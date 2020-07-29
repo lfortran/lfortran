@@ -227,7 +227,7 @@ def main():
         os.system("ld -o %s %s %s" % (outfile, objfile, LDFLAGS))
     else:
         # Invoke a C compiler to do the linking
-        os.system("cc -o %s %s -L%s -Wl,-rpath=%s -llfortran_runtime -lm" % (outfile,
+        os.system("cc -o %s %s -L%s -Wl,-rpath,%s -llfortran_runtime -lm" % (outfile,
             objfile, base_dir, base_dir))
     if objfile == "tmp_object_file.o":
         os.system("rm %s" % objfile)
