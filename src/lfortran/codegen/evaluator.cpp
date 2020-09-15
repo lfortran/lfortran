@@ -106,7 +106,7 @@ LLVMEvaluator::LLVMEvaluator()
     context = std::make_unique<llvm::LLVMContext>();
 
     target_triple = llvm::sys::getDefaultTargetTriple();
-    jit = std::make_unique<llvm::orc::KaleidoscopeJIT>();
+    jit = cantFail(llvm::orc::KaleidoscopeJIT::Create());
 }
 
 LLVMEvaluator::~LLVMEvaluator()
@@ -129,7 +129,7 @@ std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &sou
         throw std::runtime_error("add_module");
     };
     module->setTargetTriple(target_triple);
-    module->setDataLayout(jit->getTargetMachine().createDataLayout());
+    module->setDataLayout(jit->getDataLayout());
     return module;
 }
 
@@ -147,8 +147,8 @@ void LLVMEvaluator::add_module(std::unique_ptr<llvm::Module> mod) {
     // These are already set in parse_module(), but we set it here again for
     // cases when the Module was constructed directly, not via parse_module().
     mod->setTargetTriple(target_triple);
-    mod->setDataLayout(jit->getTargetMachine().createDataLayout());
-    jit->addModule(std::move(mod));
+    mod->setDataLayout(jit->getDataLayout());
+    cantFail(jit->addModule(std::move(mod)));
 }
 
 void LLVMEvaluator::add_module(std::unique_ptr<LLVMModule> m) {
@@ -156,12 +156,12 @@ void LLVMEvaluator::add_module(std::unique_ptr<LLVMModule> m) {
 }
 
 intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
-    llvm::JITSymbol s = jit->findSymbol(name);
+    llvm::Expected<llvm::JITEvaluatedSymbol> s = jit->lookup(name);
     if (!s) {
-        throw std::runtime_error("findSymbol() failed to find the symbol '"
+        throw std::runtime_error("lookup() failed to find the symbol '"
             + name + "'");
     }
-    llvm::Expected<uint64_t> addr0 = s.getAddress();
+    llvm::Expected<uint64_t> addr0 = s->getAddress();
     if (!addr0) {
         llvm::Error e = addr0.takeError();
         llvm::SmallVector<char, 128> buf;
