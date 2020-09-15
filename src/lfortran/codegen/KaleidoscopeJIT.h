@@ -39,6 +39,8 @@ private:
   MangleAndInterner Mangle;
   ThreadSafeContext Ctx;
 
+  TargetMachine *TM;
+
 public:
   KaleidoscopeJIT(JITTargetMachineBuilder JTMB, DataLayout DL)
       : ObjectLayer(ES,
@@ -49,6 +51,18 @@ public:
     ES.getMainJITDylib().setGenerator(
         cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(
             DL.getGlobalPrefix())));
+
+    std::string Error;
+    auto TargetTriple = sys::getDefaultTargetTriple();
+    auto Target = TargetRegistry::lookupTarget(TargetTriple, Error);
+    if (!Target) {
+      throw std::runtime_error("Failed to lookup the target");
+    }
+    auto CPU = "generic";
+    auto Features = "";
+    TargetOptions opt;
+    auto RM = Optional<Reloc::Model>();
+    TM = Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
   }
 
   static Expected<std::unique_ptr<KaleidoscopeJIT>> Create() {
@@ -76,6 +90,8 @@ public:
   Expected<JITEvaluatedSymbol> lookup(StringRef Name) {
     return ES.lookup({&ES.getMainJITDylib()}, Mangle(Name.str()));
   }
+
+  TargetMachine &getTargetMachine() { return *TM; }
 };
 
 } // end namespace orc
