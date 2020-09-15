@@ -28,14 +28,14 @@ define i64 @f1()
     CHECK(e.intfn("f1") == 4);
 
     e.add_module(R"""(
-define i64 @f1()
+define i64 @f2()
 {
     ret i64 5
 }
     )""");
-    CHECK(e.intfn("f1") == 5);
+    CHECK(e.intfn("f2") == 5);
     e.add_module("");
-    CHECK(e.intfn("f1") == 5);
+    CHECK(e.intfn("f2") == 5);
 }
 
 TEST_CASE("llvm 1 fail") {
