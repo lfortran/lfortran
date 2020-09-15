@@ -148,7 +148,15 @@ void LLVMEvaluator::add_module(std::unique_ptr<llvm::Module> mod) {
     // cases when the Module was constructed directly, not via parse_module().
     mod->setTargetTriple(target_triple);
     mod->setDataLayout(jit->getDataLayout());
-    cantFail(jit->addModule(std::move(mod)));
+    llvm::Error err = jit->addModule(std::move(mod));
+    if (err) {
+        llvm::SmallVector<char, 128> buf;
+        llvm::raw_svector_ostream dest(buf);
+        llvm::logAllUnhandledErrors(std::move(err), dest, "");
+        std::string msg = std::string(dest.str().data(), dest.str().size());
+        if (msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
+        throw LFortranException("addModule() returned an error: " + msg);
+    }
 }
 
 void LLVMEvaluator::add_module(std::unique_ptr<LLVMModule> m) {
