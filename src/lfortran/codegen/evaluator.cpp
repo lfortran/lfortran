@@ -166,8 +166,14 @@ void LLVMEvaluator::add_module(std::unique_ptr<LLVMModule> m) {
 intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
     llvm::Expected<llvm::JITEvaluatedSymbol> s = jit->lookup(name);
     if (!s) {
-        throw std::runtime_error("lookup() failed to find the symbol '"
-            + name + "'");
+        llvm::Error e = s.takeError();
+        llvm::SmallVector<char, 128> buf;
+        llvm::raw_svector_ostream dest(buf);
+        llvm::logAllUnhandledErrors(std::move(e), dest, "");
+        std::string msg = std::string(dest.str().data(), dest.str().size());
+        if (msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
+        throw LFortranException("lookup() failed to find the symbol '"
+            + name + "', error: " + msg);
     }
     llvm::Expected<uint64_t> addr0 = s->getAddress();
     if (!addr0) {
