@@ -71,8 +71,20 @@ src/lfortran/ast.h
 src/lfortran/asr.h
 src/libasr/asr.h
 src/lfortran/config.h
+src/libasr/config.h
 share/jupyter/kernels/fortran/kernel.json
-src/runtime/*.o.empty.c 
+src/runtime/*.o.empty.c
+src/runtime/tests/test_abs
+src/runtime/tests/test_bit
+src/runtime/tests/test_cos
+src/runtime/tests/test_hyperbolics
+src/runtime/tests/test_iso_c_binding
+src/runtime/tests/test_iso_fortran_env
+src/runtime/tests/test_kind
+src/runtime/tests/test_sin
+src/runtime/tests/test_sin2
+src/runtime/tests/test_strings
+src/runtime/tests/test_tan
 
 ### https://raw.github.com/github/gitignore/218a941be92679ce67d0484547e3e142b2f5f6f0/Global/macOS.gitignore
 
