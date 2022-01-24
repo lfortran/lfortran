@@ -70,6 +70,7 @@ src/lfortran/parser/preprocessor.cpp
 src/lfortran/ast.h
 src/lfortran/asr.h
 src/libasr/asr.h
+src/libasr/ast.h
 src/lfortran/config.h
 src/libasr/config.h
 share/jupyter/kernels/fortran/kernel.json

@@ -27,6 +27,7 @@
 #include <libasr/pass/arr_slice.h>
 #include <libasr/pass/print_arr.h>
 #include <libasr/pass/unused_functions.h>
+#include <libasr/pass/flip_sign.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/modfile.h>
@@ -51,6 +52,7 @@ enum Backend {
 enum ASRPass {
     do_loops, global_stmts, implied_do_loops, array_op,
     arr_slice, print_arr, class_constructor, unused_functions,
+    flip_sign
 };
 
 std::string remove_extension(const std::string& filename) {
@@ -562,6 +564,10 @@ int emit_asr(const std::string &infile,
             }
             case (ASRPass::array_op) : {
                 LFortran::pass_replace_array_op(al, *asr, LFortran::get_runtime_library_dir());
+                break;
+            }
+            case (ASRPass::flip_sign) : {
+                LFortran::pass_replace_flip_sign(al, *asr, LFortran::get_runtime_library_dir());
                 break;
             }
             case (ASRPass::class_constructor) : {
@@ -1400,6 +1406,8 @@ int main(int argc, char *argv[])
                 passes.push_back(ASRPass::implied_do_loops);
             } else if (arg_pass == "array_op") {
                 passes.push_back(ASRPass::array_op);
+            } else if (arg_pass == "flip_sign") {
+                passes.push_back(ASRPass::flip_sign);
             } else if (arg_pass == "class_constructor") {
                 passes.push_back(ASRPass::class_constructor);
             } else if (arg_pass == "print_arr") {
@@ -1409,7 +1417,7 @@ int main(int argc, char *argv[])
             } else if (arg_pass == "unused_functions") {
                 passes.push_back(ASRPass::unused_functions);
             } else {
-                std::cerr << "Pass must be one of: do_loops, global_stmts, implied_do_loops, array_op, class_constructor, print_arr, arr_slice, unused_functions" << std::endl;
+                std::cerr << "Pass must be one of: do_loops, global_stmts, implied_do_loops, array_op, flip_sign, class_constructor, print_arr, arr_slice, unused_functions" << std::endl;
                 return 1;
             }
             show_asr = true;
