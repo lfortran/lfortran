@@ -1801,3 +1801,7 @@ filename = "../integration_tests/nullify_02.f90"
 ast = true
 asr = true
 llvm = true
+
+[[test]]
+filename = "../integration_tests/flip_sign.f90"
+asr = true
