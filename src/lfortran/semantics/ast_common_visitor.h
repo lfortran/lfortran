@@ -2,6 +2,7 @@
 #define LFORTRAN_SEMANTICS_AST_COMMON_VISITOR_H
 
 #include <libasr/asr.h>
+#include <libasr/asr_utils.h>
 #include <lfortran/ast.h>
 #include <lfortran/bigint.h>
 #include <libasr/string_utils.h>
@@ -759,14 +760,52 @@ public:
         return return_type;
     }
 
+
+    // Transforms intrinsics real(),int() to ImplicitCast. Return true if `f` is
+    // real/int (result in `tmp`), false otherwise (`tmp` unchanged)
+    ASR::asr_t* intrinsic_function_transformation(Allocator &al, const Location &loc,
+            const std::string &fn_name, Vec<ASR::expr_t*> &args) {
+        // real(), int() are represented using ExplicitCast (for now we use
+        // ImplicitCast) in ASR, so we save them to tmp and exit:
+        if (fn_name == "real") {
+            ASR::expr_t *arg1;
+            if (args.size() == 1) {
+                arg1 = nullptr;
+            } else if (args.size() == 2) {
+                arg1 = args[1];
+            } else {
+                throw SemanticError("real(...) must have 1 or 2 arguments", loc);
+            }
+            return LFortran::CommonVisitorMethods::comptime_intrinsic_real(args[0], arg1, al, loc);
+        } else if (fn_name == "int") {
+            ASR::expr_t *arg1;
+            if (args.size() == 1) {
+                arg1 = nullptr;
+            } else if (args.size() == 2) {
+                arg1 = args[1];
+            } else {
+                throw SemanticError("int(...) must have 1 or 2 arguments", loc);
+            }
+            if (ASR::is_a<ASR::BOZ_t>(*args[0])) {
+                // Things like `int(b'01011101')` are skipped for now
+                // They are converted in comptime_eval. We should probably
+                // just convert them here instead.
+                return nullptr;
+            }
+            return LFortran::CommonVisitorMethods::comptime_intrinsic_int(args[0], arg1, al, loc);
+        } else {
+            return nullptr;
+        }
+    }
+
     ASR::asr_t* symbol_resolve_external_generic_procedure(
                 const Location &loc,
-                ASR::symbol_t *v,
-                Vec<ASR::expr_t*> args) {
+                ASR::symbol_t *v, Vec<ASR::expr_t*> args) {
         ASR::ExternalSymbol_t *p = ASR::down_cast<ASR::ExternalSymbol_t>(v);
         ASR::symbol_t *f2 = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_external;
         ASR::GenericProcedure_t *g = ASR::down_cast<ASR::GenericProcedure_t>(f2);
-        int idx = select_generic_procedure(args, *g, loc);
+        int idx = ASRUtils::select_generic_procedure(args, *g, loc,
+                    [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
         ASR::symbol_t *final_sym;
         final_sym = g->m_procs[idx];
         if (!ASR::is_a<ASR::Function_t>(*final_sym)) {
@@ -839,7 +878,8 @@ public:
                     args);
         } else {
             ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(v);
-            int idx = select_generic_procedure(args, *p, loc);
+            int idx = ASRUtils::select_generic_procedure(args, *p, loc,
+                    [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
             ASR::symbol_t *final_sym = p->m_procs[idx];
 
             ASR::ttype_t *type;
@@ -1602,175 +1642,6 @@ public:
         }
     }
 
-    // Transforms intrinsics real(),int() to ImplicitCast. Return true if `f` is
-    // real/int (result in `tmp`), false otherwise (`tmp` unchanged)
-    ASR::asr_t* intrinsic_function_transformation(Allocator &al, const Location &loc,
-            const std::string &fn_name, Vec<ASR::expr_t*> &args) {
-        // real(), int() are represented using ExplicitCast (for now we use
-        // ImplicitCast) in ASR, so we save them to tmp and exit:
-        if (fn_name == "real") {
-            ASR::expr_t *arg1;
-            if (args.size() == 1) {
-                arg1 = nullptr;
-            } else if (args.size() == 2) {
-                arg1 = args[1];
-            } else {
-                throw SemanticError("real(...) must have 1 or 2 arguments", loc);
-            }
-            return CommonVisitorMethods::comptime_intrinsic_real(args[0], arg1, al, loc);
-        } else if (fn_name == "int") {
-            ASR::expr_t *arg1;
-            if (args.size() == 1) {
-                arg1 = nullptr;
-            } else if (args.size() == 2) {
-                arg1 = args[1];
-            } else {
-                throw SemanticError("int(...) must have 1 or 2 arguments", loc);
-            }
-            if (ASR::is_a<ASR::BOZ_t>(*args[0])) {
-                // Things like `int(b'01011101')` are skipped for now
-                // They are converted in comptime_eval. We should probably
-                // just convert them here instead.
-                return nullptr;
-            }
-            return CommonVisitorMethods::comptime_intrinsic_int(args[0], arg1, al, loc);
-        } else {
-            return nullptr;
-        }
-    }
-
-    bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::expr_t*> &args,
-                             Location& loc) {
-        bool result = false;
-        if (ASR::is_a<ASR::Subroutine_t>(*proc)) {
-            ASR::Subroutine_t *sub
-                = ASR::down_cast<ASR::Subroutine_t>(proc);
-            if (argument_types_match(args, *sub)) {
-                result = true;
-            }
-        } else if (ASR::is_a<ASR::Function_t>(*proc)) {
-            ASR::Function_t *fn
-                = ASR::down_cast<ASR::Function_t>(proc);
-            if (argument_types_match(args, *fn)) {
-                result = true;
-            }
-        } else {
-            throw SemanticError("Only Subroutine and Function supported in generic procedure", loc);
-        }
-        return result;
-    }
-
-
-    int select_generic_procedure(const Vec<ASR::expr_t*> &args,
-            const ASR::GenericProcedure_t &p, Location loc) {
-        for (size_t i=0; i < p.n_procs; i++) {
-            if( ASR::is_a<ASR::ClassProcedure_t>(*p.m_procs[i]) ) {
-                ASR::ClassProcedure_t *clss_fn
-                    = ASR::down_cast<ASR::ClassProcedure_t>(p.m_procs[i]);
-                const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
-                if( select_func_subrout(proc, args, loc) ) {
-                    return i;
-                }
-            } else {
-                if( select_func_subrout(p.m_procs[i], args, loc) ) {
-                    return i;
-                }
-            }
-        }
-        throw SemanticError("Arguments do not match for any generic procedure", loc);
-    }
-
-    template <typename T>
-    bool argument_types_match(const Vec<ASR::expr_t*> &args,
-            const T &sub) {
-       if (args.size() <= sub.n_args) {
-            size_t i;
-            for (i = 0; i < args.size(); i++) {
-                ASR::Variable_t *v = LFortran::ASRUtils::EXPR2VAR(sub.m_args[i]);
-                ASR::ttype_t *arg1 = LFortran::ASRUtils::expr_type(args[i]);
-                ASR::ttype_t *arg2 = v->m_type;
-                if (!types_equal(*arg1, *arg2)) {
-                    return false;
-                }
-            }
-            for( ; i < sub.n_args; i++ ) {
-                ASR::Variable_t *v = LFortran::ASRUtils::EXPR2VAR(sub.m_args[i]);
-                if( v->m_presence != ASR::presenceType::Optional ) {
-                    return false;
-                }
-            }
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
-        // TODO: If anyone of the input or argument is derived type then
-        // add support for checking member wise types and do not compare
-        // directly. From stdlib_string len(pattern) error.
-        if (b.type == ASR::ttypeType::Derived || b.type == ASR::ttypeType::Class) {
-            return true;
-        }
-        if (a.type == b.type) {
-            // TODO: check dims
-            // TODO: check all types
-            switch (a.type) {
-                case (ASR::ttypeType::Integer) : {
-                    ASR::Integer_t *a2 = ASR::down_cast<ASR::Integer_t>(&a);
-                    ASR::Integer_t *b2 = ASR::down_cast<ASR::Integer_t>(&b);
-                    if (a2->m_kind == b2->m_kind) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                    break;
-                }
-                case (ASR::ttypeType::Real) : {
-                    ASR::Real_t *a2 = ASR::down_cast<ASR::Real_t>(&a);
-                    ASR::Real_t *b2 = ASR::down_cast<ASR::Real_t>(&b);
-                    if (a2->m_kind == b2->m_kind) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                    break;
-                }
-                case (ASR::ttypeType::Complex) : {
-                    ASR::Complex_t *a2 = ASR::down_cast<ASR::Complex_t>(&a);
-                    ASR::Complex_t *b2 = ASR::down_cast<ASR::Complex_t>(&b);
-                    if (a2->m_kind == b2->m_kind) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                    break;
-                }
-                case (ASR::ttypeType::Logical) : {
-                    ASR::Logical_t *a2 = ASR::down_cast<ASR::Logical_t>(&a);
-                    ASR::Logical_t *b2 = ASR::down_cast<ASR::Logical_t>(&b);
-                    if (a2->m_kind == b2->m_kind) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                    break;
-                }
-                case (ASR::ttypeType::Character) : {
-                    ASR::Character_t *a2 = ASR::down_cast<ASR::Character_t>(&a);
-                    ASR::Character_t *b2 = ASR::down_cast<ASR::Character_t>(&b);
-                    if (a2->m_kind == b2->m_kind) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                    break;
-                }
-                default : return false;
-            }
-        }
-        return false;
-    }
 
 };
 

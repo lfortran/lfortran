@@ -702,6 +702,17 @@ inline bool is_same_type_pointer(ASR::ttype_t* source, ASR::ttype_t* dest) {
 
                 return ASRUtils::is_same_type_pointer(x, y);
             }
+
+int select_generic_procedure(const Vec<ASR::expr_t*> &args,
+        const ASR::GenericProcedure_t &p, Location loc,
+        const std::function<void (const std::string &, const Location &)> err);
+
+ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
+            const Location &loc,
+            ASR::symbol_t *v, Vec<ASR::expr_t*> args,
+            SymbolTable* current_scope, Allocator& al,
+            const std::function<void (const std::string &, const Location &)> err);
+
 } // namespace ASRUtils
 
 } // namespace LFortran

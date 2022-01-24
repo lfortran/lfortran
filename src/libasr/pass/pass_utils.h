@@ -12,7 +12,7 @@ namespace LFortran {
 
         void get_dim_rank(ASR::ttype_t* x_type, ASR::dimension_t*& m_dims, int& n_dims);
 
-        ASR::ttype_t* set_dim_rank(ASR::ttype_t* x_type, ASR::dimension_t*& m_dims, int& n_dims, 
+        ASR::ttype_t* set_dim_rank(ASR::ttype_t* x_type, ASR::dimension_t*& m_dims, int& n_dims,
                                     bool create_new=false, Allocator* al=nullptr);
 
         int get_rank(ASR::expr_t* x);
@@ -22,13 +22,20 @@ namespace LFortran {
         ASR::expr_t* create_array_ref(ASR::symbol_t* arr, Vec<ASR::expr_t*>& idx_vars, Allocator& al,
                                       const Location& loc, ASR::ttype_t* _type);
 
-        void create_idx_vars(Vec<ASR::expr_t*>& idx_vars, int n_dims, const Location& loc, 
+        void create_idx_vars(Vec<ASR::expr_t*>& idx_vars, int n_dims, const Location& loc,
                              Allocator& al, SymbolTable*& current_scope, std::string suffix="_k");
-        
+
         ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound,
-                                Allocator& al, ASR::TranslationUnit_t& unit, 
+                                Allocator& al, ASR::TranslationUnit_t& unit,
                                 const std::string &rl_path,
                                 SymbolTable*& current_scope);
+
+
+        ASR::stmt_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
+                                  Allocator& al, ASR::TranslationUnit_t& unit,
+                                  const std::string &rl_path,
+                                  SymbolTable*& current_scope,
+                                  const std::function<void (const std::string &, const Location &)> err);
 
         ASR::expr_t* to_int32(ASR::expr_t* x, ASR::ttype_t* int32type, Allocator& al);
 
