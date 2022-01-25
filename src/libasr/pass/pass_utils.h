@@ -43,6 +43,42 @@ namespace LFortran {
 
         bool is_slice_present(const ASR::expr_t* x);
 
+        template <class Derived>
+        class PassVisitor: public ASR::BaseWalkVisitor<Derived> {
+
+            private:
+
+                Derived& self() { return static_cast<Derived&>(*this); }
+
+            public:
+
+                bool asr_changed;
+
+                void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body,
+                                     Allocator& al, Vec<ASR::stmt_t*>& pass_result) {
+                    Vec<ASR::stmt_t*> body;
+                    body.reserve(al, n_body);
+                    for (size_t i=0; i<n_body; i++) {
+                        // Not necessary after we check it after each visit_stmt in every
+                        // visitor method:
+                        pass_result.n = 0;
+                        self().visit_stmt(*m_body[i]);
+                        if (pass_result.size() > 0) {
+                            asr_changed = true;
+                            for (size_t j=0; j < pass_result.size(); j++) {
+                                body.push_back(al, pass_result[j]);
+                            }
+                            pass_result.n = 0;
+                        } else {
+                            body.push_back(al, m_body[i]);
+                        }
+                    }
+                    m_body = body.p;
+                    n_body = body.size();
+                }
+
+        };
+
     }
 
 } // namespace LFortran
