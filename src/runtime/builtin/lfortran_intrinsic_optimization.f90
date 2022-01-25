@@ -1,4 +1,4 @@
-module lfortran_intrinsic_optimisation
+module lfortran_intrinsic_optimization
 use, intrinsic :: iso_fortran_env, only: int32, int64, real32, real64, real128
 implicit none
 

@@ -49,13 +49,13 @@ The algorithm contains two components,
 2. Replacing Flip Sign with bit shifts - This phase is executed only
     when the above one is a success. Here, we replace the subtree
     detected above with a call to a generic procedure defined in
-    `lfortran_intrinsic_optimisation`. This is just a dummy call
+    `lfortran_intrinsic_optimization`. This is just a dummy call
     anyways to keep things backend agnostic. The actual implementation
     will be generated in the backend specified.
 
 
 */
-class FlipSignVisitor : public ASR::BaseWalkVisitor<FlipSignVisitor>
+class FlipSignVisitor : public PassUtils::PassVisitor<FlipSignVisitor>
 {
 private:
     Allocator &al;
@@ -79,27 +79,7 @@ public:
     FlipSignVisitor(Allocator &al_, ASR::TranslationUnit_t &unit_, const std::string& rl_path_) : al(al_), unit(unit_),
     rl_path{rl_path_}
     {
-    }
-
-    void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
-        Vec<ASR::stmt_t*> body;
-        body.reserve(al, n_body);
-        for (size_t i=0; i<n_body; i++) {
-            // Not necessary after we check it after each visit_stmt in every
-            // visitor method:
-            flip_sign_result.reserve(al, 0);
-            visit_stmt(*m_body[i]);
-            if (flip_sign_result.size() > 0) {
-                for (size_t j=0; j<flip_sign_result.size(); j++) {
-                    body.push_back(al, flip_sign_result[j]);
-                }
-                flip_sign_result.n = 0;
-            } else {
-                body.push_back(al, m_body[i]);
-            }
-        }
-        m_body = body.p;
-        n_body = body.size();
+        flip_sign_result.reserve(al, 1);
     }
 
     // TODO: Only Program and While is processed, we need to process all calls
@@ -124,7 +104,7 @@ public:
         // which requires to generate a TransformVisitor.
         ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
 
-        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts(xx.m_body, xx.n_body, al, flip_sign_result);
 
     }
 
@@ -133,7 +113,7 @@ public:
         // which requires to generate a TransformVisitor.
         ASR::Subroutine_t &xx = const_cast<ASR::Subroutine_t&>(x);
         current_scope = xx.m_symtab;
-        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts(xx.m_body, xx.n_body, al, flip_sign_result);
     }
 
     void visit_Function(const ASR::Function_t &x) {
@@ -141,7 +121,7 @@ public:
         // which requires to generate a TransformVisitor.
         ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
         current_scope = xx.m_symtab;
-        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts(xx.m_body, xx.n_body, al, flip_sign_result);
     }
 
     void visit_If(const ASR::If_t& x) {
