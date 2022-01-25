@@ -105,6 +105,7 @@ public:
     bool last_unary_plus;
     bool last_binary_plus;
     bool intrinsic_module = false;
+    const ASR::Function_t *current_function = nullptr;
 
     ASRToCPPVisitor(diag::Diagnostics &diag) : diag{diag} {}
 
@@ -129,11 +130,15 @@ public:
             if (is_a<ASR::Integer_t>(*v.m_type)) {
                 ASR::Integer_t *t = down_cast<ASR::Integer_t>(v.m_type);
                 std::string dims = convert_dims(t->n_dims, t->m_dims);
-                sub = format_type(dims, "int", v.m_name, use_ref, dummy);
+                std::string type_name = "int";
+                if (t->m_kind == 8) type_name = "long long";
+                sub = format_type(dims, type_name, v.m_name, use_ref, dummy);
             } else if (is_a<ASR::Real_t>(*v.m_type)) {
                 ASR::Real_t *t = down_cast<ASR::Real_t>(v.m_type);
                 std::string dims = convert_dims(t->n_dims, t->m_dims);
-                sub = format_type(dims, "float", v.m_name, use_ref, dummy);
+                std::string type_name = "float";
+                if (t->m_kind == 8) type_name = "double";
+                sub = format_type(dims, type_name, v.m_name, use_ref, dummy);
             } else if (is_a<ASR::Complex_t>(*v.m_type)) {
                 ASR::Complex_t *t = down_cast<ASR::Complex_t>(v.m_type);
                 std::string dims = convert_dims(t->n_dims, t->m_dims);
@@ -434,11 +439,13 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             }
         }
 
+        current_function = &x;
         std::string body;
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
             body += src;
         }
+        current_function = nullptr;
 
         body += indent + "return "
             + LFortran::ASRUtils::EXPR2VAR(x.m_return_var)->m_name
@@ -534,6 +541,12 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 
     void visit_ConstantString(const ASR::ConstantString_t &x) {
         src = "\"" + std::string(x.m_s) + "\"";
+        last_unary_plus = false;
+        last_binary_plus = false;
+    }
+
+    void visit_ConstantComplex(const ASR::ConstantComplex_t &x) {
+        src = "(" + std::to_string(x.m_re) + "," + std::to_string(x.m_im) + ")";
         last_unary_plus = false;
         last_binary_plus = false;
     }
@@ -648,7 +661,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
                 last_binary_plus = false;
                 return;
             } else {
-                throw CodeGenError("Unary type not implemented yet");
+                throw CodeGenError("Unary type not implemented yet for Integer");
             }
         } else if (x.m_type->type == ASR::ttypeType::Real) {
             if (x.m_op == ASR::unaryopType::UAdd) {
@@ -661,7 +674,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
                 last_binary_plus = false;
                 return;
             } else {
-                throw CodeGenError("Unary type not implemented yet");
+                throw CodeGenError("Unary type not implemented yet for Real");
             }
         } else if (x.m_type->type == ASR::ttypeType::Logical) {
             if (x.m_op == ASR::unaryopType::Not) {
@@ -670,7 +683,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
                 last_binary_plus = false;
                 return;
             } else {
-                throw CodeGenError("Unary type not implemented yet in Logical");
+                throw CodeGenError("Unary type not implemented yet for Logical");
             }
         } else {
             throw CodeGenError("UnaryOp: type not supported yet");
@@ -880,7 +893,13 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 
     void visit_Return(const ASR::Return_t & /* x */) {
         std::string indent(indentation_level*indentation_spaces, ' ');
-        src = indent + "return;\n";
+        if (current_function) {
+            src = indent + "return "
+                + LFortran::ASRUtils::EXPR2VAR(current_function->m_return_var)->m_name
+                + ";\n";
+        } else {
+            src = indent + "return;\n";
+        }
     }
 
     void visit_GoToTarget(const ASR::GoToTarget_t & /* x */) {
