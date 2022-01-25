@@ -49,7 +49,7 @@ The algorithm contains two components,
 2. Replacing Flip Sign with bit shifts - This phase is executed only
     when the above one is a success. Here, we replace the subtree
     detected above with a call to a generic procedure defined in
-    `lfortran_intrinsic_optimisation`. This is just a dummy call
+    `lfortran_intrinsic_optimization`. This is just a dummy call
     anyways to keep things backend agnostic. The actual implementation
     will be generated in the backend specified.
 

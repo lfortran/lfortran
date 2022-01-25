@@ -289,7 +289,7 @@ namespace LFortran {
                               const std::string& rl_path,
                               SymbolTable*& current_scope,
                               const std::function<void (const std::string &, const Location &)> err) {
-            ASR::symbol_t *v = import_generic_procedure("flipsign", "lfortran_intrinsic_optimisation",
+            ASR::symbol_t *v = import_generic_procedure("flipsign", "lfortran_intrinsic_optimization",
                                                         al, unit, rl_path, current_scope, arg0->base.loc);
             Vec<ASR::expr_t*> args;
             args.reserve(al, 2);
