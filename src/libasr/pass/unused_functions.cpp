@@ -3,7 +3,6 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
-#include <libasr/pass/pass_utils.h>
 #include <libasr/pass/unused_functions.h>
 
 #include <cstring>
@@ -18,7 +17,7 @@ uint64_t static get_hash(ASR::asr_t *node)
 }
 
 class CollectUnusedFunctionsVisitor :
-    public PassUtils::PassVisitor<CollectUnusedFunctionsVisitor>
+    public ASR::BaseWalkVisitor<CollectUnusedFunctionsVisitor>
 {
 public:
     std::map<uint64_t, std::string> fn_declarations;
