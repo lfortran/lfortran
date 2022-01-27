@@ -53,9 +53,16 @@ namespace LFortran {
             public:
 
                 bool asr_changed;
+                Allocator& al;
+                Vec<ASR::stmt_t*> pass_result;
+                SymbolTable* current_scope;
 
-                void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body,
-                                     Allocator& al, Vec<ASR::stmt_t*>& pass_result) {
+                PassVisitor(Allocator& al_, SymbolTable* current_scope_): al{al_},
+                current_scope{current_scope_} {
+                    pass_result.n = 0;
+                }
+
+                void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
                     Vec<ASR::stmt_t*> body;
                     body.reserve(al, n_body);
                     for (size_t i=0; i<n_body; i++) {
@@ -75,6 +82,42 @@ namespace LFortran {
                     }
                     m_body = body.p;
                     n_body = body.size();
+                }
+
+                void visit_Program(const ASR::Program_t &x) {
+                    // FIXME: this is a hack, we need to pass in a non-const `x`,
+                    // which requires to generate a TransformVisitor.
+                    ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
+                    current_scope = xx.m_symtab;
+                    transform_stmts(xx.m_body, xx.n_body);
+
+                    // Transform nested functions and subroutines
+                    for (auto &item : x.m_symtab->scope) {
+                        if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
+                            ASR::Subroutine_t *s = ASR::down_cast<ASR::Subroutine_t>(item.second);
+                            visit_Subroutine(*s);
+                        }
+                        if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                            ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
+                            visit_Function(*s);
+                        }
+                    }
+                }
+
+                void visit_Subroutine(const ASR::Subroutine_t &x) {
+                    // FIXME: this is a hack, we need to pass in a non-const `x`,
+                    // which requires to generate a TransformVisitor.
+                    ASR::Subroutine_t &xx = const_cast<ASR::Subroutine_t&>(x);
+                    current_scope = xx.m_symtab;
+                    transform_stmts(xx.m_body, xx.n_body);
+                }
+
+                void visit_Function(const ASR::Function_t &x) {
+                    // FIXME: this is a hack, we need to pass in a non-const `x`,
+                    // which requires to generate a TransformVisitor.
+                    ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
+                    current_scope = xx.m_symtab;
+                    transform_stmts(xx.m_body, xx.n_body);
                 }
 
         };

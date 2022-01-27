@@ -104,7 +104,7 @@ public:
     }
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
-        stmts = replace_doloop(al, x);
+        pass_result = replace_doloop(al, x);
     }
 };
 
