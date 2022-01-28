@@ -1806,3 +1806,8 @@ llvm = true
 filename = "../integration_tests/flip_sign.f90"
 asr = true
 pass = "flip_sign"
+
+[[test]]
+filename = "../integration_tests/div_to_mul.f90"
+asr = true
+pass = "div_to_mul"

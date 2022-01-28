@@ -389,6 +389,24 @@ static inline bool all_args_evaluated(const Vec<ASR::array_index_t> &args) {
     return true;
 }
 
+template <typename T>
+static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
+    if( !is_value_constant(value_expr) ) {
+        return false;
+    }
+
+    switch( value_expr->type ) {
+        case ASR::exprType::ConstantReal: {
+            ASR::ConstantReal_t* const_real = ASR::down_cast<ASR::ConstantReal_t>(value_expr);
+            value = (T) const_real->m_r;
+            break;
+        }
+        default:
+            return false;
+    }
+    return true;
+}
+
 // Returns a list of values
 static inline Vec<ASR::expr_t*> get_arg_values(Allocator &al, const Vec<ASR::expr_t*> &args) {
     Vec<ASR::expr_t*> values;
