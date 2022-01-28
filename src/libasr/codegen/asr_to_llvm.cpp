@@ -51,6 +51,7 @@
 #include <libasr/pass/nested_vars.h>
 #include <libasr/pass/print_arr.h>
 #include <libasr/pass/arr_slice.h>
+#include <libasr/pass/div_to_mul.h>
 #include <libasr/pass/class_constructor.h>
 #include <libasr/pass/unused_functions.h>
 #include <libasr/exception.h>
@@ -3991,6 +3992,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     pass_replace_forall(al, asr);
     pass_replace_select_case(al, asr);
     pass_unused_functions(al, asr);
+    pass_replace_div_to_mul(al, asr, rl_path);
     v.nested_func_types = pass_find_nested_vars(asr, context,
         v.nested_globals, v.nested_call_out, v.nesting_map);
     try {
