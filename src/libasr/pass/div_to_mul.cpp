@@ -36,12 +36,11 @@ to:
 class DivToMulVisitor : public PassUtils::PassVisitor<DivToMulVisitor>
 {
 private:
-    ASR::TranslationUnit_t &unit;
 
     std::string rl_path;
 
 public:
-    DivToMulVisitor(Allocator &al_, ASR::TranslationUnit_t &unit_, const std::string& rl_path_) : PassVisitor(al_, nullptr), unit(unit_),
+    DivToMulVisitor(Allocator &al_, const std::string& rl_path_) : PassVisitor(al_, nullptr),
     rl_path(rl_path_)
     {
         pass_result.reserve(al, 1);
@@ -80,7 +79,7 @@ public:
 
 void pass_replace_div_to_mul(Allocator &al, ASR::TranslationUnit_t &unit,
                             const std::string& rl_path) {
-    DivToMulVisitor v(al, unit, rl_path);
+    DivToMulVisitor v(al, rl_path);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));
 }

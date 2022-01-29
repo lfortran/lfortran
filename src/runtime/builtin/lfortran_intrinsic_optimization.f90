@@ -13,11 +13,13 @@ contains
 subroutine flipsigni32r32(signal, variable)
 integer(int32), intent(in) :: signal
 real(real32), intent(out) :: variable
+if (modulo(signal, 2) == 1 ) variable = -variable
 end subroutine
 
 subroutine flipsigni32r64(signal, variable)
 integer(int32), intent(in) :: signal
 real(real64), intent(out) :: variable
+if (modulo(signal, 2) == 1 ) variable = -variable
 end subroutine
 
 end module

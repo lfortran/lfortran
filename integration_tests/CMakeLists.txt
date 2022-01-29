@@ -433,5 +433,5 @@ RUN(NAME bits_05 LABELS gfortran llvm)
 RUN(NAME cpu_time_01 LABELS gfortran llvm)
 RUN(NAME boz_01 LABELS gfortran llvm)
 
-RUN(NAME flip_sign LABELS gfortran)
+RUN(NAME flip_sign LABELS gfortran llvm)
 RUN(NAME div_to_mul LABELS gfortran llvm)

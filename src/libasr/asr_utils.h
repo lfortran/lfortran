@@ -318,6 +318,21 @@ static inline bool is_intrinsic_function(const ASR::Function_t *fn) {
     return false;
 }
 
+// Returns true if the Function is intrinsic, otherwise false
+template <typename T>
+static inline bool is_intrinsic_optimization(const T *routine) {
+    ASR::symbol_t *sym = (ASR::symbol_t*)routine;
+    if( ASR::is_a<ASR::ExternalSymbol_t>(*sym) ) {
+        ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
+        return (std::string(ext_sym->m_module_name).find("lfortran_intrinsic_optimization") != std::string::npos);
+    }
+    ASR::Module_t *m = get_sym_module0(sym);
+    if (m != nullptr) {
+        return (std::string(m->m_name).find("lfortran_intrinsic_optimization") != std::string::npos);
+    }
+    return false;
+}
+
 // Returns true if all arguments have a `value`
 static inline bool all_args_have_value(const Vec<ASR::expr_t*> &args) {
     for (auto &a : args) {

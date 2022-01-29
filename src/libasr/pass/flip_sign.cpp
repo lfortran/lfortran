@@ -79,6 +79,17 @@ public:
         pass_result.reserve(al, 1);
     }
 
+    void visit_Subroutine(const ASR::Subroutine_t &x) {
+        // FIXME: this is a hack, we need to pass in a non-const `x`,
+        // which requires to generate a TransformVisitor.
+        if( ASRUtils::is_intrinsic_optimization<ASR::Subroutine_t>(&x) ) {
+            return ;
+        }
+        ASR::Subroutine_t &xx = const_cast<ASR::Subroutine_t&>(x);
+        current_scope = xx.m_symtab;
+        PassUtils::PassVisitor<FlipSignVisitor>::transform_stmts(xx.m_body, xx.n_body);
+    }
+
     void visit_If(const ASR::If_t& x) {
         is_if_present = true;
         is_compare_present = false;
