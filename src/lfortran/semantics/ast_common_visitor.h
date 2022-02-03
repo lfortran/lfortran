@@ -1009,37 +1009,45 @@ public:
     }
 
     ASR::symbol_t* resolve_deriv_type_proc(const Location &loc, const std::string &var_name,
-            const std::string &dt_name, SymbolTable*& scope) {
-        ASR::symbol_t *v = scope->resolve_symbol(dt_name);
-        if (!v) {
-            throw SemanticError("Variable '" + dt_name + "' not declared", loc);
-        }
-        ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(v);
-        ASR::ttype_t* v_type = ASRUtils::type_get_past_pointer(v_variable->m_type);
-        if ( ASR::is_a<ASR::Derived_t>(*v_type) || ASR::is_a<ASR::Class_t>(*v_type)) {
-            ASR::Derived_t* der = (ASR::Derived_t*)(&(v_type->base));
-            ASR::DerivedType_t* der_type;
-            if( der->m_derived_type->type == ASR::symbolType::ExternalSymbol ) {
-                ASR::ExternalSymbol_t* der_ext = (ASR::ExternalSymbol_t*)(&(der->m_derived_type->base));
-                ASR::symbol_t* der_sym = der_ext->m_external;
-                if( der_sym == nullptr ) {
-                    throw SemanticError("'" + std::string(der_ext->m_name) + "' isn't a Derived type.", loc);
+            const std::string dt_name, SymbolTable*& scope, ASR::symbol_t* parent=nullptr) {
+        ASR::symbol_t* v = nullptr;
+        ASR::DerivedType_t* der_type = nullptr;
+        if( parent == nullptr ) {
+            v = scope->resolve_symbol(dt_name);
+            if (!v) {
+                throw SemanticError("Variable '" + dt_name + "' not declared", loc);
+            }
+            ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(v);
+            ASR::ttype_t* v_type = ASRUtils::type_get_past_pointer(v_variable->m_type);
+            if ( ASR::is_a<ASR::Derived_t>(*v_type) || ASR::is_a<ASR::Class_t>(*v_type)) {
+                ASR::Derived_t* der = (ASR::Derived_t*)(&(v_type->base));
+                if( der->m_derived_type->type == ASR::symbolType::ExternalSymbol ) {
+                    ASR::ExternalSymbol_t* der_ext = (ASR::ExternalSymbol_t*)(&(der->m_derived_type->base));
+                    ASR::symbol_t* der_sym = der_ext->m_external;
+                    if( der_sym == nullptr ) {
+                        throw SemanticError("'" + std::string(der_ext->m_name) + "' isn't a Derived type.", loc);
+                    } else {
+                        der_type = (ASR::DerivedType_t*)(&(der_sym->base));
+                    }
                 } else {
-                    der_type = (ASR::DerivedType_t*)(&(der_sym->base));
+                    der_type = (ASR::DerivedType_t*)(&(der->m_derived_type->base));
                 }
             } else {
-                der_type = (ASR::DerivedType_t*)(&(der->m_derived_type->base));
-            }
-            scope = der_type->m_symtab;
-            ASR::symbol_t* member = der_type->m_symtab->resolve_symbol(var_name);
-            if( member != nullptr ) {
-                return member;
-            } else {
-                throw SemanticError("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.", loc);
+                throw SemanticError("Variable '" + dt_name + "' is not a derived type", loc);
             }
         } else {
-            throw SemanticError("Variable '" + dt_name + "' is not a derived type", loc);
+            v = ASRUtils::symbol_get_past_external(parent);
+            der_type = ASR::down_cast<ASR::DerivedType_t>(v);
         }
+        ASR::symbol_t* member = der_type->m_symtab->resolve_symbol(var_name);
+        if( member != nullptr ) {
+            scope = der_type->m_symtab;
+        } else if( der_type->m_parent != nullptr ) {
+            member = resolve_deriv_type_proc(loc, var_name, "", scope, der_type->m_parent);
+        } else {
+            throw SemanticError("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.", loc);
+        }
+        return member;
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
