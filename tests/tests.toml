@@ -1823,3 +1823,7 @@ llvm = true
 filename = "../integration_tests/div_to_mul.f90"
 asr = true
 pass = "div_to_mul"
+
+[[test]]
+filename = "../integration_tests/functions_04.f90"
+asr = true
