@@ -695,7 +695,7 @@ public:
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->scope[to_lower(x.m_name)];
         if( t->type == ASR::symbolType::GenericProcedure ) {
-            std::string subrout_name = "~" + to_lower(x.m_name);
+            std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->scope[subrout_name];
         }
         ASR::Subroutine_t *v = ASR::down_cast<ASR::Subroutine_t>(t);
@@ -721,6 +721,9 @@ public:
     void visit_Function(const AST::Function_t &x) {
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->scope[to_lower(x.m_name)];
+        if( t->type == ASR::symbolType::GenericProcedure ) {
+            t = current_scope->scope[to_lower(x.m_name) + "~genericprocedure"];
+        }
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
