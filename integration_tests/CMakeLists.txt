@@ -438,3 +438,4 @@ RUN(NAME boz_01 LABELS gfortran llvm)
 
 RUN(NAME flip_sign LABELS gfortran llvm)
 RUN(NAME div_to_mul LABELS gfortran llvm)
+RUN(NAME fma LABELS gfortran llvm)

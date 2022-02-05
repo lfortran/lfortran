@@ -218,19 +218,24 @@ namespace LFortran {
                                             rl_path,
                                             [&](const std::string &msg, const Location &) { throw LFortranException(msg); }
                                             );
-
             ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
-            ASR::asr_t *fn = ASR::make_ExternalSymbol_t(al, t->base.loc, current_scope,
-                                                        s2c(al, remote_sym), t,
-                                                        s2c(al, module_name), nullptr, 0, s2c(al, remote_sym),
-                                                        ASR::accessType::Private);
-            std::string& sym = remote_sym;
+
+            std::string sym = remote_sym;
             if( current_scope->scope.find(sym) != current_scope->scope.end() ) {
                 v = current_scope->scope[sym];
-            } else {
-                current_scope->scope[sym] = ASR::down_cast<ASR::symbol_t>(fn);
-                v = ASR::down_cast<ASR::symbol_t>(fn);
+                if( !ASRUtils::is_intrinsic_optimization<ASR::symbol_t>(v) ) {
+                    sym += "@IntrinsicOptimization";
+                } else {
+                    current_scope = current_scope_copy;
+                    return v;
+                }
             }
+            ASR::asr_t *fn = ASR::make_ExternalSymbol_t(al, t->base.loc, current_scope,
+                                                        s2c(al, sym), t,
+                                                        s2c(al, module_name), nullptr, 0, s2c(al, remote_sym),
+                                                        ASR::accessType::Private);
+            current_scope->scope[sym] = ASR::down_cast<ASR::symbol_t>(fn);
+            v = ASR::down_cast<ASR::symbol_t>(fn);
             current_scope = current_scope_copy;
             return v;
         }
@@ -343,6 +348,34 @@ namespace LFortran {
             }
             ASR::ArrayRef_t* array_ref = ASR::down_cast<ASR::ArrayRef_t>(x);
             return is_slice_present(*array_ref);
+        }
+
+        ASR::expr_t* create_auxiliary_variable_for_expr(ASR::expr_t* expr, std::string& name,
+            Allocator& al, SymbolTable*& current_scope, ASR::stmt_t*& assign_stmt) {
+            ASR::asr_t* expr_sym = ASR::make_Variable_t(al, expr->base.loc, current_scope, s2c(al, name),
+                                                    ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                                                    ASRUtils::expr_type(expr), ASR::abiType::Source, ASR::accessType::Public,
+                                                    ASR::presenceType::Required, false);
+            current_scope->scope[name] = ASR::down_cast<ASR::symbol_t>(expr_sym);
+            ASR::expr_t* var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, expr->base.loc, ASR::down_cast<ASR::symbol_t>(expr_sym)));
+            assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, var->base.loc, var, expr, nullptr));
+            return var;
+        }
+
+        ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
+            Allocator& al, ASR::TranslationUnit_t& unit, std::string& rl_path,
+            SymbolTable*& current_scope, Location& loc,
+            const std::function<void (const std::string &, const Location &)> err) {
+            ASR::symbol_t *v = import_generic_procedure("fma", "lfortran_intrinsic_optimization",
+                                                        al, unit, rl_path, current_scope, arg0->base.loc);
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, 3);
+            args.push_back(al, arg0);
+            args.push_back(al, arg1);
+            args.push_back(al, arg2);
+            return ASRUtils::EXPR(
+                        ASRUtils::symbol_resolve_external_generic_procedure_without_eval(
+                        loc, v, args, current_scope, al, err));
         }
 
     }

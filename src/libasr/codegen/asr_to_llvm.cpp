@@ -53,6 +53,7 @@
 #include <libasr/pass/arr_slice.h>
 #include <libasr/pass/flip_sign.h>
 #include <libasr/pass/div_to_mul.h>
+#include <libasr/pass/fma.h>
 #include <libasr/pass/class_constructor.h>
 #include <libasr/pass/unused_functions.h>
 #include <libasr/exception.h>
@@ -858,6 +859,22 @@ public:
         for (auto &item : x.m_global_scope->scope) {
             if (is_a<ASR::Variable_t>(*item.second)) {
                 visit_symbol(*item.second);
+            }
+        }
+
+        prototype_only = false;
+        for (auto &item : x.m_global_scope->scope) {
+            if (is_a<ASR::Module_t>(*item.second) &&
+                item.first.find("lfortran_intrinsic_optimization") != std::string::npos) {
+                ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(item.second);
+                for( auto &moditem: mod->m_symtab->scope ) {
+                    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(moditem.second);
+                    if (is_a<ASR::Subroutine_t>(*sym)) {
+                        visit_Subroutine(*ASR::down_cast<ASR::Subroutine_t>(sym));
+                    } else if (is_a<ASR::Function_t>(*sym)) {
+                        visit_Function(*ASR::down_cast<ASR::Function_t>(sym));
+                    }
+                }
             }
         }
 
@@ -2905,7 +2922,7 @@ public:
                 return;
             } else if (x.m_op == ASR::unaryopType::USub) {
                 llvm::Value *zero = llvm::ConstantInt::get(context,
-                    llvm::APInt(32, 0));
+                    llvm::APInt(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_operand)) * 8, 0));
                 tmp = builder ->CreateSub(zero, tmp);
                 return;
             } else {
@@ -3797,20 +3814,21 @@ public:
     }
 
     template <typename T>
-    void generate_optimization_instructions(const T* routine, ASR::expr_t** m_args) {
+    bool generate_optimization_instructions(const T* routine, ASR::expr_t** m_args) {
         if( std::string(routine->m_name).find("flipsign") != std::string::npos ) {
             generate_flip_sign(m_args);
-        } else {
-            throw CodeGenError(std::string(routine->m_name) + " optimization routine not supported in LLVM backend yet.");
+            return true;
         }
+        return false;
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
             ASR::Subroutine_t* routine = ASR::down_cast<ASR::Subroutine_t>(
                         ASRUtils::symbol_get_past_external(x.m_name));
-            generate_optimization_instructions(routine, x.m_args);
-            return ;
+            if( generate_optimization_instructions(routine, x.m_args) ) {
+                return ;
+            }
         }
         ASR::Subroutine_t *s;
         std::vector<llvm::Value*> args;
@@ -4010,8 +4028,7 @@ public:
 Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics,
         llvm::LLVMContext &context, Allocator &al, Platform platform,
-        const std::string &rl_path,
-        const std::string &run_fn)
+        bool fast, const std::string &rl_path, const std::string &run_fn)
 {
     ASRToLLVMVisitor v(al, context, platform, diagnostics);
     pass_wrap_global_stmts_into_function(al, asr, run_fn);
@@ -4027,8 +4044,13 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     pass_replace_forall(al, asr);
     pass_replace_select_case(al, asr);
     pass_unused_functions(al, asr);
-    pass_replace_flip_sign(al, asr, rl_path);
-    pass_replace_div_to_mul(al, asr, rl_path);
+
+    if( fast ) {
+        pass_replace_flip_sign(al, asr, rl_path);
+        pass_replace_div_to_mul(al, asr, rl_path);
+        pass_replace_fma(al, asr, rl_path);
+    }
+
     v.nested_func_types = pass_find_nested_vars(asr, context,
         v.nested_globals, v.nested_call_out, v.nesting_map);
     try {

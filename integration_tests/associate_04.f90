@@ -15,6 +15,6 @@ program associate_04
 
     print *, myreal
 
-    if ((myreal - 41.86) > 1e-5 .or. myreal - 41.86 < -1e-5) error stop 
+    if ((myreal - 41.86) > 1e-5 .or. myreal - 41.86 < -1e-5) error stop
 
 end program associate_04

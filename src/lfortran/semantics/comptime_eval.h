@@ -93,6 +93,7 @@ struct IntrinsicProcedures {
             {"atanh", {m_math, &eval_atanh, true}},
 
             {"atan2", {m_math, &eval_atan2, true}},
+            {"sign", {m_math, &not_implemented, false}},
 
             {"iand", {m_bit, &not_implemented, false}},
             {"ior", {m_bit, &not_implemented, false}},
