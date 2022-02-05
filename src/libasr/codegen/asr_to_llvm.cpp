@@ -2922,7 +2922,7 @@ public:
                 return;
             } else if (x.m_op == ASR::unaryopType::USub) {
                 llvm::Value *zero = llvm::ConstantInt::get(context,
-                    llvm::APInt(32, 0));
+                    llvm::APInt(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_operand)) * 8, 0));
                 tmp = builder ->CreateSub(zero, tmp);
                 return;
             } else {
