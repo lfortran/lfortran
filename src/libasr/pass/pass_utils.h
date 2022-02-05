@@ -43,6 +43,14 @@ namespace LFortran {
 
         bool is_slice_present(const ASR::expr_t* x);
 
+        ASR::expr_t* create_auxiliary_variable_for_expr(ASR::expr_t* expr, std::string& name,
+            Allocator& al, SymbolTable*& current_scope, ASR::stmt_t*& assign_stmt);
+
+        ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
+                             Allocator& al, ASR::TranslationUnit_t& unit, std::string& rl_path,
+                             SymbolTable*& current_scope,Location& loc,
+                             const std::function<void (const std::string &, const Location &)> err);
+
         template <class Derived>
         class PassVisitor: public ASR::BaseWalkVisitor<Derived> {
 
@@ -52,7 +60,7 @@ namespace LFortran {
 
             public:
 
-                bool asr_changed;
+                bool asr_changed, retain_original_stmt;
                 Allocator& al;
                 Vec<ASR::stmt_t*> pass_result;
                 SymbolTable* current_scope;
@@ -69,11 +77,16 @@ namespace LFortran {
                         // Not necessary after we check it after each visit_stmt in every
                         // visitor method:
                         pass_result.n = 0;
+                        retain_original_stmt = false;
                         self().visit_stmt(*m_body[i]);
                         if (pass_result.size() > 0) {
                             asr_changed = true;
                             for (size_t j=0; j < pass_result.size(); j++) {
                                 body.push_back(al, pass_result[j]);
+                            }
+                            if( retain_original_stmt ) {
+                                body.push_back(al, m_body[i]);
+                                retain_original_stmt = false;
                             }
                             pass_result.n = 0;
                         } else {
