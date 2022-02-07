@@ -3813,10 +3813,26 @@ public:
         builder->CreateStore(builder->CreateBitCast(tmp, variable_type->getElementType()), variable);
     }
 
+    void generate_fma(ASR::expr_t** m_args) {
+        this->visit_expr_wrapper(m_args[0], true);
+        llvm::Value* a = tmp;
+        this->visit_expr_wrapper(m_args[1], true);
+        llvm::Value* b = tmp;
+        this->visit_expr_wrapper(m_args[2], true);
+        llvm::Value* c = tmp;
+        tmp = builder->CreateIntrinsic(llvm::Intrinsic::fma,
+                {a->getType()},
+                {b, c, a});
+    }
+
     template <typename T>
     bool generate_optimization_instructions(const T* routine, ASR::expr_t** m_args) {
-        if( std::string(routine->m_name).find("flipsign") != std::string::npos ) {
+        std::string routine_name = std::string(routine->m_name);
+        if( routine_name.find("flipsign") != std::string::npos ) {
             generate_flip_sign(m_args);
+            return true;
+        } else if( routine_name.find("fma") != std::string::npos ) {
+            generate_fma(m_args);
             return true;
         }
         return false;
@@ -3886,6 +3902,13 @@ public:
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
+            ASR::Function_t* routine = ASR::down_cast<ASR::Function_t>(
+                        ASRUtils::symbol_get_past_external(x.m_name));
+            if( generate_optimization_instructions(routine, x.m_args) ) {
+                return ;
+            }
+        }
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
