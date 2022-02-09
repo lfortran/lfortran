@@ -135,6 +135,44 @@ namespace LFortran {
 
         };
 
+        template <class Derived>
+        class SkipOptimizationSubroutineVisitor: public PassVisitor<Derived> {
+
+            public:
+
+                SkipOptimizationSubroutineVisitor(Allocator& al_): PassVisitor<Derived>(al_, nullptr) {
+                }
+
+                void visit_Subroutine(const ASR::Subroutine_t &x) {
+                    // FIXME: this is a hack, we need to pass in a non-const `x`,
+                    // which requires to generate a TransformVisitor.
+                    if( ASRUtils::is_intrinsic_optimization<ASR::Subroutine_t>(&x) ) {
+                        return ;
+                    }
+                    PassUtils::PassVisitor<Derived>::visit_Subroutine(x);
+                }
+
+        };
+
+        template <class Derived>
+        class SkipOptimizationFunctionVisitor: public PassVisitor<Derived> {
+
+            public:
+
+                SkipOptimizationFunctionVisitor(Allocator& al_): PassVisitor<Derived>(al_, nullptr) {
+                }
+
+                void visit_Function(const ASR::Function_t &x) {
+                    // FIXME: this is a hack, we need to pass in a non-const `x`,
+                    // which requires to generate a TransformVisitor.
+                    if( ASRUtils::is_intrinsic_optimization<ASR::Function_t>(&x) ) {
+                        return ;
+                    }
+                    PassUtils::PassVisitor<Derived>::visit_Function(x);
+                }
+
+        };
+
     }
 
 } // namespace LFortran

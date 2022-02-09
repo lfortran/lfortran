@@ -55,7 +55,7 @@ The algorithm contains two components,
 
 
 */
-class FlipSignVisitor : public PassUtils::PassVisitor<FlipSignVisitor>
+class FlipSignVisitor : public PassUtils::SkipOptimizationSubroutineVisitor<FlipSignVisitor>
 {
 private:
     ASR::TranslationUnit_t &unit;
@@ -73,21 +73,10 @@ private:
 
 public:
     FlipSignVisitor(Allocator &al_, ASR::TranslationUnit_t &unit_,
-                    const std::string& rl_path_) : PassVisitor(al_, nullptr),
+                    const std::string& rl_path_) : SkipOptimizationSubroutineVisitor(al_),
     unit(unit_), rl_path(rl_path_)
     {
         pass_result.reserve(al, 1);
-    }
-
-    void visit_Subroutine(const ASR::Subroutine_t &x) {
-        // FIXME: this is a hack, we need to pass in a non-const `x`,
-        // which requires to generate a TransformVisitor.
-        if( ASRUtils::is_intrinsic_optimization<ASR::Subroutine_t>(&x) ) {
-            return ;
-        }
-        ASR::Subroutine_t &xx = const_cast<ASR::Subroutine_t&>(x);
-        current_scope = xx.m_symtab;
-        PassUtils::PassVisitor<FlipSignVisitor>::transform_stmts(xx.m_body, xx.n_body);
     }
 
     void visit_If(const ASR::If_t& x) {
