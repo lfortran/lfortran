@@ -1,0 +1,13 @@
+{
+    "basename": "pass_sign_from_value-sign_from_value-ba1c944",
+    "cmd": "lfortran --pass=sign_from_value --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/sign_from_value.f90",
+    "infile_hash": "c42a25e1412f728bc84baaf2ba93706752abefc44231229a9c276532",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_sign_from_value-sign_from_value-ba1c944.stdout",
+    "stdout_hash": "225c90ef7563dd10b76ee56ec1b87e6f8e396b08902f9b96b90d2939",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
