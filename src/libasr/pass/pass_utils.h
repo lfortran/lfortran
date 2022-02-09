@@ -51,6 +51,11 @@ namespace LFortran {
                              SymbolTable*& current_scope,Location& loc,
                              const std::function<void (const std::string &, const Location &)> err);
 
+        ASR::expr_t* get_sign_from_value(ASR::expr_t* arg0, ASR::expr_t* arg1,
+                                         Allocator& al, ASR::TranslationUnit_t& unit, std::string& rl_path,
+                                         SymbolTable*& current_scope, Location& loc,
+                                         const std::function<void (const std::string &, const Location &)> err);
+
         template <class Derived>
         class PassVisitor: public ASR::BaseWalkVisitor<Derived> {
 

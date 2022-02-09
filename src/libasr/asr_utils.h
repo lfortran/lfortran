@@ -362,6 +362,26 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
     return true;
 }
 
+template <typename T>
+static inline bool is_value_constant(ASR::expr_t *a_value, T& const_value) {
+    if( a_value == nullptr ) {
+        return false;
+    }
+    if (ASR::is_a<ASR::ConstantInteger_t>(*a_value)) {
+        ASR::ConstantInteger_t* const_int = ASR::down_cast<ASR::ConstantInteger_t>(a_value);
+        const_value = const_int->m_n;
+    } else if (ASR::is_a<ASR::ConstantReal_t>(*a_value)) {
+        ASR::ConstantReal_t* const_real = ASR::down_cast<ASR::ConstantReal_t>(a_value);
+        const_value = const_real->m_r;
+    } else if (ASR::is_a<ASR::ConstantLogical_t>(*a_value)) {
+        ASR::ConstantLogical_t* const_logical = ASR::down_cast<ASR::ConstantLogical_t>(a_value);
+        const_value = const_logical->m_value;
+    } else {
+        return false;
+    }
+    return true;
+}
+
 // Returns true if all arguments are evaluated
 static inline bool all_args_evaluated(const Vec<ASR::expr_t*> &args) {
     for (auto &a : args) {

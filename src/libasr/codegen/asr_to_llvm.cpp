@@ -54,6 +54,7 @@
 #include <libasr/pass/flip_sign.h>
 #include <libasr/pass/div_to_mul.h>
 #include <libasr/pass/fma.h>
+#include <libasr/pass/sign_from_value.h>
 #include <libasr/pass/class_constructor.h>
 #include <libasr/pass/unused_functions.h>
 #include <libasr/exception.h>
@@ -4070,6 +4071,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
 
     if( fast ) {
         pass_replace_flip_sign(al, asr, rl_path);
+        pass_replace_sign_from_value(al, asr, rl_path);
         pass_replace_div_to_mul(al, asr, rl_path);
         pass_replace_fma(al, asr, rl_path);
     }
