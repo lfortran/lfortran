@@ -25,16 +25,8 @@ program flip_sign
     print *, ixsp
     if (ixsp /= 5) error stop
 
-    ixsp = ixsp * sign(1_4, -epsisp)
-    print *, ixsp
-    if (ixsp /= -5) error stop
-
     ixdp = ixdp * sign(1_8, epsidp)
     print *, ixdp
     if (ixdp /= 5) error stop
-
-    ixdp = ixdp * sign(1_8, -epsidp)
-    print *, ixdp
-    if (ixdp /= -5) error stop
 
 end program
