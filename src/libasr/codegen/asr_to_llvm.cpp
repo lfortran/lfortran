@@ -3556,6 +3556,10 @@ public:
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, rank)), rank_ptr);
                 tmp = arg_struct;
                 args.push_back(tmp);
+                llvm::Value* dim = builder->CreateAlloca(getIntType(4));
+                args.push_back(dim);
+                llvm::Value* kind = builder->CreateAlloca(getIntType(4));
+                args.push_back(kind);
             } else if( name == "lbound" || name == "ubound" ) {
                 ASR::Variable_t *arg = EXPR2VAR(x.m_args[0]);
                 uint32_t h = get_hash((ASR::asr_t*)arg);
