@@ -51,6 +51,11 @@ namespace LFortran {
                              SymbolTable*& current_scope,Location& loc,
                              const std::function<void (const std::string &, const Location &)> err);
 
+        ASR::expr_t* get_sign_from_value(ASR::expr_t* arg0, ASR::expr_t* arg1,
+                                         Allocator& al, ASR::TranslationUnit_t& unit, std::string& rl_path,
+                                         SymbolTable*& current_scope, Location& loc,
+                                         const std::function<void (const std::string &, const Location &)> err);
+
         template <class Derived>
         class PassVisitor: public ASR::BaseWalkVisitor<Derived> {
 
@@ -131,6 +136,44 @@ namespace LFortran {
                     ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
                     current_scope = xx.m_symtab;
                     transform_stmts(xx.m_body, xx.n_body);
+                }
+
+        };
+
+        template <class Derived>
+        class SkipOptimizationSubroutineVisitor: public PassVisitor<Derived> {
+
+            public:
+
+                SkipOptimizationSubroutineVisitor(Allocator& al_): PassVisitor<Derived>(al_, nullptr) {
+                }
+
+                void visit_Subroutine(const ASR::Subroutine_t &x) {
+                    // FIXME: this is a hack, we need to pass in a non-const `x`,
+                    // which requires to generate a TransformVisitor.
+                    if( ASRUtils::is_intrinsic_optimization<ASR::Subroutine_t>(&x) ) {
+                        return ;
+                    }
+                    PassUtils::PassVisitor<Derived>::visit_Subroutine(x);
+                }
+
+        };
+
+        template <class Derived>
+        class SkipOptimizationFunctionVisitor: public PassVisitor<Derived> {
+
+            public:
+
+                SkipOptimizationFunctionVisitor(Allocator& al_): PassVisitor<Derived>(al_, nullptr) {
+                }
+
+                void visit_Function(const ASR::Function_t &x) {
+                    // FIXME: this is a hack, we need to pass in a non-const `x`,
+                    // which requires to generate a TransformVisitor.
+                    if( ASRUtils::is_intrinsic_optimization<ASR::Function_t>(&x) ) {
+                        return ;
+                    }
+                    PassUtils::PassVisitor<Derived>::visit_Function(x);
                 }
 
         };

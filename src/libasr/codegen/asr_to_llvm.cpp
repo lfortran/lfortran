@@ -54,6 +54,7 @@
 #include <libasr/pass/flip_sign.h>
 #include <libasr/pass/div_to_mul.h>
 #include <libasr/pass/fma.h>
+#include <libasr/pass/sign_from_value.h>
 #include <libasr/pass/class_constructor.h>
 #include <libasr/pass/unused_functions.h>
 #include <libasr/exception.h>
@@ -3829,6 +3830,22 @@ public:
                 {b, c, a});
     }
 
+    void generate_sign_from_value(ASR::expr_t** m_args) {
+        this->visit_expr_wrapper(m_args[0], true);
+        llvm::Value* arg0 = tmp;
+        this->visit_expr_wrapper(m_args[1], true);
+        llvm::Value* arg1 = tmp;
+        llvm::Type* common_llvm_type = arg0->getType();
+        ASR::ttype_t *arg1_type = ASRUtils::expr_type(m_args[1]);
+        uint64_t kind = ASRUtils::extract_kind_from_ttype_t(arg1_type);
+        llvm::Value* num_shifts = llvm::ConstantInt::get(context, llvm::APInt(kind * 8, kind * 8 - 1));
+        llvm::Value* shifted_one = builder->CreateShl(llvm::ConstantInt::get(context, llvm::APInt(kind * 8, 1)), num_shifts);
+        arg1 = builder->CreateBitCast(arg1, shifted_one->getType());
+        arg0 = builder->CreateBitCast(arg0, shifted_one->getType());
+        tmp = builder->CreateXor(arg0, builder->CreateAnd(shifted_one, arg1));
+        tmp = builder->CreateBitCast(tmp, common_llvm_type);
+    }
+
     template <typename T>
     bool generate_optimization_instructions(const T* routine, ASR::expr_t** m_args) {
         std::string routine_name = std::string(routine->m_name);
@@ -3837,6 +3854,9 @@ public:
             return true;
         } else if( routine_name.find("fma") != std::string::npos ) {
             generate_fma(m_args);
+            return true;
+        } else if( routine_name.find("signfromvalue") != std::string::npos ) {
+            generate_sign_from_value(m_args);
             return true;
         }
         return false;
@@ -4074,6 +4094,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
 
     if( fast ) {
         pass_replace_flip_sign(al, asr, rl_path);
+        pass_replace_sign_from_value(al, asr, rl_path);
         pass_replace_div_to_mul(al, asr, rl_path);
         pass_replace_fma(al, asr, rl_path);
     }

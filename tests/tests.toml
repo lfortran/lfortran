@@ -1829,5 +1829,10 @@ asr = true
 pass = "div_to_mul"
 
 [[test]]
+filename = "../integration_tests/sign_from_value.f90"
+asr = true
+pass = "sign_from_value"
+
+[[test]]
 filename = "../integration_tests/functions_04.f90"
 asr = true

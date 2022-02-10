@@ -378,6 +378,21 @@ namespace LFortran {
                         loc, v, args, current_scope, al, err));
         }
 
+        ASR::expr_t* get_sign_from_value(ASR::expr_t* arg0, ASR::expr_t* arg1,
+            Allocator& al, ASR::TranslationUnit_t& unit, std::string& rl_path,
+            SymbolTable*& current_scope, Location& loc,
+            const std::function<void (const std::string &, const Location &)> err) {
+            ASR::symbol_t *v = import_generic_procedure("sign_from_value", "lfortran_intrinsic_optimization",
+                                                        al, unit, rl_path, current_scope, arg0->base.loc);
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, 2);
+            args.push_back(al, arg0);
+            args.push_back(al, arg1);
+            return ASRUtils::EXPR(
+                        ASRUtils::symbol_resolve_external_generic_procedure_without_eval(
+                        loc, v, args, current_scope, al, err));
+        }
+
     }
 
 }

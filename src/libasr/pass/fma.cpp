@@ -32,7 +32,7 @@ to:
     d = fma(a, b, c)
 
 */
-class FMAVisitor : public PassUtils::PassVisitor<FMAVisitor>
+class FMAVisitor : public PassUtils::SkipOptimizationFunctionVisitor<FMAVisitor>
 {
 private:
     ASR::TranslationUnit_t &unit;
@@ -46,8 +46,8 @@ private:
     bool from_fma;
 
 public:
-    FMAVisitor(Allocator &al_, ASR::TranslationUnit_t &unit_, const std::string& rl_path_) : PassVisitor(al_, nullptr), unit(unit_),
-    rl_path(rl_path_), fma_var(nullptr), from_fma(false)
+    FMAVisitor(Allocator &al_, ASR::TranslationUnit_t &unit_, const std::string& rl_path_) : SkipOptimizationFunctionVisitor(al_),
+    unit(unit_), rl_path(rl_path_), fma_var(nullptr), from_fma(false)
     {
         pass_result.reserve(al, 1);
     }
@@ -58,17 +58,6 @@ public:
             return expr_binop->m_op == ASR::binopType::Mul;
         }
         return false;
-    }
-
-    void visit_Function(const ASR::Function_t &x) {
-        // FIXME: this is a hack, we need to pass in a non-const `x`,
-        // which requires to generate a TransformVisitor.
-        if( ASRUtils::is_intrinsic_optimization<ASR::Function_t>(&x) ) {
-            return ;
-        }
-        ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
-        current_scope = xx.m_symtab;
-        PassUtils::PassVisitor<FMAVisitor>::transform_stmts(xx.m_body, xx.n_body);
     }
 
     void visit_BinOp(const ASR::BinOp_t& x_const) {
