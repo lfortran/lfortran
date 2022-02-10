@@ -271,7 +271,7 @@ attribute_arg = (identifier arg)
 
 arg = (identifier arg)
 
-keyword = (identifier? arg, expr value)
+keyword = (identifier? arg, expr? value)
 
 tbind = Bind(string lang, string name)
 

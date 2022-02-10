@@ -816,8 +816,11 @@ public:
             ASR::symbol_t* f2 = LFortran::ASRUtils::symbol_get_past_external(original_sym);
             if (ASR::is_a<ASR::Subroutine_t>(*f2)) {
                 ASR::Subroutine_t *f = ASR::down_cast<ASR::Subroutine_t>(f2);
+                Vec<ASR::keyword_t> kwargs;
+                kwargs.reserve(al, 0);
                 visit_kwargs(args, x.m_keywords, x.n_keywords,
-                    f->m_args, f->n_args, x.base.base.loc);
+                    f->m_args, f->n_args, x.base.base.loc, f,
+                    kwargs);
             } else {
                 throw SemanticError(
                     "Keyword arguments are not implemented for generic subroutines yet",
