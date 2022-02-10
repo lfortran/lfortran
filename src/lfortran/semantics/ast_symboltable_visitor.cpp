@@ -315,6 +315,8 @@ public:
             parent_scope->scope.erase(sym_name);
             sym_name = sym_name + "~genericprocedure";
         }
+
+
         tmp = ASR::make_Subroutine_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
@@ -508,6 +510,7 @@ public:
                 throw SemanticError("Function already defined", tmp->loc);
             }
         }
+
 
         tmp = ASR::make_Function_t(
             al, x.base.base.loc,
