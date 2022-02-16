@@ -443,13 +443,15 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
 }
 
 // Returns a list of values
-static inline Vec<ASR::expr_t*> get_arg_values(Allocator &al, const Vec<ASR::expr_t*> &args) {
-    Vec<ASR::expr_t*> values;
+static inline Vec<ASR::call_arg_t> get_arg_values(Allocator &al, const Vec<ASR::call_arg_t>& args) {
+    Vec<ASR::call_arg_t> values;
     values.reserve(al, args.size());
     for (auto &a : args) {
-        ASR::expr_t *v = expr_value(a);
+        ASR::expr_t *v = expr_value(a.m_value);
         if (v == nullptr) return values;
-        values.push_back(al, v);
+        ASR::call_arg_t v_arg;
+        v_arg.loc = v->base.loc, v_arg.m_value = v;
+        values.push_back(al, v_arg);
     }
     return values;
 }
@@ -776,13 +778,13 @@ inline bool is_same_type_pointer(ASR::ttype_t* source, ASR::ttype_t* dest) {
                 return ASRUtils::is_same_type_pointer(x, y);
             }
 
-int select_generic_procedure(const Vec<ASR::expr_t*> &args,
+int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
         const ASR::GenericProcedure_t &p, Location loc,
         const std::function<void (const std::string &, const Location &)> err);
 
 ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
             const Location &loc,
-            ASR::symbol_t *v, Vec<ASR::expr_t*> args,
+            ASR::symbol_t *v, Vec<ASR::call_arg_t>& args,
             SymbolTable* current_scope, Allocator& al,
             const std::function<void (const std::string &, const Location &)> err);
 

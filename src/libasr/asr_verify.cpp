@@ -335,7 +335,7 @@ public:
                 x.base.base.loc);
         }
         for (size_t i=0; i<x.n_args; i++) {
-            visit_expr(*x.m_args[i]);
+            visit_expr(*(x.m_args[i].m_value));
         }
     }
 
@@ -440,10 +440,9 @@ public:
             }
         }
         for (size_t i=0; i<x.n_args; i++) {
-            visit_expr(*x.m_args[i]);
-        }
-        for (size_t i=0; i<x.n_keywords; i++) {
-            visit_keyword(x.m_keywords[i]);
+            if( x.m_args[i].m_value ) {
+                visit_expr(*(x.m_args[i].m_value));
+            }
         }
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = ASRUtils::symbol_symtab(x.m_name);
