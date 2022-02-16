@@ -623,15 +623,18 @@ public:
             current_scope->scope.find(x_name) != current_scope->scope.end() &&
             current_scope->scope[x_name]->type == ASR::symbolType::Subroutine ) {
             if( result_var == nullptr ) {
-                result_var = create_var(result_var_num, "_func_call_res", x.base.base.loc, x.m_args[x.n_args - 1]);
+                result_var = create_var(result_var_num, "_func_call_res", x.base.base.loc, x.m_args[x.n_args - 1].m_value);
                 result_var_num += 1;
             }
-            Vec<ASR::expr_t*> s_args;
+            Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, x.n_args + 1);
             for( size_t i = 0; i < x.n_args; i++ ) {
                 s_args.push_back(al, x.m_args[i]);
             }
-            s_args.push_back(al, result_var);
+            ASR::call_arg_t result_arg;
+            result_arg.loc = result_var->base.loc;
+            result_arg.m_value = result_var;
+            s_args.push_back(al, result_arg);
             tmp_val = result_var;
             ASR::stmt_t* subrout_call = LFortran::ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc,
                                                 current_scope->scope[x_name], nullptr,

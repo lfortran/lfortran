@@ -3543,7 +3543,7 @@ public:
                 @size(%size_arg* %x) is used as call where size_arg
                 is described above.
                 */
-                ASR::Variable_t *arg = EXPR2VAR(x.m_args[0]);
+                ASR::Variable_t *arg = EXPR2VAR(x.m_args[0].m_value);
                 uint32_t h = get_hash((ASR::asr_t*)arg);
                 tmp = llvm_symtab[h];
                 llvm::Value* arg_struct = builder->CreateAlloca(fname2arg_type["size"].first, nullptr);
@@ -3562,7 +3562,7 @@ public:
                 llvm::Value* kind = builder->CreateAlloca(getIntType(4));
                 args.push_back(kind);
             } else if( name == "lbound" || name == "ubound" ) {
-                ASR::Variable_t *arg = EXPR2VAR(x.m_args[0]);
+                ASR::Variable_t *arg = EXPR2VAR(x.m_args[0].m_value);
                 uint32_t h = get_hash((ASR::asr_t*)arg);
                 tmp = llvm_symtab[h];
                 llvm::Value* arg1 = builder->CreateAlloca(fname2arg_type[name].first, nullptr);
@@ -3573,17 +3573,17 @@ public:
                 args.push_back(arg1);
                 llvm::Value* arg2 = builder->CreateAlloca(getIntType(4), nullptr);
 
-                this->visit_expr_wrapper(x.m_args[1], true);
+                this->visit_expr_wrapper(x.m_args[1].m_value, true);
                 builder->CreateStore(tmp, arg2);
                 args.push_back(arg2);
             }
         }
         if( args.size() == 0 ) {
             for (size_t i=0; i<x.n_args; i++) {
-                if (x.m_args[i]->type == ASR::exprType::Var) {
+                if (x.m_args[i].m_value->type == ASR::exprType::Var) {
                     if (is_a<ASR::Variable_t>(*symbol_get_past_external(
-                            ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
-                        ASR::Variable_t *arg = EXPR2VAR(x.m_args[i]);
+                            ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v))) {
+                        ASR::Variable_t *arg = EXPR2VAR(x.m_args[i].m_value);
                         uint32_t h = get_hash((ASR::asr_t*)arg);
                         if (llvm_symtab.find(h) != llvm_symtab.end()) {
                             tmp = llvm_symtab[h];
@@ -3682,10 +3682,10 @@ public:
                             tmp = builder->CreateLoad(llvm_utils->create_gep(ptr, idx));
                         }
                     } else if (is_a<ASR::Function_t>(*symbol_get_past_external(
-                        ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
+                        ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v))) {
                         ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
                             symbol_get_past_external(ASR::down_cast<ASR::Var_t>(
-                            x.m_args[i])->m_v));
+                            x.m_args[i].m_value)->m_v));
                         uint32_t h = get_hash((ASR::asr_t*)fn);
                         if (fn->m_deftype == ASR::deftypeType::Implementation) {
                             tmp = llvm_symtab_fn[h];
@@ -3694,10 +3694,10 @@ public:
                             tmp = llvm_symtab_fn_arg[h];
                         }
                     } else if (is_a<ASR::Subroutine_t>(*symbol_get_past_external(
-                        ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
+                        ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v))) {
                         ASR::Subroutine_t* fn = ASR::down_cast<ASR::Subroutine_t>(
                             symbol_get_past_external(ASR::down_cast<ASR::Var_t>(
-                            x.m_args[i])->m_v));
+                            x.m_args[i].m_value)->m_v));
                         uint32_t h = get_hash((ASR::asr_t*)fn);
                         if (fn->m_deftype == ASR::deftypeType::Implementation) {
                             tmp = llvm_symtab_fn[h];
@@ -3707,10 +3707,10 @@ public:
                         }
                     }
                 } else {
-                    this->visit_expr_wrapper(x.m_args[i]);
+                    this->visit_expr_wrapper(x.m_args[i].m_value);
                     llvm::Value *value=tmp;
                     llvm::Type *target_type;
-                    ASR::ttype_t* arg_type = expr_type(x.m_args[i]);
+                    ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
                     bool character_bindc = false;
                     switch (arg_type->type) {
                         case (ASR::ttypeType::Integer) : {
@@ -3799,16 +3799,16 @@ public:
         return args;
     }
 
-    void generate_flip_sign(ASR::expr_t** m_args) {
-        this->visit_expr_wrapper(m_args[0], true);
+    void generate_flip_sign(ASR::call_arg_t* m_args) {
+        this->visit_expr_wrapper(m_args[0].m_value, true);
         llvm::Value* signal = tmp;
-        LFORTRAN_ASSERT(m_args[1]->type == ASR::exprType::Var);
-        ASR::Var_t* asr_var = ASR::down_cast<ASR::Var_t>(m_args[1]);
+        LFORTRAN_ASSERT(m_args[1].m_value->type == ASR::exprType::Var);
+        ASR::Var_t* asr_var = ASR::down_cast<ASR::Var_t>(m_args[1].m_value);
         ASR::Variable_t* asr_variable = ASR::down_cast<ASR::Variable_t>(asr_var->m_v);
         uint32_t x_h = get_hash((ASR::asr_t*)asr_variable);
         llvm::Value* variable = llvm_symtab[x_h];
         // variable = xor(shiftl(int(Nd), 63), variable)
-        ASR::ttype_t* signal_type = ASRUtils::expr_type(m_args[0]);
+        ASR::ttype_t* signal_type = ASRUtils::expr_type(m_args[0].m_value);
         int signal_kind = ASRUtils::extract_kind_from_ttype_t(signal_type);
         llvm::Value* num_shifts = llvm::ConstantInt::get(context, llvm::APInt(32, signal_kind * 8 - 1));
         llvm::Value* shifted_signal = builder->CreateShl(signal, num_shifts);
@@ -3818,25 +3818,25 @@ public:
         builder->CreateStore(builder->CreateBitCast(tmp, variable_type->getElementType()), variable);
     }
 
-    void generate_fma(ASR::expr_t** m_args) {
-        this->visit_expr_wrapper(m_args[0], true);
+    void generate_fma(ASR::call_arg_t* m_args) {
+        this->visit_expr_wrapper(m_args[0].m_value, true);
         llvm::Value* a = tmp;
-        this->visit_expr_wrapper(m_args[1], true);
+        this->visit_expr_wrapper(m_args[1].m_value, true);
         llvm::Value* b = tmp;
-        this->visit_expr_wrapper(m_args[2], true);
+        this->visit_expr_wrapper(m_args[2].m_value, true);
         llvm::Value* c = tmp;
         tmp = builder->CreateIntrinsic(llvm::Intrinsic::fma,
                 {a->getType()},
                 {b, c, a});
     }
 
-    void generate_sign_from_value(ASR::expr_t** m_args) {
-        this->visit_expr_wrapper(m_args[0], true);
+    void generate_sign_from_value(ASR::call_arg_t* m_args) {
+        this->visit_expr_wrapper(m_args[0].m_value, true);
         llvm::Value* arg0 = tmp;
-        this->visit_expr_wrapper(m_args[1], true);
+        this->visit_expr_wrapper(m_args[1].m_value, true);
         llvm::Value* arg1 = tmp;
         llvm::Type* common_llvm_type = arg0->getType();
-        ASR::ttype_t *arg1_type = ASRUtils::expr_type(m_args[1]);
+        ASR::ttype_t *arg1_type = ASRUtils::expr_type(m_args[1].m_value);
         uint64_t kind = ASRUtils::extract_kind_from_ttype_t(arg1_type);
         llvm::Value* num_shifts = llvm::ConstantInt::get(context, llvm::APInt(kind * 8, kind * 8 - 1));
         llvm::Value* shifted_one = builder->CreateShl(llvm::ConstantInt::get(context, llvm::APInt(kind * 8, 1)), num_shifts);
@@ -3847,7 +3847,7 @@ public:
     }
 
     template <typename T>
-    bool generate_optimization_instructions(const T* routine, ASR::expr_t** m_args) {
+    bool generate_optimization_instructions(const T* routine, ASR::call_arg_t* m_args) {
         std::string routine_name = std::string(routine->m_name);
         if( routine_name.find("flipsign") != std::string::npos ) {
             generate_flip_sign(m_args);

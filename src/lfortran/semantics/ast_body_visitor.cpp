@@ -665,8 +665,8 @@ public:
         Vec<ASR::symbol_t*> del_syms;
         del_syms.reserve(al, 1);
         for( size_t i = 0; i < subrout_call->n_args; i++ ) {
-            if( subrout_call->m_args[i]->type == ASR::exprType::Var ) {
-                const ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(subrout_call->m_args[i]);
+            if( subrout_call->m_args[i].m_value->type == ASR::exprType::Var ) {
+                const ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(subrout_call->m_args[i].m_value);
                 const ASR::symbol_t* sym = LFortran::ASRUtils::symbol_get_past_external(arg_var->m_v);
                 if( sym->type == ASR::symbolType::Variable ) {
                     ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
@@ -811,26 +811,26 @@ public:
         if (!original_sym) {
             original_sym = resolve_intrinsic_function(x.base.base.loc, sub_name);
         }
-        Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
+        Vec<ASR::call_arg_t> args;
+        visit_expr_list(x.m_args, x.n_args, args);
         if (x.n_keywords > 0) {
             ASR::symbol_t* f2 = LFortran::ASRUtils::symbol_get_past_external(original_sym);
             if (ASR::is_a<ASR::Subroutine_t>(*f2)) {
                 ASR::Subroutine_t *f = ASR::down_cast<ASR::Subroutine_t>(f2);
-                Vec<ASR::keyword_t> kwargs;
-                kwargs.reserve(al, 0);
                 visit_kwargs(args, x.m_keywords, x.n_keywords,
-                    f->m_args, f->n_args, x.base.base.loc, f,
-                    kwargs);
+                    f->m_args, f->n_args, x.base.base.loc, f);
             } else {
                 throw SemanticError(
                     "Keyword arguments are not implemented for generic subroutines yet",
                     x.base.base.loc);
             }
         }
-        Vec<ASR::expr_t*> args_with_mdt;
+        Vec<ASR::call_arg_t> args_with_mdt;
         if( x.n_member == 1 ) {
             args_with_mdt.reserve(al, x.n_args + 1);
-            args_with_mdt.push_back(al, v_expr);
+            ASR::call_arg_t v_expr_call_arg;
+            v_expr_call_arg.loc = v_expr->base.loc, v_expr_call_arg.m_value = v_expr;
+            args_with_mdt.push_back(al, v_expr_call_arg);
             for( size_t i = 0; i < args.size(); i++ ) {
                 args_with_mdt.push_back(al, args[i]);
             }
