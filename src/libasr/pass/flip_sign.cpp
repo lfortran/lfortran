@@ -172,8 +172,8 @@ public:
             }
         }
         if( is_function_modulo && x.n_args == 2) {
-            ASR::expr_t* arg0 = x.m_args[0];
-            ASR::expr_t* arg1 = x.m_args[1];
+            ASR::expr_t* arg0 = x.m_args[0].m_value;
+            ASR::expr_t* arg1 = x.m_args[1].m_value;
             bool cond_for_arg0 = false, cond_for_arg1 = false;
             ASR::ttype_t* arg0_ttype = ASRUtils::expr_type(arg0);
             cond_for_arg0 = arg0_ttype->type == ASR::ttypeType::Integer;

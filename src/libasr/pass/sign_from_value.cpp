@@ -73,7 +73,7 @@ public:
             std::string(func->m_name).find("sign") == std::string::npos ) {
             return nullptr;
         }
-        ASR::expr_t *arg0 = func_call->m_args[0], *arg1 = func_call->m_args[1];
+        ASR::expr_t *arg0 = func_call->m_args[0].m_value, *arg1 = func_call->m_args[1].m_value;
         if( !is_value_one(arg0) ) {
             return nullptr;
         }
