@@ -184,7 +184,7 @@ stmt
     | Select(expr test, case_stmt* body, stmt* default)
     | Stop(expr? code)
     | Assert(expr test, expr? msg)
-    | SubroutineCall(symbol name, symbol? original_name, expr* args, expr? dt)
+    | SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt)
     | Where(expr test, stmt* body, stmt* orelse)
     | WhileLoop(expr test, stmt* body)
     | Nullify(symbol* vars)
@@ -200,8 +200,8 @@ expr
     | NamedExpr(expr target, expr value, ttype type)
     | Compare(expr left, cmpop op, expr right, ttype type, expr? value, expr? overloaded)
     | IfExp(expr test, expr body, expr orelse, ttype type)
-    | FunctionCall(symbol name, symbol? original_name, expr* args,
-            keyword* keywords, ttype type, expr? value, expr? dt)
+    | FunctionCall(symbol name, symbol? original_name,
+            call_arg* args, ttype type, expr? value, expr? dt)
     | DerivedTypeConstructor(symbol dt_sym, expr* args, ttype type)
     | ConstantArray(expr* args, ttype type)
     | ImpliedDoLoop(expr* values, expr var, expr start, expr end,
@@ -269,9 +269,7 @@ attribute = Attribute(identifier name, attribute_arg *args)
 
 attribute_arg = (identifier arg)
 
-arg = (identifier arg)
-
-keyword = (identifier? arg, expr? value)
+call_arg = (expr? value)
 
 tbind = Bind(string lang, string name)
 
