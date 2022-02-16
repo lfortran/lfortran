@@ -396,29 +396,41 @@ public:
         for( size_t i = 0; i < x.n_args; i++ ) {
             ASR::alloc_arg_t new_arg;
             new_arg.loc = x.base.base.loc;
-            this->visit_expr(*(x.m_args[i].m_end));
+            if( x.m_args[i].m_end && !x.m_args[i].m_start && !x.m_args[i].m_step ) {
+                this->visit_expr(*(x.m_args[i].m_end));
+            } else if( x.m_args[i].m_start && !x.m_args[i].m_end && x.m_args[i].m_step ) {
+                this->visit_expr(*(x.m_args[i].m_step));
+            }
             // Assume that tmp is an `ArrayRef`
             ASR::expr_t* tmp_stmt = LFortran::ASRUtils::EXPR(tmp);
-            ASR::ArrayRef_t* array_ref = ASR::down_cast<ASR::ArrayRef_t>(tmp_stmt);
-            new_arg.m_a = array_ref->m_v;
-            Vec<ASR::dimension_t> dims_vec;
-            dims_vec.reserve(al, array_ref->n_args);
-            for( size_t j = 0; j < array_ref->n_args; j++ ) {
-                ASR::dimension_t new_dim;
-                new_dim.loc = array_ref->m_args[j].loc;
-                ASR::expr_t* m_left = array_ref->m_args[j].m_left;
-                if( m_left != nullptr ) {
-                    new_dim.m_start = m_left;
-                } else {
-                    new_dim.m_start = const_1;
+            if( ASR::is_a<ASR::ArrayRef_t>(*tmp_stmt) ) {
+                ASR::ArrayRef_t* array_ref = ASR::down_cast<ASR::ArrayRef_t>(tmp_stmt);
+                new_arg.m_a = array_ref->m_v;
+                Vec<ASR::dimension_t> dims_vec;
+                dims_vec.reserve(al, array_ref->n_args);
+                for( size_t j = 0; j < array_ref->n_args; j++ ) {
+                    ASR::dimension_t new_dim;
+                    new_dim.loc = array_ref->m_args[j].loc;
+                    ASR::expr_t* m_left = array_ref->m_args[j].m_left;
+                    if( m_left != nullptr ) {
+                        new_dim.m_start = m_left;
+                    } else {
+                        new_dim.m_start = const_1;
+                    }
+                    ASR::expr_t* m_right = array_ref->m_args[j].m_right;
+                    new_dim.m_end = m_right;
+                    dims_vec.push_back(al, new_dim);
                 }
-                ASR::expr_t* m_right = array_ref->m_args[j].m_right;
-                new_dim.m_end = m_right;
-                dims_vec.push_back(al, new_dim);
+                new_arg.m_dims = dims_vec.p;
+                new_arg.n_dims = dims_vec.size();
+                alloc_args_vec.push_back(al, new_arg);
+            } else if( ASR::is_a<ASR::Var_t>(*tmp_stmt) ) {
+                ASR::Var_t* array_var = ASR::down_cast<ASR::Var_t>(tmp_stmt);
+                new_arg.m_a = array_var->m_v;
+                new_arg.m_dims = nullptr;
+                new_arg.n_dims = 0;
+                alloc_args_vec.push_back(al, new_arg);
             }
-            new_arg.m_dims = dims_vec.p;
-            new_arg.n_dims = dims_vec.size();
-            alloc_args_vec.push_back(al, new_arg);
         }
 
         // Only one arg should be present
