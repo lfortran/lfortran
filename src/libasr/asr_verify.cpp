@@ -407,6 +407,15 @@ public:
                 parent = der_type->m_parent;
                 break;
             }
+            case (ASR::ttypeType::Class): {
+                type_sym = ASR::down_cast<ASR::Class_t>(t2)->m_class_type;
+                type_sym = ASRUtils::symbol_get_past_external(type_sym);
+                if( type_sym->type == ASR::symbolType::DerivedType ) {
+                    ASR::DerivedType_t* der_type = ASR::down_cast<ASR::DerivedType_t>(type_sym);
+                    parent = der_type->m_parent;
+                }
+                break;
+            }
             default :
                 require(false,
                     "m_dt::m_v::m_type must point to a Derived type",

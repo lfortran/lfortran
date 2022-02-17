@@ -152,7 +152,7 @@ abi                   -- External     ABI
 
 
 stmt
-    = Allocate(alloc_arg* args, expr? stat)
+    = Allocate(alloc_arg* args, expr? stat, expr? errmsg)
     | Assign(int label, identifier variable)
     | Assignment(expr target, expr value, stmt? overloaded)
     | Associate(expr target, expr value)
