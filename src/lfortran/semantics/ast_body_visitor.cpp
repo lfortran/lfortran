@@ -433,21 +433,45 @@ public:
             }
         }
 
-        // Only one arg should be present
-        if( x.n_keywords > 1 ||
-          ( x.n_keywords == 1 && to_lower(x.m_keywords[0].m_arg) != "stat") ) {
+        bool cond = x.n_keywords == 0;
+        bool stat_cond = false, errmsg_cond = false;
+        ASR::expr_t *stat = nullptr, *errmsg = nullptr;
+        if( x.n_keywords >= 1 ) {
+            stat_cond = !stat_cond && (to_lower(x.m_keywords[0].m_arg) == "stat");
+            errmsg_cond = !errmsg_cond && (to_lower(x.m_keywords[0].m_arg) == "errmsg");
+            cond = cond || (stat_cond || errmsg_cond);
+            if( stat_cond ) {
+                this->visit_expr(*(x.m_keywords[0].m_value));
+                stat = LFortran::ASRUtils::EXPR(tmp);
+            } else if( errmsg_cond ) {
+                this->visit_expr(*(x.m_keywords[0].m_value));
+                errmsg = LFortran::ASRUtils::EXPR(tmp);
+            }
+        }
+
+        if( x.n_keywords == 2 ) {
+            stat_cond = !stat_cond && (to_lower(x.m_keywords[1].m_arg) == "stat");
+            errmsg_cond = !errmsg_cond && (to_lower(x.m_keywords[1].m_arg) == "errmsg");
+            cond = cond && (stat_cond || errmsg_cond);
+            if( stat_cond ) {
+                this->visit_expr(*(x.m_keywords[1].m_value));
+                stat = LFortran::ASRUtils::EXPR(tmp);
+            } else if( errmsg_cond ) {
+                this->visit_expr(*(x.m_keywords[1].m_value));
+                errmsg = LFortran::ASRUtils::EXPR(tmp);
+            }
+        }
+
+
+        if( !cond ) {
             throw SemanticError("`allocate` statement only "
-                                "accepts one keyword argument,"
-                                "`stat`", x.base.base.loc);
+                                "accepts two keyword arguments,"
+                                "`stat` and `errmsg`", x.base.base.loc);
         }
-        ASR::expr_t* stat = nullptr;
-        if( x.n_keywords == 1 ) {
-            this->visit_expr(*(x.m_keywords[0].m_value));
-            stat = LFortran::ASRUtils::EXPR(tmp);
-        }
+
         tmp = ASR::make_Allocate_t(al, x.base.base.loc,
                                     alloc_args_vec.p, alloc_args_vec.size(),
-                                    stat);
+                                    stat, errmsg);
     }
 
 // If there are allocatable variables in the local scope it inserts an ImplicitDeallocate node
