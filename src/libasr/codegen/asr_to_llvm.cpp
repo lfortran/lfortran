@@ -57,6 +57,7 @@
 #include <libasr/pass/sign_from_value.h>
 #include <libasr/pass/class_constructor.h>
 #include <libasr/pass/unused_functions.h>
+#include <libasr/pass/inline_function_calls.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/llvm_utils.h>
@@ -4097,6 +4098,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         pass_replace_sign_from_value(al, asr, rl_path);
         pass_replace_div_to_mul(al, asr, rl_path);
         pass_replace_fma(al, asr, rl_path);
+        pass_inline_function_calls(al, asr, rl_path);
     }
 
     v.nested_func_types = pass_find_nested_vars(asr, context,
