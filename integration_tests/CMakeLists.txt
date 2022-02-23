@@ -131,6 +131,7 @@ RUN(NAME functions_01 LABELS gfortran llvm cpp x86)
 RUN(NAME functions_02 LABELS gfortran llvm)
 RUN(NAME functions_03 LABELS gfortran llvm)
 RUN(NAME functions_04 LABELS gfortran llvm)
+RUN(NAME functions_05 LABELS gfortran llvm)
 
 RUN(NAME types_01 LABELS gfortran llvm cpp)
 RUN(NAME types_02 LABELS gfortran llvm cpp)

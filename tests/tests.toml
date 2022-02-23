@@ -1840,3 +1840,8 @@ pass = "sign_from_value"
 [[test]]
 filename = "../integration_tests/functions_04.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/functions_05.f90"
+asr = true
+pass = "inline_function_calls"
