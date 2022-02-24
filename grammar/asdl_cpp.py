@@ -1445,7 +1445,7 @@ def main(argv):
         "mod": mod.name.lower(),
         "types": types_,
     }
-    is_asr = "ASR" in def_file
+    is_asr = (mod.name.upper() == "ASR")
     fp = open(out_file, "w")
     try:
         fp.write(HEAD % subs)
