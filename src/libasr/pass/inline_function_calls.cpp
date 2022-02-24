@@ -144,7 +144,7 @@ public:
             }
             ASR::Variable_t* arg_variable = ASR::down_cast<ASR::Variable_t>(arg_var->m_v);
             std::string arg_variable_name = std::string(arg_variable->m_name);
-            std::string arg_name = arg_variable_name + "@" + std::string(func->m_name);
+            std::string arg_name = current_scope->get_unique_name(arg_variable_name + "_" + std::string(func->m_name));
             ASR::stmt_t* assign_stmt = nullptr;
             ASR::expr_t* call_arg_var = nullptr;
             if( x_m_args_i ) {
@@ -171,7 +171,7 @@ public:
             ASR::Variable_t* func_var = ASR::down_cast<ASR::Variable_t>(itr.second);
             std::string func_var_name = itr.first;
             if( arg2value.find(func_var_name) == arg2value.end() ) {
-                std::string local_var_name = func_var_name + "@" + std::string(func->m_name);
+                std::string local_var_name = current_scope->get_unique_name(func_var_name + "_" + std::string(func->m_name));
                 node_duplicator.success = true;
                 ASR::expr_t *m_symbolic_value = node_duplicator.duplicate_expr(func_var->m_symbolic_value);
                 if( !node_duplicator.success ) {
