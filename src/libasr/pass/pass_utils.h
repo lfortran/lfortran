@@ -46,6 +46,9 @@ namespace LFortran {
         ASR::expr_t* create_auxiliary_variable_for_expr(ASR::expr_t* expr, std::string& name,
             Allocator& al, SymbolTable*& current_scope, ASR::stmt_t*& assign_stmt);
 
+        ASR::expr_t* create_auxiliary_variable(Location& loc, std::string& name,
+            Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type);
+
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
                              Allocator& al, ASR::TranslationUnit_t& unit, std::string& rl_path,
                              SymbolTable*& current_scope,Location& loc,
@@ -113,11 +116,11 @@ namespace LFortran {
                     for (auto &item : x.m_symtab->scope) {
                         if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
                             ASR::Subroutine_t *s = ASR::down_cast<ASR::Subroutine_t>(item.second);
-                            visit_Subroutine(*s);
+                            self().visit_Subroutine(*s);
                         }
                         if (ASR::is_a<ASR::Function_t>(*item.second)) {
                             ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
-                            visit_Function(*s);
+                            self().visit_Function(*s);
                         }
                     }
                 }
@@ -149,8 +152,6 @@ namespace LFortran {
                 }
 
                 void visit_Subroutine(const ASR::Subroutine_t &x) {
-                    // FIXME: this is a hack, we need to pass in a non-const `x`,
-                    // which requires to generate a TransformVisitor.
                     if( ASRUtils::is_intrinsic_optimization<ASR::Subroutine_t>(&x) ) {
                         return ;
                     }
@@ -168,8 +169,6 @@ namespace LFortran {
                 }
 
                 void visit_Function(const ASR::Function_t &x) {
-                    // FIXME: this is a hack, we need to pass in a non-const `x`,
-                    // which requires to generate a TransformVisitor.
                     if( ASRUtils::is_intrinsic_optimization<ASR::Function_t>(&x) ) {
                         return ;
                     }

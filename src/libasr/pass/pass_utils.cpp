@@ -362,9 +362,28 @@ namespace LFortran {
                                                     ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
                                                     ASRUtils::expr_type(expr), ASR::abiType::Source, ASR::accessType::Public,
                                                     ASR::presenceType::Required, false);
-            current_scope->scope[name] = ASR::down_cast<ASR::symbol_t>(expr_sym);
+            if( current_scope->scope.find(name) == current_scope->scope.end() ) {
+                current_scope->scope[name] = ASR::down_cast<ASR::symbol_t>(expr_sym);
+            } else {
+                throw LFortranException("Symbol with " + name + " is already present in " + std::to_string(current_scope->counter));
+            }
             ASR::expr_t* var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, expr->base.loc, ASR::down_cast<ASR::symbol_t>(expr_sym)));
             assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, var->base.loc, var, expr, nullptr));
+            return var;
+        }
+
+        ASR::expr_t* create_auxiliary_variable(Location& loc, std::string& name,
+            Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type) {
+            ASR::asr_t* expr_sym = ASR::make_Variable_t(al, loc, current_scope, s2c(al, name),
+                                                    ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                                                    var_type, ASR::abiType::Source, ASR::accessType::Public,
+                                                    ASR::presenceType::Required, false);
+            if( current_scope->scope.find(name) == current_scope->scope.end() ) {
+                current_scope->scope[name] = ASR::down_cast<ASR::symbol_t>(expr_sym);
+            } else {
+                throw LFortranException("Symbol with " + name + " is already present in " + std::to_string(current_scope->counter));
+            }
+            ASR::expr_t* var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(expr_sym)));
             return var;
         }
 
