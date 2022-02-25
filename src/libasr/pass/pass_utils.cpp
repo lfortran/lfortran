@@ -364,6 +364,8 @@ namespace LFortran {
                                                     ASR::presenceType::Required, false);
             if( current_scope->scope.find(name) == current_scope->scope.end() ) {
                 current_scope->scope[name] = ASR::down_cast<ASR::symbol_t>(expr_sym);
+            } else {
+                throw LFortranException("Symbol with " + name + " is already present in " + std::to_string(current_scope->counter));
             }
             ASR::expr_t* var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, expr->base.loc, ASR::down_cast<ASR::symbol_t>(expr_sym)));
             assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, var->base.loc, var, expr, nullptr));
@@ -378,6 +380,8 @@ namespace LFortran {
                                                     ASR::presenceType::Required, false);
             if( current_scope->scope.find(name) == current_scope->scope.end() ) {
                 current_scope->scope[name] = ASR::down_cast<ASR::symbol_t>(expr_sym);
+            } else {
+                throw LFortranException("Symbol with " + name + " is already present in " + std::to_string(current_scope->counter));
             }
             ASR::expr_t* var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(expr_sym)));
             return var;
