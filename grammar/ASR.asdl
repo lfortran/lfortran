@@ -179,6 +179,7 @@ stmt
     | Open(int label, expr? newunit, expr? filename, expr? status)
     | Close(int label, expr? unit, expr? iostat, expr? iomsg, expr? err, expr? status)
     | Read(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat, expr? id, expr* values)
+    | Rewind(int label, expr? unit, expr? iostat, expr? err)
     | Write(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat, expr? id, expr* values)
     | Return()
     | Select(expr test, case_stmt* body, stmt* default)

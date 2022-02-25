@@ -347,6 +347,37 @@ public:
         create_read_write_ASR_node(x.base, x.class_type);
     }
 
+    void visit_Rewind(const AST::Rewind_t& x) {
+        const int max_args = 3;
+        if( x.n_args + x.n_kwargs > max_args ) {
+            throw SemanticError("Incorrect number of arguments passed to Rewind. "
+                                "It accepts a total of 3 arguments namely unit, iostat and err.",
+                                x.base.base.loc);
+        }
+        ASR::expr_t *unit = nullptr, *iostat = nullptr, *err = nullptr;
+        std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"iostat", 1}, {"err", 2 }};
+        std::vector<ASR::expr_t*> args;
+        for( size_t i = 0; i < max_args; i++ ) {
+            args.push_back(nullptr);
+        }
+        for( size_t i = 0; i < x.n_args; i++ ) {
+            visit_expr(*x.m_args[i]);
+            args[i] = ASRUtils::EXPR(tmp);
+        }
+        for( size_t i = 0; i < x.n_kwargs; i++ ) {
+            if( x.m_kwargs[i].m_value ) {
+                std::string m_arg_string = to_lower(std::string(x.m_kwargs[i].m_arg));
+                if( !args[argname2idx[m_arg_string]] ) {
+                    throw SemanticError(m_arg_string + " has already been specified.", x.base.base.loc);
+                }
+                visit_expr(*x.m_kwargs[i].m_value);
+                args[argname2idx[m_arg_string]] = ASRUtils::EXPR(tmp);
+            }
+        }
+        unit = args[0], iostat = args[1], err = args[2];
+        tmp = ASR::make_Rewind_t(al, x.base.base.loc, x.m_label, unit, iostat, err);
+    }
+
     void visit_Associate(const AST::Associate_t& x) {
         this->visit_expr(*(x.m_target));
         ASR::expr_t* target = LFortran::ASRUtils::EXPR(tmp);
