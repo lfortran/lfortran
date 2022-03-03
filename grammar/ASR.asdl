@@ -197,6 +197,7 @@ stmt
     | Where(expr test, stmt* body, stmt* orelse)
     | WhileLoop(expr test, stmt* body)
     | Nullify(symbol* vars)
+    | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
 
 
 expr
