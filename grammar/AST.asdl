@@ -65,8 +65,7 @@ unit_decl2
     | Interface(interface_header header, trivia? trivia, interface_item* items)
     | DerivedType(identifier name, identifier* namelist, trivia? trivia, decl_attribute* attrtype,
         unit_decl2* items, procedure_decl* contains)
-    | Template(identifier name, identifier* namelist,
-        unit_decl2* items, procedure_decl* contains)
+    | Template(identifier name, identifier* namelist)
     | Enum(decl_attribute* attr, trivia? trivia, unit_decl2* items)
 
 interface_header
