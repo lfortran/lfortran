@@ -87,6 +87,19 @@ symbol
     | Subroutine(symbol_table symtab, identifier name, expr* args, stmt* body,
         abi abi, access access, deftype deftype, string? bindc_name, bool pure,
         bool module)
+
+-- restrictions is a list of Restriction
+-- fn is a list of TempaltedFunction
+
+    | Template(type_parameter *type_parameters,
+        symbol *restrictions, symbol *fn)
+    | Restriction(type_parameter *type_parameters, symbol *fn)
+    | TemplatedFunction(symbol_table symtab, identifier name, expr* args,
+        type_parameter *type_parameters,
+        stmt* body,
+        expr return_var, abi abi, access access, deftype deftype,
+        string? bindc_name)
+
     | Function(symbol_table symtab, identifier name, expr* args, stmt* body,
         expr return_var, abi abi, access access, deftype deftype,
         string? bindc_name)
@@ -308,6 +321,9 @@ expr
 --     size as the default integer"; we currently use kind=4 as default
 --     integer, so we also use kind=4 for the default logical.)
 
+type_parameter
+    = TypeParameter(identifier name)
+
 ttype
     = Integer(int kind, dimension* dims)
     | Real(int kind, dimension* dims)
@@ -322,6 +338,7 @@ ttype
     | Dict(ttype key_type, ttype value_type)
     | Pointer(ttype type)
     | CPtr()
+    | Generic(type_parameter sym, dimension* dims)
 
 binop = Add | Sub | Mul | Div | Pow
 
