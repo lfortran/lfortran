@@ -1948,6 +1948,12 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         DECLS(decl), decl.size(), \
         VEC_CAST(contains, procedure_decl), contains.size())
 
+#define TEMPLATE(name, namelist, decl, contains, l) \
+        make_Template_t(p.m_a, l, name2char(name), \
+        REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
+        DECLS(decl), decl.size(), \
+        VEC_CAST(contains, procedure_decl), contains.size())
+
 #define DERIVED_TYPE_PROC(attr, syms, trivia, l) make_DerivedTypeProc_t(p.m_a, l, \
         nullptr, VEC_CAST(attr, decl_attribute), attr.size(), \
         USE_SYMBOLS(syms), syms.size(), \
