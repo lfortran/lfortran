@@ -38,7 +38,7 @@ end forall
 forall (x = 1:100, J(x) > 0)
     where (I(x, :) < 0)
         I(x, :) = 0
-    else where
+    elsewhere
         I(x, :) = 1
     end where
 end forall

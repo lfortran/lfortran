@@ -1,0 +1,13 @@
+{
+    "basename": "ast_f90-where1-6c2c40f",
+    "cmd": "lfortran --show-ast-f90 --no-color {infile}",
+    "infile": "tests/where1.f90",
+    "infile_hash": "40becdc0bb7166f00e4fec335dbd7598fbc75887698b8370d7cbdbd6",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_f90-where1-6c2c40f.stdout",
+    "stdout_hash": "25254b068b8077197f4e7967c181208376fe263211cd94ae08823e9f",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
