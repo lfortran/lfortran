@@ -2045,7 +2045,7 @@ public:
         if (x.n_orelse > 0) {
             r += indent;
             r += syn(gr::Conditional);
-            r += "else where";
+            r += "elsewhere";
             r += syn();
             if(x.m_t_inside){
                 r += print_trivia_after(*x.m_t_inside);
