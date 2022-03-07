@@ -396,7 +396,7 @@ public:
             {"pad", 24}, {"flen", 25}, {"blocksize", 26}, {"convert", 27},
             {"carriagecontrol", 28}, {"iolength", 29}};
         std::vector<ASR::expr_t*> args;
-        for( size_t i = 0; i < max_args; i++ ) {
+        for( size_t i = 0; i < max_args + 1; i++ ) {
             args.push_back(nullptr);
         }
         for( size_t i = 0; i < x.n_args; i++ ) {
