@@ -347,23 +347,24 @@ public:
         create_read_write_ASR_node(x.base, x.class_type);
     }
 
-    void visit_Rewind(const AST::Rewind_t& x) {
-        const int max_args = 3;
+    template <typename T>
+    void fill_args_for_rewind_inquire_flush(const T& x, const size_t max_args,
+        std::vector<ASR::expr_t*>& args, const size_t args_size,
+        std::map<std::string, size_t>& argname2idx, std::string& stmt_name) {
         if( x.n_args + x.n_kwargs > max_args ) {
-            throw SemanticError("Incorrect number of arguments passed to Rewind. "
-                                "It accepts a total of 3 arguments namely unit, iostat and err.",
+            throw SemanticError("Incorrect number of arguments passed to " + stmt_name + "."
+                                " It accepts a total of 3 arguments namely unit, iostat and err.",
                                 x.base.base.loc);
         }
-        ASR::expr_t *unit = nullptr, *iostat = nullptr, *err = nullptr;
-        std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"iostat", 1}, {"err", 2 }};
-        std::vector<ASR::expr_t*> args;
-        for( size_t i = 0; i < max_args; i++ ) {
+
+        for( size_t i = 0; i < args_size; i++ ) {
             args.push_back(nullptr);
         }
         for( size_t i = 0; i < x.n_args; i++ ) {
             visit_expr(*x.m_args[i]);
             args[i] = ASRUtils::EXPR(tmp);
         }
+
         for( size_t i = 0; i < x.n_kwargs; i++ ) {
             if( x.m_kwargs[i].m_value ) {
                 std::string m_arg_string = to_lower(std::string(x.m_kwargs[i].m_arg));
@@ -374,18 +375,18 @@ public:
                 args[argname2idx[m_arg_string]] = ASRUtils::EXPR(tmp);
             }
         }
-        unit = args[0], iostat = args[1], err = args[2];
+    }
+
+    void visit_Rewind(const AST::Rewind_t& x) {
+        std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"iostat", 1}, {"err", 2 }};
+        std::vector<ASR::expr_t*> args;
+        std::string node_name = "Rewind";
+        fill_args_for_rewind_inquire_flush(x, 3, args, 3, argname2idx, node_name);
+        ASR::expr_t *unit = args[0], *iostat = args[1], *err = args[2];
         tmp = ASR::make_Rewind_t(al, x.base.base.loc, x.m_label, unit, iostat, err);
     }
 
     void visit_Inquire(const AST::Inquire_t& x) {
-        const int max_args = 29;
-        if( x.n_args + x.n_kwargs > max_args ) {
-            throw SemanticError("Incorrect number of arguments passed to Rewind. "
-                                "It accepts a total of 3 arguments namely unit, iostat and err.",
-                                x.base.base.loc);
-        }
-
         std::map<std::string, size_t> argname2idx = {
             {"unit", 0}, {"file", 1}, {"iostat", 2}, {"err", 3},
             {"exist", 4}, {"opened", 5}, {"number", 6}, {"named", 7},
@@ -396,31 +397,8 @@ public:
             {"pad", 24}, {"flen", 25}, {"blocksize", 26}, {"convert", 27},
             {"carriagecontrol", 28}, {"iolength", 29}};
         std::vector<ASR::expr_t*> args;
-        for( size_t i = 0; i < max_args + 1; i++ ) {
-            args.push_back(nullptr);
-        }
-        for( size_t i = 0; i < x.n_args; i++ ) {
-            visit_expr(*x.m_args[i]);
-            args[i] = ASRUtils::EXPR(tmp);
-        }
-        bool is_iolength_present = false;
-        for( size_t i = 0; i < x.n_kwargs; i++ ) {
-            if( x.m_kwargs[i].m_value ) {
-                std::string m_arg_string = to_lower(std::string(x.m_kwargs[i].m_arg));
-                is_iolength_present = is_iolength_present ? is_iolength_present : m_arg_string == "iolength";
-                if( args[argname2idx[m_arg_string]] ) {
-                    throw SemanticError(m_arg_string + " has already been specified.", x.base.base.loc);
-                }
-                if( is_iolength_present ) {
-                    if( m_arg_string != "iolength" && args[argname2idx[m_arg_string]] ) {
-                        throw SemanticError(m_arg_string + " is specified when iolength is already present.",
-                                            x.base.base.loc);
-                    }
-                }
-                visit_expr(*x.m_kwargs[i].m_value);
-                args[argname2idx[m_arg_string]] = ASRUtils::EXPR(tmp);
-            }
-        }
+        std::string node_name = "Inquire";
+        fill_args_for_rewind_inquire_flush(x, 29, args, 30, argname2idx, node_name);
         ASR::expr_t *unit = args[0], *file = args[1], *iostat = args[2], *err = args[3];
         ASR::expr_t *exist = args[4], *opened = args[5], *number = args[6], *named = args[7];
         ASR::expr_t *name = args[8], *access = args[9], *sequential = args[10], *direct = args[11];
@@ -429,6 +407,13 @@ public:
         ASR::expr_t *read = args[20], *write = args[21], *readwrite = args[22], *delim = args[23];
         ASR::expr_t *pad = args[24], *flen = args[25], *blocksize = args[26], *convert = args[27];
         ASR::expr_t *carriagecontrol = args[28], *iolength = args[29];
+        bool is_iolength_present = iolength != nullptr;
+        for( size_t i = 0; i < args.size() - 1; i++ ) {
+            if( is_iolength_present && args[i] ) {
+                throw SemanticError("No argument should be specified when iolength is already present.",
+                                    x.base.base.loc);
+            }
+        }
         tmp = ASR::make_Inquire_t(al, x.base.base.loc, x.m_label,
                                   unit, file, iostat, err,
                                   exist, opened, number, named,
@@ -441,36 +426,14 @@ public:
     }
 
     void visit_Flush(const AST::Flush_t& x) {
-        const int max_args = 4;
-        if( x.n_args + x.n_kwargs > max_args ) {
-            throw SemanticError("Incorrect number of arguments passed to Rewind. "
-                                "It accepts a total of 4 arguments namely unit, iostat and err.",
-                                x.base.base.loc);
-        }
-        ASR::expr_t *unit = nullptr, *err = nullptr, *iomsg = nullptr, *iostat = nullptr;
         std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"err", 1}, {"iomsg", 2}, {"iostat", 3}};
         std::vector<ASR::expr_t*> args;
-        for( size_t i = 0; i < max_args; i++ ) {
-            args.push_back(nullptr);
-        }
-        for( size_t i = 0; i < x.n_args; i++ ) {
-            visit_expr(*x.m_args[i]);
-            args[i] = ASRUtils::EXPR(tmp);
-        }
-        for( size_t i = 0; i < x.n_kwargs; i++ ) {
-            if( x.m_kwargs[i].m_value ) {
-                std::string m_arg_string = to_lower(std::string(x.m_kwargs[i].m_arg));
-                if( args[argname2idx[m_arg_string]] ) {
-                    throw SemanticError(m_arg_string + " has already been specified.", x.base.base.loc);
-                }
-                visit_expr(*x.m_kwargs[i].m_value);
-                args[argname2idx[m_arg_string]] = ASRUtils::EXPR(tmp);
-            }
-        }
+        std::string node_name = "Flush";
+        fill_args_for_rewind_inquire_flush(x, 4, args, 4, argname2idx, node_name);
         if( !args[0] ) {
             throw SemanticError("unit must be present in flush statement arguments", x.base.base.loc);
         }
-        unit = args[0], err = args[1], iomsg = args[2], iostat = args[3];
+        ASR::expr_t *unit = args[0], *err = args[1], *iomsg = args[2], *iostat = args[3];
         tmp = ASR::make_Flush_t(al, x.base.base.loc, x.m_label, unit, err, iomsg, iostat);
     }
 
