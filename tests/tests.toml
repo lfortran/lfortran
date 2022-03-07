@@ -1850,3 +1850,7 @@ asr = true
 filename = "../integration_tests/functions_05.f90"
 asr = true
 pass = "inline_function_calls"
+
+[[test]]
+filename = "../integration_tests/rewind_inquire_flush.f90"
+asr = true

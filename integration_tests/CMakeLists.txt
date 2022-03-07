@@ -443,3 +443,5 @@ RUN(NAME flip_sign LABELS gfortran llvm)
 RUN(NAME div_to_mul LABELS gfortran llvm)
 RUN(NAME fma LABELS gfortran llvm)
 RUN(NAME sign_from_value LABELS gfortran llvm)
+
+RUN(NAME rewind_inquire_flush LABELS gfortran)
