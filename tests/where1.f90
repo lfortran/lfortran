@@ -22,12 +22,12 @@ where(x == 2)
   x = 3
 elsewhere(x == 3)
   x = 4
-elsewhere
+elsewhere(x == 6)
   x = x * 2
-endwhere
+end where
 
 if (all(x == reshape([3,  4, &
-                      12, 16], [2, 2]))) then
+                      12, 8], [2, 2]))) then
   print *, 'pass'
 else
   print *, 'fail'
