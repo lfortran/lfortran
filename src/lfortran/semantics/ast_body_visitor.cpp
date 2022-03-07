@@ -347,6 +347,96 @@ public:
         create_read_write_ASR_node(x.base, x.class_type);
     }
 
+    template <typename T>
+    void fill_args_for_rewind_inquire_flush(const T& x, const size_t max_args,
+        std::vector<ASR::expr_t*>& args, const size_t args_size,
+        std::map<std::string, size_t>& argname2idx, std::string& stmt_name) {
+        if( x.n_args + x.n_kwargs > max_args ) {
+            throw SemanticError("Incorrect number of arguments passed to " + stmt_name + "."
+                                " It accepts a total of 3 arguments namely unit, iostat and err.",
+                                x.base.base.loc);
+        }
+
+        for( size_t i = 0; i < args_size; i++ ) {
+            args.push_back(nullptr);
+        }
+        for( size_t i = 0; i < x.n_args; i++ ) {
+            visit_expr(*x.m_args[i]);
+            args[i] = ASRUtils::EXPR(tmp);
+        }
+
+        for( size_t i = 0; i < x.n_kwargs; i++ ) {
+            if( x.m_kwargs[i].m_value ) {
+                std::string m_arg_string = to_lower(std::string(x.m_kwargs[i].m_arg));
+                if( args[argname2idx[m_arg_string]] ) {
+                    throw SemanticError(m_arg_string + " has already been specified.", x.base.base.loc);
+                }
+                visit_expr(*x.m_kwargs[i].m_value);
+                args[argname2idx[m_arg_string]] = ASRUtils::EXPR(tmp);
+            }
+        }
+    }
+
+    void visit_Rewind(const AST::Rewind_t& x) {
+        std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"iostat", 1}, {"err", 2 }};
+        std::vector<ASR::expr_t*> args;
+        std::string node_name = "Rewind";
+        fill_args_for_rewind_inquire_flush(x, 3, args, 3, argname2idx, node_name);
+        ASR::expr_t *unit = args[0], *iostat = args[1], *err = args[2];
+        tmp = ASR::make_Rewind_t(al, x.base.base.loc, x.m_label, unit, iostat, err);
+    }
+
+    void visit_Inquire(const AST::Inquire_t& x) {
+        std::map<std::string, size_t> argname2idx = {
+            {"unit", 0}, {"file", 1}, {"iostat", 2}, {"err", 3},
+            {"exist", 4}, {"opened", 5}, {"number", 6}, {"named", 7},
+            {"name", 8}, {"access", 9}, {"sequential", 10}, {"direct", 11},
+            {"form", 12}, {"formatted", 13}, {"unformatted", 14}, {"recl", 15},
+            {"nextrec", 16}, {"blank", 17}, {"position", 18}, {"action", 19},
+            {"read", 20}, {"write", 21}, {"readwrite", 22}, {"delim", 23},
+            {"pad", 24}, {"flen", 25}, {"blocksize", 26}, {"convert", 27},
+            {"carriagecontrol", 28}, {"iolength", 29}};
+        std::vector<ASR::expr_t*> args;
+        std::string node_name = "Inquire";
+        fill_args_for_rewind_inquire_flush(x, 29, args, 30, argname2idx, node_name);
+        ASR::expr_t *unit = args[0], *file = args[1], *iostat = args[2], *err = args[3];
+        ASR::expr_t *exist = args[4], *opened = args[5], *number = args[6], *named = args[7];
+        ASR::expr_t *name = args[8], *access = args[9], *sequential = args[10], *direct = args[11];
+        ASR::expr_t *form = args[12], *formatted = args[13], *unformatted = args[14], *recl = args[15];
+        ASR::expr_t *nextrec = args[16], *blank = args[17], *position = args[18], *action = args[19];
+        ASR::expr_t *read = args[20], *write = args[21], *readwrite = args[22], *delim = args[23];
+        ASR::expr_t *pad = args[24], *flen = args[25], *blocksize = args[26], *convert = args[27];
+        ASR::expr_t *carriagecontrol = args[28], *iolength = args[29];
+        bool is_iolength_present = iolength != nullptr;
+        for( size_t i = 0; i < args.size() - 1; i++ ) {
+            if( is_iolength_present && args[i] ) {
+                throw SemanticError("No argument should be specified when iolength is already present.",
+                                    x.base.base.loc);
+            }
+        }
+        tmp = ASR::make_Inquire_t(al, x.base.base.loc, x.m_label,
+                                  unit, file, iostat, err,
+                                  exist, opened, number, named,
+                                  name, access, sequential, direct,
+                                  form, formatted, unformatted, recl,
+                                  nextrec, blank, position, action,
+                                  read, write, readwrite, delim,
+                                  pad, flen, blocksize, convert,
+                                  carriagecontrol, iolength);
+    }
+
+    void visit_Flush(const AST::Flush_t& x) {
+        std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"err", 1}, {"iomsg", 2}, {"iostat", 3}};
+        std::vector<ASR::expr_t*> args;
+        std::string node_name = "Flush";
+        fill_args_for_rewind_inquire_flush(x, 4, args, 4, argname2idx, node_name);
+        if( !args[0] ) {
+            throw SemanticError("unit must be present in flush statement arguments", x.base.base.loc);
+        }
+        ASR::expr_t *unit = args[0], *err = args[1], *iomsg = args[2], *iostat = args[3];
+        tmp = ASR::make_Flush_t(al, x.base.base.loc, x.m_label, unit, err, iomsg, iostat);
+    }
+
     void visit_Associate(const AST::Associate_t& x) {
         this->visit_expr(*(x.m_target));
         ASR::expr_t* target = LFortran::ASRUtils::EXPR(tmp);

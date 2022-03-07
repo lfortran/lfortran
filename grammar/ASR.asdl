@@ -179,6 +179,15 @@ stmt
     | Open(int label, expr? newunit, expr? filename, expr? status)
     | Close(int label, expr? unit, expr? iostat, expr? iomsg, expr? err, expr? status)
     | Read(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat, expr? id, expr* values)
+    | Rewind(int label, expr? unit, expr? iostat, expr? err)
+    | Inquire(int label, expr? unit, expr? file, expr? iostat, expr? err,
+              expr? exist, expr? opened, expr? number, expr? named,
+              expr? name, expr? access, expr? sequential, expr? direct,
+              expr? form, expr? formatted, expr? unformatted, expr? recl,
+              expr? nextrec, expr? blank, expr? position, expr? action,
+              expr? read, expr? write, expr? readwrite, expr? delim,
+              expr? pad, expr? flen, expr? blocksize, expr? convert,
+              expr? carriagecontrol, expr? iolength)
     | Write(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat, expr? id, expr* values)
     | Return()
     | Select(expr test, case_stmt* body, stmt* default)
@@ -188,6 +197,7 @@ stmt
     | Where(expr test, stmt* body, stmt* orelse)
     | WhileLoop(expr test, stmt* body)
     | Nullify(symbol* vars)
+    | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
 
 
 expr
