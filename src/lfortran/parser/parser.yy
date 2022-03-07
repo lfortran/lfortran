@@ -2438,5 +2438,3 @@ id
     | KW_WHILE { $$ = SYMBOL($1, @$); }
     | KW_WRITE { $$ = SYMBOL($1, @$); }
     ;
-    ;
-    ;
