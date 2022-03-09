@@ -12,6 +12,8 @@ source_filename = "LFortran"
 @3 = private unnamed_addr constant [4 x i8] c"%s\0A\00", align 1
 @4 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
 
+declare void @__module_lfortran_intrinsic_builtin_move_alloc(i32*, i32*)
+
 define i32 @__module_lfortran_intrinsic_builtin_size(%size_arg* %x, i32* %dim, i32* %kind) {
 .entry:
   %size = alloca i32, align 4

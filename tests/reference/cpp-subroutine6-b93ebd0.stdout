@@ -26,6 +26,12 @@ bool allocated(const Kokkos::View<const int*> &x)
     return allocated;
 }
 
+bool any(const Kokkos::View<const bool*> &mask, int dim)
+{
+    bool r;
+    return r;
+}
+
 int bit_size(int x)
 {
     int bit_size;
@@ -72,6 +78,10 @@ int minval(const Kokkos::View<const int*> &x)
 {
     int minval;
     return minval;
+}
+
+void move_alloc(int &from, int &to)
+{
 }
 
 float real(const Kokkos::View<const int*> &x, int kind)

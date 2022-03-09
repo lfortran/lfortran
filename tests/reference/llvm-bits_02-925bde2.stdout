@@ -56,6 +56,8 @@ declare i64 @_lfortran_not64(i64)
 
 declare i32 @__module_lfortran_intrinsic_builtin_bit_size(i32*)
 
+declare void @__module_lfortran_intrinsic_builtin_move_alloc(i32*, i32*)
+
 define i32 @main() {
 .entry:
   %all_ones = alloca i64, align 8

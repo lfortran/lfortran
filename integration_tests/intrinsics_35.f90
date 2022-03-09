@@ -11,7 +11,7 @@ subroutine section()
     a = 1
     b = 1
     b(2, 2) = 2
-    print *, any(a .eq. b, 1)
-    print *, any(a .eq. b, 2)
+    print *, any(a == b, 1)
+    print *, any(a == b, 2)
 end subroutine section
 end program test_any
