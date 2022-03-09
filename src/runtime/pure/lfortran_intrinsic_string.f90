@@ -81,10 +81,11 @@ character(len=*), intent(in) :: string
 integer :: i
 r = len(string)
 if (r == 0) return
-i = 0
+i = 1
 do while(string(i:i) == " ")
     r = r - 1
     if (r == 0) exit
+    i = i + 1
 end do
 end function
 
@@ -96,6 +97,6 @@ function adjustl(x) result(r)
         r(j:j) = x(i:i)
         j = j + 1
     end do
-    end function
+end function
 
 end module

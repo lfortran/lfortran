@@ -49,6 +49,7 @@ struct IntrinsicProcedures {
             {"int", {m_builtin, &eval_int, false}},
             {"real", {m_builtin, &not_implemented, false}},
             {"merge", {m_builtin, &not_implemented, false}},
+            {"any", {m_builtin, &not_implemented, false}},
 
             // Require evaluated arguments
             {"aimag", {m_math, &eval_aimag, true}},
@@ -101,7 +102,6 @@ struct IntrinsicProcedures {
             {"ibclr", {m_bit, &eval_ibclr, true}},
             {"ibset", {m_bit, &eval_ibset, true}},
             {"btest", {m_bit, &not_implemented, false}},
-            {"any", {m_bit, &not_implemented, false}},
             // Elemental function
             {"ishft", {m_bit, &eval_ishft, false}},
 

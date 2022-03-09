@@ -466,10 +466,4 @@ end interface
 r = c_ibits64(i, pos, len)
 end function
 
-elemental logical function any(mask, dim) result(r)
-logical, intent(in) :: mask(:)
-integer(int32), optional :: dim
-r = .true.
-end function
-
 end module
