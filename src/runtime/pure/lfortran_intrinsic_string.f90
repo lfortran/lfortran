@@ -76,4 +76,27 @@ function new_line(c) result(r)
     r = '\n'
 end function
 
+integer elemental function len_adjustl(string) result(r)
+character(len=*), intent(in) :: string
+integer :: i
+r = len(string)
+if (r == 0) return
+i = 1
+do while(string(i:i) == " ")
+    r = r - 1
+    if (r == 0) exit
+    i = i + 1
+end do
+end function
+
+function adjustl(x) result(r)
+    character(len=*),intent(in) :: x
+    character(len=len_adjustl(x)) :: r
+    integer :: i, j = 1
+    do i = len(x) - len(r) + 1, len(x)
+        r(j:j) = x(i:i)
+        j = j + 1
+    end do
+end function
+
 end module

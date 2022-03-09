@@ -5,6 +5,8 @@ source_filename = "LFortran"
 
 declare i32 @__module_lfortran_intrinsic_builtin_iachar(i8**, i32*)
 
+declare void @__module_lfortran_intrinsic_builtin_move_alloc(i32*, i32*)
+
 define i32 @main() {
 .entry:
   %ia0 = alloca i32, align 4

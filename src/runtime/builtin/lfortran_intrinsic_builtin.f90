@@ -8,6 +8,11 @@ interface
     integer, optional :: kind
     end function
 
+    subroutine move_alloc(from, to)
+    integer, allocatable, intent(inout) :: from
+    integer, allocatable, intent(out) :: to
+    end subroutine
+
     integer function shape(x)
     integer, intent(in) :: x(:)
     end function
@@ -91,6 +96,11 @@ interface
     character(len=1) function achar(i, kind)
     integer, intent(in) :: i
     integer, optional :: kind
+    end function
+
+    logical function any(mask, dim) result(r)
+    logical, intent(in) :: mask(:)
+    integer(4), optional :: dim
     end function
 
 end interface

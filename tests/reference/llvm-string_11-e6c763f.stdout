@@ -12,6 +12,8 @@ source_filename = "LFortran"
 
 declare i32 @__module_lfortran_intrinsic_builtin_len(i8**, i32*)
 
+declare void @__module_lfortran_intrinsic_builtin_move_alloc(i32*, i32*)
+
 define i32 @__module_lfortran_intrinsic_string_index(i8** %string_, i8** %substring_) {
 .entry:
   %found = alloca i1, align 1

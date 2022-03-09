@@ -32,6 +32,8 @@ return:                                           ; preds = %.entry
   ret i32 %6
 }
 
+declare void @__module_lfortran_intrinsic_builtin_move_alloc(i32*, i32*)
+
 define i32 @__module_lfortran_intrinsic_builtin_size(%size_arg* %x, i32* %dim, i32* %kind) {
 .entry:
   %size = alloca i32, align 4
