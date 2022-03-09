@@ -335,7 +335,9 @@ public:
                 x.base.base.loc);
         }
         for (size_t i=0; i<x.n_args; i++) {
-            visit_expr(*(x.m_args[i].m_value));
+            if( x.m_args[i].m_value ) {
+                visit_expr(*(x.m_args[i].m_value));
+            }
         }
     }
 

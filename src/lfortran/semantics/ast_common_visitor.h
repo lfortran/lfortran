@@ -686,14 +686,28 @@ public:
             body.size(), type);
     }
 
-    ASR::ttype_t* handle_character_return(ASR::ttype_t *return_type, const Location &loc) {
-        // Rebuild the return type if needed and make FunctionCalls use ExternalSymbol
-        ASR::Character_t *t = ASR::down_cast<ASR::Character_t>(return_type);
-        if (t->m_len_expr) {
-            if (ASR::is_a<ASR::FunctionCall_t>(*t->m_len_expr)) {
-                ASR::FunctionCall_t *fc = ASR::down_cast<ASR::FunctionCall_t>(t->m_len_expr);
-                if (ASR::is_a<ASR::Function_t>(*fc->m_name)) {
-                    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(fc->m_name);
+    void fill_func_calls_ttype_t(std::vector<ASR::expr_t*>& func_calls, ASR::dimension_t* dims, size_t n_dims) {
+        for( size_t i = 0; i < n_dims; i++ ) {
+            func_calls.push_back(dims[i].m_start);
+            func_calls.push_back(dims[i].m_end);
+        }
+    }
+
+    void fix_function_calls_ttype_t(std::vector<ASR::expr_t*>& func_calls, const Location& loc, bool len_expr_present=false) {
+        for( size_t i = 0; i < func_calls.size(); i++ ) {
+            ASR::expr_t* potential_call = func_calls[i];
+            if (potential_call) {
+                if (ASR::is_a<ASR::FunctionCall_t>(*potential_call)) {
+                    ASR::FunctionCall_t *fc = ASR::down_cast<ASR::FunctionCall_t>(potential_call);
+                    ASR::Function_t *f = nullptr;
+                    if (ASR::is_a<ASR::Function_t>(*fc->m_name)) {
+                        f = ASR::down_cast<ASR::Function_t>(fc->m_name);
+                    } else if( ASR::is_a<ASR::ExternalSymbol_t>(*fc->m_name) ) {
+                        ASR::symbol_t* f_sym = ASRUtils::symbol_get_past_external(fc->m_name);
+                        if( ASR::is_a<ASR::Function_t>(*f_sym) ) {
+                            f = ASR::down_cast<ASR::Function_t>(f_sym);
+                        }
+                    }
                     ASR::Module_t *m = ASR::down_cast2<ASR::Module_t>(f->m_symtab->parent->asr_owner);
                     char *modname = m->m_name;
                     ASR::symbol_t *new_es;
@@ -751,18 +765,74 @@ public:
                         call_arg.m_value = arg;
                         args.push_back(al, call_arg);
                     }
-                    ASR::expr_t *new_len_expr = ASR::down_cast<ASR::expr_t>(ASR::make_FunctionCall_t(
+                    ASR::expr_t *new_call_expr = ASR::down_cast<ASR::expr_t>(ASR::make_FunctionCall_t(
                         al, fc->base.base.loc, new_es, nullptr, args.p, args.n, fc->m_type, fc->m_value, fc->m_dt));
-                    return ASR::down_cast<ASR::ttype_t>(
-                        ASR::make_Character_t(al, t->base.base.loc,
-                            t->m_kind, t->m_len, new_len_expr, t->m_dims, t->n_dims)
-                    );
+                    func_calls[i] = new_call_expr;
+                } else {
+                    if( len_expr_present ) {
+                        throw SemanticError("Currently only FunctionCall is supported in character's len expression in ExternalSymbol, found " + std::to_string(potential_call->type), loc);
+                    }
                 }
-            } else {
-                throw SemanticError("Currently only FunctionCall is supported in character's len expression in ExternalSymbol", loc);
             }
         }
-        return return_type;
+    }
+
+    ASR::ttype_t* handle_return_type(ASR::ttype_t *return_type, const Location &loc) {
+        // Rebuild the return type if needed and make FunctionCalls use ExternalSymbol
+        std::vector<ASR::expr_t*> func_calls;
+        switch( return_type->type ) {
+            case ASR::ttypeType::Character: {
+                ASR::Character_t *t = ASR::down_cast<ASR::Character_t>(return_type);
+                func_calls.push_back(t->m_len_expr);
+                fill_func_calls_ttype_t(func_calls, t->m_dims, t->n_dims);
+                fix_function_calls_ttype_t(func_calls, loc, true);
+                Vec<ASR::dimension_t> new_dims;
+                new_dims.reserve(al, t->n_dims);
+                for( size_t i = 1; i < func_calls.size(); i += 2 ) {
+                    ASR::dimension_t new_dim;
+                    new_dim.loc = func_calls[i]->base.loc;
+                    new_dim.m_start = func_calls[i];
+                    new_dim.m_end = func_calls[i + 1];
+                    new_dims.push_back(al, new_dim);
+                }
+                return ASRUtils::TYPE(ASR::make_Character_t(al, loc, t->m_kind, t->m_len, func_calls[0], new_dims.p, new_dims.size()));
+            }
+            case ASR::ttypeType::Integer: {
+                ASR::Integer_t *t = ASR::down_cast<ASR::Integer_t>(return_type);
+                fill_func_calls_ttype_t(func_calls, t->m_dims, t->n_dims);
+                fix_function_calls_ttype_t(func_calls, loc);
+                Vec<ASR::dimension_t> new_dims;
+                new_dims.reserve(al, t->n_dims);
+                for( size_t i = 0; i < func_calls.size(); i += 2 ) {
+                    ASR::dimension_t new_dim;
+                    new_dim.loc = func_calls[i]->base.loc;
+                    new_dim.m_start = func_calls[i];
+                    new_dim.m_end = func_calls[i + 1];
+                    new_dims.push_back(al, new_dim);
+                }
+                return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t->m_kind, new_dims.p, new_dims.size()));
+            }
+            case ASR::ttypeType::Real: {
+                ASR::Real_t *t = ASR::down_cast<ASR::Real_t>(return_type);
+                fill_func_calls_ttype_t(func_calls, t->m_dims, t->n_dims);
+                fix_function_calls_ttype_t(func_calls, loc);
+                Vec<ASR::dimension_t> new_dims;
+                new_dims.reserve(al, t->n_dims);
+                for( size_t i = 0; i < func_calls.size(); i += 2 ) {
+                    ASR::dimension_t new_dim;
+                    new_dim.loc = func_calls[i]->base.loc;
+                    new_dim.m_start = func_calls[i];
+                    new_dim.m_end = func_calls[i + 1];
+                    new_dims.push_back(al, new_dim);
+                }
+                return ASRUtils::TYPE(ASR::make_Real_t(al, loc, t->m_kind, new_dims.p, new_dims.size()));
+                break;
+            }
+            default: {
+                return return_type;
+            }
+        }
+        return nullptr;
     }
 
 
@@ -817,6 +887,9 @@ public:
             throw SemanticError("ExternalSymbol must point to a Function", loc);
         }
         ASR::ttype_t *return_type = LFortran::ASRUtils::EXPR2VAR(ASR::down_cast<ASR::Function_t>(final_sym)->m_return_var)->m_type;
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
+            return_type = handle_return_type(return_type, loc);
+        }
         // Create ExternalSymbol for the final subroutine:
         // We mangle the new ExternalSymbol's local name as:
         //   generic_procedure_local_name @
@@ -901,9 +974,7 @@ public:
         ASR::ttype_t *return_type = ASRUtils::EXPR2VAR(ASR::down_cast<ASR::Function_t>(f2)->m_return_var)->m_type;
         ASR::expr_t* value = nullptr;
         if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
-            if (ASR::is_a<ASR::Character_t>(*return_type)) {
-                return_type = handle_character_return(return_type, loc);
-            }
+            return_type = handle_return_type(return_type, loc);
 
             // Populate value
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
