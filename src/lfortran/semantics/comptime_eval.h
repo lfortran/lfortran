@@ -101,6 +101,7 @@ struct IntrinsicProcedures {
             {"ibclr", {m_bit, &eval_ibclr, true}},
             {"ibset", {m_bit, &eval_ibset, true}},
             {"btest", {m_bit, &not_implemented, false}},
+            {"any", {m_bit, &not_implemented, false}},
             // Elemental function
             {"ishft", {m_bit, &eval_ishft, false}},
 
@@ -108,6 +109,8 @@ struct IntrinsicProcedures {
             // left unevaluated in body visitor
             {"trim", {m_string, &not_implemented, false}},
             {"len_trim", {m_string, &not_implemented, false}},
+            {"adjustl", {m_string, &not_implemented, false}},
+            {"len_adjustl", {m_string, &not_implemented, false}},
             {"repeat", {m_string, &not_implemented, false}},
             {"new_line", {m_string, &eval_new_line, false}},
 
@@ -125,6 +128,7 @@ struct IntrinsicProcedures {
             {"achar", {m_builtin, &eval_achar, false}},
             {"len", {m_builtin, &eval_len, false}},
             {"size", {m_builtin, &not_implemented, false}},
+            {"move_alloc", {m_builtin, &not_implemented, false}},
             {"shape", {m_builtin, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
             {"lbound", {m_builtin, &not_implemented, false}},
