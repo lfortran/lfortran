@@ -1726,7 +1726,7 @@ public:
         for (size_t i=0; i<n; i++) {
             this->visit_expr(*kwargs[i].m_value);
             ASR::expr_t *expr = LFortran::ASRUtils::EXPR(tmp);
-            std::string name = kwargs[i].m_arg;
+            std::string name = to_lower(kwargs[i].m_arg);
             auto search_optional = std::find(optional_args.begin(), optional_args.end(), name);
             if( search_optional != optional_args.end() ) {
                 size_t kwarg_idx = std::distance(optional_args.begin(), search_optional);
@@ -1745,7 +1745,7 @@ public:
                     args.p[idx].loc = expr->base.loc;
                     args.p[idx].m_value = expr;
                 } else {
-                    throw SemanticError("Keyword argument not found", loc);
+                    throw SemanticError("Keyword argument not found " + name, loc);
                 }
             }
         }
