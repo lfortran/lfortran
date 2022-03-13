@@ -170,6 +170,8 @@ RUN(NAME arrays_09 LABELS gfortran)
 RUN(NAME arrays_10 LABELS gfortran)
 RUN(NAME arrays_11 LABELS gfortran llvm cpp)
 
+RUN(NAME arrays_intrin_01 LABELS gfortran) # minval, maxval
+
 RUN(NAME reserved_01 LABELS gfortran)
 RUN(NAME reserved_02 LABELS gfortran llvm)
 RUN(NAME reserved_03 LABELS gfortran)
