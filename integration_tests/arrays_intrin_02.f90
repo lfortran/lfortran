@@ -1,22 +1,27 @@
 program arrays_intrin_02
   logical l1(3), l2(3), l3(3)
-  l1 = (/.true., .true., .true./)
-  l2 = (/.true., .true., .false./)
-  l3 = (/.false., .false., .false./)
-  print *, all(l1), all(l2), all(l3)
-  print *, any(l1), any(l2), any(l3)
+  l1 = [.true., .true., .true.]
+  l2 = [.true., .true., .false.]
+  l3 = [.false., .false., .false.]
+  if(.not. all(l1)) error stop
+  if(all(l2)) error stop
+  if(all(l3)) error stop
+  if(.not. any(l1)) error stop
+  if(.not. any(l2)) error stop
+  if(any(l3)) error stop
   call matrixCheck
   contains
     subroutine matrixCheck
       integer m1(2,3), m2(2,3)
-      m1 = 1
+      m1 = 1 
       m2 = 1
+      m2(1,2) = 2
       m2(2,2) = 2
-      print *, all(m1 .eq. m2)
-      print *, all(m1 .eq. m2, 1)
-      print *, all(m1 .eq. m1, 2)
-      print *, any(m1 .eq. m2)
-      print *, any(m1 .eq. m2, 1)
-      print *, any(m1 .eq. m1, 2)
+      if(all(m1==m2)) error stop
+      if(.not. all(all(m1==m2, 1) .eqv. [.true., .false., .true.])) error stop
+      if(.not. all(all(m1==m2, 2) .eqv. [.false., .false.])) error stop
+      if(.not. any(m1==m2)) error stop
+      if(.not. all(any(m1==m2, 1) .eqv. [.true., .false., .true.])) error stop
+      if(.not. all(any(m1==m2, 2) .eqv. [.true., .true.])) error stop
     end subroutine matrixCheck
 end program arrays_intrin_02
