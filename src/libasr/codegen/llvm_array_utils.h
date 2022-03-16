@@ -131,7 +131,7 @@ namespace LFortran {
                 * of a dimension's information.
                 */
                 virtual
-                llvm::ArrayType* create_dimension_descriptor_array_type(int rank) = 0;
+                llvm::Type* create_dimension_descriptor_array_type() = 0;
 
                 /*
                 * Fills the elements of the input array descriptor
@@ -158,13 +158,6 @@ namespace LFortran {
                 */
                 virtual
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false) = 0;
-
-                /*
-                * Checks if the input dimension descriptor is the
-                * same as used by the current class.
-                */
-                virtual
-                bool is_matching_dimension_descriptor(llvm::ArrayType* des, int rank) = 0;
 
                 /*
                 * Returns pointer to data in the input
@@ -258,7 +251,6 @@ namespace LFortran {
                 llvm::IRBuilder<>* builder;
 
                 llvm::StructType* dim_des;
-                std::map<int, llvm::ArrayType*> rank2desc;
 
                 std::map<std::pair<std::pair<int, int>, int>, llvm::StructType*> tkr2array;
 
@@ -300,7 +292,7 @@ namespace LFortran {
                     bool get_pointer=false);
 
                 virtual
-                llvm::ArrayType* create_dimension_descriptor_array_type(int rank);
+                llvm::Type* create_dimension_descriptor_array_type();
 
                 virtual
                 void fill_array_details(
@@ -315,9 +307,6 @@ namespace LFortran {
 
                 virtual
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false);
-
-                virtual
-                bool is_matching_dimension_descriptor(llvm::ArrayType* des, int rank);
 
                 virtual
                 llvm::Value* get_pointer_to_data(llvm::Value* arr);

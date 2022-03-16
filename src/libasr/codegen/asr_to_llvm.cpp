@@ -3540,8 +3540,7 @@ public:
                 uint32_t h = get_hash((ASR::asr_t*)arg);
                 tmp = llvm_symtab[h];
                 llvm::Value* arg_struct = builder->CreateAlloca(fname2arg_type["size"].first, nullptr);
-                llvm::Value* first_ele_ptr = llvm_utils->create_gep(
-                    arr_descr->get_pointer_to_dimension_descriptor_array(tmp), 0);
+                llvm::Value* first_ele_ptr = arr_descr->get_pointer_to_dimension_descriptor_array(tmp);
                 llvm::Value* first_arg_ptr = llvm_utils->create_gep(arg_struct, 0);
                 builder->CreateStore(first_ele_ptr, first_arg_ptr);
                 llvm::Value* rank_ptr = llvm_utils->create_gep(arg_struct, 1);
@@ -3559,8 +3558,7 @@ public:
                 uint32_t h = get_hash((ASR::asr_t*)arg);
                 tmp = llvm_symtab[h];
                 llvm::Value* arg1 = builder->CreateAlloca(fname2arg_type[name].first, nullptr);
-                llvm::Value* first_ele_ptr = llvm_utils->create_gep(
-                    arr_descr->get_pointer_to_dimension_descriptor_array(tmp), 0);
+                llvm::Value* first_ele_ptr = arr_descr->get_pointer_to_dimension_descriptor_array(tmp);
                 llvm::Value* first_arg_ptr = arg1;
                 builder->CreateStore(first_ele_ptr, first_arg_ptr);
                 args.push_back(arg1);
