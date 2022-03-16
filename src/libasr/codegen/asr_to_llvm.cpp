@@ -2462,7 +2462,7 @@ public:
             if( arr_descr->is_array(target) ) {
                 if( asr_target->m_type->type ==
                     ASR::ttypeType::Character ) {
-                    target = arr_descr->get_pointer_to_data(target);
+                    target = builder->CreateLoad(arr_descr->get_pointer_to_data(target));
                 }
             }
         }
@@ -3616,7 +3616,7 @@ public:
                                 tmp = arr_descr->convert_to_argument(tmp, new_arr_type);
                             } else if ( x_abi == ASR::abiType::BindC ) {
                                 if( arr_descr->is_array(tmp) ) {
-                                    tmp = arr_descr->get_pointer_to_data(tmp);
+                                    tmp = builder->CreateLoad(arr_descr->get_pointer_to_data(tmp));
                                     llvm::PointerType* tmp_type = static_cast<llvm::PointerType*>(tmp->getType());
                                     if( tmp_type->getElementType()->isArrayTy() ) {
                                         tmp = llvm_utils->create_gep(tmp, 0);
