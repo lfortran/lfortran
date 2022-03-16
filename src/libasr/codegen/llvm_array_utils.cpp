@@ -198,8 +198,7 @@ namespace LFortran {
 
         llvm::Type* SimpleCMODescriptor::get_array_type
         (ASR::ttype_t* m_type_, int a_kind,
-        int rank, ASR::dimension_t* m_dims,
-        llvm::Type* el_type,
+        int rank, llvm::Type* el_type,
         bool get_pointer) {
             ASR::ttypeType type_ = m_type_->type;
             std::pair<std::pair<int, int>, int> array_key = std::make_pair(std::make_pair((int)type_, a_kind), rank);

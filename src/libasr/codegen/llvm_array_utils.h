@@ -111,8 +111,7 @@ namespace LFortran {
                 virtual
                 llvm::Type* get_array_type(
                     ASR::ttype_t* m_type_, int a_kind,
-                    int rank, ASR::dimension_t* m_dims,
-                    llvm::Type* el_type,
+                    int rank, llvm::Type* el_type,
                     bool get_pointer=false) = 0;
 
                 /*
@@ -291,8 +290,7 @@ namespace LFortran {
                 virtual
                 llvm::Type* get_array_type(
                     ASR::ttype_t* m_type_, int a_kind,
-                    int rank, ASR::dimension_t* m_dims,
-                    llvm::Type* el_type,
+                    int rank, llvm::Type* el_type,
                     bool get_pointer=false);
 
                 virtual
