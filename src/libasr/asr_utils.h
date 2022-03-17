@@ -94,25 +94,30 @@ static inline ASR::ttype_t* expr_type(const ASR::expr_t *f)
     switch (f->type) {
         case ASR::exprType::BoolOp: { return ((ASR::BoolOp_t*)f)->m_type; }
         case ASR::exprType::BinOp: { return ((ASR::BinOp_t*)f)->m_type; }
+        case ASR::exprType::StrOp: { return ((ASR::StrOp_t*)f)->m_type; }
         case ASR::exprType::UnaryOp: { return ((ASR::UnaryOp_t*)f)->m_type; }
         case ASR::exprType::ComplexConstructor: { return ((ASR::ComplexConstructor_t*)f)->m_type; }
+        case ASR::exprType::NamedExpr: { return ((ASR::NamedExpr_t*)f)->m_type; }
         case ASR::exprType::Compare: { return ((ASR::Compare_t*)f)->m_type; }
+        case ASR::exprType::IfExp: { return ((ASR::IfExp_t*)f)->m_type; }
         case ASR::exprType::FunctionCall: { return ((ASR::FunctionCall_t*)f)->m_type; }
-        case ASR::exprType::ArrayRef: { return ((ASR::ArrayRef_t*)f)->m_type; }
-        case ASR::exprType::DerivedRef: { return ((ASR::DerivedRef_t*)f)->m_type; }
+        case ASR::exprType::DerivedTypeConstructor: { return ((ASR::DerivedTypeConstructor_t*)f)->m_type; }
         case ASR::exprType::ConstantArray: { return ((ASR::ConstantArray_t*)f)->m_type; }
+        case ASR::exprType::ImpliedDoLoop: { return ((ASR::ImpliedDoLoop_t*)f)->m_type; }
         case ASR::exprType::ConstantInteger: { return ((ASR::ConstantInteger_t*)f)->m_type; }
         case ASR::exprType::ConstantReal: { return ((ASR::ConstantReal_t*)f)->m_type; }
         case ASR::exprType::ConstantComplex: { return ((ASR::ConstantComplex_t*)f)->m_type; }
+        case ASR::exprType::ConstantSet: { return ((ASR::ConstantSet_t*)f)->m_type; }
+        case ASR::exprType::ConstantTuple: { return ((ASR::ConstantTuple_t*)f)->m_type; }
+        case ASR::exprType::ConstantLogical: { return ((ASR::ConstantLogical_t*)f)->m_type; }
         case ASR::exprType::ConstantString: { return ((ASR::ConstantString_t*)f)->m_type; }
+        case ASR::exprType::ConstantDictionary: { return ((ASR::ConstantDictionary_t*)f)->m_type; }
+        case ASR::exprType::BOZ: { return ((ASR::BOZ_t*)f)->m_type; }
+        case ASR::exprType::Var: { return EXPR2VAR(f)->m_type; }
+        case ASR::exprType::ArrayRef: { return ((ASR::ArrayRef_t*)f)->m_type; }
+        case ASR::exprType::DerivedRef: { return ((ASR::DerivedRef_t*)f)->m_type; }
         case ASR::exprType::ImplicitCast: { return ((ASR::ImplicitCast_t*)f)->m_type; }
         case ASR::exprType::ExplicitCast: { return ((ASR::ExplicitCast_t*)f)->m_type; }
-        case ASR::exprType::Var: { return EXPR2VAR(f)->m_type; }
-        case ASR::exprType::ConstantLogical: { return ((ASR::ConstantLogical_t*)f)->m_type; }
-        case ASR::exprType::StrOp: { return ((ASR::StrOp_t*)f)->m_type; }
-        case ASR::exprType::ImpliedDoLoop: { return ((ASR::ImpliedDoLoop_t*)f)->m_type; }
-        case ASR::exprType::DerivedTypeConstructor: { return ((ASR::DerivedTypeConstructor_t*)f)->m_type; }
-        case ASR::exprType::BOZ: { return ((ASR::BOZ_t*)f)->m_type; }
         default : throw LFortranException("Not implemented");
     }
 }
@@ -135,7 +140,58 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
         case ASR::ttypeType::Character: {
             return "character";
         }
+        case ASR::ttypeType::Tuple: {
+            return "tuple";
+        }
+        case ASR::ttypeType::Set: {
+            return "set";
+        }
+        case ASR::ttypeType::Dict: {
+            return "dict";
+        }
         default : throw LFortranException("Not implemented");
+    }
+}
+
+static inline std::string unop_to_str(const ASR::unaryopType t) {
+    switch (t) {
+        case (ASR::unaryopType::Not): { return "!"; }
+        case (ASR::unaryopType::USub): { return "-"; }
+        case (ASR::unaryopType::UAdd): { return "+"; }
+        case (ASR::unaryopType::Invert): {return "~"; }
+        default : throw LFortranException("Not implemented");
+    }
+}
+
+static inline std::string binop_to_str(const ASR::binopType t) {
+    switch (t) {
+        case (ASR::binopType::Add): { return " + "; }
+        case (ASR::binopType::Sub): { return " - "; }
+        case (ASR::binopType::Mul): { return "*"; }
+        case (ASR::binopType::Div): { return "/"; }
+        default : throw LFortranException("Cannot represent the binary operator as a string");
+    }
+}
+
+static inline std::string cmpop_to_str(const ASR::cmpopType t) {
+    switch (t) {
+        case (ASR::cmpopType::Eq): { return " == "; }
+        case (ASR::cmpopType::NotEq): { return " != "; }
+        case (ASR::cmpopType::Lt): { return " < "; }
+        case (ASR::cmpopType::LtE): { return " <= "; }
+        case (ASR::cmpopType::Gt): { return " > "; }
+        case (ASR::cmpopType::GtE): { return " >= "; }
+        default : throw LFortranException("Cannot represent the comparison as a string");
+    }
+}
+
+static inline std::string boolop_to_str(const ASR::boolopType t) {
+    switch (t) {
+        case (ASR::boolopType::And): { return " && "; }
+        case (ASR::boolopType::Or): { return " || "; }
+        case (ASR::boolopType::Eqv): { return " == "; }
+        case (ASR::boolopType::NEqv): { return " != "; }
+        default : throw LFortranException("Cannot represent the boolean operator as a string");
     }
 }
 
@@ -160,6 +216,9 @@ static inline ASR::expr_t* expr_value(ASR::expr_t *f)
         case ASR::exprType::ConstantReal: // Drop through
         case ASR::exprType::ConstantComplex: // Drop through
         case ASR::exprType::ConstantLogical: // Drop through
+        case ASR::exprType::ConstantTuple: // Drop through
+        case ASR::exprType::ConstantDictionary: // Drop through
+        case ASR::exprType::ConstantSet: // Drop through
         case ASR::exprType::ConstantString:{ // For all Constants
             return f;
         }
@@ -315,6 +374,18 @@ static inline bool is_intrinsic_function(const ASR::Function_t *fn) {
     ASR::Module_t *m = get_sym_module0(sym);
     if (m != nullptr) {
         if (startswith(m->m_name, "lfortran_intrinsic")) return true;
+    }
+    return false;
+}
+
+// Returns true if the Function is intrinsic, otherwise false
+// This version uses the `intrinsic` member of `Module`, so it
+// should be used instead of is_intrinsic_function
+static inline bool is_intrinsic_function2(const ASR::Function_t *fn) {
+    ASR::symbol_t *sym = (ASR::symbol_t*)fn;
+    ASR::Module_t *m = get_sym_module0(sym);
+    if (m != nullptr) {
+        if (m->m_intrinsic) return true;
     }
     return false;
 }
@@ -515,6 +586,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const std::string &module_name,
                             const Location &loc, bool intrinsic,
                             const std::string &rl_path,
+                            bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err);
 
 ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &msym,

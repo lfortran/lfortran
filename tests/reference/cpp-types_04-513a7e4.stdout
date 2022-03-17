@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cassert>
+#include <cmath>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
@@ -22,22 +24,22 @@ void main2() {
         float x;
         r = 1.500000;
         i = 2;
-        x = i*i;
+        x = (float)(i*i);
         x = r*r;
-        x = i*r;
-        x = r*i;
-        x = i + i;
+        x = (float)(i)*r;
+        x = r*(float)(i);
+        x = (float)(i + i);
         x = r + r;
-        x = r + i;
-        x = i + r;
-        x = i - i;
+        x = r + (float)(i);
+        x = (float)(i) + r;
+        x = (float)(i - i);
         x = r - r;
-        x = r - i;
-        x = i - r;
-        x = i/i;
+        x = r - (float)(i);
+        x = (float)(i) - r;
+        x = (float)(i/i);
         x = r/r;
-        x = i/r;
-        x = r/i;
+        x = (float)(i)/r;
+        x = r/(float)(i);
 }
 
 }

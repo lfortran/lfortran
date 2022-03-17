@@ -114,6 +114,11 @@ public:
             asr_t *item = x.m_items[i];
             require(is_a<stmt_t>(*item) || is_a<expr_t>(*item),
                 "TranslationUnit::m_items must be either stmt or expr");
+            if (is_a<stmt_t>(*item)) {
+                this->visit_stmt(*down_cast<stmt_t>(item));
+            } else {
+                this->visit_expr(*down_cast<expr_t>(item));
+            }
         }
         current_symtab = nullptr;
     }
@@ -307,14 +312,14 @@ public:
             "Var::m_v `" + std::string(ASRUtils::symbol_name(x.m_v)) + "` cannot point outside of its symbol table");
     }
 
-    // void visit_ArrayRef(const ArrayRef_t &x) {
-    //     require(symtab_in_scope(current_symtab, x.m_v),
-    //         "ArrayRef::m_v cannot point outside of its symbol table");
-    //     for (size_t i=0; i<x.n_args; i++) {
-    //         visit_array_index(x.m_args[i]);
-    //     }
-    //     visit_ttype(*x.m_type);
-    // }
+    void visit_ArrayRef(const ArrayRef_t &x) {
+        require(symtab_in_scope(current_symtab, x.m_v),
+            "ArrayRef::m_v cannot point outside of its symbol table");
+        for (size_t i=0; i<x.n_args; i++) {
+            visit_array_index(x.m_args[i]);
+        }
+        visit_ttype(*x.m_type);
+    }
 
     void visit_SubroutineCall(const SubroutineCall_t &x) {
         if (x.m_dt) {

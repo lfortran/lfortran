@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cassert>
+#include <cmath>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
@@ -23,11 +25,11 @@ float abs(float a)
 {
     float r;
     std::cout << "abs" << std::endl;
-    if (a > 0) {
+    if (a > (float)(0)) {
         r = a;
     } else {
         r = -a;
-    };
+    }
     return r;
 }
 
@@ -36,10 +38,10 @@ float sum(const Kokkos::View<const float*> &a)
     int i;
     float r;
     std::cout << "sum" << std::endl;
-    r = 0;
+    r = (float)(0);
     for (i=1; i<=a.extent(0); i++) {
         r = r + a[i-1];
-    };
+    }
     return r;
 }
 
@@ -47,14 +49,14 @@ float sum(const Kokkos::View<const float*> &a)
 void main2() {
         Kokkos::View<float[3]> a("a");
         float b;
-        a[1-1] = 3;
-        a[2-1] = 2;
-        a[3-1] = 1;
+        a[1-1] = (float)(3);
+        a[2-1] = (float)(2);
+        a[3-1] = (float)(1);
         b = sum(a);
-        if (abs(b - 6) > 0.000010) {
+        if (abs(b - (float)(6)) > 0.000010) {
             std::cerr << "ERROR STOP" << std::endl;
             exit(1);
-        };
+        }
 }
 
 }
