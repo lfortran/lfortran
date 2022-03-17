@@ -3544,7 +3544,6 @@ public:
                 llvm::Value* first_arg_ptr = llvm_utils->create_gep(arg_struct, 0);
                 builder->CreateStore(first_ele_ptr, first_arg_ptr);
                 llvm::Value* rank_ptr = llvm_utils->create_gep(arg_struct, 1);
-                llvm::StructType* tmp_type = (llvm::StructType*)(((llvm::PointerType*)(tmp->getType()))->getElementType());
                 builder->CreateStore(arr_descr->get_rank(tmp), rank_ptr);
                 tmp = arg_struct;
                 args.push_back(tmp);
