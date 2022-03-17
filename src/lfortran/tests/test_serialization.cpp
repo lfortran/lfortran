@@ -316,29 +316,29 @@ end module
 
 }
 
-TEST_CASE("Topological sorting int") {
-    std::map<int, std::vector<int>> deps;
+TEST_CASE("Topological sorting mod_int") {
+    std::map<std::string, std::vector<std::string>> deps;
     // 1 depends on 2
-    deps[1].push_back(2);
+    deps["mod_1"].push_back("mod_2");
     // 3 depends on 1, etc.
-    deps[3].push_back(1);
-    deps[2].push_back(4);
-    deps[3].push_back(4);
-    CHECK(LFortran::ASRUtils::order_deps(deps) == std::vector<int>({4, 2, 1, 3}));
+    deps["mod_3"].push_back("mod_1");
+    deps["mod_2"].push_back("mod_4");
+    deps["mod_3"].push_back("mod_4");
+    CHECK(LFortran::ASRUtils::order_deps(deps) == std::vector<std::string>({"mod_4", "mod_2", "mod_1", "mod_3"}));
 
     deps.clear();
-    deps[1].push_back(2);
-    deps[1].push_back(3);
-    deps[2].push_back(4);
-    deps[3].push_back(4);
-    CHECK(LFortran::ASRUtils::order_deps(deps) == std::vector<int>({4, 2, 3, 1}));
+    deps["mod_1"].push_back("mod_2");
+    deps["mod_1"].push_back("mod_3");
+    deps["mod_2"].push_back("mod_4");
+    deps["mod_3"].push_back("mod_4");
+    CHECK(LFortran::ASRUtils::order_deps(deps) == std::vector<std::string>({ "mod_4", "mod_2", "mod_3", "mod_1" }));
 
     deps.clear();
-    deps[1].push_back(2);
-    deps[3].push_back(1);
-    deps[3].push_back(4);
-    deps[4].push_back(1);
-    CHECK(LFortran::ASRUtils::order_deps(deps) == std::vector<int>({2, 1, 4, 3}));
+    deps["mod_1"].push_back("mod_2");
+    deps["mod_3"].push_back("mod_1");
+    deps["mod_3"].push_back("mod_4");
+    deps["mod_4"].push_back("mod_1");
+    CHECK(LFortran::ASRUtils::order_deps(deps) == std::vector<std::string>({ "mod_2", "mod_1", "mod_4", "mod_3" }));
 }
 
 TEST_CASE("Topological sorting string") {

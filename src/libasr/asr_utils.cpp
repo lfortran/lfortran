@@ -1,3 +1,5 @@
+#include <unordered_set>
+#include <map>
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 #include <libasr/serialization.h>
@@ -10,60 +12,36 @@ namespace LFortran {
 
     namespace ASRUtils  {
 
-
-void visit(int a, std::map<int,std::vector<int>> &deps,
-        std::vector<bool> &visited, std::vector<int> &result) {
-    visited[a] = true;
-    for (auto n : deps[a]) {
-        if (!visited[n]) visit(n, deps, visited, result);
+// depth-first graph traversal
+void visit(
+    std::string const& a, 
+    std::map<std::string, std::vector<std::string>> const& deps,
+    std::unordered_set<std::string>& visited, 
+    std::vector<std::string>& result
+) {
+    visited.insert(a);
+    if (auto it = deps.find(a); it != deps.end()) {
+        for (auto n : it->second) {
+            if (!visited.count(n)) visit(n, deps, visited, result);
+        }
     }
     result.push_back(a);
 }
 
-std::vector<int> order_deps(std::map<int, std::vector<int>> &deps) {
-    std::vector<bool> visited(deps.size(), false);
-    std::vector<int> result;
-    for (auto d : deps) {
-        if (!visited[d.first]) visit(d.first, deps, visited, result);
-    }
-    return result;
-}
+std::vector<std::string> order_deps(std::map<std::string, std::vector<std::string>> const& deps) {
+    // Compute ordering: depth-first graph traversal, inserting nodes on way back
 
-std::vector<std::string> order_deps(std::map<std::string, std::vector<std::string>> &deps) {
-    // Create a mapping string <-> int
-    std::vector<std::string> int2string;
-    std::map<std::string, int> string2int;
-    for (auto d : deps) {
-        if (string2int.find(d.first) == string2int.end()) {
-            string2int[d.first] = int2string.size();
-            int2string.push_back(d.first);
-        }
-        for (auto n : d.second) {
-            if (string2int.find(n) == string2int.end()) {
-                string2int[n] = int2string.size();
-                int2string.push_back(n);
-            }
-        }
-    }
+    // set containing the visited nodes
+    std::unordered_set<std::string> visited;
 
-    // Transform dep -> dep_int
-    std::map<int, std::vector<int>> deps_int;
-    for (auto d : deps) {
-        deps_int[string2int[d.first]] = std::vector<int>();
-        for (auto n : d.second) {
-            deps_int[string2int[d.first]].push_back(string2int[n]);
-        }
-    }
-
-    // Compute ordering
-    std::vector<int> result_int = order_deps(deps_int);
-
-    // Transform result_int -> result
+    // vector containing result
     std::vector<std::string> result;
-    for (auto n : result_int) {
-        result.push_back(int2string[n]);
-    }
 
+    for (auto d : deps) {
+        if (!visited.count(d.first)) {
+            visit(d.first, deps, visited, result);
+        }
+    }
     return result;
 }
 
