@@ -143,9 +143,9 @@ namespace LFortran {
             llvm::StructType* tmp_struct_type = static_cast<llvm::StructType*>(tmp_type);
             if( tmp_struct_type->getElementType(0)->isArrayTy() ) {
                 first_ele_ptr = llvm_utils->create_gep(get_pointer_to_data(tmp), 0);
-            } else if( tmp_struct_type->getNumElements() < 4 ) {
+            } else if( tmp_struct_type->getNumElements() < 5 ) {
                 first_ele_ptr = builder->CreateLoad(get_pointer_to_data(tmp));
-            } else if( tmp_struct_type->getNumElements() == 4 ) {
+            } else if( tmp_struct_type->getNumElements() == 5 ) {
                 return tmp;
             }
             llvm::Value* first_arg_ptr = llvm_utils->create_gep(arg_struct, 0);
@@ -170,10 +170,10 @@ namespace LFortran {
                 llvm::Type* ele_type = arr_type->getElementType();
                 first_ele_ptr_type = ele_type->getPointerTo();
             } else if( type_struct->getElementType(0)->isPointerTy() &&
-                       type_struct->getNumElements() < 4 ) {
+                       type_struct->getNumElements() < 5 ) {
                 first_ele_ptr_type = type_struct->getElementType(0);
             } else if( type_struct->getElementType(0)->isPointerTy() &&
-                       type_struct->getNumElements() == 4 ) {
+                       type_struct->getNumElements() == 5 ) {
                 arr_arg_type_cache[m_h][std::string(arg_name)] = type;
                 return type->getPointerTo();
             }
@@ -211,7 +211,8 @@ namespace LFortran {
             array_type_vec = {  el_type->getPointerTo(),
                                 llvm::Type::getInt32Ty(context),
                                 dim_des_array,
-                                llvm::Type::getInt1Ty(context)  };
+                                llvm::Type::getInt1Ty(context),
+                                llvm::Type::getInt32Ty(context)  };
             llvm::StructType* new_array_type = llvm::StructType::create(context, array_type_vec, "array");
             tkr2array[array_key] = new_array_type;
             if( get_pointer ) {
@@ -239,7 +240,8 @@ namespace LFortran {
                 el_type->getPointerTo(),
                 llvm::Type::getInt32Ty(context),
                 dim_des_array,
-                llvm::Type::getInt1Ty(context)};
+                llvm::Type::getInt1Ty(context),
+                llvm::Type::getInt32Ty(context)};
             llvm::StructType* new_array_type = llvm::StructType::create(context, array_type_vec, "array");
             tkr2array[array_key] = new_array_type;
             if( get_pointer ) {
@@ -262,6 +264,15 @@ namespace LFortran {
         }
 
         llvm::Value* SimpleCMODescriptor::
+        get_rank(llvm::Value* arr, bool get_pointer) {
+            llvm::Value* rank_ptr = llvm_utils->create_gep(arr, 4);
+            if( get_pointer ) {
+                return rank_ptr;
+            }
+            return builder->CreateLoad(rank_ptr);
+        }
+
+        llvm::Value* SimpleCMODescriptor::
         get_dimension_size(llvm::Value* dim_des_arr, llvm::Value* dim) {
             return builder->CreateLoad(
                         llvm_utils->create_gep(llvm_utils->create_ptr_gep(dim_des_arr, dim), 3));
@@ -277,6 +288,7 @@ namespace LFortran {
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
             llvm::Value* dim_des_first = builder->CreateAlloca(dim_des,
                                                                builder->CreateLoad(llvm_ndims));
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(arr, true));
             builder->CreateStore(dim_des_first, dim_des_val);
             dim_des_val = builder->CreateLoad(dim_des_val);
             for( int r = 0; r < n_dims; r++ ) {
@@ -335,6 +347,7 @@ namespace LFortran {
             llvm::Value* dim_des_first = builder->CreateAlloca(dim_des,
                                                                builder->CreateLoad(llvm_ndims));
             builder->CreateStore(dim_des_first, dim_des_val);
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(arr, true));
             dim_des_val = builder->CreateLoad(dim_des_val);
             for( int r = 0; r < n_dims; r++ ) {
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep(dim_des_val, r);

@@ -208,6 +208,9 @@ namespace LFortran {
                 llvm::Value* get_dimension_size(llvm::Value* dim_des_arr,
                     llvm::Value* dim) = 0;
 
+                virtual
+                llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false) = 0;
+
                 /*
                 * Returns pointer to dimension descriptor array
                 * in the input array descriptor according to the rules
@@ -310,6 +313,9 @@ namespace LFortran {
 
                 virtual
                 llvm::Value* get_pointer_to_data(llvm::Value* arr);
+
+                virtual
+                llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false);
 
                 virtual
                 llvm::Value* get_offset(llvm::Value* dim_des);

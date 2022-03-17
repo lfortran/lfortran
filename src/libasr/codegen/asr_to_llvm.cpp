@@ -3545,8 +3545,7 @@ public:
                 builder->CreateStore(first_ele_ptr, first_arg_ptr);
                 llvm::Value* rank_ptr = llvm_utils->create_gep(arg_struct, 1);
                 llvm::StructType* tmp_type = (llvm::StructType*)(((llvm::PointerType*)(tmp->getType()))->getElementType());
-                int rank = ((llvm::ArrayType*)(tmp_type->getElementType(2)))->getNumElements();
-                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, rank)), rank_ptr);
+                builder->CreateStore(arr_descr->get_rank(tmp), rank_ptr);
                 tmp = arg_struct;
                 args.push_back(tmp);
                 llvm::Value* dim = builder->CreateAlloca(getIntType(4));
