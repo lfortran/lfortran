@@ -379,6 +379,18 @@ static inline bool is_intrinsic_function(const ASR::Function_t *fn) {
 }
 
 // Returns true if the Function is intrinsic, otherwise false
+// This version uses the `intrinsic` member of `Module`, so it
+// should be used instead of is_intrinsic_function
+static inline bool is_intrinsic_function2(const ASR::Function_t *fn) {
+    ASR::symbol_t *sym = (ASR::symbol_t*)fn;
+    ASR::Module_t *m = get_sym_module0(sym);
+    if (m != nullptr) {
+        if (m->m_intrinsic) return true;
+    }
+    return false;
+}
+
+// Returns true if the Function is intrinsic, otherwise false
 template <typename T>
 static inline bool is_intrinsic_optimization(const T *routine) {
     ASR::symbol_t *sym = (ASR::symbol_t*)routine;
