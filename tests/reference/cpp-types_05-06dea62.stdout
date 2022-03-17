@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cassert>
+#include <cmath>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
@@ -19,20 +21,20 @@ namespace {
 void main2() {
         int i;
         float r;
-        r = 1.000000*2;
-        r = 2*1.000000;
-        r = 2*(3 + 1.000000);
-        r = 2*(3.000000 - 1);
-        r = 1/2;
-        r = 1.000000/2;
-        r = 1/2.000000;
-        i = (int)(1.000000*2);
-        i = (int)(2*1.000000);
-        i = (int)(2*(3 + 1.000000));
-        i = (int)(2*(3.000000 - 1));
+        r = 1.000000*(float)(2);
+        r = (float)(2)*1.000000;
+        r = (float)(2)*((float)(3) + 1.000000);
+        r = (float)(2)*(3.000000 - (float)(1));
+        r = (float)(1/2);
+        r = 1.000000/(float)(2);
+        r = (float)(1)/2.000000;
+        i = (int)(1.000000*(float)(2));
+        i = (int)((float)(2)*1.000000);
+        i = (int)((float)(2)*((float)(3) + 1.000000));
+        i = (int)((float)(2)*(3.000000 - (float)(1)));
         i = 1/2;
-        i = (int)(1.000000/2);
-        i = (int)(1/2.000000);
+        i = (int)(1.000000/(float)(2));
+        i = (int)((float)(1)/2.000000);
 }
 
 }
