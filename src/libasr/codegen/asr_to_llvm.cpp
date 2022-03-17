@@ -3554,8 +3554,15 @@ public:
     void visit_Stop(const ASR::Stop_t &x) {
         llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("STOP\n");
         printf(context, *module, *builder, {fmt_ptr});
-        this->visit_expr(*x.m_code);
-        llvm::Value *exit_code = tmp;
+        llvm::Value *exit_code;
+        if (x.m_code && ASRUtils::expr_type(x.m_code)->type == ASR::ttypeType::Integer) {
+            this->visit_expr(*x.m_code);
+            exit_code = tmp;
+        } else {
+            int exit_code_int = 0;
+            exit_code = llvm::ConstantInt::get(context,
+                    llvm::APInt(32, exit_code_int));
+        }
         exit(context, *module, *builder, exit_code);
     }
 
