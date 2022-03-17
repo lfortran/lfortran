@@ -152,6 +152,10 @@ namespace LFortran {
                     std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
                     llvm::Module* module) = 0;
 
+                virtual
+                void fill_dimension_descriptor(
+                    llvm::Value* arr, int n_dims) = 0;
+
                 /*
                 * Returns the llvm::Type* associated with the
                 * dimension descriptor used by the current class.
@@ -307,6 +311,10 @@ namespace LFortran {
                     llvm::Value* arr, int n_dims,
                     std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
                     llvm::Module* module);
+
+                virtual
+                void fill_dimension_descriptor(
+                    llvm::Value* arr, int n_dims);
 
                 virtual
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false);

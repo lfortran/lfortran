@@ -1491,6 +1491,9 @@ public:
                     }
                     llvm::AllocaInst *ptr = builder->CreateAlloca(type, nullptr, v->m_name);
                     llvm_symtab[h] = ptr;
+                    if( is_malloc_array_type ) {
+                        arr_descr->fill_dimension_descriptor(ptr, n_dims);
+                    }
                     if( is_array_type && !is_malloc_array_type ) {
                         fill_array_details(ptr, m_dims, n_dims);
                     }

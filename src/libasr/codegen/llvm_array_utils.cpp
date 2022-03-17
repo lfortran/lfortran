@@ -381,6 +381,17 @@ namespace LFortran {
             builder->CreateStore(first_ptr, ptr2firstptr);
         }
 
+        void SimpleCMODescriptor::fill_dimension_descriptor(
+            llvm::Value* arr, int n_dims) {
+            llvm::Value* dim_des_val = llvm_utils->create_gep(arr, 2);
+            llvm::Value* llvm_ndims = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr);
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
+            llvm::Value* dim_des_first = builder->CreateAlloca(dim_des,
+                                                               builder->CreateLoad(llvm_ndims));
+            builder->CreateStore(dim_des_first, dim_des_val);
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(arr, true));
+        }
+
         llvm::Value* SimpleCMODescriptor::get_pointer_to_dimension_descriptor(llvm::Value* dim_des_arr,
             llvm::Value* dim) {
             return llvm_utils->create_ptr_gep(dim_des_arr, dim);
