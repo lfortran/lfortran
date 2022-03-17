@@ -341,14 +341,7 @@ namespace LFortran {
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                                     offset_val);
             set_is_allocated_flag(arr, 1);
-            llvm::Value* dim_des_val = llvm_utils->create_gep(arr, 2);
-            llvm::Value* llvm_ndims = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr);
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
-            llvm::Value* dim_des_first = builder->CreateAlloca(dim_des,
-                                                               builder->CreateLoad(llvm_ndims));
-            builder->CreateStore(dim_des_first, dim_des_val);
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(arr, true));
-            dim_des_val = builder->CreateLoad(dim_des_val);
+            llvm::Value* dim_des_val = builder->CreateLoad(llvm_utils->create_gep(arr, 2));
             for( int r = 0; r < n_dims; r++ ) {
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep(dim_des_val, r);
                 llvm::Value* s_val = llvm_utils->create_gep(dim_val, 0);
