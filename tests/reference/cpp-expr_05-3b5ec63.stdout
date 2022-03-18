@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cassert>
+#include <cmath>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
@@ -32,13 +34,13 @@ void main2() {
         x = (-2)*(-3);
         x = -std::pow(2, 3);
         x = -std::pow(2, 3);
-        x = -2*3;
+        x = -(2*3);
         x = std::pow(2, -3);
         x = a;
         x = a;
         x = a*b;
         x = (-a)*b;
-        x = -a*b;
+        x = -(a*b);
         x = a*(-b);
         x = (-a)*(-b);
         x = a*b*c;
@@ -60,30 +62,30 @@ void main2() {
         x = (a + b)*(std::pow(a, 2) - a*b + std::pow(b, 2));
         x = (a - b)*(a + b)*(std::pow(a, 2) + std::pow(b, 2));
         x = 2 - (-2);
-        x = a - (-b) - c;
+        x = a - ((-b) - c);
         x = a - (-2)*b;
         x = c - (-2)/b;
-        x = a - 2 + 3 + 4;
+        x = a - (2 + 3 + 4);
         x = a + 2 + 3 + 4;
-        x = 2*a + a*b - a*b + 2*a;
-        x = 2*a + a*b - a*b - 2*a;
-        x = a - b - c - 1;
+        x = 2*a + a*b - (a*b + 2*a);
+        x = 2*a + a*b - (a*b - 2*a);
+        x = a - (b - (c - 1));
         x = a - b;
+        x = a - (b - c);
         x = a - b - c;
-        x = a - b - c;
-        x = -a - (-b) + (-b) - (-b)*b;
-        x = -3 + 5;
-        x = -a + 5;
-        l = ((std::pow(x, 3)*4 + a <= 4) || ((x < 5) && (x < 6))) == ((true) || ((!false) && (true)));
-        l = (l) || ((l) && (l));
-        l = ((l) || (l)) && (l);
-        l = ((l) && (l)) || (l);
-        l = (l) && ((l) || (l));
-        l = (l) || ((!l) && (l));
-        l = (l) || ((l) && (!l));
-        l = ((l) && (l)) || (!l);
-        l = ((l) && (!l)) || (l);
-        l = (l) && (!(l) || (l));
+        x = -(a - ((-b) + (-b) - (-b)*b));
+        x = -(3 + 5);
+        x = -(a + 5);
+        l = (std::pow(x, 3)*4 + a <= 4 || x < 5 && x < 6) == (true || !false && true);
+        l = l || l && l;
+        l = (l || l) && l;
+        l = l && l || l;
+        l = l && (l || l);
+        l = l || !l && l;
+        l = l || l && !l;
+        l = l && l || !l;
+        l = l && !l || l;
+        l = l && !(l || l);
 }
 
 }

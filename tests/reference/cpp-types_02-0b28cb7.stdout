@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cassert>
+#include <cmath>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
@@ -20,8 +22,8 @@ void main2() {
         int i;
         float r;
         i = 1;
-        r = 1;
-        r = i;
+        r = (float)(1);
+        r = (float)(i);
 }
 
 }

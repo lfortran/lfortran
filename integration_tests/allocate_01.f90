@@ -1,7 +1,7 @@
 program allocate_01
 implicit none
 integer, allocatable :: a(:)
-real, allocatable :: b(:, :) 
+real, allocatable :: b(:, :)
 complex, allocatable :: c(:, :, :)
 complex :: r
 integer :: n, ierr
@@ -21,6 +21,10 @@ do i = lbound(b, 1), ubound(b, 1)
 end do
 
 call sum(a, b, c)
+
+if (lbound(c, 1) /= 5 .or. ubound(c, 1) /= n + 5) error stop
+if (lbound(c, 2) /= n .or. ubound(c, 2) /= 2 * n) error stop
+if (lbound(c, 3) /= n .or. ubound(c, 3) /= 3 * n) error stop
 
 do i = lbound(a, 1), ubound(a, 1)
     if (a(i) /= i) error stop
