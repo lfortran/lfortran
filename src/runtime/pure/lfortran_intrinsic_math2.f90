@@ -1,6 +1,6 @@
 ! Temporary module, a subset of lfortran_intrinsic_math that works
 module lfortran_intrinsic_math2
-use, intrinsic :: iso_fortran_env, only: i32 => int32, sp => real32, dp => real64
+use, intrinsic :: iso_fortran_env, only: i8 => int8, i16 => int16, i32 => int32, i64 => int64, sp => real32, dp => real64
 implicit none
 
 interface abs
@@ -35,12 +35,16 @@ interface mod
     module procedure imod, smod, dmod
 end interface
 
+interface merge
+    module procedure mergei8, mergei16, mergei32, mergei64, merger32, merger64
+end interface
+
 interface min
-    module procedure imin, smin, dmin, imin_6args
+    module procedure imin, imin8, imin16, imin64, smin, dmin, imin_6args
 end interface
 
 interface max
-    module procedure imax, smax, dmax, imax_6args
+    module procedure imax, imax8, imax16, imax64, smax, dmax, imax_6args
 end interface
 
 interface huge
@@ -238,6 +242,33 @@ else
 end if
 end function
 
+elemental integer(i8) function imin8(x, y) result(r)
+integer(i8), intent(in) :: x, y
+if (x < y) then
+    r = x
+else
+    r = y
+end if
+end function
+
+elemental integer(i16) function imin16(x, y) result(r)
+integer(i16), intent(in) :: x, y
+if (x < y) then
+    r = x
+else
+    r = y
+end if
+end function
+
+elemental integer(i64) function imin64(x, y) result(r)
+integer(i64), intent(in) :: x, y
+if (x < y) then
+    r = x
+else
+    r = y
+end if
+end function
+
 elemental real(sp) function smin(x, y) result(r)
 real(sp), intent(in) :: x, y
 if (x < y) then
@@ -277,6 +308,33 @@ end function
 
 elemental integer function imax(x, y) result(r)
 integer, intent(in) :: x, y
+if (x > y) then
+    r = x
+else
+    r = y
+end if
+end function
+
+elemental integer(i8) function imax8(x, y) result(r)
+integer(i8), intent(in) :: x, y
+if (x > y) then
+    r = x
+else
+    r = y
+end if
+end function
+
+elemental integer(i16) function imax16(x, y) result(r)
+integer(i16), intent(in) :: x, y
+if (x > y) then
+    r = x
+else
+    r = y
+end if
+end function
+
+elemental integer(i64) function imax64(x, y) result(r)
+integer(i64), intent(in) :: x, y
 if (x > y) then
     r = x
 else
@@ -337,6 +395,48 @@ elemental real(dp) function dphuge(x) result(r)
 real(dp), intent(in) :: x
 r = 1.7976931348623157d308
 ! r = 2**1024 * (1 - 2**-53)
+end function
+
+function mergei8(tsource, fsource, mask) result(r)
+    integer(i8), intent(in) :: tsource(:)
+    integer(i8), intent(in) :: fsource(:)
+    logical, intent(in) :: mask(:)
+    integer(i8) :: r
+end function
+
+function mergei16(tsource, fsource, mask) result(r)
+    integer(i16), intent(in) :: tsource(:)
+    integer(i16), intent(in) :: fsource(:)
+    logical, intent(in) :: mask(:)
+    integer(i16) :: r
+end function
+
+function mergei32(tsource, fsource, mask) result(r)
+    integer(i32), intent(in) :: tsource(:)
+    integer(i32), intent(in) :: fsource(:)
+    logical, intent(in) :: mask(:)
+    integer(i32) :: r
+end function
+
+function mergei64(tsource, fsource, mask) result(r)
+    integer(i64), intent(in) :: tsource(:)
+    integer(i64), intent(in) :: fsource(:)
+    logical, intent(in) :: mask(:)
+    integer(i64) :: r
+end function
+
+function merger32(tsource, fsource, mask) result(r)
+    real(sp), intent(in) :: tsource(:)
+    real(sp), intent(in) :: fsource(:)
+    logical, intent(in) :: mask(:)
+    real(sp) :: r
+end function
+
+function merger64(tsource, fsource, mask) result(r)
+    real(dp), intent(in) :: tsource(:)
+    real(dp), intent(in) :: fsource(:)
+    logical, intent(in) :: mask(:)
+    real(dp) :: r
 end function
 
 end module
