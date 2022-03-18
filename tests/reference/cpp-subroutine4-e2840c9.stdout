@@ -64,12 +64,6 @@ int maxval(const Kokkos::View<const int*> &x)
     return maxval;
 }
 
-int merge(const Kokkos::View<const int*> &tsource, const Kokkos::View<const int*> &fsource, bool mask)
-{
-    int merge;
-    return merge;
-}
-
 int min(int a, int b)
 {
     int min;
@@ -90,6 +84,12 @@ float real(const Kokkos::View<const int*> &x, int kind)
 {
     float real;
     return real;
+}
+
+int reshape(const Kokkos::View<const int*> &x, const Kokkos::View<const int*> &shape_vec)
+{
+    int r;
+    return r;
 }
 
 int shape(const Kokkos::View<const int*> &x)
