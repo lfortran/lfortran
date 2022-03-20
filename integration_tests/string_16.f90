@@ -1,4 +1,4 @@
-program string_15
+program string_16
     implicit none
 
     character :: exclamation = achar(33)
