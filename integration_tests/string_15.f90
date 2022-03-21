@@ -11,4 +11,3 @@ program string_15
 
     print *, s1, s2    
 end program
-    
