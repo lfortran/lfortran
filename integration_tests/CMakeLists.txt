@@ -402,6 +402,7 @@ RUN(NAME string_12 LABELS gfortran)
 RUN(NAME string_13 LABELS gfortran llvm)
 RUN(NAME string_14 LABELS gfortran)
 RUN(NAME string_15 LABELS gfortran) # lge, lgt lle, llt
+RUN(NAME string_16 LABELS gfortran) # achar
 
 RUN(NAME nested_01 LABELS gfortran llvm)
 RUN(NAME nested_02 LABELS gfortran llvm)
@@ -457,6 +458,8 @@ RUN(NAME boz_01 LABELS gfortran llvm)
 RUN(NAME flip_sign LABELS gfortran llvm)
 RUN(NAME div_to_mul LABELS gfortran llvm)
 RUN(NAME fma LABELS gfortran llvm)
+RUN(NAME loop_unroll_small LABELS gfortran llvm)
+RUN(NAME loop_unroll_large LABELS gfortran llvm)
 RUN(NAME sign_from_value LABELS gfortran llvm)
 
 RUN(NAME rewind_inquire_flush LABELS gfortran)
