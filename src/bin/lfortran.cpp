@@ -30,6 +30,7 @@
 #include <libasr/pass/flip_sign.h>
 #include <libasr/pass/div_to_mul.h>
 #include <libasr/pass/fma.h>
+#include <libasr/pass/loop_unroll.h>
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/pass/sign_from_value.h>
 #include <libasr/asr_utils.h>
@@ -57,7 +58,7 @@ enum ASRPass {
     do_loops, global_stmts, implied_do_loops, array_op,
     arr_slice, print_arr, class_constructor, unused_functions,
     flip_sign, div_to_mul, fma, sign_from_value,
-    inline_function_calls
+    inline_function_calls, loop_unroll
 };
 
 std::string remove_extension(const std::string& filename) {
@@ -577,6 +578,10 @@ int emit_asr(const std::string &infile,
             }
             case (ASRPass::fma) : {
                 LFortran::pass_replace_fma(al, *asr, LFortran::get_runtime_library_dir());
+                break;
+            }
+            case (ASRPass::loop_unroll) : {
+                LFortran::pass_loop_unroll(al, *asr, LFortran::get_runtime_library_dir());
                 break;
             }
             case (ASRPass::inline_function_calls) : {
@@ -1431,6 +1436,8 @@ int main(int argc, char *argv[])
                 passes.push_back(ASRPass::flip_sign);
             } else if (arg_pass == "fma") {
                 passes.push_back(ASRPass::fma);
+            } else if (arg_pass == "loop_unroll") {
+                passes.push_back(ASRPass::loop_unroll);
             } else if (arg_pass == "inline_function_calls") {
                 passes.push_back(ASRPass::inline_function_calls);
             } else if (arg_pass == "sign_from_value") {
@@ -1446,7 +1453,7 @@ int main(int argc, char *argv[])
             } else if (arg_pass == "unused_functions") {
                 passes.push_back(ASRPass::unused_functions);
             } else {
-                std::cerr << "Pass must be one of: do_loops, global_stmts, implied_do_loops, array_op, flip_sign, fma, inline_function_calls, sign_from_value, div_to_mul, class_constructor, print_arr, arr_slice, unused_functions" << std::endl;
+                std::cerr << "Pass must be one of: do_loops, global_stmts, implied_do_loops, array_op, flip_sign, fma, loop_unroll, inline_function_calls, sign_from_value, div_to_mul, class_constructor, print_arr, arr_slice, unused_functions" << std::endl;
                 return 1;
             }
             show_asr = true;

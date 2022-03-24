@@ -17,6 +17,11 @@ interface
     integer, intent(in) :: x(:)
     end function
 
+    integer function reshape(x, shape_vec) result(r)
+    integer, intent(in) :: x(:)
+    integer, intent(in) :: shape_vec(:)
+    end function
+
     integer function lbound(x, dim)
     integer, intent(in) :: x(:)
     integer, intent(in) :: dim
@@ -25,12 +30,6 @@ interface
     integer function ubound(x, dim)
     integer, intent(in) :: x(:)
     integer, intent(in) :: dim
-    end function
-
-    integer function merge(tsource, fsource, mask)
-    integer, intent(in) :: tsource(:)
-    integer, intent(in) :: fsource(:)
-    logical, intent(in) :: mask
     end function
 
     integer function max(a, b)

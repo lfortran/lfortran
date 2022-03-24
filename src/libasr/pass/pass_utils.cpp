@@ -275,12 +275,59 @@ namespace LFortran {
             return v;
         }
 
+        // Imports the function from an already loaded ASR module
+        ASR::symbol_t* import_function2(std::string func_name, std::string module_name,
+                                       Allocator& al, ASR::TranslationUnit_t& unit,
+                                       SymbolTable*& current_scope) {
+            ASR::symbol_t *v;
+            std::string remote_sym = func_name;
+            SymbolTable* current_scope_copy = current_scope;
+            SymbolTable* current_scope2 = unit.m_global_scope;
+
+            ASR::Module_t *m;
+            if (current_scope2->scope.find(module_name) != current_scope2->scope.end()) {
+                ASR::symbol_t *sm = current_scope2->scope[module_name];
+                if (ASR::is_a<ASR::Module_t>(*sm)) {
+                    m = ASR::down_cast<ASR::Module_t>(sm);
+                } else {
+                    // The symbol `module_name` is not a module
+                    return nullptr;
+                }
+            } else {
+                // The module `module_name` is not in ASR
+                return nullptr;
+            }
+            ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
+            if (!t) return nullptr;
+            ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(t);
+            ASR::asr_t *fn = ASR::make_ExternalSymbol_t(al, mfn->base.base.loc, current_scope2,
+                                                        mfn->m_name, (ASR::symbol_t*)mfn,
+                                                        m->m_name, nullptr, 0, mfn->m_name, ASR::accessType::Private);
+            std::string sym = mfn->m_name;
+            if( current_scope2->scope.find(sym) != current_scope2->scope.end() ) {
+                v = current_scope2->scope[sym];
+            } else {
+                current_scope2->scope[sym] = ASR::down_cast<ASR::symbol_t>(fn);
+                v = ASR::down_cast<ASR::symbol_t>(fn);
+            }
+            current_scope2 = current_scope_copy;
+            return v;
+        }
+
+
         ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound,
                                 Allocator& al, ASR::TranslationUnit_t& unit,
                                 const std::string& rl_path,
                                 SymbolTable*& current_scope) {
-            ASR::symbol_t *v = import_function(bound, "lfortran_intrinsic_builtin", al,
-                                               unit, rl_path, current_scope, arr_expr->base.loc);
+            // Loads ubound/lbound from the module already in ASR
+            ASR::symbol_t *v = import_function2(bound, "lpython_builtin", al,
+                                               unit, current_scope);
+            if (!v) {
+                // If it fails, try to load from the source until we fix
+                // LFortran to preload this module
+                v = import_function(bound, "lfortran_intrinsic_builtin", al,
+                        unit, rl_path, current_scope, arr_expr->base.loc);
+            }
             ASR::ExternalSymbol_t* v_ext = ASR::down_cast<ASR::ExternalSymbol_t>(v);
             ASR::Function_t* mfn = ASR::down_cast<ASR::Function_t>(v_ext->m_external);
             Vec<ASR::call_arg_t> args;
@@ -429,6 +476,76 @@ namespace LFortran {
             return ASRUtils::EXPR(
                         ASRUtils::symbol_resolve_external_generic_procedure_without_eval(
                         loc, v, args, current_scope, al, err));
+        }
+
+        Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop) {
+            Location loc = loop.base.base.loc;
+            ASR::expr_t *a=loop.m_head.m_start;
+            ASR::expr_t *b=loop.m_head.m_end;
+            ASR::expr_t *c=loop.m_head.m_increment;
+            ASR::expr_t *cond = nullptr;
+            ASR::stmt_t *inc_stmt = nullptr;
+            ASR::stmt_t *stmt1 = nullptr;
+            if( !a && !b && !c ) {
+                ASR::ttype_t *cond_type = LFortran::ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4, nullptr, 0));
+                cond = LFortran::ASRUtils::EXPR(ASR::make_ConstantLogical_t(al, loc, true, cond_type));
+            } else {
+                LFORTRAN_ASSERT(a);
+                LFORTRAN_ASSERT(b);
+                if (!c) {
+                    ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0));
+                    c = LFortran::ASRUtils::EXPR(ASR::make_ConstantInteger_t(al, loc, 1, type));
+                }
+                LFORTRAN_ASSERT(c);
+                int increment;
+                if (c->type == ASR::exprType::ConstantInteger) {
+                    increment = ASR::down_cast<ASR::ConstantInteger_t>(c)->m_n;
+                } else if (c->type == ASR::exprType::UnaryOp) {
+                    ASR::UnaryOp_t *u = ASR::down_cast<ASR::UnaryOp_t>(c);
+                    LFORTRAN_ASSERT(u->m_op == ASR::unaryopType::USub);
+                    LFORTRAN_ASSERT(u->m_operand->type == ASR::exprType::ConstantInteger);
+                    increment = - ASR::down_cast<ASR::ConstantInteger_t>(u->m_operand)->m_n;
+                } else {
+                    throw LFortranException("Do loop increment type not supported");
+                }
+                ASR::cmpopType cmp_op;
+                if (increment > 0) {
+                    cmp_op = ASR::cmpopType::LtE;
+                } else {
+                    cmp_op = ASR::cmpopType::GtE;
+                }
+                ASR::expr_t *target = loop.m_head.m_v;
+                ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0));
+                stmt1 = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
+                    LFortran::ASRUtils::EXPR(ASR::make_BinOp_t(al, loc, a, ASR::binopType::Sub, c, type, nullptr, nullptr)),
+                    nullptr));
+
+                cond = LFortran::ASRUtils::EXPR(ASR::make_Compare_t(al, loc,
+                    LFortran::ASRUtils::EXPR(ASR::make_BinOp_t(al, loc, target, ASR::binopType::Add, c, type, nullptr, nullptr)),
+                    cmp_op, b, type, nullptr, nullptr));
+
+                inc_stmt = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
+                            LFortran::ASRUtils::EXPR(ASR::make_BinOp_t(al, loc, target, ASR::binopType::Add, c, type, nullptr, nullptr)),
+                        nullptr));
+            }
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, loop.n_body + (inc_stmt != nullptr));
+            if( inc_stmt ) {
+                body.push_back(al, inc_stmt);
+            }
+            for (size_t i=0; i<loop.n_body; i++) {
+                body.push_back(al, loop.m_body[i]);
+            }
+            ASR::stmt_t *stmt2 = LFortran::ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc, cond,
+                body.p, body.size()));
+            Vec<ASR::stmt_t*> result;
+            result.reserve(al, 2);
+            if( stmt1 ) {
+                result.push_back(al, stmt1);
+            }
+            result.push_back(al, stmt2);
+
+            return result;
         }
 
     }

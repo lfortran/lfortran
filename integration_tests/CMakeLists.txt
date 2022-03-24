@@ -169,6 +169,7 @@ RUN(NAME arrays_08_func LABELS gfortran llvm)
 RUN(NAME arrays_09 LABELS gfortran)
 RUN(NAME arrays_10 LABELS gfortran)
 RUN(NAME arrays_11 LABELS gfortran llvm cpp)
+RUN(NAME arrays_12 LABELS gfortran) # constant arrays
 
 RUN(NAME arrays_intrin_01 LABELS gfortran) # minval, maxval
 RUN(NAME arrays_intrin_02 LABELS gfortran) # all, any
@@ -233,8 +234,12 @@ RUN(NAME intrinsics_32 LABELS gfortran)
 RUN(NAME intrinsics_33 LABELS gfortran llvm)
 RUN(NAME intrinsics_34 LABELS gfortran llvm)
 RUN(NAME intrinsics_35 LABELS gfortran)
-RUN(NAME intrinsics_36 LABELS gfortran llvm)
+RUN(NAME intrinsics_36 LABELS gfortran llvm) # adjustl
+RUN(NAME intrinsics_37 LABELS gfortran)
+RUN(NAME intrinsics_38 LABELS gfortran) # adjustr
 RUN(NAME intrinsics_39 LABELS gfortran)
+RUN(NAME intrinsics_40 LABELS gfortran)
+RUN(NAME intrinsics_41 LABELS gfortran) # command_argument_count
 RUN(NAME intrinsics_open_close_read_write LABELS gfortran)
 
 RUN(NAME parameter_01 LABELS gfortran)
@@ -326,6 +331,8 @@ RUN(NAME complex_03 LABELS llvm)
 RUN(NAME complex_04 LABELS gfortran llvm)
 RUN(NAME complex_05 LABELS gfortran llvm)
 RUN(NAME complex_06 LABELS gfortran llvm)
+RUN(NAME complex_07 LABELS gfortran) # cmplx
+RUN(NAME complex_08 LABELS gfortran) # conjg
 RUN(NAME complex_sub_test LABELS gfortran llvm)
 RUN(NAME complex_mul_test LABELS gfortran llvm)
 RUN(NAME complex_div_test LABELS gfortran llvm)
@@ -394,6 +401,8 @@ RUN(NAME string_11 LABELS gfortran llvm)
 RUN(NAME string_12 LABELS gfortran)
 RUN(NAME string_13 LABELS gfortran llvm)
 RUN(NAME string_14 LABELS gfortran)
+RUN(NAME string_15 LABELS gfortran) # lge, lgt lle, llt
+RUN(NAME string_16 LABELS gfortran) # achar
 
 RUN(NAME nested_01 LABELS gfortran llvm)
 RUN(NAME nested_02 LABELS gfortran llvm)
@@ -449,6 +458,8 @@ RUN(NAME boz_01 LABELS gfortran llvm)
 RUN(NAME flip_sign LABELS gfortran llvm)
 RUN(NAME div_to_mul LABELS gfortran llvm)
 RUN(NAME fma LABELS gfortran llvm)
+RUN(NAME loop_unroll_small LABELS gfortran llvm)
+RUN(NAME loop_unroll_large LABELS gfortran llvm)
 RUN(NAME sign_from_value LABELS gfortran llvm)
 
 RUN(NAME rewind_inquire_flush LABELS gfortran)

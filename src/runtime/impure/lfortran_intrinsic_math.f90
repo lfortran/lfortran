@@ -114,7 +114,7 @@ interface random_number
 end interface
 
 interface sign
-    module procedure signi32, signi64, signr32, signr64
+    module procedure signi8, signi16, signi32, signi64, signr32, signr64
 end interface
 
 contains
@@ -1129,6 +1129,24 @@ call c_dp_rand_num(harvest)
 end subroutine
 
 ! sign -------------------------------------------------------------------------
+
+elemental integer(i8) function signi8(x, y) result(r)
+integer(i8), intent(in) :: x, y
+if ((x >= 0 .and. y >= 0) .or. (x <= 0 .and. y <= 0)) then
+    r = x
+else
+    r = -x
+end if
+end function
+
+elemental integer(i16) function signi16(x, y) result(r)
+integer(i16), intent(in) :: x, y
+if ((x >= 0 .and. y >= 0) .or. (x <= 0 .and. y <= 0)) then
+    r = x
+else
+    r = -x
+end if
+end function
 
 elemental integer(i32) function signi32(x, y) result(r)
 integer(i32), intent(in) :: x, y

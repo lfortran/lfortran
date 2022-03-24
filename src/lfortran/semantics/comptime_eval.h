@@ -48,7 +48,6 @@ struct IntrinsicProcedures {
             // So we shouldn't even encounter them here
             {"int", {m_builtin, &eval_int, false}},
             {"real", {m_builtin, &not_implemented, false}},
-            {"merge", {m_builtin, &not_implemented, false}},
             {"any", {m_builtin, &not_implemented, false}},
 
             // Require evaluated arguments
@@ -61,6 +60,7 @@ struct IntrinsicProcedures {
             {"modulo", {m_math2, &eval_modulo, true}},
             {"min", {m_math2, &eval_min, true}},
             {"max", {m_math2, &eval_max, true}},
+            {"merge", {m_math2, &not_implemented, false}},
             {"selected_int_kind", {m_kind, &eval_selected_int_kind, true}},
             {"selected_real_kind", {m_kind, &eval_selected_real_kind, true}},
             {"selected_char_kind", {m_kind, &eval_selected_char_kind, true}},
@@ -130,6 +130,7 @@ struct IntrinsicProcedures {
             {"size", {m_builtin, &not_implemented, false}},
             {"move_alloc", {m_builtin, &not_implemented, false}},
             {"shape", {m_builtin, &not_implemented, false}},
+            {"reshape", {m_builtin, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
             {"lbound", {m_builtin, &not_implemented, false}},
             {"ubound", {m_builtin, &not_implemented, false}},

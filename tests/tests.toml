@@ -1338,6 +1338,10 @@ filename = "../integration_tests/intrinsics_36.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/intrinsics_37.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/intrinsics_39.f90"
 asr = true
 
@@ -1843,6 +1847,16 @@ pass = "flip_sign"
 filename = "../integration_tests/fma.f90"
 asr = true
 pass = "fma"
+
+[[test]]
+filename = "../integration_tests/loop_unroll_small.f90"
+asr = true
+pass = "loop_unroll"
+
+[[test]]
+filename = "../integration_tests/loop_unroll_large.f90"
+asr = true
+pass = "loop_unroll"
 
 [[test]]
 filename = "../integration_tests/div_to_mul.f90"
