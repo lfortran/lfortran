@@ -87,17 +87,13 @@ public:
         ASR::Var_t& xx = const_cast<ASR::Var_t&>(x);
         ASR::Variable_t* x_var = ASR::down_cast<ASR::Variable_t>(x.m_v);
         std::string x_var_name = std::string(x_var->m_name);
-        // std::cout<<"variable_replaced: "<<x_var_name<<std::endl;
         if( arg2value.find(x_var_name) != arg2value.end() ) {
-            // std::cout<<"found in arg2value map"<<std::endl;
             x_var = ASR::down_cast<ASR::Variable_t>(arg2value[x_var_name]);
             if( current_scope->scope.find(std::string(x_var->m_name)) != current_scope->scope.end() ) {
-                // std::cout<<"replacing variable"<<std::endl;
                 xx.m_v = arg2value[x_var_name];
             }
             x_var = ASR::down_cast<ASR::Variable_t>(x.m_v);
         }
-        // std::cout<<"variable_replaced end"<<std::endl;
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
@@ -120,8 +116,6 @@ public:
                     return ;
                 }
 
-                // std::cout<<"called_sym_ext: "<<called_sym_ext->m_name<<std::endl;
-                // std::cout<<"called_sym_original: "<<x.m_original_name<<std::endl;
                 ASR::symbol_t* called_sym = x.m_name;
 
                 // TODO: Hanlde later
@@ -142,14 +136,10 @@ public:
                 }
                 xx.m_name = current_scope->scope[new_sym_name_str];
             }
-            // std::cout<<"replacing args"<<std::endl;
-            for( auto itr: arg2value ) {
-                // std::cout<<itr.first<<" "<<ASRUtils::symbol_name(itr.second)<<std::endl;
-            }
+
             for( size_t i = 0; i < x.n_args; i++ ) {
                 visit_expr(*x.m_args[i].m_value);
             }
-            // std::cout<<"replacing args done"<<std::endl;
             return ;
         }
 
@@ -229,11 +219,9 @@ public:
         // The following loop inserts the function's local symbols i.e.,
         // the ones other than the arguments.
         // exprs_to_be_visited temporarily stores the initilisation expression as well.
-        // std::cout<<"------- "<<std::string(func->m_name)<<" -------"<<std::endl;
         for( auto& itr : func->m_symtab->scope ) {
             ASR::Variable_t* func_var = ASR::down_cast<ASR::Variable_t>(itr.second);
             std::string func_var_name = itr.first;
-            // std::cout<<"local_variable: "<<func_var_name<<std::endl;
             if( arg2value.find(func_var_name) == arg2value.end() ) {
                 std::string local_var_name = current_scope->get_unique_name(func_var_name + "_" + std::string(func->m_name));
                 node_duplicator.success = true;
@@ -256,7 +244,6 @@ public:
                                                 ASR::presenceType::Required, false);
                 current_scope->scope[local_var_name] = local_var;
                 arg2value[func_var_name] = local_var;
-                // std::cout<<"values: "<<m_symbolic_value<<" "<<m_value<<std::endl;
                 if( m_symbolic_value ) {
                     exprs_to_be_visited.push_back(std::make_pair(m_symbolic_value, local_var));
                 }
@@ -264,10 +251,6 @@ public:
                     exprs_to_be_visited.push_back(std::make_pair(m_value, local_var));
                 }
             }
-        }
-
-        for( auto itr: arg2value ) {
-            // std::cout<<itr.first<<" "<<ASRUtils::symbol_name(itr.second)<<" "<<exprs_to_be_visited.size()<<std::endl;
         }
 
         // At this point arg2value map is ready with all the variables.
@@ -282,8 +265,6 @@ public:
             ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, var->base.loc, var, value, nullptr));
             pass_result_local.push_back(al, assign_stmt);
         }
-
-        // std::cout<<"---------------"<<std::endl<<std::endl;
 
         Vec<ASR::stmt_t*> func_copy;
         func_copy.reserve(al, func->n_body);
