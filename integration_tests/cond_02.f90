@@ -22,7 +22,8 @@ implicit none
         print *, "a == b"
     else if( ap == cp ) then
         print *, "ap == cp"
-    else if( c == d )
+    else if( c == d ) then
         print *, "c == d"
     end if
+
 end
