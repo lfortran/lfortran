@@ -166,7 +166,6 @@ public:
     if (LFortran::ASRUtils::expr_value(left) != nullptr &&
         LFortran::ASRUtils::expr_value(right) != nullptr) {
       if (ASR::is_a<LFortran::ASR::Integer_t>(*dest_type)) {
-        std::cout<<LFortran::ASRUtils::expr_value(right)->type<<std::endl;
         int64_t left_value = ASR::down_cast<ASR::ConstantInteger_t>(
                                  LFortran::ASRUtils::expr_value(left))
                                  ->m_n;

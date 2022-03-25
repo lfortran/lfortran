@@ -20,8 +20,18 @@ implicit none
 
     if( a == b ) then
         print *, "a == b"
+        if( ap == bp ) then
+            print *, "ap == bp"
+        else
+            print *, "ap /= bp"
+        end if
     else if( ap == cp ) then
         print *, "ap == cp"
+        if( cp == dp ) then
+            print *, "cp == dp"
+        else
+            print *, "cp /= dp"
+        end if
     else if( c == d ) then
         print *, "c == d"
     end if
