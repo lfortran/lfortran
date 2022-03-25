@@ -1,0 +1,13 @@
+{
+    "basename": "pass_dead_code_removal-cond_02-69b6d7d",
+    "cmd": "lfortran --pass=dead_code_removal --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/cond_02.f90",
+    "infile_hash": "fc70f7e7943dfe505736cca5b8ff39a034a4a1a7f441d9bdf0a82662",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_dead_code_removal-cond_02-69b6d7d.stdout",
+    "stdout_hash": "ba1f11cd2636e2d32ec6da34afd4e75f9884d7a16f11e8d50d84ba6a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
