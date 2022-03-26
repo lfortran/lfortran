@@ -4152,6 +4152,11 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
 
     pass_replace_do_loops(al, asr);
     pass_replace_forall(al, asr);
+
+    if( fast ) {
+        pass_dead_code_removal(al, asr, rl_path);
+    }
+
     pass_replace_select_case(al, asr);
     pass_unused_functions(al, asr);
 
@@ -4161,7 +4166,6 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         pass_replace_div_to_mul(al, asr, rl_path);
         pass_replace_fma(al, asr, rl_path);
         pass_inline_function_calls(al, asr, rl_path);
-        pass_dead_code_removal(al, asr, rl_path);
     }
 
     v.nested_func_types = pass_find_nested_vars(asr, context,
