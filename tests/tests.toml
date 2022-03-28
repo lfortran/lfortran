@@ -982,6 +982,11 @@ ast_f90 = true
 asr = true
 
 [[test]]
+filename = "../integration_tests/case_06.f90"
+asr = true
+pass = "dead_code_removal"
+
+[[test]]
 filename = "../integration_tests/program_02.f90"
 ast = true
 

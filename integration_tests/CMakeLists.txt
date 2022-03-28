@@ -286,6 +286,7 @@ RUN(NAME case_02 LABELS gfortran llvm)
 RUN(NAME case_03 LABELS gfortran llvm)
 RUN(NAME case_04 LABELS gfortran)
 RUN(NAME case_05 LABELS gfortran llvm)
+RUN(NAME case_06 LABELS gfortran llvm)
 
 RUN(NAME select_type_01 LABELS gfortran)
 
