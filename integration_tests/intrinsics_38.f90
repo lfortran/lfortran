@@ -6,11 +6,11 @@ program intrinsics_38
     character(len=25) :: space_in_between = adjustr('   g for tran   ')
     character(len=25) :: spaces_with_symbols = adjustr('  # gfor* t $ ran &    ')
 
-    if(simple /= 'gfortran') error stop
-    if(space_at_start /= '   gfortran') error stop
-    if(space_at_end /= '   gfortran') error stop
-    if(space_in_between /= '      g for tran') error stop
-    if(spaces_with_symbols /= '      # gfor* t $ ran &') error stop
+    if (simple /= 'gfortran') error stop
+    if (space_at_start /= '   gfortran') error stop
+    if (space_at_end /= '   gfortran') error stop
+    if (space_in_between /= '      g for tran') error stop
+    if (spaces_with_symbols /= '      # gfor* t $ ran &') error stop
     
     print *, simple
     print *, space_at_start
