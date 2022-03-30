@@ -1537,9 +1537,8 @@ public:
                         this->visit_expr_wrapper(v->m_symbolic_value, true);
                         llvm::Value *init_value = tmp;
                         if (ASR::is_a<ASR::ConstantArray_t>(*v->m_symbolic_value)) {
-                            // TODO: Find the array's descriptor that should already be defined somewhere
-                            // and assign the `init_value` as the first data element of the descriptor
-//                            throw CodeGenError("ConstantArray");
+                            llvm::Value *array_data = arr_descr->get_pointer_to_data(target_var);
+                            builder->CreateStore(init_value, array_data);
                         } else {
                             builder->CreateStore(init_value, target_var);
                             auto finder = std::find(nested_globals.begin(),
