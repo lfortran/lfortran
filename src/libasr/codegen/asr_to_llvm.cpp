@@ -3051,17 +3051,43 @@ public:
     }
 
     void visit_ConstantArray(const ASR::ConstantArray_t &x) {
+        llvm::Type* el_type;
+        if (ASR::is_a<ASR::Real_t>(*x.m_type)) {
+            switch (ASR::down_cast<ASR::Real_t>(x.m_type)->m_kind) {
+                case (4) :
+                    el_type = llvm::Type::getFloatTy(context); break;
+                case (8) :
+                    el_type = llvm::Type::getDoubleTy(context); break;
+                default :
+                    throw CodeGenError("ConstArray real kind not supported yet");
+            }
+        } else {
+            throw CodeGenError("ConstArray type not supported yet");
+        }
         // Create <n x float> type, where `n` is the length of the `x` constant array
-        llvm::Type* type_fxn = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), x.n_args);
+        llvm::Type* type_fxn = FIXED_VECTOR_TYPE::get(el_type, x.n_args);
         // Create a pointer <n x float>* to a stack allocated <n x float>
         llvm::AllocaInst *p_fxn = builder->CreateAlloca(type_fxn, nullptr);
         // Assign the array elements to `p_fxn`.
         for (size_t i=0; i < x.n_args; i++) {
+            llvm::Value *llvm_el = llvm_utils->create_gep(p_fxn, i);
             ASR::expr_t *el = x.m_args[i];
             ASR::ConstantReal_t *cr = ASR::down_cast<ASR::ConstantReal_t>(el);
-            float el_value = cr->m_r;
-            llvm::Value *llvm_el = llvm_utils->create_gep(p_fxn, i);
-            llvm::Value *llvm_val = llvm::ConstantFP::get(context, llvm::APFloat(el_value));
+            llvm::Value *llvm_val;
+            switch (ASR::down_cast<ASR::Real_t>(x.m_type)->m_kind) {
+                case (4) : {
+                    float el_value = cr->m_r;
+                    llvm_val = llvm::ConstantFP::get(context, llvm::APFloat(el_value));
+                    break;
+                }
+                case (8) : {
+                    double el_value = cr->m_r;
+                    llvm_val = llvm::ConstantFP::get(context, llvm::APFloat(el_value));
+                    break;
+                }
+                default :
+                    throw CodeGenError("ConstArray real kind not supported yet");
+            }
             builder->CreateStore(llvm_val, llvm_el);
         }
         // Return the vector as float* type:
