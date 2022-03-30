@@ -1537,20 +1537,18 @@ public:
                         this->visit_expr_wrapper(v->m_symbolic_value, true);
                         llvm::Value *init_value = tmp;
                         if (ASR::is_a<ASR::ConstantArray_t>(*v->m_symbolic_value)) {
-                            llvm::Value *array_data = arr_descr->get_pointer_to_data(target_var);
-                            builder->CreateStore(init_value, array_data);
-                        } else {
-                            builder->CreateStore(init_value, target_var);
-                            auto finder = std::find(nested_globals.begin(),
-                                    nested_globals.end(), h);
-                            if (finder != nested_globals.end()) {
-                                llvm::Value* ptr = module->getOrInsertGlobal(nested_desc_name,
-                                        nested_global_struct);
-                                int idx = std::distance(nested_globals.begin(),
-                                        finder);
-                                builder->CreateStore(target_var, llvm_utils->create_gep(ptr,
-                                            idx));
-                            }
+                            target_var = arr_descr->get_pointer_to_data(target_var);
+                        }
+                        builder->CreateStore(init_value, target_var);
+                        auto finder = std::find(nested_globals.begin(),
+                                nested_globals.end(), h);
+                        if (finder != nested_globals.end()) {
+                            llvm::Value* ptr = module->getOrInsertGlobal(nested_desc_name,
+                                    nested_global_struct);
+                            int idx = std::distance(nested_globals.begin(),
+                                    finder);
+                            builder->CreateStore(target_var, llvm_utils->create_gep(ptr,
+                                        idx));
                         }
                     } else {
                         if (is_a<ASR::Character_t>(*v->m_type) && !is_array_type) {
