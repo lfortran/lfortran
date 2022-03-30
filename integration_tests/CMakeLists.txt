@@ -389,6 +389,7 @@ RUN(NAME complex_dp_param LABELS gfortran llvm)
 RUN(NAME const_kind_01 LABELS gfortran llvm)
 RUN(NAME const_kind_02 LABELS gfortran llvm)
 RUN(NAME const_array_01 LABELS gfortran llvm)
+RUN(NAME const_array_02 LABELS gfortran llvm)
 
 RUN(NAME string_01 LABELS gfortran llvm cpp)
 RUN(NAME string_02 LABELS gfortran llvm)
