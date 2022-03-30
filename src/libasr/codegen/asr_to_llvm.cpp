@@ -3047,6 +3047,23 @@ public:
 
     }
 
+    void visit_ConstantArray(const ASR::ConstantArray_t &x) {
+        for (size_t i=0; i < x.n_args; i++) {
+            ASR::expr_t *el = x.m_args[i];
+            ASR::ConstantReal_t *cr = ASR::down_cast<ASR::ConstantReal_t>(el);
+            std::cout << i << ": " << cr->m_r << std::endl;
+        }
+        // TODO:
+        // Investigate if LLVM allows initializing the array struct
+        // as a global variable. If so, then create the array using the
+        // `cr->m_r` numbers above as a global array, and then take a pointer
+        // to it here and assign it to `tmp`.
+        // If it does not, then we have to go one or two levels up and check
+        // if the value is a ConstantArray, and if so, insert LLVM assignments that
+        // assign the values to the array at the right index.
+        throw CodeGenError("XX");
+    }
+
     void visit_Assert(const ASR::Assert_t &x) {
         this->visit_expr_wrapper(x.m_test, true);
         llvm::Value *cond = tmp;
