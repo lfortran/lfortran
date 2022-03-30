@@ -1536,16 +1536,22 @@ public:
                         target_var = ptr;
                         this->visit_expr_wrapper(v->m_symbolic_value, true);
                         llvm::Value *init_value = tmp;
-                        builder->CreateStore(init_value, target_var);
-                        auto finder = std::find(nested_globals.begin(),
-                                nested_globals.end(), h);
-                        if (finder != nested_globals.end()) {
-                            llvm::Value* ptr = module->getOrInsertGlobal(nested_desc_name,
-                                    nested_global_struct);
-                            int idx = std::distance(nested_globals.begin(),
-                                    finder);
-                            builder->CreateStore(target_var, llvm_utils->create_gep(ptr,
-                                        idx));
+                        if (ASR::is_a<ASR::ConstantArray_t>(*v->m_symbolic_value)) {
+                            // TODO: Find the array's descriptor that should already be defined somewhere
+                            // and assign the `init_value` as the first data element of the descriptor
+//                            throw CodeGenError("ConstantArray");
+                        } else {
+                            builder->CreateStore(init_value, target_var);
+                            auto finder = std::find(nested_globals.begin(),
+                                    nested_globals.end(), h);
+                            if (finder != nested_globals.end()) {
+                                llvm::Value* ptr = module->getOrInsertGlobal(nested_desc_name,
+                                        nested_global_struct);
+                                int idx = std::distance(nested_globals.begin(),
+                                        finder);
+                                builder->CreateStore(target_var, llvm_utils->create_gep(ptr,
+                                            idx));
+                            }
                         }
                     } else {
                         if (is_a<ASR::Character_t>(*v->m_type) && !is_array_type) {
@@ -3048,20 +3054,21 @@ public:
     }
 
     void visit_ConstantArray(const ASR::ConstantArray_t &x) {
+        // Create <n x float> type, where `n` is the length of the `x` constant array
+        llvm::Type* type_fxn = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), x.n_args);
+        // Create a pointer <n x float>* to a stack allocated <n x float>
+        llvm::AllocaInst *p_fxn = builder->CreateAlloca(type_fxn, nullptr);
+        // Assign the array elements to `p_fxn`.
         for (size_t i=0; i < x.n_args; i++) {
             ASR::expr_t *el = x.m_args[i];
             ASR::ConstantReal_t *cr = ASR::down_cast<ASR::ConstantReal_t>(el);
-            std::cout << i << ": " << cr->m_r << std::endl;
+            float el_value = cr->m_r;
+            llvm::Value *llvm_el = llvm_utils->create_gep(p_fxn, i);
+            llvm::Value *llvm_val = llvm::ConstantFP::get(context, llvm::APFloat(el_value));
+            builder->CreateStore(llvm_val, llvm_el);
         }
-        // TODO:
-        // Investigate if LLVM allows initializing the array struct
-        // as a global variable. If so, then create the array using the
-        // `cr->m_r` numbers above as a global array, and then take a pointer
-        // to it here and assign it to `tmp`.
-        // If it does not, then we have to go one or two levels up and check
-        // if the value is a ConstantArray, and if so, insert LLVM assignments that
-        // assign the values to the array at the right index.
-        throw CodeGenError("XX");
+        // Return the vector as float* type:
+        tmp = llvm_utils->create_gep(p_fxn, 0);
     }
 
     void visit_Assert(const ASR::Assert_t &x) {
