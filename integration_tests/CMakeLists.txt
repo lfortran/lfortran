@@ -242,6 +242,9 @@ RUN(NAME intrinsics_38 LABELS gfortran) # adjustr
 RUN(NAME intrinsics_39 LABELS gfortran)
 RUN(NAME intrinsics_40 LABELS gfortran)
 RUN(NAME intrinsics_41 LABELS gfortran) # command_argument_count
+RUN(NAME intrinsics_42 LABELS gfortran) # hypot
+RUN(NAME intrinsics_43 LABELS gfortran) # dim
+RUN(NAME intrinsics_44 LABELS gfortran) # cshift
 RUN(NAME intrinsics_open_close_read_write LABELS gfortran)
 
 RUN(NAME parameter_01 LABELS gfortran)
