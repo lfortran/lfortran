@@ -76,25 +76,28 @@ function new_line(c) result(r)
     r = '\n'
 end function
 
-integer elemental function len_adjustl(string) result(r)
+integer elemental function cnt_initial_spaces(string) result(r)
 character(len=*), intent(in) :: string
 integer :: i
-r = len(string)
-if (r == 0) return
-i = 1
-do while(string(i:i) == " ")
-    r = r - 1
-    if (r == 0) exit
-    i = i + 1
+print *, len(string)
+do i=1, len(string)
+  if(string(i:i) /= " ") exit
 end do
+r = i - 1
 end function
 
 function adjustl(x) result(r)
     character(len=*),intent(in) :: x
-    character(len=len_adjustl(x)) :: r
-    integer :: i, j = 1
-    do i = len(x) - len(r) + 1, len(x)
+    character(len=len(x)) :: r
+    integer :: i, j = 1, initial_spaces_cnt
+    initial_spaces_cnt = cnt_initial_spaces(x)
+    do i = initial_spaces_cnt + 1, len(x)
         r(j:j) = x(i:i)
+        j = j + 1
+    end do
+
+    do i = 1, initial_spaces_cnt
+        r(j:j) = ' '
         j = j + 1
     end do
 end function
