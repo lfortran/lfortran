@@ -7,7 +7,7 @@
 
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/parser.tab.hh>
-#include <lfortran/bigint.h>
+#include <libasr/bigint.h>
 
 using LFortran::parse;
 using LFortran::TRY;

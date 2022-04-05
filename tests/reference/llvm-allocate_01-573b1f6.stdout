@@ -230,7 +230,7 @@ loop.body4:                                       ; preds = %loop.head3
   %90 = alloca %complex_4, align 8
   store %complex_4 %88, %complex_4* %90, align 4
   %91 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_add(%complex_4* %89, %complex_4* %90, %complex_4* %91)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_add_32(%complex_4* %89, %complex_4* %90, %complex_4* %91)
   %92 = load %complex_4, %complex_4* %91, align 4
   store %complex_4 %92, %complex_4* %r, align 4
   br label %loop.head3
@@ -763,7 +763,7 @@ return:                                           ; preds = %ifcont
   ret void
 }
 
-declare void @_lfortran_complex_add(%complex_4*, %complex_4*, %complex_4*, ...)
+declare void @_lfortran_complex_add_32(%complex_4*, %complex_4*, %complex_4*, ...)
 
 declare i8* @_lfortran_malloc(i32, ...)
 
