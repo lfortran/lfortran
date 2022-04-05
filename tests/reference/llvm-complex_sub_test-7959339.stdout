@@ -29,7 +29,7 @@ define i32 @main() {
   %10 = alloca %complex_4, align 8
   store %complex_4 %8, %complex_4* %10, align 4
   %11 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_sub(%complex_4* %9, %complex_4* %10, %complex_4* %11)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_sub_32(%complex_4* %9, %complex_4* %10, %complex_4* %11)
   %12 = load %complex_4, %complex_4* %11, align 4
   store %complex_4 %12, %complex_4* %x, align 4
   %13 = alloca %complex_4, align 8
@@ -44,7 +44,7 @@ define i32 @main() {
   %19 = alloca %complex_4, align 8
   store %complex_4 %17, %complex_4* %19, align 4
   %20 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_sub(%complex_4* %18, %complex_4* %19, %complex_4* %20)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_sub_32(%complex_4* %18, %complex_4* %19, %complex_4* %20)
   %21 = load %complex_4, %complex_4* %20, align 4
   store %complex_4 %21, %complex_4* %x, align 4
   %22 = load %complex_4, %complex_4* %x, align 4
@@ -71,7 +71,7 @@ define i32 @main() {
   %37 = alloca %complex_4, align 8
   store %complex_4 %35, %complex_4* %37, align 4
   %38 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_sub(%complex_4* %36, %complex_4* %37, %complex_4* %38)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_sub_32(%complex_4* %36, %complex_4* %37, %complex_4* %38)
   %39 = load %complex_4, %complex_4* %38, align 4
   store %complex_4 %39, %complex_4* %x, align 4
   %40 = load %complex_4, %complex_4* %x, align 4
@@ -98,7 +98,7 @@ define i32 @main() {
   %55 = alloca %complex_4, align 8
   store %complex_4 %53, %complex_4* %55, align 4
   %56 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_sub(%complex_4* %54, %complex_4* %55, %complex_4* %56)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_sub_32(%complex_4* %54, %complex_4* %55, %complex_4* %56)
   %57 = load %complex_4, %complex_4* %56, align 4
   store %complex_4 %57, %complex_4* %x, align 4
   %58 = load %complex_4, %complex_4* %x, align 4
@@ -116,6 +116,6 @@ define i32 @main() {
   ret i32 0
 }
 
-declare void @_lfortran_complex_sub(%complex_4*, %complex_4*, %complex_4*, ...)
+declare void @_lfortran_complex_sub_32(%complex_4*, %complex_4*, %complex_4*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
