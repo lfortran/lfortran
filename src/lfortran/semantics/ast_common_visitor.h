@@ -4,7 +4,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <lfortran/ast.h>
-#include <lfortran/bigint.h>
+#include <libasr/bigint.h>
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
