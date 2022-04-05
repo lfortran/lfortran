@@ -30,6 +30,23 @@ LFORTRAN_API void _lfortran_random_number(int n, double *v)
     }
 }
 
+LFORTRAN_API double _lfortran_random()
+{
+    return (rand() / (double) RAND_MAX);
+}
+
+LFORTRAN_API int _lfortran_randrange(int lower, int upper)
+{
+    int rr = lower + (rand() % (upper - lower));
+    return rr;
+}
+
+LFORTRAN_API int _lfortran_random_int(int lower, int upper)
+{
+    int randint = lower + (rand() % (upper - lower + 1));
+    return randint;
+}
+
 LFORTRAN_API void _lfortran_printf(const char* format, ...)
 {
     va_list args;
@@ -39,22 +56,36 @@ LFORTRAN_API void _lfortran_printf(const char* format, ...)
     va_end(args);
 }
 
-LFORTRAN_API void _lfortran_complex_add(struct _lfortran_complex* a,
-        struct _lfortran_complex* b, struct _lfortran_complex *result)
+LFORTRAN_API void _lfortran_complex_add_32(struct _lfortran_complex_32* a,
+        struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result)
 {
     result->re = a->re + b->re;
     result->im = a->im + b->im;
 }
 
-LFORTRAN_API void _lfortran_complex_sub(struct _lfortran_complex* a,
-        struct _lfortran_complex* b, struct _lfortran_complex *result)
+LFORTRAN_API void _lfortran_complex_add_64(struct _lfortran_complex_64* a,
+        struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result)
+{
+    result->re = a->re + b->re;
+    result->im = a->im + b->im;
+}
+
+LFORTRAN_API void _lfortran_complex_sub_32(struct _lfortran_complex_32* a,
+        struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result)
 {
     result->re = a->re - b->re;
     result->im = a->im - b->im;
 }
 
-LFORTRAN_API void _lfortran_complex_mul(struct _lfortran_complex* a,
-        struct _lfortran_complex* b, struct _lfortran_complex *result)
+LFORTRAN_API void _lfortran_complex_sub_64(struct _lfortran_complex_64* a,
+        struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result)
+{
+    result->re = a->re - b->re;
+    result->im = a->im - b->im;
+}
+
+LFORTRAN_API void _lfortran_complex_mul_32(struct _lfortran_complex_32* a,
+        struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result)
 {
     float p = a->re, q = a->im;
     float r = b->re, s = b->im;
@@ -62,12 +93,31 @@ LFORTRAN_API void _lfortran_complex_mul(struct _lfortran_complex* a,
     result->im = (p*s + q*r);
 }
 
-LFORTRAN_API void _lfortran_complex_div(struct _lfortran_complex* a,
-        struct _lfortran_complex* b, struct _lfortran_complex *result)
+LFORTRAN_API void _lfortran_complex_mul_64(struct _lfortran_complex_64* a,
+        struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result)
+{
+    double p = a->re, q = a->im;
+    double r = b->re, s = b->im;
+    result->re = (p*r - q*s);
+    result->im = (p*s + q*r);
+}
+
+LFORTRAN_API void _lfortran_complex_div_32(struct _lfortran_complex_32* a,
+        struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result)
 {
     float p = a->re, q = a->im;
     float r = b->re, s = -(b->im);
     float mod_b = r*r + s*s;
+    result->re = (p*r - q*s)/mod_b;
+    result->im = (p*s + q*r)/mod_b;
+}
+
+LFORTRAN_API void _lfortran_complex_div_64(struct _lfortran_complex_64* a,
+        struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result)
+{
+    double p = a->re, q = a->im;
+    double r = b->re, s = -(b->im);
+    double mod_b = r*r + s*s;
     result->re = (p*r - q*s)/mod_b;
     result->im = (p*s + q*r)/mod_b;
 }
@@ -85,22 +135,37 @@ LFORTRAN_API void _lfortran_complex_div(struct _lfortran_complex* a,
 #define BITS_32 32
 #define BITS_64 64
 
-LFORTRAN_API void _lfortran_complex_pow(struct _lfortran_complex* a,
-        struct _lfortran_complex* b, struct _lfortran_complex *result)
+LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
+        struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result)
 {
     #ifdef _MSC_VER
         _Fcomplex ca = _FCOMPLEX_(a->re, a->im);
         _Fcomplex cb = _FCOMPLEX_(b->re, b->im);
         _Fcomplex cr = cpowf(ca, cb);
-        result->re = crealf(cr);
-        result->im = cimagf(cr);
     #else
         float complex ca = CMPLXF(a->re, a->im);
         float complex cb = CMPLXF(b->re, b->im);
         float complex cr = cpowf(ca, cb);
+    #endif
         result->re = crealf(cr);
         result->im = cimagf(cr);
+
+}
+
+LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
+        struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result)
+{
+    #ifdef _MSC_VER
+        _Dcomplex ca = _DCOMPLEX_(a->re, a->im);
+        _Dcomplex cb = _DCOMPLEX_(b->re, b->im);
+        _Dcomplex cr = cpow(ca, cb);
+    #else
+        double complex ca = CMPLX(a->re, a->im);
+        double complex cb = CMPLX(b->re, b->im);
+        double complex cr = cpow(ca, cb);
     #endif
+        result->re = creal(cr);
+        result->im = cimag(cr);
 
 }
 
@@ -768,4 +833,39 @@ LFORTRAN_API void _lfortran_sp_rand_num(float *x) {
 LFORTRAN_API void _lfortran_dp_rand_num(double *x) {
     srand(time(0));
     *x = rand() / (double) RAND_MAX;
+}
+
+LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
+{
+    FILE *fd;
+    fd = fopen(path, flags);
+    if (!fd) 
+    {
+        printf("Error in opening the file!\n");
+        perror(path);
+        exit(1);
+    }
+    return (int64_t)fd;
+}
+
+LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
+{
+    char *c = (char *) calloc(n, sizeof(char));
+    if (fd < 0) 
+    {
+        printf("Error in reading the file!\n");
+        exit(1);
+    }
+    int x = fread(c, 1, n, (FILE*)fd);
+    c[x] = '\0';
+    return c;
+}
+
+LFORTRAN_API void _lpython_close(int64_t fd)
+{
+    if (fclose((FILE*)fd) != 0) 
+    {
+        printf("Error in closing the file!\n");
+        exit(1);
+    }
 }
