@@ -171,8 +171,9 @@ public:
                 switch( data->type->type ) {
                     case ASR::ttypeType::Character: {
                         ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(data->type);
-                        if( char_type->m_len == -3 ) {
+                        if( expr->type == ASR::exprType::FunctionCall ) {
                             char_type->m_len_expr = expr;
+                            char_type->m_len = -3;
                         }
                         break;
                     }
@@ -918,7 +919,7 @@ public:
                                     char_data->expr = sym_type->m_kind->m_value;
                                     char_data->scope = current_scope;
                                     char_data->sym_type = current_symbol;
-                                    a_len = -3;
+                                    a_len = 1;
                                 } else {
                                     visit_expr(*sym_type->m_kind->m_value);
                                     ASR::expr_t* len_expr0 = LFortran::ASRUtils::EXPR(tmp);
