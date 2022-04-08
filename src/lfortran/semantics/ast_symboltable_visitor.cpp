@@ -171,7 +171,9 @@ public:
                 switch( data->type->type ) {
                     case ASR::ttypeType::Character: {
                         ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(data->type);
-                        char_type->m_len_expr = expr;
+                        if( char_type->m_len == -3 ) {
+                            char_type->m_len_expr = expr;
+                        }
                         break;
                     }
                     default: {
