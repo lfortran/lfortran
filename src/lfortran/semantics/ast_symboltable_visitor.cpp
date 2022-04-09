@@ -183,6 +183,7 @@ public:
                 }
             }
         }
+        type_info.clear();
     }
 
     template <typename T, typename R>
@@ -279,6 +280,7 @@ public:
         }
         parent_scope->scope[sym_name] = ASR::down_cast<ASR::symbol_t>(tmp);
         current_scope = parent_scope;
+        fix_type_info();
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
