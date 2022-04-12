@@ -715,20 +715,29 @@ public:
                         }
                         ASR::Module_t *m = ASR::down_cast2<ASR::Module_t>(f->m_symtab->parent->asr_owner);
                         char *modname = m->m_name;
-                        std::string unique_name = current_scope->get_unique_name(f->m_name);
-                        Str s; s.from_str_view(unique_name);
-                        char *unique_name_c = s.c_str(al);
-                        LFORTRAN_ASSERT(current_scope->scope.find(unique_name) == current_scope->scope.end());
-                        new_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                            al, f->base.base.loc,
-                            /* a_symtab */ current_scope,
-                            /* a_name */ unique_name_c,
-                            (ASR::symbol_t*)f,
-                            modname, nullptr, 0,
-                            f->m_name,
-                            ASR::accessType::Private
-                            ));
-                        current_scope->scope[unique_name] = new_es;
+                        ASR::symbol_t *maybe_f = current_scope->resolve_symbol(std::string(f->m_name));
+                        std::string maybe_modname = "";
+                        if( maybe_f && ASR::is_a<ASR::ExternalSymbol_t>(*maybe_f) ) {
+                            maybe_modname = ASR::down_cast<ASR::ExternalSymbol_t>(maybe_f)->m_module_name;
+                        }
+                        if( maybe_modname == std::string(modname) ) {
+                            new_es = maybe_f;
+                        } else {
+                            std::string unique_name = current_scope->get_unique_name(f->m_name);
+                            Str s; s.from_str_view(unique_name);
+                            char *unique_name_c = s.c_str(al);
+                            LFORTRAN_ASSERT(current_scope->scope.find(unique_name) == current_scope->scope.end());
+                            new_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                                al, f->base.base.loc,
+                                /* a_symtab */ current_scope,
+                                /* a_name */ unique_name_c,
+                                (ASR::symbol_t*)f,
+                                modname, nullptr, 0,
+                                f->m_name,
+                                ASR::accessType::Private
+                                ));
+                            current_scope->scope[unique_name] = new_es;
+                        }
                     }
                     Vec<ASR::call_arg_t> args;
                     args.reserve(al, fc->n_args);
@@ -783,10 +792,6 @@ public:
     ASR::ttype_t* handle_return_type(ASR::ttype_t *return_type, const Location &loc,
                                      Vec<ASR::call_arg_t>& args, bool is_external_func_=true,
                                      ASR::Function_t* f=nullptr) {
-        if( return_type->type != ASR::ttypeType::Character &&
-            !is_external_func_ ) {
-            return return_type;
-        }
         // Rebuild the return type if needed and make FunctionCalls use ExternalSymbol
         std::vector<ASR::expr_t*> func_calls;
         switch( return_type->type ) {
