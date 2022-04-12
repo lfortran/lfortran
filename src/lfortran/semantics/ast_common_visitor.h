@@ -693,75 +693,88 @@ public:
         }
     }
 
-    void fix_function_calls_ttype_t(std::vector<ASR::expr_t*>& func_calls, const Location& loc, bool len_expr_present=false) {
+    void fix_function_calls_ttype_t(std::vector<ASR::expr_t*>& func_calls,
+                                    Vec<ASR::call_arg_t>& orig_args,
+                                    ASR::Function_t* orig_func=nullptr,
+                                    bool is_external_func=false) {
         for( size_t i = 0; i < func_calls.size(); i++ ) {
             ASR::expr_t* potential_call = func_calls[i];
             if (potential_call) {
+                // The case when expression in return type (like len_expr of character)
+                // is a function call.
                 if (ASR::is_a<ASR::FunctionCall_t>(*potential_call)) {
                     ASR::FunctionCall_t *fc = ASR::down_cast<ASR::FunctionCall_t>(potential_call);
-                    ASR::Function_t *f = nullptr;
-                    if (ASR::is_a<ASR::Function_t>(*fc->m_name)) {
-                        f = ASR::down_cast<ASR::Function_t>(fc->m_name);
-                    } else if( ASR::is_a<ASR::ExternalSymbol_t>(*fc->m_name) ) {
-                        ASR::symbol_t* f_sym = ASRUtils::symbol_get_past_external(fc->m_name);
-                        if( ASR::is_a<ASR::Function_t>(*f_sym) ) {
-                            f = ASR::down_cast<ASR::Function_t>(f_sym);
+                    ASR::symbol_t *new_es = fc->m_name;
+                    // Import a function as external only if necessary
+                    if( is_external_func ) {
+                        ASR::Function_t *f = nullptr;
+                        if (ASR::is_a<ASR::Function_t>(*fc->m_name)) {
+                            f = ASR::down_cast<ASR::Function_t>(fc->m_name);
+                        } else if( ASR::is_a<ASR::ExternalSymbol_t>(*fc->m_name) ) {
+                            ASR::symbol_t* f_sym = ASRUtils::symbol_get_past_external(fc->m_name);
+                            if( ASR::is_a<ASR::Function_t>(*f_sym) ) {
+                                f = ASR::down_cast<ASR::Function_t>(f_sym);
+                            }
+                        }
+                        ASR::Module_t *m = ASR::down_cast2<ASR::Module_t>(f->m_symtab->parent->asr_owner);
+                        char *modname = m->m_name;
+                        ASR::symbol_t *maybe_f = current_scope->resolve_symbol(std::string(f->m_name));
+                        std::string maybe_modname = "";
+                        if( maybe_f && ASR::is_a<ASR::ExternalSymbol_t>(*maybe_f) ) {
+                            maybe_modname = ASR::down_cast<ASR::ExternalSymbol_t>(maybe_f)->m_module_name;
+                        }
+                        // If the Function to be imported is already present
+                        // then do not import.
+                        if( maybe_modname == std::string(modname) ) {
+                            new_es = maybe_f;
+                        } else {
+                            // Import while assigning a new name to avoid conflicts
+                            // For example, if someone is using `len` from a user
+                            // define module then `get_unique_name` will avoid conflict
+                            std::string unique_name = current_scope->get_unique_name(f->m_name);
+                            Str s; s.from_str_view(unique_name);
+                            char *unique_name_c = s.c_str(al);
+                            LFORTRAN_ASSERT(current_scope->scope.find(unique_name) == current_scope->scope.end());
+                            new_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                                al, f->base.base.loc,
+                                /* a_symtab */ current_scope,
+                                /* a_name */ unique_name_c,
+                                (ASR::symbol_t*)f,
+                                modname, nullptr, 0,
+                                f->m_name,
+                                ASR::accessType::Private
+                                ));
+                            current_scope->scope[unique_name] = new_es;
                         }
                     }
-                    ASR::Module_t *m = ASR::down_cast2<ASR::Module_t>(f->m_symtab->parent->asr_owner);
-                    char *modname = m->m_name;
-                    ASR::symbol_t *new_es;
-                    std::string unique_name = current_scope->get_unique_name(f->m_name);
-                    Str s; s.from_str_view(unique_name);
-                    char *unique_name_c = s.c_str(al);
-                    LFORTRAN_ASSERT(current_scope->scope.find(unique_name) == current_scope->scope.end());
-                    new_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                        al, f->base.base.loc,
-                        /* a_symtab */ current_scope,
-                        /* a_name */ unique_name_c,
-                        (ASR::symbol_t*)f,
-                        modname, nullptr, 0,
-                        f->m_name,
-                        ASR::accessType::Private
-                        ));
-                    current_scope->scope[unique_name] = new_es;
                     Vec<ASR::call_arg_t> args;
                     args.reserve(al, fc->n_args);
-                    for (size_t i=0; i < fc->n_args; i++) {
+                    // The following substitutes args from the current scope
+                    for (size_t i = 0; i < fc->n_args; i++) {
                         ASR::expr_t *arg = fc->m_args[i].m_value;
+                        size_t arg_idx = i;
+                        bool idx_found = false;
                         if (ASR::is_a<ASR::Var_t>(*arg)) {
-                            ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(arg);
-                            if (ASR::is_a<ASR::Variable_t>(*var->m_v)) {
-                                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var->m_v);
-                                ASR::symbol_t *new_v;
-                                std::string unique_name = current_scope->get_unique_name(v->m_name);
-                                Str s; s.from_str_view(unique_name);
-                                char *unique_name_c = s.c_str(al);
-                                LFORTRAN_ASSERT(current_scope->scope.find(unique_name) == current_scope->scope.end());
-
-                                Vec<char*> scope_names0 = ASRUtils::get_scope_names(al, v->m_parent_symtab);
-                                LFORTRAN_ASSERT(scope_names0.size() >= 1)
-                                char *modname = scope_names0[scope_names0.size()-1];
-                                Vec<char*>  scope_names;
-                                scope_names.reserve(al, scope_names0.size()-1);
-                                for (size_t i=0; i < scope_names0.size()-1; i++) {
-                                    scope_names.push_back(al, scope_names0[scope_names0.size()-i-2]);
+                            std::string arg_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(arg)->m_v);
+                            // Finds the index of the argument to be used for substitution
+                            // Basically if we are calling maybe(string, ret_type=character(len=len(s)))
+                            // where string is a variable in current scope and s is one of the arguments
+                            // accepted by maybe i.e., maybe has a signature maybe(s). Then, we will
+                            // replace s with string. So, the call would become,
+                            // maybe(string, ret_type=character(len=len(string)))
+                            for( size_t j = 0; j < orig_func->n_args && !idx_found; j++ ) {
+                                if( ASR::is_a<ASR::Var_t>(*(orig_func->m_args[j])) ) {
+                                    std::string arg_name_2 = std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(orig_func->m_args[j])->m_v));
+                                    arg_idx = j;
+                                    idx_found = arg_name_2 == arg_name;
                                 }
-                                new_v = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                                    al, v->base.base.loc,
-                                    /* a_symtab */ current_scope,
-                                    /* a_name */ unique_name_c,
-                                    (ASR::symbol_t*)v,
-                                    modname, scope_names.p, scope_names.size(),
-                                    v->m_name,
-                                    ASR::accessType::Private
-                                    ));
-                                current_scope->scope[unique_name] = new_v;
-                                arg = ASR::down_cast<ASR::expr_t>(ASR::make_Var_t(al, arg->base.loc, new_v));
                             }
                         }
                         ASR::call_arg_t call_arg;
                         call_arg.loc = arg->base.loc;
+                        if( idx_found ) {
+                            arg = orig_args[arg_idx].m_value;
+                        }
                         call_arg.m_value = arg;
                         args.push_back(al, call_arg);
                     }
@@ -769,15 +782,38 @@ public:
                         al, fc->base.base.loc, new_es, nullptr, args.p, args.n, fc->m_type, fc->m_value, fc->m_dt));
                     func_calls[i] = new_call_expr;
                 } else {
-                    if( len_expr_present ) {
-                        throw SemanticError("Currently only FunctionCall is supported in character's len expression in ExternalSymbol, found " + std::to_string(potential_call->type), loc);
+                    // If the potential_call is not a call but any other expression
+                    ASR::expr_t *arg = potential_call;
+                    size_t arg_idx = 0;
+                    bool idx_found = false;
+                    if (ASR::is_a<ASR::Var_t>(*arg)) {
+                        std::string arg_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(arg)->m_v);
+                        // Finds the index of the argument to be used for substitution
+                        // Basically if we are calling maybe(3, ret_type=character(len=n))
+                        // where 3 is an argument to be maybe and n is one of the arguments
+                        // accepted by maybe i.e., maybe has a signature maybe(n). Then, we will
+                        // replace n with 3. So, the call would become,
+                        // maybe(string, ret_type=character(len=3))
+                        for( size_t j = 0; j < orig_func->n_args && !idx_found; j++ ) {
+                            if( ASR::is_a<ASR::Var_t>(*(orig_func->m_args[j])) ) {
+                                std::string arg_name_2 = std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(orig_func->m_args[j])->m_v));
+                                arg_idx = j;
+                                idx_found = arg_name_2 == arg_name;
+                            }
+                        }
+                    }
+
+                    if( idx_found ) {
+                        func_calls[i] = orig_args[arg_idx].m_value;
                     }
                 }
             }
         }
     }
 
-    ASR::ttype_t* handle_return_type(ASR::ttype_t *return_type, const Location &loc) {
+    ASR::ttype_t* handle_return_type(ASR::ttype_t *return_type, const Location &loc,
+                                     Vec<ASR::call_arg_t>& args, bool is_external_func_=true,
+                                     ASR::Function_t* f=nullptr) {
         // Rebuild the return type if needed and make FunctionCalls use ExternalSymbol
         std::vector<ASR::expr_t*> func_calls;
         switch( return_type->type ) {
@@ -785,7 +821,7 @@ public:
                 ASR::Character_t *t = ASR::down_cast<ASR::Character_t>(return_type);
                 func_calls.push_back(t->m_len_expr);
                 fill_func_calls_ttype_t(func_calls, t->m_dims, t->n_dims);
-                fix_function_calls_ttype_t(func_calls, loc, true);
+                fix_function_calls_ttype_t(func_calls, args, f, is_external_func_);
                 Vec<ASR::dimension_t> new_dims;
                 new_dims.reserve(al, t->n_dims);
                 for( size_t i = 1; i < func_calls.size(); i += 2 ) {
@@ -795,12 +831,16 @@ public:
                     new_dim.m_end = func_calls[i + 1];
                     new_dims.push_back(al, new_dim);
                 }
-                return ASRUtils::TYPE(ASR::make_Character_t(al, loc, t->m_kind, t->m_len, func_calls[0], new_dims.p, new_dims.size()));
+                int64_t a_len = t->m_len;
+                if( func_calls[0] ) {
+                    a_len = ASRUtils::extract_len<SemanticError>(func_calls[0], loc);
+                }
+                return ASRUtils::TYPE(ASR::make_Character_t(al, loc, t->m_kind, a_len, func_calls[0], new_dims.p, new_dims.size()));
             }
             case ASR::ttypeType::Integer: {
                 ASR::Integer_t *t = ASR::down_cast<ASR::Integer_t>(return_type);
                 fill_func_calls_ttype_t(func_calls, t->m_dims, t->n_dims);
-                fix_function_calls_ttype_t(func_calls, loc);
+                fix_function_calls_ttype_t(func_calls, args, f, is_external_func_);
                 Vec<ASR::dimension_t> new_dims;
                 new_dims.reserve(al, t->n_dims);
                 for( size_t i = 0; i < func_calls.size(); i += 2 ) {
@@ -815,7 +855,7 @@ public:
             case ASR::ttypeType::Real: {
                 ASR::Real_t *t = ASR::down_cast<ASR::Real_t>(return_type);
                 fill_func_calls_ttype_t(func_calls, t->m_dims, t->n_dims);
-                fix_function_calls_ttype_t(func_calls, loc);
+                fix_function_calls_ttype_t(func_calls, args, f, is_external_func_);
                 Vec<ASR::dimension_t> new_dims;
                 new_dims.reserve(al, t->n_dims);
                 for( size_t i = 0; i < func_calls.size(); i += 2 ) {
@@ -887,9 +927,7 @@ public:
             throw SemanticError("ExternalSymbol must point to a Function", loc);
         }
         ASR::ttype_t *return_type = LFortran::ASRUtils::EXPR2VAR(ASR::down_cast<ASR::Function_t>(final_sym)->m_return_var)->m_type;
-        if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
-            return_type = handle_return_type(return_type, loc);
-        }
+        return_type = handle_return_type(return_type, loc, args, ASR::is_a<ASR::ExternalSymbol_t>(*v), ASR::down_cast<ASR::Function_t>(final_sym));
         // Create ExternalSymbol for the final subroutine:
         // We mangle the new ExternalSymbol's local name as:
         //   generic_procedure_local_name @
@@ -972,10 +1010,10 @@ public:
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         ASR::ttype_t *return_type = ASRUtils::EXPR2VAR(ASR::down_cast<ASR::Function_t>(f2)->m_return_var)->m_type;
+        return_type = handle_return_type(return_type, loc, args, ASR::is_a<ASR::ExternalSymbol_t>(*v),
+                                         ASR::down_cast<ASR::Function_t>(f2));
         ASR::expr_t* value = nullptr;
         if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
-            return_type = handle_return_type(return_type, loc);
-
             // Populate value
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
             if (ASRUtils::is_intrinsic_function(f)) {
