@@ -61,6 +61,12 @@ void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name) {
     }
 }
 
+struct TypeMissingData {
+    SymbolTable* scope;
+    AST::expr_t* expr;
+    int64_t sym_type;
+    ASR::ttype_t* type;
+};
 
 class SymbolTableVisitor : public CommonVisitor<SymbolTableVisitor> {
 public:
@@ -99,6 +105,9 @@ public:
         {AST::intrinsicopType::GT, "~gt"},
         {AST::intrinsicopType::GTE, "~gte"}
     };
+
+    std::vector<TypeMissingData*> type_info;
+    int64_t current_symbol;
 
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
         diag::Diagnostics &diagnostics)
@@ -143,6 +152,38 @@ public:
 
     void visit_FinalName(const AST::FinalName_t&) {
         // To Be Implemented
+    }
+
+    void fix_type_info() {
+        for( TypeMissingData* data: type_info ) {
+            if( data->sym_type == -1 ) {
+                continue;
+            }
+            ASR::expr_t* expr = nullptr;
+            if( data->sym_type == (int64_t) ASR::symbolType::Function ) {
+                SymbolTable* current_scope_copy = current_scope;
+                current_scope = data->scope;
+                visit_expr(*data->expr);
+                expr = ASRUtils::EXPR(tmp);
+                current_scope = current_scope_copy;
+            }
+            if( expr ) {
+                switch( data->type->type ) {
+                    case ASR::ttypeType::Character: {
+                        ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(data->type);
+                        if( expr->type == ASR::exprType::FunctionCall ) {
+                            char_type->m_len_expr = expr;
+                            char_type->m_len = -3;
+                        }
+                        break;
+                    }
+                    default: {
+                        throw SemanticError("Only Character type is supported as of now.", data->type->base.loc);
+                    }
+                }
+            }
+        }
+        type_info.clear();
     }
 
     template <typename T, typename R>
@@ -197,6 +238,7 @@ public:
         }
         parent_scope->scope[sym_name] = ASR::down_cast<ASR::symbol_t>(tmp);
         current_scope = parent_scope;
+        fix_type_info();
     }
 
     void visit_Module(const AST::Module_t &x) {
@@ -238,6 +280,7 @@ public:
         }
         parent_scope->scope[sym_name] = ASR::down_cast<ASR::symbol_t>(tmp);
         current_scope = parent_scope;
+        fix_type_info();
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
@@ -356,6 +399,7 @@ public:
 
     void visit_Function(const AST::Function_t &x) {
         // Extract local (including dummy) variables first
+        current_symbol = (int64_t) ASR::symbolType::Function;
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         SymbolTable *parent_scope = current_scope;
@@ -526,6 +570,7 @@ public:
         current_scope = parent_scope;
         current_procedure_args.clear();
         current_procedure_abi_type = ASR::abiType::Source;
+        current_symbol = -1;
     }
 
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
@@ -866,16 +911,24 @@ public:
                 } else if (sym_type->m_type == AST::decl_typeType::TypeCharacter) {
                     int a_len = -10;
                     ASR::expr_t *len_expr = nullptr;
+                    TypeMissingData* char_data = al.make_new<TypeMissingData>();
                     // TODO: take into account m_kind->m_id and all kind items
                     if (sym_type->m_kind != nullptr) {
                         switch (sym_type->m_kind->m_type) {
                             case (AST::kind_item_typeType::Value) : {
                                 LFORTRAN_ASSERT(sym_type->m_kind->m_value != nullptr);
-                                visit_expr(*sym_type->m_kind->m_value);
-                                ASR::expr_t* len_expr0 = LFortran::ASRUtils::EXPR(tmp);
-                                a_len = ASRUtils::extract_len<SemanticError>(len_expr0, x.base.base.loc);
-                                if (a_len == -3) {
-                                    len_expr = len_expr0;
+                                if( sym_type->m_kind->m_value->type == AST::exprType::FuncCallOrArray ) {
+                                    char_data->expr = sym_type->m_kind->m_value;
+                                    char_data->scope = current_scope;
+                                    char_data->sym_type = current_symbol;
+                                    a_len = 1;
+                                } else {
+                                    visit_expr(*sym_type->m_kind->m_value);
+                                    ASR::expr_t* len_expr0 = LFortran::ASRUtils::EXPR(tmp);
+                                    a_len = ASRUtils::extract_len<SemanticError>(len_expr0, x.base.base.loc);
+                                    if (a_len == -3) {
+                                        len_expr = len_expr0;
+                                    }
                                 }
                                 break;
                             }
@@ -896,6 +949,10 @@ public:
                     LFORTRAN_ASSERT(a_len != -10)
                     type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, len_expr,
                         dims.p, dims.size()));
+                    if( char_data->scope != nullptr ) {
+                        char_data->type = type;
+                        type_info.push_back(char_data);
+                    }
                 } else if (sym_type->m_type == AST::decl_typeType::TypeType) {
                     LFORTRAN_ASSERT(sym_type->m_name);
                     std::string derived_type_name = to_lower(sym_type->m_name);
