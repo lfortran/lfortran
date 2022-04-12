@@ -700,9 +700,12 @@ public:
         for( size_t i = 0; i < func_calls.size(); i++ ) {
             ASR::expr_t* potential_call = func_calls[i];
             if (potential_call) {
+                // The case when expression in return type (like len_expr of character)
+                // is a function call.
                 if (ASR::is_a<ASR::FunctionCall_t>(*potential_call)) {
                     ASR::FunctionCall_t *fc = ASR::down_cast<ASR::FunctionCall_t>(potential_call);
                     ASR::symbol_t *new_es = fc->m_name;
+                    // Import a function as external only if necessary
                     if( is_external_func ) {
                         ASR::Function_t *f = nullptr;
                         if (ASR::is_a<ASR::Function_t>(*fc->m_name)) {
@@ -720,9 +723,14 @@ public:
                         if( maybe_f && ASR::is_a<ASR::ExternalSymbol_t>(*maybe_f) ) {
                             maybe_modname = ASR::down_cast<ASR::ExternalSymbol_t>(maybe_f)->m_module_name;
                         }
+                        // If the Function to be imported is already present
+                        // then do not import.
                         if( maybe_modname == std::string(modname) ) {
                             new_es = maybe_f;
                         } else {
+                            // Import while assigning a new name to avoid conflicts
+                            // For example, if someone is using `len` from a user
+                            // define module then `get_unique_name` will avoid conflict
                             std::string unique_name = current_scope->get_unique_name(f->m_name);
                             Str s; s.from_str_view(unique_name);
                             char *unique_name_c = s.c_str(al);
@@ -741,12 +749,19 @@ public:
                     }
                     Vec<ASR::call_arg_t> args;
                     args.reserve(al, fc->n_args);
+                    // The following substitutes args from the current scope
                     for (size_t i = 0; i < fc->n_args; i++) {
                         ASR::expr_t *arg = fc->m_args[i].m_value;
                         size_t arg_idx = i;
                         bool idx_found = false;
                         if (ASR::is_a<ASR::Var_t>(*arg)) {
                             std::string arg_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(arg)->m_v);
+                            // Finds the index of the argument to be used for substitution
+                            // Basically if we are calling maybe(string, ret_type=character(len=len(s)))
+                            // where string is a variable in current scope and s is one of the arguments
+                            // accepted by maybe i.e., maybe has a signature maybe(s). Then, we will
+                            // replace s with string. So, the call would become,
+                            // maybe(string, ret_type=character(len=len(string)))
                             for( size_t j = 0; j < orig_func->n_args && !idx_found; j++ ) {
                                 if( ASR::is_a<ASR::Var_t>(*(orig_func->m_args[j])) ) {
                                     std::string arg_name_2 = std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(orig_func->m_args[j])->m_v));
@@ -767,11 +782,18 @@ public:
                         al, fc->base.base.loc, new_es, nullptr, args.p, args.n, fc->m_type, fc->m_value, fc->m_dt));
                     func_calls[i] = new_call_expr;
                 } else {
+                    // If the potential_call is not a call but any other expression
                     ASR::expr_t *arg = potential_call;
                     size_t arg_idx = 0;
                     bool idx_found = false;
                     if (ASR::is_a<ASR::Var_t>(*arg)) {
                         std::string arg_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(arg)->m_v);
+                        // Finds the index of the argument to be used for substitution
+                        // Basically if we are calling maybe(3, ret_type=character(len=n))
+                        // where 3 is an argument to be maybe and n is one of the arguments
+                        // accepted by maybe i.e., maybe has a signature maybe(n). Then, we will
+                        // replace n with 3. So, the call would become,
+                        // maybe(string, ret_type=character(len=3))
                         for( size_t j = 0; j < orig_func->n_args && !idx_found; j++ ) {
                             if( ASR::is_a<ASR::Var_t>(*(orig_func->m_args[j])) ) {
                                 std::string arg_name_2 = std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(orig_func->m_args[j])->m_v));
