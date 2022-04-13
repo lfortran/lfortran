@@ -1988,7 +1988,6 @@ public:
         parent_function = nullptr;
     }
 
-
     void visit_Subroutine(const ASR::Subroutine_t &x) {
         if (x.m_abi != ASR::abiType::Source &&
             x.m_abi != ASR::abiType::Interactive &&
@@ -2000,9 +1999,6 @@ public:
         generate_subroutine(x);
         parent_subroutine = nullptr;
     }
-
-
-
 
     void instantiate_subroutine(const ASR::Subroutine_t &x){
         uint32_t h = get_hash((ASR::asr_t*)&x);
