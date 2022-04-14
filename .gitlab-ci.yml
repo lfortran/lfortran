@@ -124,7 +124,6 @@ cxx_binary_tests:
     - conda install -c conda-forge toml lld=11.0.1 llvmdev=11.0.1
     - sudo apt-get update
     - sudo apt-get install -yq --no-install-recommends git libtinfo-dev zlib1g-dev binutils-dev
-    - git config --global --add safe.directory /builds/lfortran/lfortran
     - tar xzf dist/lfortran-*.tar.gz
     - cd lfortran-*
     - CXXFLAGS="-Werror" cmake
@@ -192,6 +191,7 @@ cxx_binary_tests:
     - FC=../../src/bin/lfortran FFLAGS="--openmp --backend=cpp" cmake .
     - make
     - ./project1
+    - git config --global --add safe.directory /builds/lfortran/lfortran
     - git clean -dfx
     - FC=../../src/bin/lfortran cmake .
     - make
