@@ -336,6 +336,11 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "../integration_tests/cond_02.f90"
+asr = true
+pass = "dead_code_removal"
+
+[[test]]
 filename = "../integration_tests/doloop_01.f90"
 asr = true
 llvm = true
@@ -975,6 +980,11 @@ filename = "../integration_tests/case_05.f90"
 ast = true
 ast_f90 = true
 asr = true
+
+[[test]]
+filename = "../integration_tests/case_06.f90"
+asr = true
+pass = "dead_code_removal"
 
 [[test]]
 filename = "../integration_tests/program_02.f90"

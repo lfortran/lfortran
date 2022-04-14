@@ -245,6 +245,7 @@ public:
     LFORTRAN_ASSERT(right_type2->type < num_types);
     int left_type_p = type_priority[left_type2->type];
     int right_type_p = type_priority[right_type2->type];
+
     if (left_type_p >= right_type_p) {
       conversion_cand = right;
       *source_type = right_type;
