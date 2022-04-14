@@ -108,6 +108,7 @@ static inline ASR::ttype_t* expr_type(const ASR::expr_t *f)
         case ASR::exprType::ConstantReal: { return ((ASR::ConstantReal_t*)f)->m_type; }
         case ASR::exprType::ConstantComplex: { return ((ASR::ConstantComplex_t*)f)->m_type; }
         case ASR::exprType::ConstantSet: { return ((ASR::ConstantSet_t*)f)->m_type; }
+        case ASR::exprType::ConstantList: { return ((ASR::ConstantList_t*)f)->m_type; }
         case ASR::exprType::ConstantTuple: { return ((ASR::ConstantTuple_t*)f)->m_type; }
         case ASR::exprType::ConstantLogical: { return ((ASR::ConstantLogical_t*)f)->m_type; }
         case ASR::exprType::ConstantString: { return ((ASR::ConstantString_t*)f)->m_type; }
@@ -116,8 +117,7 @@ static inline ASR::ttype_t* expr_type(const ASR::expr_t *f)
         case ASR::exprType::Var: { return EXPR2VAR(f)->m_type; }
         case ASR::exprType::ArrayRef: { return ((ASR::ArrayRef_t*)f)->m_type; }
         case ASR::exprType::DerivedRef: { return ((ASR::DerivedRef_t*)f)->m_type; }
-        case ASR::exprType::ImplicitCast: { return ((ASR::ImplicitCast_t*)f)->m_type; }
-        case ASR::exprType::ExplicitCast: { return ((ASR::ExplicitCast_t*)f)->m_type; }
+        case ASR::exprType::Cast: { return ((ASR::Cast_t*)f)->m_type; }
         default : throw LFortranException("Not implemented");
     }
 }
@@ -148,6 +148,9 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
         }
         case ASR::ttypeType::Dict: {
             return "dict";
+        }
+        case ASR::ttypeType::List: {
+            return "list";
         }
         default : throw LFortranException("Not implemented");
     }
@@ -206,8 +209,7 @@ static inline ASR::expr_t* expr_value(ASR::expr_t *f)
         case ASR::exprType::FunctionCall: { return ASR::down_cast<ASR::FunctionCall_t>(f)->m_value; }
         case ASR::exprType::ArrayRef: { return ASR::down_cast<ASR::ArrayRef_t>(f)->m_value; }
         case ASR::exprType::DerivedRef: { return ASR::down_cast<ASR::DerivedRef_t>(f)->m_value; }
-        case ASR::exprType::ImplicitCast: { return ASR::down_cast<ASR::ImplicitCast_t>(f)->m_value; }
-        case ASR::exprType::ExplicitCast: { return ASR::down_cast<ASR::ExplicitCast_t>(f)->m_value; }
+        case ASR::exprType::Cast: { return ASR::down_cast<ASR::Cast_t>(f)->m_value; }
         case ASR::exprType::Var: { return EXPR2VAR(f)->m_value; }
         case ASR::exprType::StrOp: { return ASR::down_cast<ASR::StrOp_t>(f)->m_value; }
         case ASR::exprType::ImpliedDoLoop: { return ASR::down_cast<ASR::ImpliedDoLoop_t>(f)->m_value; }
