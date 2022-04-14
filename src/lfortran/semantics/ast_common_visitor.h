@@ -126,6 +126,9 @@ public:
         overloaded = LFortran::ASRUtils::EXPR(asr);
     }
 
+    ASR::ttype_t *source_type = nullptr;
+    ASR::ttype_t *dest_type = nullptr;
+
     if (((left_type->type != ASR::ttypeType::Real &&
          left_type->type != ASR::ttypeType::Integer) &&
         (right_type->type != ASR::ttypeType::Real &&
@@ -142,8 +145,8 @@ public:
           x.base.base.loc);
     } else {
       ASR::expr_t **conversion_cand = &left;
-      ASR::ttype_t *dest_type = right_type;
-      ASR::ttype_t *source_type = left_type;
+      dest_type = right_type;
+      source_type = left_type;
       ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
                                                    right_type, conversion_cand,
                                                    &source_type, &dest_type);
@@ -159,11 +162,10 @@ public:
         ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
 
     ASR::expr_t *value = nullptr;
-    ASR::ttype_t *source_type = left_type;
     // Assign evaluation to `value` if possible, otherwise leave nullptr
     if (LFortran::ASRUtils::expr_value(left) != nullptr &&
         LFortran::ASRUtils::expr_value(right) != nullptr) {
-      if (ASR::is_a<LFortran::ASR::Integer_t>(*source_type)) {
+      if (ASR::is_a<LFortran::ASR::Integer_t>(*dest_type)) {
         int64_t left_value = ASR::down_cast<ASR::ConstantInteger_t>(
                                  LFortran::ASRUtils::expr_value(left))
                                  ->m_n;
@@ -202,8 +204,8 @@ public:
             }
         }
         value = ASR::down_cast<ASR::expr_t>(ASR::make_ConstantLogical_t(
-            al, x.base.base.loc, result, source_type));
-      } else if (ASR::is_a<LFortran::ASR::Real_t>(*source_type)) {
+            al, x.base.base.loc, result, type));
+      } else if (ASR::is_a<LFortran::ASR::Real_t>(*dest_type)) {
         double left_value = ASR::down_cast<ASR::ConstantReal_t>(
                                 LFortran::ASRUtils::expr_value(left))
                                 ->m_r;
@@ -242,7 +244,7 @@ public:
             }
         }
         value = ASR::down_cast<ASR::expr_t>(ASR::make_ConstantLogical_t(
-            al, x.base.base.loc, result, source_type));
+            al, x.base.base.loc, result, type));
       }
     }
     asr = ASR::make_Compare_t(al, x.base.base.loc, left, asr_op, right, type,
