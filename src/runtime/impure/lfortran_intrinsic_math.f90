@@ -163,7 +163,7 @@ end function
 elemental real(sp) function caimag(x) result(r)
 complex(sp), intent(in) :: x
 interface
-    pure complex(c_float) function c_caimag(x) bind(c, name="_lfortran_caimag")
+    pure real(c_float) function c_caimag(x) bind(c, name="_lfortran_caimag")
     import :: c_float
     complex(c_float), intent(in), value :: x
     end function
@@ -174,7 +174,7 @@ end function
 elemental real(dp) function zaimag(x) result(r)
 complex(dp), intent(in) :: x
 interface
-    pure complex(c_double) function c_zaimag(x) bind(c, name="_lfortran_zaimag")
+    pure real(c_double) function c_zaimag(x) bind(c, name="_lfortran_zaimag")
     import :: c_double
     complex(c_double), intent(in), value :: x
     end function
