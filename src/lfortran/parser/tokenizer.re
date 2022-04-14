@@ -3,7 +3,7 @@
 #include <lfortran/parser/parser_exception.h>
 #include <lfortran/parser/tokenizer.h>
 #include <lfortran/parser/parser.tab.hh>
-#include <lfortran/bigint.h>
+#include <libasr/bigint.h>
 
 namespace LFortran
 {

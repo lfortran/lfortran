@@ -243,6 +243,9 @@ RUN(NAME intrinsics_38 LABELS gfortran) # adjustr
 RUN(NAME intrinsics_39 LABELS gfortran)
 RUN(NAME intrinsics_40 LABELS gfortran)
 RUN(NAME intrinsics_41 LABELS gfortran) # command_argument_count
+RUN(NAME intrinsics_42 LABELS gfortran) # hypot
+RUN(NAME intrinsics_43 LABELS gfortran) # dim
+RUN(NAME intrinsics_44 LABELS gfortran) # cshift
 RUN(NAME intrinsics_open_close_read_write LABELS gfortran)
 
 RUN(NAME parameter_01 LABELS gfortran)
@@ -259,6 +262,7 @@ RUN(NAME modules_05 LABELS gfortran)
 RUN(NAME modules_06 LABELS gfortran llvm)
 RUN(NAME modules_07 LABELS gfortran llvm EXTRAFILES modules_07_module.f90)
 RUN(NAME modules_22 LABELS gfortran llvm EXTRAFILES modules_22_module.f90)
+RUN(NAME modules_23 LABELS gfortran llvm EXTRAFILES modules_23_module.f90)
 RUN(NAME modules_08 LABELS gfortran llvm EXTRAFILES
         modules_08_a.f90 modules_08_b.f90)
 RUN(NAME modules_09 LABELS gfortran llvm EXTRAFILES
@@ -390,6 +394,8 @@ RUN(NAME bin_op_complex_dp LABELS gfortran llvm)
 RUN(NAME complex_dp_param LABELS gfortran llvm)
 RUN(NAME const_kind_01 LABELS gfortran llvm)
 RUN(NAME const_kind_02 LABELS gfortran llvm)
+RUN(NAME const_array_01 LABELS gfortran llvm)
+RUN(NAME const_array_02 LABELS gfortran llvm)
 
 RUN(NAME string_01 LABELS gfortran llvm cpp)
 RUN(NAME string_02 LABELS gfortran llvm)
