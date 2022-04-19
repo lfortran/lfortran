@@ -79,7 +79,6 @@ end function
 integer elemental function cnt_initial_spaces(string) result(r)
 character(len=*), intent(in) :: string
 integer :: i
-print *, len(string)
 do i=1, len(string)
   if(string(i:i) /= " ") exit
 end do
