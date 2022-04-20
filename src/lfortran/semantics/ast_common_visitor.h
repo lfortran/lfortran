@@ -547,13 +547,6 @@ public:
                 "'" + var_name + "' is undeclared");
             throw SemanticAbort();
         }
-        if( v->type == ASR::symbolType::Variable ) {
-            ASR::Variable_t* v_var = ASR::down_cast<ASR::Variable_t>(v);
-            if( v_var->m_type == nullptr &&
-                v_var->m_intent == ASR::intentType::AssociateBlock ) {
-                return (ASR::asr_t*)(v_var->m_symbolic_value);
-            }
-        }
         return ASR::make_Var_t(al, loc, v);
     }
 
@@ -601,14 +594,6 @@ public:
 
         ASR::ttype_t *type;
         type = ASR::down_cast<ASR::Variable_t>(f2)->m_type;
-        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(f2);
-        if( var->m_type == nullptr &&
-            var->m_intent == ASR::intentType::AssociateBlock ) {
-            ASR::expr_t* orig_expr = var->m_symbolic_value;
-            ASR::Var_t* orig_Var = ASR::down_cast<ASR::Var_t>(orig_expr);
-            v = orig_Var->m_v;
-            type = ASR::down_cast<ASR::Variable_t>(v)->m_type;
-        }
         ASR::expr_t *arr_ref_val = nullptr;
         bool all_args_eval = ASRUtils::all_args_evaluated(args);
         for( auto& a : args ) {
