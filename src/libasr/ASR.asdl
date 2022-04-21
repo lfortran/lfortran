@@ -105,10 +105,11 @@ symbol
     | ClassType(symbol_table symtab, identifier name, abi abi, access access)
     | ClassProcedure(symbol_table parent_symtab, identifier name, identifier
         proc_name, symbol proc, abi abi)
+    | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
 
 storage_type = Default | Save | Parameter | Allocatable
 access = Public | Private
-intent = Local | In | Out | InOut | ReturnVar | Unspecified | AssociateBlock
+intent = Local | In | Out | InOut | ReturnVar | Unspecified
 deftype = Implementation | Interface
 presence = Required | Optional
 
@@ -199,6 +200,7 @@ stmt
     | Nullify(symbol* vars)
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
     | ListAppend(symbol a, expr ele)
+    | AssociateBlockCall(symbol m)
 
 
 expr
