@@ -1,0 +1,5 @@
+semantic error: dim argument has been specified both as keyword and positional argument.
+ --> tests/errors/array_size_02.f90:5:14
+  |
+5 |     size_a = size(a, 1, dim=1)
+  |              ^^^^^^^^^^^^^^^^^ 

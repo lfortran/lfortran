@@ -5,6 +5,10 @@ integer :: size_a
 integer :: size_b
 size_a = size(a, kind=4)
 size_b = size(b, dim=1, kind=4)
+
+if (size_a /= 3) error stop
+if (size_b /= 4) error stop
+
 do i = 1, size_a
     a(i) = i+10
 end do
