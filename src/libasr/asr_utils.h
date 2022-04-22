@@ -108,6 +108,7 @@ static inline ASR::ttype_t* expr_type(const ASR::expr_t *f)
         case ASR::exprType::ConstantReal: { return ((ASR::ConstantReal_t*)f)->m_type; }
         case ASR::exprType::ConstantComplex: { return ((ASR::ConstantComplex_t*)f)->m_type; }
         case ASR::exprType::ConstantSet: { return ((ASR::ConstantSet_t*)f)->m_type; }
+        case ASR::exprType::ConstantList: { return ((ASR::ConstantList_t*)f)->m_type; }
         case ASR::exprType::ConstantTuple: { return ((ASR::ConstantTuple_t*)f)->m_type; }
         case ASR::exprType::ConstantLogical: { return ((ASR::ConstantLogical_t*)f)->m_type; }
         case ASR::exprType::ConstantString: { return ((ASR::ConstantString_t*)f)->m_type; }
@@ -116,8 +117,7 @@ static inline ASR::ttype_t* expr_type(const ASR::expr_t *f)
         case ASR::exprType::Var: { return EXPR2VAR(f)->m_type; }
         case ASR::exprType::ArrayRef: { return ((ASR::ArrayRef_t*)f)->m_type; }
         case ASR::exprType::DerivedRef: { return ((ASR::DerivedRef_t*)f)->m_type; }
-        case ASR::exprType::ImplicitCast: { return ((ASR::ImplicitCast_t*)f)->m_type; }
-        case ASR::exprType::ExplicitCast: { return ((ASR::ExplicitCast_t*)f)->m_type; }
+        case ASR::exprType::Cast: { return ((ASR::Cast_t*)f)->m_type; }
         default : throw LFortranException("Not implemented");
     }
 }
@@ -148,6 +148,9 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
         }
         case ASR::ttypeType::Dict: {
             return "dict";
+        }
+        case ASR::ttypeType::List: {
+            return "list";
         }
         default : throw LFortranException("Not implemented");
     }
@@ -206,8 +209,7 @@ static inline ASR::expr_t* expr_value(ASR::expr_t *f)
         case ASR::exprType::FunctionCall: { return ASR::down_cast<ASR::FunctionCall_t>(f)->m_value; }
         case ASR::exprType::ArrayRef: { return ASR::down_cast<ASR::ArrayRef_t>(f)->m_value; }
         case ASR::exprType::DerivedRef: { return ASR::down_cast<ASR::DerivedRef_t>(f)->m_value; }
-        case ASR::exprType::ImplicitCast: { return ASR::down_cast<ASR::ImplicitCast_t>(f)->m_value; }
-        case ASR::exprType::ExplicitCast: { return ASR::down_cast<ASR::ExplicitCast_t>(f)->m_value; }
+        case ASR::exprType::Cast: { return ASR::down_cast<ASR::Cast_t>(f)->m_value; }
         case ASR::exprType::Var: { return EXPR2VAR(f)->m_value; }
         case ASR::exprType::StrOp: { return ASR::down_cast<ASR::StrOp_t>(f)->m_value; }
         case ASR::exprType::ImpliedDoLoop: { return ASR::down_cast<ASR::ImpliedDoLoop_t>(f)->m_value; }
@@ -259,6 +261,9 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         case ASR::symbolType::CustomOperator: {
             return ASR::down_cast<ASR::CustomOperator_t>(f)->m_name;
         }
+        case ASR::symbolType::AssociateBlock: {
+            return ASR::down_cast<ASR::AssociateBlock_t>(f)->m_name;
+        }
         default : throw LFortranException("Not implemented");
     }
 }
@@ -295,6 +300,9 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::CustomOperator: {
             return ASR::down_cast<ASR::CustomOperator_t>(f)->m_parent_symtab;
+        }
+        case ASR::symbolType::AssociateBlock: {
+            return ASR::down_cast<ASR::AssociateBlock_t>(f)->m_symtab->parent;
         }
         default : throw LFortranException("Not implemented");
     }
@@ -334,6 +342,9 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::ClassProcedure: {
             return nullptr;
             //throw LFortranException("ClassProcedure does not have a symtab");
+        }
+        case ASR::symbolType::AssociateBlock: {
+            return ASR::down_cast<ASR::AssociateBlock_t>(f)->m_symtab;
         }
         default : throw LFortranException("Not implemented");
     }
@@ -385,7 +396,10 @@ static inline bool is_intrinsic_function2(const ASR::Function_t *fn) {
     ASR::symbol_t *sym = (ASR::symbol_t*)fn;
     ASR::Module_t *m = get_sym_module0(sym);
     if (m != nullptr) {
-        if (m->m_intrinsic) return true;
+        if (m->m_intrinsic ||
+            fn->m_abi == ASR::abiType::Intrinsic) {
+                return true;
+        }
     }
     return false;
 }
@@ -434,8 +448,33 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
     return true;
 }
 
-template <typename T>
-static inline bool is_value_constant(ASR::expr_t *a_value, T& const_value) {
+static inline bool is_value_constant(ASR::expr_t *a_value, int64_t& const_value) {
+    if( a_value == nullptr ) {
+        return false;
+    }
+    if (ASR::is_a<ASR::ConstantInteger_t>(*a_value)) {
+        ASR::ConstantInteger_t* const_int = ASR::down_cast<ASR::ConstantInteger_t>(a_value);
+        const_value = const_int->m_n;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+static inline bool is_value_constant(ASR::expr_t *a_value, bool& const_value) {
+    if( a_value == nullptr ) {
+        return false;
+    }
+    if (ASR::is_a<ASR::ConstantLogical_t>(*a_value)) {
+        ASR::ConstantLogical_t* const_logical = ASR::down_cast<ASR::ConstantLogical_t>(a_value);
+        const_value = const_logical->m_value;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+static inline bool is_value_constant(ASR::expr_t *a_value, double& const_value) {
     if( a_value == nullptr ) {
         return false;
     }
@@ -445,13 +484,72 @@ static inline bool is_value_constant(ASR::expr_t *a_value, T& const_value) {
     } else if (ASR::is_a<ASR::ConstantReal_t>(*a_value)) {
         ASR::ConstantReal_t* const_real = ASR::down_cast<ASR::ConstantReal_t>(a_value);
         const_value = const_real->m_r;
-    } else if (ASR::is_a<ASR::ConstantLogical_t>(*a_value)) {
-        ASR::ConstantLogical_t* const_logical = ASR::down_cast<ASR::ConstantLogical_t>(a_value);
-        const_value = const_logical->m_value;
     } else {
         return false;
     }
     return true;
+}
+
+static inline bool is_value_constant(ASR::expr_t *a_value, std::string& const_value) {
+    if( a_value == nullptr ) {
+        return false;
+    }
+    if (ASR::is_a<ASR::ConstantString_t>(*a_value)) {
+        ASR::ConstantString_t* const_string = ASR::down_cast<ASR::ConstantString_t>(a_value);
+        const_value = std::string(const_string->m_s);
+    } else {
+        return false;
+    }
+    return true;
+}
+
+static inline bool is_value_equal(ASR::expr_t* test_expr, ASR::expr_t* desired_expr) {
+    ASR::expr_t* test_value = expr_value(test_expr);
+    ASR::expr_t* desired_value = expr_value(desired_expr);
+    if( !is_value_constant(test_value) ||
+        !is_value_constant(desired_value) ||
+        test_value->type != desired_value->type ) {
+        return false;
+    }
+
+    switch( desired_value->type ) {
+        case ASR::exprType::ConstantInteger: {
+            ASR::ConstantInteger_t* test_int = ASR::down_cast<ASR::ConstantInteger_t>(test_value);
+            ASR::ConstantInteger_t* desired_int = ASR::down_cast<ASR::ConstantInteger_t>(desired_value);
+            return test_int->m_n == desired_int->m_n;
+        }
+        case ASR::exprType::ConstantString: {
+            ASR::ConstantString_t* test_str = ASR::down_cast<ASR::ConstantString_t>(test_value);
+            ASR::ConstantString_t* desired_str = ASR::down_cast<ASR::ConstantString_t>(desired_value);
+            return std::string(test_str->m_s) == std::string(desired_str->m_s);
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
+static inline bool is_value_in_range(ASR::expr_t* start, ASR::expr_t* end, ASR::expr_t* value) {
+    ASR::expr_t *start_value = nullptr, *end_value = nullptr;
+    if( start ) {
+        start_value = expr_value(start);
+    }
+    if( end ) {
+        end_value = expr_value(end);
+    }
+    ASR::expr_t* test_value = expr_value(value);
+
+
+    double start_double = std::numeric_limits<double>::min();
+    double end_double = std::numeric_limits<double>::max();
+    double value_double;
+    bool start_const = is_value_constant(start_value, start_double);
+    bool end_const = is_value_constant(end_value, end_double);
+    bool value_const = is_value_constant(test_value, value_double);
+    if( !value_const || (!start_const && !end_const) ) {
+        return false;
+    }
+    return value_double >= start_double && value_double <= end_double;
 }
 
 // Returns true if all arguments are evaluated

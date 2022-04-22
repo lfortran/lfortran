@@ -29,7 +29,7 @@ define i32 @main() {
   %10 = alloca %complex_4, align 8
   store %complex_4 %8, %complex_4* %10, align 4
   %11 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_mul(%complex_4* %9, %complex_4* %10, %complex_4* %11)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_mul_32(%complex_4* %9, %complex_4* %10, %complex_4* %11)
   %12 = load %complex_4, %complex_4* %11, align 4
   store %complex_4 %12, %complex_4* %x, align 4
   %13 = load %complex_4, %complex_4* %x, align 4
@@ -56,7 +56,7 @@ define i32 @main() {
   %28 = alloca %complex_4, align 8
   store %complex_4 %26, %complex_4* %28, align 4
   %29 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_mul(%complex_4* %27, %complex_4* %28, %complex_4* %29)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_mul_32(%complex_4* %27, %complex_4* %28, %complex_4* %29)
   %30 = load %complex_4, %complex_4* %29, align 4
   store %complex_4 %30, %complex_4* %x, align 4
   %31 = load %complex_4, %complex_4* %x, align 4
@@ -83,7 +83,7 @@ define i32 @main() {
   %46 = alloca %complex_4, align 8
   store %complex_4 %44, %complex_4* %46, align 4
   %47 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_mul(%complex_4* %45, %complex_4* %46, %complex_4* %47)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_mul_32(%complex_4* %45, %complex_4* %46, %complex_4* %47)
   %48 = load %complex_4, %complex_4* %47, align 4
   store %complex_4 %48, %complex_4* %x, align 4
   %49 = load %complex_4, %complex_4* %x, align 4
@@ -101,6 +101,6 @@ define i32 @main() {
   ret i32 0
 }
 
-declare void @_lfortran_complex_mul(%complex_4*, %complex_4*, %complex_4*, ...)
+declare void @_lfortran_complex_mul_32(%complex_4*, %complex_4*, %complex_4*, ...)
 
 declare void @_lfortran_printf(i8*, ...)

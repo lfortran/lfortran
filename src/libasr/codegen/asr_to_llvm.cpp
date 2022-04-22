@@ -59,6 +59,7 @@
 #include <libasr/pass/class_constructor.h>
 #include <libasr/pass/unused_functions.h>
 #include <libasr/pass/inline_function_calls.h>
+#include <libasr/pass/dead_code_removal.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/llvm_utils.h>
@@ -1988,7 +1989,6 @@ public:
         parent_function = nullptr;
     }
 
-
     void visit_Subroutine(const ASR::Subroutine_t &x) {
         if (x.m_abi != ASR::abiType::Source &&
             x.m_abi != ASR::abiType::Interactive &&
@@ -2000,9 +2000,6 @@ public:
         generate_subroutine(x);
         parent_subroutine = nullptr;
     }
-
-
-
 
     void instantiate_subroutine(const ASR::Subroutine_t &x){
         uint32_t h = get_hash((ASR::asr_t*)&x);
@@ -2520,6 +2517,15 @@ public:
         }
     }
 
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t& x) {
+        LFORTRAN_ASSERT(ASR::is_a<ASR::AssociateBlock_t>(*x.m_m));
+        ASR::AssociateBlock_t* associate_block = ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        declare_vars(*associate_block);
+        for (size_t i = 0; i < associate_block->n_body; i++) {
+            this->visit_stmt(*(associate_block->m_body[i]));
+        }
+    }
+
     inline void visit_expr_wrapper(const ASR::expr_t* x, bool load_ref=false) {
         this->visit_expr(*x);
         if( x->type == ASR::exprType::ArrayRef ||
@@ -2931,30 +2937,52 @@ public:
             if( right_val->getType()->isPointerTy() ) {
                 right_val = CreateLoad(right_val);
             }
+            std::string fn_name;
             switch (x.m_op) {
                 case ASR::binopType::Add: {
-                    tmp = lfortran_complex_bin_op(left_val, right_val, "_lfortran_complex_add", type);
+                    if (a_kind == 4) {
+                        fn_name = "_lfortran_complex_add_32";
+                    } else {
+                        fn_name = "_lfortran_complex_add_64";
+                    }
                     break;
                 };
                 case ASR::binopType::Sub: {
-                    tmp = lfortran_complex_bin_op(left_val, right_val, "_lfortran_complex_sub", type);
+                    if (a_kind == 4) {
+                        fn_name = "_lfortran_complex_sub_32";
+                    } else {
+                        fn_name = "_lfortran_complex_sub_64";
+                    }
                     break;
                 };
                 case ASR::binopType::Mul: {
-                    tmp = lfortran_complex_bin_op(left_val, right_val, "_lfortran_complex_mul", type);
+                    if (a_kind == 4) {
+                        fn_name = "_lfortran_complex_mul_32";
+                    } else {
+                        fn_name = "_lfortran_complex_mul_64";
+                    }
                     break;
                 };
                 case ASR::binopType::Div: {
-                    tmp = lfortran_complex_bin_op(left_val, right_val, "_lfortran_complex_div", type);
+                    if (a_kind == 4) {
+                        fn_name = "_lfortran_complex_div_32";
+                    } else {
+                        fn_name = "_lfortran_complex_div_64";
+                    }
                     break;
                 };
                 case ASR::binopType::Pow: {
-                    tmp = lfortran_complex_bin_op(left_val, right_val, "_lfortran_complex_pow", type);
+                    if (a_kind == 4) {
+                        fn_name = "_lfortran_complex_pow_32";
+                    } else {
+                        fn_name = "_lfortran_complex_pow_64";
+                    }
                     break;
                 };
             }
+            tmp = lfortran_complex_bin_op(left_val, right_val, fn_name, type);
         } else {
-            throw CodeGenError("Binop: Only Real, Integer and Complex types implemented");
+            throw CodeGenError("Binop: Only Real, Integer and Complex types are allowed");
         }
     }
 
@@ -3089,7 +3117,7 @@ public:
                         break;
                     }
                     default :
-                        throw CodeGenError("ConstArray real kind not supported yet");
+                        throw CodeGenError("ConstArray integer kind not supported yet");
                 }
             } else if (ASR::is_a<ASR::Real_t>(*x.m_type)) {
                 ASR::ConstantReal_t *cr = ASR::down_cast<ASR::ConstantReal_t>(el);
@@ -3159,29 +3187,18 @@ public:
         switch( a_kind ) {
             case 4: {
                 re2 = llvm::ConstantFP::get(context, llvm::APFloat((float)re));
+                im2 = llvm::ConstantFP::get(context, llvm::APFloat((float)im));
                 type = complex_type_4;
                 break;
             }
             case 8: {
                 re2 = llvm::ConstantFP::get(context, llvm::APFloat(re));
+                im2 = llvm::ConstantFP::get(context, llvm::APFloat(im));
                 type = complex_type_8;
                 break;
             }
             default: {
-                throw CodeGenError("kind type not supported");
-            }
-        }
-        switch( a_kind ) {
-            case 4: {
-                im2 = llvm::ConstantFP::get(context, llvm::APFloat((float)im));
-                break;
-            }
-            case 8: {
-                im2 = llvm::ConstantFP::get(context, llvm::APFloat(im));
-                break;
-            }
-            default: {
-                throw CodeGenError("kind type not supported");
+                throw CodeGenError("kind type is not supported");
             }
         }
         tmp = complex_from_floats(re2, im2, type);
@@ -3300,7 +3317,7 @@ public:
         return ASRUtils::expr_type(expr);
     }
 
-    void extract_kinds(const ASR::ImplicitCast_t& x,
+    void extract_kinds(const ASR::Cast_t& x,
                        int& arg_kind, int& dest_kind)
     {
         dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
@@ -3309,7 +3326,7 @@ public:
         arg_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
     }
 
-    void visit_ImplicitCast(const ASR::ImplicitCast_t &x) {
+    void visit_Cast(const ASR::Cast_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -3389,6 +3406,27 @@ public:
             }
             case (ASR::cast_kindType::IntegerToLogical) : {
                 tmp = builder->CreateICmpNE(tmp, builder->getInt32(0));
+                break;
+            }
+            case (ASR::cast_kindType::LogicalToInteger) : {
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                if (a_kind == 2) {
+                    tmp = builder->CreateSExt(tmp, llvm::Type::getInt16Ty(context));
+                    llvm::Value *zero = llvm::ConstantInt::get(context, llvm::APInt(16, 0, true));
+                    tmp = builder ->CreateSub(zero, tmp);
+                } else if (a_kind == 4) {
+                    tmp = builder->CreateSExt(tmp, llvm::Type::getInt32Ty(context));
+                    llvm::Value *zero = llvm::ConstantInt::get(context, llvm::APInt(32, 0, true));
+                    tmp = builder ->CreateSub(zero, tmp);
+                } else if (a_kind == 8) {
+                    tmp = builder->CreateSExt(tmp, llvm::Type::getInt64Ty(context));
+                    llvm::Value *zero = llvm::ConstantInt::get(context, llvm::APInt(64, 0, true));
+                    tmp = builder ->CreateSub(zero, tmp);
+                } else {
+                    std::string msg = "Conversion from i1 to"  +
+                                      std::to_string(a_kind) + " is not implemented yet.";
+                    throw CodeGenError(msg);
+                }
                 break;
             }
             case (ASR::cast_kindType::RealToReal) : {
@@ -3623,7 +3661,8 @@ public:
                 d = builder->CreateFPExt(complex_im(tmp, complex_type), type);
                 args.push_back(d);
             } else {
-                throw LFortranException("Type not implemented");
+                throw LFortranException("Printing support is available only for integer, real,"
+                    " character, and complex types.");
             }
         }
         std::string fmt_str;
@@ -3736,8 +3775,8 @@ public:
                         uint32_t h = get_hash((ASR::asr_t*)arg);
                         if (llvm_symtab.find(h) != llvm_symtab.end()) {
                             tmp = llvm_symtab[h];
-                            const ASR::symbol_t* func_subrout = symbol_get_past_external(x.m_name);
-                            ASR::abiType x_abi = (ASR::abiType) 0;
+                            func_subrout = symbol_get_past_external(x.m_name);
+                            x_abi = (ASR::abiType) 0;
                             std::uint32_t m_h;
                             ASR::Variable_t *orig_arg = nullptr;
                             std::string orig_arg_name = "";
@@ -4058,7 +4097,7 @@ public:
             llvm::Value* fn = llvm_symtab_fn_arg[h];
             llvm::FunctionType* fntype = llvm_symtab_fn[h]->getFunctionType();
             std::string m_name = std::string(((ASR::Subroutine_t*)(&(x.m_name->base)))->m_name);
-            std::vector<llvm::Value *> args = convert_call_args(x, m_name);
+            args = convert_call_args(x, m_name);
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Subroutine code not generated for '"
@@ -4125,7 +4164,7 @@ public:
                 h = get_hash((ASR::asr_t*)s);
             } else {
                 if (func_name == "len") {
-                    std::vector<llvm::Value *> args = convert_call_args(x, "len");
+                    args = convert_call_args(x, "len");
                     LFORTRAN_ASSERT(args.size() == 1)
                     tmp = lfortran_str_len(args[0]);
                     return;
@@ -4144,7 +4183,7 @@ public:
             llvm::Value* fn = llvm_symtab_fn_arg[h];
             llvm::FunctionType* fntype = llvm_symtab_fn[h]->getFunctionType();
             std::string m_name = std::string(((ASR::Function_t*)(&(x.m_name->base)))->m_name);
-            std::vector<llvm::Value *> args = convert_call_args(x, m_name);
+            args = convert_call_args(x, m_name);
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Function code not generated for '"
@@ -4243,6 +4282,11 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
 
     pass_replace_do_loops(al, asr);
     pass_replace_forall(al, asr);
+
+    if( fast ) {
+        pass_dead_code_removal(al, asr, rl_path);
+    }
+
     pass_replace_select_case(al, asr);
     pass_unused_functions(al, asr);
 
@@ -4274,8 +4318,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         llvm::raw_string_ostream os(buf);
         v.module->print(os, nullptr);
         std::cout << os.str();
-        std::string msg = "asr_to_llvm: module failed verification. Error:\n"
-            + err.str();
+        msg = "asr_to_llvm: module failed verification. Error:\n" + err.str();
         diagnostics.diagnostics.push_back(diag::Diagnostic(msg,
             diag::Level::Error, diag::Stage::CodeGen));
         Error error;

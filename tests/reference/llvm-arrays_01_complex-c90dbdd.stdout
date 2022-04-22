@@ -627,7 +627,7 @@ loop.body23:                                      ; preds = %loop.head22
   %402 = alloca %complex_4, align 8
   store %complex_4 %400, %complex_4* %402, align 4
   %403 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_sub(%complex_4* %401, %complex_4* %402, %complex_4* %403)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_sub_32(%complex_4* %401, %complex_4* %402, %complex_4* %403)
   %404 = load %complex_4, %complex_4* %403, align 4
   store %complex_4 %404, %complex_4* %380, align 4
   br label %loop.head22
@@ -835,7 +835,7 @@ ifcont33:                                         ; preds = %else32, %then31
   %552 = alloca %complex_4, align 8
   store %complex_4 %550, %complex_4* %552, align 4
   %553 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_add(%complex_4* %551, %complex_4* %552, %complex_4* %553)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_add_32(%complex_4* %551, %complex_4* %552, %complex_4* %553)
   %554 = load %complex_4, %complex_4* %553, align 4
   %555 = getelementptr %array, %array* %b, i32 0, i32 2
   %556 = load %dimension_descriptor*, %dimension_descriptor** %555, align 8
@@ -857,7 +857,7 @@ ifcont33:                                         ; preds = %else32, %then31
   %571 = alloca %complex_4, align 8
   store %complex_4 %569, %complex_4* %571, align 4
   %572 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_add(%complex_4* %570, %complex_4* %571, %complex_4* %572)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_add_32(%complex_4* %570, %complex_4* %571, %complex_4* %572)
   %573 = load %complex_4, %complex_4* %572, align 4
   %574 = getelementptr %array, %array* %a, i32 0, i32 2
   %575 = load %dimension_descriptor*, %dimension_descriptor** %574, align 8
@@ -879,7 +879,7 @@ ifcont33:                                         ; preds = %else32, %then31
   %590 = alloca %complex_4, align 8
   store %complex_4 %588, %complex_4* %590, align 4
   %591 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_add(%complex_4* %589, %complex_4* %590, %complex_4* %591)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_add_32(%complex_4* %589, %complex_4* %590, %complex_4* %591)
   %592 = load %complex_4, %complex_4* %591, align 4
   store %complex_4 %592, %complex_4* %520, align 4
   %593 = getelementptr %array, %array* %b, i32 0, i32 2
@@ -1330,6 +1330,6 @@ declare void @_lfortran_printf(i8*, ...)
 
 declare void @exit(i32)
 
-declare void @_lfortran_complex_sub(%complex_4*, %complex_4*, %complex_4*, ...)
+declare void @_lfortran_complex_sub_32(%complex_4*, %complex_4*, %complex_4*, ...)
 
-declare void @_lfortran_complex_add(%complex_4*, %complex_4*, %complex_4*, ...)
+declare void @_lfortran_complex_add_32(%complex_4*, %complex_4*, %complex_4*, ...)

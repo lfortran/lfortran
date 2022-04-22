@@ -199,7 +199,7 @@ public:
 
         }
 
-      *convert_can = (ASR::expr_t *)ASR::make_ImplicitCast_t(
+      *convert_can = (ASR::expr_t *)ASR::make_Cast_t(
           al, a_loc, *convert_can, (ASR::cast_kindType)cast_kind, dest_type,
           value);
     }
@@ -245,6 +245,7 @@ public:
     LFORTRAN_ASSERT(right_type2->type < num_types);
     int left_type_p = type_priority[left_type2->type];
     int right_type_p = type_priority[right_type2->type];
+
     if (left_type_p >= right_type_p) {
       conversion_cand = right;
       *source_type = right_type;

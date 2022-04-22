@@ -1,7 +1,7 @@
 #include <cctype>
 #include <lfortran/ast_to_src.h>
 #include <libasr/string_utils.h>
-#include <lfortran/bigint.h>
+#include <libasr/bigint.h>
 
 using LFortran::AST::expr_t;
 using LFortran::AST::Name_t;

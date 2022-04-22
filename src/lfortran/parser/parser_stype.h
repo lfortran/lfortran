@@ -5,7 +5,7 @@
 #include <lfortran/ast.h>
 #include <libasr/location.h>
 #include <libasr/containers.h>
-#include <lfortran/bigint.h>
+#include <libasr/bigint.h>
 
 namespace LFortran
 {

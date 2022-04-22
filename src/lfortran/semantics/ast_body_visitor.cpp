@@ -456,25 +456,58 @@ public:
 
     void visit_AssociateBlock(const AST::AssociateBlock_t& x) {
         SymbolTable* new_scope = al.make_new<SymbolTable>(current_scope);
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, x.n_body);
         for( size_t i = 0; i < x.n_syms; i++ ) {
             this->visit_expr(*x.m_syms[i].m_initializer);
+            ASR::expr_t* tmp_expr = LFortran::ASRUtils::EXPR(tmp);
+            ASR::ttype_t* tmp_type = ASRUtils::expr_type(tmp_expr);
+            ASR::storage_typeType tmp_storage = ASR::storage_typeType::Default;
+            bool create_associate_stmt = false;
+            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
+                ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
+                LFORTRAN_ASSERT(ASR::is_a<ASR::Variable_t>(*(tmp_var->m_v)));
+                ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(tmp_var->m_v);
+                tmp_storage = variable->m_storage;
+                tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, tmp_type->base.loc, variable->m_type));
+                create_associate_stmt = true;
+            }
             std::string name = to_lower(x.m_syms[i].m_name);
             char *name_c = s2c(al, name);
             ASR::asr_t *v = ASR::make_Variable_t(al, x.base.base.loc, new_scope,
-                                                 name_c, ASR::intentType::AssociateBlock,
-                                                 LFortran::ASRUtils::EXPR(tmp), nullptr,
-                                                 ASR::storage_typeType::Default,
-                                                 nullptr, ASR::abiType::Source,
+                                                 name_c, ASR::intentType::Local,
+                                                 nullptr, nullptr,
+                                                 tmp_storage,
+                                                 tmp_type,
+                                                 ASR::abiType::Source,
                                                  ASR::accessType::Private,
                                                  ASR::presenceType::Required,
                                                  false);
-            new_scope->scope[name_c] = ASR::down_cast<ASR::symbol_t>(v);
+            new_scope->scope[name] = ASR::down_cast<ASR::symbol_t>(v);
+            ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, v->loc, ASR::down_cast<ASR::symbol_t>(v)));
+            if( create_associate_stmt ) {
+                ASR::stmt_t* associate_stmt = ASRUtils::STMT(ASR::make_Associate_t(al, tmp_expr->base.loc, target_var, tmp_expr));
+                body.push_back(al, associate_stmt);
+            } else {
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, tmp_expr->base.loc, target_var, tmp_expr, nullptr));
+                body.push_back(al, assign_stmt);
+            }
         }
         SymbolTable* current_scope_copy = current_scope;
         current_scope = new_scope;
-        transform_stmts(*current_body, x.n_body, x.m_body);
-        current_scope->scope.clear();
+        Vec<ASR::stmt_t*>* current_body_copy = current_body;
+        current_body = &body;
+        transform_stmts(body, x.n_body, x.m_body);
+        current_body = current_body_copy;
         current_scope = current_scope_copy;
+        std::string name = current_scope->get_unique_name("associate_block");
+        ASR::asr_t* associate_block = ASR::make_AssociateBlock_t(al, x.base.base.loc,
+                                                                 new_scope, s2c(al, name),
+                                                                 body.p, body.size());
+        current_scope->scope[name] = ASR::down_cast<ASR::symbol_t>(associate_block);
+        tmp = ASR::make_AssociateBlockCall_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(associate_block));
+        current_body->push_back(al, ASRUtils::STMT(tmp));
+        tmp = nullptr;
     }
 
     void visit_Allocate(const AST::Allocate_t& x) {

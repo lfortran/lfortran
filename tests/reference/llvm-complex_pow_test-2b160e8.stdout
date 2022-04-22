@@ -31,7 +31,7 @@ define i32 @main() {
   %11 = alloca %complex_4, align 8
   store %complex_4 %9, %complex_4* %11, align 4
   %12 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_pow(%complex_4* %10, %complex_4* %11, %complex_4* %12)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_pow_32(%complex_4* %10, %complex_4* %11, %complex_4* %12)
   %13 = load %complex_4, %complex_4* %12, align 4
   store %complex_4 %13, %complex_4* %z, align 4
   %14 = load %complex_4, %complex_4* %z, align 4
@@ -49,6 +49,6 @@ define i32 @main() {
   ret i32 0
 }
 
-declare void @_lfortran_complex_pow(%complex_4*, %complex_4*, %complex_4*, ...)
+declare void @_lfortran_complex_pow_32(%complex_4*, %complex_4*, %complex_4*, ...)
 
 declare void @_lfortran_printf(i8*, ...)

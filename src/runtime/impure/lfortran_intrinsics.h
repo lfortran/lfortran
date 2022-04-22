@@ -9,8 +9,12 @@
 extern "C" {
 #endif
 
-struct _lfortran_complex {
+struct _lfortran_complex_32 {
     float re, im;
+};
+
+struct _lfortran_complex_64 {
+    double re, im;
 };
 
 #ifdef _MSC_VER
@@ -31,18 +35,33 @@ typedef double _Complex double_complex_t;
 
 LFORTRAN_API double _lfortran_sum(int n, double *v);
 LFORTRAN_API void _lfortran_random_number(int n, double *v);
+LFORTRAN_API double _lfortran_random();
+LFORTRAN_API int _lfortran_randrange(int lower, int upper);
+LFORTRAN_API int _lfortran_random_int(int lower, int upper);
 LFORTRAN_API void _lfortran_printf(const char* format, ...);
-LFORTRAN_API void _lfortran_complex_add(struct _lfortran_complex* a,
-        struct _lfortran_complex* b, struct _lfortran_complex *result);
-LFORTRAN_API void _lfortran_complex_sub(struct _lfortran_complex* a,
-        struct _lfortran_complex* b, struct _lfortran_complex *result);
-LFORTRAN_API void _lfortran_complex_mul(struct _lfortran_complex* a,
-        struct _lfortran_complex* b, struct _lfortran_complex *result);
-LFORTRAN_API void _lfortran_complex_div(struct _lfortran_complex* a,
-        struct _lfortran_complex* b, struct _lfortran_complex *result);
 
-LFORTRAN_API void _lfortran_complex_pow(struct _lfortran_complex* a,
-        struct _lfortran_complex* b, struct _lfortran_complex *result);
+LFORTRAN_API void _lfortran_complex_add_32(struct _lfortran_complex_32* a,
+        struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result);
+LFORTRAN_API void _lfortran_complex_sub(struct _lfortran_complex_32* a,
+        struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result);
+LFORTRAN_API void _lfortran_complex_mul(struct _lfortran_complex_32* a,
+        struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result);
+LFORTRAN_API void _lfortran_complex_div(struct _lfortran_complex_32* a,
+        struct _lfortran_complex_32* b, struct _lfortran_complex_32* result);
+LFORTRAN_API void _lfortran_complex_pow(struct _lfortran_complex_32* a,
+        struct _lfortran_complex_32* b, struct _lfortran_complex_32* result);
+
+LFORTRAN_API void _lfortran_complex_add_64(struct _lfortran_complex_64* a,
+        struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result);
+LFORTRAN_API void _lfortran_complex_sub_64(struct _lfortran_complex_64* a,
+        struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result);
+LFORTRAN_API void _lfortran_complex_mul_64(struct _lfortran_complex_64* a,
+        struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result);
+LFORTRAN_API void _lfortran_complex_div_64(struct _lfortran_complex_64* a,
+        struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result);
+LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
+        struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result);
+
 LFORTRAN_API float_complex_t _lfortran_csqrt(float_complex_t x);
 LFORTRAN_API double_complex_t _lfortran_zsqrt(double_complex_t x);
 LFORTRAN_API float _lfortran_caimag(float_complex_t x);
@@ -157,6 +176,9 @@ LFORTRAN_API void _lfortran_i64sys_clock(
         uint64_t *count, int64_t *rate, int64_t *max);
 LFORTRAN_API void _lfortran_sp_rand_num(float *x);
 LFORTRAN_API void _lfortran_dp_rand_num(double *x);
+LFORTRAN_API int64_t _lpython_open(char *path, char *flags);
+LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n);
+LFORTRAN_API void _lpython_close(int64_t fd);
 
 #ifdef __cplusplus
 }

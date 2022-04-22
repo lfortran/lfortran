@@ -216,14 +216,14 @@ then:                                             ; preds = %loop.body4
   %113 = alloca %complex_4, align 8
   store %complex_4 %111, %complex_4* %113, align 4
   %114 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_mul(%complex_4* %112, %complex_4* %113, %complex_4* %114)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_mul_32(%complex_4* %112, %complex_4* %113, %complex_4* %114)
   %115 = load %complex_4, %complex_4* %114, align 4
   %116 = alloca %complex_4, align 8
   store %complex_4 %102, %complex_4* %116, align 4
   %117 = alloca %complex_4, align 8
   store %complex_4 %115, %complex_4* %117, align 4
   %118 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_add(%complex_4* %116, %complex_4* %117, %complex_4* %118)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_add_32(%complex_4* %116, %complex_4* %117, %complex_4* %118)
   %119 = load %complex_4, %complex_4* %118, align 4
   %120 = alloca %complex_4, align 8
   store %complex_4 %97, %complex_4* %120, align 4
@@ -339,14 +339,14 @@ then7:                                            ; preds = %else6
   %201 = alloca %complex_4, align 8
   store %complex_4 %199, %complex_4* %201, align 4
   %202 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_mul(%complex_4* %200, %complex_4* %201, %complex_4* %202)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_mul_32(%complex_4* %200, %complex_4* %201, %complex_4* %202)
   %203 = load %complex_4, %complex_4* %202, align 4
   %204 = alloca %complex_4, align 8
   store %complex_4 %190, %complex_4* %204, align 4
   %205 = alloca %complex_4, align 8
   store %complex_4 %203, %complex_4* %205, align 4
   %206 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_sub(%complex_4* %204, %complex_4* %205, %complex_4* %206)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_sub_32(%complex_4* %204, %complex_4* %205, %complex_4* %206)
   %207 = load %complex_4, %complex_4* %206, align 4
   %208 = alloca %complex_4, align 8
   store %complex_4 %184, %complex_4* %208, align 4
@@ -402,15 +402,15 @@ return:                                           ; preds = %loop.end15
   ret void
 }
 
-declare void @_lfortran_complex_mul(%complex_4*, %complex_4*, %complex_4*, ...)
+declare void @_lfortran_complex_mul_32(%complex_4*, %complex_4*, %complex_4*, ...)
 
-declare void @_lfortran_complex_add(%complex_4*, %complex_4*, %complex_4*, ...)
+declare void @_lfortran_complex_add_32(%complex_4*, %complex_4*, %complex_4*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 
 declare void @exit(i32)
 
-declare void @_lfortran_complex_sub(%complex_4*, %complex_4*, %complex_4*, ...)
+declare void @_lfortran_complex_sub_32(%complex_4*, %complex_4*, %complex_4*, ...)
 
 define i32 @main() {
 .entry:
@@ -1698,7 +1698,7 @@ loop.body30:                                      ; preds = %loop.head29
   %885 = alloca %complex_4, align 8
   store %complex_4 %883, %complex_4* %885, align 4
   %886 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_mul(%complex_4* %884, %complex_4* %885, %complex_4* %886)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_mul_32(%complex_4* %884, %complex_4* %885, %complex_4* %886)
   %887 = load %complex_4, %complex_4* %886, align 4
   store %complex_4 %887, %complex_4* %843, align 4
   %888 = load i32, i32* %"3_v", align 4
@@ -1918,7 +1918,7 @@ loop.body39:                                      ; preds = %loop.head38
   %1050 = alloca %complex_4, align 8
   store %complex_4 %1048, %complex_4* %1050, align 4
   %1051 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_add(%complex_4* %1049, %complex_4* %1050, %complex_4* %1051)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_add_32(%complex_4* %1049, %complex_4* %1050, %complex_4* %1051)
   %1052 = load %complex_4, %complex_4* %1051, align 4
   store %complex_4 %1052, %complex_4* %976, align 4
   %1053 = load i32, i32* %"3_v", align 4
@@ -2787,7 +2787,7 @@ loop.body84:                                      ; preds = %loop.head83
   %1672 = alloca %complex_4, align 8
   store %complex_4 %1670, %complex_4* %1672, align 4
   %1673 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_mul(%complex_4* %1671, %complex_4* %1672, %complex_4* %1673)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_mul_32(%complex_4* %1671, %complex_4* %1672, %complex_4* %1673)
   %1674 = load %complex_4, %complex_4* %1673, align 4
   store %complex_4 %1674, %complex_4* %1630, align 4
   %1675 = load i32, i32* %"3_v", align 4
@@ -3007,7 +3007,7 @@ loop.body93:                                      ; preds = %loop.head92
   %1837 = alloca %complex_4, align 8
   store %complex_4 %1835, %complex_4* %1837, align 4
   %1838 = alloca %complex_4, align 8
-  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_add(%complex_4* %1836, %complex_4* %1837, %complex_4* %1838)
+  call void (%complex_4*, %complex_4*, %complex_4*, ...) @_lfortran_complex_add_32(%complex_4* %1836, %complex_4* %1837, %complex_4* %1838)
   %1839 = load %complex_4, %complex_4* %1838, align 4
   store %complex_4 %1839, %complex_4* %1763, align 4
   %1840 = load i32, i32* %"3_v", align 4
