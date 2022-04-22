@@ -527,6 +527,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         std::string var_name = src;
         std::string args = "";
         if (x.m_dim == nullptr) {
+            // TODO: return the product of all dimensions:
             args = "0";
         } else {
             if( x.m_dim ) {
