@@ -10,7 +10,27 @@
 #include <lfortran/utils.h>
 #include <lfortran/semantics/semantic_exception.h>
 
+#include <set>
+
 namespace LFortran {
+
+struct IntrinsicProceduresAsASRNodes {
+
+    private:
+
+        std::set<std::string> intrinsics_present_in_ASR;
+
+    public:
+
+        IntrinsicProceduresAsASRNodes() {
+            intrinsics_present_in_ASR = {"size"};
+        }
+
+        bool is_intrinsic_present_in_ASR(std::string& name) {
+            return intrinsics_present_in_ASR.find(name) != intrinsics_present_in_ASR.end();
+        }
+
+};
 
 struct IntrinsicProcedures {
 
