@@ -98,6 +98,22 @@ ast = true
 asr = true
 
 [[test]]
+filename = "errors/array_size_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_size_02.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_size_03.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_size_04.f90"
+asr = true
+
+[[test]]
 filename = "errors/esub1.f90"
 tokens = true
 ast = true

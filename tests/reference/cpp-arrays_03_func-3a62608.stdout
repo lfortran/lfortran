@@ -16,10 +16,6 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     return r;
 }
 
-void move_alloc(int &from, int &to)
-{
-}
-
 namespace {
 int mysum(const Kokkos::View<const int*> &a)
 {
