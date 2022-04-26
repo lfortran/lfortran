@@ -2,12 +2,6 @@ module lfortran_intrinsic_builtin
 implicit none
 
 interface
-    integer function size(x, dim, kind)
-    integer, intent(in) :: x(:)
-    integer, optional :: dim
-    integer, optional :: kind
-    end function
-
     subroutine move_alloc(from, to)
     integer, allocatable, intent(inout) :: from
     integer, allocatable, intent(out) :: to
