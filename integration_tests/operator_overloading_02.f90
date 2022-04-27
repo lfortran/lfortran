@@ -14,12 +14,12 @@ contains
         tf = (i == 0)
     end subroutine
 
-    ! subroutine logical_gets_integer_use(tf, i)
-    !     logical, intent (out) :: tf
-    !     integer, intent (in)  :: i
+    subroutine logical_gets_integer_use(tf, i)
+        logical, intent (out) :: tf
+        integer, intent (in)  :: i
 
-    !     tf = i
-    ! end subroutine
+        tf = i
+    end subroutine
 end module
 
 program main
