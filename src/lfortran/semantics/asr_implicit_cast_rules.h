@@ -129,10 +129,10 @@ public:
                 LFORTRAN_ASSERT(ASR::is_a<ASR::Integer_t>(*dest_type2))
                 LFORTRAN_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(*convert_can)))
                 value = ASRUtils::expr_value(*convert_can);
-                LFORTRAN_ASSERT(ASR::is_a<ASR::ConstantReal_t>(*value))
-                ASR::ConstantReal_t *r = ASR::down_cast<ASR::ConstantReal_t>(value);
+                LFORTRAN_ASSERT(ASR::is_a<ASR::RealConstant_t>(*value))
+                ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
                 int64_t i = r->m_r;
-                value = (ASR::expr_t *)ASR::make_ConstantInteger_t(al, a_loc,
+                value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
                     i, dest_type2);
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::IntegerToReal) {
@@ -140,10 +140,10 @@ public:
                 LFORTRAN_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_pointer(dest_type)))
                 LFORTRAN_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(*convert_can)))
                 value = ASRUtils::expr_value(*convert_can);
-                if (ASR::is_a<ASR::ConstantInteger_t>(*value)) {
-                  ASR::ConstantInteger_t *i = ASR::down_cast<ASR::ConstantInteger_t>(value);
+                if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
+                  ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
                   double rval = static_cast<double>(i->m_n);
-                  value = (ASR::expr_t *)ASR::make_ConstantReal_t(al, a_loc,
+                  value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
                                                                  rval, dest_type2);
                 } else {
                   // TODO: Handle cases where this is say, a constant Array
@@ -157,10 +157,10 @@ public:
                 LFORTRAN_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_pointer(dest_type)))
                 LFORTRAN_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(*convert_can)))
                 value = ASRUtils::expr_value(*convert_can);
-                LFORTRAN_ASSERT(ASR::is_a<ASR::ConstantReal_t>(*value))
-                ASR::ConstantReal_t *r = ASR::down_cast<ASR::ConstantReal_t>(value);
+                LFORTRAN_ASSERT(ASR::is_a<ASR::RealConstant_t>(*value))
+                ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
                 double rval = r->m_r;
-                value = (ASR::expr_t *)ASR::make_ConstantReal_t(al, a_loc,
+                value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
                     rval, dest_type2);
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToComplex) {
@@ -168,10 +168,10 @@ public:
                 LFORTRAN_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_pointer(dest_type)))
                 LFORTRAN_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(*convert_can)))
                 value = ASRUtils::expr_value(*convert_can);
-                LFORTRAN_ASSERT(ASR::is_a<ASR::ConstantReal_t>(*value))
-                ASR::ConstantReal_t *r = ASR::down_cast<ASR::ConstantReal_t>(value);
+                LFORTRAN_ASSERT(ASR::is_a<ASR::RealConstant_t>(*value))
+                ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
                 double rval = r->m_r;
-                value = (ASR::expr_t *)ASR::make_ConstantComplex_t(al, a_loc,
+                value = (ASR::expr_t *)ASR::make_ComplexConstant_t(al, a_loc,
                     rval, 0, dest_type2);
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::ComplexToReal) {
@@ -179,10 +179,10 @@ public:
                 LFORTRAN_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_pointer(dest_type)))
                 LFORTRAN_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(*convert_can)))
                 value = ASRUtils::expr_value(*convert_can);
-                LFORTRAN_ASSERT(ASR::is_a<ASR::ConstantComplex_t>(*value))
-                ASR::ConstantComplex_t *r = ASR::down_cast<ASR::ConstantComplex_t>(value);
+                LFORTRAN_ASSERT(ASR::is_a<ASR::ComplexConstant_t>(*value))
+                ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
                 double rval = r->m_re;
-                value = (ASR::expr_t *)ASR::make_ConstantReal_t(al, a_loc,
+                value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
                     rval, dest_type2);
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::IntegerToInteger) {
@@ -190,10 +190,10 @@ public:
                 LFORTRAN_ASSERT(ASR::is_a<ASR::Integer_t>(*dest_type2))
                 LFORTRAN_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(*convert_can)))
                 value = ASRUtils::expr_value(*convert_can);
-                LFORTRAN_ASSERT(ASR::is_a<ASR::ConstantInteger_t>(*value))
-                ASR::ConstantInteger_t *i = ASR::down_cast<ASR::ConstantInteger_t>(value);
+                LFORTRAN_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*value))
+                ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
                 int64_t ival = i->m_n;
-                value = (ASR::expr_t *)ASR::make_ConstantInteger_t(al, a_loc,
+                value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
                     ival, dest_type2);
             }
 

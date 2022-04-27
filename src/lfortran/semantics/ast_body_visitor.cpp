@@ -137,7 +137,7 @@ public:
             throw SemanticError("`newunit` or `unit` must be specified either in argument or keyword arguments.",
                                 x.base.base.loc);
         }
-        tmp = ASR::make_Open_t(al, x.base.base.loc, x.m_label,
+        tmp = ASR::make_FileOpen_t(al, x.base.base.loc, x.m_label,
                                a_newunit, a_filename, a_status);
     }
 
@@ -217,7 +217,7 @@ public:
             throw SemanticError("`newunit` or `unit` must be specified either in argument or keyword arguments.",
                                 x.base.base.loc);
         }
-        tmp = ASR::make_Close_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_iomsg, a_err, a_status);
+        tmp = ASR::make_FileClose_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_iomsg, a_err, a_status);
     }
 
     void create_read_write_ASR_node(const AST::stmt_t& read_write_stmt, AST::stmtType _type) {
@@ -331,10 +331,10 @@ public:
             a_values_vec.push_back(al, LFortran::ASRUtils::EXPR(tmp));
         }
         if( _type == AST::stmtType::Write ) {
-            tmp = ASR::make_Write_t(al, loc, m_label, a_unit, a_fmt,
+            tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_fmt,
                                     a_iomsg, a_iostat, a_id, a_values_vec.p, n_values);
         } else if( _type == AST::stmtType::Read ) {
-            tmp = ASR::make_Read_t(al, loc, m_label, a_unit, a_fmt,
+            tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
                                    a_iomsg, a_iostat, a_id, a_values_vec.p, n_values);
         }
     }
@@ -383,7 +383,7 @@ public:
         std::string node_name = "Rewind";
         fill_args_for_rewind_inquire_flush(x, 3, args, 3, argname2idx, node_name);
         ASR::expr_t *unit = args[0], *iostat = args[1], *err = args[2];
-        tmp = ASR::make_Rewind_t(al, x.base.base.loc, x.m_label, unit, iostat, err);
+        tmp = ASR::make_FileRewind_t(al, x.base.base.loc, x.m_label, unit, iostat, err);
     }
 
     void visit_Inquire(const AST::Inquire_t& x) {
@@ -414,7 +414,7 @@ public:
                                     x.base.base.loc);
             }
         }
-        tmp = ASR::make_Inquire_t(al, x.base.base.loc, x.m_label,
+        tmp = ASR::make_FileInquire_t(al, x.base.base.loc, x.m_label,
                                   unit, file, iostat, err,
                                   exist, opened, number, named,
                                   name, access, sequential, direct,
@@ -515,7 +515,7 @@ public:
         alloc_args_vec.reserve(al, x.n_args);
         ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
                                                             4, nullptr, 0));
-        ASR::expr_t* const_1 = LFortran::ASRUtils::EXPR(ASR::make_ConstantInteger_t(al, x.base.base.loc, 1, int32_type));
+        ASR::expr_t* const_1 = LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
         for( size_t i = 0; i < x.n_args; i++ ) {
             ASR::alloc_arg_t new_arg;
             new_arg.loc = x.base.base.loc;
@@ -927,7 +927,7 @@ public:
 
         ASR::ttype_t *value_type = ASRUtils::expr_type(value);
         if( target->type == ASR::exprType::Var && !ASRUtils::is_array(target_type) &&
-            value->type == ASR::exprType::ConstantArray ) {
+            value->type == ASR::exprType::ArrayConstant ) {
             throw SemanticError("ArrayInitalizer expressions can only be assigned array references", x.base.base.loc);
         }
         if (target->type == ASR::exprType::Var ||
