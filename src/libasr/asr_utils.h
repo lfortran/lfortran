@@ -732,7 +732,8 @@ bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
 
 bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                SymbolTable* curr_scope, ASR::asr_t*& asr,
-                               Allocator &al, const Location& loc);
+                               Allocator &al, const Location& loc,
+                               const std::function<void (const std::string &, const Location &)> err);
 
 void set_intrinsic(ASR::symbol_t* sym);
 

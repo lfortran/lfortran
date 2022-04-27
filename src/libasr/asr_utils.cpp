@@ -383,17 +383,19 @@ bool is_op_overloaded(ASR::binopType op, std::string& intrinsic_op_name,
 
 bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                SymbolTable* curr_scope, ASR::asr_t*& asr,
-                               Allocator &al, const Location& loc) {
+                               Allocator &al, const Location& loc,
+                               const std::function<void (const std::string &, const Location &)> err) {
     ASR::ttype_t *target_type = LFortran::ASRUtils::expr_type(target);
     ASR::ttype_t *value_type = LFortran::ASRUtils::expr_type(value);
     bool found = false;
-    if( curr_scope->get_symbol("~assign") != nullptr ) {
-        ASR::symbol_t* sym = curr_scope->get_symbol("~assign");
+    if( curr_scope->resolve_symbol("~assign") != nullptr ) {
+        ASR::symbol_t* sym = curr_scope->resolve_symbol("~assign");
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
             ASR::symbol_t* proc = gen_proc->m_procs[i];
             ASR::Subroutine_t* subrout = ASR::down_cast<ASR::Subroutine_t>(proc);
+            std::string matched_subrout_name = "";
             if( subrout->n_args == 2 ) {
                 ASR::ttype_t* target_arg_type = ASRUtils::expr_type(subrout->m_args[0]);
                 ASR::ttype_t* value_arg_type = ASRUtils::expr_type(subrout->m_args[1]);
@@ -408,20 +410,28 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                     value_arg.loc = value->base.loc, value_arg.m_value = value;
                     a_args.push_back(al, value_arg);
                     std::string subrout_name = to_lower(subrout->m_name);
-                    std::string mangled_name = subrout_name + "@~assign";
-                    ASR::symbol_t* imported_subrout = nullptr;
-                    if( sym->type == ASR::symbolType::ExternalSymbol  &&
-                        curr_scope->get_symbol(mangled_name) == nullptr) {
-                        ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
-                        imported_subrout = ASR::down_cast<ASR::symbol_t>(
-                                                            ASR::make_ExternalSymbol_t(al,
-                                                            loc, curr_scope,
-                                                            s2c(al, mangled_name), proc,
-                                                            ext_sym->m_module_name, nullptr, 0,
-                                                            subrout->m_name, ASR::accessType::Private));
-                        curr_scope->add_symbol(mangled_name, imported_subrout, true);
+                    if( curr_scope->resolve_symbol(subrout_name) ) {
+                        matched_subrout_name = subrout_name;
+                    } else {
+                        std::string mangled_name = subrout_name + "@~assign";
+                        matched_subrout_name = mangled_name;
+                        ASR::symbol_t* imported_subrout = nullptr;
+                        if( sym->type == ASR::symbolType::ExternalSymbol  &&
+                            curr_scope->resolve_symbol(mangled_name) == nullptr) {
+                            ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
+                            imported_subrout = ASR::down_cast<ASR::symbol_t>(
+                                                                ASR::make_ExternalSymbol_t(al,
+                                                                loc, curr_scope,
+                                                                s2c(al, mangled_name), proc,
+                                                                ext_sym->m_module_name, nullptr, 0,
+                                                                subrout->m_name, ASR::accessType::Private));
+                            curr_scope->add_symbol(mangled_name, imported_subrout, true);
+                        }
                     }
-                    asr = ASR::make_SubroutineCall_t(al, loc, curr_scope->resolve_symbol(mangled_name), orig_sym,
+                    if( curr_scope->resolve_symbol(matched_subrout_name) == nullptr ) {
+                        err("Unable to resolve matched subroutine for assignment overloading, " + std::string(matched_subrout_name), loc);
+                    }
+                    asr = ASR::make_SubroutineCall_t(al, loc, curr_scope->resolve_symbol(matched_subrout_name), orig_sym,
                                                         a_args.p, 2, nullptr);
                 }
             }
@@ -439,7 +449,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     ASR::ttype_t *right_type = LFortran::ASRUtils::expr_type(right);
     bool found = false;
     if( is_op_overloaded(op, intrinsic_op_name, curr_scope) ) {
-        ASR::symbol_t* sym = curr_scope->get_symbol(intrinsic_op_name);
+        ASR::symbol_t* sym = curr_scope->resolve_symbol(intrinsic_op_name);
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
@@ -519,7 +529,7 @@ bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
             break;
         }
     }
-    if( result && curr_scope->get_symbol(intrinsic_op_name) == nullptr ) {
+    if( result && curr_scope->resolve_symbol(intrinsic_op_name) == nullptr ) {
         result = false;
     }
     return result;

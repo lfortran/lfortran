@@ -911,7 +911,8 @@ public:
         ASR::expr_t *value = LFortran::ASRUtils::EXPR(tmp);
         ASR::stmt_t *overloaded_stmt = nullptr;
         if( LFortran::ASRUtils::use_overloaded_assignment(target, value,
-            current_scope, asr, al, x.base.base.loc) ) {
+            current_scope, asr, al, x.base.base.loc,
+            [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }) ) {
             overloaded_stmt = LFortran::ASRUtils::STMT(asr);
         }
         ASR::ttype_t *target_type = LFortran::ASRUtils::expr_type(target);
