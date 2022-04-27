@@ -13,7 +13,10 @@ namespace ASR {
 }
 
 struct SymbolTable {
+    private:
     std::map<std::string, ASR::symbol_t*> scope;
+
+    public:
     SymbolTable *parent;
     // The ASR node (either symbol_t or TranslationUnit_t) that contains this
     // SymbolTable as m_symtab / m_global_scope member. One of:
@@ -44,6 +47,10 @@ struct SymbolTable {
         return scope[name];
     }
 
+    const std::map<std::string, ASR::symbol_t*>& get_scope() {
+        return scope;
+    }
+
     // Obtains the symbol `name` from the current symbol table
     // Returns `nullptr` if symbol not found.
     ASR::symbol_t* get_symbol(const std::string &name) const {
@@ -54,6 +61,27 @@ struct SymbolTable {
         } else {
             return it->second;
         }
+    }
+
+    ASR::symbol_t* erase_symbol(const std::string &name) {
+        //auto it = scope.find(to_lower(name));
+        ASR::symbol_t* erased_sym = scope[name];
+        scope.erase(name);
+        return erased_sym;
+    }
+
+    void add_symbol(const std::string &name, ASR::symbol_t* symbol,
+                    bool only_if_unresolved) {
+        // TODO: Symbols like overloaded operators
+        // are not required to be added in a function's
+        // scope if they are already present in some parent scope
+        // The argument `only_if_unresolved` allows to specify when
+        // to skip adding a symbol to scope map of current
+        // symbol table.
+        if( only_if_unresolved && resolve_symbol(name) ) {
+            return ;
+        }
+        scope[name] = symbol;
     }
 
     // Marks all variables as external
