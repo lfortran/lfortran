@@ -532,7 +532,7 @@ public:
                 dertype2parent[der_type_name] = std::string(par_der_type->m_name);
                 member_idx += 1;
             }
-            std::map<std::string, ASR::symbol_t*> scope = der_type->m_symtab->scope;
+            const std::map<std::string, ASR::symbol_t*>& scope = der_type->m_symtab->get_scope();
             for( auto itr = scope.begin(); itr != scope.end(); itr++ ) {
                 ASR::Variable_t* member = (ASR::Variable_t*)(&(itr->second->base));
                 llvm::Type* mem_type = nullptr;
@@ -608,7 +608,7 @@ public:
         if( name2dertype.find(der_type_name) != name2dertype.end() ) {
             der_type_llvm = name2dertype[der_type_name];
         } else {
-            std::map<std::string, ASR::symbol_t*> scope = der_type->m_symtab->scope;
+            const std::map<std::string, ASR::symbol_t*>& scope = der_type->m_symtab->get_scope();
             std::vector<llvm::Type*> member_types;
             int member_idx = 0;
             for( auto itr = scope.begin(); itr != scope.end(); itr++ ) {
@@ -871,18 +871,18 @@ public:
         fname2arg_type["ubound"] = std::make_pair(bound_arg, bound_arg->getPointerTo());
 
         // Process Variables first:
-        for (auto &item : x.m_global_scope->scope) {
+        for (auto &item : x.m_global_scope->get_scope()) {
             if (is_a<ASR::Variable_t>(*item.second)) {
                 visit_symbol(*item.second);
             }
         }
 
         prototype_only = false;
-        for (auto &item : x.m_global_scope->scope) {
+        for (auto &item : x.m_global_scope->get_scope()) {
             if (is_a<ASR::Module_t>(*item.second) &&
                 item.first.find("lfortran_intrinsic_optimization") != std::string::npos) {
                 ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(item.second);
-                for( auto &moditem: mod->m_symtab->scope ) {
+                for( auto &moditem: mod->m_symtab->get_scope() ) {
                     ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(moditem.second);
                     if (is_a<ASR::Subroutine_t>(*sym)) {
                         visit_Subroutine(*ASR::down_cast<ASR::Subroutine_t>(sym));
@@ -895,7 +895,7 @@ public:
 
         prototype_only = true;
         // Generate function prototypes
-        for (auto &item : x.m_global_scope->scope) {
+        for (auto &item : x.m_global_scope->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 visit_Function(*ASR::down_cast<ASR::Function_t>(item.second));
             }
@@ -911,14 +911,14 @@ public:
         std::vector<std::string> build_order
             = determine_module_dependencies(x);
         for (auto &item : build_order) {
-            LFORTRAN_ASSERT(x.m_global_scope->scope.find(item)
-                != x.m_global_scope->scope.end());
-            ASR::symbol_t *mod = x.m_global_scope->scope[item];
+            LFORTRAN_ASSERT(x.m_global_scope->get_symbol(item)
+                != nullptr);
+            ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
             visit_symbol(*mod);
         }
 
         // Then do all the procedures
-        for (auto &item : x.m_global_scope->scope) {
+        for (auto &item : x.m_global_scope->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)
                 || is_a<ASR::Subroutine_t>(*item.second)) {
                 visit_symbol(*item.second);
@@ -926,7 +926,7 @@ public:
         }
 
         // Then the main program
-        for (auto &item : x.m_global_scope->scope) {
+        for (auto &item : x.m_global_scope->get_scope()) {
             if (is_a<ASR::Program_t>(*item.second)) {
                 visit_symbol(*item.second);
             }
@@ -1226,7 +1226,7 @@ public:
 
         start_module_init_function_prototype(x);
 
-        for (auto &item : x.m_symtab->scope) {
+        for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = down_cast<ASR::Variable_t>(
                         item.second);
@@ -1253,7 +1253,7 @@ public:
 
     void visit_Program(const ASR::Program_t &x) {
         // Generate code for nested subroutines and functions first:
-        for (auto &item : x.m_symtab->scope) {
+        for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *v = down_cast<ASR::Function_t>(
                         item.second);
@@ -1307,7 +1307,7 @@ public:
     template<typename T>
     void declare_vars(const T &x) {
         llvm::Value *target_var;
-        for (auto &item : x.m_symtab->scope) {
+        for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = down_cast<ASR::Variable_t>(item.second);
                 uint32_t h = get_hash((ASR::asr_t*)v);
@@ -1836,7 +1836,7 @@ public:
             llvm::Value *sp_loc = module->getOrInsertGlobal(
                 nested_sp_name, llvm::Type::getInt32Ty(context));
             llvm::Value *sp_val = CreateLoad(sp_loc);
-            for (auto &item : x->m_symtab->scope) {
+            for (auto &item : x->m_symtab->get_scope()) {
                 if (is_a<ASR::Variable_t>(*item.second)) {
                     ASR::Variable_t *v = down_cast<ASR::Variable_t>(
                         item.second);
@@ -1897,7 +1897,7 @@ public:
             builder->SetInsertPoint(dec_sp);
             builder->CreateStore(builder->CreateAdd(builder->getInt32(-1),
                 sp_val), sp_loc);
-            for (auto &item : x->m_symtab->scope) {
+            for (auto &item : x->m_symtab->get_scope()) {
                 if (is_a<ASR::Variable_t>(*item.second)) {
                     ASR::Variable_t *v = down_cast<ASR::Variable_t>(
                         item.second);
@@ -2029,7 +2029,7 @@ public:
             llvm_symtab_fn[h] = F;
 
             // Instantiate (pre-declare) all nested interfaces
-            for (auto &item : x.m_symtab->scope) {
+            for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::Function_t>(*item.second)) {
                     ASR::Function_t *v = down_cast<ASR::Function_t>(
                             item.second);
@@ -2102,7 +2102,7 @@ public:
             llvm_symtab_fn[h] = F;
 
             // Instantiate (pre-declare) all nested interfaces
-            for (auto &item : x.m_symtab->scope) {
+            for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::Function_t>(*item.second)) {
                     ASR::Function_t *v = down_cast<ASR::Function_t>(
                             item.second);
@@ -2374,7 +2374,7 @@ public:
 
     template<typename T>
     void visit_procedures(const T &x) {
-        for (auto &item : x.m_symtab->scope) {
+        for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Subroutine_t>(*item.second)) {
                 ASR::Subroutine_t *s = ASR::down_cast<ASR::Subroutine_t>(item.second);
                 visit_Subroutine(*s);

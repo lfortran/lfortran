@@ -14,9 +14,9 @@ namespace LFortran {
 
 // depth-first graph traversal
 void visit(
-    std::string const& a, 
+    std::string const& a,
     std::map<std::string, std::vector<std::string>> const& deps,
-    std::unordered_set<std::string>& visited, 
+    std::unordered_set<std::string>& visited,
     std::vector<std::string>& result
 ) {
     visited.insert(a);
@@ -49,7 +49,7 @@ std::vector<std::string> determine_module_dependencies(
         const ASR::TranslationUnit_t &unit)
 {
     std::map<std::string, std::vector<std::string>> deps;
-    for (auto &item : unit.m_global_scope->scope) {
+    for (auto &item : unit.m_global_scope->get_scope()) {
         if (ASR::is_a<ASR::Module_t>(*item.second)) {
             std::string name = item.first;
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(item.second);
@@ -64,8 +64,8 @@ std::vector<std::string> determine_module_dependencies(
 }
 
 ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
-    LFORTRAN_ASSERT(m.m_global_scope->scope.size()== 1);
-    for (auto &a : m.m_global_scope->scope) {
+    LFORTRAN_ASSERT(m.m_global_scope->get_scope().size()== 1);
+    for (auto &a : m.m_global_scope->get_scope()) {
         LFORTRAN_ASSERT(ASR::is_a<ASR::Module_t>(*a.second));
         return ASR::down_cast<ASR::Module_t>(a.second);
     }
@@ -79,8 +79,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err) {
     LFORTRAN_ASSERT(symtab);
-    if (symtab->scope.find(module_name) != symtab->scope.end()) {
-        ASR::symbol_t *m = symtab->scope[module_name];
+    if (symtab->get_symbol(module_name) != nullptr) {
+        ASR::symbol_t *m = symtab->get_symbol(module_name);
         if (ASR::is_a<ASR::Module_t>(*m)) {
             return ASR::down_cast<ASR::Module_t>(m);
         } else {
@@ -104,7 +104,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
             loc);
     }
     ASR::Module_t *mod2 = extract_module(*mod1);
-    symtab->scope[module_name] = (ASR::symbol_t*)mod2;
+    symtab->add_symbol(module_name, (ASR::symbol_t*)mod2, false);
     mod2->m_symtab->parent = symtab;
     mod2->m_loaded_from_mod = true;
     LFORTRAN_ASSERT(symtab->resolve_symbol(module_name));
@@ -122,8 +122,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
         std::vector<std::string> modules_list
             = determine_module_dependencies(*tu);
         for (auto &item : modules_list) {
-            if (symtab->scope.find(item)
-                    == symtab->scope.end()) {
+            if (symtab->get_symbol(item)
+                    == nullptr) {
                 // A module that was loaded requires to load another
                 // module
 
@@ -147,7 +147,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                     err("Module '" + item + "' modfile was not found", loc);
                 }
                 ASR::Module_t *mod2 = extract_module(*mod1);
-                symtab->scope[item] = (ASR::symbol_t*)mod2;
+                symtab->add_symbol(item, (ASR::symbol_t*)mod2, false);
                 mod2->m_symtab->parent = symtab;
                 mod2->m_loaded_from_mod = true;
                 rerun = true;
@@ -159,7 +159,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     std::vector<std::string> modules_list
         = determine_module_dependencies(*tu);
     for (auto &item : modules_list) {
-        if (symtab->scope.find(item) == symtab->scope.end()) {
+        if (symtab->get_symbol(item) == nullptr) {
             err("ICE: Module '" + item + "' modfile was not found, but should have", loc);
         }
     }
@@ -178,7 +178,7 @@ void set_intrinsic(ASR::symbol_t* sym) {
     switch( sym->type ) {
         case ASR::symbolType::Module: {
             ASR::Module_t* module_sym = ASR::down_cast<ASR::Module_t>(sym);
-            for( auto& itr: module_sym->m_symtab->scope ) {
+            for( auto& itr: module_sym->m_symtab->get_scope() ) {
                 set_intrinsic(itr.second);
             }
             break;
@@ -210,7 +210,7 @@ void set_intrinsic(ASR::symbol_t* sym) {
 }
 
 void set_intrinsic(ASR::TranslationUnit_t* trans_unit) {
-    for( auto& itr: trans_unit->m_global_scope->scope ) {
+    for( auto& itr: trans_unit->m_global_scope->get_scope() ) {
         set_intrinsic(itr.second);
     }
 }
@@ -256,11 +256,11 @@ ASR::asr_t* getDerivedRef_t(Allocator& al, const Location& loc,
                                             std::string(module_name) + "_" +
                                             std::string(der_type->m_name));
                 char* mangled_name_char = mangled_name.c_str(al);
-                if( current_scope->scope.find(mangled_name.str()) == current_scope->scope.end() ) {
+                if( current_scope->get_symbol(mangled_name.str()) == nullptr ) {
                     bool make_new_ext_sym = true;
                     ASR::symbol_t* der_tmp = nullptr;
-                    if( current_scope->scope.find(std::string(der_type->m_name)) != current_scope->scope.end() ) {
-                        der_tmp = current_scope->scope[std::string(der_type->m_name)];
+                    if( current_scope->get_symbol(std::string(der_type->m_name)) != nullptr ) {
+                        der_tmp = current_scope->get_symbol(std::string(der_type->m_name));
                         if( der_tmp->type == ASR::symbolType::ExternalSymbol ) {
                             ASR::ExternalSymbol_t* der_ext_tmp = (ASR::ExternalSymbol_t*)(&(der_tmp->base));
                             if( der_ext_tmp->m_external == m_external ) {
@@ -273,13 +273,13 @@ ASR::asr_t* getDerivedRef_t(Allocator& al, const Location& loc,
                     if( make_new_ext_sym ) {
                         der_ext = (ASR::symbol_t*)ASR::make_ExternalSymbol_t(al, loc, current_scope, mangled_name_char, m_external,
                                                                             module_name, nullptr, 0, der_type->m_name, ASR::accessType::Public);
-                        current_scope->scope[mangled_name.str()] = der_ext;
+                        current_scope->add_symbol(mangled_name.str(), der_ext, false);
                     } else {
                         LFORTRAN_ASSERT(der_tmp != nullptr);
                         der_ext = der_tmp;
                     }
                 } else {
-                    der_ext = current_scope->scope[mangled_name.str()];
+                    der_ext = current_scope->get_symbol(mangled_name.str());
                 }
                 ASR::asr_t* der_new = ASR::make_Derived_t(al, loc, der_ext, der->m_dims, der->n_dims);
                 member_type = (ASR::ttype_t*)(der_new);
@@ -301,7 +301,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     ASR::ttype_t *right_type = LFortran::ASRUtils::expr_type(right);
     bool found = false;
     if( is_op_overloaded(op, intrinsic_op_name, curr_scope) ) {
-        ASR::symbol_t* sym = curr_scope->scope[intrinsic_op_name];
+        ASR::symbol_t* sym = curr_scope->get_symbol(intrinsic_op_name);
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
@@ -322,7 +322,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             a_args.push_back(al, left_call_arg);
                             right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
                             a_args.push_back(al, right_call_arg);
-                            asr = ASR::make_FunctionCall_t(al, loc, curr_scope->scope[std::string(func->m_name)], orig_sym,
+                            asr = ASR::make_FunctionCall_t(al, loc, curr_scope->get_symbol(std::string(func->m_name)), orig_sym,
                                                             a_args.p, 2,
                                                             ASRUtils::expr_type(func->m_return_var),
                                                             nullptr, nullptr);
@@ -375,7 +375,7 @@ bool is_op_overloaded(ASR::binopType op, std::string& intrinsic_op_name,
             break;
         }
     }
-    if( result && curr_scope->scope.find(intrinsic_op_name) == curr_scope->scope.end() ) {
+    if( result && curr_scope->get_symbol(intrinsic_op_name) == nullptr ) {
         result = false;
     }
     return result;
@@ -387,8 +387,8 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     ASR::ttype_t *target_type = LFortran::ASRUtils::expr_type(target);
     ASR::ttype_t *value_type = LFortran::ASRUtils::expr_type(value);
     bool found = false;
-    if( curr_scope->scope.find("~assign") != curr_scope->scope.end() ) {
-        ASR::symbol_t* sym = curr_scope->scope["~assign"];
+    if( curr_scope->get_symbol("~assign") != nullptr ) {
+        ASR::symbol_t* sym = curr_scope->get_symbol("~assign");
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
@@ -411,7 +411,7 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                     std::string mangled_name = subrout_name + "@~assign";
                     ASR::symbol_t* imported_subrout = nullptr;
                     if( sym->type == ASR::symbolType::ExternalSymbol  &&
-                        curr_scope->scope.find(mangled_name) == curr_scope->scope.end()) {
+                        curr_scope->get_symbol(mangled_name) == nullptr) {
                         ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
                         imported_subrout = ASR::down_cast<ASR::symbol_t>(
                                                             ASR::make_ExternalSymbol_t(al,
@@ -419,9 +419,9 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                                             s2c(al, mangled_name), proc,
                                                             ext_sym->m_module_name, nullptr, 0,
                                                             subrout->m_name, ASR::accessType::Private));
-                        curr_scope->scope[mangled_name] = imported_subrout;
+                        curr_scope->add_symbol(mangled_name, imported_subrout, true);
                     }
-                    asr = ASR::make_SubroutineCall_t(al, loc, curr_scope->scope[mangled_name], orig_sym,
+                    asr = ASR::make_SubroutineCall_t(al, loc, curr_scope->resolve_symbol(mangled_name), orig_sym,
                                                         a_args.p, 2, nullptr);
                 }
             }
@@ -439,7 +439,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     ASR::ttype_t *right_type = LFortran::ASRUtils::expr_type(right);
     bool found = false;
     if( is_op_overloaded(op, intrinsic_op_name, curr_scope) ) {
-        ASR::symbol_t* sym = curr_scope->scope[intrinsic_op_name];
+        ASR::symbol_t* sym = curr_scope->get_symbol(intrinsic_op_name);
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
@@ -460,7 +460,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             a_args.push_back(al, left_call_arg);
                             right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
                             a_args.push_back(al, right_call_arg);
-                            asr = ASR::make_FunctionCall_t(al, loc, curr_scope->scope[std::string(func->m_name)], orig_sym,
+                            asr = ASR::make_FunctionCall_t(al, loc, curr_scope->resolve_symbol(std::string(func->m_name)), orig_sym,
                                                             a_args.p, 2,
                                                             ASRUtils::expr_type(func->m_return_var),
                                                             nullptr, nullptr);
@@ -519,7 +519,7 @@ bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
             break;
         }
     }
-    if( result && curr_scope->scope.find(intrinsic_op_name) == curr_scope->scope.end() ) {
+    if( result && curr_scope->get_symbol(intrinsic_op_name) == nullptr ) {
         result = false;
     }
     return result;
@@ -683,8 +683,8 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
     //     specific_procedure_remote_name
     std::string local_sym = std::string(p->m_name) + "@"
         + LFortran::ASRUtils::symbol_name(final_sym);
-    if (current_scope->scope.find(local_sym)
-        == current_scope->scope.end()) {
+    if (current_scope->get_symbol(local_sym)
+        == nullptr) {
         Str name;
         name.from_str(al, local_sym);
         char *cname = name.c_str(al);
@@ -697,9 +697,9 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
             ASR::accessType::Private
             );
         final_sym = ASR::down_cast<ASR::symbol_t>(sub);
-        current_scope->scope[local_sym] = final_sym;
+        current_scope->add_symbol(local_sym, final_sym, false);
     } else {
-        final_sym = current_scope->scope[local_sym];
+        final_sym = current_scope->get_symbol(local_sym);
     }
     if( is_subroutine ) {
         return ASR::make_SubroutineCall_t(al, loc, final_sym,
