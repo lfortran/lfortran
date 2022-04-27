@@ -722,7 +722,7 @@ public:
                             std::string unique_name = current_scope->get_unique_name(f->m_name);
                             Str s; s.from_str_view(unique_name);
                             char *unique_name_c = s.c_str(al);
-                            LFORTRAN_ASSERT(current_scope->scope.find(unique_name) == current_scope->scope.end());
+                            LFORTRAN_ASSERT(current_scope->get_symbol(unique_name) == nullptr);
                             new_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
                                 al, f->base.base.loc,
                                 /* a_symtab */ current_scope,
@@ -732,7 +732,7 @@ public:
                                 f->m_name,
                                 ASR::accessType::Private
                                 ));
-                            current_scope->scope[unique_name] = new_es;
+                            current_scope->add_symbol(unique_name, new_es, false);
                         }
                     }
                     Vec<ASR::call_arg_t> args;
@@ -922,8 +922,8 @@ public:
         //     specific_procedure_remote_name
         std::string local_sym = std::string(p->m_name) + "@"
             + LFortran::ASRUtils::symbol_name(final_sym);
-        if (current_scope->scope.find(local_sym)
-            == current_scope->scope.end()) {
+        if (current_scope->get_symbol(local_sym)
+            == nullptr) {
             Str name;
             name.from_str(al, local_sym);
             char *cname = name.c_str(al);
@@ -936,9 +936,9 @@ public:
                 ASR::accessType::Private
                 );
             final_sym = ASR::down_cast<ASR::symbol_t>(sub);
-            current_scope->scope[local_sym] = final_sym;
+            current_scope->add_symbol(local_sym, final_sym, false);
         } else {
-            final_sym = current_scope->scope[local_sym];
+            final_sym = current_scope->get_symbol(local_sym);
         }
         ASR::expr_t *value = nullptr;
         ASR::symbol_t* final_sym2 = LFortran::ASRUtils::symbol_get_past_external(final_sym);
@@ -1330,7 +1330,7 @@ public:
             );
         std::string sym = fn_name;
 
-        current_scope->scope[sym] = ASR::down_cast<ASR::symbol_t>(fn);
+        current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn), false);
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(fn);
         if (current_module) {
             // We are in body visitor
@@ -1794,7 +1794,7 @@ public:
                 ASR::expr_t **fn_args, size_t fn_n_args, const Location &loc, T* fn) {
         size_t n_args = args.size();
         std::vector<std::string> optional_args;
-        for( auto itr = fn->m_symtab->scope.begin(); itr != fn->m_symtab->scope.end();
+        for( auto itr = fn->m_symtab->get_scope().begin(); itr != fn->m_symtab->get_scope().end();
              itr++ ) {
             ASR::symbol_t* fn_sym = itr->second;
             if( ASR::is_a<ASR::Variable_t>(*fn_sym) ) {
