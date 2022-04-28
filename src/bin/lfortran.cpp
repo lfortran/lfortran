@@ -905,6 +905,95 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         bool time_report,
         CompilerOptions &compiler_options)
 {
+    int time_file_read=0;
+    int time_src_to_ast=0;
+    int time_ast_to_asr=0;
+    int time_asr_to_wasm=0;
+
+    std::string input;
+    LFortran::diag::Diagnostics diagnostics;
+    LFortran::FortranEvaluator fe(compiler_options);
+    Allocator al(64*1024*1024); // Allocate 64 MB
+    LFortran::AST::TranslationUnit_t* ast;
+    LFortran::ASR::TranslationUnit_t* asr;
+
+    {
+        auto t1 = std::chrono::high_resolution_clock::now();
+        input = read_file(infile);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        time_file_read = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    }
+
+    // Src -> AST
+    LFortran::LocationManager lm;
+    lm.in_filename = infile;
+    {
+        auto t1 = std::chrono::high_resolution_clock::now();
+        LFortran::Result<LFortran::AST::TranslationUnit_t*>
+            result = fe.get_ast2(input, lm, diagnostics);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        time_src_to_ast = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+
+        std::cerr << diagnostics.render(input, lm, compiler_options);
+        if (result.ok) {
+            ast = result.result;
+        } else {
+            LFORTRAN_ASSERT(diagnostics.has_error())
+            return 1;
+        }
+    }
+
+    // AST -> ASR
+    {
+        diagnostics.diagnostics.clear();
+        auto t1 = std::chrono::high_resolution_clock::now();
+        LFortran::Result<LFortran::ASR::TranslationUnit_t*>
+            result = fe.get_asr3(*ast, diagnostics);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+
+        std::cerr << diagnostics.render(input, lm, compiler_options);
+        if (result.ok) {
+            asr = result.result;
+        } else {
+            LFORTRAN_ASSERT(diagnostics.has_error())
+            return 2;
+        }
+    }
+
+    // ASR -> wasm machine code
+    {
+        diagnostics.diagnostics.clear();
+        auto t1 = std::chrono::high_resolution_clock::now();
+        LFortran::Result<int>
+            result = LFortran::asr_to_wasm(*asr, al, outfile, time_report);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        time_asr_to_wasm = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+
+        std::cerr << diagnostics.render(input, lm, compiler_options);
+        if (result.ok) {
+            // pass
+        } else {
+            LFORTRAN_ASSERT(diagnostics.has_error())
+            return 3;
+        }
+    }
+
+    if (time_report) {
+        std::cout << "Allocator usage of last chunk (MB): "
+            << al.size_current() / (1024. * 1024) << std::endl;
+        std::cout << "Allocator chunks: " << al.num_chunks() << std::endl;
+        std::cout << std::endl;
+        std::cout << "Time report:" << std::endl;
+        std::cout << "File reading:" << std::setw(5) << time_file_read << std::endl;
+        std::cout << "Src -> AST:  " << std::setw(5) << time_src_to_ast << std::endl;
+        std::cout << "AST -> ASR:  " << std::setw(5) << time_ast_to_asr << std::endl;
+        std::cout << "ASR -> wasm:  " << std::setw(5) << time_asr_to_wasm << std::endl;
+        int total = time_file_read + time_src_to_ast + time_ast_to_asr
+                + time_asr_to_wasm;
+        std::cout << "Total:       " << std::setw(5) << total << std::endl;
+    }
+
     return 0;
 }
 
