@@ -104,7 +104,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
             loc);
     }
     ASR::Module_t *mod2 = extract_module(*mod1);
-    symtab->add_symbol(module_name, (ASR::symbol_t*)mod2, false);
+    symtab->add_symbol(module_name, (ASR::symbol_t*)mod2);
     mod2->m_symtab->parent = symtab;
     mod2->m_loaded_from_mod = true;
     LFORTRAN_ASSERT(symtab->resolve_symbol(module_name));
@@ -147,7 +147,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                     err("Module '" + item + "' modfile was not found", loc);
                 }
                 ASR::Module_t *mod2 = extract_module(*mod1);
-                symtab->add_symbol(item, (ASR::symbol_t*)mod2, false);
+                symtab->add_symbol(item, (ASR::symbol_t*)mod2);
                 mod2->m_symtab->parent = symtab;
                 mod2->m_loaded_from_mod = true;
                 rerun = true;
@@ -273,7 +273,7 @@ ASR::asr_t* getDerivedRef_t(Allocator& al, const Location& loc,
                     if( make_new_ext_sym ) {
                         der_ext = (ASR::symbol_t*)ASR::make_ExternalSymbol_t(al, loc, current_scope, mangled_name_char, m_external,
                                                                             module_name, nullptr, 0, der_type->m_name, ASR::accessType::Public);
-                        current_scope->add_symbol(mangled_name.str(), der_ext, false);
+                        current_scope->add_symbol(mangled_name.str(), der_ext);
                     } else {
                         LFORTRAN_ASSERT(der_tmp != nullptr);
                         der_ext = der_tmp;
@@ -425,7 +425,7 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                                                 s2c(al, mangled_name), proc,
                                                                 ext_sym->m_module_name, nullptr, 0,
                                                                 subrout->m_name, ASR::accessType::Private));
-                            curr_scope->add_symbol(mangled_name, imported_subrout, true);
+                            curr_scope->add_symbol(mangled_name, imported_subrout);
                         }
                     }
                     if( curr_scope->resolve_symbol(matched_subrout_name) == nullptr ) {
@@ -707,7 +707,7 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
             ASR::accessType::Private
             );
         final_sym = ASR::down_cast<ASR::symbol_t>(sub);
-        current_scope->add_symbol(local_sym, final_sym, false);
+        current_scope->add_symbol(local_sym, final_sym);
     } else {
         final_sym = current_scope->get_symbol(local_sym);
     }

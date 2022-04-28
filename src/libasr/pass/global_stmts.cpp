@@ -54,7 +54,7 @@ void pass_wrap_global_stmts_into_function(Allocator &al,
                         ASR::Public, ASR::presenceType::Required, false);
                     return_var_ref = EXPR(ASR::make_Var_t(al, loc,
                         down_cast<ASR::symbol_t>(return_var)));
-                    fn_scope->add_symbol(std::string(var_name), down_cast<ASR::symbol_t>(return_var), false);
+                    fn_scope->add_symbol(std::string(var_name), down_cast<ASR::symbol_t>(return_var));
                     target = return_var_ref;
                     idx++;
                 } else if (LFortran::ASRUtils::expr_type(value)->type == ASR::ttypeType::Real) {
@@ -68,7 +68,7 @@ void pass_wrap_global_stmts_into_function(Allocator &al,
                         ASR::Public, ASR::presenceType::Required, false);
                     return_var_ref = EXPR(ASR::make_Var_t(al, loc,
                         down_cast<ASR::symbol_t>(return_var)));
-                    fn_scope->add_symbol(std::string(var_name), down_cast<ASR::symbol_t>(return_var), false);
+                    fn_scope->add_symbol(std::string(var_name), down_cast<ASR::symbol_t>(return_var));
                     target = return_var_ref;
                     idx++;
                 } else if (LFortran::ASRUtils::expr_type(value)->type == ASR::ttypeType::Complex) {
@@ -82,7 +82,7 @@ void pass_wrap_global_stmts_into_function(Allocator &al,
                         ASR::Public, ASR::presenceType::Required, false);
                     return_var_ref = EXPR(ASR::make_Var_t(al, loc,
                         down_cast<ASR::symbol_t>(return_var)));
-                    fn_scope->add_symbol(std::string(var_name), down_cast<ASR::symbol_t>(return_var), false);
+                    fn_scope->add_symbol(std::string(var_name), down_cast<ASR::symbol_t>(return_var));
                     target = return_var_ref;
                     idx++;
                 } else {
@@ -121,7 +121,7 @@ void pass_wrap_global_stmts_into_function(Allocator &al,
             if (unit.m_global_scope->get_symbol(sym_name) != nullptr) {
                 throw LFortranException("Function already defined");
             }
-            unit.m_global_scope->add_symbol(sym_name, down_cast<ASR::symbol_t>(fn), false);
+            unit.m_global_scope->add_symbol(sym_name, down_cast<ASR::symbol_t>(fn));
         } else {
             // The last item was a statement, create a subroutine (returing
             // nothing)
@@ -140,7 +140,7 @@ void pass_wrap_global_stmts_into_function(Allocator &al,
             if (unit.m_global_scope->get_symbol(sym_name) != nullptr) {
                 throw LFortranException("Function already defined");
             }
-            unit.m_global_scope->add_symbol(sym_name, down_cast<ASR::symbol_t>(fn), false);
+            unit.m_global_scope->add_symbol(sym_name, down_cast<ASR::symbol_t>(fn));
         }
         unit.m_items = nullptr;
         unit.n_items = 0;

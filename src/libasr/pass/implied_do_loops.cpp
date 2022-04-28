@@ -149,7 +149,7 @@ public:
                                                             ASR::intentType::Local, const_1, nullptr, ASR::storage_typeType::Default,
                                                             idx_var_type, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
                                                             false);
-                    unit.m_global_scope->add_symbol(std::string(idx_var_name), ASR::down_cast<ASR::symbol_t>(idx_sym), false);
+                    unit.m_global_scope->add_symbol(std::string(idx_var_name), ASR::down_cast<ASR::symbol_t>(idx_sym));
                     idx_var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(idx_sym)));
                 } else {
                     ASR::symbol_t* idx_sym = unit.m_global_scope->get_symbol(std::string(idx_var_name));

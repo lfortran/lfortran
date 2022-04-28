@@ -122,7 +122,7 @@ public:
                 READ_SYMBOL_CASE(ClassProcedure)
                 default : throw LFortranException("Symbol type not supported");
             }
-            symtab->add_symbol(symbol_name, s, false);
+            symtab->add_symbol(symbol_name, s);
         }
         ASR::symbol_t *sym = symtab->get_symbol(symbol_name);
         return sym;
@@ -131,7 +131,7 @@ public:
     void symtab_insert_symbol(SymbolTable &symtab, const std::string &name,
         ASR::symbol_t *sym) {
         if (symtab.get_symbol(name) == nullptr) {
-            symtab.add_symbol(name, sym, false);
+            symtab.add_symbol(name, sym);
         } else {
             // We have to copy the contents of `sym` into `sym2` without
             // changing the `sym2` pointer already in the table

@@ -194,7 +194,7 @@ namespace LFortran {
                                                             ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
                                                             int32_type, ASR::abiType::Source, ASR::accessType::Public,
                                                             ASR::presenceType::Required, false);
-                    current_scope->add_symbol(std::string(idx_var_name), ASR::down_cast<ASR::symbol_t>(idx_sym), false);
+                    current_scope->add_symbol(std::string(idx_var_name), ASR::down_cast<ASR::symbol_t>(idx_sym));
                     idx_var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(idx_sym)));
                 } else {
                     ASR::symbol_t* idx_sym = current_scope->get_symbol(std::string(idx_var_name));
@@ -237,7 +237,7 @@ namespace LFortran {
                                                         s2c(al, sym), t,
                                                         s2c(al, module_name), nullptr, 0, s2c(al, remote_sym),
                                                         ASR::accessType::Private);
-            current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn), false);
+            current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn));
             v = ASR::down_cast<ASR::symbol_t>(fn);
             current_scope = current_scope_copy;
             return v;
@@ -268,7 +268,7 @@ namespace LFortran {
             if( current_scope->get_symbol(sym) != nullptr ) {
                 v = current_scope->get_symbol(sym);
             } else {
-                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn), false);
+                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn));
                 v = ASR::down_cast<ASR::symbol_t>(fn);
             }
             current_scope = current_scope_copy;
@@ -307,7 +307,7 @@ namespace LFortran {
             if( current_scope2->get_symbol(sym) != nullptr ) {
                 v = current_scope2->get_symbol(sym);
             } else {
-                current_scope2->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn), false);
+                current_scope2->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn));
                 v = ASR::down_cast<ASR::symbol_t>(fn);
             }
             current_scope2 = current_scope_copy;
@@ -416,7 +416,7 @@ namespace LFortran {
                                                     ASRUtils::expr_type(expr), ASR::abiType::Source, ASR::accessType::Public,
                                                     ASR::presenceType::Required, false);
             if( current_scope->get_symbol(name) == nullptr ) {
-                current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(expr_sym), false);
+                current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(expr_sym));
             } else {
                 throw LFortranException("Symbol with " + name + " is already present in " + std::to_string(current_scope->counter));
             }
@@ -432,7 +432,7 @@ namespace LFortran {
                                                     var_type, ASR::abiType::Source, ASR::accessType::Public,
                                                     ASR::presenceType::Required, false);
             if( current_scope->get_symbol(name) == nullptr ) {
-                current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(expr_sym), false);
+                current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(expr_sym));
             } else {
                 throw LFortranException("Symbol with " + name + " is already present in " + std::to_string(current_scope->counter));
             }

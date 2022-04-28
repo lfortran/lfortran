@@ -149,7 +149,7 @@ public:
                                                 al, called_sym->base.loc, current_scope, new_sym_name,
                                                 f_sym, modname, nullptr, 0,
                                                 f->m_name, ASR::accessType::Private));
-                    current_scope->add_symbol(new_sym_name_str, new_sym, false);
+                    current_scope->add_symbol(new_sym_name_str, new_sym);
                 }
                 xx.m_name = current_scope->get_symbol(new_sym_name_str);
             }
@@ -262,7 +262,7 @@ public:
                                                 nullptr, nullptr, ASR::storage_typeType::Default,
                                                 func_var->m_type, ASR::abiType::Source, ASR::accessType::Public,
                                                 ASR::presenceType::Required, false);
-                current_scope->add_symbol(local_var_name, local_var, false);
+                current_scope->add_symbol(local_var_name, local_var);
                 arg2value[func_var_name] = local_var;
                 if( m_symbolic_value ) {
                     exprs_to_be_visited.push_back(std::make_pair(m_symbolic_value, local_var));

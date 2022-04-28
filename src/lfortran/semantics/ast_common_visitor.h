@@ -732,7 +732,7 @@ public:
                                 f->m_name,
                                 ASR::accessType::Private
                                 ));
-                            current_scope->add_symbol(unique_name, new_es, false);
+                            current_scope->add_symbol(unique_name, new_es);
                         }
                     }
                     Vec<ASR::call_arg_t> args;
@@ -936,7 +936,7 @@ public:
                 ASR::accessType::Private
                 );
             final_sym = ASR::down_cast<ASR::symbol_t>(sub);
-            current_scope->add_symbol(local_sym, final_sym, false);
+            current_scope->add_symbol(local_sym, final_sym);
         } else {
             final_sym = current_scope->get_symbol(local_sym);
         }
@@ -1330,7 +1330,7 @@ public:
             );
         std::string sym = fn_name;
 
-        current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn), false);
+        current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn));
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(fn);
         if (current_module) {
             // We are in body visitor

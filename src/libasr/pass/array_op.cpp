@@ -160,7 +160,7 @@ public:
         // of the function (which returned array) now points
         // to the newly created subroutine.
         for( auto& item: replace_vec ) {
-            xx.m_global_scope->add_symbol(item.first, item.second, false);
+            xx.m_global_scope->add_symbol(item.first, item.second);
         }
 
         // Now visit everything else
@@ -222,7 +222,7 @@ public:
         // of the function (which returned array) now points
         // to the newly created subroutine.
         for( auto& item: replace_vec ) {
-            current_scope->add_symbol(item.first, item.second, false);
+            current_scope->add_symbol(item.first, item.second);
         }
         transform_stmts(xx.m_body, xx.n_body);
 
@@ -309,7 +309,7 @@ public:
                                                     ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
                                                     var_type, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
                                                     false);
-            current_scope->add_symbol(std::string(idx_var_name), ASR::down_cast<ASR::symbol_t>(idx_sym), false);
+            current_scope->add_symbol(std::string(idx_var_name), ASR::down_cast<ASR::symbol_t>(idx_sym));
             idx_var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(idx_sym)));
         } else {
             ASR::symbol_t* idx_sym = current_scope->get_symbol(std::string(idx_var_name));

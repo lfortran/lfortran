@@ -68,17 +68,7 @@ struct SymbolTable {
         scope.erase(name);
     }
 
-    void add_symbol(const std::string &name, ASR::symbol_t* symbol,
-                    bool only_if_unresolved) {
-        // TODO: Symbols like overloaded operators
-        // are not required to be added in a function's
-        // scope if they are already present in some parent scope
-        // The argument `only_if_unresolved` allows to specify when
-        // to skip adding a symbol to scope map of current
-        // symbol table.
-        if( only_if_unresolved && resolve_symbol(name) ) {
-            return ;
-        }
+    void add_symbol(const std::string &name, ASR::symbol_t* symbol) {
         scope[name] = symbol;
     }
 

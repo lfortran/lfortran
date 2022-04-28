@@ -483,7 +483,7 @@ public:
                                                  ASR::accessType::Private,
                                                  ASR::presenceType::Required,
                                                  false);
-            new_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(v), false);
+            new_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(v));
             ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, v->loc, ASR::down_cast<ASR::symbol_t>(v)));
             if( create_associate_stmt ) {
                 ASR::stmt_t* associate_stmt = ASRUtils::STMT(ASR::make_Associate_t(al, tmp_expr->base.loc, target_var, tmp_expr));
@@ -504,7 +504,7 @@ public:
         ASR::asr_t* associate_block = ASR::make_AssociateBlock_t(al, x.base.base.loc,
                                                                  new_scope, s2c(al, name),
                                                                  body.p, body.size());
-        current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(associate_block), false);
+        current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(associate_block));
         tmp = ASR::make_AssociateBlockCall_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(associate_block));
         current_body->push_back(al, ASRUtils::STMT(tmp));
         tmp = nullptr;
@@ -1057,7 +1057,7 @@ public:
                             ASR::accessType::Private
                             );
                         final_sym = ASR::down_cast<ASR::symbol_t>(sub);
-                        current_scope->add_symbol(local_sym, final_sym, false);
+                        current_scope->add_symbol(local_sym, final_sym);
                     } else {
                         final_sym = current_scope->get_symbol(local_sym);
                     }

@@ -658,7 +658,7 @@ int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
             Allocator al(4*1024);
             LFortran::SymbolTable *symtab =
                 al.make_new<LFortran::SymbolTable>(nullptr);
-            symtab->add_symbol(std::string(m->m_name), item.second, false);
+            symtab->add_symbol(std::string(m->m_name), item.second);
             LFortran::SymbolTable *orig_symtab = m->m_symtab->parent;
             m->m_symtab->parent = symtab;
 
