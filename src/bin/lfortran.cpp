@@ -15,6 +15,7 @@
 #include <libasr/codegen/asr_to_cpp.h>
 #include <libasr/codegen/asr_to_py.h>
 #include <libasr/codegen/asr_to_x86.h>
+#include <libasr/codegen/asr_to_wasm.h>
 #include <lfortran/ast_to_src.h>
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/evaluator.h>
