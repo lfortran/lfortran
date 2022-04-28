@@ -388,8 +388,8 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     ASR::ttype_t *target_type = LFortran::ASRUtils::expr_type(target);
     ASR::ttype_t *value_type = LFortran::ASRUtils::expr_type(value);
     bool found = false;
-    if( curr_scope->resolve_symbol("~assign") != nullptr ) {
-        ASR::symbol_t* sym = curr_scope->resolve_symbol("~assign");
+    ASR::symbol_t* sym = curr_scope->resolve_symbol("~assign");
+    if (sym) {
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {

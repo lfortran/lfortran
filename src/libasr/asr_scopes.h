@@ -63,11 +63,9 @@ struct SymbolTable {
         }
     }
 
-    ASR::symbol_t* erase_symbol(const std::string &name) {
+    void erase_symbol(const std::string &name) {
         //auto it = scope.find(to_lower(name));
-        ASR::symbol_t* erased_sym = scope[name];
         scope.erase(name);
-        return erased_sym;
     }
 
     void add_symbol(const std::string &name, ASR::symbol_t* symbol,
