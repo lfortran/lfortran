@@ -233,10 +233,10 @@ public:
         m->m_dependencies = current_module_dependencies.p;
         m->n_dependencies = current_module_dependencies.n;
         std::string sym_name = to_lower(x.m_name);
-        if (parent_scope->scope.find(sym_name) != parent_scope->scope.end()) {
+        if (parent_scope->get_symbol(sym_name) != nullptr) {
             throw SemanticError("Module already defined", tmp->loc);
         }
-        parent_scope->scope[sym_name] = ASR::down_cast<ASR::symbol_t>(tmp);
+        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         fix_type_info();
     }
@@ -275,10 +275,10 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0);
         std::string sym_name = to_lower(x.m_name);
-        if (parent_scope->scope.find(sym_name) != parent_scope->scope.end()) {
+        if (parent_scope->get_symbol(sym_name) != nullptr) {
             throw SemanticError("Program already defined", tmp->loc);
         }
-        parent_scope->scope[sym_name] = ASR::down_cast<ASR::symbol_t>(tmp);
+        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         fix_type_info();
     }
@@ -307,10 +307,10 @@ public:
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             std::string arg_s = to_lower(arg);
-            if (current_scope->scope.find(arg_s) == current_scope->scope.end()) {
+            if (current_scope->get_symbol(arg_s) == nullptr) {
                 throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
             }
-            ASR::symbol_t *var = current_scope->scope[arg_s];
+            ASR::symbol_t *var = current_scope->get_symbol(arg_s);
             args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 var)));
         }
@@ -340,8 +340,8 @@ public:
                 }
             }
         }
-        if (parent_scope->scope.find(sym_name) != parent_scope->scope.end()) {
-            ASR::symbol_t *f1 = parent_scope->scope[sym_name];
+        if (parent_scope->get_symbol(sym_name) != nullptr) {
+            ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
             ASR::Subroutine_t *f2 = nullptr;
             if( f1->type == ASR::symbolType::Subroutine ) {
                 f2 = ASR::down_cast<ASR::Subroutine_t>(f1);
@@ -349,13 +349,13 @@ public:
             if ((f1->type == ASR::symbolType::ExternalSymbol && in_submodule) ||
                 f2->m_abi == ASR::abiType::Interactive) {
                 // Previous declaration will be shadowed
-                parent_scope->scope.erase(sym_name);
+                parent_scope->erase_symbol(sym_name);
             } else {
                 throw SemanticError("Subroutine already defined", tmp->loc);
             }
         }
         if( sym_name == interface_name ) {
-            parent_scope->scope.erase(sym_name);
+            parent_scope->erase_symbol(sym_name);
             sym_name = sym_name + "~genericprocedure";
         }
 
@@ -371,7 +371,7 @@ public:
             current_procedure_abi_type,
             s_access, deftype, bindc_name,
             is_pure, is_module);
-        parent_scope->scope[sym_name] = ASR::down_cast<ASR::symbol_t>(tmp);
+        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         /* FIXME: This can become incorrect/get cleared prematurely, perhaps
            in nested functions, and also in callback.f90 test, but it may not
@@ -426,10 +426,10 @@ public:
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             std::string arg_s = to_lower(arg);
-            if (current_scope->scope.find(arg_s) == current_scope->scope.end()) {
+            if (current_scope->get_symbol(arg_s) == nullptr) {
                 throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
             }
-            ASR::symbol_t *var = current_scope->scope[arg_s];
+            ASR::symbol_t *var = current_scope->get_symbol(arg_s);
             args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 var)));
         }
@@ -456,7 +456,7 @@ public:
         ASR::asr_t *return_var;
         AST::AttrType_t *return_type = find_return_type(x.m_attributes,
             x.n_attributes, x.base.base.loc);
-        if (current_scope->scope.find(return_var_name) == current_scope->scope.end()) {
+        if (current_scope->get_symbol(return_var_name) == nullptr) {
             // The variable is not defined among local variables, extract the
             // type from "integer function f()" and add the variable.
             if (!return_type) {
@@ -510,15 +510,14 @@ public:
                 ASR::storage_typeType::Default, type,
                 current_procedure_abi_type, ASR::Public, ASR::presenceType::Required,
                 false);
-            current_scope->scope[return_var_name]
-                = ASR::down_cast<ASR::symbol_t>(return_var);
+            current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
         } else {
             if (return_type) {
                 throw SemanticError("Cannot specify the return type twice",
                     x.base.base.loc);
             }
             // Extract the variable from the local scope
-            return_var = (ASR::asr_t*) current_scope->scope[return_var_name];
+            return_var = (ASR::asr_t*) current_scope->get_symbol(return_var_name);
             ASR::down_cast2<ASR::Variable_t>(return_var)->m_intent = LFortran::ASRUtils::intent_return_var;
         }
 
@@ -536,12 +535,12 @@ public:
         }
 
         if( generic_procedures.find(sym_name) != generic_procedures.end() ) {
-            parent_scope->scope.erase(sym_name);
+            parent_scope->erase_symbol(sym_name);
             sym_name = sym_name + "~genericprocedure";
         }
 
-        if (parent_scope->scope.find(sym_name) != parent_scope->scope.end()) {
-            ASR::symbol_t *f1 = parent_scope->scope[sym_name];
+        if (parent_scope->get_symbol(sym_name) != nullptr) {
+            ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
             ASR::Function_t *f2 = nullptr;
             if( f1->type == ASR::symbolType::Function ) {
                 f2 = ASR::down_cast<ASR::Function_t>(f1);
@@ -549,7 +548,7 @@ public:
             if ((f1->type == ASR::symbolType::ExternalSymbol && in_submodule) ||
                 f2->m_abi == ASR::abiType::Interactive) {
                 // Previous declaration will be shadowed
-                parent_scope->scope.erase(sym_name);
+                parent_scope->erase_symbol(sym_name);
             } else {
                 throw SemanticError("Function already defined", tmp->loc);
             }
@@ -566,7 +565,7 @@ public:
             /* n_body */ 0,
             /* a_return_var */ LFortran::ASRUtils::EXPR(return_var_ref),
             current_procedure_abi_type, s_access, deftype, bindc_name);
-        parent_scope->scope[sym_name] = ASR::down_cast<ASR::symbol_t>(tmp);
+        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         current_procedure_args.clear();
         current_procedure_abi_type = ASR::abiType::Source;
@@ -748,12 +747,12 @@ public:
                 ASR::storage_typeType storage_type =
                         ASR::storage_typeType::Default;
                 bool is_pointer = false;
-                if (current_scope->scope.find(sym) !=
-                        current_scope->scope.end()) {
+                if (current_scope->get_symbol(sym) !=
+                        nullptr) {
                     if (current_scope->parent != nullptr) {
                         // re-declaring a global scope variable is allowed
                         // Otherwise raise an error
-                        ASR::symbol_t *orig_decl = current_scope->scope[sym];
+                        ASR::symbol_t *orig_decl = current_scope->get_symbol(sym);
                         throw SemanticError(diag::Diagnostic(
                             "Symbol is already declared in the same scope",
                             diag::Level::Error, diag::Stage::Semantic, {
@@ -983,7 +982,7 @@ public:
                                                         s2c(al, to_lower(derived_type_name)), nullptr, 0,
                                                         ASR::abiType::Source, dflt_access, nullptr);
                         v = ASR::down_cast<ASR::symbol_t>(dtype);
-                        parent_scope->scope[derived_type_name] = v;
+                        parent_scope->add_symbol(derived_type_name, v);
                         current_scope = parent_scope;
                     }
                     type = LFortran::ASRUtils::TYPE(ASR::make_Class_t(al,
@@ -1046,7 +1045,7 @@ public:
                             s2c(al, to_lower(s.m_name)), s_intent, init_expr, value, storage_type, type,
                             current_procedure_abi_type, s_access, s_presence,
                             value_attr);
-                    current_scope->scope[sym] = ASR::down_cast<ASR::symbol_t>(v);
+                    current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                     if( is_derived_type ) {
                         data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
                     }
@@ -1083,21 +1082,21 @@ public:
             visit_procedure_decl(*x.m_contains[i]);
         }
         std::string sym_name = to_lower(x.m_name);
-        if (current_scope->scope.find(sym_name) != current_scope->scope.end()) {
+        if (current_scope->get_symbol(sym_name) != nullptr) {
             throw SemanticError("DerivedType already defined", x.base.base.loc);
         }
         ASR::symbol_t* parent_sym = nullptr;
         if( attr_extend != nullptr ) {
             std::string parent_sym_name = to_lower(attr_extend->m_name);
-            if( parent_scope->scope.find(parent_sym_name) == parent_scope->scope.end() ) {
+            if( parent_scope->get_symbol(parent_sym_name) == nullptr ) {
                 throw SemanticError(parent_sym_name + " is not defined.", x.base.base.loc);
             }
-            parent_sym = parent_scope->scope[parent_sym_name];
+            parent_sym = parent_scope->get_symbol(parent_sym_name);
         }
         tmp = ASR::make_DerivedType_t(al, x.base.base.loc, current_scope,
                 s2c(al, to_lower(x.m_name)), data_member_names.p, data_member_names.size(),
                 ASR::abiType::Source, dflt_access, parent_sym);
-        parent_scope->scope[sym_name] = ASR::down_cast<ASR::symbol_t>(tmp);
+        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         is_derived_type = false;
     }
@@ -1233,7 +1232,7 @@ public:
             }
             ASR::asr_t *v = ASR::make_CustomOperator_t(al, loc, current_scope,
                                 generic_name, symbols.p, symbols.size(), ASR::Public);
-            current_scope->scope[intrinsic2str[proc.first]] = ASR::down_cast<ASR::symbol_t>(v);
+            current_scope->add_symbol(intrinsic2str[proc.first], ASR::down_cast<ASR::symbol_t>(v));
         }
         overloaded_op_procs.clear();
 
@@ -1257,7 +1256,7 @@ public:
             }
             ASR::asr_t *v = ASR::make_CustomOperator_t(al, loc, current_scope,
                                 generic_name, symbols.p, symbols.size(), ASR::Public);
-            current_scope->scope[proc.first] = ASR::down_cast<ASR::symbol_t>(v);
+            current_scope->add_symbol(proc.first, ASR::down_cast<ASR::symbol_t>(v));
         }
         defined_op_procs.clear();
     }
@@ -1285,7 +1284,7 @@ public:
         }
         ASR::asr_t *v = ASR::make_CustomOperator_t(al, loc, current_scope,
                             generic_name, symbols.p, symbols.size(), assgn[current_scope]);
-        current_scope->scope[str_name] = ASR::down_cast<ASR::symbol_t>(v);
+        current_scope->add_symbol(str_name, ASR::down_cast<ASR::symbol_t>(v));
     }
 
     void add_generic_procedures() {
@@ -1309,8 +1308,8 @@ public:
                 symbols.push_back(al, x);
             }
             std::string sym_name_str = proc.first;
-            if( current_scope->scope.find(proc.first) != current_scope->scope.end() ) {
-                ASR::symbol_t* der_type_name = current_scope->scope[proc.first];
+            if( current_scope->get_symbol(proc.first) != nullptr ) {
+                ASR::symbol_t* der_type_name = current_scope->get_symbol(proc.first);
                 if( der_type_name->type == ASR::symbolType::DerivedType ||
                     der_type_name->type == ASR::symbolType::Function ) {
                     sym_name_str = "~" + proc.first;
@@ -1322,7 +1321,7 @@ public:
             ASR::asr_t *v = ASR::make_GenericProcedure_t(al, loc,
                 current_scope,
                 generic_name, symbols.p, symbols.size(), ASR::Public);
-            current_scope->scope[sym_name_str] = ASR::down_cast<ASR::symbol_t>(v);
+            current_scope->add_symbol(sym_name_str, ASR::down_cast<ASR::symbol_t>(v));
         }
     }
 
@@ -1332,13 +1331,13 @@ public:
             loc.first = 1;
             loc.last = 1;
             ASR::DerivedType_t *clss = ASR::down_cast<ASR::DerivedType_t>(
-                                            current_scope->scope[proc.first]);
+                                            current_scope->get_symbol(proc.first));
             for (auto &pname : proc.second) {
                 Vec<ASR::symbol_t*> cand_procs;
                 cand_procs.reserve(al, pname.second.size());
                 for( std::string &cand_proc: pname.second ) {
-                    if( clss->m_symtab->scope.find(cand_proc) != clss->m_symtab->scope.end() ) {
-                        cand_procs.push_back(al, clss->m_symtab->scope[cand_proc]);
+                    if( clss->m_symtab->get_symbol(cand_proc) != nullptr ) {
+                        cand_procs.push_back(al, clss->m_symtab->get_symbol(cand_proc));
                     } else {
                         throw SemanticError(cand_proc + " doesn't exist inside " + proc.first + " type", loc);
                     }
@@ -1350,7 +1349,7 @@ public:
                     clss->m_symtab, generic_name, cand_procs.p, cand_procs.size(),
                     ASR::accessType::Public); // Update the access as per the input Fortran code
                 ASR::symbol_t *cls_proc_sym = ASR::down_cast<ASR::symbol_t>(v);
-                clss->m_symtab->scope[pname.first] = cls_proc_sym;
+                clss->m_symtab->add_symbol(pname.first, cls_proc_sym);
             }
         }
     }
@@ -1362,9 +1361,9 @@ public:
             loc.first = 1;
             loc.last = 1;
             ASR::DerivedType_t *clss = ASR::down_cast<ASR::DerivedType_t>(
-                current_scope->scope[proc.first]);
+                current_scope->get_symbol(proc.first));
             for (auto &pname : proc.second) {
-                ASR::symbol_t *proc_sym = current_scope->scope[pname.second];
+                ASR::symbol_t *proc_sym = current_scope->get_symbol(pname.second);
                 Str s;
                 s.from_str_view(pname.first);
                 char *name = s.c_str(al);
@@ -1374,7 +1373,7 @@ public:
                     clss->m_symtab, name, proc_name, proc_sym,
                     ASR::abiType::Source);
                 ASR::symbol_t *cls_proc_sym = ASR::down_cast<ASR::symbol_t>(v);
-                clss->m_symtab->scope[pname.first] = cls_proc_sym;
+                clss->m_symtab->add_symbol(pname.first, cls_proc_sym);
             }
         }
     }
@@ -1382,8 +1381,8 @@ public:
     std::string import_all(const ASR::Module_t* m) {
         // Import all symbols from the module, e.g.:
         //     use a
-        for (auto &item : m->m_symtab->scope) {
-            if( current_scope->scope.find(item.first) != current_scope->scope.end() &&
+        for (auto &item : m->m_symtab->get_scope()) {
+            if( current_scope->get_symbol(item.first) != nullptr &&
                 !in_submodule ) {
                 continue;
             }
@@ -1399,7 +1398,7 @@ public:
                     dflt_access
                     );
                 std::string sym = to_lower(msub->m_name);
-                current_scope->scope[sym] = ASR::down_cast<ASR::symbol_t>(sub);
+                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(sub));
             } else if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(item.second);
                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
@@ -1411,7 +1410,7 @@ public:
                     dflt_access
                     );
                 std::string sym = to_lower(mfn->m_name);
-                current_scope->scope[sym] = ASR::down_cast<ASR::symbol_t>(fn);
+                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn));
             } else if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
                 ASR::GenericProcedure_t *gp = ASR::down_cast<
                     ASR::GenericProcedure_t>(item.second);
@@ -1424,7 +1423,7 @@ public:
                     dflt_access
                     );
                 std::string sym = to_lower(gp->m_name);
-                current_scope->scope[sym] = ASR::down_cast<ASR::symbol_t>(ep);
+                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(ep));
             }  else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
                 ASR::CustomOperator_t *gp = ASR::down_cast<
                     ASR::CustomOperator_t>(item.second);
@@ -1437,7 +1436,7 @@ public:
                     dflt_access
                     );
                 std::string sym = to_lower(gp->m_name);
-                current_scope->scope[sym] = ASR::down_cast<ASR::symbol_t>(ep);
+                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(ep));
             } else if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *mvar = ASR::down_cast<ASR::Variable_t>(item.second);
                 ASR::asr_t *var = ASR::make_ExternalSymbol_t(
@@ -1449,7 +1448,7 @@ public:
                     dflt_access
                     );
                 std::string sym = to_lower(mvar->m_name);
-                current_scope->scope[sym] = ASR::down_cast<ASR::symbol_t>(var);
+                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(var));
             } else if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
                 // We have to "repack" the ExternalSymbol so that it lives in the
                 // local symbol table
@@ -1469,7 +1468,7 @@ public:
                     es0->m_original_name,
                     dflt_access
                     );
-                current_scope->scope[sym] = ASR::down_cast<ASR::symbol_t>(es);
+                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(es));
             } else if( ASR::is_a<ASR::DerivedType_t>(*item.second) ) {
                 ASR::DerivedType_t *mv = ASR::down_cast<ASR::DerivedType_t>(item.second);
                 // `mv` is the Variable in a module. Now we construct
@@ -1485,7 +1484,7 @@ public:
                     m->m_name, nullptr, 0, mv->m_name,
                     dflt_access
                     );
-                current_scope->scope[item.first] = ASR::down_cast<ASR::symbol_t>(v);
+                current_scope->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
             } else {
                 return item.first;
             }
@@ -1554,7 +1553,7 @@ public:
                         x.base.base.loc);
                 }
                 if (ASR::is_a<ASR::Subroutine_t>(*t)) {
-                    if (current_scope->scope.find(local_sym) != current_scope->scope.end()) {
+                    if (current_scope->get_symbol(local_sym) != nullptr) {
                         throw SemanticError("Subroutine already defined",
                             x.base.base.loc);
                     }
@@ -1572,9 +1571,9 @@ public:
                         m->m_name, nullptr, 0, msub->m_name,
                         dflt_access
                         );
-                    current_scope->scope[local_sym] = ASR::down_cast<ASR::symbol_t>(sub);
+                    current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(sub));
                 } else if (ASR::is_a<ASR::GenericProcedure_t>(*t)) {
-                    if (current_scope->scope.find(local_sym) != current_scope->scope.end()) {
+                    if (current_scope->get_symbol(local_sym) != nullptr) {
                         throw SemanticError("Symbol already defined",
                             x.base.base.loc);
                     }
@@ -1590,9 +1589,9 @@ public:
                         m->m_name, nullptr, 0, gp->m_name,
                         dflt_access
                         );
-                    current_scope->scope[local_sym] = ASR::down_cast<ASR::symbol_t>(ep);
+                    current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
                 } else if (ASR::is_a<ASR::CustomOperator_t>(*t)) {
-                    if (current_scope->scope.find(local_sym) != current_scope->scope.end()) {
+                    if (current_scope->get_symbol(local_sym) != nullptr) {
                         throw SemanticError("Symbol already defined",
                             x.base.base.loc);
                     }
@@ -1608,9 +1607,9 @@ public:
                         m->m_name, nullptr, 0, gp->m_name,
                         dflt_access
                         );
-                    current_scope->scope[local_sym] = ASR::down_cast<ASR::symbol_t>(ep);
+                    current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
                 } else if (ASR::is_a<ASR::ExternalSymbol_t>(*t)) {
-                    if (current_scope->scope.find(local_sym) != current_scope->scope.end()) {
+                    if (current_scope->get_symbol(local_sym) != nullptr) {
                         throw SemanticError("Symbol already defined",
                             x.base.base.loc);
                     }
@@ -1624,9 +1623,9 @@ public:
                         es->m_module_name, es->m_scope_names, es->n_scope_names, es->m_original_name,
                         es->m_access
                         );
-                    current_scope->scope[local_sym] = ASR::down_cast<ASR::symbol_t>(ep);
+                    current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
                 } else if (ASR::is_a<ASR::Function_t>(*t)) {
-                    if (current_scope->scope.find(local_sym) != current_scope->scope.end()) {
+                    if (current_scope->get_symbol(local_sym) != nullptr) {
                         throw SemanticError("Function already defined",
                             x.base.base.loc);
                     }
@@ -1644,9 +1643,9 @@ public:
                         m->m_name, nullptr, 0, mfn->m_name,
                         dflt_access
                         );
-                    current_scope->scope[local_sym] = ASR::down_cast<ASR::symbol_t>(fn);
+                    current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(fn));
                 } else if (ASR::is_a<ASR::Variable_t>(*t)) {
-                    if (current_scope->scope.find(local_sym) != current_scope->scope.end()) {
+                    if (current_scope->get_symbol(local_sym) != nullptr) {
                         throw SemanticError("Variable already defined",
                             x.base.base.loc);
                     }
@@ -1664,9 +1663,9 @@ public:
                         m->m_name, nullptr, 0, mv->m_name,
                         dflt_access
                         );
-                    current_scope->scope[local_sym] = ASR::down_cast<ASR::symbol_t>(v);
+                    current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
                 } else if( ASR::is_a<ASR::DerivedType_t>(*t) ) {
-                    if (current_scope->scope.find(local_sym) != current_scope->scope.end()) {
+                    if (current_scope->get_symbol(local_sym) != nullptr) {
                         throw SemanticError("Derived type already defined",
                             x.base.base.loc);
                     }
@@ -1684,7 +1683,7 @@ public:
                         m->m_name, nullptr, 0, mv->m_name,
                         dflt_access
                         );
-                    current_scope->scope[local_sym] = ASR::down_cast<ASR::symbol_t>(v);
+                    current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
                 } else {
                     throw LFortranException("Only Subroutines, Functions, Variables and Derived supported in 'use'");
                 }

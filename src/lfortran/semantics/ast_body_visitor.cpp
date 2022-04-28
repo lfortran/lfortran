@@ -483,7 +483,7 @@ public:
                                                  ASR::accessType::Private,
                                                  ASR::presenceType::Required,
                                                  false);
-            new_scope->scope[name] = ASR::down_cast<ASR::symbol_t>(v);
+            new_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(v));
             ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, v->loc, ASR::down_cast<ASR::symbol_t>(v)));
             if( create_associate_stmt ) {
                 ASR::stmt_t* associate_stmt = ASRUtils::STMT(ASR::make_Associate_t(al, tmp_expr->base.loc, target_var, tmp_expr));
@@ -504,7 +504,7 @@ public:
         ASR::asr_t* associate_block = ASR::make_AssociateBlock_t(al, x.base.base.loc,
                                                                  new_scope, s2c(al, name),
                                                                  body.p, body.size());
-        current_scope->scope[name] = ASR::down_cast<ASR::symbol_t>(associate_block);
+        current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(associate_block));
         tmp = ASR::make_AssociateBlockCall_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(associate_block));
         current_body->push_back(al, ASRUtils::STMT(tmp));
         tmp = nullptr;
@@ -603,7 +603,7 @@ public:
     ASR::stmt_t* create_implicit_deallocate(const Location& loc) {
         Vec<ASR::symbol_t*> del_syms;
         del_syms.reserve(al, 0);
-        for( auto& item: current_scope->scope ) {
+        for( auto& item: current_scope->get_scope() ) {
             if( item.second->type == ASR::symbolType::Variable ) {
                 const ASR::symbol_t* sym = LFortran::ASRUtils::symbol_get_past_external(item.second);
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
@@ -759,7 +759,7 @@ public:
 
     void visit_Submodule(const AST::Submodule_t &x) {
         SymbolTable *old_scope = current_scope;
-        ASR::symbol_t *t = current_scope->scope[to_lower(x.m_name)];
+        ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Module_t *v = ASR::down_cast<ASR::Module_t>(t);
         current_scope = v->m_symtab;
         current_module = v;
@@ -775,7 +775,7 @@ public:
 
     void visit_Module(const AST::Module_t &x) {
         SymbolTable *old_scope = current_scope;
-        ASR::symbol_t *t = current_scope->scope[to_lower(x.m_name)];
+        ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Module_t *v = ASR::down_cast<ASR::Module_t>(t);
         current_scope = v->m_symtab;
         current_module = v;
@@ -791,7 +791,7 @@ public:
 
     void visit_Program(const AST::Program_t &x) {
         SymbolTable *old_scope = current_scope;
-        ASR::symbol_t *t = current_scope->scope[to_lower(x.m_name)];
+        ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Program_t *v = ASR::down_cast<ASR::Program_t>(t);
         current_scope = v->m_symtab;
 
@@ -853,10 +853,10 @@ public:
     // an error
     // TODO: add SymbolTable::get_symbol(), which will only check in Debug mode
         SymbolTable *old_scope = current_scope;
-        ASR::symbol_t *t = current_scope->scope[to_lower(x.m_name)];
+        ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         if( t->type == ASR::symbolType::GenericProcedure ) {
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
-            t = current_scope->scope[subrout_name];
+            t = current_scope->get_symbol(subrout_name);
         }
         ASR::Subroutine_t *v = ASR::down_cast<ASR::Subroutine_t>(t);
         current_scope = v->m_symtab;
@@ -880,9 +880,9 @@ public:
 
     void visit_Function(const AST::Function_t &x) {
         SymbolTable *old_scope = current_scope;
-        ASR::symbol_t *t = current_scope->scope[to_lower(x.m_name)];
+        ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         if( t->type == ASR::symbolType::GenericProcedure ) {
-            t = current_scope->scope[to_lower(x.m_name) + "~genericprocedure"];
+            t = current_scope->get_symbol(to_lower(x.m_name) + "~genericprocedure");
         }
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
@@ -911,7 +911,8 @@ public:
         ASR::expr_t *value = LFortran::ASRUtils::EXPR(tmp);
         ASR::stmt_t *overloaded_stmt = nullptr;
         if( LFortran::ASRUtils::use_overloaded_assignment(target, value,
-            current_scope, asr, al, x.base.base.loc) ) {
+            current_scope, asr, al, x.base.base.loc,
+            [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }) ) {
             overloaded_stmt = LFortran::ASRUtils::STMT(asr);
         }
         ASR::ttype_t *target_type = LFortran::ASRUtils::expr_type(target);
@@ -1042,8 +1043,8 @@ public:
                     //     specific_procedure_remote_name
                     std::string local_sym = std::string(to_lower(p->m_name)) + "@"
                         + LFortran::ASRUtils::symbol_name(final_sym);
-                    if (current_scope->scope.find(local_sym)
-                        == current_scope->scope.end()) {
+                    if (current_scope->get_symbol(local_sym)
+                        == nullptr) {
                         Str name;
                         name.from_str(al, local_sym);
                         char *cname = name.c_str(al);
@@ -1056,9 +1057,9 @@ public:
                             ASR::accessType::Private
                             );
                         final_sym = ASR::down_cast<ASR::symbol_t>(sub);
-                        current_scope->scope[local_sym] = final_sym;
+                        current_scope->add_symbol(local_sym, final_sym);
                     } else {
-                        final_sym = current_scope->scope[local_sym];
+                        final_sym = current_scope->get_symbol(local_sym);
                     }
                 } else {
                     if (!ASR::is_a<ASR::Subroutine_t>(*final_sym)) {
@@ -1145,12 +1146,12 @@ public:
         //                                                 ASR::storage_typeType::Default, LFortran::ASRUtils::expr_type(a_start),
         //                                                 ASR::abiType::Source, ASR::Public);
         std::string var_name = to_lower(x.m_var);
-        if (current_scope->scope.find(var_name) == current_scope->scope.end()) {
+        if (current_scope->get_symbol(var_name) == nullptr) {
             throw SemanticError("The implied do loop variable '" + var_name + "' is not declared", x.base.base.loc);
         };
 
-        LFORTRAN_ASSERT(current_scope->scope.find(var_name) != current_scope->scope.end());
-        ASR::symbol_t* a_sym = current_scope->scope[var_name];
+        LFORTRAN_ASSERT(current_scope->get_symbol(var_name) != nullptr);
+        ASR::symbol_t* a_sym = current_scope->get_symbol(var_name);
         // current_scope->scope[a_var_name] = a_sym;
         ASR::expr_t* a_var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
         tmp = ASR::make_ImpliedDoLoop_t(al, x.base.base.loc, a_values, n_values,
