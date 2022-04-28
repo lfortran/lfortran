@@ -52,7 +52,7 @@ using LFortran::endswith;
 using LFortran::CompilerOptions;
 
 enum Backend {
-    llvm, cpp, x86
+    llvm, cpp, x86, wasm
 };
 
 enum ASRPass {
@@ -901,6 +901,13 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
     return 0;
 }
 
+int compile_to_binary_wasm(const std::string &infile, const std::string &outfile,
+        bool time_report,
+        CompilerOptions &compiler_options)
+{
+    return 0;
+}
+
 
 int compile_to_object_file_cpp(const std::string &infile,
         const std::string &outfile,
@@ -1264,7 +1271,7 @@ int main(int argc, char *argv[])
         app.add_flag("--static", static_link, "Create a static executable");
         app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings");
         app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner");
-        app.add_option("--backend", arg_backend, "Select a backend (llvm, cpp, x86)")->capture_default_str();
+        app.add_option("--backend", arg_backend, "Select a backend (llvm, cpp, x86, wasm)")->capture_default_str();
         app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
         app.add_flag("--fast", compiler_options.fast, "Best performance (disable strict standard compliance)");
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
@@ -1369,8 +1376,10 @@ int main(int argc, char *argv[])
             backend = Backend::cpp;
         } else if (arg_backend == "x86") {
             backend = Backend::x86;
+        } else if (arg_backend == "wasm") {
+            backend = Backend::wasm;
         } else {
-            std::cerr << "The backend must be one of: llvm, cpp, x86." << std::endl;
+            std::cerr << "The backend must be one of: llvm, cpp, x86, wasm." << std::endl;
             return 1;
         }
 
@@ -1517,6 +1526,8 @@ int main(int argc, char *argv[])
                         true, rtlib_header_dir, compiler_options);
             } else if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile, time_report, compiler_options);
+            } else if (backend == Backend::wasm) {
+                return compile_to_binary_wasm(arg_file, outfile, time_report, compiler_options);
             } else {
                 throw LFortran::LFortranException("Unsupported backend.");
             }
@@ -1525,6 +1536,10 @@ int main(int argc, char *argv[])
         if (endswith(arg_file, ".f90")) {
             if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile,
+                        time_report, compiler_options);
+            }
+            else if (backend == Backend::wasm) {
+                return compile_to_binary_wasm(arg_file, outfile,
                         time_report, compiler_options);
             }
             std::string tmp_o = outfile + ".tmp.o";
