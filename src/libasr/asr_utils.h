@@ -336,6 +336,9 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         case ASR::symbolType::AssociateBlock: {
             return ASR::down_cast<ASR::AssociateBlock_t>(f)->m_name;
         }
+        case ASR::symbolType::Block: {
+            return ASR::down_cast<ASR::Block_t>(f)->m_name;
+        }
         default : throw LFortranException("Not implemented");
     }
 }
@@ -375,6 +378,9 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::AssociateBlock: {
             return ASR::down_cast<ASR::AssociateBlock_t>(f)->m_symtab->parent;
+        }
+        case ASR::symbolType::Block: {
+            return ASR::down_cast<ASR::Block_t>(f)->m_symtab->parent;
         }
         default : throw LFortranException("Not implemented");
     }
@@ -417,6 +423,9 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::AssociateBlock: {
             return ASR::down_cast<ASR::AssociateBlock_t>(f)->m_symtab;
+        }
+        case ASR::symbolType::Block: {
+            return ASR::down_cast<ASR::Block_t>(f)->m_symtab;
         }
         default : throw LFortranException("Not implemented");
     }
