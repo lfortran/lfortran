@@ -176,12 +176,11 @@ public:
                 ASR::storage_typeType storage_type =
                         ASR::storage_typeType::Default;
                 bool is_pointer = false;
-                if (current_scope->scope.find(sym) !=
-                        current_scope->scope.end()) {
+                if (current_scope->get_symbol(sym) != nullptr) {
                     if (current_scope->parent != nullptr) {
                         // re-declaring a global scope variable is allowed
                         // Otherwise raise an error
-                        ASR::symbol_t *orig_decl = current_scope->scope[sym];
+                        ASR::symbol_t *orig_decl = current_scope->get_symbol(sym);
                         throw SemanticError(diag::Diagnostic(
                             "Symbol is already declared in the same scope",
                             diag::Level::Error, diag::Stage::Semantic, {
@@ -399,7 +398,7 @@ public:
                                                         s2c(al, to_lower(derived_type_name)), nullptr, 0,
                                                         ASR::abiType::Source, dflt_access, nullptr);
                         v = ASR::down_cast<ASR::symbol_t>(dtype);
-                        parent_scope->scope[derived_type_name] = v;
+                        parent_scope->add_symbol(derived_type_name, v);
                         current_scope = parent_scope;
                     }
                     type = LFortran::ASRUtils::TYPE(ASR::make_Class_t(al,
@@ -462,7 +461,7 @@ public:
                             s2c(al, s.m_name), s_intent, init_expr, value, storage_type, type,
                             current_procedure_abi_type, s_access, s_presence,
                             value_attr);
-                    current_scope->scope[sym] = ASR::down_cast<ASR::symbol_t>(v);
+                    current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                     if( is_derived_type ) {
                         data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
                     }
@@ -494,7 +493,7 @@ public:
                                               current_scope, s2c(al, name),
                                               body.p, body.size());
         current_scope = parent_scope;
-        current_scope->scope[name] = ASR::down_cast<ASR::symbol_t>(block);
+        current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(block));
         tmp = ASR::make_BlockCall_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(block));
         current_body->push_back(al, ASRUtils::STMT(tmp));
         tmp = nullptr;

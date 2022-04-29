@@ -2494,6 +2494,15 @@ public:
         }
     }
 
+    void visit_BlockCall(const ASR::BlockCall_t& x) {
+        LFORTRAN_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
+        ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        declare_vars(*block);
+        for (size_t i = 0; i < block->n_body; i++) {
+            this->visit_stmt(*(block->m_body[i]));
+        }
+    }
+
     inline void visit_expr_wrapper(const ASR::expr_t* x, bool load_ref=false) {
         this->visit_expr(*x);
         if( x->type == ASR::exprType::ArrayRef ||
