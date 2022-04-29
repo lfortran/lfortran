@@ -4361,6 +4361,24 @@ public:
         tmp = CreateLoad(llvm_size);
     }
 
+    void visit_ArrayBound(const ASR::ArrayBound_t& x) {
+        visit_expr_wrapper(x.m_v);
+        llvm::Value* llvm_arg1 = tmp;
+        llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_arg1);
+        visit_expr_wrapper(x.m_dim, true);
+        llvm::Value* dim_val = tmp;
+        llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+        dim_val = builder->CreateSub(dim_val, const_1);
+        llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
+        llvm::Value* res = nullptr;
+        if( x.m_bound == ASR::arrayboundType::LBound ) {
+            res = arr_descr->get_lower_bound(dim_struct);
+        } else if( x.m_bound == ASR::arrayboundType::UBound ) {
+            res = arr_descr->get_upper_bound(dim_struct);
+        }
+        tmp = res;
+    }
+
 };
 
 
