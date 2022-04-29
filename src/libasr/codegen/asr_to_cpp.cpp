@@ -212,10 +212,10 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             std::vector<std::string> build_order
                 = LFortran::ASRUtils::determine_module_dependencies(x);
             for (auto &item : build_order) {
-                LFORTRAN_ASSERT(x.m_global_scope->scope.find(item)
-                    != x.m_global_scope->scope.end());
+                LFORTRAN_ASSERT(x.m_global_scope->get_scope().find(item)
+                    != x.m_global_scope->get_scope().end());
                 if (startswith(item, "lfortran_intrinsic")) {
-                    ASR::symbol_t *mod = x.m_global_scope->scope[item];
+                    ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
                     visit_symbol(*mod);
                     unit_src += src;
                 }
@@ -223,7 +223,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         }
 
         // Process procedures first:
-        for (auto &item : x.m_global_scope->scope) {
+        for (auto &item : x.m_global_scope->get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)
                 || ASR::is_a<ASR::Subroutine_t>(*item.second)) {
                 visit_symbol(*item.second);
@@ -235,17 +235,17 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         std::vector<std::string> build_order
             = LFortran::ASRUtils::determine_module_dependencies(x);
         for (auto &item : build_order) {
-            LFORTRAN_ASSERT(x.m_global_scope->scope.find(item)
-                != x.m_global_scope->scope.end());
+            LFORTRAN_ASSERT(x.m_global_scope->get_scope().find(item)
+                != x.m_global_scope->get_scope().end());
             if (!startswith(item, "lfortran_intrinsic")) {
-                ASR::symbol_t *mod = x.m_global_scope->scope[item];
+                ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
                 visit_symbol(*mod);
                 unit_src += src;
             }
         }
 
         // Then the main program:
-        for (auto &item : x.m_global_scope->scope) {
+        for (auto &item : x.m_global_scope->get_scope()) {
             if (ASR::is_a<ASR::Program_t>(*item.second)) {
                 visit_symbol(*item.second);
                 unit_src += src;
@@ -263,7 +263,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         }
         // Generate code for nested subroutines and functions first:
         std::string contains;
-        for (auto &item : x.m_symtab->scope) {
+        for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
                 ASR::Subroutine_t *s = ASR::down_cast<ASR::Subroutine_t>(item.second);
                 visit_Subroutine(*s);
@@ -282,7 +282,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     void visit_Program(const ASR::Program_t &x) {
         // Generate code for nested subroutines and functions first:
         std::string contains;
-        for (auto &item : x.m_symtab->scope) {
+        for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
                 ASR::Subroutine_t *s = ASR::down_cast<ASR::Subroutine_t>(item.second);
                 visit_Subroutine(*s);
@@ -301,7 +301,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         indentation_level += 1;
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string decl;
-        for (auto &item : x.m_symtab->scope) {
+        for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
                 decl += indent;
@@ -340,7 +340,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         }
         sub += ")\n";
 
-        for (auto &item : x.m_symtab->scope) {
+        for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
                 if (v->m_intent == LFortran::ASRUtils::intent_local) {
@@ -358,7 +358,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         }
 
         std::string decl;
-        for (auto &item : x.m_symtab->scope) {
+        for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
                 if (v->m_intent == LFortran::ASRUtils::intent_local) {
@@ -434,7 +434,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         indentation_level += 1;
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string decl;
-        for (auto &item : x.m_symtab->scope) {
+        for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
                 if (v->m_intent == LFortran::ASRUtils::intent_local || v->m_intent == LFortran::ASRUtils::intent_return_var) {

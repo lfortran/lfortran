@@ -647,7 +647,7 @@ int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
 
 int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
 {
-    for (auto &item : u.m_global_scope->scope) {
+    for (auto &item : u.m_global_scope->get_scope()) {
         if (LFortran::ASR::is_a<LFortran::ASR::Module_t>(*item.second)) {
             LFortran::ASR::Module_t *m = LFortran::ASR::down_cast<LFortran::ASR::Module_t>(item.second);
 
@@ -658,7 +658,7 @@ int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
             Allocator al(4*1024);
             LFortran::SymbolTable *symtab =
                 al.make_new<LFortran::SymbolTable>(nullptr);
-            symtab->scope[std::string(m->m_name)] = item.second;
+            symtab->add_symbol(std::string(m->m_name), item.second);
             LFortran::SymbolTable *orig_symtab = m->m_symtab->parent;
             m->m_symtab->parent = symtab;
 

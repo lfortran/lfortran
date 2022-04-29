@@ -401,7 +401,7 @@ class ASTWalkVisitorVisitor(ASDLVisitor):
         elif field.type == "symbol_table" and field.name in["symtab",
                 "global_scope"]:
             self.used = True
-            self.emit("for (auto &a : x.m_%s->scope) {" % field.name, 2)
+            self.emit("for (auto &a : x.m_%s->get_scope()) {" % field.name, 2)
             self.emit(  "this->visit_symbol(*a.second);", 3)
             self.emit("}", 2)
 
@@ -432,7 +432,7 @@ class TreeVisitorVisitor(ASDLVisitor):
         self.emit(  "void inc_lindent() {", 1)
         self.emit(      "indent_level++;", 2)
         self.emit(      'indtd += "| ";', 2)
-        self.emit(  "}", 1)        
+        self.emit(  "}", 1)
         self.emit(  "void dec_indent() {", 1)
         self.emit(      "indent_level--;", 2)
         self.emit(      "LFORTRAN_ASSERT(indent_level >= 0);", 2)
@@ -535,9 +535,9 @@ class TreeVisitorVisitor(ASDLVisitor):
                     self.emit("self().visit_%s(*x.m_%s[i]);" % (field.type, field.name), level+1)
                 else:
                     self.emit("self().visit_%s(x.m_%s[i]);" % (field.type, field.name), level+1)
-                self.emit(  'dec_indent();', level+1)      
+                self.emit(  'dec_indent();', level+1)
                 self.emit("}", level)
-            elif field.opt: 
+            elif field.opt:
                 self.emit('s.append("\\n" + indtd + "%s" + "%s=");' % (arr, field.name), 2)
                 if last:
                     self.emit('last = true;', 2)
@@ -562,7 +562,7 @@ class TreeVisitorVisitor(ASDLVisitor):
                     self.emit('s.append("\\n" + indtd + "%s" + "%s=");' % (arr, field.name), level)
                     self.emit("for (size_t i=0; i<x.n_%s; i++) {" % field.name, level)
                     self.emit(  "s.append(x.m_%s[i]);" % (field.name), level+1)
-                    self.emit(  'if (i < x.n_%s-1) s.append(" ");' % (field.name), level+1)            
+                    self.emit(  'if (i < x.n_%s-1) s.append(" ");' % (field.name), level+1)
                     self.emit("}", level)
                 else:
                     if field.opt:
@@ -587,7 +587,7 @@ class TreeVisitorVisitor(ASDLVisitor):
                 self.emit(  'last = i == x.n_%s-1;' % field.name, level+1)
                 self.emit(  'attached = false;', level+1)
                 self.emit(  "self().visit_%s(*x.m_%s[i]);" % (mod_name, field.name), level+1)
-                self.emit(  'dec_indent();', level+1)   
+                self.emit(  'dec_indent();', level+1)
                 self.emit("}", level)
             elif field.type == "symbol_table":
                 assert not field.opt
@@ -611,10 +611,10 @@ class TreeVisitorVisitor(ASDLVisitor):
                     self.emit(      's.append(x.m_%s->get_counter());' % field.name, level)
                     self.emit('size_t i = 0;', level)
                     self.emit('s.append("\\n" + indtd + "└-scope=\u21a7");', level)
-                    self.emit('for (auto &a : x.m_%s->scope) {' % field.name, level)
+                    self.emit('for (auto &a : x.m_%s->get_scope()) {' % field.name, level)
                     self.emit(      'i++;', level+1)
                     self.emit(      'inc_indent();', level+1)
-                    self.emit(      'last = i == x.m_%s->scope.size();' % field.name, level+1)
+                    self.emit(      'last = i == x.m_%s->get_scope().size();' % field.name, level+1)
                     self.emit(      's.append("\\n" + indtd + (last ? "└-" : "|-") + a.first + ": ");', level+1)
                     self.emit(      'this->visit_symbol(*a.second);', level+1)
                     self.emit(      'dec_indent();', level+1)
@@ -1035,14 +1035,14 @@ class PickleVisitorVisitor(ASDLVisitor):
                     self.emit(      's.append("{");', level)
                     self.emit('{', level)
                     self.emit('    size_t i = 0;', level)
-                    self.emit('    for (auto &a : x.m_%s->scope) {' % field.name, level)
+                    self.emit('    for (auto &a : x.m_%s->get_scope()) {' % field.name, level)
                     self.emit(      'if(indent) {',level)
                     self.emit(          's.append("\\n"+indtd);', level+1)
                     self.emit(          'inc_indent();',level+1)
                     self.emit(      '}', level)
                     self.emit('      s.append(a.first + ": ");', level)
                     self.emit('        this->visit_symbol(*a.second);', level)
-                    self.emit('        if (i < x.m_%s->scope.size()-1) { ' % field.name, level)
+                    self.emit('        if (i < x.m_%s->get_scope().size()-1) { ' % field.name, level)
                     self.emit('            s.append(", ");', level)
                     self.emit('            if(indent) {', level)
                     self.emit('                for(int times = 0; times < tmp2; times++)', level+1)
@@ -1229,15 +1229,15 @@ class SerializationVisitorVisitor(ASDLVisitor):
                 else:
                     level = 2
                     self.emit('self().write_int64(x.m_%s->counter);' % field.name, level)
-                    self.emit('self().write_int64(x.m_%s->scope.size());' % field.name, level)
-                    self.emit('for (auto &a : x.m_%s->scope) {' % field.name, level)
+                    self.emit('self().write_int64(x.m_%s->get_scope().size());' % field.name, level)
+                    self.emit('for (auto &a : x.m_%s->get_scope()) {' % field.name, level)
                     self.emit('    if (ASR::is_a<ASR::Subroutine_t>(*a.second) || ASR::is_a<ASR::Function_t>(*a.second)) {', level)
                     self.emit('        continue;', level)
                     self.emit('    }', level)
                     self.emit('    self().write_string(a.first);', level)
                     self.emit('    this->visit_symbol(*a.second);', level)
                     self.emit('}', level)
-                    self.emit('for (auto &a : x.m_%s->scope) {' % field.name, level)
+                    self.emit('for (auto &a : x.m_%s->get_scope()) {' % field.name, level)
                     self.emit('    if (ASR::is_a<ASR::Subroutine_t>(*a.second) || ASR::is_a<ASR::Function_t>(*a.second)) {', level)
                     self.emit('        self().write_string(a.first);', level)
                     self.emit('        this->visit_symbol(*a.second);', level)

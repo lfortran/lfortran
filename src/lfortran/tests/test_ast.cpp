@@ -45,7 +45,7 @@ end program
     CHECK(asr_verify(*asr)); // Passes
 
     // Extract the variable "x" from the "x = (2+3)*5" line:
-    ASR::Program_t *prog = ASR::down_cast<ASR::Program_t>(asr->m_global_scope->scope["expr2"]);
+    ASR::Program_t *prog = ASR::down_cast<ASR::Program_t>(asr->m_global_scope->get_symbol("expr2"));
     ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(prog->m_body[0]);
     ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(a->m_target);
 

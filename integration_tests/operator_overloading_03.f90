@@ -29,6 +29,12 @@ contains
             less_than_inverse = .false.
         end if
     end function
+
+    pure logical function less_than_overload_use(log1, log2)
+        logical, intent (in) :: log1, log2
+
+        less_than_overload_use = log1 < log2
+    end function
 end module
 
 program operator_overloading_01
