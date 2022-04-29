@@ -331,8 +331,8 @@ Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al,
                v.m_type_section.size(), fp);
         fwrite(v.m_func_section.data(), sizeof(uint8_t),
                v.m_func_section.size(), fp);
-        // fwrite(v.m_export_section.data(), sizeof(uint8_t),
-        //        v.m_export_section.size(), fp);
+        fwrite(v.m_export_section.data(), sizeof(uint8_t),
+               v.m_export_section.size(), fp);
         fwrite(v.m_code_section.data(), sizeof(uint8_t),
                v.m_code_section.size(), fp);
         fclose(fp);
