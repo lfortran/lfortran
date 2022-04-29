@@ -87,19 +87,19 @@ void emit_b8(Vec<uint8_t> &code, Allocator &al, uint8_t x) {
     code.push_back(al, x);
 }
 
-void emit_u32_b32_idx(Vec<uint8_t> &code, Allocator &al, uint8_t idx,
-                      uint8_t i) {
+void emit_u32_b32_idx(Vec<uint8_t> &code, Allocator &al, uint32_t idx,
+                      uint32_t section_size) {
     /*
     Encodes the integer `i` using LEB128 and adds trailing zeros to always
     occupy 4 bytes. Stores the int `i` at the index `idx` in `code`.
     */
-    std::vector<uint8_t> num = encode_unsigned_leb128(i);
+    std::vector<uint8_t> num = encode_unsigned_leb128(section_size);
     std::vector<uint8_t> num_4b = {0x80, 0x80, 0x80, 0x00};
     assert(num.size() <= 4);
-    for (int i = 0; i < num.size(); i++) {
+    for (uint32_t i = 0; i < num.size(); i++) {
         num_4b[i] |= num[i];
     }
-    for (int i = 0; i < 4; i++) {
+    for (uint32_t i = 0; i < 4u; i++) {
         code.p[idx + i] = num_4b[i];
     }
 }
