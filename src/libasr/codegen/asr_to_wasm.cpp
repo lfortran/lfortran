@@ -225,9 +225,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     void visit_Return(const ASR::Return_t & /* x */) {
         emit_get_local(m_code_section, m_al, m_var_name_idx_map[return_var->m_name]);
+        emit_b8(m_code_section, m_al, 0x0F);
     }
 
-    void visit_ConstantInteger(const ASR::IntegerConstant_t &x) {
+    void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
         int64_t val = x.m_n;
         int a_kind = ((ASR::Integer_t *)(&(x.m_type->base)))->m_kind;
         switch (a_kind) {
