@@ -1154,6 +1154,10 @@ public:
         return member;
     }
 
+    ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
+        // TBD
+    }
+
     ASR::asr_t* create_ArraySize(const AST::FuncCallOrArray_t& x) {
         if( !(x.n_args + x.n_keywords <= 3 && x.n_args >= 1)  ) {
             throw SemanticError("Incorrect number of arguments "
@@ -1256,6 +1260,8 @@ public:
             if( intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ) {
                 if( var_name == "size" ) {
                     tmp = create_ArraySize(x);
+                } else if( var_name == "lbound" || var_name == "ubound" ) {
+                    tmp = create_ArrayBound(x, var_name);
                 }
                 return ;
             }
