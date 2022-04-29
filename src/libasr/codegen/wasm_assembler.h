@@ -87,7 +87,7 @@ void emit_b8(Vec<uint8_t> &code, Allocator &al, uint8_t x) {
     code.push_back(al, x);
 }
 
-void emit_u32_b32_idx(Vec<uint8_t> &code, Allocator &al, uint32_t idx,
+void emit_u32_b32_idx(Vec<uint8_t> &code, uint32_t idx,
                       uint32_t section_size) {
     /*
     Encodes the integer `i` using LEB128 and adds trailing zeros to always
@@ -105,9 +105,9 @@ void emit_u32_b32_idx(Vec<uint8_t> &code, Allocator &al, uint32_t idx,
 }
 
 // function to fixup length at the given length index
-void fixup_len(Vec<uint8_t> &code, Allocator &al, uint32_t len_idx) {
+void fixup_len(Vec<uint8_t> &code, uint32_t len_idx) {
     uint32_t section_len = code.size() - len_idx - 4u;
-    emit_u32_b32_idx(code, al, len_idx, section_len);
+    emit_u32_b32_idx(code, len_idx, section_len);
 }
 
 // function to emit length placeholder
