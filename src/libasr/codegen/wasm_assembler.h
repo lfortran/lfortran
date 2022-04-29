@@ -137,14 +137,45 @@ void emit_get_local(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
     emit_u32(code, al, idx);
 }
 
+// function to emit set local variable at given index
+void emit_set_local(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
+    code.push_back(al, 0x21);
+    emit_u32(code, al, idx);
+}
+
 // function to emit i32.add instruction
 void emit_i32_add(Vec<uint8_t> &code, Allocator &al) {
     code.push_back(al, 0x6A);
 }
 
+// function to emit i32.sub instruction
+void emit_i32_sub(Vec<uint8_t> &code, Allocator &al) {
+    code.push_back(al, 0x6B);
+}
+
+// function to emit i32.mul instruction
+void emit_i32_mul(Vec<uint8_t> &code, Allocator &al) {
+    code.push_back(al, 0x6C);
+}
+
+// function to emit i32.div instruction
+void emit_i32_div(Vec<uint8_t> &code, Allocator &al) {
+    code.push_back(al, 0x6D);
+}
 // function to emit call instruction
 void emit_call(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
     code.push_back(al, 0x10);
+    emit_u32(code, al, idx);
+}
+
+void emit_export_fn(Vec<uint8_t> &code, Allocator &al, const std::string& name,
+                    uint32_t idx) {
+    std::vector<uint8_t> name_bytes(name.size());
+    std::memcpy(name_bytes.data(), name.data(), name.size());
+    emit_u32(code, al, name_bytes.size());
+    for(auto &byte:name_bytes)
+        emit_b8(code, al, byte);
+    emit_b8(code, al, 0x00);
     emit_u32(code, al, idx);
 }
 
