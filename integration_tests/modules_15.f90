@@ -14,7 +14,7 @@ use modules_15b, only: &
     f_float_complex_value_return, f_double_complex_value_return, &
     f_int_double_value_name, &
     sub_int_double_value_name, &
-    f_string, call_fortran_i32, fortran_i32
+    f_string, call_fortran_i32
 implicit none
 integer :: i, a, n, I32(3)
 real(sp) :: r32, X32(3)
