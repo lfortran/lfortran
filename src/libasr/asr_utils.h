@@ -124,6 +124,7 @@ static inline ASR::ttype_t* expr_type(const ASR::expr_t *f)
         case ASR::exprType::Var: { return EXPR2VAR(f)->m_type; }
         case ASR::exprType::ArrayRef: { return ((ASR::ArrayRef_t*)f)->m_type; }
         case ASR::exprType::ArraySize: { return ((ASR::ArraySize_t*)f)->m_type; }
+        case ASR::exprType::ArrayBound: { return ((ASR::ArrayBound_t*)f)->m_type; }
         case ASR::exprType::DerivedRef: { return ((ASR::DerivedRef_t*)f)->m_type; }
         case ASR::exprType::Cast: { return ((ASR::Cast_t*)f)->m_type; }
         case ASR::exprType::ComplexRe: { return ((ASR::ComplexRe_t*)f)->m_type; }
@@ -272,6 +273,7 @@ static inline ASR::expr_t* expr_value(ASR::expr_t *f)
         case ASR::exprType::FunctionCall: { return ASR::down_cast<ASR::FunctionCall_t>(f)->m_value; }
         case ASR::exprType::ArrayRef: { return ASR::down_cast<ASR::ArrayRef_t>(f)->m_value; }
         case ASR::exprType::ArraySize: { return ASR::down_cast<ASR::ArraySize_t>(f)->m_value; }
+        case ASR::exprType::ArrayBound: { return ASR::down_cast<ASR::ArrayBound_t>(f)->m_value; }
         case ASR::exprType::DerivedRef: { return ASR::down_cast<ASR::DerivedRef_t>(f)->m_value; }
         case ASR::exprType::Cast: { return ASR::down_cast<ASR::Cast_t>(f)->m_value; }
         case ASR::exprType::Var: { return EXPR2VAR(f)->m_value; }

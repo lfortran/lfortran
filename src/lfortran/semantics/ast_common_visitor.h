@@ -1154,7 +1154,8 @@ public:
         return member;
     }
 
-    ASR::asr_t* create_ArraySize(const AST::FuncCallOrArray_t& x) {
+    void handle_array_bound_size_args(const AST::FuncCallOrArray_t& x, ASR::expr_t*& v_Var,
+                                      ASR::expr_t*& dim, ASR::ttype_t*& type) {
         if( !(x.n_args + x.n_keywords <= 3 && x.n_args >= 1)  ) {
             throw SemanticError("Incorrect number of arguments "
                                 "to the array size() intrinsic "
@@ -1164,15 +1165,14 @@ public:
                                 x.base.base.loc);
         }
 
-        ASR::expr_t* dim = nullptr;
         ASR::expr_t* kind = nullptr;
-        ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Integer_t(
+        type = ASRUtils::TYPE(ASR::make_Integer_t(
                                                 al, x.base.base.loc, 4,
                                                 nullptr, 0));;
 
         LFORTRAN_ASSERT(x.m_args[0].m_end != nullptr);
         this->visit_expr(*x.m_args[0].m_end);
-        ASR::expr_t* v_Var = ASRUtils::EXPR(tmp);
+        v_Var = ASRUtils::EXPR(tmp);
         AST::expr_t *dim_expr = nullptr, *kind_expr = nullptr;
         if( x.n_keywords == 0 ) {
             if( x.n_args >= 2 ) {
@@ -1232,7 +1232,28 @@ public:
                                         nullptr, 0));
             }
         }
+    }
 
+    ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
+         ASR::expr_t *v_Var, *dim;
+         ASR::ttype_t *type;
+        v_Var = nullptr, dim = nullptr, type = nullptr;
+        handle_array_bound_size_args(x, v_Var, dim, type);
+        ASR::arrayboundType bound = ASR::arrayboundType::LBound;
+        if( bound_name == "lbound" ) {
+            bound = ASR::arrayboundType::LBound;
+        } else if( bound_name == "ubound" ) {
+            bound = ASR::arrayboundType::UBound;
+        }
+        return ASR::make_ArrayBound_t(al, x.base.base.loc, v_Var, dim, type,
+                                      bound, nullptr);
+    }
+
+    ASR::asr_t* create_ArraySize(const AST::FuncCallOrArray_t& x) {
+        ASR::expr_t *v_Var, *dim;
+        ASR::ttype_t *type;
+        v_Var = nullptr, dim = nullptr, type = nullptr;
+        handle_array_bound_size_args(x, v_Var, dim, type);
         return ASR::make_ArraySize_t(al, x.base.base.loc, v_Var, dim, type, nullptr);
     }
 
@@ -1256,6 +1277,8 @@ public:
             if( intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ) {
                 if( var_name == "size" ) {
                     tmp = create_ArraySize(x);
+                } else if( var_name == "lbound" || var_name == "ubound" ) {
+                    tmp = create_ArrayBound(x, var_name);
                 }
                 return ;
             }
