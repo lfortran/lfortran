@@ -27,7 +27,9 @@ public:
 
     void visit_Function(const ASR::Function_t &x) {
         uint64_t h = get_hash((ASR::asr_t*)&x);
-        fn_declarations[h] = x.m_name;
+        if (x.m_abi != ASR::abiType::BindC) {
+            fn_declarations[h] = x.m_name;
+        }
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }

@@ -195,13 +195,6 @@ if (f_string(" ") /= 1) error stop
 if (f_string("") /= 0) error stop
 
 ! Calling Fortran code from C
-!! First test pure Fortran version:
-i = 5
-i = fortran_i32(i)
-print *, i
-if (i /= 7) error stop
-
-!! Now call it via C
 i = 5
 i = call_fortran_i32(i)
 print *, i
