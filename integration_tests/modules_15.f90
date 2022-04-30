@@ -14,7 +14,7 @@ use modules_15b, only: &
     f_float_complex_value_return, f_double_complex_value_return, &
     f_int_double_value_name, &
     sub_int_double_value_name, &
-    f_string
+    f_string, call_fortran_i32, fortran_i32
 implicit none
 integer :: i, a, n, I32(3)
 real(sp) :: r32, X32(3)
@@ -193,5 +193,18 @@ if (f_string("123") /= 3) error stop
 if (f_string("abcde") /= 5) error stop
 if (f_string(" ") /= 1) error stop
 if (f_string("") /= 0) error stop
+
+! Calling Fortran code from C
+!! First test pure Fortran version:
+i = 5
+i = fortran_i32(i)
+print *, i
+if (i /= 7) error stop
+
+!! Now call it via C
+i = 5
+i = call_fortran_i32(i)
+print *, i
+if (i /= 7) error stop
 
 end
