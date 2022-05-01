@@ -26,6 +26,8 @@ int f_int_intarray(int n, int *b);
 float f_int_floatarray(int n, float *b);
 double f_int_doublearray(int n, double *b);
 
+int call_fortran_i32(int i);
+
 
 void sub_int_float(int *a, float *b, int *r);
 void sub_int_double(int *a, double *b, int *r);
@@ -40,6 +42,7 @@ void sub_int_floatarray(int n, float *b, float *r);
 void sub_int_doublearray(int n, double *b, double *r);
 
 int f_string(char *s);
+int fortran_i32(int *i);
 
 
 #endif // MODULES_15C

@@ -205,6 +205,11 @@ interface
     character(len=1, kind=c_char), intent(in) :: s(*)
     end function
 
+    integer(c_int) function call_fortran_i32(i) result(r) bind(c)
+    import :: c_int
+    integer(c_int), value, intent(in) :: i
+    end function
+
 end interface
 
 contains
@@ -212,6 +217,11 @@ contains
 integer function f_string(s) result(r)
 character(*), intent(in) :: s
 r = f_string0(s // c_null_char)
+end function
+
+integer(c_int) function fortran_i32(i) result(r) bind(c)
+integer(c_int), intent(in) :: i
+r = i + 2
 end function
 
 end module

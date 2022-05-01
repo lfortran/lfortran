@@ -722,7 +722,7 @@ public:
                             std::string unique_name = current_scope->get_unique_name(f->m_name);
                             Str s; s.from_str_view(unique_name);
                             char *unique_name_c = s.c_str(al);
-                            LFORTRAN_ASSERT(current_scope->scope.find(unique_name) == current_scope->scope.end());
+                            LFORTRAN_ASSERT(current_scope->get_symbol(unique_name) == nullptr);
                             new_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
                                 al, f->base.base.loc,
                                 /* a_symtab */ current_scope,
@@ -732,7 +732,7 @@ public:
                                 f->m_name,
                                 ASR::accessType::Private
                                 ));
-                            current_scope->scope[unique_name] = new_es;
+                            current_scope->add_symbol(unique_name, new_es);
                         }
                     }
                     Vec<ASR::call_arg_t> args;
@@ -922,8 +922,8 @@ public:
         //     specific_procedure_remote_name
         std::string local_sym = std::string(p->m_name) + "@"
             + LFortran::ASRUtils::symbol_name(final_sym);
-        if (current_scope->scope.find(local_sym)
-            == current_scope->scope.end()) {
+        if (current_scope->get_symbol(local_sym)
+            == nullptr) {
             Str name;
             name.from_str(al, local_sym);
             char *cname = name.c_str(al);
@@ -936,9 +936,9 @@ public:
                 ASR::accessType::Private
                 );
             final_sym = ASR::down_cast<ASR::symbol_t>(sub);
-            current_scope->scope[local_sym] = final_sym;
+            current_scope->add_symbol(local_sym, final_sym);
         } else {
-            final_sym = current_scope->scope[local_sym];
+            final_sym = current_scope->get_symbol(local_sym);
         }
         ASR::expr_t *value = nullptr;
         ASR::symbol_t* final_sym2 = LFortran::ASRUtils::symbol_get_past_external(final_sym);
@@ -1154,7 +1154,8 @@ public:
         return member;
     }
 
-    ASR::asr_t* create_ArraySize(const AST::FuncCallOrArray_t& x) {
+    void handle_array_bound_size_args(const AST::FuncCallOrArray_t& x, ASR::expr_t*& v_Var,
+                                      ASR::expr_t*& dim, ASR::ttype_t*& type) {
         if( !(x.n_args + x.n_keywords <= 3 && x.n_args >= 1)  ) {
             throw SemanticError("Incorrect number of arguments "
                                 "to the array size() intrinsic "
@@ -1164,15 +1165,14 @@ public:
                                 x.base.base.loc);
         }
 
-        ASR::expr_t* dim = nullptr;
         ASR::expr_t* kind = nullptr;
-        ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Integer_t(
+        type = ASRUtils::TYPE(ASR::make_Integer_t(
                                                 al, x.base.base.loc, 4,
                                                 nullptr, 0));;
 
         LFORTRAN_ASSERT(x.m_args[0].m_end != nullptr);
         this->visit_expr(*x.m_args[0].m_end);
-        ASR::expr_t* v_Var = ASRUtils::EXPR(tmp);
+        v_Var = ASRUtils::EXPR(tmp);
         AST::expr_t *dim_expr = nullptr, *kind_expr = nullptr;
         if( x.n_keywords == 0 ) {
             if( x.n_args >= 2 ) {
@@ -1232,7 +1232,28 @@ public:
                                         nullptr, 0));
             }
         }
+    }
 
+    ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
+         ASR::expr_t *v_Var, *dim;
+         ASR::ttype_t *type;
+        v_Var = nullptr, dim = nullptr, type = nullptr;
+        handle_array_bound_size_args(x, v_Var, dim, type);
+        ASR::arrayboundType bound = ASR::arrayboundType::LBound;
+        if( bound_name == "lbound" ) {
+            bound = ASR::arrayboundType::LBound;
+        } else if( bound_name == "ubound" ) {
+            bound = ASR::arrayboundType::UBound;
+        }
+        return ASR::make_ArrayBound_t(al, x.base.base.loc, v_Var, dim, type,
+                                      bound, nullptr);
+    }
+
+    ASR::asr_t* create_ArraySize(const AST::FuncCallOrArray_t& x) {
+        ASR::expr_t *v_Var, *dim;
+        ASR::ttype_t *type;
+        v_Var = nullptr, dim = nullptr, type = nullptr;
+        handle_array_bound_size_args(x, v_Var, dim, type);
         return ASR::make_ArraySize_t(al, x.base.base.loc, v_Var, dim, type, nullptr);
     }
 
@@ -1256,6 +1277,8 @@ public:
             if( intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ) {
                 if( var_name == "size" ) {
                     tmp = create_ArraySize(x);
+                } else if( var_name == "lbound" || var_name == "ubound" ) {
+                    tmp = create_ArrayBound(x, var_name);
                 }
                 return ;
             }
@@ -1330,7 +1353,7 @@ public:
             );
         std::string sym = fn_name;
 
-        current_scope->scope[sym] = ASR::down_cast<ASR::symbol_t>(fn);
+        current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn));
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(fn);
         if (current_module) {
             // We are in body visitor
@@ -1794,7 +1817,7 @@ public:
                 ASR::expr_t **fn_args, size_t fn_n_args, const Location &loc, T* fn) {
         size_t n_args = args.size();
         std::vector<std::string> optional_args;
-        for( auto itr = fn->m_symtab->scope.begin(); itr != fn->m_symtab->scope.end();
+        for( auto itr = fn->m_symtab->get_scope().begin(); itr != fn->m_symtab->get_scope().end();
              itr++ ) {
             ASR::symbol_t* fn_sym = itr->second;
             if( ASR::is_a<ASR::Variable_t>(*fn_sym) ) {

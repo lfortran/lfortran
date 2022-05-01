@@ -151,3 +151,7 @@ void sub_int_doublearray(int n, double *b, double *r) {
 int f_string(char *s) {
     return strlen(s);
 }
+
+int call_fortran_i32(int i) {
+    return fortran_i32(&i);
+}
