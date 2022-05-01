@@ -67,12 +67,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Program(const ASR::Program_t &x) {
-        emit_header(m_preamble, m_al); // emit header and version
+        wasm::emit_header(m_preamble, m_al); // emit header and version
         
-        uint32_t len_idx_type_section = emit_len_placeholder(m_type_section, m_al);
-        uint32_t len_idx_func_section = emit_len_placeholder(m_func_section, m_al);
-        uint32_t len_idx_export_section = emit_len_placeholder(m_export_section, m_al);
-        uint32_t len_idx_code_section = emit_len_placeholder(m_code_section, m_al);
+        uint32_t len_idx_type_section = wasm::emit_len_placeholder(m_type_section, m_al);
+        uint32_t len_idx_func_section = wasm::emit_len_placeholder(m_func_section, m_al);
+        uint32_t len_idx_export_section = wasm::emit_len_placeholder(m_export_section, m_al);
+        uint32_t len_idx_code_section = wasm::emit_len_placeholder(m_code_section, m_al);
         
         for (auto &item : x.m_symtab->scope) {
             if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
@@ -85,16 +85,16 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
         }
 
-        emit_u32_b32_idx(m_type_section, len_idx_type_section, cur_func_idx);
-        emit_u32_b32_idx(m_func_section, len_idx_func_section, cur_func_idx);
-        emit_u32_b32_idx(m_export_section, len_idx_export_section, cur_func_idx);
-        emit_u32_b32_idx(m_code_section, len_idx_code_section, cur_func_idx);
+        wasm::emit_u32_b32_idx(m_type_section, len_idx_type_section, cur_func_idx);
+        wasm::emit_u32_b32_idx(m_func_section, len_idx_func_section, cur_func_idx);
+        wasm::emit_u32_b32_idx(m_export_section, len_idx_export_section, cur_func_idx);
+        wasm::emit_u32_b32_idx(m_code_section, len_idx_code_section, cur_func_idx);
     }
 
     void visit_Function(const ASR::Function_t &x) {
-        emit_b8(m_type_section, m_al, 0x60);  // type section
+        wasm::emit_b8(m_type_section, m_al, 0x60);  // type section
         
-        uint32_t len_idx_type_section_param_types_list = emit_len_placeholder(m_type_section, m_al);
+        uint32_t len_idx_type_section_param_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
         int curIdx = 0;
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::Variable_t *arg = LFortran::ASRUtils::EXPR2VAR(x.m_args[i]);
@@ -102,32 +102,32 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             if (arg->m_type->type == ASR::ttypeType::Integer) {
                 // checking for array is currently omitted
 
-                emit_b8(m_type_section, m_al, 0x7F);  // i32
+                wasm::emit_b8(m_type_section, m_al, 0x7F);  // i32
                 m_var_name_idx_map[arg->m_name] = curIdx++;
             } else {
                 throw CodeGenError(
                     "Parameters other than integer not yet supported");
             }
         }
-        fixup_len(m_type_section, len_idx_type_section_param_types_list);
+        wasm::fixup_len(m_type_section, len_idx_type_section_param_types_list);
 
-        uint32_t len_idx_type_section_return_types_list = emit_len_placeholder(m_type_section, m_al);
+        uint32_t len_idx_type_section_return_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
         return_var = LFortran::ASRUtils::EXPR2VAR(x.m_return_var);
         if (ASRUtils::is_integer(*return_var->m_type)) {
             bool is_int =
                 ASR::down_cast<ASR::Integer_t>(return_var->m_type)->m_kind == 4;
             if (is_int) {
-                emit_b8(m_type_section, m_al, 0x7F); // i32
+                wasm::emit_b8(m_type_section, m_al, 0x7F); // i32
             } else {
-                emit_b8(m_type_section, m_al, 0x7E); // i64
+                wasm::emit_b8(m_type_section, m_al, 0x7E); // i64
             }
         } else {
             throw CodeGenError("Return type not supported");
         }
-        fixup_len(m_type_section, len_idx_type_section_return_types_list);
+        wasm::fixup_len(m_type_section, len_idx_type_section_return_types_list);
 
-        uint32_t len_idx_code_section_func_size = emit_len_placeholder(m_code_section, m_al);
-        uint32_t len_idx_code_section_local_vars_list = emit_len_placeholder(m_code_section, m_al);
+        uint32_t len_idx_code_section_func_size = wasm::emit_len_placeholder(m_code_section, m_al);
+        uint32_t len_idx_code_section_local_vars_list = wasm::emit_len_placeholder(m_code_section, m_al);
         int local_vars_cnt = 0;
         for (auto &item : x.m_symtab->scope) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
@@ -136,8 +136,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 if (v->m_intent == LFortran::ASRUtils::intent_local ||
                     v->m_intent == LFortran::ASRUtils::intent_return_var) {
                     if (v->m_type->type == ASR::ttypeType::Integer) {
-                        emit_u32(m_code_section, m_al, 1); // count of local vars of this type
-                        emit_b8(m_code_section, m_al, 0x7F); // i32
+                        wasm::emit_u32(m_code_section, m_al, 1); // count of local vars of this type
+                        wasm::emit_b8(m_code_section, m_al, 0x7F); // i32
                         m_var_name_idx_map[v->m_name] = curIdx++;
                         local_vars_cnt++;
                     } else {
@@ -148,18 +148,18 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
         }
         // fixup length of local vars list
-        emit_u32_b32_idx(m_code_section, len_idx_code_section_local_vars_list, local_vars_cnt);
+        wasm::emit_u32_b32_idx(m_code_section, len_idx_code_section_local_vars_list, local_vars_cnt);
 
         for (size_t i = 0; i < x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
 
-        emit_expr_end(m_code_section, m_al);
-        fixup_len(m_code_section, len_idx_code_section_func_size);
+        wasm::emit_expr_end(m_code_section, m_al);
+        wasm::fixup_len(m_code_section, len_idx_code_section_func_size);
 
-        emit_u32(m_func_section, m_al, cur_func_idx);
+        wasm::emit_u32(m_func_section, m_al, cur_func_idx);
         
-        emit_export_fn(m_export_section, m_al, x.m_name, cur_func_idx);
+        wasm::emit_export_fn(m_export_section, m_al, x.m_name, cur_func_idx);
         m_func_name_idx_map[x.m_name] = cur_func_idx++;
     }
 
@@ -169,7 +169,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
             ASR::Variable_t *asr_target = LFortran::ASRUtils::EXPR2VAR(x.m_target);
             
-            emit_set_local(m_code_section, m_al, m_var_name_idx_map[asr_target->m_name]);
+            wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[asr_target->m_name]);
         } else if (ASR::is_a<ASR::ArrayRef_t>(*x.m_target)) {
             throw CodeGenError("Assignment: Arrays not yet supported");
         } else {
@@ -185,19 +185,19 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         if (ASRUtils::is_integer(*x.m_type)) {
             switch (x.m_op) {
                 case ASR::binopType::Add: {
-                    emit_i32_add(m_code_section, m_al);
+                    wasm::emit_i32_add(m_code_section, m_al);
                     break;
                 };
                 case ASR::binopType::Sub: {
-                    emit_i32_sub(m_code_section, m_al);
+                    wasm::emit_i32_sub(m_code_section, m_al);
                     break;
                 };
                 case ASR::binopType::Mul: {
-                    emit_i32_mul(m_code_section, m_al);
+                    wasm::emit_i32_mul(m_code_section, m_al);
                     break;
                 };
                 case ASR::binopType::Div: {
-                    emit_i32_div(m_code_section, m_al);
+                    wasm::emit_i32_div(m_code_section, m_al);
                     break;
                 };
                 default:
@@ -215,7 +215,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         switch (v->m_type->type) {
             case ASR::ttypeType::Integer:
                 // currently omitting check for 64 bit integers
-                emit_get_local(m_code_section, m_al, m_var_name_idx_map[v->m_name]);
+                wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[v->m_name]);
                 break;
 
             default:
@@ -224,8 +224,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Return(const ASR::Return_t & /* x */) {
-        emit_get_local(m_code_section, m_al, m_var_name_idx_map[return_var->m_name]);
-        emit_b8(m_code_section, m_al, 0x0F);
+        wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[return_var->m_name]);
+        wasm::emit_b8(m_code_section, m_al, 0x0F);
     }
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
@@ -233,7 +233,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         int a_kind = ((ASR::Integer_t *)(&(x.m_type->base)))->m_kind;
         switch (a_kind) {
             case 4: {
-                emit_i32_const(m_code_section, m_al, val);
+                wasm::emit_i32_const(m_code_section, m_al, val);
                 break;
             }
             default: {
@@ -251,7 +251,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             visit_expr(*x.m_args[i].m_value);
         }
 
-        emit_call(m_code_section, m_al, m_func_name_idx_map[fn->m_name]);
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[fn->m_name]);
     }
 };
 
@@ -287,22 +287,22 @@ Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al,
     {
         auto t1 = std::chrono::high_resolution_clock::now();
         try {
-            emit_u32(v.m_type_section, v.m_al, 1);
-            emit_u32(v.m_func_section, v.m_al, 3);
-            emit_u32(v.m_export_section, v.m_al, 7);
-            emit_u32(v.m_code_section, v.m_al, 10);
+            wasm::emit_u32(v.m_type_section, v.m_al, 1);
+            wasm::emit_u32(v.m_func_section, v.m_al, 3);
+            wasm::emit_u32(v.m_export_section, v.m_al, 7);
+            wasm::emit_u32(v.m_code_section, v.m_al, 10);
             
-            uint32_t len_idx_type_section = emit_len_placeholder(v.m_type_section, v.m_al);
-            uint32_t len_idx_func_section = emit_len_placeholder(v.m_func_section, v.m_al);
-            uint32_t len_idx_export_section = emit_len_placeholder(v.m_export_section, v.m_al);
-            uint32_t len_idx_code_section = emit_len_placeholder(v.m_code_section, v.m_al);
+            uint32_t len_idx_type_section = wasm::emit_len_placeholder(v.m_type_section, v.m_al);
+            uint32_t len_idx_func_section = wasm::emit_len_placeholder(v.m_func_section, v.m_al);
+            uint32_t len_idx_export_section = wasm::emit_len_placeholder(v.m_export_section, v.m_al);
+            uint32_t len_idx_code_section = wasm::emit_len_placeholder(v.m_code_section, v.m_al);
             
             v.visit_asr((ASR::asr_t &)asr);
 
-            fixup_len(v.m_type_section, len_idx_type_section);
-            fixup_len(v.m_func_section, len_idx_func_section);
-            fixup_len(v.m_export_section, len_idx_export_section);
-            fixup_len(v.m_code_section, len_idx_code_section);
+            wasm::fixup_len(v.m_type_section, len_idx_type_section);
+            wasm::fixup_len(v.m_func_section, len_idx_func_section);
+            wasm::fixup_len(v.m_export_section, len_idx_export_section);
+            wasm::fixup_len(v.m_code_section, len_idx_code_section);
 
         } catch (const CodeGenError &e) {
             Error error;

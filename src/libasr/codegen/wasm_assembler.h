@@ -4,7 +4,7 @@
 #include <libasr/containers.h>
 
 namespace LFortran {
-namespace WASMAssembler {
+namespace wasm {
 
 std::vector<uint8_t> encode_signed_leb128(int32_t n) {
     std::vector<uint8_t> out;
@@ -179,6 +179,6 @@ void emit_export_fn(Vec<uint8_t> &code, Allocator &al, const std::string& name,
     emit_u32(code, al, idx);
 }
 
-}  // namespace WASMAssembler
+}  // namespace wasm
 
 }  // namespace LFortran
