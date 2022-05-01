@@ -57,7 +57,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         // the main program:
-        for (auto &item : x.m_global_scope->scope) {
+        for (auto &item : x.m_global_scope->get_scope()) {
             if (ASR::is_a<ASR::Program_t>(*item.second)) {
                 visit_symbol(*item.second);
             }
@@ -72,7 +72,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         uint32_t len_idx_export_section = wasm::emit_len_placeholder(m_export_section, m_al);
         uint32_t len_idx_code_section = wasm::emit_len_placeholder(m_code_section, m_al);
         
-        for (auto &item : x.m_symtab->scope) {
+        for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
                 throw CodeGenError("Sub Routine not yet supported");
             }
@@ -127,7 +127,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         uint32_t len_idx_code_section_func_size = wasm::emit_len_placeholder(m_code_section, m_al);
         uint32_t len_idx_code_section_local_vars_list = wasm::emit_len_placeholder(m_code_section, m_al);
         int local_vars_cnt = 0;
-        for (auto &item : x.m_symtab->scope) {
+        for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v =
                     ASR::down_cast<ASR::Variable_t>(item.second);
