@@ -34,4 +34,9 @@ end interface
 call sub_int_float_value(a, b, r)
 end subroutine
 
+integer(c_int) function fortran_i32(i) result(r) bind(c)
+integer(c_int), intent(in) :: i
+r = i + 2
+end function
+
 end module
