@@ -30,8 +30,6 @@ namespace {
 
 }  // namespace
 
-using namespace LFortran::WASMAssembler;
-
 class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
    public:
     Allocator &m_al;
