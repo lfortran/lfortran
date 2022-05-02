@@ -1872,6 +1872,10 @@ asr = true
 llvm = true
 
 [[test]]
+filename = "../integration_tests/kwargs_02.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/flip_sign.f90"
 asr = true
 pass = "flip_sign"
