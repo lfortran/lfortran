@@ -15,6 +15,7 @@
 #include <libasr/codegen/asr_to_cpp.h>
 #include <libasr/codegen/asr_to_py.h>
 #include <libasr/codegen/asr_to_x86.h>
+#include <libasr/codegen/asr_to_wasm.h>
 #include <lfortran/ast_to_src.h>
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/evaluator.h>
@@ -52,7 +53,7 @@ using LFortran::endswith;
 using LFortran::CompilerOptions;
 
 enum Backend {
-    llvm, cpp, x86
+    llvm, cpp, x86, wasm
 };
 
 enum ASRPass {
@@ -901,6 +902,102 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
     return 0;
 }
 
+int compile_to_binary_wasm(const std::string &infile, const std::string &outfile,
+        bool time_report,
+        CompilerOptions &compiler_options)
+{
+    int time_file_read=0;
+    int time_src_to_ast=0;
+    int time_ast_to_asr=0;
+    int time_asr_to_wasm=0;
+
+    std::string input;
+    LFortran::diag::Diagnostics diagnostics;
+    LFortran::FortranEvaluator fe(compiler_options);
+    Allocator al(64*1024*1024); // Allocate 64 MB
+    LFortran::AST::TranslationUnit_t* ast;
+    LFortran::ASR::TranslationUnit_t* asr;
+
+    {
+        auto t1 = std::chrono::high_resolution_clock::now();
+        input = read_file(infile);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        time_file_read = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    }
+
+    // Src -> AST
+    LFortran::LocationManager lm;
+    lm.in_filename = infile;
+    {
+        auto t1 = std::chrono::high_resolution_clock::now();
+        LFortran::Result<LFortran::AST::TranslationUnit_t*>
+            result = fe.get_ast2(input, lm, diagnostics);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        time_src_to_ast = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+
+        std::cerr << diagnostics.render(input, lm, compiler_options);
+        if (result.ok) {
+            ast = result.result;
+        } else {
+            LFORTRAN_ASSERT(diagnostics.has_error())
+            return 1;
+        }
+    }
+
+    // AST -> ASR
+    {
+        diagnostics.diagnostics.clear();
+        auto t1 = std::chrono::high_resolution_clock::now();
+        LFortran::Result<LFortran::ASR::TranslationUnit_t*>
+            result = fe.get_asr3(*ast, diagnostics);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+
+        std::cerr << diagnostics.render(input, lm, compiler_options);
+        if (result.ok) {
+            asr = result.result;
+        } else {
+            LFORTRAN_ASSERT(diagnostics.has_error())
+            return 2;
+        }
+    }
+
+    // ASR -> wasm machine code
+    {
+        diagnostics.diagnostics.clear();
+        auto t1 = std::chrono::high_resolution_clock::now();
+        LFortran::Result<int>
+            result = LFortran::asr_to_wasm(*asr, al, outfile, time_report);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        time_asr_to_wasm = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+
+        std::cerr << diagnostics.render(input, lm, compiler_options);
+        if (result.ok) {
+            // pass
+        } else {
+            LFORTRAN_ASSERT(diagnostics.has_error())
+            return 3;
+        }
+    }
+
+    if (time_report) {
+        std::cout << "Allocator usage of last chunk (MB): "
+            << al.size_current() / (1024. * 1024) << std::endl;
+        std::cout << "Allocator chunks: " << al.num_chunks() << std::endl;
+        std::cout << std::endl;
+        std::cout << "Time report:" << std::endl;
+        std::cout << "File reading:" << std::setw(5) << time_file_read << std::endl;
+        std::cout << "Src -> AST:  " << std::setw(5) << time_src_to_ast << std::endl;
+        std::cout << "AST -> ASR:  " << std::setw(5) << time_ast_to_asr << std::endl;
+        std::cout << "ASR -> wasm:  " << std::setw(5) << time_asr_to_wasm << std::endl;
+        int total = time_file_read + time_src_to_ast + time_ast_to_asr
+                + time_asr_to_wasm;
+        std::cout << "Total:       " << std::setw(5) << total << std::endl;
+    }
+
+    return 0;
+}
+
 
 int compile_to_object_file_cpp(const std::string &infile,
         const std::string &outfile,
@@ -1264,7 +1361,7 @@ int main(int argc, char *argv[])
         app.add_flag("--static", static_link, "Create a static executable");
         app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings");
         app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner");
-        app.add_option("--backend", arg_backend, "Select a backend (llvm, cpp, x86)")->capture_default_str();
+        app.add_option("--backend", arg_backend, "Select a backend (llvm, cpp, x86, wasm)")->capture_default_str();
         app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
         app.add_flag("--fast", compiler_options.fast, "Best performance (disable strict standard compliance)");
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
@@ -1369,8 +1466,10 @@ int main(int argc, char *argv[])
             backend = Backend::cpp;
         } else if (arg_backend == "x86") {
             backend = Backend::x86;
+        } else if (arg_backend == "wasm") {
+            backend = Backend::wasm;
         } else {
-            std::cerr << "The backend must be one of: llvm, cpp, x86." << std::endl;
+            std::cerr << "The backend must be one of: llvm, cpp, x86, wasm." << std::endl;
             return 1;
         }
 
@@ -1517,6 +1616,8 @@ int main(int argc, char *argv[])
                         true, rtlib_header_dir, compiler_options);
             } else if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile, time_report, compiler_options);
+            } else if (backend == Backend::wasm) {
+                return compile_to_binary_wasm(arg_file, outfile, time_report, compiler_options);
             } else {
                 throw LFortran::LFortranException("Unsupported backend.");
             }
@@ -1525,6 +1626,10 @@ int main(int argc, char *argv[])
         if (endswith(arg_file, ".f90")) {
             if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile,
+                        time_report, compiler_options);
+            }
+            else if (backend == Backend::wasm) {
+                return compile_to_binary_wasm(arg_file, outfile,
                         time_report, compiler_options);
             }
             std::string tmp_o = outfile + ".tmp.o";
