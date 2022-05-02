@@ -26,13 +26,46 @@ private:
 public:
     ASR::asr_t *asr;
     Vec<ASR::stmt_t*> *current_body;
+    bool from_block;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics)
-         : CommonVisitor(al, nullptr, diagnostics), asr{unit} {}
+         : CommonVisitor(al, nullptr, diagnostics), asr{unit}, from_block{false} {}
 
-    void visit_Declaration(const AST::Declaration_t & /* x */){
-        // Already visited this AST node in the SymbolTableVisitor
-    };
+    void visit_Declaration(const AST::Declaration_t& x) {
+        if( from_block ) {
+            visit_DeclarationUtil(x);
+        }
+    }
+
+    void visit_Block(const AST::Block_t &x) {
+        from_block = true;
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        for (size_t i=0; i<x.n_use; i++) {
+            visit_unit_decl1(*x.m_use[i]);
+        }
+        for (size_t i=0; i<x.n_decl; i++) {
+            visit_unit_decl2(*x.m_decl[i]);
+        }
+
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, x.n_body);
+        Vec<ASR::stmt_t*>* current_body_copy = current_body;
+        current_body = &body;
+        transform_stmts(body, x.n_body, x.m_body);
+        current_body = current_body_copy;
+        std::string name = parent_scope->get_unique_name("block");
+        ASR::asr_t* block = ASR::make_Block_t(al, x.base.base.loc,
+                                              current_scope, s2c(al, name),
+                                              body.p, body.size());
+        current_scope = parent_scope;
+        current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(block));
+        tmp = ASR::make_BlockCall_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(block));
+        current_body->push_back(al, ASRUtils::STMT(tmp));
+        tmp = nullptr;
+        from_block = false;
+    }
 
     // Transforms statements to a list of ASR statements
     // In addition, it also inserts the following nodes if needed:
