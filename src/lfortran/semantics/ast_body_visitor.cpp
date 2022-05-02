@@ -1013,6 +1013,15 @@ public:
                 ASR::Subroutine_t *f = ASR::down_cast<ASR::Subroutine_t>(f2);
                 visit_kwargs(args, x.m_keywords, x.n_keywords,
                     f->m_args, f->n_args, x.base.base.loc, f);
+            } else if (ASR::is_a<ASR::ClassProcedure_t>(*f2)) {
+                ASR::ClassProcedure_t* f3 = ASR::down_cast<ASR::ClassProcedure_t>(f2);
+                ASR::symbol_t* f4 = f3->m_proc;
+                if( !ASR::is_a<ASR::Subroutine_t>(*f4) ) {
+                    throw SemanticError(std::string(f3->m_proc_name) + " is not a subroutine.", x.base.base.loc);
+                }
+                ASR::Subroutine_t *f = ASR::down_cast<ASR::Subroutine_t>(f4);
+                visit_kwargs(args, x.m_keywords, x.n_keywords,
+                    f->m_args, f->n_args, x.base.base.loc, f);
             } else {
                 throw SemanticError(
                     "Keyword arguments are not implemented for generic subroutines yet",
