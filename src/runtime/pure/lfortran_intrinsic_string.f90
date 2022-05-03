@@ -1,5 +1,10 @@
 module lfortran_intrinsic_string
+    use, intrinsic :: iso_fortran_env, only: i64 => int64
 implicit none
+
+interface repeat
+    module procedure repeati32, repeati64
+end interface
 
 contains
 
@@ -54,20 +59,36 @@ integer elemental function index(string_, substring_) result(idx)
     end do
 end function
 
-integer elemental function len_repeat(n) result(r)
-    integer, intent(in) :: n
-    r = n
+integer elemental function len_repeati32(n) result(r)
+integer, intent(in) :: n
+r = n
 end function
 
-function repeat(s, n) result(r)
-    character(len=1), intent(in) :: s
-    integer, intent(in) :: n
-    character(len=len_repeat(n)) :: r
-    integer :: i, i1
-    i1 = 1
-    do i = 1, n
-        r(i:i) = s(i1:i1)
-    end do
+function repeati32(s, n) result(r)
+character(len=1), intent(in) :: s
+integer, intent(in) :: n
+character(len=len_repeati32(n)) :: r
+integer :: i, i1
+i1 = 1
+do i = 1, n
+    r(i:i) = s(i1:i1)
+end do
+end function
+
+integer elemental function len_repeati64(n) result(r)
+integer(i64), intent(in) :: n
+r = n
+end function
+
+function repeati64(s, n) result(r)
+character(len=1), intent(in) :: s
+integer(i64), intent(in) :: n
+character(len=len_repeati64(n)) :: r
+integer :: i, i1
+i1 = 1
+do i = 1, n
+    r(i:i) = s(i1:i1)
+end do
 end function
 
 function new_line(c) result(r)
@@ -80,10 +101,10 @@ integer elemental function cnt_initial_spaces(string) result(r)
     character(len=*), intent(in) :: string
     logical :: is_all_spaces
     integer :: i
-    
+
     r = len(string)
     if (r == 0) return
-    
+
     is_all_spaces = .true.
     do i=1, len(string)
         if(string(i:i) /= " ") then
@@ -91,7 +112,7 @@ integer elemental function cnt_initial_spaces(string) result(r)
             exit
         end if
     end do
-    
+
     ! if string is all spaces, then no need to update r as it is already equal to len(string)
     if (.not. is_all_spaces) then
         r = i - 1
