@@ -96,6 +96,10 @@ interface
     integer(4), optional :: dim
     end function
 
+    logical function is_iostat_eor(i) result(r)
+    integer, intent(in) :: i
+    end function
+
 end interface
 
 end module
