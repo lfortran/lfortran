@@ -144,20 +144,24 @@ public:
           "If operator is .eq. or .neq. then Complex type is also acceptable",
           x.base.base.loc);
     } else {
-      ASR::expr_t **conversion_cand = &left;
-      dest_type = right_type;
-      source_type = left_type;
-      ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
-                                                   right_type, conversion_cand,
-                                                   &source_type, &dest_type);
+      if( overloaded == nullptr ) {
+        ASR::expr_t **conversion_cand = &left;
+        dest_type = right_type;
+        source_type = left_type;
+        ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
+                                                    right_type, conversion_cand,
+                                                    &source_type, &dest_type);
 
-      ImplicitCastRules::set_converted_value(
-          al, x.base.base.loc, conversion_cand, source_type, dest_type);
+        ImplicitCastRules::set_converted_value(
+            al, x.base.base.loc, conversion_cand, source_type, dest_type);
+      }
     }
 
-    LFORTRAN_ASSERT(
-        ASRUtils::check_equal_type(LFortran::ASRUtils::expr_type(left),
-                                   LFortran::ASRUtils::expr_type(right)));
+    if( overloaded == nullptr ) {
+        LFORTRAN_ASSERT(
+            ASRUtils::check_equal_type(LFortran::ASRUtils::expr_type(left),
+                                    LFortran::ASRUtils::expr_type(right)));
+    }
     ASR::ttype_t *type = LFortran::ASRUtils::TYPE(
         ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
 
