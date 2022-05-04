@@ -25,7 +25,6 @@ private:
 
 public:
     ASR::asr_t *asr;
-    Vec<ASR::stmt_t*> *current_body;
     bool from_block;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics)
@@ -51,10 +50,7 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        Vec<ASR::stmt_t*>* current_body_copy = current_body;
-        current_body = &body;
         transform_stmts(body, x.n_body, x.m_body);
-        current_body = current_body_copy;
         std::string name = parent_scope->get_unique_name("block");
         ASR::asr_t* block = ASR::make_Block_t(al, x.base.base.loc,
                                               current_scope, s2c(al, name),
@@ -62,8 +58,6 @@ public:
         current_scope = parent_scope;
         current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(block));
         tmp = ASR::make_BlockCall_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(block));
-        current_body->push_back(al, ASRUtils::STMT(tmp));
-        tmp = nullptr;
         from_block = false;
     }
 
@@ -528,10 +522,7 @@ public:
         }
         SymbolTable* current_scope_copy = current_scope;
         current_scope = new_scope;
-        Vec<ASR::stmt_t*>* current_body_copy = current_body;
-        current_body = &body;
         transform_stmts(body, x.n_body, x.m_body);
-        current_body = current_body_copy;
         current_scope = current_scope_copy;
         std::string name = current_scope->get_unique_name("associate_block");
         ASR::asr_t* associate_block = ASR::make_AssociateBlock_t(al, x.base.base.loc,
@@ -539,8 +530,6 @@ public:
                                                                  body.p, body.size());
         current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(associate_block));
         tmp = ASR::make_AssociateBlockCall_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(associate_block));
-        current_body->push_back(al, ASRUtils::STMT(tmp));
-        tmp = nullptr;
     }
 
     void visit_Allocate(const AST::Allocate_t& x) {
@@ -829,7 +818,6 @@ public:
         current_scope = v->m_symtab;
 
         Vec<ASR::stmt_t*> body;
-        current_body = &body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
