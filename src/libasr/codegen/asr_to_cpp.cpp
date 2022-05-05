@@ -187,6 +187,7 @@ R"(#include <iostream>
 #include <vector>
 #include <cassert>
 #include <cmath>
+#include <complex>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 

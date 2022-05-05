@@ -207,6 +207,7 @@ stmt
     | SetRemove(symbol a, expr ele)
     | ListInsert(symbol a, expr pos, expr ele)
     | ListRemove(symbol a, expr ele)
+    | DictInsert(symbol a, expr key, expr value)
 
 
 expr
@@ -256,6 +257,7 @@ expr
     | Cast(expr arg, cast_kind kind, ttype type, expr? value)
     | ComplexRe(expr arg, ttype type, expr? value)
     | ComplexIm(expr arg, ttype type, expr? value)
+    | DictItem(symbol a, expr key, expr? default, ttype type)
 
 
 -- `len` in Character:
