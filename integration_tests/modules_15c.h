@@ -1,6 +1,7 @@
 #ifndef MODULES_15C
 #define MODULES_15C
 
+#include <stdint.h>
 #include <complex.h>
 
 #if _WIN32
@@ -42,7 +43,10 @@ void sub_int_floatarray(int n, float *b, float *r);
 void sub_int_doublearray(int n, double *b, double *r);
 
 int f_string(char *s);
-int fortran_i32(int *i);
+int32_t fortran_i32(int32_t *i);
+int64_t fortran_i64(int64_t *i);
+float fortran_f32(float *i);
+double fortran_f64(double *i);
 
 
 #endif // MODULES_15C
