@@ -220,12 +220,27 @@ interface
     integer(c_long_long), value, intent(in) :: i
     end function
 
+    integer(c_long_long) function call_fortran_i64_value(i) result(r) bind(c)
+    import :: c_long_long
+    integer(c_long_long), value, intent(in) :: i
+    end function
+
     real(c_float) function call_fortran_f32(i) result(r) bind(c)
     import :: c_float
     real(c_float), value, intent(in) :: i
     end function
 
+    real(c_float) function call_fortran_f32_value(i) result(r) bind(c)
+    import :: c_float
+    real(c_float), value, intent(in) :: i
+    end function
+
     real(c_double) function call_fortran_f64(i) result(r) bind(c)
+    import :: c_double
+    real(c_double), value, intent(in) :: i
+    end function
+
+    real(c_double) function call_fortran_f64_value(i) result(r) bind(c)
     import :: c_double
     real(c_double), value, intent(in) :: i
     end function
@@ -254,13 +269,28 @@ integer(c_long_long), intent(in) :: i
 r = i + 2
 end function
 
+integer(c_long_long) function fortran_i64_value(i) result(r) bind(c)
+integer(c_long_long), value, intent(in) :: i
+r = i + 2
+end function
+
 real(c_float) function fortran_f32(i) result(r) bind(c)
 real(c_float), intent(in) :: i
 r = i + 2.3_c_float
 end function
 
+real(c_float) function fortran_f32_value(i) result(r) bind(c)
+real(c_float), value, intent(in) :: i
+r = i + 2.3_c_float
+end function
+
 real(c_double) function fortran_f64(i) result(r) bind(c)
 real(c_double), intent(in) :: i
+r = i + 2.3_c_double
+end function
+
+real(c_double) function fortran_f64_value(i) result(r) bind(c)
+real(c_double), value, intent(in) :: i
 r = i + 2.3_c_double
 end function
 
