@@ -16,7 +16,8 @@ use modules_15b, only: &
     sub_int_double_value_name, &
     f_string, &
     call_fortran_i32, call_fortran_i64, &
-    call_fortran_f32, call_fortran_f64
+    call_fortran_f32, call_fortran_f64, &
+    call_fortran_i32_value
 implicit none
 integer :: i, a, n, I32(3)
 integer(int32) :: in32
@@ -201,6 +202,11 @@ if (f_string("") /= 0) error stop
 ! Calling Fortran code from C
 in32 = 5
 in32 = call_fortran_i32(in32)
+print *, in32
+if (in32 /= 7) error stop
+
+in32 = 5
+in32 = call_fortran_i32_value(in32)
 print *, in32
 if (in32 /= 7) error stop
 
