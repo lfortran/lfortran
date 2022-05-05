@@ -204,10 +204,10 @@ in32 = call_fortran_i32(in32)
 print *, in32
 if (in32 /= 7) error stop
 
-!in64 = 5
-!in64 = call_fortran_i64(in64)
-!print *, in64
-!if (in64 /= 7) error stop
+in64 = 5
+in64 = call_fortran_i64(in64)
+print *, in64
+if (in64 /= 7) error stop
 
 r32 = 5
 r32 = call_fortran_f32(r32)
