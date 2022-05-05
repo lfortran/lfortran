@@ -14,6 +14,8 @@ contains
 
         if (int >= 0) then
             neg_int = -int
+        else
+            neg_int = int
         end if
 
     end function to_negative
