@@ -410,12 +410,7 @@ public:
   static inline void visit_StrOp(Allocator &al, const AST::StrOp_t &x,
                                  ASR::expr_t *&left, ASR::expr_t *&right,
                                  ASR::asr_t *&asr) {
-    ASR::stropType op;
     LFORTRAN_ASSERT(x.m_op == AST::Concat)
-    switch (x.m_op) {
-    case (AST::Concat):
-      op = ASR::Concat;
-    }
     ASR::ttype_t *left_type = LFortran::ASRUtils::expr_type(left);
     ASR::ttype_t *right_type = LFortran::ASRUtils::expr_type(right);
     LFORTRAN_ASSERT(ASR::is_a<ASR::Character_t>(*left_type))
@@ -445,7 +440,7 @@ public:
         value = ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(
             al, x.base.base.loc, result, dest_type));
       }
-    asr = ASR::make_StrOp_t(al, x.base.base.loc, left, op, right, dest_type,
+    asr = ASR::make_StringConcat_t(al, x.base.base.loc, left, right, dest_type,
                             value);
   }
 
