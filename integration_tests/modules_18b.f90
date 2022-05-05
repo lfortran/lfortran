@@ -1,5 +1,5 @@
 module modules_18b
-use iso_c_binding, only: c_int, c_float, c_double
+use iso_c_binding, only: c_int, c_long, c_float, c_double
 implicit none
 
 contains
@@ -37,6 +37,21 @@ end subroutine
 integer(c_int) function fortran_i32(i) result(r) bind(c)
 integer(c_int), intent(in) :: i
 r = i + 2
+end function
+
+integer(c_long) function fortran_i64(i) result(r) bind(c)
+integer(c_long), intent(in) :: i
+r = i + 2
+end function
+
+real(c_float) function fortran_f32(i) result(r) bind(c)
+real(c_float), intent(in) :: i
+r = i + 2.3
+end function
+
+real(c_double) function fortran_f64(i) result(r) bind(c)
+real(c_double), intent(in) :: i
+r = i + 2.3
 end function
 
 end module
