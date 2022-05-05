@@ -204,4 +204,19 @@ in32 = call_fortran_i32(in32)
 print *, in32
 if (in32 /= 7) error stop
 
+in64 = 5
+in64 = call_fortran_i64(in64)
+print *, in64
+if (in64 /= 7) error stop
+
+r32 = 5
+r32 = call_fortran_f32(r32)
+print *, r32
+if (abs(r32 - 7.3_sp) > 1e-5_dp) error stop
+
+r64 = 5
+r64 = call_fortran_f64(r64)
+print *, r64
+if (abs(r64 - 7.3_dp) > 1e-10_dp) error stop
+
 end

@@ -246,12 +246,12 @@ end function
 
 real(c_float) function fortran_f32(i) result(r) bind(c)
 real(c_float), intent(in) :: i
-r = i + 2.3
+r = i + 2.3_c_float
 end function
 
 real(c_double) function fortran_f64(i) result(r) bind(c)
 real(c_double), intent(in) :: i
-r = i + 2.3
+r = i + 2.3_c_double
 end function
 
 end module
