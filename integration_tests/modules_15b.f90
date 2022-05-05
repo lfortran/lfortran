@@ -1,5 +1,5 @@
 module modules_15b
-use iso_c_binding, only: c_int, c_float, c_double, c_char, c_null_char
+use iso_c_binding, only: c_int, c_long, c_float, c_double, c_char, c_null_char
 implicit none
 
 interface
@@ -210,6 +210,21 @@ interface
     integer(c_int), value, intent(in) :: i
     end function
 
+    integer(c_long) function call_fortran_i64(i) result(r) bind(c)
+    import :: c_long
+    integer(c_long), value, intent(in) :: i
+    end function
+
+    real(c_float) function call_fortran_f32(i) result(r) bind(c)
+    import :: c_float
+    real(c_float), value, intent(in) :: i
+    end function
+
+    real(c_double) function call_fortran_f64(i) result(r) bind(c)
+    import :: c_double
+    real(c_double), value, intent(in) :: i
+    end function
+
 end interface
 
 contains
@@ -222,6 +237,21 @@ end function
 integer(c_int) function fortran_i32(i) result(r) bind(c)
 integer(c_int), intent(in) :: i
 r = i + 2
+end function
+
+integer(c_long) function fortran_i64(i) result(r) bind(c)
+integer(c_long), intent(in) :: i
+r = i + 2
+end function
+
+real(c_float) function fortran_f32(i) result(r) bind(c)
+real(c_float), intent(in) :: i
+r = i + 2.3_c_float
+end function
+
+real(c_double) function fortran_f64(i) result(r) bind(c)
+real(c_double), intent(in) :: i
+r = i + 2.3_c_double
 end function
 
 end module

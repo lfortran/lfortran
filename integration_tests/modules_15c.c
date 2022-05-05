@@ -152,6 +152,18 @@ int f_string(char *s) {
     return strlen(s);
 }
 
-int call_fortran_i32(int i) {
+int32_t call_fortran_i32(int32_t i) {
     return fortran_i32(&i);
+}
+
+int64_t call_fortran_i64(int64_t i) {
+    return fortran_i64(&i);
+}
+
+float call_fortran_f32(float i) {
+    return fortran_f32(&i);
+}
+
+double call_fortran_f64(double i) {
+    return fortran_f64(&i);
 }

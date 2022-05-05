@@ -1,5 +1,5 @@
 program modules_15
-use iso_fortran_env, only: sp=>real32, dp=>real64
+use iso_fortran_env, only: sp=>real32, dp=>real64, int32, int64
 use modules_15b, only: &
     f_int_float, f_int_double, &
     sub_int_float, sub_int_double, &
@@ -14,9 +14,13 @@ use modules_15b, only: &
     f_float_complex_value_return, f_double_complex_value_return, &
     f_int_double_value_name, &
     sub_int_double_value_name, &
-    f_string, call_fortran_i32
+    f_string, &
+    call_fortran_i32, call_fortran_i64, &
+    call_fortran_f32, call_fortran_f64
 implicit none
 integer :: i, a, n, I32(3)
+integer(int32) :: in32
+integer(int64) :: in64
 real(sp) :: r32, X32(3)
 real(dp) :: r64, X64(3)
 complex(sp) :: c32
@@ -195,9 +199,24 @@ if (f_string(" ") /= 1) error stop
 if (f_string("") /= 0) error stop
 
 ! Calling Fortran code from C
-i = 5
-i = call_fortran_i32(i)
-print *, i
-if (i /= 7) error stop
+in32 = 5
+in32 = call_fortran_i32(in32)
+print *, in32
+if (in32 /= 7) error stop
+
+!in64 = 5
+!in64 = call_fortran_i64(in64)
+!print *, in64
+!if (in64 /= 7) error stop
+
+r32 = 5
+r32 = call_fortran_f32(r32)
+print *, r32
+if (abs(r32 - 7.3_sp) > 1e-5_dp) error stop
+
+r64 = 5
+r64 = call_fortran_f64(r64)
+print *, r64
+if (abs(r64 - 7.3_dp) > 1e-10_dp) error stop
 
 end
