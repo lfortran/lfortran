@@ -164,10 +164,22 @@ int64_t call_fortran_i64(int64_t i) {
     return fortran_i64(&i);
 }
 
+int64_t call_fortran_i64_value(int64_t i) {
+    return fortran_i64_value(i);
+}
+
 float call_fortran_f32(float i) {
     return fortran_f32(&i);
 }
 
+float call_fortran_f32_value(float i) {
+    return fortran_f32_value(i);
+}
+
 double call_fortran_f64(double i) {
     return fortran_f64(&i);
+}
+
+double call_fortran_f64_value(double i) {
+    return fortran_f64_value(i);
 }
