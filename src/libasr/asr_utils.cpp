@@ -471,7 +471,11 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             a_args.push_back(al, left_call_arg);
                             right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
                             a_args.push_back(al, right_call_arg);
-                            asr = ASR::make_FunctionCall_t(al, loc, curr_scope->resolve_symbol(std::string(func->m_name)), orig_sym,
+                            ASR::symbol_t* a_name = curr_scope->resolve_symbol(std::string(func->m_name));
+                            if( a_name == nullptr ) {
+                                err("Unable to resolve matched subroutine for operator overloading, " + std::string(func->m_name), loc);
+                            }
+                            asr = ASR::make_FunctionCall_t(al, loc, a_name, orig_sym,
                                                             a_args.p, 2,
                                                             ASRUtils::expr_type(func->m_return_var),
                                                             nullptr, nullptr);

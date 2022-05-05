@@ -5,6 +5,7 @@
 #include <string>
 #include <cmath>
 #include <limits>
+#include <queue>
 
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
@@ -992,6 +993,151 @@ public:
         return "";
     }
 
+    void import_symbols_util(ASR::Module_t *m, std::string& msym,
+                             std::string& remote_sym, std::string& local_sym,
+                             std::queue<ASR::symbol_t*>& to_be_imported_later,
+                             const Location& loc) {
+        ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
+        if (!t) {
+            throw SemanticError("The symbol '" + remote_sym + "' not found in the module '" + msym + "'",
+                loc);
+        }
+        if (ASR::is_a<ASR::Subroutine_t>(*t)) {
+            if (current_scope->get_symbol(local_sym) != nullptr) {
+                throw SemanticError("Subroutine already defined",
+                    loc);
+            }
+            ASR::Subroutine_t *msub = ASR::down_cast<ASR::Subroutine_t>(t);
+            // `msub` is the Subroutine in a module. Now we construct
+            // an ExternalSymbol that points to
+            // `msub` via the `external` field.
+            Str name;
+            name.from_str(al, local_sym);
+            ASR::asr_t *sub = ASR::make_ExternalSymbol_t(
+                al, msub->base.base.loc,
+                /* a_symtab */ current_scope,
+                /* a_name */ name.c_str(al),
+                (ASR::symbol_t*)msub,
+                m->m_name, nullptr, 0, msub->m_name,
+                dflt_access
+                );
+            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(sub));
+        } else if (ASR::is_a<ASR::GenericProcedure_t>(*t)) {
+            if (current_scope->get_symbol(local_sym) != nullptr) {
+                throw SemanticError("Symbol already defined",
+                    loc);
+            }
+            ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(t);
+            Str name;
+            name.from_str(al, local_sym);
+            char *cname = name.c_str(al);
+            ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
+                al, t->base.loc,
+                current_scope,
+                /* a_name */ cname,
+                t,
+                m->m_name, nullptr, 0, gp->m_name,
+                dflt_access
+                );
+            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
+        } else if (ASR::is_a<ASR::CustomOperator_t>(*t)) {
+            if (current_scope->get_symbol(local_sym) != nullptr) {
+                throw SemanticError("Symbol already defined",
+                    loc);
+            }
+            ASR::CustomOperator_t *gp = ASR::down_cast<ASR::CustomOperator_t>(t);
+            for (size_t igp = 0; igp < gp->n_procs; igp++) {
+                to_be_imported_later.push(gp->m_procs[igp]);
+            }
+            Str name;
+            name.from_str(al, local_sym);
+            char *cname = name.c_str(al);
+            ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
+                al, t->base.loc,
+                current_scope,
+                /* a_name */ cname,
+                t,
+                m->m_name, nullptr, 0, gp->m_name,
+                dflt_access
+                );
+            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
+        } else if (ASR::is_a<ASR::ExternalSymbol_t>(*t)) {
+            if (current_scope->get_symbol(local_sym) != nullptr) {
+                throw SemanticError("Symbol already defined", loc);
+            }
+            // Repack ExternalSymbol to point directly to the original symbol
+            ASR::ExternalSymbol_t *es = ASR::down_cast<ASR::ExternalSymbol_t>(t);
+            ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
+                al, es->base.base.loc,
+                current_scope,
+                /* a_name */ es->m_name,
+                es->m_external,
+                es->m_module_name, es->m_scope_names, es->n_scope_names, es->m_original_name,
+                es->m_access
+                );
+            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
+        } else if (ASR::is_a<ASR::Function_t>(*t)) {
+            if (current_scope->get_symbol(local_sym) != nullptr) {
+                throw SemanticError("Function already defined", loc);
+            }
+            ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(t);
+            // `mfn` is the Function in a module. Now we construct
+            // an ExternalSymbol that points to it.
+            Str name;
+            name.from_str(al, local_sym);
+            char *cname = name.c_str(al);
+            ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
+                al, mfn->base.base.loc,
+                /* a_symtab */ current_scope,
+                /* a_name */ cname,
+                (ASR::symbol_t*)mfn,
+                m->m_name, nullptr, 0, mfn->m_name,
+                dflt_access
+                );
+            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(fn));
+        } else if (ASR::is_a<ASR::Variable_t>(*t)) {
+            if (current_scope->get_symbol(local_sym) != nullptr) {
+                throw SemanticError("Variable already defined", loc);
+            }
+            ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(t);
+            // `mv` is the Variable in a module. Now we construct
+            // an ExternalSymbol that points to it.
+            Str name;
+            name.from_str(al, local_sym);
+            char *cname = name.c_str(al);
+            ASR::asr_t *v = ASR::make_ExternalSymbol_t(
+                al, mv->base.base.loc,
+                /* a_symtab */ current_scope,
+                /* a_name */ cname,
+                (ASR::symbol_t*)mv,
+                m->m_name, nullptr, 0, mv->m_name,
+                dflt_access
+                );
+            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
+        } else if( ASR::is_a<ASR::DerivedType_t>(*t) ) {
+            if (current_scope->get_symbol(local_sym) != nullptr) {
+                throw SemanticError("Derived type already defined", loc);
+            }
+            ASR::DerivedType_t *mv = ASR::down_cast<ASR::DerivedType_t>(t);
+            // `mv` is the Variable in a module. Now we construct
+            // an ExternalSymbol that points to it.
+            Str name;
+            name.from_str(al, local_sym);
+            char *cname = name.c_str(al);
+            ASR::asr_t *v = ASR::make_ExternalSymbol_t(
+                al, mv->base.base.loc,
+                /* a_symtab */ current_scope,
+                /* a_name */ cname,
+                (ASR::symbol_t*)mv,
+                m->m_name, nullptr, 0, mv->m_name,
+                dflt_access
+                );
+            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
+        } else {
+            throw LFortranException("Only Subroutines, Functions, Variables and Derived supported in 'use'");
+        }
+    }
+
     void visit_Use(const AST::Use_t &x) {
         std::string msym = to_lower(x.m_module);
         Str msym_c; msym_c.from_str_view(msym);
@@ -1020,6 +1166,7 @@ public:
         } else {
             // Only import individual symbols from the module, e.g.:
             //     use a, only: x, y, z
+            std::queue<ASR::symbol_t*> to_be_imported_later;
             for (size_t i = 0; i < x.n_symbols; i++) {
                 std::string remote_sym;
                 switch (x.m_symbols[i]->type)
@@ -1047,145 +1194,17 @@ public:
                 } else {
                     local_sym = remote_sym;
                 }
-                ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
-                if (!t) {
-                    throw SemanticError("The symbol '" + remote_sym + "' not found in the module '" + msym + "'",
-                        x.base.base.loc);
-                }
-                if (ASR::is_a<ASR::Subroutine_t>(*t)) {
-                    if (current_scope->get_symbol(local_sym) != nullptr) {
-                        throw SemanticError("Subroutine already defined",
-                            x.base.base.loc);
-                    }
-                    ASR::Subroutine_t *msub = ASR::down_cast<ASR::Subroutine_t>(t);
-                    // `msub` is the Subroutine in a module. Now we construct
-                    // an ExternalSymbol that points to
-                    // `msub` via the `external` field.
-                    Str name;
-                    name.from_str(al, local_sym);
-                    ASR::asr_t *sub = ASR::make_ExternalSymbol_t(
-                        al, msub->base.base.loc,
-                        /* a_symtab */ current_scope,
-                        /* a_name */ name.c_str(al),
-                        (ASR::symbol_t*)msub,
-                        m->m_name, nullptr, 0, msub->m_name,
-                        dflt_access
-                        );
-                    current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(sub));
-                } else if (ASR::is_a<ASR::GenericProcedure_t>(*t)) {
-                    if (current_scope->get_symbol(local_sym) != nullptr) {
-                        throw SemanticError("Symbol already defined",
-                            x.base.base.loc);
-                    }
-                    ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(t);
-                    Str name;
-                    name.from_str(al, local_sym);
-                    char *cname = name.c_str(al);
-                    ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
-                        al, t->base.loc,
-                        current_scope,
-                        /* a_name */ cname,
-                        t,
-                        m->m_name, nullptr, 0, gp->m_name,
-                        dflt_access
-                        );
-                    current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
-                } else if (ASR::is_a<ASR::CustomOperator_t>(*t)) {
-                    if (current_scope->get_symbol(local_sym) != nullptr) {
-                        throw SemanticError("Symbol already defined",
-                            x.base.base.loc);
-                    }
-                    ASR::CustomOperator_t *gp = ASR::down_cast<ASR::CustomOperator_t>(t);
-                    Str name;
-                    name.from_str(al, local_sym);
-                    char *cname = name.c_str(al);
-                    ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
-                        al, t->base.loc,
-                        current_scope,
-                        /* a_name */ cname,
-                        t,
-                        m->m_name, nullptr, 0, gp->m_name,
-                        dflt_access
-                        );
-                    current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
-                } else if (ASR::is_a<ASR::ExternalSymbol_t>(*t)) {
-                    if (current_scope->get_symbol(local_sym) != nullptr) {
-                        throw SemanticError("Symbol already defined",
-                            x.base.base.loc);
-                    }
-                    // Repack ExternalSymbol to point directly to the original symbol
-                    ASR::ExternalSymbol_t *es = ASR::down_cast<ASR::ExternalSymbol_t>(t);
-                    ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
-                        al, es->base.base.loc,
-                        current_scope,
-                        /* a_name */ es->m_name,
-                        es->m_external,
-                        es->m_module_name, es->m_scope_names, es->n_scope_names, es->m_original_name,
-                        es->m_access
-                        );
-                    current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
-                } else if (ASR::is_a<ASR::Function_t>(*t)) {
-                    if (current_scope->get_symbol(local_sym) != nullptr) {
-                        throw SemanticError("Function already defined",
-                            x.base.base.loc);
-                    }
-                    ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(t);
-                    // `mfn` is the Function in a module. Now we construct
-                    // an ExternalSymbol that points to it.
-                    Str name;
-                    name.from_str(al, local_sym);
-                    char *cname = name.c_str(al);
-                    ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
-                        al, mfn->base.base.loc,
-                        /* a_symtab */ current_scope,
-                        /* a_name */ cname,
-                        (ASR::symbol_t*)mfn,
-                        m->m_name, nullptr, 0, mfn->m_name,
-                        dflt_access
-                        );
-                    current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(fn));
-                } else if (ASR::is_a<ASR::Variable_t>(*t)) {
-                    if (current_scope->get_symbol(local_sym) != nullptr) {
-                        throw SemanticError("Variable already defined",
-                            x.base.base.loc);
-                    }
-                    ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(t);
-                    // `mv` is the Variable in a module. Now we construct
-                    // an ExternalSymbol that points to it.
-                    Str name;
-                    name.from_str(al, local_sym);
-                    char *cname = name.c_str(al);
-                    ASR::asr_t *v = ASR::make_ExternalSymbol_t(
-                        al, mv->base.base.loc,
-                        /* a_symtab */ current_scope,
-                        /* a_name */ cname,
-                        (ASR::symbol_t*)mv,
-                        m->m_name, nullptr, 0, mv->m_name,
-                        dflt_access
-                        );
-                    current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
-                } else if( ASR::is_a<ASR::DerivedType_t>(*t) ) {
-                    if (current_scope->get_symbol(local_sym) != nullptr) {
-                        throw SemanticError("Derived type already defined",
-                            x.base.base.loc);
-                    }
-                    ASR::DerivedType_t *mv = ASR::down_cast<ASR::DerivedType_t>(t);
-                    // `mv` is the Variable in a module. Now we construct
-                    // an ExternalSymbol that points to it.
-                    Str name;
-                    name.from_str(al, local_sym);
-                    char *cname = name.c_str(al);
-                    ASR::asr_t *v = ASR::make_ExternalSymbol_t(
-                        al, mv->base.base.loc,
-                        /* a_symtab */ current_scope,
-                        /* a_name */ cname,
-                        (ASR::symbol_t*)mv,
-                        m->m_name, nullptr, 0, mv->m_name,
-                        dflt_access
-                        );
-                    current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
-                } else {
-                    throw LFortranException("Only Subroutines, Functions, Variables and Derived supported in 'use'");
+                import_symbols_util(m, msym, remote_sym, local_sym,
+                                    to_be_imported_later, x.base.base.loc);
+            }
+
+            while( !to_be_imported_later.empty() ) {
+                ASR::symbol_t* potential_import = to_be_imported_later.front();
+                to_be_imported_later.pop();
+                std::string remote_sym = ASRUtils::symbol_name(potential_import);
+                if( current_scope->resolve_symbol(remote_sym) == nullptr ) {
+                    import_symbols_util(m, msym, remote_sym, remote_sym,
+                                        to_be_imported_later, x.base.base.loc);
                 }
             }
         }
