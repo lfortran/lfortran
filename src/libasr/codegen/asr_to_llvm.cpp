@@ -3261,6 +3261,11 @@ public:
             x_v = CreateLoad(CreateGEP(ptr, idx_vec));
         } else {
             x_v = llvm_symtab[x_h];
+            if (x->m_value_attr) {
+                // Already a value, such as value argument to bind(c)
+                tmp = x_v;
+                return;
+            }
         }
         tmp = CreateLoad(x_v);
 

@@ -156,6 +156,10 @@ int32_t call_fortran_i32(int32_t i) {
     return fortran_i32(&i);
 }
 
+int32_t call_fortran_i32_value(int32_t i) {
+    return fortran_i32_value(i);
+}
+
 int64_t call_fortran_i64(int64_t i) {
     return fortran_i64(&i);
 }

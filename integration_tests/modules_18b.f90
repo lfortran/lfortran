@@ -39,6 +39,11 @@ integer(c_int), intent(in) :: i
 r = i + 2
 end function
 
+integer(c_int) function fortran_i32_value(i) result(r) bind(c)
+integer(c_int), value, intent(in) :: i
+r = i + 2
+end function
+
 integer(c_long) function fortran_i64(i) result(r) bind(c)
 integer(c_long), intent(in) :: i
 r = i + 2
