@@ -144,10 +144,10 @@ public:
           "If operator is .eq. or .neq. then Complex type is also acceptable",
           x.base.base.loc);
     } else {
+      dest_type = right_type;
+      source_type = left_type;
       if( overloaded == nullptr ) {
         ASR::expr_t **conversion_cand = &left;
-        dest_type = right_type;
-        source_type = left_type;
         ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
                                                     right_type, conversion_cand,
                                                     &source_type, &dest_type);
