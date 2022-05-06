@@ -946,29 +946,30 @@ public:
                 x.base.base.loc
             );
         }
-
         ASR::ttype_t *value_type = ASRUtils::expr_type(value);
         if( target->type == ASR::exprType::Var && !ASRUtils::is_array(target_type) &&
             value->type == ASR::exprType::ArrayConstant ) {
             throw SemanticError("ArrayInitalizer expressions can only be assigned array references", x.base.base.loc);
         }
-        if (target->type == ASR::exprType::Var ||
-            target->type == ASR::exprType::ArrayRef) {
+        if( overloaded_stmt == nullptr ) {
+            if (target->type == ASR::exprType::Var ||
+                target->type == ASR::exprType::ArrayRef) {
 
-            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
-                                                    value_type, target_type);
+                ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                                                        value_type, target_type);
 
-        }
-        if (!ASRUtils::check_equal_type(ASRUtils::expr_type(target),
-                                    ASRUtils::expr_type(value))) {
-            std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(target));
-            std::string rtype = ASRUtils::type_to_str(ASRUtils::expr_type(value));
-            diag.semantic_error_label(
-                "Type mismatch in assignment, the types must be compatible",
-                {target->base.loc, value->base.loc},
-                "type mismatch (" + ltype + " and " + rtype + ")"
-            );
-            throw SemanticAbort();
+            }
+            if (!ASRUtils::check_equal_type(ASRUtils::expr_type(target),
+                                        ASRUtils::expr_type(value))) {
+                std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(target));
+                std::string rtype = ASRUtils::type_to_str(ASRUtils::expr_type(value));
+                diag.semantic_error_label(
+                    "Type mismatch in assignment, the types must be compatible",
+                    {target->base.loc, value->base.loc},
+                    "type mismatch (" + ltype + " and " + rtype + ")"
+                );
+                throw SemanticAbort();
+            }
         }
         tmp = ASR::make_Assignment_t(al, x.base.base.loc, target, value,
                                      overloaded_stmt);
