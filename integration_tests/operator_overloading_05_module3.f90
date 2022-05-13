@@ -1,4 +1,5 @@
-submodule(module2) module3
+module operator_overloading_05_module3
+use operator_overloading_05_module2
 contains
 pure subroutine insert_head( array )
 
@@ -14,5 +15,8 @@ pure subroutine insert_head( array )
         end do find_hole
         array(i-1) = tmp
 
-    end subroutine insert_head
-end submodule
+end subroutine insert_head
+end module
+
+program main
+end program

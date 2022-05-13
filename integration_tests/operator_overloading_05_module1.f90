@@ -1,4 +1,4 @@
-module module1
+module operator_overloading_05_module1
     type :: string_type
         character(len=:), allocatable :: raw
     end type string_type
@@ -13,13 +13,13 @@ module module1
 
 contains
 
-    subroutine assign_string_type(lhs, rhs)
+    pure subroutine assign_string_type(lhs, rhs)
         type(string_type), intent(inout) :: lhs
         type(string_type), intent(in) :: rhs
         lhs%raw = rhs%raw
     end subroutine assign_string_type
 
-    function gt_string_type(lhs, rhs) result(r)
+    pure function gt_string_type(lhs, rhs) result(r)
         type(string_type), intent(in) :: lhs
         type(string_type), intent(in) :: rhs
         logical :: r
