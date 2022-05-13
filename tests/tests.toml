@@ -114,6 +114,10 @@ filename = "errors/array_size_04.f90"
 asr = true
 
 [[test]]
+filename = "errors/array_size_05.f90"
+asr = true
+
+[[test]]
 filename = "errors/esub1.f90"
 tokens = true
 ast = true
