@@ -551,6 +551,10 @@ asr = true
 llvm = true
 
 [[test]]
+filename = "../integration_tests/arrays_02_size.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/arrays_01_real.f90"
 asr = true
 llvm = true
