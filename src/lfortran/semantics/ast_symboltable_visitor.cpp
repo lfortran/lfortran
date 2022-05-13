@@ -995,7 +995,7 @@ public:
 
     void import_symbols_util(ASR::Module_t *m, std::string& msym,
                              std::string& remote_sym, std::string& local_sym,
-                             std::queue<ASR::symbol_t*>& to_be_imported_later,
+                             std::queue<std::pair<ASR::symbol_t*, std::string>>& to_be_imported_later,
                              const Location& loc) {
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
         if (!t) {
@@ -1046,8 +1046,11 @@ public:
                     loc);
             }
             ASR::CustomOperator_t *gp = ASR::down_cast<ASR::CustomOperator_t>(t);
+            std::string gp_name = std::string(gp->m_name);
             for (size_t igp = 0; igp < gp->n_procs; igp++) {
-                to_be_imported_later.push(gp->m_procs[igp]);
+                std::string proc_name = ASRUtils::symbol_name(gp->m_procs[igp]);
+                std::string mangled_name = proc_name + "@" + gp_name;
+                to_be_imported_later.push(std::make_pair(gp->m_procs[igp], mangled_name));
             }
             Str name;
             name.from_str(al, local_sym);
@@ -1166,7 +1169,7 @@ public:
         } else {
             // Only import individual symbols from the module, e.g.:
             //     use a, only: x, y, z
-            std::queue<ASR::symbol_t*> to_be_imported_later;
+            std::queue<std::pair<ASR::symbol_t*, std::string>> to_be_imported_later;
             for (size_t i = 0; i < x.n_symbols; i++) {
                 std::string remote_sym;
                 switch (x.m_symbols[i]->type)
@@ -1199,11 +1202,12 @@ public:
             }
 
             while( !to_be_imported_later.empty() ) {
-                ASR::symbol_t* potential_import = to_be_imported_later.front();
+                ASR::symbol_t* potential_import = to_be_imported_later.front().first;
+                std::string imported_name = to_be_imported_later.front().second;
                 to_be_imported_later.pop();
                 std::string remote_sym = ASRUtils::symbol_name(potential_import);
-                if( current_scope->resolve_symbol(remote_sym) == nullptr ) {
-                    import_symbols_util(m, msym, remote_sym, remote_sym,
+                if( current_scope->resolve_symbol(imported_name) == nullptr ) {
+                    import_symbols_util(m, msym, remote_sym, imported_name,
                                         to_be_imported_later, x.base.base.loc);
                 }
             }
