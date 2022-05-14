@@ -995,7 +995,7 @@ public:
 
     void import_symbols_util(ASR::Module_t *m, std::string& msym,
                              std::string& remote_sym, std::string& local_sym,
-                             std::queue<std::pair<ASR::symbol_t*, std::pair<std::string, std::string>>>& to_be_imported_later,
+                             std::queue<std::pair<std::string, std::string>>& to_be_imported_later,
                              const Location& loc) {
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
         if (!t) {
@@ -1050,8 +1050,7 @@ public:
             for (size_t igp = 0; igp < gp->n_procs; igp++) {
                 std::string proc_name = ASRUtils::symbol_name(gp->m_procs[igp]);
                 std::string mangled_name = proc_name + "@" + gp_name;
-                to_be_imported_later.push(std::make_pair(gp->m_procs[igp],
-                                          std::make_pair(proc_name, mangled_name)));
+                to_be_imported_later.push(std::make_pair(proc_name, mangled_name));
             }
             Str name;
             name.from_str(al, local_sym);
@@ -1100,8 +1099,7 @@ public:
                         // of to_be_imported_later queue.
                         LFORTRAN_ASSERT(false);
                     }
-                    to_be_imported_later.push(std::make_pair(gp->m_procs[igp],
-                                              std::make_pair(proc_remote_sym, mangled_name)));
+                    to_be_imported_later.push(std::make_pair(proc_remote_sym, mangled_name));
                 }
             }
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
@@ -1195,7 +1193,7 @@ public:
         } else {
             // Only import individual symbols from the module, e.g.:
             //     use a, only: x, y, z
-            std::queue<std::pair<ASR::symbol_t*, std::pair<std::string, std::string>>> to_be_imported_later;
+            std::queue<std::pair<std::string, std::string>> to_be_imported_later;
             for (size_t i = 0; i < x.n_symbols; i++) {
                 std::string remote_sym;
                 switch (x.m_symbols[i]->type)
@@ -1233,9 +1231,8 @@ public:
             // the required procedures manually then importing later avoids polluting the
             // symbol table.
             while( !to_be_imported_later.empty() ) {
-                ASR::symbol_t* potential_import = to_be_imported_later.front().first;
-                std::string remote_sym = to_be_imported_later.front().second.first;
-                std::string local_sym = to_be_imported_later.front().second.second;
+                std::string remote_sym = to_be_imported_later.front().first;
+                std::string local_sym = to_be_imported_later.front().second;
                 to_be_imported_later.pop();
                 if( current_scope->resolve_symbol(local_sym) == nullptr ) {
                     import_symbols_util(m, msym, remote_sym, local_sym,
