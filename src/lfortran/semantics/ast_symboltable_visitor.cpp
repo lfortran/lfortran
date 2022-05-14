@@ -995,7 +995,7 @@ public:
 
     void import_symbols_util(ASR::Module_t *m, std::string& msym,
                              std::string& remote_sym, std::string& local_sym,
-                             std::queue<std::pair<ASR::symbol_t*, std::string>>& to_be_imported_later,
+                             std::queue<std::pair<ASR::symbol_t*, std::pair<std::string, std::string>>>& to_be_imported_later,
                              const Location& loc) {
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
         if (!t) {
@@ -1050,7 +1050,8 @@ public:
             for (size_t igp = 0; igp < gp->n_procs; igp++) {
                 std::string proc_name = ASRUtils::symbol_name(gp->m_procs[igp]);
                 std::string mangled_name = proc_name + "@" + gp_name;
-                to_be_imported_later.push(std::make_pair(gp->m_procs[igp], mangled_name));
+                to_be_imported_later.push(std::make_pair(gp->m_procs[igp],
+                                          std::make_pair(proc_name, mangled_name)));
             }
             Str name;
             name.from_str(al, local_sym);
@@ -1078,6 +1079,31 @@ public:
                 es->m_module_name, es->m_scope_names, es->n_scope_names, es->m_original_name,
                 es->m_access
                 );
+            ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(t);
+            if( ASR::is_a<ASR::CustomOperator_t>(*orig_sym) ) {
+                ASR::CustomOperator_t *gp = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
+                std::string gp_name = std::string(gp->m_name);
+                for (size_t igp = 0; igp < gp->n_procs; igp++) {
+                    std::string proc_name = ASRUtils::symbol_name(gp->m_procs[igp]);
+                    std::string mangled_name = proc_name + "@" + gp_name;
+                    ASR::symbol_t* proc_sym = m->m_symtab->resolve_symbol(proc_name);
+                    ASR::symbol_t* mangled_sym = m->m_symtab->resolve_symbol(mangled_name);
+                    std::string proc_remote_sym = "";
+                    if( proc_sym ) {
+                        proc_remote_sym = proc_name;
+                    } else if( mangled_sym ) {
+                        proc_remote_sym = mangled_name;
+                    } else {
+                        // Should never happen because if the user
+                        // doesn't import a procedure for a custom operator
+                        // the lfortran is supposed to do that with help
+                        // of to_be_imported_later queue.
+                        LFORTRAN_ASSERT(false);
+                    }
+                    to_be_imported_later.push(std::make_pair(gp->m_procs[igp],
+                                              std::make_pair(proc_remote_sym, mangled_name)));
+                }
+            }
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
         } else if (ASR::is_a<ASR::Function_t>(*t)) {
             if (current_scope->get_symbol(local_sym) != nullptr) {
@@ -1169,7 +1195,7 @@ public:
         } else {
             // Only import individual symbols from the module, e.g.:
             //     use a, only: x, y, z
-            std::queue<std::pair<ASR::symbol_t*, std::string>> to_be_imported_later;
+            std::queue<std::pair<ASR::symbol_t*, std::pair<std::string, std::string>>> to_be_imported_later;
             for (size_t i = 0; i < x.n_symbols; i++) {
                 std::string remote_sym;
                 switch (x.m_symbols[i]->type)
@@ -1201,13 +1227,18 @@ public:
                                     to_be_imported_later, x.base.base.loc);
             }
 
+            // Importing procedures defined for overloaded operators like assignment
+            // after all the user imports are complete. This avoids
+            // importing the same function twice i.e., if the user has already imported
+            // the required procedures manually then importing later avoids polluting the
+            // symbol table.
             while( !to_be_imported_later.empty() ) {
                 ASR::symbol_t* potential_import = to_be_imported_later.front().first;
-                std::string imported_name = to_be_imported_later.front().second;
+                std::string remote_sym = to_be_imported_later.front().second.first;
+                std::string local_sym = to_be_imported_later.front().second.second;
                 to_be_imported_later.pop();
-                std::string remote_sym = ASRUtils::symbol_name(potential_import);
-                if( current_scope->resolve_symbol(imported_name) == nullptr ) {
-                    import_symbols_util(m, msym, remote_sym, imported_name,
+                if( current_scope->resolve_symbol(local_sym) == nullptr ) {
+                    import_symbols_util(m, msym, remote_sym, local_sym,
                                         to_be_imported_later, x.base.base.loc);
                 }
             }

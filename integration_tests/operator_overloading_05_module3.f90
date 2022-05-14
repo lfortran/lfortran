@@ -1,5 +1,5 @@
 module operator_overloading_05_module3
-use operator_overloading_05_module2
+use operator_overloading_05_module2, only: string_type, operator(>=), assignment(=)
 contains
 pure subroutine insert_head( array )
 
