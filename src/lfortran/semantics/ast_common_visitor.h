@@ -1730,11 +1730,16 @@ public:
         if( kind_expr ) {
             this->visit_expr(*kind_expr);
             kind = ASRUtils::EXPR(tmp);
-            if( ASRUtils::expr_value(kind) ) {
-                type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
-                                        ASR::down_cast<ASR::IntegerConstant_t>(kind)->m_n ,
-                                        nullptr, 0));
+            ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
+            if( kind_value == nullptr ) {
+                throw SemanticError(("Only Integer literals or expressions "
+                                    "which reduce to constant Integer are "
+                                    "accepted as kind parameters."),
+                                    kind->base.loc);
             }
+            type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                    ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n ,
+                                    nullptr, 0));
         }
     }
 

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-arrays_02_size-ab6ee62",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/arrays_02_size.f90",
+    "infile_hash": "38abe88ea3a7e82aa0d9dd390578cda301e16cccabaefeaab3650c5f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-arrays_02_size-ab6ee62.stdout",
+    "stdout_hash": "b9033016fece1b9f98d39bb7f5fdf9ffe3b2eb9ab473f96e9ab3ec9d",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

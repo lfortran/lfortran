@@ -114,6 +114,10 @@ filename = "errors/array_size_04.f90"
 asr = true
 
 [[test]]
+filename = "errors/array_size_05.f90"
+asr = true
+
+[[test]]
 filename = "errors/esub1.f90"
 tokens = true
 ast = true
@@ -545,6 +549,10 @@ asr = true
 filename = "../integration_tests/arrays_01_size.f90"
 asr = true
 llvm = true
+
+[[test]]
+filename = "../integration_tests/arrays_02_size.f90"
+asr = true
 
 [[test]]
 filename = "../integration_tests/arrays_01_real.f90"

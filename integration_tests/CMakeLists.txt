@@ -149,6 +149,7 @@ RUN(NAME doconcurrentloop_01 LABELS gfortran cpp)
 
 RUN(NAME arrays_01 LABELS gfortran cpp llvm)
 RUN(NAME arrays_01_size LABELS gfortran llvm)
+RUN(NAME arrays_02_size LABELS gfortran llvm)
 RUN(NAME arrays_01_real LABELS gfortran llvm)
 RUN(NAME arrays_01_complex LABELS gfortran llvm)
 RUN(NAME arrays_01_logical LABELS gfortran llvm)
@@ -285,6 +286,8 @@ RUN(NAME modules_21 LABELS gfortran llvm EXTRAFILES
         modules_21b.f90)
 RUN(NAME operator_overloading_05_module3 LABELS gfortran llvm EXTRAFILES
         operator_overloading_05_module1.f90 operator_overloading_05_module2.f90)
+RUN(NAME associate_06 LABELS gfortran EXTRAFILES
+        associate_06_module.f90)
 
 RUN(NAME if_04 LABELS gfortran x86)
 RUN(NAME case_01 LABELS gfortran llvm)
