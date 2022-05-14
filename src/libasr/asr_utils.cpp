@@ -302,7 +302,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     ASR::ttype_t *right_type = LFortran::ASRUtils::expr_type(right);
     bool found = false;
     if( is_op_overloaded(op, intrinsic_op_name, curr_scope) ) {
-        ASR::symbol_t* sym = curr_scope->get_symbol(intrinsic_op_name);
+        ASR::symbol_t* sym = curr_scope->resolve_symbol(intrinsic_op_name);
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
@@ -310,6 +310,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
             switch(proc->type) {
                 case ASR::symbolType::Function: {
                     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
+                    std::string matched_func_name = "";
                     if( func->n_args == 2 ) {
                         ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
                         ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
@@ -323,7 +324,18 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             a_args.push_back(al, left_call_arg);
                             right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
                             a_args.push_back(al, right_call_arg);
-                            asr = ASR::make_FunctionCall_t(al, loc, curr_scope->get_symbol(std::string(func->m_name)), orig_sym,
+                            std::string func_name = to_lower(func->m_name);
+                            if( curr_scope->resolve_symbol(func_name) ) {
+                                matched_func_name = func_name;
+                            } else {
+                                std::string mangled_name = func_name + "@" + intrinsic_op_name;
+                                matched_func_name = mangled_name;
+                            }
+                            ASR::symbol_t* a_name = curr_scope->resolve_symbol(matched_func_name);
+                            if( a_name == nullptr ) {
+                                err("Unable to resolve matched function for operator overloading, " + matched_func_name, loc);
+                            }
+                            asr = ASR::make_FunctionCall_t(al, loc, a_name, sym,
                                                             a_args.p, 2,
                                                             ASRUtils::expr_type(func->m_return_var),
                                                             nullptr, nullptr);
@@ -416,24 +428,13 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                     } else {
                         std::string mangled_name = subrout_name + "@~assign";
                         matched_subrout_name = mangled_name;
-                        ASR::symbol_t* imported_subrout = nullptr;
-                        if( sym->type == ASR::symbolType::ExternalSymbol  &&
-                            curr_scope->resolve_symbol(mangled_name) == nullptr) {
-                            ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
-                            imported_subrout = ASR::down_cast<ASR::symbol_t>(
-                                                                ASR::make_ExternalSymbol_t(al,
-                                                                loc, curr_scope,
-                                                                s2c(al, mangled_name), proc,
-                                                                ext_sym->m_module_name, nullptr, 0,
-                                                                subrout->m_name, ASR::accessType::Private));
-                            curr_scope->add_symbol(mangled_name, imported_subrout);
-                        }
                     }
-                    if( curr_scope->resolve_symbol(matched_subrout_name) == nullptr ) {
-                        err("Unable to resolve matched subroutine for assignment overloading, " + std::string(matched_subrout_name), loc);
+                    ASR::symbol_t *a_name = curr_scope->resolve_symbol(matched_subrout_name);
+                    if( a_name == nullptr ) {
+                        err("Unable to resolve matched subroutine for assignment overloading, " + matched_subrout_name, loc);
                     }
-                    asr = ASR::make_SubroutineCall_t(al, loc, curr_scope->resolve_symbol(matched_subrout_name), orig_sym,
-                                                        a_args.p, 2, nullptr);
+                    asr = ASR::make_SubroutineCall_t(al, loc, a_name, sym,
+                                                     a_args.p, 2, nullptr);
                 }
             }
         }
@@ -458,6 +459,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
             switch(proc->type) {
                 case ASR::symbolType::Function: {
                     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
+                    std::string matched_func_name = "";
                     if( func->n_args == 2 ) {
                         ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
                         ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
@@ -471,7 +473,18 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             a_args.push_back(al, left_call_arg);
                             right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
                             a_args.push_back(al, right_call_arg);
-                            asr = ASR::make_FunctionCall_t(al, loc, curr_scope->resolve_symbol(std::string(func->m_name)), orig_sym,
+                            std::string func_name = to_lower(func->m_name);
+                            if( curr_scope->resolve_symbol(func_name) ) {
+                                matched_func_name = func_name;
+                            } else {
+                                std::string mangled_name = func_name + "@" + intrinsic_op_name;
+                                matched_func_name = mangled_name;
+                            }
+                            ASR::symbol_t* a_name = curr_scope->resolve_symbol(matched_func_name);
+                            if( a_name == nullptr ) {
+                                err("Unable to resolve matched function for operator overloading, " + matched_func_name, loc);
+                            }
+                            asr = ASR::make_FunctionCall_t(al, loc, a_name, sym,
                                                             a_args.p, 2,
                                                             ASRUtils::expr_type(func->m_return_var),
                                                             nullptr, nullptr);
