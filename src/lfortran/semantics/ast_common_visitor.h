@@ -1903,12 +1903,51 @@ public:
             if (x.n_keywords > 0) {
                 if (ASR::is_a<ASR::Function_t>(*f2)) {
                     ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
+                    diag::Diagnostics diags;
                     visit_kwargs(args, x.m_keywords, x.n_keywords,
-                        f->m_args, f->n_args, x.base.base.loc, f);
+                        f->m_args, f->n_args, x.base.base.loc, f,
+                        diags, x.n_member);
+                    if( diags.has_error() ) {
+                        throw SemanticAbort();
+                    }
                 } else {
                     LFORTRAN_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
-                    throw SemanticError("Keyword arguments are not implemented for generic functions yet",
-                        x.base.base.loc);
+                    ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(f2);
+                    bool function_found = false;
+                    for( int i = 0; i < (int) gp->n_procs; i++ ) {
+                        Vec<ASR::call_arg_t> args_copy;
+                        args_copy.reserve(al, args.size() + x.n_keywords);
+                        for( size_t j = 0; j < args.size(); j++ ) {
+                            args_copy.push_back(al, args[j]);
+                        }
+                        ASR::symbol_t* f4 = gp->m_procs[i];
+                        if( !ASR::is_a<ASR::Function_t>(*f4) ) {
+                            throw SemanticError(std::string(ASRUtils::symbol_name(f4)) +
+                                                " is not a function.",
+                                                x.base.base.loc);
+                        }
+                        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f4);
+                        diag::Diagnostics diags;
+                        visit_kwargs(args_copy, x.m_keywords, x.n_keywords,
+                            f->m_args, f->n_args, x.base.base.loc, f,
+                            diags, x.n_member);
+                        if( diags.has_error() ) {
+                            continue ;
+                        }
+                        int idx = ASRUtils::select_generic_procedure(args_copy, *gp, x.base.base.loc,
+                                        [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
+                        if( idx == i ) {
+                            function_found = true;
+                            for( size_t j = args.size(); j < args_copy.size(); j++ ) {
+                                args.push_back(al, args_copy[j]);
+                            }
+                            break;
+                        }
+                    }
+                    if( !function_found ) {
+                        throw SemanticError("Unable to find a function to bind for generic procedure call, " + std::string(gp->m_name),
+                                            x.base.base.loc);
+                    }
                 }
             }
             tmp = create_FunctionCall(x.base.base.loc, v, args);
@@ -2426,8 +2465,10 @@ public:
 
     template <typename T>
     void visit_kwargs(Vec<ASR::call_arg_t>& args, AST::keyword_t *kwargs, size_t n,
-                ASR::expr_t **fn_args, size_t fn_n_args, const Location &loc, T* fn) {
+                ASR::expr_t **fn_args, size_t fn_n_args, const Location &loc, T* fn,
+                diag::Diagnostics& diag, size_t type_bound=0) {
         size_t n_args = args.size();
+        std::string fn_name = fn->m_name;
         std::vector<std::string> optional_args;
         for( auto itr = fn->m_symtab->get_scope().begin(); itr != fn->m_symtab->get_scope().end();
              itr++ ) {
@@ -2439,14 +2480,16 @@ public:
                 }
             }
         }
-        size_t n_optional = optional_args.size();
-        if (n_args + n > fn_n_args + n_optional) {
-            throw SemanticError(
-                "Procedure accepts " + std::to_string(fn_n_args + n_optional)
+
+        if (n_args + n > fn_n_args) {
+            diag.semantic_error_label(
+                "Procedure accepts " + std::to_string(fn_n_args)
                 + " arguments, but " + std::to_string(n_args + n)
                 + " were provided",
-                loc
+                {loc},
+                "incorrect number of arguments to " + std::string(fn_name)
             );
+            return ;
         }
 
         std::vector<std::string> fn_args2 = convert_fn_args_to_string(
@@ -2466,13 +2509,13 @@ public:
 
 
         size_t offset = args.size();
-        for (size_t i = 0; i < n_optional; i++) {
+        for (size_t i = 0; i < fn_n_args - offset - type_bound; i++) {
             ASR::call_arg_t call_arg;
             call_arg.loc = loc;
             call_arg.m_value = nullptr;
             args.push_back(al, call_arg);
         }
-        for (size_t i=0; i<n; i++) {
+        for (size_t i = 0; i < n; i++) {
             this->visit_expr(*kwargs[i].m_value);
             ASR::expr_t *expr = LFortran::ASRUtils::EXPR(tmp);
             std::string name = to_lower(kwargs[i].m_arg);
@@ -2486,21 +2529,38 @@ public:
                 if (search != fn_args2.end()) {
                     size_t idx = std::distance(fn_args2.begin(), search);
                     if (idx < n_args) {
-                        throw SemanticError("Keyword argument is already specified as a non-keyword argument", loc);
+                        diag.semantic_error_label(
+                            "Keyword argument is already specified as a non-keyword argument",
+                            {loc},
+                            name + "keyword argument is already specified.");
+                        return ;
                     }
                     if (args[idx].m_value != nullptr) {
-                        throw SemanticError("Keyword argument is already specified as another keyword argument ", loc);
+                        diag.semantic_error_label(
+                            "Keyword argument is already specified as another keyword argument",
+                            {loc},
+                            name + "keyword argument is already specified.");
+                        return ;
                     }
                     args.p[idx].loc = expr->base.loc;
                     args.p[idx].m_value = expr;
                 } else {
-                    throw SemanticError("Keyword argument not found " + name, loc);
+                    diag.semantic_error_label(
+                        "Keyword argument not found " + name,
+                        {loc},
+                        name + " keyword argument not found.");
+                    return ;
                 }
             }
         }
         for (size_t i=0; i < offset; i++) {
             if (args[i].m_value == nullptr) {
-                throw SemanticError("Argument was not specified", loc);
+                diag.semantic_error_label(
+                    "Argument was not specified",
+                    {loc},
+                    std::to_string(i) +
+                    "-th argument not specified for " + fn_name);
+                return ;
             }
         }
     }

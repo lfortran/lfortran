@@ -1026,8 +1026,13 @@ public:
             ASR::symbol_t* f2 = LFortran::ASRUtils::symbol_get_past_external(original_sym);
             if (ASR::is_a<ASR::Subroutine_t>(*f2)) {
                 ASR::Subroutine_t *f = ASR::down_cast<ASR::Subroutine_t>(f2);
+                diag::Diagnostics diags;
                 visit_kwargs(args, x.m_keywords, x.n_keywords,
-                    f->m_args, f->n_args, x.base.base.loc, f);
+                    f->m_args, f->n_args, x.base.base.loc, f,
+                    diags, x.n_member);
+                if( diags.has_error() ) {
+                    throw SemanticAbort();
+                }
             } else if (ASR::is_a<ASR::ClassProcedure_t>(*f2)) {
                 ASR::ClassProcedure_t* f3 = ASR::down_cast<ASR::ClassProcedure_t>(f2);
                 ASR::symbol_t* f4 = f3->m_proc;
@@ -1035,8 +1040,13 @@ public:
                     throw SemanticError(std::string(f3->m_proc_name) + " is not a subroutine.", x.base.base.loc);
                 }
                 ASR::Subroutine_t *f = ASR::down_cast<ASR::Subroutine_t>(f4);
+                diag::Diagnostics diags;
                 visit_kwargs(args, x.m_keywords, x.n_keywords,
-                    f->m_args, f->n_args, x.base.base.loc, f);
+                    f->m_args, f->n_args, x.base.base.loc, f,
+                    diags, x.n_member);
+                if( diags.has_error() ) {
+                    throw SemanticAbort();
+                }
             } else {
                 throw SemanticError(
                     "Keyword arguments are not implemented for generic subroutines yet",
