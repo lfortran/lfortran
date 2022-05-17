@@ -256,6 +256,10 @@ public:
       *dest_type = right_type;
     }
   }
+
+  static int get_type_priority(ASR::ttypeType type_kind) {
+    return type_priority[(int) type_kind];
+  }
 };
 } // namespace LFortran
 

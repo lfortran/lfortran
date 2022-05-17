@@ -36,7 +36,7 @@ interface mod
 end interface
 
 interface merge
-    module procedure mergei8, mergei16, mergei32, mergei64, merger32, merger64, mergechar
+    module procedure mergei8, mergei16, mergei32, mergei64, merger32, merger64, mergez32, mergez64, mergechar, mergelogical
 end interface
 
 interface min
@@ -444,6 +444,27 @@ function mergechar(tsource, fsource, mask) result(r)
     character(len=*), intent(in) :: fsource(:)
     logical, intent(in) :: mask(:)
     character(len=len(tsource)) :: r
+end function
+
+function mergelogical(tsource, fsource, mask) result(r)
+    logical, intent(in) :: tsource(:)
+    logical, intent(in) :: fsource(:)
+    logical, intent(in) :: mask(:)
+    logical :: r
+end function
+
+function mergez32(tsource, fsource, mask) result(r)
+    complex(sp), intent(in) :: tsource(:)
+    complex(sp), intent(in) :: fsource(:)
+    logical, intent(in) :: mask(:)
+    complex(sp) :: r
+end function
+
+function mergez64(tsource, fsource, mask) result(r)
+    complex(dp), intent(in) :: tsource(:)
+    complex(dp), intent(in) :: fsource(:)
+    logical, intent(in) :: mask(:)
+    complex(dp) :: r
 end function
 
 end module

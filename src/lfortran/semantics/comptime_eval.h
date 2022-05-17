@@ -23,7 +23,8 @@ struct IntrinsicProceduresAsASRNodes {
     public:
 
         IntrinsicProceduresAsASRNodes() {
-            intrinsics_present_in_ASR = {"size", "lbound", "ubound"};
+            intrinsics_present_in_ASR = {"size", "lbound", "ubound",
+                "transpose", "matmul"};
         }
 
         bool is_intrinsic_present_in_ASR(std::string& name) {
@@ -117,6 +118,9 @@ struct IntrinsicProcedures {
             {"atan2", {m_math, &eval_atan2, true}},
             {"sign", {m_math, &not_implemented, false}},
 
+            {"dot_product", {m_math, &not_implemented, false}},
+            {"conjg", {m_math, &not_implemented, false}},
+
             {"iand", {m_bit, &not_implemented, false}},
             {"ior", {m_bit, &not_implemented, false}},
             {"ieor", {m_bit, &eval_ieor, true}},
@@ -165,6 +169,9 @@ struct IntrinsicProcedures {
 
             // Inquiry function
             {"huge", {m_math2, &eval_huge, false}},
+
+            // IEEE Arithmetic
+            {"ieee_value", {m_ieee_arithmetic, &not_implemented, false}},
         };
     }
 

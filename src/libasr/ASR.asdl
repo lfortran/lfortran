@@ -254,6 +254,8 @@ expr
     | ArraySize(expr v, expr? dim, ttype type, expr? value)
     | ArrayBound(expr v, expr? dim ttype type, arraybound bound,
                  expr? value)
+    | ArrayTranspose(expr matrix, ttype type, expr? value)
+    | ArrayMatMul(expr matrix_a, expr matrix_b, ttype type, expr? value)
     | DerivedRef(expr v, symbol m, ttype type, expr? value)
     | Cast(expr arg, cast_kind kind, ttype type, expr? value)
     | ComplexRe(expr arg, ttype type, expr? value)

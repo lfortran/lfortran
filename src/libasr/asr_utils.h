@@ -131,6 +131,8 @@ static inline ASR::ttype_t* expr_type(const ASR::expr_t *f)
         case ASR::exprType::ComplexRe: { return ((ASR::ComplexRe_t*)f)->m_type; }
         case ASR::exprType::ComplexIm: { return ((ASR::ComplexIm_t*)f)->m_type; }
         case ASR::exprType::DictItem: { return ((ASR::DictItem_t*)f)->m_type; }
+        case ASR::exprType::ArrayTranspose: { return ((ASR::ArrayTranspose_t*)f)->m_type; }
+        case ASR::exprType::ArrayMatMul: { return ((ASR::ArrayMatMul_t*)f)->m_type; }
         default : throw LFortranException("Not implemented");
     }
 }
@@ -876,45 +878,108 @@ static inline bool is_logical(ASR::ttype_t &x) {
     return ASR::is_a<ASR::Logical_t>(*type_get_past_pointer(&x));
 }
 
-inline bool is_array(ASR::ttype_t *x) {
+inline int extract_dimensions_from_ttype(ASR::ttype_t *x,
+                                         ASR::dimension_t*& m_dims) {
     int n_dims = 0;
     switch (x->type) {
         case ASR::ttypeType::Integer: {
-            n_dims = ASR::down_cast<ASR::Integer_t>(x)->n_dims;
+            ASR::Integer_t* Integer_type = ASR::down_cast<ASR::Integer_t>(x);
+            n_dims = Integer_type->n_dims;
+            m_dims = Integer_type->m_dims;
             break;
         }
         case ASR::ttypeType::Real: {
-            n_dims = ASR::down_cast<ASR::Real_t>(x)->n_dims;
+            ASR::Real_t* Real_type = ASR::down_cast<ASR::Real_t>(x);
+            n_dims = Real_type->n_dims;
+            m_dims = Real_type->m_dims;
             break;
         }
         case ASR::ttypeType::Complex: {
-            n_dims = ASR::down_cast<ASR::Complex_t>(x)->n_dims;
+            ASR::Complex_t* Complex_type = ASR::down_cast<ASR::Complex_t>(x);
+            n_dims = Complex_type->n_dims;
+            m_dims = Complex_type->m_dims;
             break;
         }
         case ASR::ttypeType::Character: {
-            n_dims = ASR::down_cast<ASR::Character_t>(x)->n_dims;
+            ASR::Character_t* Character_type = ASR::down_cast<ASR::Character_t>(x);
+            n_dims = Character_type->n_dims;
+            m_dims = Character_type->m_dims;
             break;
         }
         case ASR::ttypeType::Logical: {
-            n_dims = ASR::down_cast<ASR::Logical_t>(x)->n_dims;
+            ASR::Logical_t* Logical_type = ASR::down_cast<ASR::Logical_t>(x);
+            n_dims = Logical_type->n_dims;
+            m_dims = Logical_type->m_dims;
             break;
         }
         case ASR::ttypeType::Derived: {
-            n_dims = ASR::down_cast<ASR::Derived_t>(x)->n_dims;
+            ASR::Derived_t* Derived_type = ASR::down_cast<ASR::Derived_t>(x);
+            n_dims = Derived_type->n_dims;
+            m_dims = Derived_type->m_dims;
             break;
         }
         case ASR::ttypeType::Class: {
-            n_dims = ASR::down_cast<ASR::Class_t>(x)->n_dims;
+            ASR::Class_t* Class_type = ASR::down_cast<ASR::Class_t>(x);
+            n_dims = Class_type->n_dims;
+            m_dims = Class_type->m_dims;
             break;
         }
         case ASR::ttypeType::Pointer: {
-            return is_array(ASR::down_cast<ASR::Pointer_t>(x)->m_type);
+            n_dims = extract_dimensions_from_ttype(ASR::down_cast<ASR::Pointer_t>(x)->m_type, m_dims);
             break;
         }
         default:
             throw LFortranException("Not implemented.");
     }
-    return n_dims > 0;
+    return n_dims;
+}
+
+inline bool is_array(ASR::ttype_t *x) {
+    ASR::dimension_t* dims = nullptr;
+    return extract_dimensions_from_ttype(x, dims) > 0;
+}
+
+static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
+                                           Vec<ASR::dimension_t>* dims = nullptr) {
+    switch (t->type) {
+        case ASR::ttypeType::Integer: {
+            ASR::Integer_t* tnew = ASR::down_cast<ASR::Integer_t>(t);
+            ASR::dimension_t* dimsp = dims ? dims->p : tnew->m_dims;
+            size_t dimsn = dims ? dims->n : tnew->n_dims;
+            return ASRUtils::TYPE(ASR::make_Integer_t(al, t->base.loc,
+                        tnew->m_kind, dimsp, dimsn));
+        }
+        case ASR::ttypeType::Real: {
+            ASR::Real_t* tnew = ASR::down_cast<ASR::Real_t>(t);
+            ASR::dimension_t* dimsp = dims ? dims->p : tnew->m_dims;
+            size_t dimsn = dims ? dims->n : tnew->n_dims;
+            return ASRUtils::TYPE(ASR::make_Real_t(al, t->base.loc,
+                        tnew->m_kind, dimsp, dimsn));
+        }
+        case ASR::ttypeType::Complex: {
+            ASR::Complex_t* tnew = ASR::down_cast<ASR::Complex_t>(t);
+            ASR::dimension_t* dimsp = dims ? dims->p : tnew->m_dims;
+            size_t dimsn = dims ? dims->n : tnew->n_dims;
+            return ASRUtils::TYPE(ASR::make_Integer_t(al, t->base.loc,
+                        tnew->m_kind, dimsp, dimsn));
+        }
+        case ASR::ttypeType::Logical: {
+            ASR::Logical_t* tnew = ASR::down_cast<ASR::Logical_t>(t);
+            ASR::dimension_t* dimsp = dims ? dims->p : tnew->m_dims;
+            size_t dimsn = dims ? dims->n : tnew->n_dims;
+            return ASRUtils::TYPE(ASR::make_Logical_t(al, t->base.loc,
+                        tnew->m_kind, dimsp, dimsn));
+        }
+        case ASR::ttypeType::Character: {
+            ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
+            ASR::dimension_t* dimsp = dims ? dims->p : tnew->m_dims;
+            size_t dimsn = dims ? dims->n : tnew->n_dims;
+            return ASRUtils::TYPE(ASR::make_Character_t(al, t->base.loc,
+                        tnew->m_kind, tnew->m_len, tnew->m_len_expr,
+                        dimsp, dimsn));
+        }
+        default : throw LFortranException("Not implemented");
+    }
 }
 
 inline bool is_same_type_pointer(ASR::ttype_t* source, ASR::ttype_t* dest) {
