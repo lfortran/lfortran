@@ -117,6 +117,14 @@ interface sign
     module procedure signi8, signi16, signi32, signi64, signr32, signr64
 end interface
 
+interface conjg
+    module procedure conjgz32, conjgz64
+end interface
+
+interface dot_product
+    module procedure dotproductr32r32, dotproductr64r64
+end interface
+
 contains
 
 ! abs --------------------------------------------------------------------------
@@ -1182,6 +1190,26 @@ if ((x >= 0 .and. y >= 0) .or. (x <= 0 .and. y <= 0)) then
 else
     r = -x
 end if
+end function
+
+function conjgz32(x) result(r)
+complex(sp) :: x
+complex(sp) :: r
+end function
+
+function conjgz64(x) result(r)
+complex(dp) :: x
+complex(dp) :: r
+end function
+
+function dotproductr32r32(x, y) result(r)
+real(sp) :: x(:), y(:)
+real(sp) :: r
+end function
+
+function dotproductr64r64(x, y) result(r)
+real(dp) :: x(:), y(:)
+real(dp) :: r
 end function
 
 end module
