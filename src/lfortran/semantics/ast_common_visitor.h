@@ -1658,112 +1658,211 @@ public:
         return member;
     }
 
-    void handle_array_bound_size_args(const AST::FuncCallOrArray_t& x, ASR::expr_t*& v_Var,
-                                      ASR::expr_t*& dim, ASR::ttype_t*& type) {
-        if( !(x.n_args + x.n_keywords <= 3 && x.n_args >= 1)  ) {
+    void handle_intrinsic_node_args(const AST::FuncCallOrArray_t& x,
+        std::vector<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
+        size_t min_args, size_t max_args, const std::string& intrinsic_name) {
+        size_t total_args = x.n_args + x.n_keywords;
+        if( !(total_args <= max_args && total_args >= min_args) ) {
             throw SemanticError("Incorrect number of arguments "
-                                "to the array size() intrinsic "
-                                "function; It accepts the array "
-                                "and optionally the dimension and "
-                                "the result kind.",
+                                "passed to the " + intrinsic_name + " intrinsic."
+                                "It accepts at least " + std::to_string(min_args) +
+                                " and at most " + std::to_string(max_args) + " arguments.",
                                 x.base.base.loc);
         }
 
-        ASR::expr_t* kind = nullptr;
-        type = ASRUtils::TYPE(ASR::make_Integer_t(
-                                                al, x.base.base.loc, 4,
-                                                nullptr, 0));;
+        for( size_t i = 0; i < max_args; i++ ) {
+            args.push_back(nullptr);
+        }
 
-        LFORTRAN_ASSERT(x.m_args[0].m_end != nullptr);
-        this->visit_expr(*x.m_args[0].m_end);
-        v_Var = ASRUtils::EXPR(tmp);
-        AST::expr_t *dim_expr = nullptr, *kind_expr = nullptr;
-        if( x.n_keywords == 0 ) {
-            if( x.n_args >= 2 ) {
-                dim_expr = x.m_args[1].m_end;
-                LFORTRAN_ASSERT(dim_expr != nullptr);
-            }
-            if( x.n_args >= 3 ) {
-                kind_expr = x.m_args[2].m_end;
-                LFORTRAN_ASSERT(kind_expr != nullptr);
-            }
-        } else if( x.n_keywords == 1 ) {
-            if( std::string(x.m_keywords[0].m_arg) == "dim" ) {
-                dim_expr = x.m_keywords[0].m_value;
-                if( x.n_args != 1 ) {
-                    throw SemanticError("dim argument has been "
-                                        "specified both as keyword "
-                                        "and positional argument.",
-                                        x.base.base.loc);
-                }
-            } else if( std::string(x.m_keywords[0].m_arg) == "kind" ) {
-                kind_expr = x.m_keywords[0].m_value;
-                if( x.n_args == 2 ) {
-                    dim_expr = x.m_args[1].m_end;
-                    LFORTRAN_ASSERT(dim_expr != nullptr);
-                }
-            } else {
-                throw SemanticError("Unrecognized keyword argument, " +
-                                    std::string(x.m_keywords[0].m_arg) +
-                                    ".", x.base.base.loc);
-            }
-        } else if( x.n_keywords == 2 ) {
-            std::string keyword0_name = x.m_keywords[0].m_arg;
-            std::string keyword1_name = x.m_keywords[1].m_arg;
-            LFORTRAN_ASSERT(keyword0_name != keyword1_name);
-            if( keyword0_name == "dim" && keyword1_name == "kind" ) {
-                dim_expr = x.m_keywords[0].m_value;
-                kind_expr = x.m_keywords[1].m_value;
-            } else if( keyword0_name == "kind" && keyword1_name == "dim" ) {
-                dim_expr = x.m_keywords[1].m_value;
-                kind_expr = x.m_keywords[0].m_value;
-            } else {
-                throw SemanticError("Unrecognized keyword arguments, " +
-                                    keyword0_name + " and " + keyword1_name +
-                                    ".", x.base.base.loc);
+        for( size_t i = 0; i < x.n_args; i++ ) {
+            this->visit_expr(*x.m_args[i].m_end);
+            args[i] = ASRUtils::EXPR(tmp);
+        }
+
+        for( size_t i = 0; i < x.n_keywords; i++ ) {
+            std::string curr_kwarg_name = std::string(x.m_keywords[i].m_arg);
+            if( std::find(kwarg_names.begin(), kwarg_names.end(),
+                          curr_kwarg_name) == kwarg_names.end() ) {
+                throw SemanticError("Unrecognized keyword argument " + curr_kwarg_name +
+                                    " passed to " + intrinsic_name + " intrinsic.",
+                                    x.base.base.loc);
             }
         }
-        if( dim_expr ) {
-            this->visit_expr(*dim_expr);
-            dim = ASRUtils::EXPR(tmp);
-        }
-        if( kind_expr ) {
-            this->visit_expr(*kind_expr);
-            kind = ASRUtils::EXPR(tmp);
-            ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
-            if( kind_value == nullptr ) {
-                throw SemanticError(("Only Integer literals or expressions "
-                                    "which reduce to constant Integer are "
-                                    "accepted as kind parameters."),
-                                    kind->base.loc);
+
+        size_t offset = min_args;
+        for( size_t i = 0; i < x.n_keywords; i++ ) {
+            std::string curr_kwarg_name = std::string(x.m_keywords[i].m_arg);
+            auto it = std::find(kwarg_names.begin(), kwarg_names.end(),
+                                curr_kwarg_name);
+            int64_t kwarg_idx = it - kwarg_names.begin();
+            if( args[kwarg_idx + offset] != nullptr ) {
+                throw SemanticError(curr_kwarg_name + " has already " +
+                                    "been specified as a positional/keyword " +
+                                    "argument to " + intrinsic_name + ".",
+                                    x.base.base.loc);
             }
-            type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
-                                    ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n ,
-                                    nullptr, 0));
+            this->visit_expr(*x.m_keywords[i].m_value);
+            args[kwarg_idx + offset] = ASRUtils::EXPR(tmp);
         }
     }
 
+    int64_t handle_kind(ASR::expr_t* kind) {
+        if( kind == nullptr ) {
+            return 4;
+        }
+
+        ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
+        if( kind_value == nullptr ) {
+            throw SemanticError(("Only Integer literals or expressions "
+                                "which reduce to constant Integer are "
+                                "accepted as kind parameters."),
+                                kind->base.loc);
+        }
+        return ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n;
+    }
+
     ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
-         ASR::expr_t *v_Var, *dim;
-         ASR::ttype_t *type;
-        v_Var = nullptr, dim = nullptr, type = nullptr;
-        handle_array_bound_size_args(x, v_Var, dim, type);
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"dim", "kind"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, bound_name);
+        ASR::expr_t *v_Var = args[0], *dim = args[1], *kind = args[2];
         ASR::arrayboundType bound = ASR::arrayboundType::LBound;
         if( bound_name == "lbound" ) {
             bound = ASR::arrayboundType::LBound;
         } else if( bound_name == "ubound" ) {
             bound = ASR::arrayboundType::UBound;
         }
+        int64_t kind_const = handle_kind(kind);
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                            kind_const, nullptr, 0));
         return ASR::make_ArrayBound_t(al, x.base.base.loc, v_Var, dim, type,
                                       bound, nullptr);
     }
 
     ASR::asr_t* create_ArraySize(const AST::FuncCallOrArray_t& x) {
-        ASR::expr_t *v_Var, *dim;
-        ASR::ttype_t *type;
-        v_Var = nullptr, dim = nullptr, type = nullptr;
-        handle_array_bound_size_args(x, v_Var, dim, type);
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"dim", "kind"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, std::string("size"));
+        ASR::expr_t *v_Var = args[0], *dim = args[1], *kind = args[2];
+        int64_t kind_const = handle_kind(kind);
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                            kind_const, nullptr, 0));
         return ASR::make_ArraySize_t(al, x.base.base.loc, v_Var, dim, type, nullptr);
+    }
+
+    ASR::asr_t* create_ArrayTranspose(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names;
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("transpose"));
+        ASR::expr_t *matrix = args[0];
+        ASR::ttype_t *type = ASRUtils::expr_type(matrix);
+        ASR::dimension_t* matrix_dims = nullptr;
+        int matrix_rank = ASRUtils::extract_dimensions_from_ttype(type, matrix_dims);
+        if( matrix_rank != 2 ) {
+            throw SemanticError("transpose accepts arrays "
+                                "of rank 2 only, provided an array "
+                                "with rank, " + std::to_string(matrix_rank),
+                                matrix->base.loc);
+        }
+        Vec<ASR::dimension_t> reversed_dims;
+        reversed_dims.reserve(al, 2);
+        reversed_dims.push_back(al, matrix_dims[1]);
+        reversed_dims.push_back(al, matrix_dims[0]);
+        ASR::ttype_t* ret_type = ASRUtils::duplicate_type(al, type, &reversed_dims);
+        return ASR::make_ArrayTranspose_t(al, x.base.base.loc, matrix, ret_type, nullptr);
+    }
+
+    ASR::asr_t* create_ArrayMatMul(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names;
+        handle_intrinsic_node_args(x, args, kwarg_names, 2, 2, std::string("matmul"));
+        ASR::expr_t *matrix_a = args[0], *matrix_b = args[1];
+        ASR::ttype_t *type_a = ASRUtils::expr_type(matrix_a);
+        ASR::ttype_t *type_b = ASRUtils::expr_type(matrix_b);
+        bool matrix_a_numeric = ASR::is_a<ASR::Integer_t>(*type_a) ||
+                                ASR::is_a<ASR::Real_t>(*type_a) ||
+                                ASR::is_a<ASR::Complex_t>(*type_a);
+        bool matrix_a_logical = ASR::is_a<ASR::Logical_t>(*type_a);
+        bool matrix_b_numeric = ASR::is_a<ASR::Integer_t>(*type_b) ||
+                                ASR::is_a<ASR::Real_t>(*type_b) ||
+                                ASR::is_a<ASR::Complex_t>(*type_b);
+        bool matrix_b_logical = ASR::is_a<ASR::Logical_t>(*type_b);
+        if( !matrix_a_numeric && !matrix_a_logical ) {
+            throw SemanticError("matmul accepts first matrix of "
+                                "type Integer, Real, Complex or Logical.",
+                                matrix_a->base.loc);
+        }
+        if( matrix_a_numeric ) {
+            if( !matrix_b_numeric ) {
+                throw SemanticError("matmul accepts second matrix of "
+                                    "type Integer, Real or Complex if "
+                                    "first matrix is of numeric type.",
+                                    matrix_b->base.loc);
+            }
+        } else {
+            if( !matrix_b_logical ) {
+                throw SemanticError("matmul accepts second matrix of type "
+                                    "Logical if first matrix is of Logical type",
+                                    matrix_b->base.loc);
+            }
+        }
+        ASR::dimension_t* matrix_a_dims = nullptr;
+        ASR::dimension_t* matrix_b_dims = nullptr;
+        int matrix_a_rank = ASRUtils::extract_dimensions_from_ttype(type_a, matrix_a_dims);
+        int matrix_b_rank = ASRUtils::extract_dimensions_from_ttype(type_b, matrix_b_dims);
+        if( matrix_a_rank != 1 && matrix_a_rank != 2 ) {
+            throw SemanticError("matmul accepts arrays "
+                                "of rank 1 or 2 only, provided an array "
+                                "with rank, " + std::to_string(matrix_a_rank),
+                                matrix_a->base.loc);
+        }
+        if( matrix_b_rank != 1 && matrix_b_rank != 2 ) {
+            throw SemanticError("matmul accepts arrays "
+                                "of rank 1 or 2 only, provided an array "
+                                "with rank, " + std::to_string(matrix_b_rank),
+                                matrix_b->base.loc);
+        }
+        if( matrix_a_rank == 1 && matrix_b_rank == 1 ) {
+            throw SemanticError("matmul provided with two arrays, each of rank 1.",
+                                x.base.base.loc);
+        }
+        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                                                      4, nullptr, 0));
+        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+        ASR::dimension_t default_dim;
+        default_dim.m_start = one;
+        default_dim.m_end = one;
+        default_dim.loc = one->base.loc;
+        std::vector<ASR::dimension_t> pair_a(2), pair_b(2);
+        if( matrix_a_rank == 1 ) {
+            pair_a[0] = matrix_a_dims[0];
+            pair_a[1] = default_dim;
+        } else {
+            pair_a[0] = matrix_a_dims[0];
+            pair_a[1] = matrix_a_dims[1];
+        }
+        if( matrix_b_rank == 1 ) {
+            pair_b[0] = matrix_b_dims[0];
+            pair_b[1] = default_dim;
+        } else {
+            pair_b[0] = matrix_b_dims[0];
+            pair_b[1] = matrix_b_dims[1];
+        }
+        // TODO: Check if second dimension of matrix is equal
+        // TODO: to first dimension of matrix_b
+        Vec<ASR::dimension_t> reversed_dims;
+        reversed_dims.reserve(al, 2);
+        reversed_dims.push_back(al, pair_a[0]);
+        reversed_dims.push_back(al, pair_b[1]);
+        ASR::ttype_t* selected_type = nullptr;
+        if( ImplicitCastRules::get_type_priority(type_a->type) >=
+            ImplicitCastRules::get_type_priority(type_b->type) ) {
+            selected_type = type_a;
+        } else {
+            selected_type = type_b;
+        }
+        ASR::ttype_t* ret_type = ASRUtils::duplicate_type(al, selected_type, &reversed_dims);
+        return ASR::make_ArrayMatMul_t(al, x.base.base.loc, matrix_a, matrix_b, ret_type, nullptr);
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
@@ -1788,6 +1887,10 @@ public:
                     tmp = create_ArraySize(x);
                 } else if( var_name == "lbound" || var_name == "ubound" ) {
                     tmp = create_ArrayBound(x, var_name);
+                } else if( var_name == "transpose" ) {
+                    tmp = create_ArrayTranspose(x);
+                } else if( var_name == "matmul" ) {
+                    tmp = create_ArrayMatMul(x);
                 }
                 return ;
             }
