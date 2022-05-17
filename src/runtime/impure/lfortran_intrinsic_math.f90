@@ -122,7 +122,7 @@ interface conjg
 end interface
 
 interface dot_product
-    module procedure dotproductr32r32, dotproductr64r64
+    module procedure dotproductr32r32, dotproductr64r64, dotproductz32z32, dotproductz64z64
 end interface
 
 contains
@@ -1211,5 +1211,16 @@ function dotproductr64r64(x, y) result(r)
 real(dp) :: x(:), y(:)
 real(dp) :: r
 end function
+
+function dotproductz32z32(x, y) result(r)
+complex(sp) :: x(:), y(:)
+complex(sp) :: r
+end function
+
+function dotproductz64z64(x, y) result(r)
+complex(dp) :: x(:), y(:)
+complex(dp) :: r
+end function
+
 
 end module
