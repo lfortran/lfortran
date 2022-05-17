@@ -1740,6 +1740,7 @@ define i32 @main() {
   %17 = getelementptr %array, %array* %c, i32 0, i32 3
   store i1 false, i1* %17, align 1
   %ierr = alloca i32, align 4
+  %isource = alloca i32, align 4
   %n = alloca i32, align 4
   store i32 10, i32* %n, align 4
   %18 = load i32, i32* %n, align 4
