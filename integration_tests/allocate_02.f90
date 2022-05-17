@@ -1,9 +1,9 @@
 program allocate_01
 implicit none
 integer, allocatable :: a(:), b(:), c(:)
-integer :: n, ierr
+integer :: n, ierr, isource
 n = 10
-allocate(a(n), b(n), c(n), stat=ierr)
+allocate(a(n), b(n), c(n), stat=ierr, source=isource)
 
 a = 1
 b = 2
