@@ -1865,6 +1865,26 @@ public:
         return ASR::make_ArrayMatMul_t(al, x.base.base.loc, matrix_a, matrix_b, ret_type, nullptr);
     }
 
+    ASR::asr_t* create_ArrayPack(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"vector"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "pack");
+        ASR::expr_t *array = args[0], *mask = args[1], *vector = args[2];
+        Vec<ASR::dimension_t> new_dims;
+        new_dims.reserve(al, 1);
+        ASR::dimension_t new_dim;
+        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+        new_dim.loc = x.base.base.loc;
+        new_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+        new_dim.m_end = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.base.base.loc,
+                            vector ? vector : mask, nullptr,
+                            int32_type, nullptr));
+        new_dims.push_back(al, new_dim);
+        ASR::ttype_t *type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(array), &new_dims);
+        return ASR::make_ArrayPack_t(al, x.base.base.loc, array, mask,
+                                     vector, type, nullptr);
+    }
+
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         SymbolTable *scope = current_scope;
         std::string var_name = to_lower(x.m_func);
@@ -1891,6 +1911,8 @@ public:
                     tmp = create_ArrayTranspose(x);
                 } else if( var_name == "matmul" ) {
                     tmp = create_ArrayMatMul(x);
+                } else if( var_name == "pack" ) {
+                    tmp = create_ArrayPack(x);
                 }
                 return ;
             }
