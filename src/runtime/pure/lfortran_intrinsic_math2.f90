@@ -4,7 +4,7 @@ use, intrinsic :: iso_fortran_env, only: i8 => int8, i16 => int16, i32 => int32,
 implicit none
 
 interface abs
-    module procedure iabs, sabs, dabs, cabs, zabs
+    module procedure i8abs, i16abs, iabs, i64abs, sabs, dabs, cabs, zabs
 end interface
 
 interface sqrt
@@ -32,7 +32,7 @@ interface modulo
 end interface
 
 interface mod
-    module procedure imod, smod, dmod
+    module procedure i8mod, i16mod, imod, i64mod, smod, dmod
 end interface
 
 interface merge
@@ -55,8 +55,35 @@ contains
 
 ! abs --------------------------------------------------------------------------
 
+elemental integer(i16) function i16abs(x) result(r)
+integer(i16), intent(in) :: x
+if (x >= 0) then
+    r = x
+else
+    r = -x
+end if
+end function
+
+elemental integer(i8) function i8abs(x) result(r)
+integer(i8), intent(in) :: x
+if (x >= 0) then
+    r = x
+else
+    r = -x
+end if
+end function
+
 elemental integer function iabs(x) result(r)
 integer, intent(in) :: x
+if (x >= 0) then
+    r = x
+else
+    r = -x
+end if
+end function
+
+elemental integer(i64) function i64abs(x) result(r)
+integer(i64), intent(in) :: x
 if (x >= 0) then
     r = x
 else
@@ -207,8 +234,32 @@ end function
 
 ! mod --------------------------------------------------------------------------
 
+elemental integer(i16) function i16mod(x, y) result(r)
+integer(i16), intent(in) :: x, y
+r = x-floor(real(x)/y)*y
+if (x < 0 .and. y < 0) return
+if (x < 0) r = r - y
+if (y < 0) r = r - y
+end function
+
+elemental integer(i8) function i8mod(x, y) result(r)
+integer(i8), intent(in) :: x, y
+r = x-floor(real(x)/y)*y
+if (x < 0 .and. y < 0) return
+if (x < 0) r = r - y
+if (y < 0) r = r - y
+end function
+
 elemental integer function imod(x, y) result(r)
 integer, intent(in) :: x, y
+r = x-floor(real(x)/y)*y
+if (x < 0 .and. y < 0) return
+if (x < 0) r = r - y
+if (y < 0) r = r - y
+end function
+
+elemental integer function i64mod(x, y) result(r)
+integer(i64), intent(in) :: x, y
 r = x-floor(real(x)/y)*y
 if (x < 0 .and. y < 0) return
 if (x < 0) r = r - y
