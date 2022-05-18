@@ -1,8 +1,9 @@
 module submodule_03_mod
     implicit none
     interface
-        module integer function f(a) result(r)
+        module function f(a) result(r)
         integer, intent(in) :: a
+        integer :: r
         end function
     end interface
 end module
@@ -10,8 +11,9 @@ end module
 
 submodule (submodule_03_mod) submodule_03_submod
 contains
-    module integer function f(a) result(r)
+    module function f(a) result(r)
     integer, intent(in) :: a
+    integer :: r
     r = a + 1
     end function
 end submodule
