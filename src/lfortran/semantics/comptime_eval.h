@@ -129,12 +129,19 @@ struct IntrinsicProcedures {
             {"btest", {m_bit, &not_implemented, false}},
             // Elemental function
             {"ishft", {m_bit, &eval_ishft, true}},
+            {"shiftr", {m_bit, &not_implemented, true}},
+            {"shiftl", {m_bit, &not_implemented, true}},
 
             // These will fail if used in symbol table visitor, but will be
             // left unevaluated in body visitor
             {"trim", {m_string, &not_implemented, false}},
             {"len_trim", {m_string, &not_implemented, false}},
             {"adjustl", {m_string, &not_implemented, false}},
+            {"adjustr", {m_string, &not_implemented, false}},
+            {"lgt", {m_string, &not_implemented, false}},
+            {"llt", {m_string, &not_implemented, false}},
+            {"lge", {m_string, &not_implemented, false}},
+            {"lle", {m_string, &not_implemented, false}},
             {"len_adjustl", {m_string, &not_implemented, false}},
             {"repeat", {m_string, &not_implemented, false}},
             {"new_line", {m_string, &eval_new_line, false}},
@@ -149,6 +156,7 @@ struct IntrinsicProcedures {
             {"ble", {m_bit, &not_implemented, true}},
             {"blt", {m_bit, &not_implemented, true}},
             {"ibits", {m_bit, &not_implemented, true}},
+            {"count", {m_bit, &not_implemented, false}},
             {"iachar",  {m_builtin, &eval_iachar, true}},
             {"achar", {m_builtin, &eval_achar, false}},
             {"len", {m_builtin, &eval_len, false}},
@@ -172,6 +180,7 @@ struct IntrinsicProcedures {
 
             // IEEE Arithmetic
             {"ieee_value", {m_ieee_arithmetic, &not_implemented, false}},
+            {"ieee_is_nan", {m_ieee_arithmetic, &not_implemented, false}},
         };
     }
 
