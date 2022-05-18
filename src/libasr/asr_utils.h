@@ -134,6 +134,7 @@ static inline ASR::ttype_t* expr_type(const ASR::expr_t *f)
         case ASR::exprType::ArrayTranspose: { return ((ASR::ArrayTranspose_t*)f)->m_type; }
         case ASR::exprType::ArrayMatMul: { return ((ASR::ArrayMatMul_t*)f)->m_type; }
         case ASR::exprType::ArrayPack: { return ((ASR::ArrayPack_t*)f)->m_type; }
+        case ASR::exprType::ArrayTransfer: { return ((ASR::ArrayTransfer_t*)f)->m_type; }
         default : throw LFortranException("Not implemented");
     }
 }
