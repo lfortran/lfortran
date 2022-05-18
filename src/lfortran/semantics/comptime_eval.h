@@ -180,6 +180,7 @@ struct IntrinsicProcedures {
 
             // IEEE Arithmetic
             {"ieee_value", {m_ieee_arithmetic, &not_implemented, false}},
+            {"ieee_is_nan", {m_ieee_arithmetic, &not_implemented, false}},
         };
     }
 
