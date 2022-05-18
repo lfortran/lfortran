@@ -1,5 +1,5 @@
 module lfortran_intrinsic_bit
-use, intrinsic :: iso_fortran_env, only: int32, int64
+use, intrinsic :: iso_fortran_env, only: int8, int32, int64
 implicit none
 
 interface iand
@@ -32,6 +32,14 @@ end interface
 
 interface ishft
     module procedure ishft32, ishft64
+end interface
+
+interface shiftl
+    module procedure shiftli8, shiftli32, shiftli64
+end interface
+
+interface shiftr
+    module procedure shiftri8, shiftri32, shiftri64
 end interface
 
 interface mvbits
@@ -316,6 +324,36 @@ else
 end if
 end function
 
+integer(int8) function shiftri8(i, shift) result(r)
+integer(int8), intent(in) :: i
+integer :: shift
+end function
+
+integer(int32) function shiftri32(i, shift) result(r)
+integer(int32) :: i
+integer :: shift
+end function
+
+integer(int64) function shiftri64(i, shift) result(r)
+integer(int64) :: i
+integer :: shift
+end function
+
+integer(int8) function shiftli8(i, shift) result(r)
+integer(int8), intent(in) :: i
+integer :: shift
+end function
+
+integer(int32) function shiftli32(i, shift) result(r)
+integer(int32) :: i
+integer :: shift
+end function
+
+integer(int64) function shiftli64(i, shift) result(r)
+integer(int64) :: i
+integer :: shift
+end function
+
 ! mvbits ------------------------------------------------------------------------
 
 elemental subroutine mvbits32(from, frompos, len, to, topos)
@@ -464,6 +502,12 @@ interface
     end function
 end interface
 r = c_ibits64(i, pos, len)
+end function
+
+function count(mask, dim, kind) result(r)
+logical :: mask(:)
+integer, optional :: dim, kind
+integer :: r(size(mask))
 end function
 
 end module
