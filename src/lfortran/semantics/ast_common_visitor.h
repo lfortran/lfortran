@@ -1865,6 +1865,74 @@ public:
         return ASR::make_ArrayMatMul_t(al, x.base.base.loc, matrix_a, matrix_b, ret_type, nullptr);
     }
 
+    ASR::asr_t* create_ArrayPack(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"vector"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "pack");
+        ASR::expr_t *array = args[0], *mask = args[1], *vector = args[2];
+        Vec<ASR::dimension_t> new_dims;
+        new_dims.reserve(al, 1);
+        ASR::dimension_t new_dim;
+        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+        new_dim.loc = x.base.base.loc;
+        new_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+        new_dim.m_end = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.base.base.loc,
+                            vector ? vector : mask, nullptr,
+                            int32_type, nullptr));
+        new_dims.push_back(al, new_dim);
+        ASR::ttype_t *type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(array), &new_dims);
+        return ASR::make_ArrayPack_t(al, x.base.base.loc, array, mask,
+                                     vector, type, nullptr);
+    }
+
+    ASR::asr_t* create_Transfer(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"size"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "transfer");
+        ASR::expr_t *source = args[0], *mold = args[1], *size = args[2];
+        if( size && !ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(size)) ) {
+            throw SemanticError("size argument to transfer intrinsic must "
+                                "be of Integer type.",
+                                size->base.loc);
+        }
+        Vec<ASR::dimension_t> new_dims;
+        new_dims.reserve(al, 1);
+        if( size ) {
+            ASR::expr_t* one = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, x.base.base.loc, 1,
+                    ASRUtils::expr_type(size)));
+            ASR::dimension_t size_dim;
+            size_dim.loc = size->base.loc;
+            size_dim.m_start = one;
+            size_dim.m_end = size;
+            new_dims.push_back(al, size_dim);
+        } else {
+            if( ASR::is_a<ASR::ArrayConstant_t>(*mold) ||
+                ASRUtils::is_array(ASRUtils::expr_type(mold)) ) {
+                // TODO: Make resulting array size more efficient by
+                // considering bit length of source.
+                ASR::ttype_t *int32_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, x.base.base.loc,
+                                        4, nullptr, 0));
+                ASR::expr_t* one = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, x.base.base.loc, 1,
+                                                int32_type));
+                ASR::expr_t* b64 = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, x.base.base.loc, 64,
+                                                int32_type));
+                ASR::dimension_t size_dim;
+                size_dim.loc = x.base.base.loc;
+                size_dim.m_start = one;
+                size_dim.m_end = b64;
+                new_dims.push_back(al, size_dim);
+            }
+        }
+        ASR::ttype_t* type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims);
+        return ASR::make_Transfer_t(al, x.base.base.loc, source, mold,
+                                     size, type, nullptr);
+    }
+
+
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         SymbolTable *scope = current_scope;
         std::string var_name = to_lower(x.m_func);
@@ -1891,6 +1959,10 @@ public:
                     tmp = create_ArrayTranspose(x);
                 } else if( var_name == "matmul" ) {
                     tmp = create_ArrayMatMul(x);
+                } else if( var_name == "pack" ) {
+                    tmp = create_ArrayPack(x);
+                } else if( var_name == "transfer" ) {
+                    tmp = create_Transfer(x);
                 }
                 return ;
             }

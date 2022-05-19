@@ -146,6 +146,10 @@ filename = "errors/matrix_matmul_06.f90"
 asr = true
 
 [[test]]
+filename = "errors/array_transfer_01.f90"
+asr = true
+
+[[test]]
 filename = "errors/esub1.f90"
 tokens = true
 ast = true
@@ -588,6 +592,26 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/matrix_02_matmul.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/array_01_pack.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/array_01_transfer.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/array_02_pack.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/array_02_transfer.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/array_03_transfer.f90"
 asr = true
 
 [[test]]
