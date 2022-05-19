@@ -538,6 +538,9 @@ public:
     Vec<char *> current_module_dependencies;
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
+    std::set<std::string> intrinsic_module_procedures_as_asr_nodes = {
+        "c_loc"
+    };
 
     ASR::accessType dflt_access = ASR::Public;
     bool in_module = false;
@@ -1997,6 +2000,17 @@ public:
         return resolve_intrinsic_function(x.base.base.loc, var_name);
     }
 
+    ASR::asr_t* create_CLoc(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_loc"));
+        ASR::expr_t *v_Var = args[0];
+        // TODO: change `type` from Integer to Derived(c_ptr)
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                            4, nullptr, 0));
+        return ASR::make_CLoc_t(al, x.base.base.loc, v_Var, type, nullptr);
+    }
+
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         SymbolTable *scope = current_scope;
         std::string var_name = to_lower(x.m_func);
@@ -2021,6 +2035,19 @@ public:
             }
         }
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
+        if (ASR::is_a<ASR::Function_t>(*f2)) {
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
+            if (ASRUtils::is_intrinsic_function(f)) {
+                if (intrinsic_module_procedures_as_asr_nodes.find(var_name) != intrinsic_module_procedures_as_asr_nodes.end()) {
+                    if (var_name == "c_loc") {
+                        tmp = create_CLoc(x);
+                    } else {
+                        LFORTRAN_ASSERT(false)
+                    }
+                    return;
+                }
+            }
+        }
         if (ASR::is_a<ASR::Function_t>(*f2) || ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
             if (ASRUtils::is_intrinsic_symbol(f2)) {
                 // Here we handle all intrinsic functions that are implemented
