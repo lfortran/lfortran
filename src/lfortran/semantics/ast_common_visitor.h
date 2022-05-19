@@ -1885,7 +1885,7 @@ public:
                                      vector, type, nullptr);
     }
 
-    ASR::asr_t* create_ArrayTransfer(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_Transfer(const AST::FuncCallOrArray_t& x) {
         std::vector<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"size"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "transfer");
@@ -1928,7 +1928,7 @@ public:
             }
         }
         ASR::ttype_t* type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims);
-        return ASR::make_ArrayTransfer_t(al, x.base.base.loc, source, mold,
+        return ASR::make_Transfer_t(al, x.base.base.loc, source, mold,
                                      size, type, nullptr);
     }
 
@@ -1962,7 +1962,7 @@ public:
                 } else if( var_name == "pack" ) {
                     tmp = create_ArrayPack(x);
                 } else if( var_name == "transfer" ) {
-                    tmp = create_ArrayTransfer(x);
+                    tmp = create_Transfer(x);
                 }
                 return ;
             }
