@@ -108,6 +108,20 @@ LFORTRAN_API float _lfortran_stanh(float x);
 LFORTRAN_API double _lfortran_dtanh(double x);
 LFORTRAN_API float_complex_t _lfortran_ctanh(float_complex_t x);
 LFORTRAN_API double_complex_t _lfortran_ztanh(double_complex_t x);
+
+/**
+ * @brief asin procedure API _lfortran_sasin(float x)
+ *
+ * _lfortran_sasin internally calls asinf(x)
+ *
+ * @parameter x, type float
+ *
+ * @return value of kind parameter, type can be real or complex.
+ * @see _lfortran_sacos(float x)
+ * @note Lfortan_API
+ * @warning none.
+ */
+
 LFORTRAN_API float _lfortran_sasin(float x);
 LFORTRAN_API double _lfortran_dasin(double x);
 LFORTRAN_API float_complex_t _lfortran_casin(float_complex_t x);
