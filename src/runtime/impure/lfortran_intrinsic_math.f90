@@ -748,6 +748,11 @@ r = c_ztanh(x)
 end function
 
 ! asin --------------------------------------------------------------------------
+!> compute the arcsine of argument x.
+!! @param x, can be real or complex
+!! @return The return value is of the same type and kind as x. The result lies
+!!          between - π 2 and π 2 radians.
+!! @see acos(x), atan(x)
 
 elemental real(sp) function sasin(x) result(r)
 real(sp), intent(in) :: x
