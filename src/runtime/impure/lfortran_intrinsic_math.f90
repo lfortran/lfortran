@@ -67,6 +67,12 @@ interface tanh
     module procedure stanh, dtanh, ctanh, ztanh
 end interface
 
+!> interface for asin
+!! procedure sasin for argument type float
+!! procedure dasin for argument type double
+!! procedure casin for argument type complex, real part being float
+!! procedure zasin for argument type double, real part being double
+
 interface asin
     module procedure sasin, dasin, casin, zasin
 end interface
