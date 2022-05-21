@@ -136,6 +136,7 @@ RUN(NAME functions_05 LABELS gfortran llvm)
 RUN(NAME functions_06 LABELS gfortran)
 RUN(NAME functions_07 LABELS gfortran llvm)
 RUN(NAME functions_08 LABELS gfortran llvm)
+RUN(NAME functions_09 LABELS gfortran)
 RUN(NAME functions_10 LABELS gfortran)
 
 RUN(NAME types_01 LABELS gfortran llvm cpp)
@@ -423,6 +424,7 @@ RUN(NAME string_13 LABELS gfortran llvm)
 RUN(NAME string_14 LABELS gfortran)
 RUN(NAME string_15 LABELS gfortran) # lge, lgt lle, llt
 RUN(NAME string_16 LABELS gfortran) # achar
+RUN(NAME string_19 LABELS gfortran) # achar
 
 RUN(NAME nested_01 LABELS gfortran llvm)
 RUN(NAME nested_02 LABELS gfortran llvm)
