@@ -1143,6 +1143,108 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
             SymbolTable* current_scope, Allocator& al,
             const std::function<void (const std::string &, const Location &)> err);
 
+class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
+
+    private:
+
+    Allocator& al;
+
+    SymbolTable* current_scope;
+
+    ASR::Function_t* orig_func;
+
+    Vec<ASR::call_arg_t>& orig_args;
+
+    public:
+
+    ReplaceArgVisitor(Allocator& al_, SymbolTable* current_scope_,
+                      ASR::Function_t* orig_func_, Vec<ASR::call_arg_t>& orig_args_) :
+        al(al_), current_scope(current_scope_), orig_func(orig_func_),
+        orig_args(orig_args_)
+    {}
+
+    void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        ASR::symbol_t *new_es = x->m_name;
+        // Import a function as external only if necessary
+        ASR::Function_t *f = nullptr;
+        ASR::symbol_t* f_sym = nullptr;
+        if (ASR::is_a<ASR::Function_t>(*x->m_name)) {
+            f = ASR::down_cast<ASR::Function_t>(x->m_name);
+        } else if( ASR::is_a<ASR::ExternalSymbol_t>(*x->m_name) ) {
+            f_sym = ASRUtils::symbol_get_past_external(x->m_name);
+            if( ASR::is_a<ASR::Function_t>(*f_sym) ) {
+                f = ASR::down_cast<ASR::Function_t>(f_sym);
+            }
+        }
+        ASR::Module_t *m = ASR::down_cast2<ASR::Module_t>(f->m_symtab->parent->asr_owner);
+        char *modname = m->m_name;
+        ASR::symbol_t *maybe_f = current_scope->resolve_symbol(std::string(f->m_name));
+        ASR::symbol_t* maybe_f_actual = nullptr;
+        std::string maybe_modname = "";
+        if( maybe_f && ASR::is_a<ASR::ExternalSymbol_t>(*maybe_f) ) {
+            maybe_modname = ASR::down_cast<ASR::ExternalSymbol_t>(maybe_f)->m_module_name;
+            maybe_f_actual = ASRUtils::symbol_get_past_external(maybe_f);
+        }
+        // If the Function to be imported is already present
+        // then do not import.
+        if( maybe_modname == std::string(modname) &&
+            f_sym == maybe_f_actual ) {
+            new_es = maybe_f;
+        } else {
+            // Import while assigning a new name to avoid conflicts
+            // For example, if someone is using `len` from a user
+            // define module then `get_unique_name` will avoid conflict
+            std::string unique_name = current_scope->get_unique_name(f->m_name);
+            Str s; s.from_str_view(unique_name);
+            char *unique_name_c = s.c_str(al);
+            LFORTRAN_ASSERT(current_scope->get_symbol(unique_name) == nullptr);
+            new_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                al, f->base.base.loc,
+                /* a_symtab */ current_scope,
+                /* a_name */ unique_name_c,
+                (ASR::symbol_t*)f,
+                modname, nullptr, 0,
+                f->m_name,
+                ASR::accessType::Private
+                ));
+            current_scope->add_symbol(unique_name, new_es);
+        }
+        // The following substitutes args from the current scope
+        for (size_t i = 0; i < x->n_args; i++) {
+            current_expr_copy = current_expr;
+            current_expr = &(x->m_args[i].m_value);
+            replace_expr(x->m_args[i].m_value);
+            current_expr = current_expr_copy;
+        }
+        x->m_name = new_es;
+    }
+
+    void replace_Var(ASR::Var_t* x) {
+        size_t arg_idx = 0;
+        bool idx_found = false;
+        std::string arg_name = ASRUtils::symbol_name(x->m_v);
+        // Finds the index of the argument to be used for substitution
+        // Basically if we are calling maybe(string, ret_type=character(len=len(s)))
+        // where string is a variable in current scope and s is one of the arguments
+        // accepted by maybe i.e., maybe has a signature maybe(s). Then, we will
+        // replace s with string. So, the call would become,
+        // maybe(string, ret_type=character(len=len(string)))
+        for( size_t j = 0; j < orig_func->n_args && !idx_found; j++ ) {
+            if( ASR::is_a<ASR::Var_t>(*(orig_func->m_args[j])) ) {
+                std::string arg_name_2 = std::string(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(orig_func->m_args[j])->m_v));
+                arg_idx = j;
+                idx_found = arg_name_2 == arg_name;
+            }
+        }
+        if( idx_found ) {
+            LFORTRAN_ASSERT(current_expr);
+            *current_expr = orig_args[arg_idx].m_value;
+        }
+    }
+
+};
+
 } // namespace ASRUtils
 
 } // namespace LFortran
