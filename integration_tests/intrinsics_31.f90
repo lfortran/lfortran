@@ -1,8 +1,11 @@
 program intrinsics_31
     real :: x = 63.29
     real :: y = -63.59
-    real(kind = 8) :: z = 0.000001
-    real(kind = 8) :: w = -1.000001
+    
+    integer, parameter :: dp = kind(0.d0)
+    real(dp) :: z = 0.000001_dp
+    real(dp) :: w = -1.000001_dp
+
     real :: x_ceil, y_ceil
     integer :: z_ceil, w_ceil
     
