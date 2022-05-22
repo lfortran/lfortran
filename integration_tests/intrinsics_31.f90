@@ -14,8 +14,8 @@ program intrinsics_31
     z_ceil = ceiling(z)
     w_ceil = ceiling(w)
 
-    if((abs(x_ceil - 64) > 1e-5) .or. (ceiling(x_ceil) /= 64)) error stop
-    if(abs(y_ceil - (-63)) > 1e-5 .or. (ceiling(y_ceil) /= -63)) error stop
+    if (abs(x_ceil - 64) > 1e-5) error stop
+    if (abs(y_ceil - (-63)) > 1e-5) error stop
     if(z_ceil /= 1) error stop
     if(w_ceil /= -1) error stop
 
