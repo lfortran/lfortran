@@ -3,7 +3,6 @@ module stdlib_string_type
         ! Use the sequence statement below as a hack to prevent extending this type.
         ! It is not used for storage association.
         sequence
-        private
         character(len=:), allocatable :: raw
     end type string_type
 
@@ -13,7 +12,7 @@ module stdlib_string_type
 
 contains
 
-    subroutine assign_string_char(lhs, rhs)
+    pure subroutine assign_string_char(lhs, rhs)
         type(string_type), intent(inout) :: lhs
         character(len=*), intent(in) :: rhs
         lhs%raw = rhs
@@ -26,6 +25,22 @@ contains
         trimmed_string = string%raw
 
     end function trim_string
+end module
+
+module stdlib_string_use
+use stdlib_string_type, only: string_type
+implicit none
+
+contains
+
+pure function chomp_string(string) result(chomped_string)
+    ! Avoid polluting the module scope and use the assignment only in this scope
+    use stdlib_string_type, only : assignment(=)
+    type(string_type), intent(in) :: string
+    type(string_type) :: chomped_string
+    integer :: last
+end function chomp_string
+
 end module
 
 program stdlib_string
