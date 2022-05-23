@@ -549,13 +549,26 @@ bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
     return result;
 }
 
+bool is_parent(ASR::DerivedType_t* a, ASR::DerivedType_t* b) {
+    ASR::symbol_t* current_parent = b->m_parent;
+    while( current_parent ) {
+        if( current_parent == (ASR::symbol_t*) a ) {
+            return true;
+        }
+        LFORTRAN_ASSERT(ASR::is_a<ASR::DerivedType_t>(*current_parent));
+        current_parent = ASR::down_cast<ASR::DerivedType_t>(current_parent)->m_parent;
+    }
+    return false;
+}
+
+bool is_derived_type_similar(ASR::DerivedType_t* a, ASR::DerivedType_t* b) {
+    return a == b || is_parent(a, b) || is_parent(b, a);
+}
+
 bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
     // TODO: If anyone of the input or argument is derived type then
     // add support for checking member wise types and do not compare
     // directly. From stdlib_string len(pattern) error.
-    if (b.type == ASR::ttypeType::Derived || b.type == ASR::ttypeType::Class) {
-        return true;
-    }
     if (a.type == b.type) {
         // TODO: check dims
         // TODO: check all types
@@ -610,7 +623,73 @@ bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
                 }
                 break;
             }
+            case (ASR::ttypeType::Derived) : {
+                ASR::Derived_t *a2 = ASR::down_cast<ASR::Derived_t>(&a);
+                ASR::Derived_t *b2 = ASR::down_cast<ASR::Derived_t>(&b);
+                ASR::DerivedType_t *a2_type = ASR::down_cast<ASR::DerivedType_t>(
+                                                ASRUtils::symbol_get_past_external(
+                                                    a2->m_derived_type));
+                ASR::DerivedType_t *b2_type = ASR::down_cast<ASR::DerivedType_t>(
+                                                ASRUtils::symbol_get_past_external(
+                                                    b2->m_derived_type));
+                return a2_type == b2_type;
+            }
+            case (ASR::ttypeType::Class) : {
+                ASR::Class_t *a2 = ASR::down_cast<ASR::Class_t>(&a);
+                ASR::Class_t *b2 = ASR::down_cast<ASR::Class_t>(&b);
+                ASR::symbol_t* a2_typesym = ASRUtils::symbol_get_past_external(a2->m_class_type);
+                ASR::symbol_t* b2_typesym = ASRUtils::symbol_get_past_external(b2->m_class_type);
+                if( a2_typesym->type != b2_typesym->type ) {
+                    return false;
+                }
+                if( a2_typesym->type == ASR::symbolType::ClassType ) {
+                    ASR::ClassType_t *a2_type = ASR::down_cast<ASR::ClassType_t>(a2_typesym);
+                    ASR::ClassType_t *b2_type = ASR::down_cast<ASR::ClassType_t>(b2_typesym);
+                    return a2_type == b2_type;
+                } else if( a2_typesym->type == ASR::symbolType::DerivedType ) {
+                    ASR::DerivedType_t *a2_type = ASR::down_cast<ASR::DerivedType_t>(a2_typesym);
+                    ASR::DerivedType_t *b2_type = ASR::down_cast<ASR::DerivedType_t>(b2_typesym);
+                    return is_derived_type_similar(a2_type, b2_type);
+                }
+                return false;
+            }
             default : return false;
+        }
+    } else if( a.type == ASR::ttypeType::Derived &&
+               b.type == ASR::ttypeType::Class ) {
+        ASR::Derived_t *a2 = ASR::down_cast<ASR::Derived_t>(&a);
+        ASR::Class_t *b2 = ASR::down_cast<ASR::Class_t>(&b);
+        ASR::symbol_t* a2_typesym = ASRUtils::symbol_get_past_external(a2->m_derived_type);
+        ASR::symbol_t* b2_typesym = ASRUtils::symbol_get_past_external(b2->m_class_type);
+        if( a2_typesym->type != b2_typesym->type ) {
+            return false;
+        }
+        if( a2_typesym->type == ASR::symbolType::ClassType ) {
+            ASR::ClassType_t *a2_type = ASR::down_cast<ASR::ClassType_t>(a2_typesym);
+            ASR::ClassType_t *b2_type = ASR::down_cast<ASR::ClassType_t>(b2_typesym);
+            return a2_type == b2_type;
+        } else if( a2_typesym->type == ASR::symbolType::DerivedType ) {
+            ASR::DerivedType_t *a2_type = ASR::down_cast<ASR::DerivedType_t>(a2_typesym);
+            ASR::DerivedType_t *b2_type = ASR::down_cast<ASR::DerivedType_t>(b2_typesym);
+            return is_derived_type_similar(a2_type, b2_type);
+        }
+    } else if( a.type == ASR::ttypeType::Class &&
+               b.type == ASR::ttypeType::Derived ) {
+        ASR::Class_t *a2 = ASR::down_cast<ASR::Class_t>(&a);
+        ASR::Derived_t *b2 = ASR::down_cast<ASR::Derived_t>(&b);
+        ASR::symbol_t* a2_typesym = ASRUtils::symbol_get_past_external(a2->m_class_type);
+        ASR::symbol_t* b2_typesym = ASRUtils::symbol_get_past_external(b2->m_derived_type);
+        if( a2_typesym->type != b2_typesym->type ) {
+            return false;
+        }
+        if( a2_typesym->type == ASR::symbolType::ClassType ) {
+            ASR::ClassType_t *a2_type = ASR::down_cast<ASR::ClassType_t>(a2_typesym);
+            ASR::ClassType_t *b2_type = ASR::down_cast<ASR::ClassType_t>(b2_typesym);
+            return a2_type == b2_type;
+        } else if( a2_typesym->type == ASR::symbolType::DerivedType ) {
+            ASR::DerivedType_t *a2_type = ASR::down_cast<ASR::DerivedType_t>(a2_typesym);
+            ASR::DerivedType_t *b2_type = ASR::down_cast<ASR::DerivedType_t>(b2_typesym);
+            return is_derived_type_similar(a2_type, b2_type);
         }
     }
     return false;
@@ -664,7 +743,8 @@ bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& 
 
 int select_generic_procedure(const Vec<ASR::call_arg_t>& args,
         const ASR::GenericProcedure_t &p, Location loc,
-        const std::function<void (const std::string &, const Location &)> err) {
+        const std::function<void (const std::string &, const Location &)> err,
+        bool raise_error) {
     for (size_t i=0; i < p.n_procs; i++) {
         if( ASR::is_a<ASR::ClassProcedure_t>(*p.m_procs[i]) ) {
             ASR::ClassProcedure_t *clss_fn
@@ -679,7 +759,9 @@ int select_generic_procedure(const Vec<ASR::call_arg_t>& args,
             }
         }
     }
-    err("Arguments do not match for any generic procedure", loc);
+    if( raise_error ) {
+        err("Arguments do not match for any generic procedure, " + std::string(p.m_name), loc);
+    }
     return -1;
 }
 
