@@ -13,9 +13,9 @@ Trigonometric archsine function.
 ### Syntax
 
 ```fortran
-result = asin(x)
-  elemental TYPE(kind=KIND) function asin(x)
-  TYPE(kind=KIND) :: x
+* = asin(x)
+elemental real(p) function asin(x)
+elemental complex(p) function asin(x)
 ```
 ### Arguments
 
@@ -34,6 +34,35 @@ The arcsine is the inverse function of the sine function. It is commonly used in
 trigonometry to find the angle when the lengths of the hypotenuse and the
 opposite side of a right triangle are known.
 
+## Types
+
+Supported argument types float, double, complex float, complex double.
+
+```
+interface asin
+    module procedure sasin, dasin, casin, zasin
+end interface
+
+contains
+
+interface
+    elemental real(sp) function sasin(x)
+    real(sp), intent(in) :: x
+    end function
+
+    elemental real(dp) function dasin(x)
+    real(dp), intent(in) :: x
+    end function
+
+    elemental complex(sp) function casin(x)
+    complex(sp), intent(in) :: x
+    end function
+
+    elemental complex(dp) function zasin(x)
+    complex(dp), intent(in) :: x
+    end function
+end interface
+```
 ## Examples
 
 ```fortran
@@ -59,4 +88,3 @@ end program
 ## See Also
 
 [acos](acos.md), [atan](atan.md).
-
