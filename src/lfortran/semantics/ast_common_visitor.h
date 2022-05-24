@@ -1834,6 +1834,33 @@ public:
                                      size, type, nullptr);
     }
 
+    ASR::asr_t* create_Cmplx(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"y", "kind"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, "cmplx");
+        ASR::expr_t *x_ = args[0], *y_ = args[1], *kind = args[2];
+        if( ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(x_)) ) {
+            if( y_ != nullptr ) {
+                throw SemanticError("The first argument of cmplx intrinsic"
+                                    " is of complex type, the second argument "
+                                    "in this case must be absent",
+                                    x.base.base.loc);
+            }
+            return (ASR::asr_t*) x_;
+        }
+        int64_t kind_value = handle_kind(kind);
+        if( y_ == nullptr ) {
+            ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al,
+                                        x.base.base.loc, kind_value,
+                                        nullptr, 0));
+            y_ = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
+                                                         0.0, real_type));
+        }
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc,
+                                kind_value, nullptr, 0));
+        return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, nullptr);
+    }
+
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         SymbolTable *scope = current_scope;
@@ -1865,6 +1892,8 @@ public:
                     tmp = create_ArrayPack(x);
                 } else if( var_name == "transfer" ) {
                     tmp = create_Transfer(x);
+                } else if( var_name == "cmplx" ) {
+                    tmp = create_Cmplx(x);
                 }
                 return ;
             }
