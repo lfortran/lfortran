@@ -16,7 +16,7 @@ interface aimag
 end interface
 
 interface floor
-    module procedure sfloor, dfloor
+    module procedure sfloor_i32, sfloor_i64, dfloor_i32, dfloor_i64
 end interface
 
 interface ceiling
@@ -159,8 +159,9 @@ end function
 
 ! floor ------------------------------------------------------------------------
 
-elemental integer function sfloor(x) result(r)
+elemental integer(i32) function sfloor_i32(x, kind) result(r)
 real(sp), intent(in) :: x
+integer, intent(in), optional :: kind
 if (x >= 0) then
     r = x
 else
@@ -168,8 +169,29 @@ else
 end if
 end function
 
-elemental integer function dfloor(x) result(r)
+elemental integer(i64) function sfloor_i64(x, kind) result(r)
+real(sp), intent(in) :: x
+integer, intent(in), optional :: kind
+if (x >= 0) then
+    r = x
+else
+    r = x-1
+end if
+end function
+
+elemental integer(i32) function dfloor_i32(x, kind) result(r)
 real(dp), intent(in) :: x
+integer, intent(in), optional :: kind
+if (x >= 0) then
+    r = x
+else
+    r = x-1
+end if
+end function
+
+elemental integer(i64) function dfloor_i64(x, kind) result(r)
+real(dp), intent(in) :: x
+integer, intent(in), optional :: kind
 if (x >= 0) then
     r = x
 else
@@ -181,7 +203,7 @@ end function
 
 elemental integer function sceiling(x) result(r)
 real(sp), intent(in) :: x
-r = sfloor(x)
+r = sfloor_i32(x)
 if (r - x /= 0.0) then
     r = r + 1
 end if
@@ -189,7 +211,7 @@ end function
 
 elemental integer function dceiling(x) result(r)
 real(dp), intent(in) :: x
-r = dfloor(x)
+r = dfloor_i32(x)
 if (r - x /= 0.0) then
     r = r + 1
 end if
