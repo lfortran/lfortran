@@ -13,7 +13,7 @@ Trigonometric archsine function.
 ### Syntax
 
 ```fortran
-* = asin(x)
+retval = asin(x)
 elemental real(p) function asin(x)
 elemental complex(p) function asin(x)
 ```
@@ -70,11 +70,11 @@ program intrinsics\_asin
 implicit none
 integer, parameter :: arg_x = kind(0.0)
 real(arg_x) :: x1
-real :: ret_val_x
+real :: retval_x
 real :: arg_x
-ret_val_x = asin(0.84147098)
+retval_x = asin(0.84147098)
 print *, ret_val_x
-ret_val_x = asin(x1)
+retval_x = asin(x1)
 print *, ret_val_x
 end program
 ```
