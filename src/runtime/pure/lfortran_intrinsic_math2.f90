@@ -1,6 +1,7 @@
 ! Temporary module, a subset of lfortran_intrinsic_math that works
 module lfortran_intrinsic_math2
 use, intrinsic :: iso_fortran_env, only: i8 => int8, i16 => int16, i32 => int32, i64 => int64, sp => real32, dp => real64
+use lfortran_intrinsic_math3, only: floor
 implicit none
 
 interface abs
@@ -13,10 +14,6 @@ end interface
 
 interface aimag
     module procedure saimag, daimag
-end interface
-
-interface floor
-    module procedure sfloor_i32, sfloor_i64, dfloor_i32, dfloor_i64
 end interface
 
 interface ceiling
@@ -157,53 +154,11 @@ r = 3
 !error stop "aimag not implemented yet"
 end function
 
-! floor ------------------------------------------------------------------------
-
-elemental integer(i32) function sfloor_i32(x, kind) result(r)
-real(sp), intent(in) :: x
-integer, intent(in), optional :: kind
-if (x >= 0) then
-    r = x
-else
-    r = x-1
-end if
-end function
-
-elemental integer(i64) function sfloor_i64(x, kind) result(r)
-real(sp), intent(in) :: x
-integer, intent(in), optional :: kind
-if (x >= 0) then
-    r = x
-else
-    r = x-1
-end if
-end function
-
-elemental integer(i32) function dfloor_i32(x, kind) result(r)
-real(dp), intent(in) :: x
-integer, intent(in), optional :: kind
-if (x >= 0) then
-    r = x
-else
-    r = x-1
-end if
-end function
-
-elemental integer(i64) function dfloor_i64(x, kind) result(r)
-real(dp), intent(in) :: x
-integer, intent(in), optional :: kind
-if (x >= 0) then
-    r = x
-else
-    r = x-1
-end if
-end function
-
 ! ceiling ------------------------------------------------------------------------
 
 elemental integer function sceiling(x) result(r)
 real(sp), intent(in) :: x
-r = sfloor_i32(x)
+r = floor(x)
 if (r - x /= 0.0) then
     r = r + 1
 end if
@@ -211,7 +166,7 @@ end function
 
 elemental integer function dceiling(x) result(r)
 real(dp), intent(in) :: x
-r = dfloor_i32(x)
+r = floor(x)
 if (r - x /= 0.0) then
     r = r + 1
 end if
