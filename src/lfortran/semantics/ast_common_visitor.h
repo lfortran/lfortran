@@ -538,7 +538,6 @@ public:
     Vec<char *> current_module_dependencies;
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
-    IntrinsicProceduresWithVariableResultKind intrinsics_with_variable_result_kind;
 
     ASR::accessType dflt_access = ASR::Public;
     bool in_module = false;
@@ -1343,7 +1342,7 @@ public:
             final_sym = current_scope->get_symbol(local_sym);
         }
         ASR::expr_t *value = nullptr;
-        ASR::symbol_t* final_sym2 = LFortran::ASRUtils::symbol_get_past_external(final_sym);
+        ASR::symbol_t* final_sym2 = ASRUtils::symbol_get_past_external(final_sym);
         if (ASR::is_a<ASR::Function_t>(*final_sym2)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(final_sym2);
             if (ASRUtils::is_intrinsic_function(f)) {
@@ -1392,12 +1391,8 @@ public:
             }
             return create_FunctionCall(loc, v, args);
         } else {
-            ASR::asr_t* cand_func_call = intrinsic_with_variable_result_kind(g, args, idx, v, p);
-            if( cand_func_call ) {
-                return cand_func_call;
-            }
+            return symbol_resolve_external_generic_procedure_util(loc, idx, v, args, g, p);
         }
-        return symbol_resolve_external_generic_procedure_util(loc, idx, v, args, g, p);
     }
 
     ASR::asr_t* create_ClassProcedure(const Location &loc,
@@ -1462,11 +1457,6 @@ public:
                     return tmp;
                 }
                 return create_FunctionCall(loc, v, args);
-            } else {
-                ASR::asr_t* cand_func_call = intrinsic_with_variable_result_kind(p, args, idx, v);
-                if( cand_func_call ) {
-                    return cand_func_call;
-                }
             }
             ASR::symbol_t *final_sym = p->m_procs[idx];
 
@@ -1512,13 +1502,13 @@ public:
     // If `fn` is intrinsic, it will also try to evaluate it into the `value`
     // member of the returned `FunctionCall`.
     ASR::asr_t* create_FunctionCall(const Location &loc,
-                ASR::symbol_t *v, Vec<ASR::call_arg_t>& args) {
-        ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
+                ASR::symbol_t *fn, Vec<ASR::call_arg_t>& args) {
+        ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(fn);
         if (ASR::is_a<ASR::Function_t>(*f2)) {
-            return create_Function(loc, args, v);
+            return create_Function(loc, args, fn);
         } else {
             LFORTRAN_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
-            return create_GenericProcedure(loc, args, v);
+            return create_GenericProcedure(loc, args, fn);
         }
     }
 
@@ -1649,6 +1639,7 @@ public:
         return member;
     }
 
+    // TODO: Use Vec<expr_t*> instead of std::vector<expr_t*> for performance
     void handle_intrinsic_node_args(const AST::FuncCallOrArray_t& x,
         std::vector<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
         size_t min_args, size_t max_args, const std::string& intrinsic_name) {
@@ -1671,7 +1662,7 @@ public:
         }
 
         for( size_t i = 0; i < x.n_keywords; i++ ) {
-            std::string curr_kwarg_name = std::string(x.m_keywords[i].m_arg);
+            std::string curr_kwarg_name = to_lower(x.m_keywords[i].m_arg);
             if( std::find(kwarg_names.begin(), kwarg_names.end(),
                           curr_kwarg_name) == kwarg_names.end() ) {
                 throw SemanticError("Unrecognized keyword argument " + curr_kwarg_name +
@@ -1682,7 +1673,7 @@ public:
 
         size_t offset = min_args;
         for( size_t i = 0; i < x.n_keywords; i++ ) {
-            std::string curr_kwarg_name = std::string(x.m_keywords[i].m_arg);
+            std::string curr_kwarg_name = to_lower(x.m_keywords[i].m_arg);
             auto it = std::find(kwarg_names.begin(), kwarg_names.end(),
                                 curr_kwarg_name);
             int64_t kwarg_idx = it - kwarg_names.begin();
@@ -1710,6 +1701,35 @@ public:
                                 kind->base.loc);
         }
         return ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n;
+    }
+
+    ASR::asr_t* create_Floor(const AST::FuncCallOrArray_t &x,
+            ASR::ExternalSymbol_t* gp_ext, ASR::symbol_t* v) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"kind"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "floor");
+        ASR::expr_t* kind = args[1];
+        int64_t kind_value = handle_kind(kind);
+        ASR::ttype_t *kind_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                x.base.base.loc, kind_value, nullptr, 0));
+        ASR::expr_t* kind_arg = ASR::down_cast<ASR::expr_t>(
+                ASR::make_IntegerConstant_t(al, x.base.base.loc, 0, kind_type));
+        Vec<ASR::call_arg_t> args2;
+        args2.reserve(al, 2);
+        ASR::call_arg_t arg1;
+        arg1.loc = args[0]->base.loc;
+        arg1.m_value = args[0];
+        args2.push_back(al, arg1);
+        ASR::call_arg_t kind_arg2;
+        kind_arg2.loc = x.base.base.loc;
+        kind_arg2.m_value = kind_arg;
+        args2.push_back(al, kind_arg2);
+        ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(
+                gp_ext->m_external);
+        int idx = ASRUtils::select_generic_procedure(args2, *gp, x.base.base.loc,
+                        [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); },
+                        true);
+        return symbol_resolve_external_generic_procedure_util(gp->base.base.loc, idx, v, args2, gp, gp_ext);
     }
 
     ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
@@ -1977,56 +1997,6 @@ public:
         return resolve_intrinsic_function(x.base.base.loc, var_name);
     }
 
-    int select_procedure_by_kind(ASR::GenericProcedure_t* gp,
-        std::string& suffix, int selected_idx_without_kind) {
-        std::string func_name = ASRUtils::symbol_name(gp->m_procs[selected_idx_without_kind]);
-        std::string corrected_name = func_name.substr(0, func_name.find("_")) + suffix;
-        for(size_t i = 0; i < gp->n_procs; i++) {
-            std::string current_name = ASRUtils::symbol_name(gp->m_procs[i]);
-            if( current_name == corrected_name ) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    ASR::asr_t* create_Floor(ASR::GenericProcedure_t* gp,
-                             ASR::ExternalSymbol_t* gp_ext,
-                             ASR::symbol_t* v,
-                             Vec<ASR::call_arg_t>& args,
-                             int selected_idx_without_kind) {
-        ASR::expr_t* kind = nullptr;
-        if( args.size() == 2 ) {
-            kind = args[1].m_value;
-        }
-        int64_t kind_value = handle_kind(kind);
-        std::string suffix = "_i" + std::to_string(kind_value * 8);
-        int idx = select_procedure_by_kind(gp, suffix, selected_idx_without_kind);
-        if( gp_ext ) {
-            return symbol_resolve_external_generic_procedure_util(gp->base.base.loc, idx, v, args, gp, gp_ext);
-        }
-        return create_FunctionCall(gp->base.base.loc, gp->m_procs[idx], args);
-    }
-
-    ASR::asr_t* intrinsic_with_variable_result_kind(
-        ASR::GenericProcedure_t* gp,
-        Vec<ASR::call_arg_t>& args,
-        int selected_idx_without_kind,
-        ASR::symbol_t* v,
-        ASR::ExternalSymbol_t* gp_ext=nullptr) {
-        std::string var_name = to_lower(gp->m_name);
-        if( intrinsics_with_variable_result_kind.is_intrinsic_present_with_variable_result_kind(var_name) ) {
-            if( var_name == "floor" ) {
-                return create_Floor(gp, gp_ext, v, args, selected_idx_without_kind);
-            } else {
-                LFortranException("create_" + var_name + " not implemented yet.");
-            }
-            return nullptr;
-        }
-        LFortranException(var_name + " doesn't have support for variable result kinds.");
-        return nullptr;
-    }
-
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         SymbolTable *scope = current_scope;
         std::string var_name = to_lower(x.m_func);
@@ -2047,11 +2017,34 @@ public:
             bool is_function = true;
             v = intrinsic_as_node(x, is_function);
             if( !is_function ) {
-                return ;
+                return;
             }
         }
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Function_t>(*f2) || ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
+            if (ASRUtils::is_intrinsic_symbol(f2)) {
+                // Here we handle all intrinsic functions that are implemented
+                // in Fortran, but have different interface (API), e.g.,
+                // the `kind` argument is handled differently, such as `floor`.
+                // In these cases we have to handle them here, since we need
+                // to process the arguments ourselves, not via comparison
+                // with the `floor` implementation.
+                if (var_name == "floor") {
+                    if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
+                        // The above check is needed to ensure we are in an
+                        // intrinsic module and calling an external, that is, we
+                        // skip a locally defined `floor` function in an
+                        // intrinsic module
+                        ASR::ExternalSymbol_t *p = ASR::down_cast<ASR::ExternalSymbol_t>(v);
+                        ASR::symbol_t *f2 = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_external;
+                        if (ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
+                            LFORTRAN_ASSERT(std::string(ASR::down_cast<ASR::GenericProcedure_t>(f2)->m_name) == "floor")
+                            tmp = create_Floor(x, p, v);
+                            return;
+                        }
+                    }
+                }
+            }
             Vec<ASR::call_arg_t> args;
             visit_expr_list(x.m_args, x.n_args, args);
             if (x.n_keywords > 0) {

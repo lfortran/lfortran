@@ -33,25 +33,6 @@ struct IntrinsicProceduresAsASRNodes {
 
 };
 
-struct IntrinsicProceduresWithVariableResultKind {
-
-    private:
-
-        std::set<std::string> intrinsics_present_with_variable_result_kind;
-
-    public:
-
-        IntrinsicProceduresWithVariableResultKind() {
-            intrinsics_present_with_variable_result_kind = {"floor"};
-        }
-
-        bool is_intrinsic_present_with_variable_result_kind(std::string& name) {
-            return intrinsics_present_with_variable_result_kind.find(name) !=
-                   intrinsics_present_with_variable_result_kind.end();
-        }
-
-};
-
 struct IntrinsicProcedures {
 
     const std::string m_kind = "lfortran_intrinsic_kind";
