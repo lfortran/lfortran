@@ -496,6 +496,18 @@ static inline bool is_intrinsic_function2(const ASR::Function_t *fn) {
     return false;
 }
 
+static inline bool is_intrinsic_symbol(const ASR::symbol_t *fn) {
+    const ASR::symbol_t *sym = fn;
+    ASR::Module_t *m = get_sym_module0(sym);
+    if (m != nullptr) {
+        if (m->m_intrinsic) {
+            return true;
+        }
+        if (startswith(m->m_name, "lfortran_intrinsic")) return true;
+    }
+    return false;
+}
+
 // Returns true if the Function is intrinsic, otherwise false
 template <typename T>
 static inline bool is_intrinsic_optimization(const T *routine) {
