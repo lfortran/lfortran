@@ -10,6 +10,17 @@ nav:
         - developer_tutorial.md
         - AST and ASR.md
         - CONTRIBUTING.md
+    - LFortran Intrinsics:
+        - Numeric Intrinsic Functions:
+            - numeric_example.md
+        - Mathematical Intrinsic Functions:
+            - intrinsics/mathematical/trigonometric/asin.md
+        - Bit Intrinsic Functions:
+            - bit_example.md
+        - Character Intrinsic Functions:
+            - character_example.md
+        - Miscellaneous Intrinsic Functions:
+            - misc_example.md
 
 # Until https://gitlab.com/lfortran/lfortran/issues/89 is fixed, we disable the
 # "Edit on GitLab" link:
