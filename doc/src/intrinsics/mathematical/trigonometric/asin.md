@@ -38,7 +38,7 @@ opposite side of a right triangle are known.
 
 Supported argument types float, double, complex float, complex double.
 
-```
+```fortran
 interface asin
     module procedure sasin, dasin, casin, zasin
 end interface
