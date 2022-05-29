@@ -91,52 +91,7 @@ static inline ASR::Subroutine_t* EXPR2SUB(const ASR::expr_t *f)
 
 static inline ASR::ttype_t* expr_type(const ASR::expr_t *f)
 {
-    LFORTRAN_ASSERT(f != nullptr);
-    switch (f->type) {
-        case ASR::exprType::BoolOp: { return ((ASR::BoolOp_t*)f)->m_type; }
-        case ASR::exprType::BinOp: { return ((ASR::BinOp_t*)f)->m_type; }
-        case ASR::exprType::StrOp: { return ((ASR::StrOp_t*)f)->m_type; }
-        case ASR::exprType::UnaryOp: { return ((ASR::UnaryOp_t*)f)->m_type; }
-        case ASR::exprType::ComplexConstructor: { return ((ASR::ComplexConstructor_t*)f)->m_type; }
-        case ASR::exprType::NamedExpr: { return ((ASR::NamedExpr_t*)f)->m_type; }
-        case ASR::exprType::Compare: { return ((ASR::Compare_t*)f)->m_type; }
-        case ASR::exprType::IfExp: { return ((ASR::IfExp_t*)f)->m_type; }
-        case ASR::exprType::FunctionCall: { return ((ASR::FunctionCall_t*)f)->m_type; }
-        case ASR::exprType::DerivedTypeConstructor: { return ((ASR::DerivedTypeConstructor_t*)f)->m_type; }
-        case ASR::exprType::ArrayConstant: { return ((ASR::ArrayConstant_t*)f)->m_type; }
-        case ASR::exprType::ImpliedDoLoop: { return ((ASR::ImpliedDoLoop_t*)f)->m_type; }
-        case ASR::exprType::IntegerConstant: { return ((ASR::IntegerConstant_t*)f)->m_type; }
-        case ASR::exprType::RealConstant: { return ((ASR::RealConstant_t*)f)->m_type; }
-        case ASR::exprType::ComplexConstant: { return ((ASR::ComplexConstant_t*)f)->m_type; }
-        case ASR::exprType::SetConstant: { return ((ASR::SetConstant_t*)f)->m_type; }
-        case ASR::exprType::SetLen: { return ((ASR::SetLen_t*)f)->m_type; }
-        case ASR::exprType::ListConstant: { return ((ASR::ListConstant_t*)f)->m_type; }
-        case ASR::exprType::ListConcat: { return ((ASR::ListConcat_t*)f)->m_type; }
-        case ASR::exprType::ListLen: { return ((ASR::ListLen_t*)f)->m_type; }
-        case ASR::exprType::TupleConstant: { return ((ASR::TupleConstant_t*)f)->m_type; }
-        case ASR::exprType::TupleLen: { return ((ASR::TupleLen_t*)f)->m_type; }
-        case ASR::exprType::LogicalConstant: { return ((ASR::LogicalConstant_t*)f)->m_type; }
-        case ASR::exprType::StringConstant: { return ((ASR::StringConstant_t*)f)->m_type; }
-        case ASR::exprType::StringConcat: { return ((ASR::StringConcat_t*)f)->m_type; }
-        case ASR::exprType::StringLen: { return ((ASR::StringLen_t*)f)->m_type; }
-        case ASR::exprType::DictConstant: { return ((ASR::DictConstant_t*)f)->m_type; }
-        case ASR::exprType::DictLen: { return ((ASR::DictLen_t*)f)->m_type; }
-        case ASR::exprType::IntegerBOZ: { return ((ASR::IntegerBOZ_t*)f)->m_type; }
-        case ASR::exprType::Var: { return EXPR2VAR(f)->m_type; }
-        case ASR::exprType::ArrayRef: { return ((ASR::ArrayRef_t*)f)->m_type; }
-        case ASR::exprType::ArraySize: { return ((ASR::ArraySize_t*)f)->m_type; }
-        case ASR::exprType::ArrayBound: { return ((ASR::ArrayBound_t*)f)->m_type; }
-        case ASR::exprType::DerivedRef: { return ((ASR::DerivedRef_t*)f)->m_type; }
-        case ASR::exprType::Cast: { return ((ASR::Cast_t*)f)->m_type; }
-        case ASR::exprType::ComplexRe: { return ((ASR::ComplexRe_t*)f)->m_type; }
-        case ASR::exprType::ComplexIm: { return ((ASR::ComplexIm_t*)f)->m_type; }
-        case ASR::exprType::DictItem: { return ((ASR::DictItem_t*)f)->m_type; }
-        case ASR::exprType::ArrayTranspose: { return ((ASR::ArrayTranspose_t*)f)->m_type; }
-        case ASR::exprType::ArrayMatMul: { return ((ASR::ArrayMatMul_t*)f)->m_type; }
-        case ASR::exprType::ArrayPack: { return ((ASR::ArrayPack_t*)f)->m_type; }
-        case ASR::exprType::Transfer: { return ((ASR::Transfer_t*)f)->m_type; }
-        default : throw LFortranException("Not implemented");
-    }
+    return ASR::expr_type0(f);
 }
 
 static inline std::string type_to_str(const ASR::ttype_t *t)
