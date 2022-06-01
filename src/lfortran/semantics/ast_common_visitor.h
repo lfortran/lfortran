@@ -2415,6 +2415,17 @@ public:
         return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, nullptr);
     }
 
+    ASR::asr_t* create_Ichar(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"kind"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "ichar");
+        ASR::expr_t *arg = args[0], *kind = args[1];
+        int64_t kind_value = handle_kind(kind);
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                kind_value, nullptr, 0));
+        return ASR::make_Ichar_t(al, x.base.base.loc, arg, type, nullptr);
+    }
+
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
@@ -2436,8 +2447,10 @@ public:
                 tmp = create_Cmplx(x);
             } else if( var_name == "reshape" ) {
                 tmp = create_ArrayReshape(x);
-            } else {
-                LCompilersException("create_" + var_name + " not implemented yet.");
+            } else if( var_name == "ichar" ) {
+                tmp = create_Ichar(x);
+            }  else {
+                LFortranException("create_" + var_name + " not implemented yet.");
             }
             return nullptr;
         }
