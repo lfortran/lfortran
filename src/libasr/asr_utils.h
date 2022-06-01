@@ -124,6 +124,9 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
         case ASR::ttypeType::List: {
             return "list";
         }
+        case ASR::ttypeType::Derived: {
+            return "derived type";
+        }
         default : throw LFortranException("Not implemented");
     }
 }
