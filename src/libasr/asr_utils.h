@@ -294,7 +294,7 @@ static inline ASR::expr_t* expr_value(ASR::expr_t *f)
         case ASR::exprType::StringConcat: { return ASR::down_cast<ASR::StringConcat_t>(f)->m_value; }
         case ASR::exprType::ComplexRe: { return ASR::down_cast<ASR::ComplexRe_t>(f)->m_value; }
         case ASR::exprType::ComplexIm: { return ASR::down_cast<ASR::ComplexIm_t>(f)->m_value; }
-        case ASR::exprType::DictItem: // Drop through
+        case ASR::exprType::DictItem: { return ASR::down_cast<ASR::DictItem_t>(f)->m_value; }
         case ASR::exprType::ArrayConstant: // Drop through
         case ASR::exprType::IntegerConstant: // Drop through
         case ASR::exprType::RealConstant: // Drop through
