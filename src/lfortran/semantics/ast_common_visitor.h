@@ -1062,7 +1062,7 @@ public:
                             ASR::make_Derived_t(al, loc, v,
                                                 nullptr, 0));
         return ASR::make_DerivedTypeConstructor_t(al, loc,
-                v, vals.p, vals.size(), der);
+                v, vals.p, vals.size(), der, nullptr);
     }
 
     ASR::asr_t* create_ArrayRef(const Location &loc,

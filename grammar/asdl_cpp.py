@@ -1669,6 +1669,142 @@ class DeserializationVisitorVisitor(ASDLVisitor):
         self.emit(    'return %s::make_%s_t(%s);' % (subs["mod"].upper(), name, ", ".join(args)), 2)
         self.emit("}", 1)
 
+class ExprTypeVisitor(ASDLVisitor):
+
+    def __init__(self, stream, data):
+        self.replace_expr = []
+        self.is_expr = False
+        self.is_product = False
+        super(ExprTypeVisitor, self).__init__(stream, data)
+
+    def emit(self, line, level=0, new_line=True):
+        indent = "    "*level
+        self.stream.write(indent + line)
+        if new_line:
+            self.stream.write("\n")
+
+    def visitModule(self, mod):
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Expression Type (`expr_type`) visitor")
+        self.emit("""\
+static inline ASR::ttype_t* expr_type0(const ASR::expr_t *f)
+{
+    LFORTRAN_ASSERT(f != nullptr);
+    switch (f->type) {""")
+
+        super(ExprTypeVisitor, self).visitModule(mod)
+
+        self.emit("""        default : throw LFortranException("Not implemented");
+    }
+}
+""")
+
+    def visitType(self, tp):
+        if not (isinstance(tp.value, asdl.Sum) and
+                is_simple_sum(tp.value)):
+            super(ExprTypeVisitor, self).visitType(tp, tp.name)
+
+    def visitSum(self, sum, *args):
+        self.is_expr = args[0] == 'expr'
+        if self.is_expr:
+            for tp in sum.types:
+                self.visit(tp, *args)
+
+    def visitProduct(self, prod, name):
+        pass
+
+    def visitConstructor(self, cons, _):
+        self.make_visitor(cons.name, cons.fields)
+
+    def make_visitor(self, name, fields):
+        if name == "Var":
+            self.emit("""case ASR::exprType::%s: {
+            ASR::symbol_t *s = ((ASR::%s_t*)f)->m_v;
+            if (s->type == ASR::symbolType::ExternalSymbol) {
+                ASR::ExternalSymbol_t *e = ASR::down_cast<ASR::ExternalSymbol_t>(s);
+                LFORTRAN_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*e->m_external));
+                s = e->m_external;
+            }
+            return ASR::down_cast<ASR::Variable_t>(s)->m_type;
+        }""" \
+                    % (name, name), 2, new_line=False)
+        else:
+            self.emit("case ASR::exprType::%s: { return ((ASR::%s_t*)f)->m_type; }"\
+                    % (name, name), 2, new_line=False)
+        self.emit("")
+
+    def visitField(self, field):
+        pass
+
+class ExprValueVisitor(ASDLVisitor):
+
+    def __init__(self, stream, data):
+        self.replace_expr = []
+        self.is_expr = False
+        self.is_product = False
+        super(ExprValueVisitor, self).__init__(stream, data)
+
+    def emit(self, line, level=0, new_line=True):
+        indent = "    "*level
+        self.stream.write(indent + line)
+        if new_line:
+            self.stream.write("\n")
+
+    def visitModule(self, mod):
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Expression Value (`expr_value`) visitor")
+        self.emit("""\
+static inline ASR::expr_t* expr_value0(ASR::expr_t *f)
+{
+    LFORTRAN_ASSERT(f != nullptr);
+    switch (f->type) {""")
+
+        super(ExprValueVisitor, self).visitModule(mod)
+
+        self.emit("""        default : throw LFortranException("Not implemented");
+    }
+}
+""")
+
+    def visitType(self, tp):
+        if not (isinstance(tp.value, asdl.Sum) and
+                is_simple_sum(tp.value)):
+            super(ExprValueVisitor, self).visitType(tp, tp.name)
+
+    def visitSum(self, sum, *args):
+        self.is_expr = args[0] == 'expr'
+        if self.is_expr:
+            for tp in sum.types:
+                self.visit(tp, *args)
+
+    def visitProduct(self, prod, name):
+        pass
+
+    def visitConstructor(self, cons, _):
+        self.make_visitor(cons.name, cons.fields)
+
+    def make_visitor(self, name, fields):
+        if name == "Var":
+            self.emit("""case ASR::exprType::%s: {
+            ASR::symbol_t *s = ((ASR::%s_t*)f)->m_v;
+            if (s->type == ASR::symbolType::ExternalSymbol) {
+                ASR::ExternalSymbol_t *e = ASR::down_cast<ASR::ExternalSymbol_t>(s);
+                LFORTRAN_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*e->m_external));
+                s = e->m_external;
+            }
+            return ASR::down_cast<ASR::Variable_t>(s)->m_value;
+        }""" \
+                    % (name, name), 2, new_line=False)
+        elif name.endswith("Constant") or name == "IntegerBOZ":
+            self.emit("case ASR::exprType::%s: { return f; }"\
+                    % (name), 2, new_line=False)
+        else:
+            self.emit("case ASR::exprType::%s: { return ((ASR::%s_t*)f)->m_value; }"\
+                    % (name, name), 2, new_line=False)
+        self.emit("")
+
+    def visitField(self, field):
+        pass
 
 class ASDLData(object):
 
@@ -1823,6 +1959,10 @@ def main(argv):
             ExprStmtDuplicatorVisitor(fp, data).visit(mod)
             fp.write("\n\n")
             ExprBaseReplacerVisitor(fp, data).visit(mod)
+            fp.write("\n\n")
+            ExprTypeVisitor(fp, data).visit(mod)
+            fp.write("\n\n")
+            ExprValueVisitor(fp, data).visit(mod)
             fp.write("\n\n")
             fp.write(FOOT % subs)
     finally:
