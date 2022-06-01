@@ -226,44 +226,7 @@ static inline std::string boolop_to_str(const ASR::boolopType t) {
 
 static inline ASR::expr_t* expr_value(ASR::expr_t *f)
 {
-    switch (f->type) {
-        case ASR::exprType::BoolOp: { return ASR::down_cast<ASR::BoolOp_t>(f)->m_value; }
-        case ASR::exprType::BinOp: { return ASR::down_cast<ASR::BinOp_t>(f)->m_value; }
-        case ASR::exprType::UnaryOp: { return ASR::down_cast<ASR::UnaryOp_t>(f)->m_value; }
-        case ASR::exprType::ComplexConstructor: { return ASR::down_cast<ASR::ComplexConstructor_t>(f)->m_value; }
-        case ASR::exprType::Compare: { return ASR::down_cast<ASR::Compare_t>(f)->m_value; }
-        case ASR::exprType::FunctionCall: { return ASR::down_cast<ASR::FunctionCall_t>(f)->m_value; }
-        case ASR::exprType::ArrayRef: { return ASR::down_cast<ASR::ArrayRef_t>(f)->m_value; }
-        case ASR::exprType::ArraySize: { return ASR::down_cast<ASR::ArraySize_t>(f)->m_value; }
-        case ASR::exprType::ArrayBound: { return ASR::down_cast<ASR::ArrayBound_t>(f)->m_value; }
-        case ASR::exprType::DerivedRef: { return ASR::down_cast<ASR::DerivedRef_t>(f)->m_value; }
-        case ASR::exprType::Cast: { return ASR::down_cast<ASR::Cast_t>(f)->m_value; }
-        case ASR::exprType::Var: { return EXPR2VAR(f)->m_value; }
-        case ASR::exprType::StrOp: { return ASR::down_cast<ASR::StrOp_t>(f)->m_value; }
-        case ASR::exprType::ImpliedDoLoop: { return ASR::down_cast<ASR::ImpliedDoLoop_t>(f)->m_value; }
-        case ASR::exprType::StringLen: { return ASR::down_cast<ASR::StringLen_t>(f)->m_value; }
-        case ASR::exprType::DictLen: { return ASR::down_cast<ASR::DictLen_t>(f)->m_value; }
-        case ASR::exprType::ListLen: { return ASR::down_cast<ASR::ListLen_t>(f)->m_value; }
-        case ASR::exprType::TupleLen: { return ASR::down_cast<ASR::TupleLen_t>(f)->m_value; }
-        case ASR::exprType::SetLen: { return ASR::down_cast<ASR::SetLen_t>(f)->m_value; }
-        case ASR::exprType::StringConcat: { return ASR::down_cast<ASR::StringConcat_t>(f)->m_value; }
-        case ASR::exprType::ComplexRe: { return ASR::down_cast<ASR::ComplexRe_t>(f)->m_value; }
-        case ASR::exprType::ComplexIm: { return ASR::down_cast<ASR::ComplexIm_t>(f)->m_value; }
-        case ASR::exprType::DictItem: { return ASR::down_cast<ASR::DictItem_t>(f)->m_value; }
-        case ASR::exprType::ArrayConstant: // Drop through
-        case ASR::exprType::IntegerConstant: // Drop through
-        case ASR::exprType::RealConstant: // Drop through
-        case ASR::exprType::ComplexConstant: // Drop through
-        case ASR::exprType::LogicalConstant: // Drop through
-        case ASR::exprType::TupleConstant: // Drop through
-        case ASR::exprType::DictConstant: // Drop through
-        case ASR::exprType::SetConstant: // Drop through
-        case ASR::exprType::ListConstant: // Drop through
-        case ASR::exprType::StringConstant:{ // For all Constants
-            return f;
-        }
-        default : throw LFortranException("Not implemented");
-    }
+    return ASR::expr_value0(f);
 }
 
 static inline char *symbol_name(const ASR::symbol_t *f)
