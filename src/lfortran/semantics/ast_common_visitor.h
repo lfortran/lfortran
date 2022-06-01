@@ -2005,9 +2005,7 @@ public:
         std::vector<std::string> kwarg_names = {};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_loc"));
         ASR::expr_t *v_Var = args[0];
-        // TODO: change `type` from Integer to Derived(c_ptr)
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
-                                            4, nullptr, 0));
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
         return ASR::make_CLoc_t(al, x.base.base.loc, v_Var, type, nullptr);
     }
 
