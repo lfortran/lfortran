@@ -299,6 +299,7 @@ RUN(NAME operator_overloading_05_module3 LABELS gfortran llvm EXTRAFILES
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
         associate_06_module.f90)
 
+RUN(NAME bindc1 LABELS gfortran llvm)
 RUN(NAME bindc_01 LABELS gfortran EXTRAFILES bindc_01b.f90 bindc_01c.c)
 
 RUN(NAME if_04 LABELS gfortran x86)
