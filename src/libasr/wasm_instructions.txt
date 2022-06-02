@@ -52,12 +52,12 @@
 0x3C u32:align:𝒶 u32:offset:𝑜 ⇒ i64.store8 𝑚
 0x3D u32:align:𝒶 u32:offset:𝑜 ⇒ i64.store16 𝑚
 0x3E u32:align:𝒶 u32:offset:𝑜 ⇒ i64.store32 𝑚
-0x3F u8:temp_byte:0x00 ⇒ memory.size
-0x40 u8:temp_byte:0x00 ⇒ memory.grow
-0xFC u32:num:8 u32:dataidx:𝑥 u8:temp_byte:0x00 ⇒ memory.init 𝑥
+-- 0x3F u8:temp_byte:0x00 ⇒ memory.size
+-- 0x40 u8:temp_byte:0x00 ⇒ memory.grow
+-- 0xFC u32:num:8 u32:dataidx:𝑥 u8:temp_byte:0x00 ⇒ memory.init 𝑥
 0xFC u32:num:9 u32:dataidx:𝑥 ⇒ data.drop 𝑥
-0xFC u32:num:10 u8:temp_byte1:0x00 u8:temp_byte2:0x00 ⇒ memory.copy
-0xFC u32:num:11 u8:temp_byte:0x00 ⇒ memory.fill
+-- 0xFC u32:num:10 u8:temp_byte1:0x00 u8:temp_byte2:0x00 ⇒ memory.copy
+-- 0xFC u32:num:11 u8:temp_byte:0x00 ⇒ memory.fill
 0x41 i32:n:𝑛 ⇒ i32.const 𝑛
 0x42 i64:n:𝑛 ⇒ i64.const 𝑛
 0x43 f32:z:𝑧 ⇒ f32.const 𝑧
