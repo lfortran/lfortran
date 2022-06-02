@@ -539,7 +539,7 @@ public:
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
     std::set<std::string> intrinsic_module_procedures_as_asr_nodes = {
-        "c_loc"
+        "c_loc", "c_f_pointer"
     };
 
     ASR::accessType dflt_access = ASR::Public;
@@ -1367,7 +1367,7 @@ public:
         ASR::symbol_t* final_sym2 = ASRUtils::symbol_get_past_external(final_sym);
         if (ASR::is_a<ASR::Function_t>(*final_sym2)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(final_sym2);
-            if (ASRUtils::is_intrinsic_function(f)) {
+            if (ASRUtils::is_intrinsic_procedure(f)) {
                 ASR::symbol_t* v2 = LFortran::ASRUtils::symbol_get_past_external(v);
                 ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(v2);
 
@@ -1500,7 +1500,7 @@ public:
         if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
             // Populate value
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
-            if (ASRUtils::is_intrinsic_function(f)) {
+            if (ASRUtils::is_intrinsic_procedure(f)) {
                 ASR::asr_t* result = intrinsic_function_transformation(al, loc, f->m_name, args);
                 if (result) {
                     return result;
@@ -1662,7 +1662,8 @@ public:
     }
 
     // TODO: Use Vec<expr_t*> instead of std::vector<expr_t*> for performance
-    void handle_intrinsic_node_args(const AST::FuncCallOrArray_t& x,
+    template <typename T>
+    void handle_intrinsic_node_args(const T& x,
         std::vector<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
         size_t min_args, size_t max_args, const std::string& intrinsic_name) {
         size_t total_args = x.n_args + x.n_keywords;
@@ -2054,7 +2055,7 @@ public:
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
-            if (ASRUtils::is_intrinsic_function(f)) {
+            if (ASRUtils::is_intrinsic_procedure(f)) {
                 if (intrinsic_module_procedures_as_asr_nodes.find(var_name) != intrinsic_module_procedures_as_asr_nodes.end()) {
                     if (var_name == "c_loc") {
                         tmp = create_CLoc(x);

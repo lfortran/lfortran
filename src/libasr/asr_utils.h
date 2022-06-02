@@ -396,7 +396,8 @@ static inline ASR::Module_t *get_sym_module0(const ASR::symbol_t *sym) {
 }
 
 // Returns true if the Function is intrinsic, otherwise false
-static inline bool is_intrinsic_function(const ASR::Function_t *fn) {
+template <typename T>
+static inline bool is_intrinsic_procedure(const T *fn) {
     ASR::symbol_t *sym = (ASR::symbol_t*)fn;
     ASR::Module_t *m = get_sym_module0(sym);
     if (m != nullptr) {
@@ -407,7 +408,7 @@ static inline bool is_intrinsic_function(const ASR::Function_t *fn) {
 
 // Returns true if the Function is intrinsic, otherwise false
 // This version uses the `intrinsic` member of `Module`, so it
-// should be used instead of is_intrinsic_function
+// should be used instead of is_intrinsic_procedure
 static inline bool is_intrinsic_function2(const ASR::Function_t *fn) {
     ASR::symbol_t *sym = (ASR::symbol_t*)fn;
     ASR::Module_t *m = get_sym_module0(sym);
