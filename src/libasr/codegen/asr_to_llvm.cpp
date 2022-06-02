@@ -1797,6 +1797,10 @@ public:
                         }
                         break;
                     }
+                    case (ASR::ttypeType::CPtr) : {
+                        type = llvm::Type::getVoidTy(context)->getPointerTo();
+                        break;
+                    }
                     default :
                         LFORTRAN_ASSERT(false);
                 }
