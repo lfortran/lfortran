@@ -483,6 +483,19 @@ public:
                     type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr, nullptr, 0));
                     break;
                 }
+                case (AST::decl_typeType::TypeType) : {
+                    LFORTRAN_ASSERT(return_type->m_name);
+                    std::string derived_type_name = to_lower(return_type->m_name);
+                    ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
+                    if (!v) {
+                        throw SemanticError("Derived type '"
+                            + derived_type_name + "' not declared", x.base.base.loc);
+
+                    }
+                    type = LFortran::ASRUtils::TYPE(ASR::make_Derived_t(al, x.base.base.loc, v,
+                        nullptr, 0));
+                    break;
+                }
                 default :
                     throw SemanticError("Return type not supported",
                             x.base.base.loc);

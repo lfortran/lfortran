@@ -1001,6 +1001,32 @@ public:
                                      overloaded_stmt);
     }
 
+    ASR::asr_t* create_CFPointer(const AST::SubroutineCall_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"shape"};
+        handle_intrinsic_node_args<AST::SubroutineCall_t>(
+            x, args, kwarg_names, 2, 3, std::string("c_f_ptr"));
+        ASR::expr_t *cptr = args[0], *fptr = args[1], *shape = args[2];
+        if(!ASRUtils::is_array(ASRUtils::expr_type(fptr)) && shape) {
+            throw SemanticError("shape argument specified in c_f_pointer "
+                                "even though fptr is not an array.",
+                                shape->base.loc);
+        }
+        ASR::dimension_t* shape_dims;
+        if( shape ) {
+            int shape_rank = ASRUtils::extract_dimensions_from_ttype(
+                                ASRUtils::expr_type(shape),
+                                shape_dims);
+            if( shape_rank != 1 ) {
+                throw SemanticError("shape array passed to c_f_pointer "
+                                    "must be of rank 1 but given rank is " +
+                                    std::to_string(shape_rank),
+                                    shape->base.loc);
+            }
+        }
+        return ASR::make_CFPointer_t(al, x.base.base.loc, cptr, fptr, shape);
+    }
+
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
         SymbolTable* scope = current_scope;
         std::string sub_name = to_lower(x.m_name);
@@ -1019,6 +1045,21 @@ public:
         }
         if (!original_sym) {
             original_sym = resolve_intrinsic_function(x.base.base.loc, sub_name);
+        }
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(original_sym);
+        if (ASR::is_a<ASR::Subroutine_t>(*sym)) {
+            ASR::Subroutine_t *f = ASR::down_cast<ASR::Subroutine_t>(sym);
+            if (ASRUtils::is_intrinsic_procedure(f)) {
+                if (intrinsic_module_procedures_as_asr_nodes.find(sub_name) !=
+                    intrinsic_module_procedures_as_asr_nodes.end()) {
+                    if (sub_name == "c_f_pointer") {
+                        tmp = create_CFPointer(x);
+                    } else {
+                        LFORTRAN_ASSERT(false)
+                    }
+                    return;
+                }
+            }
         }
         Vec<ASR::call_arg_t> args;
         visit_expr_list(x.m_args, x.n_args, args);

@@ -124,6 +124,12 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
         case ASR::ttypeType::List: {
             return "list";
         }
+        case ASR::ttypeType::Derived: {
+            return "derived type";
+        }
+        case ASR::ttypeType::CPtr: {
+            return "type(c_ptr)";
+        }
         default : throw LFortranException("Not implemented");
     }
 }
@@ -390,7 +396,8 @@ static inline ASR::Module_t *get_sym_module0(const ASR::symbol_t *sym) {
 }
 
 // Returns true if the Function is intrinsic, otherwise false
-static inline bool is_intrinsic_function(const ASR::Function_t *fn) {
+template <typename T>
+static inline bool is_intrinsic_procedure(const T *fn) {
     ASR::symbol_t *sym = (ASR::symbol_t*)fn;
     ASR::Module_t *m = get_sym_module0(sym);
     if (m != nullptr) {
@@ -401,7 +408,7 @@ static inline bool is_intrinsic_function(const ASR::Function_t *fn) {
 
 // Returns true if the Function is intrinsic, otherwise false
 // This version uses the `intrinsic` member of `Module`, so it
-// should be used instead of is_intrinsic_function
+// should be used instead of is_intrinsic_procedure
 static inline bool is_intrinsic_function2(const ASR::Function_t *fn) {
     ASR::symbol_t *sym = (ASR::symbol_t*)fn;
     ASR::Module_t *m = get_sym_module0(sym);
@@ -858,6 +865,11 @@ inline int extract_dimensions_from_ttype(ASR::ttype_t *x,
         }
         case ASR::ttypeType::Pointer: {
             n_dims = extract_dimensions_from_ttype(ASR::down_cast<ASR::Pointer_t>(x)->m_type, m_dims);
+            break;
+        }
+        case ASR::ttypeType::CPtr: {
+            n_dims = 0;
+            m_dims = nullptr;
             break;
         }
         default:

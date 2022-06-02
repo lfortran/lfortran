@@ -21,12 +21,20 @@ interface
     type(c_ptr), intent(in) :: c_ptr_1
     end function
 
-    subroutine c_f_pointer(cptr, fptr)
+    subroutine c_f_pointer(cptr, fptr, shape)
     import c_ptr
     type(c_ptr), intent(in) :: cptr
     !type(*), pointer, intent(out) :: fptr
     integer, pointer, intent(out) :: fptr
+    integer, intent(in), optional :: shape(:)
     end subroutine
+
+    !type(c_ptr) function c_loc(x)
+    integer function c_loc(x)
+    import c_ptr
+    !type(*), intent(in) :: x
+    integer, intent(in) :: x
+    end function
 end interface
 
 end module

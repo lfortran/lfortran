@@ -538,6 +538,9 @@ public:
     Vec<char *> current_module_dependencies;
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
+    std::set<std::string> intrinsic_module_procedures_as_asr_nodes = {
+        "c_loc", "c_f_pointer"
+    };
 
     ASR::accessType dflt_access = ASR::Public;
     bool in_module = false;
@@ -610,6 +613,21 @@ public:
                 LFORTRAN_ASSERT(false);
         }
         return access_type;
+    }
+
+    bool is_c_ptr(ASR::symbol_t* v, std::string v_name="") {
+        if( v_name == "" ) {
+            v_name = ASRUtils::symbol_name(v);
+        }
+        ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
+        if( ASR::is_a<ASR::DerivedType_t>(*v_orig) ) {
+            ASR::Module_t* der_type_module = ASRUtils::get_sym_module0(v_orig);
+            return (der_type_module && std::string(der_type_module->m_name) ==
+                    "lfortran_intrinsic_iso_c_binding" &&
+                    der_type_module->m_intrinsic &&
+                    v_name == "c_ptr");
+        }
+        return false;
     }
 
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
@@ -956,13 +974,17 @@ public:
                     LFORTRAN_ASSERT(sym_type->m_name);
                     std::string derived_type_name = to_lower(sym_type->m_name);
                     ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
-                    if (!v) {
-                        throw SemanticError("Derived type '"
-                            + derived_type_name + "' not declared", x.base.base.loc);
+                    if( is_c_ptr(v, derived_type_name) ) {
+                        type = LFortran::ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
+                    } else {
+                        if (!v) {
+                            throw SemanticError("Derived type '"
+                                + derived_type_name + "' not declared", x.base.base.loc);
 
+                        }
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Derived_t(al, x.base.base.loc, v,
+                            dims.p, dims.size()));
                     }
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Derived_t(al, x.base.base.loc, v,
-                        dims.p, dims.size()));
                 } else if (sym_type->m_type == AST::decl_typeType::TypeClass) {
                     std::string derived_type_name;
                     if( !sym_type->m_name ) {
@@ -1174,6 +1196,18 @@ public:
             }
             body.push_back(al, expr);
         }
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = x.base.base.loc;
+        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                                                      4, nullptr, 0));
+        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+        ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.n_args, int32_type));
+        dim.m_start = one;
+        dim.m_end = x_n_args;
+        dims.push_back(al, dim);
+        type = ASRUtils::duplicate_type(al, type, &dims);
         tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
             body.size(), type);
     }
@@ -1345,7 +1379,7 @@ public:
         ASR::symbol_t* final_sym2 = ASRUtils::symbol_get_past_external(final_sym);
         if (ASR::is_a<ASR::Function_t>(*final_sym2)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(final_sym2);
-            if (ASRUtils::is_intrinsic_function(f)) {
+            if (ASRUtils::is_intrinsic_procedure(f)) {
                 ASR::symbol_t* v2 = LFortran::ASRUtils::symbol_get_past_external(v);
                 ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(v2);
 
@@ -1478,7 +1512,7 @@ public:
         if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
             // Populate value
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
-            if (ASRUtils::is_intrinsic_function(f)) {
+            if (ASRUtils::is_intrinsic_procedure(f)) {
                 ASR::asr_t* result = intrinsic_function_transformation(al, loc, f->m_name, args);
                 if (result) {
                     return result;
@@ -1640,7 +1674,8 @@ public:
     }
 
     // TODO: Use Vec<expr_t*> instead of std::vector<expr_t*> for performance
-    void handle_intrinsic_node_args(const AST::FuncCallOrArray_t& x,
+    template <typename T>
+    void handle_intrinsic_node_args(const T& x,
         std::vector<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
         size_t min_args, size_t max_args, const std::string& intrinsic_name) {
         size_t total_args = x.n_args + x.n_keywords;
@@ -1997,6 +2032,15 @@ public:
         return resolve_intrinsic_function(x.base.base.loc, var_name);
     }
 
+    ASR::asr_t* create_CLoc(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_loc"));
+        ASR::expr_t *v_Var = args[0];
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
+        return ASR::make_CLoc_t(al, x.base.base.loc, v_Var, type, nullptr);
+    }
+
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         SymbolTable *scope = current_scope;
         std::string var_name = to_lower(x.m_func);
@@ -2021,6 +2065,19 @@ public:
             }
         }
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
+        if (ASR::is_a<ASR::Function_t>(*f2)) {
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
+            if (ASRUtils::is_intrinsic_procedure(f)) {
+                if (intrinsic_module_procedures_as_asr_nodes.find(var_name) != intrinsic_module_procedures_as_asr_nodes.end()) {
+                    if (var_name == "c_loc") {
+                        tmp = create_CLoc(x);
+                    } else {
+                        LFORTRAN_ASSERT(false)
+                    }
+                    return;
+                }
+            }
+        }
         if (ASR::is_a<ASR::Function_t>(*f2) || ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
             if (ASRUtils::is_intrinsic_symbol(f2)) {
                 // Here we handle all intrinsic functions that are implemented

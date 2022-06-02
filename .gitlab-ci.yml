@@ -298,8 +298,8 @@ documentation:
     - sudo apt-get install -yq --no-install-recommends openssh-client git
     - export CONDA_PREFIX="$HOME/conda_root"
     - export PATH="$HOME/conda_root/bin:$PATH"
-    - conda install -c conda-forge nbconvert=5.6.0 mkdocs
-    - pip install mkdocs-material
+    - conda install -c conda-forge nbconvert=5.6.0 mkdocs=1.3.0
+    - pip install mkdocs-material==8.2.16
     - tar xzf dist/lfortran-*.tar.gz
     - cd lfortran-*
     - CXXFLAGS="-Werror" cmake

@@ -202,6 +202,7 @@ stmt
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
     | ListAppend(symbol a, expr ele)
     | AssociateBlockCall(symbol m)
+    | CFPointer(expr cptr, expr fptr, expr? shape)
     | BlockCall(symbol m)
     | SetInsert(symbol a, expr ele)
     | SetRemove(symbol a, expr ele)
@@ -263,6 +264,7 @@ expr
     | ComplexRe(expr arg, ttype type, expr? value)
     | ComplexIm(expr arg, ttype type, expr? value)
     | DictItem(symbol a, expr key, expr? default, ttype type, expr? value)
+    | CLoc(expr arg, ttype type, expr? value)
 
 
 -- `len` in Character:
@@ -284,6 +286,7 @@ ttype
     | Class(symbol class_type, dimension* dims)
     | Dict(ttype key_type, ttype value_type)
     | Pointer(ttype type)
+    | CPtr()
 
 boolop = And | Or | Xor | NEqv | Eqv
 

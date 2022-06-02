@@ -179,6 +179,7 @@ void set_intrinsic(ASR::symbol_t* sym) {
     switch( sym->type ) {
         case ASR::symbolType::Module: {
             ASR::Module_t* module_sym = ASR::down_cast<ASR::Module_t>(sym);
+            module_sym->m_intrinsic = true;
             for( auto& itr: module_sym->m_symtab->get_scope() ) {
                 set_intrinsic(itr.second);
             }

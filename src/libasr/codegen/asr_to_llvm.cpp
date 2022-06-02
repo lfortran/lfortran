@@ -268,6 +268,8 @@ public:
     std::unique_ptr<LLVMUtils> llvm_utils;
     std::unique_ptr<LLVMArrUtils::Descriptor> arr_descr;
 
+    uint64_t ptr_loads;
+
     ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, Platform platform,
         diag::Diagnostics &diagnostics) :
     diag{diagnostics},
@@ -280,7 +282,8 @@ public:
     arr_descr(LLVMArrUtils::Descriptor::get_descriptor(context,
               builder.get(),
               llvm_utils.get(),
-              LLVMArrUtils::DESCR_TYPE::_SimpleCMODescriptor))
+              LLVMArrUtils::DESCR_TYPE::_SimpleCMODescriptor)),
+    ptr_loads(2)
     {
     }
 
@@ -1491,6 +1494,10 @@ public:
                             }
                             break;
                         }
+                        case (ASR::ttypeType::CPtr) : {
+                            type = llvm::Type::getVoidTy(context)->getPointerTo();
+                            break;
+                        }
                         default :
                             throw CodeGenError("Type not implemented");
                     }
@@ -1788,6 +1795,10 @@ public:
                         } else {
                             type = getClassType(arg->m_type, true);
                         }
+                        break;
+                    }
+                    case (ASR::ttypeType::CPtr) : {
+                        type = llvm::Type::getVoidTy(context)->getPointerTo();
                         break;
                     }
                     default :
@@ -2402,6 +2413,21 @@ public:
             }
         }
     }
+
+    void visit_CLoc(const ASR::CLoc_t& x) {
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 1;
+        this->visit_expr(*x.m_arg);
+        ptr_loads = ptr_loads_copy;
+        tmp = builder->CreateBitCast(tmp,
+                    llvm::Type::getVoidTy(context)->getPointerTo());
+    }
+
+/*
+    void visit_CFPointer(const ASR::CFPointer_t& x) {
+        ASR::expr_t *cptr = x.m_cptr, *fptr = x.m_fptr, *shape = x.m_shape;
+    }
+*/
 
     void visit_Associate(const ASR::Associate_t& x) {
         ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
@@ -3242,8 +3268,11 @@ public:
         uint32_t x_h = get_hash((ASR::asr_t*)x);
         LFORTRAN_ASSERT(llvm_symtab.find(x_h) != llvm_symtab.end());
         llvm::Value* x_v = llvm_symtab[x_h];
-        tmp = CreateLoad(x_v);
-        tmp = CreateLoad(tmp);
+        uint64_t ptr_loads_copy = ptr_loads;
+        tmp = x_v;
+        while( ptr_loads_copy-- ) {
+            tmp = CreateLoad(tmp);
+        }
     }
 
     inline void fetch_val(ASR::Variable_t* x) {
