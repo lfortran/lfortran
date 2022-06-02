@@ -2025,5 +2025,9 @@ filename = "../integration_tests/functions_10.f90"
 asr = true
 
 [[test]]
+filename = "bindc1.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"
 asr = true

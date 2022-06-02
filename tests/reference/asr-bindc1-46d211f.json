@@ -1,0 +1,13 @@
+{
+    "basename": "asr-bindc1-46d211f",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/bindc1.f90",
+    "infile_hash": "b894bae3cff84c3540cc34d38c5e3e6c46197db6d93d5f0b48013a06",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-bindc1-46d211f.stdout",
+    "stdout_hash": "9f352de55cf19bd2bbeec93f1c37d6e778adc6d030995a84b543ab87",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
