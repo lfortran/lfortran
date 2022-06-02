@@ -2034,5 +2034,13 @@ filename = "../integration_tests/bindc2.f90"
 asr = true
 
 [[test]]
+filename = "errors/c_f_pointer_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/c_f_pointer_02.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"
 asr = true
