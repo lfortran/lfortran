@@ -2419,6 +2419,9 @@ public:
                     llvm::Type::getVoidTy(context)->getPointerTo());
     }
 
+    void visit_CFPointer(const ASR::CFPointer_t& x) {
+    }
+
     void visit_Associate(const ASR::Associate_t& x) {
         ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
         ASR::Variable_t *asr_value = EXPR2VAR(x.m_value);

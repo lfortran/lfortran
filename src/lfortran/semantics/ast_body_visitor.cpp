@@ -1007,6 +1007,11 @@ public:
         handle_intrinsic_node_args<AST::SubroutineCall_t>(
             x, args, kwarg_names, 2, 3, std::string("c_f_ptr"));
         ASR::expr_t *cptr = args[0], *fptr = args[1], *shape = args[2];
+        if(!ASRUtils::is_array(ASRUtils::expr_type(fptr)) && shape) {
+            throw SemanticError("shape argument specified in c_f_pointer "
+                                "even though fptr is not an array.",
+                                shape->base.loc);
+        }
         return ASR::make_CFPointer_t(al, x.base.base.loc, cptr, fptr, shape);
     }
 
