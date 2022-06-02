@@ -3,6 +3,8 @@
 
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/asr_to_cpp.h>
+#include <libasr/codegen/asr_to_wasm.h>
+#include <libasr/codegen/wasm_to_wat.h>
 #include <lfortran/ast_to_src.h>
 #include <libasr/exception.h>
 #include <lfortran/ast.h>
@@ -344,6 +346,44 @@ Result<std::string> FortranEvaluator::get_asm(
 #else
     throw LFortranException("LLVM is not enabled");
 #endif
+}
+
+Result<std::string> FortranEvaluator::get_wat(const std::string &code,
+    LocationManager &lm, diag::Diagnostics &diagnostics)
+{
+    // Src -> AST -> ASR
+    SymbolTable *old_symbol_table = symbol_table;
+    symbol_table = nullptr;
+    Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
+    symbol_table = old_symbol_table;
+    if (asr.ok) {
+        Result<Vec<uint8_t>> wasm_bytes_result = asr_to_wasm_bytes_stream(*asr.result, al);
+        if(wasm_bytes_result.ok){
+            wasm::WASMDecoder wasm_decoder(al);
+            wasm_decoder.wasm_bytes.from_pointer_n(wasm_bytes_result.result.data(), wasm_bytes_result.result.size());
+            wasm_decoder.decode_wasm();
+
+            std::cout << "wasm_bytes.size() = " << wasm_decoder.wasm_bytes.size() << std::endl;
+            std::cout << "func_types.size() = " << wasm_decoder.func_types.size() << std::endl;
+            std::cout << "type_indices.size() = " << wasm_decoder.type_indices.size() << std::endl;
+            std::cout << "exports.size() = " << wasm_decoder.exports.size() << std::endl;
+            std::cout << "codes.size() = " << wasm_decoder.codes.size() << std::endl;  
+
+            // std::cout << "wasm_bytes.size() = " << wasm_decoder.wasm_bytes.size() << std::endl;
+            // std::cout << "func_types.size() = " << wasm_decoder.func_types.size() << std::endl;
+            // std::cout << "type_indices.size() = " << wasm_decoder.type_indices.size() << std::endl;
+            std::cout << "exports.size() = " << wasm_decoder.exports[0].kind << std::endl;
+            // std::cout << "codes.size() = " << wasm_decoder.codes.size() << std::endl;  
+            
+            return wasm_decoder.get_wat();
+        }
+        else{
+            return wasm_bytes_result.error;
+        }
+    } else {
+        LFORTRAN_ASSERT(diagnostics.has_error())
+        return asr.error;
+    }
 }
 
 Result<std::string> FortranEvaluator::get_cpp(const std::string &code,
