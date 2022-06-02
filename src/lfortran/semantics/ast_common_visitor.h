@@ -1196,6 +1196,18 @@ public:
             }
             body.push_back(al, expr);
         }
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = x.base.base.loc;
+        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                                                      4, nullptr, 0));
+        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+        ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.n_args, int32_type));
+        dim.m_start = one;
+        dim.m_end = x_n_args;
+        dims.push_back(al, dim);
+        type = ASRUtils::duplicate_type(al, type, &dims);
         tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
             body.size(), type);
     }

@@ -2420,6 +2420,7 @@ public:
     }
 
     void visit_CFPointer(const ASR::CFPointer_t& x) {
+        ASR::expr_t *cptr = x.m_cptr, *fptr = x.m_fptr, *shape = x.m_shape;
     }
 
     void visit_Associate(const ASR::Associate_t& x) {

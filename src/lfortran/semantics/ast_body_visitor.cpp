@@ -1012,6 +1012,18 @@ public:
                                 "even though fptr is not an array.",
                                 shape->base.loc);
         }
+        ASR::dimension_t* shape_dims;
+        if( shape ) {
+            int shape_rank = ASRUtils::extract_dimensions_from_ttype(
+                                ASRUtils::expr_type(shape),
+                                shape_dims);
+            if( shape_rank != 1 ) {
+                throw SemanticError("shape array passed to c_f_pointer "
+                                    "must be of rank 1 but given rank is " +
+                                    std::to_string(shape_rank),
+                                    shape->base.loc);
+            }
+        }
         return ASR::make_CFPointer_t(al, x.base.base.loc, cptr, fptr, shape);
     }
 
