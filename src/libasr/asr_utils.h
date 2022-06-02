@@ -866,6 +866,11 @@ inline int extract_dimensions_from_ttype(ASR::ttype_t *x,
             n_dims = extract_dimensions_from_ttype(ASR::down_cast<ASR::Pointer_t>(x)->m_type, m_dims);
             break;
         }
+        case ASR::ttypeType::CPtr: {
+            n_dims = 0;
+            m_dims = nullptr;
+            break;
+        }
         default:
             throw LFortranException("Not implemented.");
     }

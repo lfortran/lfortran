@@ -615,6 +615,21 @@ public:
         return access_type;
     }
 
+    bool is_c_ptr(ASR::symbol_t* v, std::string v_name="") {
+        if( v_name == "" ) {
+            v_name = ASRUtils::symbol_name(v);
+        }
+        ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
+        if( ASR::is_a<ASR::DerivedType_t>(*v_orig) ) {
+            ASR::Module_t* der_type_module = ASRUtils::get_sym_module0(v_orig);
+            return (der_type_module && std::string(der_type_module->m_name) ==
+                    "lfortran_intrinsic_iso_c_binding" &&
+                    der_type_module->m_intrinsic &&
+                    v_name == "c_ptr");
+        }
+        return false;
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
@@ -959,13 +974,17 @@ public:
                     LFORTRAN_ASSERT(sym_type->m_name);
                     std::string derived_type_name = to_lower(sym_type->m_name);
                     ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
-                    if (!v) {
-                        throw SemanticError("Derived type '"
-                            + derived_type_name + "' not declared", x.base.base.loc);
+                    if( is_c_ptr(v, derived_type_name) ) {
+                        type = LFortran::ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
+                    } else {
+                        if (!v) {
+                            throw SemanticError("Derived type '"
+                                + derived_type_name + "' not declared", x.base.base.loc);
 
+                        }
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Derived_t(al, x.base.base.loc, v,
+                            dims.p, dims.size()));
                     }
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Derived_t(al, x.base.base.loc, v,
-                        dims.p, dims.size()));
                 } else if (sym_type->m_type == AST::decl_typeType::TypeClass) {
                     std::string derived_type_name;
                     if( !sym_type->m_name ) {
