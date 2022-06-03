@@ -2423,11 +2423,26 @@ public:
                     llvm::Type::getVoidTy(context)->getPointerTo());
     }
 
-/*
+
     void visit_CFPointer(const ASR::CFPointer_t& x) {
         ASR::expr_t *cptr = x.m_cptr, *fptr = x.m_fptr, *shape = x.m_shape;
+        if( shape ) {
+            throw CodeGenError("Arrays not yet supported for "
+                               "fptr argument in c_f_pointer.");
+        }
+
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 1;
+        this->visit_expr(*cptr);
+        llvm::Value* llvm_cptr = tmp;
+        ptr_loads = 0;
+        this->visit_expr(*fptr);
+        llvm::Value* llvm_fptr = tmp;
+        ptr_loads = ptr_loads_copy;
+        llvm_cptr = builder->CreateBitCast(llvm_cptr,
+                        static_cast<llvm::PointerType*>(llvm_fptr->getType())->getElementType());
+        builder->CreateStore(llvm_cptr, llvm_fptr);
     }
-*/
 
     void visit_Associate(const ASR::Associate_t& x) {
         ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
@@ -3788,9 +3803,15 @@ public:
                 args.push_back(d);
                 d = builder->CreateFPExt(complex_im(tmp, complex_type), type);
                 args.push_back(d);
+            } else if (t->type == ASR::ttypeType::CPtr) {
+                fmt.push_back("%lld");
+                llvm::Value* d = builder->CreatePtrToInt(tmp, getIntType(8, false));
+                args.push_back(d);
+
             } else {
                 throw LFortranException("Printing support is available only for integer, real,"
-                    " character, and complex types.");
+                    " character, and complex types, got type " +
+                    ASRUtils::type_to_str(t));
             }
         }
         std::string fmt_str;
