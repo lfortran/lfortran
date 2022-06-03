@@ -30,7 +30,9 @@ int32_t decode_signed_leb128(Vec<uint8_t> &code, uint32_t &offset) {
     } while ((byte & 0x80) != 0);
 
     if ((shift < size) && (byte & 0x40)) {
-        result |= (~0 << shift);
+        // without U it gives warning that negative number is being shifted, unsure if this works currently
+        // this needs to be tested/fixed once the ASR->WASM Backend supports negative integers
+        result |= (~0U << shift);
     }
 
     return result;
