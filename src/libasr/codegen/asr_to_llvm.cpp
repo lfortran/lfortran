@@ -4402,6 +4402,21 @@ public:
     }
 
     void visit_ArrayBound(const ASR::ArrayBound_t& x) {
+        ASR::expr_t* array_value = ASRUtils::expr_value(x.m_v);
+        if( array_value && ASR::is_a<ASR::ArrayConstant_t>(*array_value) ) {
+            ASR::ArrayConstant_t* array_const = ASR::down_cast<ASR::ArrayConstant_t>(array_value);
+            int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+            size_t bound_value = 0;
+            if( x.m_bound == ASR::arrayboundType::LBound ) {
+                bound_value = 1;
+            } else if( x.m_bound == ASR::arrayboundType::UBound ) {
+                bound_value = array_const->n_args;
+            } else {
+                LFORTRAN_ASSERT(false);
+            }
+            tmp = llvm::ConstantInt::get(context, llvm::APInt(kind * 8, bound_value));
+            return ;
+        }
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = ptr_loads_copy -
                     (ASRUtils::expr_type(x.m_v)->type ==
