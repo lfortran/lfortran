@@ -130,7 +130,11 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
         case ASR::ttypeType::CPtr: {
             return "type(c_ptr)";
         }
-        default : throw LFortranException("Not implemented");
+        case ASR::ttypeType::Pointer: {
+            return type_to_str(ASRUtils::type_get_past_pointer(
+                        const_cast<ASR::ttype_t*>(t))) + " pointer";
+        }
+        default : throw LFortranException("Not implemented " + std::to_string(t->type) + ".");
     }
 }
 
