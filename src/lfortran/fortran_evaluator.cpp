@@ -362,19 +362,6 @@ Result<std::string> FortranEvaluator::get_wat(const std::string &code,
             wasm::WASMDecoder wasm_decoder(al);
             wasm_decoder.wasm_bytes.from_pointer_n(wasm_bytes_result.result.data(), wasm_bytes_result.result.size());
             wasm_decoder.decode_wasm();
-
-            std::cout << "wasm_bytes.size() = " << wasm_decoder.wasm_bytes.size() << std::endl;
-            std::cout << "func_types.size() = " << wasm_decoder.func_types.size() << std::endl;
-            std::cout << "type_indices.size() = " << wasm_decoder.type_indices.size() << std::endl;
-            std::cout << "exports.size() = " << wasm_decoder.exports.size() << std::endl;
-            std::cout << "codes.size() = " << wasm_decoder.codes.size() << std::endl;  
-
-            // std::cout << "wasm_bytes.size() = " << wasm_decoder.wasm_bytes.size() << std::endl;
-            // std::cout << "func_types.size() = " << wasm_decoder.func_types.size() << std::endl;
-            // std::cout << "type_indices.size() = " << wasm_decoder.type_indices.size() << std::endl;
-            std::cout << "exports.size() = " << wasm_decoder.exports[0].kind << std::endl;
-            // std::cout << "codes.size() = " << wasm_decoder.codes.size() << std::endl;  
-            
             return wasm_decoder.get_wat();
         }
         else{
