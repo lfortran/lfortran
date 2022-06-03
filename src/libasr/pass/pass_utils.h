@@ -26,9 +26,7 @@ namespace LFortran {
                              Allocator& al, SymbolTable*& current_scope, std::string suffix="_k");
 
         ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound,
-                                Allocator& al, ASR::TranslationUnit_t& unit,
-                                const std::string &rl_path,
-                                SymbolTable*& current_scope);
+                                Allocator& al);
 
 
         ASR::stmt_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
