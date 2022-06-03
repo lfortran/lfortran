@@ -38,8 +38,8 @@ namespace wasm {
 
 class WASMDecoder {
    public:
-    std::unordered_map<uint8_t, std::string> byte_type_to_string;
-    std::unordered_map<uint8_t, std::string> byte_kind_to_string;
+    std::unordered_map<uint8_t, std::string> var_type_to_string;
+    std::unordered_map<uint8_t, std::string> kind_to_string;
 
     Allocator &al;
     Vec<uint8_t> wasm_bytes;
@@ -50,8 +50,8 @@ class WASMDecoder {
     Vec<wasm::Code> codes;
 
     WASMDecoder(Allocator &al) : al(al) {
-        byte_kind_to_string = {{0x7F, "i32"}, {0x7E, "i64"}, {0x7D, "f32"}, {0x7C, "f64"}};
-        byte_type_to_string = {{0x00, "func"}, {0x01, "table"}, {0x02, "mem"}, {0x03, "global"}};
+        var_type_to_string = {{0x7F, "i32"}, {0x7E, "i64"}, {0x7D, "f32"}, {0x7C, "f64"}};
+        kind_to_string = {{0x00, "func"}, {0x01, "table"}, {0x02, "mem"}, {0x03, "global"}};
         
         // wasm_bytes.reserve(al, 1024 * 128);
         // func_types.reserve(al, 1024 * 128);

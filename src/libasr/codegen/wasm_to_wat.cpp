@@ -157,17 +157,17 @@ std::string WASMDecoder::get_wat() {
         result += "\n        (param";
         uint32_t func_index = type_indices.p[i];
         for (uint32_t j = 0; j < func_types[func_index].param_types.size(); j++) {
-            result += " " + byte_type_to_string[func_types[func_index].param_types.p[j]];
+            result += " " + var_type_to_string[func_types[func_index].param_types.p[j]];
         }
         result += ") (result";
         for (uint32_t j = 0; j < func_types[func_index].result_types.size(); j++) {
-            result += " " + byte_type_to_string[func_types[func_index].result_types.p[j]];
+            result += " " + var_type_to_string[func_types[func_index].result_types.p[j]];
         }
         result += ")";
         result += "\n        (local";
         for (uint32_t j = 0; j < codes.p[i].locals.size(); j++) {
             for (uint32_t k = 0; k < codes.p[i].locals.p[j].count; k++) {
-                result += " " + byte_type_to_string[codes.p[i].locals.p[j].type];
+                result += " " + var_type_to_string[codes.p[i].locals.p[j].type];
             }
         }
         result += ")";
@@ -183,7 +183,7 @@ std::string WASMDecoder::get_wat() {
     }
 
     for (uint32_t i = 0; i < exports.size(); i++) {
-        result += "\n    (export \"" + exports.p[i].name + "\" (" + byte_kind_to_string[exports.p[i].kind] + " $" + std::to_string(exports.p[i].index) + "))";
+        result += "\n    (export \"" + exports.p[i].name + "\" (" + kind_to_string[exports.p[i].kind] + " $" + std::to_string(exports.p[i].index) + "))";
     }
     result += "\n)\n";
 
