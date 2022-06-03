@@ -11,7 +11,7 @@ python grammar/asdl_cpp.py
 # Generate a Fortran ASR from ASR.asdl (C++)
 python grammar/asdl_cpp.py src/libasr/ASR.asdl src/libasr/asr.h
 # Generate a wasm_visitor.h from src/libasr/wasm_instructions.txt (C++)
-python grammar/wasm_instructions_visitor.py
+python src/libasr/wasm_instructions_visitor.py
 
 # Generate the tokenizer and parser
 (cd src/lfortran/parser && re2c -W -b tokenizer.re -o tokenizer.cpp)
