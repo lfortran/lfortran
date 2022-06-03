@@ -1447,34 +1447,13 @@ public:
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(asr_type)->m_type;
                 switch (t2->type) {
-                    case (ASR::ttypeType::Integer) : {
-                        a_kind = down_cast<ASR::Integer_t>(t2)->m_kind;
-                        llvm_type = getIntType(a_kind, true);
-                        break;
-                    }
-                    case (ASR::ttypeType::Real) : {
-                        a_kind = down_cast<ASR::Real_t>(t2)->m_kind;
-                        llvm_type = getFPType(a_kind, true);
-                        break;
-                    }
-                    case (ASR::ttypeType::Complex) : {
-                        a_kind = down_cast<ASR::Complex_t>(t2)->m_kind;
-                        llvm_type = getComplexType(a_kind, true);
-                        break;
-                    }
-                    case (ASR::ttypeType::Character) : {
-                        llvm_type = character_type;
-                        break;
-                    }
                     case (ASR::ttypeType::Derived) : {
-                        throw CodeGenError("Pointers for Derived type not implemented yet in conversion");
-                    }
-                    case (ASR::ttypeType::Logical) : {
-                        llvm_type = llvm::Type::getInt1Ty(context);
-                        break;
+                        throw CodeGenError("Pointers for Derived type not implemented yet in conversion.");
                     }
                     default :
-                        throw CodeGenError("Type not implemented");
+                        llvm_type = get_type_from_ttype_t(t2, m_storage, is_array_type,
+                                        is_malloc_array_type, m_dims, n_dims, a_kind);
+                        llvm_type = llvm_type->getPointerTo();
                 }
                 break;
             }
@@ -1552,7 +1531,8 @@ public:
                     if( is_malloc_array_type ) {
                         arr_descr->fill_dimension_descriptor(ptr, n_dims);
                     }
-                    if( is_array_type && !is_malloc_array_type ) {
+                    if( is_array_type && !is_malloc_array_type &&
+                        v->m_type->type != ASR::ttypeType::Pointer ) {
                         fill_array_details(ptr, m_dims, n_dims);
                     }
                     if( is_array_type && is_malloc_array_type ) {
