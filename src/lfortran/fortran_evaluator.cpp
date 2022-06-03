@@ -348,28 +348,38 @@ Result<std::string> FortranEvaluator::get_asm(
 #endif
 }
 
-Result<std::string> FortranEvaluator::get_wat(const std::string &code,
+Result<Vec<uint8_t>> FortranEvaluator::get_wasm(const std::string &code,
     LocationManager &lm, diag::Diagnostics &diagnostics)
 {
-    // Src -> AST -> ASR
+    // Src -> AST -> ASR -> WASM
     SymbolTable *old_symbol_table = symbol_table;
     symbol_table = nullptr;
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (asr.ok) {
-        Result<Vec<uint8_t>> wasm_bytes_result = asr_to_wasm_bytes_stream(*asr.result, al);
-        if(wasm_bytes_result.ok){
-            wasm::WASMDecoder wasm_decoder(al);
-            wasm_decoder.wasm_bytes.from_pointer_n(wasm_bytes_result.result.data(), wasm_bytes_result.result.size());
-            wasm_decoder.decode_wasm();
-            return wasm_decoder.get_wat();
-        }
-        else{
-            return wasm_bytes_result.error;
-        }
+        return asr_to_wasm_bytes_stream(*asr.result, al);
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
         return asr.error;
+    }
+}
+
+Result<std::string> FortranEvaluator::get_wat(const std::string &code,
+    LocationManager &lm, diag::Diagnostics &diagnostics)
+{
+    // Src -> AST -> ASR -> WASM -> WAT
+    SymbolTable *old_symbol_table = symbol_table;
+    symbol_table = nullptr;
+    Result<Vec<uint8_t>> wasm = get_wasm(code, lm, diagnostics);
+    symbol_table = old_symbol_table;
+    if (wasm.ok) {
+            wasm::WASMDecoder wasm_decoder(al);
+            wasm_decoder.wasm_bytes.from_pointer_n(wasm.result.data(), wasm.result.size());
+            wasm_decoder.decode_wasm();
+            return wasm_decoder.get_wat();
+    } else {
+        LFORTRAN_ASSERT(diagnostics.has_error())
+        return wasm.error;
     }
 }
 
