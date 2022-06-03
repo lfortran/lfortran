@@ -6,6 +6,9 @@
 namespace LFortran {
 
     // Generates a 32-bit wasm Linux executable binary `filename`
+    Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Allocator &al);
+
+    // Generates a 32-bit wasm Linux executable binary `filename`
     Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al,
             const std::string &filename, bool time_report);
 

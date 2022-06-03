@@ -803,8 +803,27 @@ int compile_to_assembly_file(const std::string &infile,
 {
     return compile_to_object_file(infile, outfile, true, compiler_options);
 }
-#endif
+#endif // HAVE_LFORTRAN_LLVM
 
+
+int emit_wat(const std::string &infile, CompilerOptions &compiler_options)
+{
+    std::string input = read_file(infile);
+
+    LFortran::FortranEvaluator fe(compiler_options);
+    LFortran::LocationManager lm;
+    LFortran::diag::Diagnostics diagnostics;
+    lm.in_filename = infile;
+    LFortran::Result<std::string> r = fe.get_wat(input, lm, diagnostics);
+    std::cerr << diagnostics.render(input, lm, compiler_options);
+    if (r.ok) {
+        std::cout << r.result;
+        return 0;
+    } else {
+        LFORTRAN_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+}
 
 int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         bool time_report,
@@ -1302,6 +1321,7 @@ int main(int argc, char *argv[])
         bool show_llvm = false;
         bool show_cpp = false;
         bool show_asm = false;
+        bool show_wat = false;
         bool time_report = false;
         bool static_link = false;
         std::string arg_backend = "llvm";
@@ -1355,6 +1375,7 @@ int main(int argc, char *argv[])
         app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
         app.add_flag("--show-cpp", show_cpp, "Show C++ translation source for the given file and exit");
         app.add_flag("--show-asm", show_asm, "Show assembly for the given file and exit");
+        app.add_flag("--show-wat", show_wat, "Show WAT (WebAssembly Text Format) and exit");
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors");
         app.add_flag("--symtab-only", compiler_options.symtab_only, "Only create symbol tables in ASR (skip executable stmt)");
         app.add_flag("--time-report", time_report, "Show compilation time report");
@@ -1506,6 +1527,8 @@ int main(int argc, char *argv[])
             outfile = basename + ".asr";
         } else if (show_llvm) {
             outfile = basename + ".ll";
+        } else if (show_wat) {
+            outfile = basename + ".wat";
         } else {
             outfile = "a.out";
         }
@@ -1583,6 +1606,9 @@ int main(int argc, char *argv[])
             std::cerr << "The --show-asm option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
 #endif
+        }
+        if (show_wat) {
+            return emit_wat(arg_file, compiler_options);
         }
         if (show_cpp) {
             return emit_cpp(arg_file, compiler_options);
