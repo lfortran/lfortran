@@ -16,6 +16,6 @@ program associate_05
         v(6:10) = v(6:10) * 2.6
     end associate
 
-    print *, myreal 
+    print *, myreal
 
 end program associate_05
