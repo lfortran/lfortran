@@ -4,11 +4,9 @@ program arrays_13
     integer :: u, v
     integer, pointer :: i(:)
     real, pointer :: r(:, :)
-    complex, pointer :: c(:)
 
-    integer :: iv(2)
-    real :: rv(2, 3)
-    complex :: cv(4)
+    integer, target :: iv(2)
+    real, target :: rv(2, 3)
 
     i => iv
     r => rv
