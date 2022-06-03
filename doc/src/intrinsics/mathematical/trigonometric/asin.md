@@ -6,7 +6,7 @@ permalink: intrinsics/mathematics/trigonometric
 
 ## asin(x)
 
-Trigonometric archsine function.
+Trigonometric arcsine function.
 
 ## Declaration
 
