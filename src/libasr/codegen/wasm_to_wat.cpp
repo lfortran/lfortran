@@ -3,7 +3,7 @@
 #include <libasr/assert.h>
 #include <libasr/codegen/wasm_to_wat.h>
 
-#define WAT_DEBUG
+// #define WAT_DEBUG
 
 #ifdef WAT_DEBUG
 #define DEBUG(s) std::cout << s << std::endl
