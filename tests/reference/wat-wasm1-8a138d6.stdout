@@ -1,0 +1,49 @@
+(module
+    (func $0
+        (param i32) (result i32)
+        (local i32)
+        local.get 0
+        local.get 0
+        i32.mul
+        local.set 1
+        local.get 1
+        return
+    )
+    (func $1
+        (param i32 i32) (result i32)
+        (local i32)
+        local.get 0
+        local.get 1
+        i32.add
+        local.set 2
+        local.get 2
+        return
+    )
+    (func $2
+        (param i32) (result i32)
+        (local i32 i32)
+        i32.const 3
+        local.set 2
+        local.get 2
+        local.get 0
+        call 0
+        i32.mul
+        local.set 1
+        local.get 1
+        return
+    )
+    (func $3
+        (param i32 i32) (result i32)
+        (local i32)
+        local.get 0
+        local.get 1
+        i32.add
+        local.set 2
+        local.get 2
+        return
+    )
+    (export "a_sqr" (func $0))
+    (export "add" (func $1))
+    (export "computecirclearea" (func $2))
+    (export "my_add" (func $3))
+)
