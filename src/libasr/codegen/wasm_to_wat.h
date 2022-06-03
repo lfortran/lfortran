@@ -60,11 +60,11 @@ class WASMDecoder {
         // codes.reserve(al, 1024 * 128);
     }
 
+    void load_file(std::string filename);
     void decode_type_section(uint32_t offset);
     void decode_function_section(uint32_t offset);
     void decode_export_section(uint32_t offset);
     void decode_code_section(uint32_t offset);
-    void load_file(std::string filename);
     void decode_wasm();
     std::string get_wat();
 };

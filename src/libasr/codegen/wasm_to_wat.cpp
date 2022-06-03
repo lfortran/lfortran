@@ -15,6 +15,16 @@ namespace LFortran {
 
 namespace wasm {
 
+void WASMDecoder::load_file(std::string filename) {
+    std::ifstream file(filename, std::ios::binary);
+    file.seekg(0, std::ios::end);
+    size_t size = file.tellg();
+    file.seekg(0, std::ios::beg);
+    wasm_bytes.reserve(al, size);
+    file.read((char*)wasm_bytes.data(), size);
+    file.close();
+}
+
 void WASMDecoder::decode_type_section(uint32_t offset) {
     // read type section contents
     uint32_t no_of_func_types = read_unsigned_num(wasm_bytes, offset);
@@ -138,16 +148,6 @@ void WASMDecoder::decode_wasm() {
 
     LFORTRAN_ASSERT(index == wasm_bytes.size());
     LFORTRAN_ASSERT(type_indices.size() == codes.size());
-}
-
-void WASMDecoder::load_file(std::string filename) {
-    std::ifstream file(filename, std::ios::binary);
-    file.seekg(0, std::ios::end);
-    size_t size = file.tellg();
-    file.seekg(0, std::ios::beg);
-    wasm_bytes.reserve(al, size);
-    file.read((char*)wasm_bytes.data(), size);
-    file.close();
 }
 
 std::string WASMDecoder::get_wat() {
