@@ -214,6 +214,7 @@ public:
     llvm::StructType *complex_type_4, *complex_type_8;
     llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
     llvm::PointerType *character_type;
+    llvm::PointerType *list_type;
 
     std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>> arr_arg_type_cache;
 
@@ -744,6 +745,30 @@ public:
         return CreateLoad(presult);
     }
 
+    llvm::Value* lfortran_strrepeat(llvm::Value* left_arg, llvm::Value* right_arg)
+    {
+        std::string runtime_func_name = "_lfortran_strrepeat";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        character_type->getPointerTo(),
+                        llvm::Type::getInt32Ty(context),
+                        character_type->getPointerTo()
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        llvm::AllocaInst *pleft_arg = builder->CreateAlloca(character_type,
+            nullptr);
+        builder->CreateStore(left_arg, pleft_arg);
+        llvm::AllocaInst *presult = builder->CreateAlloca(character_type,
+            nullptr);
+        std::vector<llvm::Value*> args = {pleft_arg, right_arg, presult};
+        builder->CreateCall(fn, args);
+        return CreateLoad(presult);
+    }
+
     llvm::Value* lfortran_str_len(llvm::Value* str)
     {
         std::string runtime_func_name = "_lfortran_str_len";
@@ -772,6 +797,49 @@ public:
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
         return builder->CreateCall(fn, {str, idx1, idx2});
+    }
+
+    llvm::Value* lcompilers_list_init_i32()
+    {
+        std::string runtime_func_name = "_lcompilers_list_init_i32";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    list_type, { }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        return builder->CreateCall(fn, {});
+    }
+
+    void lcompilers_list_append_i32(llvm::Value* plist, llvm::Value *item)
+    {
+        std::string runtime_func_name = "_lcompilers_list_append_i32";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        list_type, llvm::Type::getInt32Ty(context)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        builder->CreateCall(fn, {plist, item});
+    }
+
+    llvm::Value* lcompilers_list_item_i32(llvm::Value* plist, llvm::Value *pos)
+    {
+        std::string runtime_func_name = "_lcompilers_list_item_i32";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getInt32Ty(context), {
+                        list_type, llvm::Type::getInt32Ty(context)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        return builder->CreateCall(fn, {plist, pos});
     }
 
     // This function is called as:
@@ -882,6 +950,7 @@ public:
         complex_type_4_ptr = llvm::StructType::create(context, els_4_ptr, "complex_4_ptr");
         complex_type_8_ptr = llvm::StructType::create(context, els_8_ptr, "complex_8_ptr");
         character_type = llvm::Type::getInt8PtrTy(context);
+        list_type = llvm::Type::getInt8PtrTy(context);
 
         llvm::Type* bound_arg = static_cast<llvm::Type*>(arr_descr->get_dimension_descriptor_type(true));
         fname2arg_type["lbound"] = std::make_pair(bound_arg, bound_arg->getPointerTo());
@@ -1035,6 +1104,56 @@ public:
 
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t& x) {
         _Deallocate<ASR::ExplicitDeallocate_t>(x);
+    }
+
+    void visit_ListAppend(const ASR::ListAppend_t& x) {
+        ASR::Variable_t *l = ASR::down_cast<ASR::Variable_t>(x.m_a);
+        uint32_t v_h = get_hash((ASR::asr_t*)l);
+        LFORTRAN_ASSERT(llvm_symtab.find(v_h) != llvm_symtab.end());
+        llvm::Value *plist = llvm_symtab[v_h];
+
+        this->visit_expr_wrapper(x.m_ele, true);
+        llvm::Value *ele = tmp;
+
+        ASR::ttype_t *el_type = ASR::down_cast<ASR::List_t>(l->m_type)->m_type;
+        if (is_a<ASR::Integer_t>(*el_type)) {
+            int kind = ASR::down_cast<ASR::Integer_t>(el_type)->m_kind;
+            if (kind == 4) {
+                llvm::Value *plist2 = CreateLoad(plist);
+                lcompilers_list_append_i32(plist2, ele);
+            } else {
+                throw CodeGenError("Integer kind not supported yet in ListAppend", x.base.base.loc);
+            }
+
+        } else {
+            throw CodeGenError("List type not supported yet in ListAppend", x.base.base.loc);
+        }
+
+    }
+
+    void visit_ListItem(const ASR::ListItem_t& x) {
+        ASR::Variable_t *l = ASR::down_cast<ASR::Variable_t>(x.m_a);
+        uint32_t v_h = get_hash((ASR::asr_t*)l);
+        LFORTRAN_ASSERT(llvm_symtab.find(v_h) != llvm_symtab.end());
+        llvm::Value *plist = llvm_symtab[v_h];
+
+        this->visit_expr_wrapper(x.m_pos, true);
+        llvm::Value *pos = tmp;
+
+        ASR::ttype_t *el_type = ASR::down_cast<ASR::List_t>(l->m_type)->m_type;
+        if (is_a<ASR::Integer_t>(*el_type)) {
+            int kind = ASR::down_cast<ASR::Integer_t>(el_type)->m_kind;
+            if (kind == 4) {
+                llvm::Value *plist2 = CreateLoad(plist);
+                tmp = lcompilers_list_item_i32(plist2, pos);
+            } else {
+                throw CodeGenError("Integer kind not supported yet in ListAppend", x.base.base.loc);
+            }
+
+        } else {
+            throw CodeGenError("List type not supported yet in ListAppend", x.base.base.loc);
+        }
+
     }
 
     void visit_ArrayRef(const ASR::ArrayRef_t& x) {
@@ -1220,7 +1339,7 @@ public:
             }
             llvm_symtab[h] = ptr;
         } else {
-            throw CodeGenError("Variable type not supported");
+            throw CodeGenError("Variable type not supported", x.base.base.loc);
         }
     }
 
@@ -1588,6 +1707,11 @@ public:
                             } else {
                                 throw CodeGenError("Unsupported len value in ASR");
                             }
+                        } else if (is_a<ASR::List_t>(*v->m_type)) {
+                            // TODO: do a different initialization based on element type
+                            llvm::Value *init_value = lcompilers_list_init_i32();
+                            target_var = ptr;
+                            builder->CreateStore(init_value, target_var);
                         }
                     }
                 }
@@ -2842,7 +2966,7 @@ public:
         }
     }
 
-    void visit_StrOp(const ASR::StrOp_t &x) {
+    void visit_StringRepeat(const ASR::StringRepeat_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -2851,7 +2975,7 @@ public:
         llvm::Value *left_val = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right_val = tmp;
-        tmp = lfortran_strop(left_val, right_val, "_lfortran_strrepeat");
+        tmp = lfortran_strrepeat(left_val, right_val);
     }
 
     void visit_StringConcat(const ASR::StringConcat_t &x) {
@@ -2876,6 +3000,33 @@ public:
         builder->CreateStore(tmp, parg);
         tmp = lfortran_str_len(parg);
     }
+
+    void visit_StringItem(const ASR::StringItem_t& x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        this->visit_expr_wrapper(x.m_idx, true);
+        llvm::Value *idx = tmp;
+        this->visit_expr_wrapper(x.m_arg, true);
+        llvm::Value *str = tmp;
+        tmp = lfortran_str_copy(str, idx, idx);
+    }
+
+    void visit_StringSection(const ASR::StringSection_t& x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+         }
+        this->visit_expr_wrapper(x.m_arg, true);
+        llvm::Value *str = tmp;
+        this->visit_expr_wrapper(x.m_start, true);
+        llvm::Value *left = tmp;
+        this->visit_expr_wrapper(x.m_end, true);
+        llvm::Value *right = tmp;
+        tmp = lfortran_str_copy(str, left, right);
+    }
+
 
     void visit_BinOp(const ASR::BinOp_t &x) {
         if( x.m_overloaded ) {
@@ -3079,6 +3230,84 @@ public:
         }
     }
 
+    void visit_IntegerBitNot(const ASR::IntegerBitNot_t &x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        this->visit_expr_wrapper(x.m_arg, true);
+        tmp = builder->CreateNot(tmp);
+    }
+
+    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        this->visit_expr_wrapper(x.m_arg, true);
+        llvm::Value *zero = llvm::ConstantInt::get(context,
+            llvm::APInt(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_arg)) * 8, 0));
+        tmp = builder->CreateSub(zero, tmp);
+    }
+
+    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        this->visit_expr_wrapper(x.m_arg, true);
+        llvm::Value *zero;
+        int a_kind = down_cast<ASR::Real_t>(x.m_type)->m_kind;
+        if (a_kind == 4) {
+            zero = llvm::ConstantFP::get(context,
+                llvm::APFloat((float)0.0));
+        } else if (a_kind == 8) {
+            zero = llvm::ConstantFP::get(context,
+                llvm::APFloat((double)0.0));
+        } else {
+            throw CodeGenError("RealUnaryMinus: kind not supported yet");
+        }
+
+        tmp = builder->CreateFSub(zero, tmp);
+    }
+
+    void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        this->visit_expr_wrapper(x.m_arg, true);
+        llvm::Value *c = tmp;
+        double re = 0.0;
+        double im = 0.0;
+        llvm::Value *re2, *im2;
+        llvm::Type *type;
+        int a_kind = down_cast<ASR::Complex_t>(x.m_type)->m_kind;
+        std::string f_name;
+        switch (a_kind) {
+            case 4: {
+                re2 = llvm::ConstantFP::get(context, llvm::APFloat((float)re));
+                im2 = llvm::ConstantFP::get(context, llvm::APFloat((float)im));
+                type = complex_type_4;
+                f_name = "_lfortran_complex_sub_32";
+                break;
+            }
+            case 8: {
+                re2 = llvm::ConstantFP::get(context, llvm::APFloat(re));
+                im2 = llvm::ConstantFP::get(context, llvm::APFloat(im));
+                type = complex_type_8;
+                f_name = "_lfortran_complex_sub_64";
+                break;
+            }
+            default: {
+                throw CodeGenError("kind type is not supported");
+            }
+        }
+        tmp = complex_from_floats(re2, im2, type);
+        llvm::Value *zero_c = tmp;
+        tmp = lfortran_complex_bin_op(zero_c, c, f_name, type);
+    }
+
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
         int64_t val = x.m_n;
         int a_kind = ((ASR::Integer_t*)(&(x.m_type->base)))->m_kind;
@@ -3263,6 +3492,15 @@ public:
         tmp = llvm::ConstantInt::get(context, llvm::APInt(1, val));
     }
 
+    void visit_LogicalNot(const ASR::LogicalNot_t &x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        this->visit_expr_wrapper(x.m_arg, true);
+        llvm::Value *arg = tmp;
+        tmp = builder->CreateNot(arg);
+    }
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
         tmp = builder->CreateGlobalStringPtr(x.m_s);
@@ -3384,6 +3622,10 @@ public:
     }
 
     void visit_ComplexRe(const ASR::ComplexRe_t &x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
         this->visit_expr_wrapper(x.m_arg, true);
         ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
         int arg_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
@@ -3413,6 +3655,10 @@ public:
     }
 
     void visit_ComplexIm(const ASR::ComplexIm_t &x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
         ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
         int arg_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
         llvm::Function *fn = nullptr;
