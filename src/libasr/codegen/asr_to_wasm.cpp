@@ -95,10 +95,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::Variable_t *arg = LFortran::ASRUtils::EXPR2VAR(x.m_args[i]);
             LFORTRAN_ASSERT(LFortran::ASRUtils::is_arg_dummy(arg->m_intent));
-            if (arg->m_type->type == ASR::ttypeType::Integer) {
+            if (ASR::is_a<ASR::Integer_t>(*arg->m_type)) {
                 // checking for array is currently omitted
-
-                wasm::emit_b8(m_type_section, m_al, 0x7F);  // i32
+                bool is_int32 = ASR::down_cast<ASR::Integer_t>(arg->m_type)->m_kind == 4;
+                if (is_int32) {
+                    wasm::emit_b8(m_type_section, m_al, 0x7F);  // i32
+                } else {
+                    wasm::emit_b8(m_type_section, m_al, 0x7E);  // i64
+                }
                 m_var_name_idx_map[arg->m_name] = curIdx++;
             } else {
                 throw CodeGenError("Parameters other than integer not yet supported");
@@ -109,8 +113,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         uint32_t len_idx_type_section_return_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
         return_var = LFortran::ASRUtils::EXPR2VAR(x.m_return_var);
         if (ASRUtils::is_integer(*return_var->m_type)) {
-            bool is_int = ASR::down_cast<ASR::Integer_t>(return_var->m_type)->m_kind == 4;
-            if (is_int) {
+            bool is_int32 = ASR::down_cast<ASR::Integer_t>(return_var->m_type)->m_kind == 4;
+            if (is_int32) {
                 wasm::emit_b8(m_type_section, m_al, 0x7F);  // i32
             } else {
                 wasm::emit_b8(m_type_section, m_al, 0x7E);  // i64
@@ -127,9 +131,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
                 if (v->m_intent == LFortran::ASRUtils::intent_local || v->m_intent == LFortran::ASRUtils::intent_return_var) {
-                    if (v->m_type->type == ASR::ttypeType::Integer) {
+                    if (ASR::is_a<ASR::Integer_t>(*v->m_type)) {
                         wasm::emit_u32(m_code_section, m_al, 1);    // count of local vars of this type
-                        wasm::emit_b8(m_code_section, m_al, 0x7F);  // i32
+                        bool is_int32 = ASR::down_cast<ASR::Integer_t>(v->m_type)->m_kind == 4;
+                        if (is_int32) {
+                            wasm::emit_b8(m_code_section, m_al, 0x7F);  // i32
+                        } else {
+                            wasm::emit_b8(m_code_section, m_al, 0x7E);  // i64
+                        }
                         m_var_name_idx_map[v->m_name] = curIdx++;
                         local_vars_cnt++;
                     } else {
@@ -174,25 +183,51 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         this->visit_expr(*x.m_right);
 
         if (ASRUtils::is_integer(*x.m_type)) {
-            switch (x.m_op) {
-                case ASR::binopType::Add: {
-                    wasm::emit_i32_add(m_code_section, m_al);
-                    break;
-                };
-                case ASR::binopType::Sub: {
-                    wasm::emit_i32_sub(m_code_section, m_al);
-                    break;
-                };
-                case ASR::binopType::Mul: {
-                    wasm::emit_i32_mul(m_code_section, m_al);
-                    break;
-                };
-                case ASR::binopType::Div: {
-                    wasm::emit_i32_div(m_code_section, m_al);
-                    break;
-                };
-                default:
-                    throw CodeGenError("Binop: Pow Operation not yet implemented");
+            ASR::Integer_t *i = ASR::down_cast<ASR::Integer_t>(x.m_type);
+            if (i->m_kind == 4) {
+                switch (x.m_op) {
+                    case ASR::binopType::Add: {
+                        wasm::emit_i32_add(m_code_section, m_al);
+                        break;
+                    };
+                    case ASR::binopType::Sub: {
+                        wasm::emit_i32_sub(m_code_section, m_al);
+                        break;
+                    };
+                    case ASR::binopType::Mul: {
+                        wasm::emit_i32_mul(m_code_section, m_al);
+                        break;
+                    };
+                    case ASR::binopType::Div: {
+                        wasm::emit_i32_div(m_code_section, m_al);
+                        break;
+                    };
+                    default:
+                        throw CodeGenError("Binop: Pow Operation not yet implemented");
+                }
+            } else if (i->m_kind == 8) {
+                switch (x.m_op) {
+                    case ASR::binopType::Add: {
+                        wasm::emit_i64_add(m_code_section, m_al);
+                        break;
+                    };
+                    case ASR::binopType::Sub: {
+                        wasm::emit_i64_sub(m_code_section, m_al);
+                        break;
+                    };
+                    case ASR::binopType::Mul: {
+                        wasm::emit_i64_mul(m_code_section, m_al);
+                        break;
+                    };
+                    case ASR::binopType::Div: {
+                        wasm::emit_i64_div(m_code_section, m_al);
+                        break;
+                    };
+                    default:
+                        throw CodeGenError("Binop: Pow Operation not yet implemented");
+                }
+            } else {
+                throw CodeGenError("Binop: Integer kind not supported");
             }
         } else {
             throw CodeGenError("Binop: Only Integer type implemented");

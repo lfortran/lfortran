@@ -24,12 +24,16 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
     void visit_I32Const(int value) { src += indent + "i32.const " + std::to_string(value); }
 
     void visit_I32Add() { src += indent + "i32.add"; }
+    void visit_I64Add() { src += indent + "i64.add"; }
 
     void visit_I32Sub() { src += indent + "i32.sub"; }
+    void visit_I64Sub() { src += indent + "i64.sub"; }
 
     void visit_I32Mul() { src += indent + "i32.mul"; }
+    void visit_I64Mul() { src += indent + "i64.mul"; }
 
     void visit_I32DivS() { src += indent + "i32.div_s"; }
+    void visit_I64DivS() { src += indent + "i64.div_s"; }
 };
 
 }  // namespace WASM_INSTS_VISITOR
