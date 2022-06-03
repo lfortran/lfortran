@@ -319,6 +319,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "wasm1.f90"
+wat = true
+
+[[test]]
 filename = "stop.f90"
 asr = true
 llvm = true
