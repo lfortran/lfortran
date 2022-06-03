@@ -301,6 +301,7 @@ RUN(NAME associate_06 LABELS gfortran EXTRAFILES
 
 RUN(NAME bindc1 LABELS gfortran llvm)
 RUN(NAME bindc2 LABELS gfortran)
+RUN(NAME bindc3 LABELS gfortran llvm)
 RUN(NAME bindc_01 LABELS gfortran EXTRAFILES bindc_01b.f90 bindc_01c.c)
 
 RUN(NAME if_04 LABELS gfortran x86)
