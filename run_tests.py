@@ -51,6 +51,7 @@ def main():
         mod_to_asr = test.get("mod_to_asr", False)
         llvm = test.get("llvm", False)
         cpp = test.get("cpp", False)
+        wat = test.get("wat", False)
         obj = test.get("obj", False)
         x86 = test.get("x86", False)
         bin_ = test.get("bin", False)
@@ -127,6 +128,10 @@ def main():
 
         if cpp:
             run_test("cpp", "lfortran --no-color --show-cpp {infile}",
+                    filename, update_reference, extra_args)
+
+        if wat:
+            run_test("wat", "lfortran --no-color --show-wat {infile}",
                     filename, update_reference, extra_args)
 
         if obj:
