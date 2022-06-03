@@ -76,6 +76,8 @@ public:
         diag::Diagnostics &diagnostics);
     Result<std::string> get_asm(const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics);
+    Result<Vec<uint8_t>> get_wasm(const std::string &code, LocationManager &lm,
+        diag::Diagnostics &diagnostics);
     Result<std::string> get_wat(const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics);
     Result<std::string> get_cpp(const std::string &code, LocationManager &lm,

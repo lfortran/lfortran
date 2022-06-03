@@ -244,7 +244,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 };
 
 Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Allocator &al) {
-    
     ASRToWASMVisitor v(al);
     Vec<uint8_t> wasm_bytes;
     
@@ -297,74 +296,22 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
 }
 
 Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al, const std::string &filename, bool time_report) {
-    int time_pass_global = 0;
-    int time_pass_do_loops = 0;
     int time_visit_asr = 0;
-    int time_verify = 0;
     int time_save = 0;
 
-    ASRToWASMVisitor v(al);
-
-    {
-        auto t1 = std::chrono::high_resolution_clock::now();
-        pass_wrap_global_stmts_into_function(al, asr, "f");
-        auto t2 = std::chrono::high_resolution_clock::now();
-        time_pass_global = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    auto t1 = std::chrono::high_resolution_clock::now();
+    Result<Vec<uint8_t>> wasm = asr_to_wasm_bytes_stream(asr, al);
+    auto t2 = std::chrono::high_resolution_clock::now();
+    time_visit_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    if (!wasm.ok) {
+        Error error;
+        return error;
     }
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        pass_replace_do_loops(al, asr);
-        auto t2 = std::chrono::high_resolution_clock::now();
-        time_pass_do_loops = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    }
-
-    {
-        auto t1 = std::chrono::high_resolution_clock::now();
-        try {
-            wasm::emit_u32(v.m_type_section, v.m_al, 1);
-            wasm::emit_u32(v.m_func_section, v.m_al, 3);
-            wasm::emit_u32(v.m_export_section, v.m_al, 7);
-            wasm::emit_u32(v.m_code_section, v.m_al, 10);
-
-            uint32_t len_idx_type_section = wasm::emit_len_placeholder(v.m_type_section, v.m_al);
-            uint32_t len_idx_func_section = wasm::emit_len_placeholder(v.m_func_section, v.m_al);
-            uint32_t len_idx_export_section = wasm::emit_len_placeholder(v.m_export_section, v.m_al);
-            uint32_t len_idx_code_section = wasm::emit_len_placeholder(v.m_code_section, v.m_al);
-
-            v.visit_asr((ASR::asr_t &)asr);
-
-            wasm::fixup_len(v.m_type_section, len_idx_type_section);
-            wasm::fixup_len(v.m_func_section, len_idx_func_section);
-            wasm::fixup_len(v.m_export_section, len_idx_export_section);
-            wasm::fixup_len(v.m_code_section, len_idx_code_section);
-
-        } catch (const CodeGenError &e) {
-            Error error;
-            return error;
-        }
-        auto t2 = std::chrono::high_resolution_clock::now();
-        time_visit_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    }
-
-    // {
-    //     auto t1 = std::chrono::high_resolution_clock::now();
-    //     v.m_a.verify();
-    //     auto t2 = std::chrono::high_resolution_clock::now();
-    //     time_verify =
-    //     std::chrono::duration_cast<std::chrono::milliseconds>(t2 -
-    //     t1).count();
-    // }
-
-    {
-        auto t1 = std::chrono::high_resolution_clock::now();
-        // v.m_a.save_binary(filename);
         FILE *fp = fopen(filename.c_str(), "wb");
-        fwrite(v.m_preamble.data(), sizeof(uint8_t), v.m_preamble.size(), fp);
-        fwrite(v.m_type_section.data(), sizeof(uint8_t), v.m_type_section.size(), fp);
-        fwrite(v.m_func_section.data(), sizeof(uint8_t), v.m_func_section.size(), fp);
-        fwrite(v.m_export_section.data(), sizeof(uint8_t), v.m_export_section.size(), fp);
-        fwrite(v.m_code_section.data(), sizeof(uint8_t), v.m_code_section.size(), fp);
+        fwrite(wasm.result.data(), sizeof(uint8_t), wasm.result.size(), fp);
         fclose(fp);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_save = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
@@ -372,12 +319,9 @@ Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al, const std::s
 
     if (time_report) {
         std::cout << "Codegen Time report:" << std::endl;
-        std::cout << "Global:     " << std::setw(5) << time_pass_global << std::endl;
-        std::cout << "Do loops:   " << std::setw(5) << time_pass_do_loops << std::endl;
         std::cout << "ASR -> wasm: " << std::setw(5) << time_visit_asr << std::endl;
-        std::cout << "Verify:     " << std::setw(5) << time_verify << std::endl;
         std::cout << "Save:       " << std::setw(5) << time_save << std::endl;
-        int total = time_pass_global + time_pass_do_loops + time_visit_asr + time_verify + time_verify + time_save;
+        int total = time_visit_asr + time_save;
         std::cout << "Total:      " << std::setw(5) << total << std::endl;
     }
     return 0;
