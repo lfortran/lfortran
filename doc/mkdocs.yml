@@ -10,6 +10,17 @@ nav:
         - developer_tutorial.md
         - AST and ASR.md
         - CONTRIBUTING.md
+    - LFortran Intrinsics:
+        - Numeric Intrinsic Functions:
+            - numeric_example.md
+        - Mathematical Intrinsic Functions:
+            - intrinsics/mathematical/trigonometric/asin.md
+        - Bit Intrinsic Functions:
+            - bit_example.md
+        - Character Intrinsic Functions:
+            - character_example.md
+        - Miscellaneous Intrinsic Functions:
+            - misc_example.md
 
 # Until https://gitlab.com/lfortran/lfortran/issues/89 is fixed, we disable the
 # "Edit on GitLab" link:
@@ -20,7 +31,11 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
-
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
 extra_css:
     - ansi.css
 
