@@ -729,25 +729,6 @@ int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-int emit_wat(const std::string &infile, CompilerOptions &compiler_options)
-{
-    std::string input = read_file(infile);
-
-    LFortran::FortranEvaluator fe(compiler_options);
-    LFortran::LocationManager lm;
-    LFortran::diag::Diagnostics diagnostics;
-    lm.in_filename = infile;
-    LFortran::Result<std::string> r = fe.get_wat(input, lm, diagnostics);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
-    if (r.ok) {
-        std::cout << r.result;
-        return 0;
-    } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
-        return 1;
-    }
-}
-
 int compile_to_object_file(const std::string &infile,
         const std::string &outfile,
         bool assembly,
@@ -822,8 +803,27 @@ int compile_to_assembly_file(const std::string &infile,
 {
     return compile_to_object_file(infile, outfile, true, compiler_options);
 }
-#endif
+#endif // HAVE_LFORTRAN_LLVM
 
+
+int emit_wat(const std::string &infile, CompilerOptions &compiler_options)
+{
+    std::string input = read_file(infile);
+
+    LFortran::FortranEvaluator fe(compiler_options);
+    LFortran::LocationManager lm;
+    LFortran::diag::Diagnostics diagnostics;
+    lm.in_filename = infile;
+    LFortran::Result<std::string> r = fe.get_wat(input, lm, diagnostics);
+    std::cerr << diagnostics.render(input, lm, compiler_options);
+    if (r.ok) {
+        std::cout << r.result;
+        return 0;
+    } else {
+        LFORTRAN_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+}
 
 int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         bool time_report,
