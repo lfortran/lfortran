@@ -18,6 +18,14 @@ program wasm1
         return
     end function
 
+    function add64(x, y) result(r)
+        implicit none
+        integer(8), intent(in):: x, y
+        integer(8) :: r
+        r = x + y
+        return
+    end function
+
     function computeCircleArea(radius) result(area)
         implicit none
         integer, intent(in):: radius
