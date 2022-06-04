@@ -2145,6 +2145,10 @@ public:
     void instantiate_subroutine(const ASR::Subroutine_t &x){
         uint32_t h = get_hash((ASR::asr_t*)&x);
         llvm::Function *F = nullptr;
+        std::string sym_name = x.m_name;
+        if (sym_name == "main") {
+            sym_name = "_xx_lcompilers_changed_main_xx";
+        }
         if (llvm_symtab_fn.find(h) != llvm_symtab_fn.end()) {
             /*
             throw CodeGenError("Subroutine code already generated for '"
@@ -2158,10 +2162,10 @@ public:
                 if (x.m_bindc_name) {
                     fn_name = x.m_bindc_name;
                 } else {
-                    fn_name = x.m_name;
+                    fn_name = sym_name;
                 }
             } else {
-                fn_name = mangle_prefix + x.m_name;
+                fn_name = mangle_prefix + sym_name;
             }
             if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn_names[fn_name] = h;
@@ -2218,6 +2222,10 @@ public:
     void instantiate_function(const ASR::Function_t &x){
         uint32_t h = get_hash((ASR::asr_t*)&x);
         llvm::Function *F = nullptr;
+        std::string sym_name = x.m_name;
+        if (sym_name == "main") {
+            sym_name = "_xx_lcompilers_changed_main_xx";
+        }
         if (llvm_symtab_fn.find(h) != llvm_symtab_fn.end()) {
             /*
             throw CodeGenError("Function code already generated for '"
@@ -2231,10 +2239,10 @@ public:
                 if (x.m_bindc_name) {
                     fn_name = x.m_bindc_name;
                 } else {
-                    fn_name = x.m_name;
+                    fn_name = sym_name;
                 }
             } else {
-                fn_name = mangle_prefix + x.m_name;
+                fn_name = mangle_prefix + sym_name;
             }
             if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn_names[fn_name] = h;
