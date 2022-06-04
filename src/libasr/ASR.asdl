@@ -214,7 +214,6 @@ stmt
 expr
     = BoolOp(expr left, boolop op, expr right, ttype type, expr? value)
     | BinOp(expr left, binop op, expr right, ttype type, expr? value, expr? overloaded)
-    | StrOp(expr left, strop op, expr right, ttype type, expr? value)
     | UnaryOp(unaryop op, expr operand, ttype type, expr? value)
         -- Such as: (x, y+z), (3.0, 2.0) generally not known at compile time
     | ComplexConstructor(expr re, expr im, ttype type, expr? value)
@@ -228,9 +227,14 @@ expr
                     expr? increment, ttype type, expr? value)
     | IntegerConstant(int n, ttype type)
     | IntegerBOZ(int v, integerboz intboz_type, ttype? type)
+    | IntegerBitNot(expr arg, ttype type, expr? value)
+    | IntegerUnaryMinus(expr arg, ttype type, expr? value)
     | RealConstant(float r, ttype type)
+    | RealUnaryMinus(expr arg, ttype type, expr? value)
     | ComplexConstant(float re, float im, ttype type)
+    | ComplexUnaryMinus(expr arg, ttype type, expr? value)
     | LogicalConstant(bool value, ttype type)
+    | LogicalNot(expr arg, ttype type, expr? value)
 
     | ListConstant(expr* args, ttype type)
     | ListLen(expr arg, ttype type, expr? value)
@@ -246,7 +250,10 @@ expr
 
     | StringConstant(string s, ttype type)
     | StringConcat(expr left, expr right, ttype type, expr? value)
+    | StringRepeat(expr left, expr right, ttype type, expr? value)
     | StringLen(expr arg, ttype type, expr? value)
+    | StringItem(expr arg, expr idx, ttype type, expr? value)
+    | StringSection(expr arg, expr start, expr end, expr step, ttype type, expr? value)
 
     | DictConstant(expr* keys, expr* values, ttype type)
     | DictLen(expr arg, ttype type, expr? value)
@@ -265,6 +272,12 @@ expr
     | ComplexIm(expr arg, ttype type, expr? value)
     | DictItem(symbol a, expr key, expr? default, ttype type, expr? value)
     | CLoc(expr arg, ttype type, expr? value)
+    | ListItem(symbol a, expr pos, ttype type, expr? value)
+    | TupleItem(symbol a, expr pos, ttype type, expr? value)
+    | ListSection(expr a, array_index section, ttype type, expr? value)
+    | ListPop(symbol a, expr? index, ttype type, expr? value)
+    | DictPop(symbol a, expr key, ttype type, expr? value)
+    | SetPop(symbol a, ttype type, expr? value)
 
 
 -- `len` in Character:
@@ -272,6 +285,19 @@ expr
 --  -1 ... character(*), i.e., inferred at runtime
 --  -2 ... character(:), allocatable (possibly we might use -1 for that also)
 --  -3 ... character(n+3), i.e., a runtime expression stored in `len_expr`
+
+-- kind: The `kind` member selects the kind of a given type. We currently
+-- support the following:
+-- Integer kinds: 1 (i8), 2 (i16), 4 (i32), 8 (i64)
+-- Real kinds: 4 (f32), 8 (f64)
+-- Complex kinds: 4 (c32), 8 (c64)
+-- Character kinds: 1 (utf8 string)
+-- Logical kinds: 1, 2, 4: (boolean represented by 1, 2, 4 bytes; the default
+--     kind is 4, just like the default integer kind, consistent with Python
+--     and Fortran: in Python "Booleans in Python are implemented as a subclass
+--     of integers", in Fortran the "default logical kind has the same storage
+--     size as the default integer"; we currently use kind=4 as default
+--     integer, so we also use kind=4 for the default logical.)
 
 ttype
     = Integer(int kind, dimension* dims)
@@ -293,8 +319,6 @@ boolop = And | Or | Xor | NEqv | Eqv
 binop = Add | Sub | Mul | Div | Pow
 
 unaryop = Invert | Not | UAdd | USub
-
-strop = Repeat
 
 cmpop = Eq | NotEq | Lt | LtE | Gt | GtE
 

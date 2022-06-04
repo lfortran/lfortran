@@ -174,7 +174,16 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t)
             return "str";
         }
         case ASR::ttypeType::Tuple: {
-            return "tuple";
+            ASR::Tuple_t *tup = ASR::down_cast<ASR::Tuple_t>(t);
+            std::string result = "tuple[";
+            for (size_t i=0; i<tup->n_type; i++) {
+                result += type_to_str_python(tup->m_type[i]);
+                if (i+1 != tup->n_type) {
+                    result += ", ";
+                }
+            }
+            result += "]";
+            return result;
         }
         case ASR::ttypeType::Set: {
             ASR::Set_t *s = (ASR::Set_t *)t;
@@ -410,6 +419,18 @@ static inline bool is_intrinsic_procedure(const T *fn) {
     return false;
 }
 
+static inline bool is_intrinsic_symbol(const ASR::symbol_t *fn) {
+    const ASR::symbol_t *sym = fn;
+    ASR::Module_t *m = get_sym_module0(sym);
+    if (m != nullptr) {
+        if (m->m_intrinsic) {
+            return true;
+        }
+        if (startswith(m->m_name, "lfortran_intrinsic")) return true;
+    }
+    return false;
+}
+
 // Returns true if the Function is intrinsic, otherwise false
 // This version uses the `intrinsic` member of `Module`, so it
 // should be used instead of is_intrinsic_procedure
@@ -421,18 +442,6 @@ static inline bool is_intrinsic_function2(const ASR::Function_t *fn) {
             fn->m_abi == ASR::abiType::Intrinsic) {
                 return true;
         }
-    }
-    return false;
-}
-
-static inline bool is_intrinsic_symbol(const ASR::symbol_t *fn) {
-    const ASR::symbol_t *sym = fn;
-    ASR::Module_t *m = get_sym_module0(sym);
-    if (m != nullptr) {
-        if (m->m_intrinsic) {
-            return true;
-        }
-        if (startswith(m->m_name, "lfortran_intrinsic")) return true;
     }
     return false;
 }
@@ -871,6 +880,11 @@ inline int extract_dimensions_from_ttype(ASR::ttype_t *x,
             n_dims = extract_dimensions_from_ttype(ASR::down_cast<ASR::Pointer_t>(x)->m_type, m_dims);
             break;
         }
+        case ASR::ttypeType::List: {
+            n_dims = 0;
+            m_dims = nullptr;
+            break;
+        }
         case ASR::ttypeType::CPtr: {
             n_dims = 0;
             m_dims = nullptr;
@@ -1071,6 +1085,20 @@ inline bool is_same_type_pointer(ASR::ttype_t* source, ASR::ttype_t* dest) {
                     ASR::ttype_t *y_value_type = ASR::down_cast<ASR::Dict_t>(y)->m_value_type;
                     return (check_equal_type(x_key_type, y_key_type) &&
                             check_equal_type(x_value_type, y_value_type));
+                } else if (ASR::is_a<ASR::Tuple_t>(*x) && ASR::is_a<ASR::Tuple_t>(*y)) {
+                    ASR::Tuple_t *a = ASR::down_cast<ASR::Tuple_t>(x);
+                    ASR::Tuple_t *b = ASR::down_cast<ASR::Tuple_t>(y);
+                    if(a->n_type != b->n_type) {
+                        return false;
+                    }
+                    bool result = true;
+                    for (size_t i=0; i<a->n_type; i++) {
+                        result = result && check_equal_type(a->m_type[i], b->m_type[i]);
+                        if (!result) {
+                            return false;
+                        }
+                    }
+                    return result;
                 }
                 if( x->type == y->type ) {
                     return true;
@@ -1191,6 +1219,10 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
     }
 
 };
+
+ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
+        ASR::expr_t* a_arg, ASR::cast_kindType a_kind, ASR::ttype_t* a_type);
+
 
 } // namespace ASRUtils
 

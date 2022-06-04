@@ -20,27 +20,27 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 namespace {
 
 void main2() {
-        int i;
-        float r;
-        float x;
-        r = 1.500000;
-        i = 2;
-        x = (float)(i*i);
-        x = r*r;
-        x = (float)(i)*r;
-        x = r*(float)(i);
-        x = (float)(i + i);
-        x = r + r;
-        x = r + (float)(i);
-        x = (float)(i) + r;
-        x = (float)(i - i);
-        x = r - r;
-        x = r - (float)(i);
-        x = (float)(i) - r;
-        x = (float)(i/i);
-        x = r/r;
-        x = (float)(i)/r;
-        x = r/(float)(i);
+    int i;
+    float r;
+    float x;
+    r = 1.500000;
+    i = 2;
+    x = (float)(i*i);
+    x = r*r;
+    x = (float)(i)*r;
+    x = r*(float)(i);
+    x = (float)(i + i);
+    x = r + r;
+    x = r + (float)(i);
+    x = (float)(i) + r;
+    x = (float)(i - i);
+    x = r - r;
+    x = r - (float)(i);
+    x = (float)(i) - r;
+    x = (float)(i/i);
+    x = r/r;
+    x = (float)(i)/r;
+    x = r/(float)(i);
 }
 
 }

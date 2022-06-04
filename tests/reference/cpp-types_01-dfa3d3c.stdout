@@ -20,10 +20,10 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 namespace {
 
 void main2() {
-        float r;
-        r = 1.000000;
-        r = 1.500000;
-        r = 1.000000;
+    float r;
+    r = 1.000000;
+    r = 1.500000;
+    r = 1.000000;
 }
 
 }
