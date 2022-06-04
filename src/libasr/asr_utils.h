@@ -880,6 +880,11 @@ inline int extract_dimensions_from_ttype(ASR::ttype_t *x,
             n_dims = extract_dimensions_from_ttype(ASR::down_cast<ASR::Pointer_t>(x)->m_type, m_dims);
             break;
         }
+        case ASR::ttypeType::List: {
+            n_dims = 0;
+            m_dims = nullptr;
+            break;
+        }
         case ASR::ttypeType::CPtr: {
             n_dims = 0;
             m_dims = nullptr;
@@ -1214,6 +1219,10 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
     }
 
 };
+
+ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
+        ASR::expr_t* a_arg, ASR::cast_kindType a_kind, ASR::ttype_t* a_type);
+
 
 } // namespace ASRUtils
 

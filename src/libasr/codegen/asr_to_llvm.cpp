@@ -1579,12 +1579,18 @@ public:
                 }
                 break;
             }
+            case (ASR::ttypeType::List) : {
+                //ASR::List_t* v_type = down_cast<ASR::List_t>(v->m_type);
+                //ASR::ttype_t *el_type = v_type->m_type;
+                llvm_type = list_type;
+                break;
+            }
             case (ASR::ttypeType::CPtr) : {
                 llvm_type = llvm::Type::getVoidTy(context)->getPointerTo();
                 break;
             }
             default :
-                throw CodeGenError("Support for type" + ASRUtils::type_to_str(asr_type) +
+                throw CodeGenError("Support for type " + ASRUtils::type_to_str(asr_type) +
                                    " not yet implemented.");
         }
         return llvm_type;
