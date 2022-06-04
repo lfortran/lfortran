@@ -44,16 +44,16 @@ float sum(const Kokkos::View<const float*> &a)
 
 
 void main2() {
-        Kokkos::View<float[3]> a("a");
-        float b;
-        a[1-1] = (float)(3);
-        a[2-1] = (float)(2);
-        a[3-1] = (float)(1);
-        b = sum(a);
-        if (abs(b - (float)(6)) > 0.000010) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
+    Kokkos::View<float[3]> a("a");
+    float b;
+    a[1-1] = (float)(3);
+    a[2-1] = (float)(2);
+    a[3-1] = (float)(1);
+    b = sum(a);
+    if (abs(b - (float)(6)) > 0.000010) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
 }
 
 }

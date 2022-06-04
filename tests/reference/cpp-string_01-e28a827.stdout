@@ -20,8 +20,8 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 namespace {
 
 void main2() {
-        std::string my_name="Dominic";
-        std::cout << "My name is " << my_name << std::endl;
+    std::string my_name="Dominic";
+    std::cout << "My name is " << my_name << std::endl;
 }
 
 }

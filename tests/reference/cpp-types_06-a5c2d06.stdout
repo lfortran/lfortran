@@ -20,106 +20,106 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 namespace {
 
 void main2() {
-        int i;
-        float r;
-        r = (float)(2);
-        i = 2;
-        if (i < i) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (r < r) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (r < (float)(i)) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if ((float)(i) < r) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (i > i) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (r > r) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (r > (float)(i)) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if ((float)(i) > r) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (i != i) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (r != r) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (r != (float)(i)) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if ((float)(i) != r) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (i + 1 <= i) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (r + (float)(1) <= r) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (r + (float)(1) <= (float)(i)) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if ((float)(i + 1) <= r) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (i >= i + 1) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (r >= r + (float)(1)) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (r >= (float)(i + 1)) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if ((float)(i) >= r + (float)(1)) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (i == i + 1) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (r == r + (float)(1)) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if (r == (float)(i + 1)) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
-        if ((float)(i) == r + (float)(1)) {
-            std::cerr << "ERROR STOP" << std::endl;
-            exit(1);
-        }
+    int i;
+    float r;
+    r = (float)(2);
+    i = 2;
+    if (i < i) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (r < r) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (r < (float)(i)) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if ((float)(i) < r) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (i > i) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (r > r) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (r > (float)(i)) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if ((float)(i) > r) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (i != i) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (r != r) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (r != (float)(i)) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if ((float)(i) != r) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (i + 1 <= i) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (r + (float)(1) <= r) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (r + (float)(1) <= (float)(i)) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if ((float)(i + 1) <= r) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (i >= i + 1) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (r >= r + (float)(1)) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (r >= (float)(i + 1)) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if ((float)(i) >= r + (float)(1)) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (i == i + 1) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (r == r + (float)(1)) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (r == (float)(i + 1)) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if ((float)(i) == r + (float)(1)) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
 }
 
 }

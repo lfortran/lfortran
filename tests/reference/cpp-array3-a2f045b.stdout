@@ -20,10 +20,10 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 namespace {
 
 void main2() {
-        Kokkos::View<float[3]> a("a");
-        Kokkos::View<float[3]> b("b");
-        a = (float)(from_std_vector<float>({1, 2, 3}));
-        b = (float)(from_std_vector<float>({1, 2, 3}));
+    Kokkos::View<float[3]> a("a");
+    Kokkos::View<float[3]> b("b");
+    a = (float)(from_std_vector<float>({1, 2, 3}));
+    b = (float)(from_std_vector<float>({1, 2, 3}));
 }
 
 }

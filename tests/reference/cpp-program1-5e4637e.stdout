@@ -20,10 +20,10 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 namespace {
 
 void main2() {
-        int i;
-        i = 5;
-        std::cout << i << std::endl;
-        std::cout << i + 1 << std::endl;
+    int i;
+    i = 5;
+    std::cout << i << std::endl;
+    std::cout << i + 1 << std::endl;
 }
 
 }
