@@ -41,7 +41,7 @@ return:                                           ; preds = %.entry
   ret void
 }
 
-define void @__module_class_circle2_main() {
+define void @__module_class_circle2__xx_lcompilers_changed_main_xx() {
 .entry:
   %c = alloca %circle, align 8
   %0 = getelementptr %circle, %circle* %c, i32 0, i32 0
@@ -62,7 +62,7 @@ declare void @_lfortran_printf(i8*, ...)
 
 define i32 @main() {
 .entry:
-  call void @__module_class_circle2_main()
+  call void @__module_class_circle2__xx_lcompilers_changed_main_xx()
   ret i32 0
 }
 
