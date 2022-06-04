@@ -174,8 +174,8 @@ def main(argv):
     elif len(argv) == 1:
         print("Assuming default values of wasm_instructions.txt and wasm_visitor.h")
         here = os.path.dirname(__file__)
-        def_file = os.path.join(here, "..", "src", "libasr", "wasm_instructions.txt")
-        out_file = os.path.join(here, "..", "src", "libasr", "wasm_visitor.h")
+        def_file = os.path.join(here, "wasm_instructions.txt")
+        out_file = os.path.join(here, "wasm_visitor.h")
     else:
         print("invalid arguments")
         return 2
