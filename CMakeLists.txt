@@ -88,6 +88,7 @@ find_package(StaticZLIB REQUIRED)
 set(WITH_LLVM no CACHE BOOL "Build with LLVM support")
 set(WITH_TARGET_AARCH64 no CACHE BOOL "Enable target AARCH64")
 set(WITH_TARGET_X86 no CACHE BOOL "Enable target X86")
+set(WITH_TARGET_WASM no CACHE BOOL "Enable target WebAssembly")
 if (WITH_LLVM)
     set(LFORTRAN_LLVM_COMPONENTS core support mcjit orcjit native asmparser asmprinter)
     find_package(LLVM REQUIRED)
@@ -121,6 +122,15 @@ if (WITH_LLVM)
         add_definitions("-DHAVE_TARGET_X86=1")
     endif()
 
+    if (WITH_TARGET_WASM)
+        if (NOT ("${LLVM_TARGETS_TO_BUILD}" MATCHES "WebAssembly"))
+            message(FATAL_ERROR "The selected LLVM library doesn't have support for WebAssembly targets")
+        endif()
+
+        list(APPEND LFORTRAN_LLVM_COMPONENTS webassemblyasmparser webassemblycodegen webassemblydesc webassemblydisassembler webassemblyinfo)
+        add_definitions("-DHAVE_TARGET_WASM=1")
+    endif()
+    
     llvm_map_components_to_libnames(llvm_libs ${LFORTRAN_LLVM_COMPONENTS})
     unset(LFORTRAN_LLVM_COMPONENTS)
 
@@ -267,6 +277,7 @@ message("WITH_LFORTRAN_BINARY_MODFILES: ${WITH_LFORTRAN_BINARY_MODFILES}")
 message("WITH_RUNTIME_LIBRARY: ${WITH_RUNTIME_LIBRARY}")
 message("WITH_TARGET_AARCH64: ${WITH_TARGET_AARCH64}")
 message("WITH_TARGET_X86: ${WITH_TARGET_X86}")
+message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
 
 
 add_subdirectory(src)
