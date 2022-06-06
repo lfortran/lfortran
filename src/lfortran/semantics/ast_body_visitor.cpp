@@ -1007,9 +1007,20 @@ public:
         handle_intrinsic_node_args<AST::SubroutineCall_t>(
             x, args, kwarg_names, 2, 3, std::string("c_f_ptr"));
         ASR::expr_t *cptr = args[0], *fptr = args[1], *shape = args[2];
-        if(!ASRUtils::is_array(ASRUtils::expr_type(fptr)) && shape) {
+        ASR::ttype_t* fptr_type = ASRUtils::expr_type(fptr);
+        bool is_fptr_array = ASRUtils::is_array(fptr_type);
+        bool is_ptr = ASR::is_a<ASR::Pointer_t>(*fptr_type);
+        if( !is_ptr ) {
+            throw SemanticError("fptr is not a pointer.", fptr->base.loc);
+        }
+        if(!is_fptr_array && shape) {
             throw SemanticError("shape argument specified in c_f_pointer "
                                 "even though fptr is not an array.",
+                                shape->base.loc);
+        }
+        if(is_fptr_array && !shape) {
+            throw SemanticError("shape argument not specified in c_f_pointer "
+                                "even though fptr is an array.",
                                 shape->base.loc);
         }
         ASR::dimension_t* shape_dims;
