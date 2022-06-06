@@ -2552,21 +2552,62 @@ public:
     void visit_CFPointer(const ASR::CFPointer_t& x) {
         ASR::expr_t *cptr = x.m_cptr, *fptr = x.m_fptr, *shape = x.m_shape;
         if( shape ) {
-            throw CodeGenError("Arrays not yet supported for "
-                               "fptr argument in c_f_pointer.");
+            uint64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 1;
+            this->visit_expr(*cptr);
+            llvm::Value* llvm_cptr = tmp;
+            ptr_loads = 0;
+            this->visit_expr(*fptr);
+            llvm::Value* llvm_fptr = tmp;
+            ptr_loads = ptr_loads_copy;
+            this->visit_expr(*shape);
+            llvm::Value* llvm_shape = tmp;
+            llvm::Type* llvm_fptr_type = llvm_fptr->getType();
+            llvm_fptr_type = static_cast<llvm::PointerType*>(llvm_fptr_type)->getElementType();
+            llvm_fptr_type = static_cast<llvm::PointerType*>(llvm_fptr_type)->getElementType();
+            llvm::Value* fptr_array = builder->CreateAlloca(llvm_fptr_type);
+            ASR::dimension_t* fptr_dims;
+            int fptr_rank = ASRUtils::extract_dimensions_from_ttype(
+                                ASRUtils::expr_type(fptr),
+                                fptr_dims);
+            llvm::Value* llvm_rank = llvm::ConstantInt::get(context, llvm::APInt(32, fptr_rank));
+            llvm::Value* dim_des = builder->CreateAlloca(arr_descr->get_dimension_descriptor_type(), llvm_rank);
+            builder->CreateStore(dim_des, arr_descr->get_pointer_to_dimension_descriptor_array(fptr_array, false));
+            arr_descr->set_rank(fptr_array, llvm_rank);
+            builder->CreateStore(fptr_array, llvm_fptr);
+            llvm_fptr = fptr_array;
+            llvm::Value* fptr_data = arr_descr->get_pointer_to_data(llvm_fptr);
+            llvm::Value* fptr_des = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_fptr);
+            llvm::Value* shape_data = builder->CreateLoad(arr_descr->get_pointer_to_data(llvm_shape));
+            llvm_cptr = builder->CreateBitCast(llvm_cptr,
+                            static_cast<llvm::PointerType*>(fptr_data->getType())->getElementType());
+            builder->CreateStore(llvm_cptr, fptr_data);
+            for( int i = 0; i < fptr_rank; i++ ) {
+                llvm::Value* curr_dim = llvm::ConstantInt::get(context, llvm::APInt(32, i));
+                llvm::Value* desi = arr_descr->get_pointer_to_dimension_descriptor(fptr_des, curr_dim);
+                llvm::Value* desi_lb = arr_descr->get_lower_bound(desi, false);
+                llvm::Value* desi_ub = arr_descr->get_upper_bound(desi, false);
+                llvm::Value* desi_size = arr_descr->get_dimension_size(fptr_des, curr_dim, false);
+                llvm::Value* i32_one = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                llvm::Value* new_lb = i32_one;
+                llvm::Value* new_ub = builder->CreateLoad(llvm_utils->create_ptr_gep(shape_data, i));
+                builder->CreateStore(new_lb, desi_lb);
+                builder->CreateStore(new_ub, desi_ub);
+                builder->CreateStore(builder->CreateAdd(builder->CreateSub(new_ub, new_lb), i32_one), desi_size);
+            }
+        } else {
+            uint64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 1;
+            this->visit_expr(*cptr);
+            llvm::Value* llvm_cptr = tmp;
+            ptr_loads = 0;
+            this->visit_expr(*fptr);
+            llvm::Value* llvm_fptr = tmp;
+            ptr_loads = ptr_loads_copy;
+            llvm_cptr = builder->CreateBitCast(llvm_cptr,
+                            static_cast<llvm::PointerType*>(llvm_fptr->getType())->getElementType());
+            builder->CreateStore(llvm_cptr, llvm_fptr);
         }
-
-        uint64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 1;
-        this->visit_expr(*cptr);
-        llvm::Value* llvm_cptr = tmp;
-        ptr_loads = 0;
-        this->visit_expr(*fptr);
-        llvm::Value* llvm_fptr = tmp;
-        ptr_loads = ptr_loads_copy;
-        llvm_cptr = builder->CreateBitCast(llvm_cptr,
-                        static_cast<llvm::PointerType*>(llvm_fptr->getType())->getElementType());
-        builder->CreateStore(llvm_cptr, llvm_fptr);
     }
 
     void visit_Associate(const ASR::Associate_t& x) {
@@ -3557,10 +3598,10 @@ public:
                 return;
             }
         }
-        tmp = CreateLoad(x_v);
-
         if( arr_descr->is_array(x_v) ) {
             tmp = x_v;
+        } else {
+            tmp = CreateLoad(x_v);
         }
     }
 
@@ -4636,7 +4677,12 @@ public:
             return ;
         }
         int output_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = ptr_loads_copy -
+                    (ASRUtils::expr_type(x.m_v)->type ==
+                     ASR::ttypeType::Pointer);
         visit_expr_wrapper(x.m_v);
+        ptr_loads = ptr_loads_copy;
         llvm::Value* llvm_arg = tmp;
         llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_arg);
         if( x.m_dim ) {
