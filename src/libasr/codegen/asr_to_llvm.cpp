@@ -2583,11 +2583,11 @@ public:
                             static_cast<llvm::PointerType*>(fptr_data->getType())->getElementType());
             builder->CreateStore(llvm_cptr, fptr_data);
             for( int i = 0; i < fptr_rank; i++ ) {
-                // TODO: Use methods from arr_descr
-                llvm::Value* desi = llvm_utils->create_ptr_gep(fptr_des, i);
-                llvm::Value* desi_lb = llvm_utils->create_gep(desi, 1);
-                llvm::Value* desi_ub = llvm_utils->create_gep(desi, 2);
-                llvm::Value* desi_size = llvm_utils->create_gep(desi, 3);
+                llvm::Value* curr_dim = llvm::ConstantInt::get(context, llvm::APInt(32, i));
+                llvm::Value* desi = arr_descr->get_pointer_to_dimension_descriptor(fptr_des, curr_dim);
+                llvm::Value* desi_lb = arr_descr->get_lower_bound(desi, false);
+                llvm::Value* desi_ub = arr_descr->get_upper_bound(desi, false);
+                llvm::Value* desi_size = arr_descr->get_dimension_size(fptr_des, curr_dim, false);
                 llvm::Value* i32_one = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 llvm::Value* new_lb = i32_one;
                 llvm::Value* new_ub = builder->CreateLoad(llvm_utils->create_ptr_gep(shape_data, i));
