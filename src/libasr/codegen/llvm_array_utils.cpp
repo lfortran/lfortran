@@ -259,8 +259,12 @@ namespace LFortran {
         }
 
         llvm::Value* SimpleCMODescriptor::
-        get_pointer_to_dimension_descriptor_array(llvm::Value* arr) {
-            return LLVM::CreateLoad(*builder, llvm_utils->create_gep(arr, 2));
+        get_pointer_to_dimension_descriptor_array(llvm::Value* arr, bool load) {
+            llvm::Value* dim_des_arr_ptr = llvm_utils->create_gep(arr, 2);
+            if( !load ) {
+                return dim_des_arr_ptr;
+            }
+            return LLVM::CreateLoad(*builder, dim_des_arr_ptr);
         }
 
         llvm::Value* SimpleCMODescriptor::
@@ -270,6 +274,12 @@ namespace LFortran {
                 return rank_ptr;
             }
             return LLVM::CreateLoad(*builder, rank_ptr);
+        }
+
+        void SimpleCMODescriptor::
+        set_rank(llvm::Value* arr, llvm::Value* rank) {
+            llvm::Value* rank_ptr = llvm_utils->create_gep(arr, 4);
+            LLVM::CreateStore(*builder, rank, rank_ptr);
         }
 
         llvm::Value* SimpleCMODescriptor::

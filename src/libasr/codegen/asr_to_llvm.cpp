@@ -2556,15 +2556,26 @@ public:
             ptr_loads = 1;
             this->visit_expr(*cptr);
             llvm::Value* llvm_cptr = tmp;
+            ptr_loads = 0;
             this->visit_expr(*fptr);
             llvm::Value* llvm_fptr = tmp;
             ptr_loads = ptr_loads_copy;
             this->visit_expr(*shape);
             llvm::Value* llvm_shape = tmp;
+            llvm::Type* llvm_fptr_type = llvm_fptr->getType();
+            llvm_fptr_type = static_cast<llvm::PointerType*>(llvm_fptr_type)->getElementType();
+            llvm_fptr_type = static_cast<llvm::PointerType*>(llvm_fptr_type)->getElementType();
+            llvm::Value* fptr_array = builder->CreateAlloca(llvm_fptr_type);
             ASR::dimension_t* fptr_dims;
             int fptr_rank = ASRUtils::extract_dimensions_from_ttype(
                                 ASRUtils::expr_type(fptr),
                                 fptr_dims);
+            llvm::Value* llvm_rank = llvm::ConstantInt::get(context, llvm::APInt(32, fptr_rank));
+            llvm::Value* dim_des = builder->CreateAlloca(arr_descr->get_dimension_descriptor_type(), llvm_rank);
+            builder->CreateStore(dim_des, arr_descr->get_pointer_to_dimension_descriptor_array(fptr_array, false));
+            arr_descr->set_rank(fptr_array, llvm_rank);
+            builder->CreateStore(fptr_array, llvm_fptr);
+            llvm_fptr = fptr_array;
             llvm::Value* fptr_data = arr_descr->get_pointer_to_data(llvm_fptr);
             llvm::Value* fptr_des = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_fptr);
             llvm::Value* shape_data = builder->CreateLoad(arr_descr->get_pointer_to_data(llvm_shape));
@@ -2572,6 +2583,7 @@ public:
                             static_cast<llvm::PointerType*>(fptr_data->getType())->getElementType());
             builder->CreateStore(llvm_cptr, fptr_data);
             for( int i = 0; i < fptr_rank; i++ ) {
+                // TODO: Use methods from arr_descr
                 llvm::Value* desi = llvm_utils->create_ptr_gep(fptr_des, i);
                 llvm::Value* desi_lb = llvm_utils->create_gep(desi, 1);
                 llvm::Value* desi_ub = llvm_utils->create_gep(desi, 2);
@@ -4665,7 +4677,12 @@ public:
             return ;
         }
         int output_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = ptr_loads_copy -
+                    (ASRUtils::expr_type(x.m_v)->type ==
+                     ASR::ttypeType::Pointer);
         visit_expr_wrapper(x.m_v);
+        ptr_loads = ptr_loads_copy;
         llvm::Value* llvm_arg = tmp;
         llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_arg);
         if( x.m_dim ) {

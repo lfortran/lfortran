@@ -215,13 +215,16 @@ namespace LFortran {
                 virtual
                 llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false) = 0;
 
+                virtual
+                void set_rank(llvm::Value* arr, llvm::Value* rank) = 0;
+
                 /*
                 * Returns pointer to dimension descriptor array
                 * in the input array descriptor according to the rules
                 * implemented by current class.
                 */
                 virtual
-                llvm::Value* get_pointer_to_dimension_descriptor_array(llvm::Value* arr) = 0;
+                llvm::Value* get_pointer_to_dimension_descriptor_array(llvm::Value* arr, bool load=true) = 0;
 
                 /*
                 * Returns pointer to the dimension descriptor
@@ -326,6 +329,9 @@ namespace LFortran {
                 llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false);
 
                 virtual
+                void set_rank(llvm::Value* arr, llvm::Value* rank);
+
+                virtual
                 llvm::Value* get_offset(llvm::Value* dim_des);
 
                 virtual
@@ -339,7 +345,7 @@ namespace LFortran {
                     llvm::Value* dim);
 
                 virtual
-                llvm::Value* get_pointer_to_dimension_descriptor_array(llvm::Value* arr);
+                llvm::Value* get_pointer_to_dimension_descriptor_array(llvm::Value* arr, bool load=true);
 
                 virtual
                 llvm::Value* get_pointer_to_dimension_descriptor(llvm::Value* dim_des_arr,
