@@ -10,13 +10,14 @@ void driver() {
         A[i] = i;
     }
     printf("driver: calling callback(12, A)\n");
-    callback(12, A);
+    int n = 12;
+    callback(&n, A);
 }
 
-void print_ptr(int n, float *A) {
-    printf("print_ptr: n = %d\n", n);
+void print_ptr(int *n, float *A) {
+    printf("print_ptr: n = %d\n", *n);
     printf("[ ");
-    for (int i=0; i < n; i++) {
+    for (int i=0; i < *n; i++) {
         printf("%f ", A[i]);
     }
     printf("]\n");
