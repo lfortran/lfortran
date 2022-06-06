@@ -65,6 +65,9 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 
+// Uncomment for ASR printing below
+//#include <lfortran/pickle.h>
+
 #if LLVM_VERSION_MAJOR >= 11
 #    define FIXED_VECTOR_TYPE llvm::FixedVectorType
 #else
@@ -4778,8 +4781,6 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     ASRToLLVMVisitor v(al, context, platform, diagnostics);
     pass_wrap_global_stmts_into_function(al, asr, run_fn);
 
-    // Uncomment for debugging the ASR after the transformation
-    // std::cout << pickle(asr) << std::endl;
     pass_replace_class_constructor(al, asr);
     pass_replace_implied_do_loops(al, asr, rl_path);
     pass_replace_arr_slice(al, asr, rl_path);
@@ -4807,6 +4808,9 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         pass_replace_fma(al, asr, rl_path);
         pass_inline_function_calls(al, asr, rl_path);
     }
+
+    // Uncomment for debugging the ASR after the transformation
+    //std::cout << pickle(asr, true, true, true) << std::endl;
 
     v.nested_func_types = pass_find_nested_vars(asr, context,
         v.nested_globals, v.nested_call_out, v.nesting_map);
