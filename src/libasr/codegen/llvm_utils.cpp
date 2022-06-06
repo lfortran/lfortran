@@ -13,10 +13,7 @@ namespace LFortran {
         }
 
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y) {
-            llvm::Type *tx = x->getType();
-            llvm::Type *ty = y->getType();
-            LFORTRAN_ASSERT(!tx->isPointerTy());
-            LFORTRAN_ASSERT(ty->isPointerTy());
+            LFORTRAN_ASSERT(y->getType()->isPointerTy());
             return builder.CreateStore(x, y);
         }
 
