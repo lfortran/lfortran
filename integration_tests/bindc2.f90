@@ -34,5 +34,4 @@ if( lbound(x, 2) /= 1) error stop
 if( ubound(x, 2) /= 3) error stop
 if( size(x) /= 6 ) error stop
 
-! print *, c_loc(x(idx))
 end program

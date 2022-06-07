@@ -1,4 +1,4 @@
-program bindc2
+program bindc3
 use iso_c_binding, only: c_loc, c_ptr, c_f_pointer
 type(c_ptr) :: queries
 integer :: idx = 1
