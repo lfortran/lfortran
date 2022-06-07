@@ -1119,8 +1119,7 @@ public:
             args.push_back(al, ai);
         }
 
-        ASR::ttype_t *type;
-        type = ASRUtils::type_get_past_pointer(ASR::down_cast<ASR::Variable_t>(f2)->m_type);
+        ASR::ttype_t *type = ASRUtils::type_get_past_pointer(ASR::down_cast<ASR::Variable_t>(f2)->m_type);
         ASR::expr_t *arr_ref_val = nullptr;
         bool all_args_eval = ASRUtils::all_args_evaluated(args);
         for( auto& a : args ) {
