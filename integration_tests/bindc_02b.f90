@@ -7,8 +7,8 @@ interface
     subroutine driver() bind(c)
     end subroutine
 
-    ! void print_ptr(int n, float *A);
-    subroutine print_ptr(n, A) bind(c)
+    ! void print_ptr1(int n, float *A);
+    subroutine print_ptr1(n, A) bind(c)
     import :: c_ptr, c_int
     integer(c_int), value, intent(in) :: n
     type(c_ptr), value, intent(in) :: A
@@ -25,18 +25,18 @@ end interface
 contains
 
     ! void callback(int n, float *A);
-    subroutine callback(n, A) bind(c)
+    subroutine callback1(n, A) bind(c)
     integer(c_int), value, intent(in) :: n
     type(c_ptr), value, intent(in) :: A
-    print *, "callback: calling print_ptr(n, A), n =", n
-    call print_ptr(n, A)
+    print *, "callback1: calling print_ptr1(n, A), n =", n
+    call print_ptr1(n, A)
     end subroutine
 
     ! void callback2(int *n, float *A);
     subroutine callback2(n, A) bind(c)
     integer(c_int), intent(in) :: n
     type(c_ptr), value, intent(in) :: A
-    print *, "callback: calling print_ptr(n, A), n =", n
+    print *, "callback2: calling print_ptr2(n, A), n =", n
     call print_ptr2(n, A)
     end subroutine
 
