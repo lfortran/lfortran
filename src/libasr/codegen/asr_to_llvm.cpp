@@ -4282,12 +4282,14 @@ public:
                                             } else if (is_a<ASR::CPtr_t>(*arg_type)) {
                                                 // pass
                                             } else {
-                                                // Dereference the pointer argument (unless it is a CPtr)
-                                                // to pass by value
-                                                // E.g.:
-                                                // i32* -> i32
-                                                // {double,double}* -> {double,double}
-                                                tmp = CreateLoad(tmp);
+                                                if (!arg->m_value_attr) {
+                                                    // Dereference the pointer argument (unless it is a CPtr)
+                                                    // to pass by value
+                                                    // E.g.:
+                                                    // i32* -> i32
+                                                    // {double,double}* -> {double,double}
+                                                    tmp = CreateLoad(tmp);
+                                                }
                                             }
                                         }
                                 }
