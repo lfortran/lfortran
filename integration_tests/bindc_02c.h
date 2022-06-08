@@ -2,7 +2,12 @@
 #define BINDC_02C
 
 void driver();
-void callback(int n, float *A);
-void print_ptr(int n, float *A);
+void print_ptr1(int n, float *A);
+void print_ptr2(int *n, float *A);
+
+void callback1(int n, float *A);
+void callback1b(int n, float *A);
+void callback2(int *n, float *A);
+void callback2b(int *n, float *A);
 
 #endif // BINDC_02C
