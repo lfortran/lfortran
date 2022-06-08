@@ -12,6 +12,9 @@ void driver() {
     printf("driver: calling callback1(12, A)\n");
     callback1(12, A);
 
+    printf("driver: calling callback1b(12, A)\n");
+    callback1b(12, A);
+
     int n = 12;
     printf("driver: calling callback2(&n, A)\n");
     callback2(&n, A);
