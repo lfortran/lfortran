@@ -73,6 +73,7 @@ if (WITH_RUNTIME_LIBRARY)
     )
     LFORTRAN_COMPILE_RUNTIME(lfortran_intrinsic_string pure
       ${CMAKE_CURRENT_BINARY_DIR}/../runtime/lfortran_intrinsic_builtin.mod
+      ${CMAKE_CURRENT_BINARY_DIR}/../runtime/lfortran_intrinsic_iso_fortran_env.mod
     )
     LFORTRAN_COMPILE_RUNTIME(lfortran_intrinsic_trig pure
       ${CMAKE_CURRENT_BINARY_DIR}/../runtime/lfortran_intrinsic_iso_fortran_env.mod
