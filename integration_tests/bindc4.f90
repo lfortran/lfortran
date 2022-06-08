@@ -26,4 +26,14 @@ do i = lbound(x, 1), ubound(x, 1)
         print *, i, j, c_loc(x(i, j))
     end do
 end do
+
+call c_f_pointer(queries, x, [3, 4])
+
+print *, c_loc(x), queries
+
+do i = lbound(x, 1), ubound(x, 1)
+    do j = lbound(x, 2), ubound(x, 2)
+        print *, i, j, c_loc(x(i, j))
+    end do
+end do
 end program
