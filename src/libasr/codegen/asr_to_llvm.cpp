@@ -1924,6 +1924,10 @@ public:
                 type = get_arg_type_from_ttype_t(arg->m_type, x.m_abi,
                             arg->m_abi, arg->m_storage, arg->m_value_attr,
                             n_dims, a_kind, is_array_type);
+                if( arg->m_intent == ASRUtils::intent_out &&
+                    ASR::is_a<ASR::CPtr_t>(*arg->m_type) ) {
+                    type = type->getPointerTo();
+                }
                 std::uint32_t m_h;
                 std::string m_name = std::string(x.m_name);
                 if( x.class_type == ASR::symbolType::Function ) {
@@ -2593,7 +2597,10 @@ public:
             llvm_fptr = fptr_array;
             llvm::Value* fptr_data = arr_descr->get_pointer_to_data(llvm_fptr);
             llvm::Value* fptr_des = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_fptr);
-            llvm::Value* shape_data = builder->CreateLoad(arr_descr->get_pointer_to_data(llvm_shape));
+            llvm::Value* shape_data = llvm_shape;
+            if( arr_descr->is_array(llvm_shape) ) {
+                shape_data = builder->CreateLoad(arr_descr->get_pointer_to_data(llvm_shape));
+            }
             llvm_cptr = builder->CreateBitCast(llvm_cptr,
                             static_cast<llvm::PointerType*>(fptr_data->getType())->getElementType());
             builder->CreateStore(llvm_cptr, fptr_data);
@@ -4373,8 +4380,11 @@ public:
                             break;
                         case (ASR::ttypeType::Derived) :
                             break;
+                        case (ASR::ttypeType::CPtr) :
+                            target_type = llvm::Type::getVoidTy(context)->getPointerTo();
+                            break;
                         default :
-                            throw CodeGenError("Type not implemented yet.");
+                            throw CodeGenError("Type " + ASRUtils::type_to_str(arg_type) + " not implemented yet.");
                     }
                     switch(arg_type->type) {
                         case ASR::ttypeType::Derived: {
