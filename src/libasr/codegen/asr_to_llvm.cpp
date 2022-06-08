@@ -4279,8 +4279,10 @@ public:
                                                         tmp = CreateLoad(tmp);
                                                     }
                                                 }
+                                            } else if (is_a<ASR::CPtr_t>(*arg_type)) {
+                                                // pass
                                             } else {
-                                                // Dereference the pointer argument
+                                                // Dereference the pointer argument (unless it is a CPtr)
                                                 // to pass by value
                                                 // E.g.:
                                                 // i32* -> i32
