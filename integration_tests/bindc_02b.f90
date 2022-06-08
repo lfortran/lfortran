@@ -40,4 +40,12 @@ contains
     call print_ptr2(n, A)
     end subroutine
 
+    ! void callback2b(int *n, float *A);
+    subroutine callback2b(n, A) bind(c)
+    integer(c_int), intent(in) :: n
+    type(c_ptr), value, intent(in) :: A
+    print *, "callback2b: calling print_ptr1(n, A), n =", n
+    call print_ptr1(n, A)
+    end subroutine
+
 end module
