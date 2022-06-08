@@ -13,6 +13,13 @@ interface
     integer(c_int), value, intent(in) :: n
     type(c_ptr), value, intent(in) :: A
     end subroutine
+
+    ! void print_ptr2(int *n, float *A);
+    subroutine print_ptr2(n, A) bind(c)
+    import :: c_ptr, c_int
+    integer(c_int), intent(in) :: n
+    type(c_ptr), value, intent(in) :: A
+    end subroutine
 end interface
 
 contains
@@ -23,6 +30,14 @@ contains
     type(c_ptr), value, intent(in) :: A
     print *, "callback: calling print_ptr(n, A), n =", n
     call print_ptr(n, A)
+    end subroutine
+
+    ! void callback2(int *n, float *A);
+    subroutine callback2(n, A) bind(c)
+    integer(c_int), intent(in) :: n
+    type(c_ptr), value, intent(in) :: A
+    print *, "callback: calling print_ptr(n, A), n =", n
+    call print_ptr2(n, A)
     end subroutine
 
 end module
