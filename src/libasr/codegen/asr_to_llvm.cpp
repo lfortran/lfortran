@@ -1341,6 +1341,43 @@ public:
                 }
             }
             llvm_symtab[h] = ptr;
+        } else if( x.m_type->type == ASR::ttypeType::CPtr ) {
+            llvm::Type* void_ptr = llvm::Type::getVoidTy(context)->getPointerTo();
+            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+                void_ptr);
+            if (!external) {
+                if (init_value) {
+                    module->getNamedGlobal(x.m_name)->setInitializer(
+                            init_value);
+                } else {
+                    module->getNamedGlobal(x.m_name)->setInitializer(
+                            llvm::ConstantPointerNull::get(
+                                static_cast<llvm::PointerType*>(void_ptr))
+                            );
+                }
+            }
+            llvm_symtab[h] = ptr;
+        } else if(x.m_type->type == ASR::ttypeType::Pointer) {
+            ASR::dimension_t* m_dims = nullptr;
+            int n_dims = -1, a_kind = -1;
+            bool is_array_type = false, is_malloc_array_type = false;
+            llvm::Type* x_ptr = get_type_from_ttype_t(x.m_type, x.m_storage, is_array_type,
+                                                      is_malloc_array_type, m_dims, n_dims,
+                                                      a_kind);
+            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+                x_ptr);
+            if (!external) {
+                if (init_value) {
+                    module->getNamedGlobal(x.m_name)->setInitializer(
+                            init_value);
+                } else {
+                    module->getNamedGlobal(x.m_name)->setInitializer(
+                            llvm::ConstantPointerNull::get(
+                                static_cast<llvm::PointerType*>(x_ptr))
+                            );
+                }
+            }
+            llvm_symtab[h] = ptr;
         } else {
             throw CodeGenError("Variable type not supported", x.base.base.loc);
         }
@@ -2568,8 +2605,8 @@ public:
     }
 
 
-    void visit_CFPointer(const ASR::CFPointer_t& x) {
-        ASR::expr_t *cptr = x.m_cptr, *fptr = x.m_fptr, *shape = x.m_shape;
+    void visit_CPtrToPointer(const ASR::CPtrToPointer_t& x) {
+        ASR::expr_t *cptr = x.m_cptr, *fptr = x.m_ptr, *shape = x.m_shape;
         if( shape ) {
             uint64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 1;
@@ -4119,7 +4156,6 @@ public:
                 fmt.push_back("%lld");
                 llvm::Value* d = builder->CreatePtrToInt(tmp, getIntType(8, false));
                 args.push_back(d);
-
             } else {
                 throw LFortranException("Printing support is available only for integer, real,"
                     " character, and complex types, got type " +
