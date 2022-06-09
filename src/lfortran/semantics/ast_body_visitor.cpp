@@ -1035,7 +1035,7 @@ public:
                                     shape->base.loc);
             }
         }
-        return ASR::make_CFPointer_t(al, x.base.base.loc, cptr, fptr, shape);
+        return ASR::make_CPtrToPointer_t(al, x.base.base.loc, cptr, fptr, shape);
     }
 
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
