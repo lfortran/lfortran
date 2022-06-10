@@ -2588,17 +2588,32 @@ public:
         }
     }
 
-    void visit_CLoc(const ASR::CLoc_t& x) {
+    llvm::Value* GetPointerCPtrUtil(llvm::Value* llvm_tmp) {
+        if( llvm_tmp->getType()->isPointerTy() &&
+            llvm_tmp->getType()->getContainedType(0)->isPointerTy() ) {
+            llvm_tmp = builder->CreateLoad(llvm_tmp);
+        }
+        if( arr_descr->is_array(llvm_tmp) ) {
+            llvm_tmp = builder->CreateLoad(arr_descr->get_pointer_to_data(llvm_tmp));
+        }
+        return llvm_tmp;
+    }
+
+    void visit_GetPointer(const ASR::GetPointer_t& x) {
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_arg);
         ptr_loads = ptr_loads_copy;
-        if( tmp->getType()->isPointerTy() &&
-            tmp->getType()->getContainedType(0)->isPointerTy() ) {
-            tmp = builder->CreateLoad(tmp);
-        }
-        if( arr_descr->is_array(tmp) ) {
-            tmp = builder->CreateLoad(arr_descr->get_pointer_to_data(tmp));
+        tmp = GetPointerCPtrUtil(tmp);
+    }
+
+    void visit_PointerToCPtr(const ASR::PointerToCPtr_t& x) {
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr(*x.m_arg);
+        ptr_loads = ptr_loads_copy;
+        if( !ASR::is_a<ASR::GetPointer_t>(*x.m_arg) ) {
+            tmp = GetPointerCPtrUtil(tmp);
         }
         tmp = builder->CreateBitCast(tmp,
                     llvm::Type::getVoidTy(context)->getPointerTo());

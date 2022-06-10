@@ -2061,13 +2061,13 @@ public:
         return resolve_intrinsic_function(x.base.base.loc, var_name);
     }
 
-    ASR::asr_t* create_CLoc(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_PointerToCptr(const AST::FuncCallOrArray_t& x) {
         std::vector<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_loc"));
         ASR::expr_t *v_Var = args[0];
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
-        return ASR::make_CLoc_t(al, x.base.base.loc, v_Var, type, nullptr);
+        return ASR::make_PointerToCPtr_t(al, x.base.base.loc, v_Var, type, nullptr);
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
@@ -2099,7 +2099,7 @@ public:
             if (ASRUtils::is_intrinsic_procedure(f)) {
                 if (intrinsic_module_procedures_as_asr_nodes.find(var_name) != intrinsic_module_procedures_as_asr_nodes.end()) {
                     if (var_name == "c_loc") {
-                        tmp = create_CLoc(x);
+                        tmp = create_PointerToCptr(x);
                     } else {
                         LFORTRAN_ASSERT(false)
                     }
