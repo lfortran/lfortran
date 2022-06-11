@@ -314,6 +314,24 @@ namespace LFortran {
             return v;
         }
 
+        ASR::expr_t* create_compare_helper(Allocator &al, const Location &loc, ASR::expr_t* left, ASR::expr_t* right,
+                                                ASR::cmpopType op) {
+            LFORTRAN_ASSERT(ASRUtils::expr_type(left) == ASRUtils::expr_type(right))
+            ASR::ttype_t* type = ASRUtils::expr_type(left);
+            // TODO: compute `value`:
+            if (ASRUtils::is_integer(*type)) {
+                return ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, left, op, right, type, nullptr));
+            } else if (ASRUtils::is_real(*type)) {
+                return ASRUtils::EXPR(ASR::make_RealCompare_t(al, loc, left, op, right, type, nullptr));
+            } else if (ASRUtils::is_complex(*type)) {
+                return ASRUtils::EXPR(ASR::make_ComplexCompare_t(al, loc, left, op, right, type, nullptr));
+            } else if (ASRUtils::is_logical(*type)) {
+                return ASRUtils::EXPR(ASR::make_LogicalCompare_t(al, loc, left, op, right, type, nullptr));
+            } else {
+                LFORTRAN_ASSERT(false);
+                return nullptr;
+            }
+        }
 
         ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound,
                                 Allocator& al) {
