@@ -283,44 +283,21 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
     pass_replace_do_loops(al, asr);
     
     try {
-        wasm::emit_u32(v.m_type_section, v.m_al, 1);
-        wasm::emit_u32(v.m_func_section, v.m_al, 3);
-        wasm::emit_u32(v.m_export_section, v.m_al, 7);
-        wasm::emit_u32(v.m_code_section, v.m_al, 10);
-
-        uint32_t len_idx_type_section = wasm::emit_len_placeholder(v.m_type_section, v.m_al);
-        uint32_t len_idx_func_section = wasm::emit_len_placeholder(v.m_func_section, v.m_al);
-        uint32_t len_idx_export_section = wasm::emit_len_placeholder(v.m_export_section, v.m_al);
-        uint32_t len_idx_code_section = wasm::emit_len_placeholder(v.m_code_section, v.m_al);
-
         v.visit_asr((ASR::asr_t &)asr);
-
-        wasm::fixup_len(v.m_type_section, len_idx_type_section);
-        wasm::fixup_len(v.m_func_section, len_idx_func_section);
-        wasm::fixup_len(v.m_export_section, len_idx_export_section);
-        wasm::fixup_len(v.m_code_section, len_idx_code_section);
-
     } catch (const CodeGenError &e) {
         Error error;
         return error;
     }
 
     {
-        wasm_bytes.reserve(al, 8U + v.m_type_section.size() + v.m_func_section.size() + v.m_export_section.size() + v.m_code_section.size());
+        wasm_bytes.reserve(al, 8U /* preamble size */ + 8U /* (section id + section size) */ * 4U /* number of sections */ 
+            + v.m_type_section.size() + v.m_func_section.size() + v.m_export_section.size() + v.m_code_section.size());
+        
         wasm::emit_header(wasm_bytes, al);  // emit header and version
-
-        for (auto &byte : v.m_type_section) {
-            wasm_bytes.push_back(al, byte);
-        }
-        for (auto &byte : v.m_func_section) {
-            wasm_bytes.push_back(al, byte);
-        }
-        for (auto &byte : v.m_export_section) {
-            wasm_bytes.push_back(al, byte);
-        }
-        for (auto &byte : v.m_code_section) {
-            wasm_bytes.push_back(al, byte);
-        }
+        wasm::encode_section(wasm_bytes, v.m_type_section, al, 1U);
+        wasm::encode_section(wasm_bytes, v.m_func_section, al, 3U);
+        wasm::encode_section(wasm_bytes, v.m_export_section, al, 7U);
+        wasm::encode_section(wasm_bytes, v.m_code_section, al, 10U);
     }
 
     return wasm_bytes;

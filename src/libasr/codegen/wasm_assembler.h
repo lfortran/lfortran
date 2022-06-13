@@ -196,6 +196,16 @@ void emit_export_fn(Vec<uint8_t> &code, Allocator &al, const std::string& name,
     emit_u32(code, al, idx);
 }
 
+void encode_section(Vec<uint8_t> &des, Vec<uint8_t> &section_content, Allocator &al, uint32_t section_id){
+    // every section in WebAssembly is encoded by adding its section id, followed by the content size and lastly the contents
+    emit_u32(des, al, section_id);
+    emit_u32(des, al, section_content.size());
+    for(auto &byte:section_content){
+        des.push_back(al, byte);
+    }
+}
+
+
 }  // namespace wasm
 
 }  // namespace LFortran
