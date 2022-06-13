@@ -34,7 +34,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     Allocator &m_al;
     ASR::Variable_t *return_var;
 
-    Vec<uint8_t> m_preamble;
     Vec<uint8_t> m_type_section;
     Vec<uint8_t> m_func_section;
     Vec<uint8_t> m_export_section;
@@ -47,7 +46,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
    public:
     ASRToWASMVisitor(Allocator &al) : m_al{al} {
         cur_func_idx = 0;
-        m_preamble.reserve(m_al, 1024 * 128);
         m_type_section.reserve(m_al, 1024 * 128);
         m_func_section.reserve(m_al, 1024 * 128);
         m_export_section.reserve(m_al, 1024 * 128);
@@ -64,8 +62,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Program(const ASR::Program_t &x) {
-        wasm::emit_header(m_preamble, m_al);  // emit header and version
-
+        
         uint32_t len_idx_type_section = wasm::emit_len_placeholder(m_type_section, m_al);
         uint32_t len_idx_func_section = wasm::emit_len_placeholder(m_func_section, m_al);
         uint32_t len_idx_export_section = wasm::emit_len_placeholder(m_export_section, m_al);
@@ -309,10 +306,9 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
     }
 
     {
-        wasm_bytes.reserve(al, v.m_preamble.size() + v.m_type_section.size() + v.m_func_section.size() + v.m_export_section.size() + v.m_code_section.size());
-        for (auto &byte : v.m_preamble) {
-            wasm_bytes.push_back(al, byte);
-        }
+        wasm_bytes.reserve(al, 8U + v.m_type_section.size() + v.m_func_section.size() + v.m_export_section.size() + v.m_code_section.size());
+        wasm::emit_header(wasm_bytes, al);  // emit header and version
+
         for (auto &byte : v.m_type_section) {
             wasm_bytes.push_back(al, byte);
         }
