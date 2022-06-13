@@ -4790,7 +4790,7 @@ public:
         }
         int output_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         uint64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = ptr_loads_copy -
+        ptr_loads = 2 -
                     (ASRUtils::expr_type(x.m_v)->type ==
                      ASR::ttypeType::Pointer);
         visit_expr_wrapper(x.m_v);
@@ -4857,7 +4857,7 @@ public:
             return ;
         }
         uint64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = ptr_loads_copy -
+        ptr_loads = 2 -
                     (ASRUtils::expr_type(x.m_v)->type ==
                      ASR::ttypeType::Pointer);
         visit_expr_wrapper(x.m_v);
