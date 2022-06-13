@@ -275,7 +275,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 };
 
-Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Allocator &al) {
+Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Allocator &al, diag::Diagnostics &diagnostics) {
     ASRToWASMVisitor v(al);
     Vec<uint8_t> wasm_bytes;
     
@@ -285,8 +285,8 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
     try {
         v.visit_asr((ASR::asr_t &)asr);
     } catch (const CodeGenError &e) {
-        Error error;
-        return error;
+        diagnostics.diagnostics.push_back(e.d);
+        return Error();
     }
 
     {
@@ -303,17 +303,17 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
     return wasm_bytes;
 }
 
-Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al, const std::string &filename, bool time_report) {
+Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al, const std::string &filename,
+    bool time_report, diag::Diagnostics &diagnostics) {
     int time_visit_asr = 0;
     int time_save = 0;
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    Result<Vec<uint8_t>> wasm = asr_to_wasm_bytes_stream(asr, al);
+    Result<Vec<uint8_t>> wasm = asr_to_wasm_bytes_stream(asr, al, diagnostics);
     auto t2 = std::chrono::high_resolution_clock::now();
     time_visit_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     if (!wasm.ok) {
-        Error error;
-        return error;
+        return wasm.error;
     }
 
     {
