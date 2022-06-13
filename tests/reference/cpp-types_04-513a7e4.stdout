@@ -23,7 +23,7 @@ void main2() {
     int i;
     float r;
     float x;
-    r = 1.500000;
+    r =   1.50000000000000000e+00;
     i = 2;
     x = (float)(i*i);
     x = r*r;

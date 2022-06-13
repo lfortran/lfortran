@@ -17,7 +17,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     return r;
 }
 
-int a()
+int32_t a()
 {
     int a;
     return a;
@@ -35,7 +35,7 @@ bool c()
     return c;
 }
 
-int d()
+int32_t d()
 {
     int r;
     return r;

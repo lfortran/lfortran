@@ -18,7 +18,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 }
 
 namespace {
-int mysum(const Kokkos::View<const int*> &a)
+int32_t mysum(const Kokkos::View<const int*> &a)
 {
     int i;
     int r;
