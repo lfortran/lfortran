@@ -75,7 +75,7 @@ class WASMInstructionsVisitor():
         self.emit(                "}", 4)
         
         self.emit(                "case 0xFD: {", 4)
-        self.emit(                    "uint32_t num = wasm::read_signed_num(code, offset);", 5)
+        self.emit(                    "uint32_t num = wasm::read_unsigned_num(code, offset);", 5)
         self.emit(                    "switch(num) {", 5)
         for inst in filter(lambda i: i["opcode"] == "0xFD", mod["instructions"]):
             self.emit(                    "case %sU: {" % (inst["params"][0]["val"]), 6)
