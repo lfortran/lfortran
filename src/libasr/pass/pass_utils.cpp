@@ -327,8 +327,7 @@ namespace LFortran {
             } else if (ASRUtils::is_logical(*type)) {
                 return ASRUtils::EXPR(ASR::make_LogicalCompare_t(al, loc, left, op, right, type, nullptr));
             } else {
-                LFORTRAN_ASSERT(false);
-                return nullptr;
+                throw LFortranException("Type not supported");
             }
         }
 
