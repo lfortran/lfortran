@@ -67,6 +67,11 @@ void emit_i32(Vec<uint8_t> &code, Allocator &al, int32_t x) {
     emit_signed_leb128(code, al, x);
 }
 
+// function to emit signed 64 bit integer
+void emit_i64(Vec<uint8_t> &code, Allocator &al, int64_t x) {
+    emit_signed_leb128(code, al, x);
+}
+
 // function to append a given bytecode to the end of the code
 void emit_b8(Vec<uint8_t> &code, Allocator &al, uint8_t x) {
     code.push_back(al, x);
@@ -111,6 +116,12 @@ uint32_t emit_len_placeholder(Vec<uint8_t> &code, Allocator &al) {
 void emit_i32_const(Vec<uint8_t> &code, Allocator &al, int32_t x) {
     code.push_back(al, 0x41);
     emit_i32(code, al, x);
+}
+
+// function to emit a i64.const instruction
+void emit_i64_const(Vec<uint8_t> &code, Allocator &al, int64_t x) {
+    code.push_back(al, 0x42);
+    emit_i64(code, al, x);
 }
 
 // function to emit end of wasm expression

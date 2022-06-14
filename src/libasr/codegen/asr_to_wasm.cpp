@@ -258,8 +258,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 wasm::emit_i32_const(m_code_section, m_al, val);
                 break;
             }
+            case 8: {
+                wasm::emit_i64_const(m_code_section, m_al, val);
+                break;
+            }
             default: {
-                throw CodeGenError("Constant Integer: Only kind 4 currently supported");
+                throw CodeGenError("Constant Integer: Only kind 4 and 8 supported");
             }
         }
     }
