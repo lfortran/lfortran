@@ -167,7 +167,7 @@ public:
 
     ASR::expr_t *value = nullptr;
 
-    if (ASRUtils::is_integer(*source_type)) {
+    if (ASRUtils::is_integer(*dest_type)) {
 
         if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
             int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(
@@ -193,7 +193,7 @@ public:
 
         asr = ASR::make_IntegerCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
 
-    } else if (ASRUtils::is_real(*source_type)) {
+    } else if (ASRUtils::is_real(*dest_type)) {
 
         if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
             double left_value = ASR::down_cast<ASR::RealConstant_t>(
@@ -219,7 +219,7 @@ public:
 
         asr = ASR::make_RealCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
 
-    } else if (ASRUtils::is_complex(*source_type)) {
+    } else if (ASRUtils::is_complex(*dest_type)) {
 
         if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
             ASR::ComplexConstant_t *left0
@@ -252,7 +252,7 @@ public:
 
         asr = ASR::make_ComplexCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
 
-    } else if (ASRUtils::is_logical(*source_type)) {
+    } else if (ASRUtils::is_logical(*dest_type)) {
 
         if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
             bool left_value = ASR::down_cast<ASR::LogicalConstant_t>(
@@ -278,7 +278,7 @@ public:
 
         asr = ASR::make_LogicalCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
 
-    } else if (ASRUtils::is_character(*source_type)) {
+    } else if (ASRUtils::is_character(*dest_type)) {
 
         if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
             char* left_value = ASR::down_cast<ASR::StringConstant_t>(

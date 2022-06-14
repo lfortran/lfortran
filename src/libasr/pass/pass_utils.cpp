@@ -316,7 +316,6 @@ namespace LFortran {
 
         ASR::expr_t* create_compare_helper(Allocator &al, const Location &loc, ASR::expr_t* left, ASR::expr_t* right,
                                                 ASR::cmpopType op) {
-            LFORTRAN_ASSERT(ASRUtils::expr_type(left) == ASRUtils::expr_type(right))
             ASR::ttype_t* type = ASRUtils::expr_type(left);
             // TODO: compute `value`:
             if (ASRUtils::is_integer(*type)) {
