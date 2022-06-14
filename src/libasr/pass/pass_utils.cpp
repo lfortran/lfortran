@@ -326,6 +326,8 @@ namespace LFortran {
                 return ASRUtils::EXPR(ASR::make_ComplexCompare_t(al, loc, left, op, right, type, nullptr));
             } else if (ASRUtils::is_logical(*type)) {
                 return ASRUtils::EXPR(ASR::make_LogicalCompare_t(al, loc, left, op, right, type, nullptr));
+            } else if (ASRUtils::is_character(*type)) {
+                return ASRUtils::EXPR(ASR::make_StringCompare_t(al, loc, left, op, right, type, nullptr));
             } else {
                 throw LFortranException("Type not supported");
             }
