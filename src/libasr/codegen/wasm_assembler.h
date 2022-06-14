@@ -6,8 +6,19 @@
 namespace LFortran {
 namespace wasm {
 
-void emit_signed_leb128(Vec<uint8_t> &code, Allocator &al, int32_t n) {
-    auto more = true;
+void emit_unsigned_leb128(Vec<uint8_t> &code, Allocator &al, uint32_t n) {
+    do {
+        uint8_t byte = n & 0x7f;
+        n >>= 7;
+        if (n != 0) {
+            byte |= 0x80;
+        }
+        code.push_back(al, byte);
+    } while (n != 0);
+}
+
+void emit_signed_leb128(Vec<uint8_t> &code, Allocator &al, int32_t n) { // for i32
+    bool more = true;
     do {
         uint8_t byte = n & 0x7f;
         n >>= 7;
@@ -18,17 +29,6 @@ void emit_signed_leb128(Vec<uint8_t> &code, Allocator &al, int32_t n) {
         }
         code.push_back(al, byte);
     } while (more);
-}
-
-void emit_unsigned_leb128(Vec<uint8_t> &code, Allocator &al, uint32_t n) {
-    do {
-        uint8_t byte = n & 0x7f;
-        n >>= 7;
-        if (n != 0) {
-            byte |= 0x80;
-        }
-        code.push_back(al, byte);
-    } while (n != 0);
 }
 
 // function to emit header of Wasm Binary Format
