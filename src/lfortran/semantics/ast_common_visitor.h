@@ -322,6 +322,10 @@ public:
 
         asr = ASR::make_StringCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
     }
+    if (overloaded != nullptr) {
+        asr = ASR::make_OverloadedCompare_t(al, x.base.base.loc, left, asr_op, right, type,
+            value, overloaded);
+    }
   }
 
   inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
