@@ -50,7 +50,7 @@ void main2() {
     a[2-1] = (float)(2);
     a[3-1] = (float)(1);
     b = sum(a);
-    if (abs(b - (float)(6)) > 0.000010) {
+    if (abs(b - (float)(6)) >   1.00000000000000008e-05) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }

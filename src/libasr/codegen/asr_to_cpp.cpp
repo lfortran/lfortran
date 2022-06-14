@@ -327,47 +327,6 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         last_expr_precedence = 2;
     }
 
-    void visit_Cast(const ASR::Cast_t &x) {
-        visit_expr(*x.m_arg);
-        switch (x.m_kind) {
-            case (ASR::cast_kindType::IntegerToReal) : {
-                src = "(float)(" + src + ")";
-                break;
-            }
-            case (ASR::cast_kindType::RealToInteger) : {
-                src = "(int)(" + src + ")";
-                break;
-            }
-            case (ASR::cast_kindType::RealToReal) : {
-                // In C++, we do not need to cast float to float explicitly:
-                // src = src;
-                break;
-            }
-            case (ASR::cast_kindType::IntegerToInteger) : {
-                // In C++, we do not need to cast int <-> long long explicitly:
-                // src = src;
-                break;
-            }
-            case (ASR::cast_kindType::ComplexToComplex) : {
-                break;
-            }
-            case (ASR::cast_kindType::IntegerToComplex) : {
-                src = "std::complex<double>(" + src + ")";
-                break;
-            }
-            case (ASR::cast_kindType::ComplexToReal) : {
-                src = "std::real(" + src + ")";
-                break;
-            }
-            case (ASR::cast_kindType::LogicalToInteger) : {
-                src = "(int)(" + src + ")";
-                break;
-            }
-            default : throw CodeGenError("Cast kind " + std::to_string(x.m_kind) + " not implemented");
-        }
-        last_expr_precedence = 2;
-    }
-
     void visit_StringConcat(const ASR::StringConcat_t &x) {
         this->visit_expr(*x.m_left);
         std::string left = std::move(src);
@@ -388,81 +347,6 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             src += right;
         }
     }
-
-
-    // TODO: remove once we remove UnaryOp
-    void visit_UnaryOp(const ASR::UnaryOp_t &x) {
-        this->visit_expr(*x.m_operand);
-        int expr_precedence = last_expr_precedence;
-        if (x.m_type->type == ASR::ttypeType::Integer) {
-            if (x.m_op == ASR::unaryopType::UAdd) {
-                // src = src;
-                // Skip unary plus, keep the previous precedence
-            } else if (x.m_op == ASR::unaryopType::USub) {
-                last_expr_precedence = 3;
-                if (expr_precedence <= last_expr_precedence) {
-                    src = "-" + src;
-                } else {
-                    src = "-(" + src + ")";
-                }
-            } else if (x.m_op == ASR::unaryopType::Invert) {
-                last_expr_precedence = 3;
-                if (expr_precedence <= last_expr_precedence) {
-                    src = "~" + src;
-                } else {
-                    src = "~(" + src + ")";
-                }
-
-            } else if (x.m_op == ASR::unaryopType::Not) {
-                last_expr_precedence = 3;
-                if (expr_precedence <= last_expr_precedence) {
-                    src = "!" + src;
-                } else {
-                    src = "!(" + src + ")";
-                }
-            } else {
-                throw CodeGenError("Unary type not implemented yet for Integer");
-            }
-            return;
-        } else if (x.m_type->type == ASR::ttypeType::Real) {
-            if (x.m_op == ASR::unaryopType::UAdd) {
-                // src = src;
-                // Skip unary plus, keep the previous precedence
-            } else if (x.m_op == ASR::unaryopType::USub) {
-                last_expr_precedence = 3;
-                if (expr_precedence <= last_expr_precedence) {
-                    src = "-" + src;
-                } else {
-                    src = "-(" + src + ")";
-                }
-            } else if (x.m_op == ASR::unaryopType::Not) {
-                last_expr_precedence = 3;
-                if (expr_precedence <= last_expr_precedence) {
-                    src = "!" + src;
-                } else {
-                    src = "!(" + src + ")";
-                }
-            } else {
-                throw CodeGenError("Unary type not implemented yet for Real");
-            }
-            return;
-        } else if (x.m_type->type == ASR::ttypeType::Logical) {
-            if (x.m_op == ASR::unaryopType::Not) {
-                last_expr_precedence = 3;
-                if (expr_precedence <= last_expr_precedence) {
-                    src = "!" + src;
-                } else {
-                    src = "!(" + src + ")";
-                }
-                return;
-            } else {
-                throw CodeGenError("Unary type not implemented yet for Logical");
-            }
-        } else {
-            throw CodeGenError("UnaryOp: type not supported yet");
-        }
-    }
-
 
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
         std::string out = "from_std_vector<float>({";
@@ -529,12 +413,6 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         out += indent + "});\n";
         indentation_level -= 1;
         src = out;
-    }
-
-    void visit_ErrorStop(const ASR::ErrorStop_t & /* x */) {
-        std::string indent(indentation_level*indentation_spaces, ' ');
-        src = indent + "std::cerr << \"ERROR STOP\" << std::endl;\n";
-        src += indent + "exit(1);\n";
     }
 
 };

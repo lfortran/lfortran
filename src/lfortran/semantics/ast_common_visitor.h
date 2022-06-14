@@ -343,72 +343,101 @@ public:
 
   inline static void visit_UnaryOp(Allocator &al, const AST::UnaryOp_t &x,
                                    ASR::expr_t *&operand, ASR::asr_t *&asr) {
-    ASR::unaryopType op;
-    switch (x.m_op) {
-    case (AST::unaryopType::Invert):
-      op = ASR::unaryopType::Invert;
-      break;
-    case (AST::unaryopType::Not):
-      op = ASR::unaryopType::Not;
-      break;
-    case (AST::unaryopType::UAdd):
-      op = ASR::unaryopType::UAdd;
-      break;
-    case (AST::unaryopType::USub):
-      op = ASR::unaryopType::USub;
-      break;
-    // Fix compiler warning:
-    default: {
-      LFORTRAN_ASSERT(false);
-      op = ASR::unaryopType::Invert;
-    }
-    }
+
     ASR::ttype_t *operand_type = LFortran::ASRUtils::expr_type(operand);
     ASR::expr_t *value = nullptr;
-    // Assign evaluation to `value` if possible, otherwise leave nullptr
-    if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
-      if (ASR::is_a<LFortran::ASR::Integer_t>(*operand_type)) {
-        int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                  LFortran::ASRUtils::expr_value(operand))
-                                  ->m_n;
-        int64_t result;
-        switch (op) {
-        case (ASR::unaryopType::UAdd):
-          result = op_value;
-          break;
-        case (ASR::unaryopType::USub):
-          result = -op_value;
-          break;
-        default: {
-            throw SemanticError("Unary operator not implemented yet for compile time evaluation",
-                x.base.base.loc);
+    if (x.m_op == AST::unaryopType::UAdd) {
+
+        if (LFortran::ASRUtils::is_integer(*operand_type)) {
+            if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
+                int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
+                                        LFortran::ASRUtils::expr_value(operand))->m_n;
+                asr = ASR::make_IntegerConstant_t(al, x.base.base.loc, op_value, operand_type);
+            }
         }
+        else if (LFortran::ASRUtils::is_real(*operand_type)) {
+            if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
+                double op_value = ASR::down_cast<ASR::RealConstant_t>(
+                                LFortran::ASRUtils::expr_value(operand))->m_r;
+                asr = ASR::make_RealConstant_t(al, x.base.base.loc, op_value, operand_type);
+            }
         }
-        value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(
-            al, x.base.base.loc, result, operand_type));
-      } else if (ASR::is_a<LFortran::ASR::Real_t>(*operand_type)) {
-        double op_value = ASR::down_cast<ASR::RealConstant_t>(
-                                LFortran::ASRUtils::expr_value(operand))
-                                ->m_r;
-        double result;
-        switch (op) {
-        case (ASR::unaryopType::UAdd):
-          result = op_value;
-          break;
-        case (ASR::unaryopType::USub):
-          result = -op_value;
-          break;
-        default: {
-            throw SemanticError("Unary operator not implemented yet for compile time evaluation",
-                x.base.base.loc);
+        return;
+
+    } else if (x.m_op == AST::unaryopType::USub) {
+
+        if (LFortran::ASRUtils::is_integer(*operand_type)) {
+            if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
+                int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
+                                        LFortran::ASRUtils::expr_value(operand))->m_n;
+                value = ASR::down_cast<ASR::expr_t>(
+                    ASR::make_IntegerConstant_t(al, x.base.base.loc, -op_value, operand_type));
+            }
+            asr = ASR::make_IntegerUnaryMinus_t(al, x.base.base.loc, operand,
+                                                    operand_type, value);
+            return;
         }
+        else if (LFortran::ASRUtils::is_real(*operand_type)) {
+            if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
+                double op_value = ASR::down_cast<ASR::RealConstant_t>(
+                                        LFortran::ASRUtils::expr_value(operand))->m_r;
+                value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
+                    al, x.base.base.loc, -op_value, operand_type));
+            }
+            asr = ASR::make_RealUnaryMinus_t(al, x.base.base.loc, operand,
+                                             operand_type, value);
+            return;
         }
-        value = ASR::down_cast<ASR::expr_t>(
-            ASR::make_RealConstant_t(al, x.base.base.loc, result, operand_type));
-      }
+        else if (LFortran::ASRUtils::is_complex(*operand_type)) {
+            if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
+                ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(
+                                    LFortran::ASRUtils::expr_value(operand));
+                std::complex<double> op_value(c->m_re, c->m_im);
+                std::complex<double> result;
+                result = -op_value;
+                value = ASR::down_cast<ASR::expr_t>(
+                        ASR::make_ComplexConstant_t(al, x.base.base.loc, std::real(result),
+                        std::imag(result), operand_type));
+            }
+            asr = ASR::make_ComplexUnaryMinus_t(al, x.base.base.loc, operand,
+                                                    operand_type, value);
+            return;
+        }
+
+    } else if (x.m_op == AST::unaryopType::Invert) {
+
+        if (LFortran::ASRUtils::is_integer(*operand_type)) {
+            if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
+                int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
+                                        LFortran::ASRUtils::expr_value(operand))->m_n;
+                value = ASR::down_cast<ASR::expr_t>(
+                    ASR::make_IntegerConstant_t(al, x.base.base.loc, ~op_value, operand_type));
+            }
+            asr = ASR::make_IntegerBitNot_t(al, x.base.base.loc, operand, operand_type, value);
+            return;
+        }
+        else {
+            throw SemanticError("Argument of `not` intrinsic must be INTEGER", x.base.base.loc);
+        }
+
+    } else if (x.m_op == AST::unaryopType::Not) {
+
+        if (LFortran::ASRUtils::is_logical(*operand_type)) {
+            if (ASRUtils::expr_value(operand) != nullptr) {
+                bool op_value = ASR::down_cast<ASR::LogicalConstant_t>(
+                                ASRUtils::expr_value(operand))->m_value;
+                value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
+                    al, x.base.base.loc, !op_value, operand_type));
+            }
+            asr = ASR::make_LogicalNot_t(al, x.base.base.loc, operand, operand_type, value);
+            return;
+        }
+        else {
+            throw SemanticError("Operand of .not. operator is "+
+                std::string(ASRUtils::type_to_str(operand_type)), x.base.base.loc);
+        }
+
     }
-    asr = ASR::make_UnaryOp_t(al, x.base.base.loc, op, operand, operand_type,
-                              value);
   }
 
   static inline void visit_StrOp(Allocator &al, const AST::StrOp_t &x,

@@ -193,6 +193,16 @@ LFORTRAN_API double _lfortran_zaimag(double_complex_t x)
     return cimag(x);
 }
 
+LFORTRAN_API void _lfortran_complex_aimag_32(struct _lfortran_complex_32 *x, float *res)
+{
+    *res = x->im;
+}
+
+LFORTRAN_API void _lfortran_complex_aimag_64(struct _lfortran_complex_64 *x, double *res)
+{
+    *res = x->im;
+}
+
 // exp -------------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_sexp(float x)
@@ -552,6 +562,13 @@ LFORTRAN_API double_complex_t _lfortran_zacosh(double_complex_t x)
     return cacosh(x);
 }
 
+// fmod -----------------------------------------------------------------------
+
+LFORTRAN_API double _lfortran_dfmod(double x, double y)
+{
+    return fmod(x, y);
+}
+
 // atanh -----------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_satanh(float x)
@@ -597,6 +614,50 @@ LFORTRAN_API void _lfortran_strcat(char** s1, char** s2, char** dest)
     *dest = &(dest_char[0]);
 }
 
+//repeat str for n time
+LFORTRAN_API void _lfortran_strrepeat(char** s, int32_t n, char** dest)
+{
+    int cntr = 0;
+    char trmn = '\0';
+    int s_len = strlen(*s);
+    int trmn_size = sizeof(trmn);
+    int f_len = s_len*n;
+    if (f_len < 0)
+        f_len = 0;
+    char* dest_char = (char*)malloc(f_len+trmn_size);
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < s_len; j++) {
+            dest_char[cntr] = (*s)[j];
+            cntr++;
+        }
+    }
+    dest_char[cntr] = trmn;
+    *dest = &(dest_char[0]);
+}
+
+// idx1 and idx2 both start from 1
+LFORTRAN_API char* _lfortran_str_copy(char* s, int32_t idx1, int32_t idx2) {
+
+    int s_len = strlen(s);
+    if(idx1 > s_len || idx1 <= (-1*s_len)){
+        printf("String index out of Bounds\n");
+        exit(1);
+    }
+    if(idx1 <= 0) {
+        idx1 = s_len + idx1;
+    }
+    if(idx2 <= 0) {
+        idx2 = s_len + idx2;
+    }
+    char* dest_char = (char*)malloc(idx2-idx1+2);
+    for (int i=idx1; i <= idx2; i++)
+    {
+        dest_char[i-idx1] = s[i-1];
+    }
+    dest_char[idx2-idx1+1] = '\0';
+    return dest_char;
+}
+
 LFORTRAN_API int _lfortran_str_len(char** s)
 {
     return strlen(*s);
@@ -617,6 +678,45 @@ LFORTRAN_API void _lfortran_string_init(int size_plus_one, char *s) {
         s[i] = ' ';
     }
     s[size] = '\0';
+}
+
+// List  -----------------------------------------------------------------------
+
+struct _lcompilers_list_i32 {
+    uint64_t n;
+    uint64_t capacity;
+    int32_t *p;
+};
+
+LFORTRAN_API int8_t* _lcompilers_list_init_i32() {
+    struct _lcompilers_list_i32 *l;
+    l = (struct _lcompilers_list_i32*)malloc(
+            sizeof(struct _lcompilers_list_i32));
+    l->n = 0;
+    l->capacity = 4;
+    l->p = (int32_t*)malloc(l->capacity*sizeof(int32_t));
+    return (int8_t*)l;
+}
+
+LFORTRAN_API void _lcompilers_list_append_i32(int8_t* s, int32_t item) {
+    struct _lcompilers_list_i32 *l = (struct _lcompilers_list_i32 *)s;
+    if (l->n == l->capacity) {
+        l->capacity = 2*l->capacity;
+        l->p = realloc(l->p, sizeof(int32_t)*l->capacity);
+    }
+    l->p[l->n] = item;
+    l->n++;
+}
+
+// pos is the index = 1..n
+LFORTRAN_API int32_t _lcompilers_list_item_i32(int8_t* s, int32_t pos) {
+    struct _lcompilers_list_i32 *l = (struct _lcompilers_list_i32 *)s;
+    if (pos >= 1 && pos <= l->n) {
+        return l->p[pos-1];
+    } else {
+        printf("Out of bounds\n");
+        return 0;
+    }
 }
 
 // bit  ------------------------------------------------------------------------
@@ -839,7 +939,7 @@ LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
 {
     FILE *fd;
     fd = fopen(path, flags);
-    if (!fd) 
+    if (!fd)
     {
         printf("Error in opening the file!\n");
         perror(path);
@@ -851,7 +951,7 @@ LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
 {
     char *c = (char *) calloc(n, sizeof(char));
-    if (fd < 0) 
+    if (fd < 0)
     {
         printf("Error in reading the file!\n");
         exit(1);
@@ -863,7 +963,7 @@ LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
 
 LFORTRAN_API void _lpython_close(int64_t fd)
 {
-    if (fclose((FILE*)fd) != 0) 
+    if (fclose((FILE*)fd) != 0)
     {
         printf("Error in closing the file!\n");
         exit(1);

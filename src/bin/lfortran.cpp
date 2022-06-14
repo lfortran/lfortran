@@ -986,7 +986,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         diagnostics.diagnostics.clear();
         auto t1 = std::chrono::high_resolution_clock::now();
         LFortran::Result<int>
-            result = LFortran::asr_to_wasm(*asr, al, outfile, time_report);
+            result = LFortran::asr_to_wasm(*asr, al, outfile, time_report, diagnostics);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_asr_to_wasm = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
