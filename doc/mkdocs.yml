@@ -11,16 +11,26 @@ nav:
         - AST and ASR.md
         - CONTRIBUTING.md
     - LFortran Intrinsics:
-        - Numeric Intrinsic Functions:
-            - numeric_example.md
-        - Mathematical Intrinsic Functions:
-            - intrinsics/mathematical/trigonometric/asin.md
+        - Array Intrinsic Functions:
+            - intrinsics/array/size.md
         - Bit Intrinsic Functions:
-            - bit_example.md
+            - intrinsics/bit/shiftl.md
+            - intrinsics/bit/shiftr.md
         - Character Intrinsic Functions:
-            - character_example.md
+            - intrinsics/character/len_trim.md
+            - intrinsics/character/lge.md
+        - Kind Type Intrinsic Functions:
+            - intrinsics/kind-type/kind.md
+        - Mathematical Intrinsic Functions:
+            - intrinsics/mathematical/trigonometric/acos.md
+            - intrinsics/mathematical/trigonometric/asin.md
+            - intrinsics/mathematical/trigonometric/atan.md
+        - Numeric Intrinsic Functions:
+            - intrinsics/numeric/ceiling.md
+            - intrinsics/numeric/floor.md
+            - intrinsics/numeric/mod.md
         - Miscellaneous Intrinsic Functions:
-            - misc_example.md
+            - intrinsics/misc/new_line.md
 
 # Until https://gitlab.com/lfortran/lfortran/issues/89 is fixed, we disable the
 # "Edit on GitLab" link:
