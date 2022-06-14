@@ -34,7 +34,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     Allocator &m_al;
     ASR::Variable_t *return_var;
 
-    Vec<uint8_t> m_preamble;
     Vec<uint8_t> m_type_section;
     Vec<uint8_t> m_func_section;
     Vec<uint8_t> m_export_section;
@@ -47,7 +46,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
    public:
     ASRToWASMVisitor(Allocator &al) : m_al{al} {
         cur_func_idx = 0;
-        m_preamble.reserve(m_al, 1024 * 128);
         m_type_section.reserve(m_al, 1024 * 128);
         m_func_section.reserve(m_al, 1024 * 128);
         m_export_section.reserve(m_al, 1024 * 128);
@@ -64,8 +62,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Program(const ASR::Program_t &x) {
-        wasm::emit_header(m_preamble, m_al);  // emit header and version
-
+        
         uint32_t len_idx_type_section = wasm::emit_len_placeholder(m_type_section, m_al);
         uint32_t len_idx_func_section = wasm::emit_len_placeholder(m_func_section, m_al);
         uint32_t len_idx_export_section = wasm::emit_len_placeholder(m_export_section, m_al);
@@ -278,7 +275,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 };
 
-Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Allocator &al) {
+Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Allocator &al, diag::Diagnostics &diagnostics) {
     ASRToWASMVisitor v(al);
     Vec<uint8_t> wasm_bytes;
     
@@ -286,61 +283,37 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
     pass_replace_do_loops(al, asr);
     
     try {
-        wasm::emit_u32(v.m_type_section, v.m_al, 1);
-        wasm::emit_u32(v.m_func_section, v.m_al, 3);
-        wasm::emit_u32(v.m_export_section, v.m_al, 7);
-        wasm::emit_u32(v.m_code_section, v.m_al, 10);
-
-        uint32_t len_idx_type_section = wasm::emit_len_placeholder(v.m_type_section, v.m_al);
-        uint32_t len_idx_func_section = wasm::emit_len_placeholder(v.m_func_section, v.m_al);
-        uint32_t len_idx_export_section = wasm::emit_len_placeholder(v.m_export_section, v.m_al);
-        uint32_t len_idx_code_section = wasm::emit_len_placeholder(v.m_code_section, v.m_al);
-
         v.visit_asr((ASR::asr_t &)asr);
-
-        wasm::fixup_len(v.m_type_section, len_idx_type_section);
-        wasm::fixup_len(v.m_func_section, len_idx_func_section);
-        wasm::fixup_len(v.m_export_section, len_idx_export_section);
-        wasm::fixup_len(v.m_code_section, len_idx_code_section);
-
     } catch (const CodeGenError &e) {
-        Error error;
-        return error;
+        diagnostics.diagnostics.push_back(e.d);
+        return Error();
     }
 
     {
-        wasm_bytes.reserve(al, v.m_preamble.size() + v.m_type_section.size() + v.m_func_section.size() + v.m_export_section.size() + v.m_code_section.size());
-        for (auto &byte : v.m_preamble) {
-            wasm_bytes.push_back(al, byte);
-        }
-        for (auto &byte : v.m_type_section) {
-            wasm_bytes.push_back(al, byte);
-        }
-        for (auto &byte : v.m_func_section) {
-            wasm_bytes.push_back(al, byte);
-        }
-        for (auto &byte : v.m_export_section) {
-            wasm_bytes.push_back(al, byte);
-        }
-        for (auto &byte : v.m_code_section) {
-            wasm_bytes.push_back(al, byte);
-        }
+        wasm_bytes.reserve(al, 8U /* preamble size */ + 8U /* (section id + section size) */ * 4U /* number of sections */ 
+            + v.m_type_section.size() + v.m_func_section.size() + v.m_export_section.size() + v.m_code_section.size());
+        
+        wasm::emit_header(wasm_bytes, al);  // emit header and version
+        wasm::encode_section(wasm_bytes, v.m_type_section, al, 1U);
+        wasm::encode_section(wasm_bytes, v.m_func_section, al, 3U);
+        wasm::encode_section(wasm_bytes, v.m_export_section, al, 7U);
+        wasm::encode_section(wasm_bytes, v.m_code_section, al, 10U);
     }
 
     return wasm_bytes;
 }
 
-Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al, const std::string &filename, bool time_report) {
+Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al, const std::string &filename,
+    bool time_report, diag::Diagnostics &diagnostics) {
     int time_visit_asr = 0;
     int time_save = 0;
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    Result<Vec<uint8_t>> wasm = asr_to_wasm_bytes_stream(asr, al);
+    Result<Vec<uint8_t>> wasm = asr_to_wasm_bytes_stream(asr, al, diagnostics);
     auto t2 = std::chrono::high_resolution_clock::now();
     time_visit_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     if (!wasm.ok) {
-        Error error;
-        return error;
+        return wasm.error;
     }
 
     {
