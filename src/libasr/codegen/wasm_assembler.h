@@ -31,6 +31,20 @@ void emit_signed_leb128(Vec<uint8_t> &code, Allocator &al, int32_t n) { // for i
     } while (more);
 }
 
+void emit_signed_leb128(Vec<uint8_t> &code, Allocator &al, int64_t n) { // for i64
+    bool more = true;
+    do {
+        uint8_t byte = n & 0x7f;
+        n >>= 7;
+        more = !((((n == 0) && ((byte & 0x40) == 0)) ||
+                  ((n == -1) && ((byte & 0x40) != 0))));
+        if (more) {
+            byte |= 0x80;
+        }
+        code.push_back(al, byte);
+    } while (more);
+}
+
 // function to emit header of Wasm Binary Format
 void emit_header(Vec<uint8_t> &code, Allocator &al) {
     code.push_back(al, 0x00);
