@@ -38,6 +38,26 @@ int32_t decode_signed_leb128_i32(Vec<uint8_t> &code, uint32_t &offset) {
     return result;
 }
 
+int64_t decode_signed_leb128_i64(Vec<uint8_t> &code, uint32_t &offset) {
+    int64_t result = 0;
+    uint32_t shift = 0U;
+    uint8_t byte;
+
+    do {
+        byte = code.p[offset++];
+        uint64_t slice = byte & 0x7f;
+        result |= slice << shift;
+        shift += 7;
+    } while (byte & 0x80);
+
+    // Sign extend negative numbers if needed.
+    if ((shift < 64U) && (byte & 0x40)) {
+        result |= (-1ULL << shift);
+    }
+
+    return result;
+}
+
 uint8_t read_byte(Vec<uint8_t> &code, uint32_t &offset) {
     if (offset >= code.size()) {
         throw LFortran::LFortranException("read_byte: offset out of bounds");
@@ -56,6 +76,8 @@ double read_double(Vec<uint8_t> & /*code*/, uint32_t & /*offset*/) {
 }
 
 int32_t read_signed_num_i32(Vec<uint8_t> &code, uint32_t &offset) { return decode_signed_leb128_i32(code, offset); }
+
+int64_t read_signed_num_i64(Vec<uint8_t> &code, uint32_t &offset) { return decode_signed_leb128_i64(code, offset); }
 
 uint32_t read_unsigned_num(Vec<uint8_t> &code, uint32_t &offset) { return decode_unsigned_leb128(code, offset); }
 

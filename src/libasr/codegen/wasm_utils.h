@@ -45,6 +45,8 @@ double read_double(Vec<uint8_t> & code, uint32_t & offset);
 
 int32_t read_signed_num_i32(Vec<uint8_t> &code, uint32_t &offset);
 
+int64_t read_signed_num_i64(Vec<uint8_t> &code, uint32_t &offset);
+
 uint32_t read_unsigned_num(Vec<uint8_t> &code, uint32_t &offset);
 
 void hexdump(void *ptr, int buflen);
