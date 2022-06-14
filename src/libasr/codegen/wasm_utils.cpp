@@ -18,7 +18,7 @@ uint32_t decode_unsigned_leb128(Vec<uint8_t> &code, uint32_t &offset) {
     }
 }
 
-int32_t decode_signed_leb128(Vec<uint8_t> &code, uint32_t &offset) {
+int32_t decode_signed_leb128_i32(Vec<uint8_t> &code, uint32_t &offset) {
     int32_t result = 0;
     uint32_t shift = 0U;
     uint8_t byte;
@@ -55,7 +55,7 @@ double read_double(Vec<uint8_t> & /*code*/, uint32_t & /*offset*/) {
     return 0.00;
 }
 
-int32_t read_signed_num(Vec<uint8_t> &code, uint32_t &offset) { return decode_signed_leb128(code, offset); }
+int32_t read_signed_num_i32(Vec<uint8_t> &code, uint32_t &offset) { return decode_signed_leb128_i32(code, offset); }
 
 uint32_t read_unsigned_num(Vec<uint8_t> &code, uint32_t &offset) { return decode_unsigned_leb128(code, offset); }
 

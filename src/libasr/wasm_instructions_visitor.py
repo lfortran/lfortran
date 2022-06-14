@@ -133,8 +133,8 @@ def get_func_name(func):
 param_read_function = {
     "uint8_t": "wasm::read_byte",
     "uint32_t": "wasm::read_unsigned_num",
-    "int32_t": "wasm::read_signed_num",
-    "int64_t": "wasm::read_signed_num",
+    "int32_t": "wasm::read_signed_num_i32",
+    "int64_t": "wasm::read_signed_num_i64",
     "float": "wasm::read_float",
     "double": "wasm::read_double"
 }
