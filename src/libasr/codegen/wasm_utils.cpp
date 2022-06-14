@@ -9,7 +9,8 @@ uint32_t decode_unsigned_leb128(Vec<uint8_t> &code, uint32_t &offset) {
     uint32_t shift = 0U;
     while (true) {
         uint8_t byte = code.p[offset++];
-        result |= (byte & 0x7f) << shift;
+        uint32_t slice = byte & 0x7f;
+        result |= slice << shift;
         if ((byte & 0x80) == 0) {
             return result;
         }
@@ -20,19 +21,18 @@ uint32_t decode_unsigned_leb128(Vec<uint8_t> &code, uint32_t &offset) {
 int32_t decode_signed_leb128(Vec<uint8_t> &code, uint32_t &offset) {
     int32_t result = 0;
     uint32_t shift = 0U;
-    uint32_t size = 32U;
     uint8_t byte;
 
     do {
         byte = code.p[offset++];
-        result |= (byte & 0x7f) << shift;
+        uint32_t slice = byte & 0x7f;
+        result |= slice << shift;
         shift += 7;
-    } while ((byte & 0x80) != 0);
+    } while (byte & 0x80);
 
-    if ((shift < size) && (byte & 0x40)) {
-        // without U it gives warning that negative number is being shifted, unsure if this works currently
-        // this needs to be tested/fixed once the ASR->WASM Backend supports negative integers
-        result |= (~0U << shift);
+    // Sign extend negative numbers if needed.
+    if ((shift < 32U) && (byte & 0x40)) {
+        result |= (-1U << shift);
     }
 
     return result;
