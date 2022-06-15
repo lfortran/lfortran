@@ -327,6 +327,10 @@ filename = "wasm_i64.f90"
 wat = true
 
 [[test]]
+filename = "wasm_unary_minus.f90"
+wat = true
+
+[[test]]
 filename = "stop.f90"
 asr = true
 llvm = true
