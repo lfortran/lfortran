@@ -60,16 +60,18 @@ public:
         return false;
     }
 
-    void visit_BinOp(const ASR::BinOp_t& x_const) {
+    void visit_IntegerBinOp(const ASR::IntegerBinOp_t& /*x*/) { }
+    void visit_ComplexBinOp(const ASR::ComplexBinOp_t& /*x*/) { }
+    void visit_LogicalBinOp(const ASR::LogicalBinOp_t& /*x*/) { }
+
+    void visit_RealBinOp(const ASR::RealBinOp_t& x_const) {
         if( !from_fma ) {
             return ;
         }
 
         from_fma = true;
-        if( x_const.m_type->type != ASR::ttypeType::Real ) {
-            return ;
-        }
-        ASR::BinOp_t& x = const_cast<ASR::BinOp_t&>(x_const);
+        LFORTRAN_ASSERT(ASRUtils::is_real(*x_const.m_type))
+        ASR::RealBinOp_t& x = const_cast<ASR::RealBinOp_t&>(x_const);
 
         fma_var = nullptr;
         visit_expr(*x.m_left);
@@ -106,7 +108,7 @@ public:
                 ASRUtils::expr_type(other_expr), nullptr));
         }
 
-        ASR::BinOp_t* mul_binop = ASR::down_cast<ASR::BinOp_t>(mul_expr);
+        ASR::RealBinOp_t* mul_binop = ASR::down_cast<ASR::RealBinOp_t>(mul_expr);
         ASR::expr_t *first_arg = mul_binop->m_left, *second_arg = mul_binop->m_right;
 
         if( is_mul_expr_negative ) {
