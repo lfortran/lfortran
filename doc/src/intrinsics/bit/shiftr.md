@@ -26,8 +26,8 @@ The return value is of type integer and of the same kind as `x`.
 
 **shiftr(x, shift)** logically right shifts `x` by `shift` number of bits.
 `shiftr` shifts from MSB(**M**ost **S**ignificant **B**it) to LSB(**L**east **S**ignificant **B**it).
-Bits shifted from the right end i.e., LSB bits are lost. Zeroes are appened in
-from the opposite left end.
+Bits shifted from the right end i.e., LSB bits are lost. Zeroes are appended to
+the opposite left end.
 
 ## Types
 
