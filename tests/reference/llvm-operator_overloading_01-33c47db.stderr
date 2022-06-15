@@ -1,5 +1,36 @@
-style suggestion: Use 'end if' instead of 'endif'
-  --> tests/../integration_tests/operator_overloading_01.f90:28:9
-   |
-28 |         endif
-   |         ^^^^^ help: write this as 'end if'
+Internal Compiler Error: Unhandled exception
+Traceback (most recent call last):
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 1596[0m
+    return emit_llvm(arg_file, compiler_options);
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 702[0m
+    = fe.get_llvm(input, lm, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 258[0m
+    Result<std::unique_ptr<LLVMModule>> res = get_llvm2(code, lm, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 278[0m
+    Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 307[0m
+    = asr_to_llvm(asr, diagnostics,
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_llvm.cpp[39m[0m[2m", line 4966[0m
+    v.nested_func_types = pass_find_nested_vars(asr, context,
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 3587[0m
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 3565[0m
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 3588[0m
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 3370[0m
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_llvm.cpp[39m[0m[2m", line 1020[0m
+    visit_symbol(*item.second);
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 3590[0m
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 3379[0m
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_llvm.cpp[39m[0m[2m", line 1464[0m
+    this->visit_stmt(*x.m_body[i]);
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 3604[0m
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 3414[0m
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_llvm.cpp[39m[0m[2m", line 4098[0m
+    handle_print(x);
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_llvm.cpp[39m[0m[2m", line 4121[0m
+    this->visit_expr_wrapper(x.m_values[i], true);
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_llvm.cpp[39m[0m[2m", line 2835[0m
+    this->visit_expr(*x);
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 3646[0m
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 3497[0m
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 3698[0m
+LFortranException: visit_OverloadedBinOp() not implemented
