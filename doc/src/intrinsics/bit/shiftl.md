@@ -26,7 +26,7 @@ The return value is of type integer and of the same kind as `x`.
 
 **shiftl(x, shift)** logically left shifts `x` by `shift` number of bits. `shiftl`
 shifts from LSB(**L**east **S**ignificant **B**it) to MSB(**M**ost **S**ignificant **B**it). Bits
-shifted from the left end i.e., MSB bits are lost. Zeroes are appened in from the
+shifted from the left end i.e., MSB bits are lost. Zeroes are appended to the
 opposite right end.
 
 ## Types
