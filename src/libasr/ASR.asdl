@@ -212,12 +212,10 @@ stmt
 
 
 expr
-    = BoolOp(expr left, boolop op, expr right, ttype type, expr? value)
-    | BinOp(expr left, binop op, expr right, ttype type, expr? value, expr? overloaded)
+    = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
         -- Such as: (x, y+z), (3.0, 2.0) generally not known at compile time
     | ComplexConstructor(expr re, expr im, ttype type, expr? value)
     | NamedExpr(expr target, expr value, ttype type)
-    | IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
     | FunctionCall(symbol name, symbol? original_name,
             call_arg* args, ttype type, expr? value, expr? dt)
     | DerivedTypeConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
@@ -228,15 +226,19 @@ expr
     | IntegerBitNot(expr arg, ttype type, expr? value)
     | IntegerUnaryMinus(expr arg, ttype type, expr? value)
     | IntegerCompare(expr left, cmpop op, expr right, ttype type, expr? value)
+    | IntegerBinOp(expr left, binop op, expr right, ttype type, expr? value)
     | RealConstant(float r, ttype type)
     | RealUnaryMinus(expr arg, ttype type, expr? value)
     | RealCompare(expr left, cmpop op, expr right, ttype type, expr? value)
+    | RealBinOp(expr left, binop op, expr right, ttype type, expr? value)
     | ComplexConstant(float re, float im, ttype type)
     | ComplexUnaryMinus(expr arg, ttype type, expr? value)
     | ComplexCompare(expr left, cmpop op, expr right, ttype type, expr? value)
+    | ComplexBinOp(expr left, binop op, expr right, ttype type, expr? value)
     | LogicalConstant(bool value, ttype type)
     | LogicalNot(expr arg, ttype type, expr? value)
     | LogicalCompare(expr left, cmpop op, expr right, ttype type, expr? value)
+    | LogicalBinOp(expr left, logicalbinop op, expr right, ttype type, expr? value)
 
     | ListConstant(expr* args, ttype type)
     | ListLen(expr arg, ttype type, expr? value)
@@ -271,6 +273,7 @@ expr
     | Transfer(expr source, expr mold, expr? size, ttype type, expr? value)
     | DerivedRef(expr v, symbol m, ttype type, expr? value)
     | OverloadedCompare(expr left, cmpop op, expr right, ttype type, expr? value, expr overloaded)
+    | OverloadedBinOp(expr left, binop op, expr right, ttype type, expr? value, expr overloaded)
     | Cast(expr arg, cast_kind kind, ttype type, expr? value)
     | ComplexRe(expr arg, ttype type, expr? value)
     | ComplexIm(expr arg, ttype type, expr? value)
@@ -320,9 +323,9 @@ ttype
     | Pointer(ttype type)
     | CPtr()
 
-boolop = And | Or | Xor | NEqv | Eqv
-
 binop = Add | Sub | Mul | Div | Pow
+
+logicalbinop = And | Or | Xor | NEqv | Eqv
 
 cmpop = Eq | NotEq | Lt | LtE | Gt | GtE
 
