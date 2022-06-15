@@ -331,7 +331,7 @@ public:
   inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
                                   ASR::expr_t *&left, ASR::expr_t *&right,
                                   ASR::asr_t *&asr, diag::Diagnostics &diag) {
-    ASR::boolopType op;
+    ASR::logicalbinopType op;
     switch (x.m_op) {
     case (AST::And):
       op = ASR::And;
@@ -410,8 +410,9 @@ public:
         value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
             al, x.base.base.loc, result, dest_type));
     }
-    asr = ASR::make_BoolOp_t(al, x.base.base.loc, left, op, right, dest_type,
-                             value);
+
+    asr = ASR::make_LogicalBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
+
   }
 
   inline static void visit_UnaryOp(Allocator &al, const AST::UnaryOp_t &x,
@@ -2425,10 +2426,10 @@ public:
             throw SemanticAbort();
         }
         ASR::expr_t *value = nullptr;
-        // Assign evaluation to `value` if possible, otherwise leave nullptr
-        if (LFortran::ASRUtils::expr_value(left) != nullptr &&
-                    LFortran::ASRUtils::expr_value(right) != nullptr) {
-            if (ASR::is_a<LFortran::ASR::Integer_t>(*dest_type)) {
+
+        if (ASRUtils::is_integer(*dest_type)) {
+
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
                 int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(
                                         LFortran::ASRUtils::expr_value(left))
                                         ->m_n;
@@ -2460,7 +2461,13 @@ public:
                 }
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(
                     al, x.base.base.loc, result, dest_type));
-            } else if (ASR::is_a<LFortran::ASR::Real_t>(*dest_type)) {
+            }
+
+            asr = ASR::make_IntegerBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
+
+        } else if (ASRUtils::is_real(*dest_type)) {
+
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
                 double left_value = ASR::down_cast<ASR::RealConstant_t>(
                                         LFortran::ASRUtils::expr_value(left))
                                         ->m_r;
@@ -2492,7 +2499,13 @@ public:
                 }
                 value = ASR::down_cast<ASR::expr_t>(
                     ASR::make_RealConstant_t(al, x.base.base.loc, result, dest_type));
-            } else if (ASR::is_a<LFortran::ASR::Complex_t>(*dest_type)) {
+            }
+
+            asr = ASR::make_RealBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
+
+        } else if (ASRUtils::is_complex(*dest_type)) {
+
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
                 ASR::ComplexConstant_t *left0
                     = ASR::down_cast<ASR::ComplexConstant_t>(
                             LFortran::ASRUtils::expr_value(left));
@@ -2528,9 +2541,15 @@ public:
                     ASR::make_ComplexConstant_t(al, x.base.base.loc,
                         std::real(result), std::imag(result), dest_type));
             }
+
+            asr = ASR::make_ComplexBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
+
         }
-        asr = ASR::make_BinOp_t(al, x.base.base.loc, left, op, right, dest_type,
-                                value, overloaded);
+
+        if (overloaded != nullptr) {
+            asr = ASR::make_OverloadedBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value, overloaded);
+        }
+
     }
 
 
