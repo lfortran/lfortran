@@ -3395,6 +3395,10 @@ public:
         tmp = lfortran_complex_bin_op(left_val, right_val, fn_name, type);
     }
 
+    void visit_OverloadedBinOp(const ASR::OverloadedBinOp_t &x) {
+        this->visit_expr(*x.m_overloaded);
+    }
+
     void visit_IntegerBitNot(const ASR::IntegerBitNot_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
