@@ -1,0 +1,39 @@
+(module
+    (func $0
+        (param i64) (result i64)
+        (local i64)
+        local.get 0
+        local.get 0
+        i64.mul
+        local.set 1
+        local.get 1
+        return
+    )
+    (func $1
+        (param i64 i64) (result i64)
+        (local i64)
+        local.get 0
+        local.get 1
+        i64.add
+        local.set 2
+        local.get 2
+        return
+    )
+    (func $2
+        (param) (result i64)
+        (local i64 i64 i64)
+        i64.const 1000000000000
+        local.set 1
+        i64.const 2000000000000
+        local.set 2
+        local.get 1
+        local.get 2
+        call 1
+        local.set 0
+        local.get 0
+        return
+    )
+    (export "a_sqr_i64" (func $0))
+    (export "add_i64" (func $1))
+    (export "test_i64" (func $2))
+)

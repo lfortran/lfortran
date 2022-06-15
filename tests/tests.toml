@@ -323,6 +323,10 @@ filename = "wasm1.f90"
 wat = true
 
 [[test]]
+filename = "wasm_i64.f90"
+wat = true
+
+[[test]]
 filename = "stop.f90"
 asr = true
 llvm = true

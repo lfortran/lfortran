@@ -78,10 +78,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
         }
 
-        wasm::emit_u32_b32_idx(m_type_section, len_idx_type_section, cur_func_idx);
-        wasm::emit_u32_b32_idx(m_func_section, len_idx_func_section, cur_func_idx);
-        wasm::emit_u32_b32_idx(m_export_section, len_idx_export_section, cur_func_idx);
-        wasm::emit_u32_b32_idx(m_code_section, len_idx_code_section, cur_func_idx);
+        wasm::emit_u32_b32_idx(m_type_section, m_al, len_idx_type_section, cur_func_idx);
+        wasm::emit_u32_b32_idx(m_func_section, m_al, len_idx_func_section, cur_func_idx);
+        wasm::emit_u32_b32_idx(m_export_section, m_al, len_idx_export_section, cur_func_idx);
+        wasm::emit_u32_b32_idx(m_code_section, m_al, len_idx_code_section, cur_func_idx);
     }
 
     void visit_Function(const ASR::Function_t &x) {
@@ -105,7 +105,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 throw CodeGenError("Parameters other than integer not yet supported");
             }
         }
-        wasm::fixup_len(m_type_section, len_idx_type_section_param_types_list);
+        wasm::fixup_len(m_type_section, m_al, len_idx_type_section_param_types_list);
 
         uint32_t len_idx_type_section_return_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
         return_var = LFortran::ASRUtils::EXPR2VAR(x.m_return_var);
@@ -119,7 +119,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         } else {
             throw CodeGenError("Return type not supported");
         }
-        wasm::fixup_len(m_type_section, len_idx_type_section_return_types_list);
+        wasm::fixup_len(m_type_section, m_al, len_idx_type_section_return_types_list);
 
         uint32_t len_idx_code_section_func_size = wasm::emit_len_placeholder(m_code_section, m_al);
         uint32_t len_idx_code_section_local_vars_list = wasm::emit_len_placeholder(m_code_section, m_al);
@@ -145,14 +145,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
         }
         // fixup length of local vars list
-        wasm::emit_u32_b32_idx(m_code_section, len_idx_code_section_local_vars_list, local_vars_cnt);
+        wasm::emit_u32_b32_idx(m_code_section, m_al, len_idx_code_section_local_vars_list, local_vars_cnt);
 
         for (size_t i = 0; i < x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
 
         wasm::emit_expr_end(m_code_section, m_al);
-        wasm::fixup_len(m_code_section, len_idx_code_section_func_size);
+        wasm::fixup_len(m_code_section, m_al, len_idx_code_section_func_size);
 
         wasm::emit_u32(m_func_section, m_al, cur_func_idx);
 
@@ -258,8 +258,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 wasm::emit_i32_const(m_code_section, m_al, val);
                 break;
             }
+            case 8: {
+                wasm::emit_i64_const(m_code_section, m_al, val);
+                break;
+            }
             default: {
-                throw CodeGenError("Constant Integer: Only kind 4 currently supported");
+                throw CodeGenError("Constant Integer: Only kind 4 and 8 supported");
             }
         }
     }

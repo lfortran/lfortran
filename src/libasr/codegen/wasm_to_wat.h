@@ -21,7 +21,8 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
 
     void visit_LocalSet(uint32_t localidx) { src += indent + "local.set " + std::to_string(localidx); }
 
-    void visit_I32Const(int value) { src += indent + "i32.const " + std::to_string(value); }
+    void visit_I32Const(int32_t value) { src += indent + "i32.const " + std::to_string(value); }
+    void visit_I64Const(int64_t value) { src += indent + "i64.const " + std::to_string(value); }
 
     void visit_I32Add() { src += indent + "i32.add"; }
     void visit_I64Add() { src += indent + "i64.add"; }

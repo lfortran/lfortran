@@ -6,49 +6,6 @@
 namespace LFortran {
 namespace wasm {
 
-std::vector<uint8_t> encode_signed_leb128(int32_t n) {
-    std::vector<uint8_t> out;
-    auto more = true;
-    do {
-        uint8_t byte = n & 0x7f;
-        n >>= 7;
-        more = !((((n == 0) && ((byte & 0x40) == 0)) ||
-                  ((n == -1) && ((byte & 0x40) != 0))));
-        if (more) {
-            byte |= 0x80;
-        }
-        out.emplace_back(byte);
-    } while (more);
-    return out;
-}
-
-std::vector<uint8_t> encode_unsigned_leb128(uint32_t n) {
-    std::vector<uint8_t> out;
-    do {
-        uint8_t byte = n & 0x7f;
-        n >>= 7;
-        if (n != 0) {
-            byte |= 0x80;
-        }
-        out.emplace_back(byte);
-    } while (n != 0);
-    return out;
-}
-
-void emit_signed_leb128(Vec<uint8_t> &code, Allocator &al, int32_t n) {
-    auto more = true;
-    do {
-        uint8_t byte = n & 0x7f;
-        n >>= 7;
-        more = !((((n == 0) && ((byte & 0x40) == 0)) ||
-                  ((n == -1) && ((byte & 0x40) != 0))));
-        if (more) {
-            byte |= 0x80;
-        }
-        code.push_back(al, byte);
-    } while (more);
-}
-
 void emit_unsigned_leb128(Vec<uint8_t> &code, Allocator &al, uint32_t n) {
     do {
         uint8_t byte = n & 0x7f;
@@ -58,6 +15,34 @@ void emit_unsigned_leb128(Vec<uint8_t> &code, Allocator &al, uint32_t n) {
         }
         code.push_back(al, byte);
     } while (n != 0);
+}
+
+void emit_signed_leb128(Vec<uint8_t> &code, Allocator &al, int32_t n) { // for i32
+    bool more = true;
+    do {
+        uint8_t byte = n & 0x7f;
+        n >>= 7;
+        more = !((((n == 0) && ((byte & 0x40) == 0)) ||
+                  ((n == -1) && ((byte & 0x40) != 0))));
+        if (more) {
+            byte |= 0x80;
+        }
+        code.push_back(al, byte);
+    } while (more);
+}
+
+void emit_signed_leb128(Vec<uint8_t> &code, Allocator &al, int64_t n) { // for i64
+    bool more = true;
+    do {
+        uint8_t byte = n & 0x7f;
+        n >>= 7;
+        more = !((((n == 0) && ((byte & 0x40) == 0)) ||
+                  ((n == -1) && ((byte & 0x40) != 0))));
+        if (more) {
+            byte |= 0x80;
+        }
+        code.push_back(al, byte);
+    } while (more);
 }
 
 // function to emit header of Wasm Binary Format
@@ -82,18 +67,25 @@ void emit_i32(Vec<uint8_t> &code, Allocator &al, int32_t x) {
     emit_signed_leb128(code, al, x);
 }
 
+// function to emit signed 64 bit integer
+void emit_i64(Vec<uint8_t> &code, Allocator &al, int64_t x) {
+    emit_signed_leb128(code, al, x);
+}
+
 // function to append a given bytecode to the end of the code
 void emit_b8(Vec<uint8_t> &code, Allocator &al, uint8_t x) {
     code.push_back(al, x);
 }
 
-void emit_u32_b32_idx(Vec<uint8_t> &code, uint32_t idx,
+void emit_u32_b32_idx(Vec<uint8_t> &code, Allocator &al, uint32_t idx,
                       uint32_t section_size) {
     /*
     Encodes the integer `i` using LEB128 and adds trailing zeros to always
     occupy 4 bytes. Stores the int `i` at the index `idx` in `code`.
     */
-    std::vector<uint8_t> num = encode_unsigned_leb128(section_size);
+    Vec<uint8_t> num;
+    num.reserve(al, 4);
+    emit_unsigned_leb128(num, al, section_size);
     std::vector<uint8_t> num_4b = {0x80, 0x80, 0x80, 0x00};
     assert(num.size() <= 4);
     for (uint32_t i = 0; i < num.size(); i++) {
@@ -105,9 +97,9 @@ void emit_u32_b32_idx(Vec<uint8_t> &code, uint32_t idx,
 }
 
 // function to fixup length at the given length index
-void fixup_len(Vec<uint8_t> &code, uint32_t len_idx) {
+void fixup_len(Vec<uint8_t> &code, Allocator &al, uint32_t len_idx) {
     uint32_t section_len = code.size() - len_idx - 4u;
-    emit_u32_b32_idx(code, len_idx, section_len);
+    emit_u32_b32_idx(code, al, len_idx, section_len);
 }
 
 // function to emit length placeholder
@@ -124,6 +116,12 @@ uint32_t emit_len_placeholder(Vec<uint8_t> &code, Allocator &al) {
 void emit_i32_const(Vec<uint8_t> &code, Allocator &al, int32_t x) {
     code.push_back(al, 0x41);
     emit_i32(code, al, x);
+}
+
+// function to emit a i64.const instruction
+void emit_i64_const(Vec<uint8_t> &code, Allocator &al, int64_t x) {
+    code.push_back(al, 0x42);
+    emit_i64(code, al, x);
 }
 
 // function to emit end of wasm expression
