@@ -350,19 +350,19 @@ public:
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x) {
-        visit_BinOp(x);
+        handle_BinOp(x);
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t& x) {
-        visit_BinOp(x);
+        handle_BinOp(x);
     }
 
     void visit_ComplexBinOp(const ASR::ComplexBinOp_t& x) {
-        visit_BinOp(x);
+        handle_BinOp(x);
     }
 
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t& x) {
-        visit_BinOp(x);
+        handle_BinOp(x);
     }
 
     template <typename T>

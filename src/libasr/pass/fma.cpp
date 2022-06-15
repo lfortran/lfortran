@@ -53,8 +53,8 @@ public:
     }
 
     bool is_BinOpMul(ASR::expr_t* expr) {
-        if( expr->type == ASR::exprType::BinOp ) {
-            ASR::BinOp_t* expr_binop = ASR::down_cast<ASR::BinOp_t>(expr);
+        if (ASR::is_a<ASR::RealBinOp_t>(*expr)) {
+            ASR::RealBinOp_t* expr_binop = ASR::down_cast<ASR::RealBinOp_t>(expr);
             return expr_binop->m_op == ASR::binopType::Mul;
         }
         return false;
