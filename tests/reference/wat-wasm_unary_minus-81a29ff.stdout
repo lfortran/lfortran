@@ -1,0 +1,39 @@
+(module
+    (func $0
+        (param i32) (result i32)
+        (local i32)
+        i32.const 0
+        local.get 0
+        i32.sub
+        local.set 1
+        local.get 1
+        return
+    )
+    (func $1
+        (param i64) (result i64)
+        (local i64)
+        i64.const 0
+        local.get 0
+        i64.sub
+        local.set 1
+        local.get 1
+        return
+    )
+    (func $2
+        (param) (result i64)
+        (local i64)
+        i64.const 0
+        i64.const 15000000000000
+        i64.sub
+        i64.const 0
+        i64.const 16000000000000
+        i64.sub
+        i64.sub
+        local.set 0
+        local.get 0
+        return
+    )
+    (export "get_num_neg_i32" (func $0))
+    (export "get_num_neg_i64" (func $1))
+    (export "test_unary_minus" (func $2))
+)
