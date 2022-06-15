@@ -31,7 +31,7 @@ The return value is of logical `true` or `false` type.
 ## Description
 
 **lge(x, y)** determines if input string `x` is lexically greater than or equal
-to input string `y`. The two strings in comparsion are interpreted as
+to input string `y`. The two strings in comparison are interpreted as
 containing ASCII character codes.
 
 ## Types
