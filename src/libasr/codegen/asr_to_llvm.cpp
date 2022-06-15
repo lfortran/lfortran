@@ -3134,7 +3134,7 @@ public:
         start_new_block(target);
     }
 
-    void visit_BoolOp(const ASR::BoolOp_t &x) {
+    void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -3143,31 +3143,28 @@ public:
         llvm::Value *left_val = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right_val = tmp;
-        if (x.m_type->type == ASR::ttypeType::Logical) {
-            switch (x.m_op) {
-                case ASR::boolopType::And: {
-                    tmp = builder->CreateAnd(left_val, right_val);
-                    break;
-                };
-                case ASR::boolopType::Or: {
-                    tmp = builder->CreateOr(left_val, right_val);
-                    break;
-                };
-                case ASR::boolopType::Xor: {
-                    tmp = builder->CreateXor(left_val, right_val);
-                    break;
-                };
-                case ASR::boolopType::NEqv: {
-                    tmp = builder->CreateXor(left_val, right_val);
-                    break;
-                };
-                case ASR::boolopType::Eqv: {
-                    tmp = builder->CreateXor(left_val, right_val);
-                    tmp = builder->CreateNot(tmp);
-                };
-            }
-        } else {
-            throw CodeGenError("Boolop: Only Logical types can be used with logical operators.");
+        LFORTRAN_ASSERT(ASRUtils::is_logical(*x.m_type))
+        switch (x.m_op) {
+            case ASR::logicalbinopType::And: {
+                tmp = builder->CreateAnd(left_val, right_val);
+                break;
+            };
+            case ASR::logicalbinopType::Or: {
+                tmp = builder->CreateOr(left_val, right_val);
+                break;
+            };
+            case ASR::logicalbinopType::Xor: {
+                tmp = builder->CreateXor(left_val, right_val);
+                break;
+            };
+            case ASR::logicalbinopType::NEqv: {
+                tmp = builder->CreateXor(left_val, right_val);
+                break;
+            };
+            case ASR::logicalbinopType::Eqv: {
+                tmp = builder->CreateXor(left_val, right_val);
+                tmp = builder->CreateNot(tmp);
+            };
         }
     }
 
