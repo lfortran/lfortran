@@ -166,93 +166,166 @@ public:
         ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
 
     ASR::expr_t *value = nullptr;
-    // Assign evaluation to `value` if possible, otherwise leave nullptr
-    if (LFortran::ASRUtils::expr_value(left) != nullptr &&
-        LFortran::ASRUtils::expr_value(right) != nullptr) {
-      if (ASR::is_a<LFortran::ASR::Integer_t>(*dest_type)) {
-        int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                 LFortran::ASRUtils::expr_value(left))
-                                 ->m_n;
-        int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                  LFortran::ASRUtils::expr_value(right))
-                                  ->m_n;
-        bool result;
-        switch (asr_op) {
-            case (ASR::cmpopType::Eq): {
-                result = left_value == right_value;
-                break;
+
+    if (ASRUtils::is_integer(*dest_type)) {
+
+        if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
+            int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(
+                                    ASRUtils::expr_value(left))->m_n;
+            int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(
+                                    ASRUtils::expr_value(right))->m_n;
+            bool result;
+            switch (asr_op) {
+                case (ASR::cmpopType::Eq):  { result = left_value == right_value; break; }
+                case (ASR::cmpopType::Gt): { result = left_value > right_value; break; }
+                case (ASR::cmpopType::GtE): { result = left_value >= right_value; break; }
+                case (ASR::cmpopType::Lt): { result = left_value < right_value; break; }
+                case (ASR::cmpopType::LtE): { result = left_value <= right_value; break; }
+                case (ASR::cmpopType::NotEq): { result = left_value != right_value; break; }
+                default: {
+                    throw SemanticError("Comparison operator not implemented",
+                                        x.base.base.loc);
+                }
             }
-            case (ASR::cmpopType::Gt): {
-                result = left_value > right_value;
-                break;
-            }
-            case (ASR::cmpopType::GtE): {
-                result = left_value >= right_value;
-                break;
-            }
-            case (ASR::cmpopType::Lt): {
-                result = left_value < right_value;
-                break;
-            }
-            case (ASR::cmpopType::LtE): {
-                result = left_value <= right_value;
-                break;
-            }
-            case (ASR::cmpopType::NotEq): {
-                result = left_value != right_value;
-                break;
-            }
-            default: {
-                throw SemanticError("Comparison operator not implemented",
-                                    x.base.base.loc);
-            }
+            value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
+                al, x.base.base.loc, result, type));
         }
-        value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
-            al, x.base.base.loc, result, type));
-      } else if (ASR::is_a<LFortran::ASR::Real_t>(*dest_type)) {
-        double left_value = ASR::down_cast<ASR::RealConstant_t>(
-                                LFortran::ASRUtils::expr_value(left))
-                                ->m_r;
-        double right_value = ASR::down_cast<ASR::RealConstant_t>(
-                                 LFortran::ASRUtils::expr_value(right))
-                                 ->m_r;
-        bool result;
-        switch (asr_op) {
-            case (ASR::cmpopType::Eq): {
-                result = left_value == right_value;
-                break;
+
+        asr = ASR::make_IntegerCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
+
+    } else if (ASRUtils::is_real(*dest_type)) {
+
+        if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
+            double left_value = ASR::down_cast<ASR::RealConstant_t>(
+                                    ASRUtils::expr_value(left))->m_r;
+            double right_value = ASR::down_cast<ASR::RealConstant_t>(
+                                    ASRUtils::expr_value(right))->m_r;
+            bool result;
+            switch (asr_op) {
+                case (ASR::cmpopType::Eq):  { result = left_value == right_value; break; }
+                case (ASR::cmpopType::Gt): { result = left_value > right_value; break; }
+                case (ASR::cmpopType::GtE): { result = left_value >= right_value; break; }
+                case (ASR::cmpopType::Lt): { result = left_value < right_value; break; }
+                case (ASR::cmpopType::LtE): { result = left_value <= right_value; break; }
+                case (ASR::cmpopType::NotEq): { result = left_value != right_value; break; }
+                default: {
+                    throw SemanticError("Comparison operator not implemented",
+                                        x.base.base.loc);
+                }
             }
-            case (ASR::cmpopType::Gt): {
-                result = left_value > right_value;
-                break;
-            }
-            case (ASR::cmpopType::GtE): {
-                result = left_value >= right_value;
-                break;
-            }
-            case (ASR::cmpopType::Lt): {
-                result = left_value < right_value;
-                break;
-            }
-            case (ASR::cmpopType::LtE): {
-                result = left_value <= right_value;
-                break;
-            }
-            case (ASR::cmpopType::NotEq): {
-                result = left_value != right_value;
-                break;
-            }
-            default: {
-                throw SemanticError("Comparison operator not implemented",
-                                    x.base.base.loc);
-            }
+            value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
+                al, x.base.base.loc, result, type));
         }
-        value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
-            al, x.base.base.loc, result, type));
-      }
+
+        asr = ASR::make_RealCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
+
+    } else if (ASRUtils::is_complex(*dest_type)) {
+
+        if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
+            ASR::ComplexConstant_t *left0
+                = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(left));
+            ASR::ComplexConstant_t *right0
+                = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(right));
+            std::complex<double> left_value(left0->m_re, left0->m_im);
+            std::complex<double> right_value(right0->m_re, right0->m_im);
+            bool result;
+            switch (asr_op) {
+                case (ASR::cmpopType::Eq) : {
+                    result = left_value.real() == right_value.real() &&
+                            left_value.imag() == right_value.imag();
+                    break;
+                }
+                case (ASR::cmpopType::NotEq) : {
+                    result = left_value.real() != right_value.real() ||
+                            left_value.imag() != right_value.imag();
+                    break;
+                }
+                default: {
+                    throw SemanticError("'" + ASRUtils::cmpop_to_str(asr_op) +
+                                        "' comparison is not supported between complex numbers",
+                                        x.base.base.loc);
+                }
+            }
+            value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
+                al, x.base.base.loc, result, type));
+        }
+
+        asr = ASR::make_ComplexCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
+
+    } else if (ASRUtils::is_logical(*dest_type)) {
+
+        if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
+            bool left_value = ASR::down_cast<ASR::LogicalConstant_t>(
+                                    ASRUtils::expr_value(left))->m_value;
+            bool right_value = ASR::down_cast<ASR::LogicalConstant_t>(
+                                    ASRUtils::expr_value(right))->m_value;
+            bool result;
+            switch (asr_op) {
+                case (ASR::cmpopType::Eq):  { result = left_value == right_value; break; }
+                case (ASR::cmpopType::Gt): { result = left_value > right_value; break; }
+                case (ASR::cmpopType::GtE): { result = left_value >= right_value; break; }
+                case (ASR::cmpopType::Lt): { result = left_value < right_value; break; }
+                case (ASR::cmpopType::LtE): { result = left_value <= right_value; break; }
+                case (ASR::cmpopType::NotEq): { result = left_value != right_value; break; }
+                default: {
+                    throw SemanticError("Comparison operator not implemented",
+                                        x.base.base.loc);
+                }
+            }
+            value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
+                al, x.base.base.loc, result, type));
+        }
+
+        asr = ASR::make_LogicalCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
+
+    } else if (ASRUtils::is_character(*dest_type)) {
+
+        if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
+            char* left_value = ASR::down_cast<ASR::StringConstant_t>(
+                                    ASRUtils::expr_value(left))->m_s;
+            char* right_value = ASR::down_cast<ASR::StringConstant_t>(
+                                    ASRUtils::expr_value(right))->m_s;
+            std::string left_str = std::string(left_value);
+            std::string right_str = std::string(right_value);
+            int8_t strcmp = left_str.compare(right_str);
+            bool result;
+            switch (asr_op) {
+                case (ASR::cmpopType::Eq) : {
+                    result = (strcmp == 0);
+                    break;
+                }
+                case (ASR::cmpopType::NotEq) : {
+                    result = (strcmp != 0);
+                    break;
+                }
+                case (ASR::cmpopType::Gt) : {
+                    result = (strcmp > 0);
+                    break;
+                }
+                case (ASR::cmpopType::GtE) : {
+                    result = (strcmp > 0 || strcmp == 0);
+                    break;
+                }
+                case (ASR::cmpopType::Lt) : {
+                    result = (strcmp < 0);
+                    break;
+                }
+                case (ASR::cmpopType::LtE) : {
+                    result = (strcmp < 0 || strcmp == 0);
+                    break;
+                }
+                default: LFORTRAN_ASSERT(false); // should never happen
+            }
+            value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
+                al, x.base.base.loc, result, type));
+        }
+
+        asr = ASR::make_StringCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
     }
-    asr = ASR::make_Compare_t(al, x.base.base.loc, left, asr_op, right, type,
-                              value, overloaded);
+    if (overloaded != nullptr) {
+        asr = ASR::make_OverloadedCompare_t(al, x.base.base.loc, left, asr_op, right, type,
+            value, overloaded);
+    }
   }
 
   inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
