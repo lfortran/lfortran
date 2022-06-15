@@ -225,6 +225,24 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+        ASR::Integer_t *i = ASR::down_cast<ASR::Integer_t>(x.m_type);
+        // there seems no direct unary-minus inst in wasm, so subtracting from 0
+        if(i->m_kind == 4){
+            wasm::emit_i32_const(m_code_section, m_al, 0);
+            this->visit_expr(*x.m_arg);
+            wasm::emit_i32_sub(m_code_section, m_al);
+        }
+        else if(i->m_kind == 8){
+            wasm::emit_i64_const(m_code_section, m_al, 0LL);
+            this->visit_expr(*x.m_arg);
+            wasm::emit_i64_sub(m_code_section, m_al);
+        }
+        else{
+            throw CodeGenError("IntegerUnaryMinus: Only kind 4 and 8 supported");
+        }
+    }
+
     void visit_Var(const ASR::Var_t &x) {
         const ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
         auto v = ASR::down_cast<ASR::Variable_t>(s);
