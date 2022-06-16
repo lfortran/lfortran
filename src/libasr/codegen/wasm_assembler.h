@@ -206,6 +206,8 @@ void encode_section(Vec<uint8_t> &des, Vec<uint8_t> &section_content, Allocator 
 }
 
 
+/**************************** Integer Operations ****************************/
+
 // function to emit i32.clz instruction
 void emit_i32_clz(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x67); }
 
@@ -314,6 +316,9 @@ void emit_i64_rotl(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x89)
 // function to emit i64.rotr instruction
 void emit_i64_rotr(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x8A); }
 
+
+
+/**************************** Floating Point Operations ****************************/
 
 // function to emit f32.abs instruction
 void emit_f32_abs(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x8B); }
