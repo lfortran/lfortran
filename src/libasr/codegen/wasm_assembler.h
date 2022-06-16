@@ -150,6 +150,18 @@ void emit_i64_const(Vec<uint8_t> &code, Allocator &al, int64_t x) {
     emit_i64(code, al, x);
 }
 
+// function to emit a f32.const instruction
+void emit_f32_const(Vec<uint8_t> &code, Allocator &al, float x) {
+    code.push_back(al, 0x43);
+    emit_f32(code, al, x);
+}
+
+// function to emit a f64.const instruction
+void emit_f64_const(Vec<uint8_t> &code, Allocator &al, double x) {
+    code.push_back(al, 0x44);
+    emit_f64(code, al, x);
+}
+
 // function to emit end of wasm expression
 void emit_expr_end(Vec<uint8_t> &code, Allocator &al) {
     code.push_back(al, 0x0B);
@@ -302,6 +314,90 @@ void emit_i64_rotl(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x89)
 // function to emit i64.rotr instruction
 void emit_i64_rotr(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x8A); }
 
+
+// function to emit f32.abs instruction
+void emit_f32_abs(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x8B); }
+
+// function to emit f32.neg instruction
+void emit_f32_neg(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x8C); }
+
+// function to emit f32.ceil instruction
+void emit_f32_ceil(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x8D); }
+
+// function to emit f32.floor instruction
+void emit_f32_floor(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x8E); }
+
+// function to emit f32.trunc instruction
+void emit_f32_trunc(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x8F); }
+
+// function to emit f32.nearest instruction
+void emit_f32_nearest(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x90); }
+
+// function to emit f32.sqrt instruction
+void emit_f32_sqrt(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x91); }
+
+// function to emit f32.add instruction
+void emit_f32_add(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x92); }
+
+// function to emit f32.sub instruction
+void emit_f32_sub(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x93); }
+
+// function to emit f32.mul instruction
+void emit_f32_mul(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x94); }
+
+// function to emit f32.div instruction
+void emit_f32_div(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x95); }
+
+// function to emit f32.min instruction
+void emit_f32_min(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x96); }
+
+// function to emit f32.max instruction
+void emit_f32_max(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x97); }
+
+// function to emit f32.copysign instruction
+void emit_f32_copysign(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x98); }
+
+// function to emit f64.abs instruction
+void emit_f64_abs(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x99); }
+
+// function to emit f64.neg instruction
+void emit_f64_neg(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x9A); }
+
+// function to emit f64.ceil instruction
+void emit_f64_ceil(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x9B); }
+
+// function to emit f64.floor instruction
+void emit_f64_floor(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x9C); }
+
+// function to emit f64.trunc instruction
+void emit_f64_trunc(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x9D); }
+
+// function to emit f64.nearest instruction
+void emit_f64_nearest(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x9E); }
+
+// function to emit f64.sqrt instruction
+void emit_f64_sqrt(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x9F); }
+
+// function to emit f64.add instruction
+void emit_f64_add(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0xA0); }
+
+// function to emit f64.sub instruction
+void emit_f64_sub(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0xA1); }
+
+// function to emit f64.mul instruction
+void emit_f64_mul(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0xA2); }
+
+// function to emit f64.div instruction
+void emit_f64_div(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0xA3); }
+
+// function to emit f64.min instruction
+void emit_f64_min(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0xA4); }
+
+// function to emit f64.max instruction
+void emit_f64_max(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0xA5); }
+
+// function to emit f64.copysign instruction
+void emit_f64_copysign(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0xA6); }
 
 }  // namespace wasm
 
