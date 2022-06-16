@@ -4,7 +4,7 @@ namespace LFortran {
 
 namespace wasm {
 
-uint32_t decode_unsigned_leb128(Vec<uint8_t> &code, uint32_t &offset) {
+uint32_t decode_leb128_u32(Vec<uint8_t> &code, uint32_t &offset) {
     uint32_t result = 0U;
     uint32_t shift = 0U;
     while (true) {
@@ -18,7 +18,7 @@ uint32_t decode_unsigned_leb128(Vec<uint8_t> &code, uint32_t &offset) {
     }
 }
 
-int32_t decode_signed_leb128_i32(Vec<uint8_t> &code, uint32_t &offset) {
+int32_t decode_leb128_i32(Vec<uint8_t> &code, uint32_t &offset) {
     int32_t result = 0;
     uint32_t shift = 0U;
     uint8_t byte;
@@ -38,7 +38,7 @@ int32_t decode_signed_leb128_i32(Vec<uint8_t> &code, uint32_t &offset) {
     return result;
 }
 
-int64_t decode_signed_leb128_i64(Vec<uint8_t> &code, uint32_t &offset) {
+int64_t decode_leb128_i64(Vec<uint8_t> &code, uint32_t &offset) {
     int64_t result = 0;
     uint32_t shift = 0U;
     uint8_t byte;
@@ -72,28 +72,26 @@ double decode_ieee754_f64(Vec<uint8_t> &code, uint32_t &offset) {
     return value;
 }
 
-uint8_t read_byte(Vec<uint8_t> &code, uint32_t &offset) {
-    if (offset >= code.size()) {
-        throw LFortran::LFortranException("read_byte: offset out of bounds");
-    }
+uint8_t read_b8(Vec<uint8_t> &code, uint32_t &offset) {
+    LFORTRAN_ASSERT(offset < code.size());
     return code.p[offset++];
 }
 
-float read_float(Vec<uint8_t> & code, uint32_t & offset) {
+float read_f32(Vec<uint8_t> & code, uint32_t & offset) {
     LFORTRAN_ASSERT(offset + sizeof(float) <= code.size());
     return decode_ieee754_f32(code, offset);
 }
 
-double read_double(Vec<uint8_t> & code, uint32_t & offset) {
+double read_f64(Vec<uint8_t> & code, uint32_t & offset) {
     LFORTRAN_ASSERT(offset + sizeof(double) <= code.size());
     return decode_ieee754_f64(code, offset);
 }
 
-int32_t read_signed_num_i32(Vec<uint8_t> &code, uint32_t &offset) { return decode_signed_leb128_i32(code, offset); }
+uint32_t read_u32(Vec<uint8_t> &code, uint32_t &offset) { return decode_leb128_u32(code, offset); }
 
-int64_t read_signed_num_i64(Vec<uint8_t> &code, uint32_t &offset) { return decode_signed_leb128_i64(code, offset); }
+int32_t read_i32(Vec<uint8_t> &code, uint32_t &offset) { return decode_leb128_i32(code, offset); }
 
-uint32_t read_unsigned_num(Vec<uint8_t> &code, uint32_t &offset) { return decode_unsigned_leb128(code, offset); }
+int64_t read_i64(Vec<uint8_t> &code, uint32_t &offset) { return decode_leb128_i64(code, offset); }
 
 void hexdump(void *ptr, int buflen) {
     unsigned char *buf = (unsigned char *)ptr;

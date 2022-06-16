@@ -6,7 +6,7 @@
 namespace LFortran {
 namespace wasm {
 
-void emit_unsigned_leb128(Vec<uint8_t> &code, Allocator &al, uint32_t n) {
+void emit_leb128_u32(Vec<uint8_t> &code, Allocator &al, uint32_t n) { // for u32
     do {
         uint8_t byte = n & 0x7f;
         n >>= 7;
@@ -17,7 +17,7 @@ void emit_unsigned_leb128(Vec<uint8_t> &code, Allocator &al, uint32_t n) {
     } while (n != 0);
 }
 
-void emit_signed_leb128(Vec<uint8_t> &code, Allocator &al, int32_t n) { // for i32
+void emit_leb128_i32(Vec<uint8_t> &code, Allocator &al, int32_t n) { // for i32
     bool more = true;
     do {
         uint8_t byte = n & 0x7f;
@@ -31,7 +31,7 @@ void emit_signed_leb128(Vec<uint8_t> &code, Allocator &al, int32_t n) { // for i
     } while (more);
 }
 
-void emit_signed_leb128(Vec<uint8_t> &code, Allocator &al, int64_t n) { // for i64
+void emit_leb128_i64(Vec<uint8_t> &code, Allocator &al, int64_t n) { // for i64
     bool more = true;
     do {
         uint8_t byte = n & 0x7f;
@@ -80,17 +80,17 @@ void emit_b8(Vec<uint8_t> &code, Allocator &al, uint8_t x) {
 
 // function to emit unsigned 32 bit integer
 void emit_u32(Vec<uint8_t> &code, Allocator &al, uint32_t x) {
-    emit_unsigned_leb128(code, al, x);
+    emit_leb128_u32(code, al, x);
 }
 
 // function to emit signed 32 bit integer
 void emit_i32(Vec<uint8_t> &code, Allocator &al, int32_t x) {
-    emit_signed_leb128(code, al, x);
+    emit_leb128_i32(code, al, x);
 }
 
 // function to emit signed 64 bit integer
 void emit_i64(Vec<uint8_t> &code, Allocator &al, int64_t x) {
-    emit_signed_leb128(code, al, x);
+    emit_leb128_i64(code, al, x);
 }
 
 // function to emit 32 bit float
@@ -111,7 +111,7 @@ void emit_u32_b32_idx(Vec<uint8_t> &code, Allocator &al, uint32_t idx,
     */
     Vec<uint8_t> num;
     num.reserve(al, 4);
-    emit_unsigned_leb128(num, al, section_size);
+    emit_leb128_u32(num, al, section_size);
     std::vector<uint8_t> num_4b = {0x80, 0x80, 0x80, 0x00};
     assert(num.size() <= 4);
     for (uint32_t i = 0; i < num.size(); i++) {
