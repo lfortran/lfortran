@@ -73,6 +73,11 @@ void emit_header(Vec<uint8_t> &code, Allocator &al) {
     code.push_back(al, 0x00);
 }
 
+// function to append a given bytecode to the end of the code
+void emit_b8(Vec<uint8_t> &code, Allocator &al, uint8_t x) {
+    code.push_back(al, x);
+}
+
 // function to emit unsigned 32 bit integer
 void emit_u32(Vec<uint8_t> &code, Allocator &al, uint32_t x) {
     emit_unsigned_leb128(code, al, x);
@@ -96,11 +101,6 @@ void emit_f32(Vec<uint8_t> &code, Allocator &al, float x) {
 // function to emit 64 bit float
 void emit_f64(Vec<uint8_t> &code, Allocator &al, double x) {
     emit_ieee754_f64(code, al, x);
-}
-
-// function to append a given bytecode to the end of the code
-void emit_b8(Vec<uint8_t> &code, Allocator &al, uint8_t x) {
-    code.push_back(al, x);
 }
 
 void emit_u32_b32_idx(Vec<uint8_t> &code, Allocator &al, uint32_t idx,
@@ -138,53 +138,6 @@ uint32_t emit_len_placeholder(Vec<uint8_t> &code, Allocator &al) {
     return len_idx;
 }
 
-// function to emit a i32.const instruction
-void emit_i32_const(Vec<uint8_t> &code, Allocator &al, int32_t x) {
-    code.push_back(al, 0x41);
-    emit_i32(code, al, x);
-}
-
-// function to emit a i64.const instruction
-void emit_i64_const(Vec<uint8_t> &code, Allocator &al, int64_t x) {
-    code.push_back(al, 0x42);
-    emit_i64(code, al, x);
-}
-
-// function to emit a f32.const instruction
-void emit_f32_const(Vec<uint8_t> &code, Allocator &al, float x) {
-    code.push_back(al, 0x43);
-    emit_f32(code, al, x);
-}
-
-// function to emit a f64.const instruction
-void emit_f64_const(Vec<uint8_t> &code, Allocator &al, double x) {
-    code.push_back(al, 0x44);
-    emit_f64(code, al, x);
-}
-
-// function to emit end of wasm expression
-void emit_expr_end(Vec<uint8_t> &code, Allocator &al) {
-    code.push_back(al, 0x0B);
-}
-
-// function to emit get local variable at given index
-void emit_get_local(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
-    code.push_back(al, 0x20);
-    emit_u32(code, al, idx);
-}
-
-// function to emit set local variable at given index
-void emit_set_local(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
-    code.push_back(al, 0x21);
-    emit_u32(code, al, idx);
-}
-
-// function to emit call instruction
-void emit_call(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
-    code.push_back(al, 0x10);
-    emit_u32(code, al, idx);
-}
-
 void emit_export_fn(Vec<uint8_t> &code, Allocator &al, const std::string& name,
                     uint32_t idx) {
     std::vector<uint8_t> name_bytes(name.size());
@@ -205,8 +158,36 @@ void encode_section(Vec<uint8_t> &des, Vec<uint8_t> &section_content, Allocator 
     }
 }
 
+// function to emit get local variable at given index
+void emit_get_local(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
+    code.push_back(al, 0x20);
+    emit_u32(code, al, idx);
+}
+
+// function to emit set local variable at given index
+void emit_set_local(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
+    code.push_back(al, 0x21);
+    emit_u32(code, al, idx);
+}
+
+// function to emit call instruction
+void emit_call(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
+    code.push_back(al, 0x10);
+    emit_u32(code, al, idx);
+}
+
+// function to emit end of wasm expression
+void emit_expr_end(Vec<uint8_t> &code, Allocator &al) {
+    code.push_back(al, 0x0B);
+}
 
 /**************************** Integer Operations ****************************/
+
+// function to emit a i32.const instruction
+void emit_i32_const(Vec<uint8_t> &code, Allocator &al, int32_t x) {
+    code.push_back(al, 0x41);
+    emit_i32(code, al, x);
+}
 
 // function to emit i32.clz instruction
 void emit_i32_clz(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x67); }
@@ -261,6 +242,13 @@ void emit_i32_rotl(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x77)
 
 // function to emit i32.rotr instruction
 void emit_i32_rotr(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x78); }
+
+
+// function to emit a i64.const instruction
+void emit_i64_const(Vec<uint8_t> &code, Allocator &al, int64_t x) {
+    code.push_back(al, 0x42);
+    emit_i64(code, al, x);
+}
 
 // function to emit i64.clz instruction
 void emit_i64_clz(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x79); }
@@ -320,6 +308,12 @@ void emit_i64_rotr(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x8A)
 
 /**************************** Floating Point Operations ****************************/
 
+// function to emit a f32.const instruction
+void emit_f32_const(Vec<uint8_t> &code, Allocator &al, float x) {
+    code.push_back(al, 0x43);
+    emit_f32(code, al, x);
+}
+
 // function to emit f32.abs instruction
 void emit_f32_abs(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x8B); }
 
@@ -361,6 +355,13 @@ void emit_f32_max(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x97);
 
 // function to emit f32.copysign instruction
 void emit_f32_copysign(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x98); }
+
+
+// function to emit a f64.const instruction
+void emit_f64_const(Vec<uint8_t> &code, Allocator &al, double x) {
+    code.push_back(al, 0x44);
+    emit_f64(code, al, x);
+}
 
 // function to emit f64.abs instruction
 void emit_f64_abs(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x99); }
