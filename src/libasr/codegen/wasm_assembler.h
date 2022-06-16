@@ -141,42 +141,6 @@ void emit_set_local(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
     emit_u32(code, al, idx);
 }
 
-// function to emit i32.add instruction
-void emit_i32_add(Vec<uint8_t> &code, Allocator &al) {
-    code.push_back(al, 0x6A);
-}
-
-// function to emit i32.sub instruction
-void emit_i32_sub(Vec<uint8_t> &code, Allocator &al) {
-    code.push_back(al, 0x6B);
-}
-
-// function to emit i32.mul instruction
-void emit_i32_mul(Vec<uint8_t> &code, Allocator &al) {
-    code.push_back(al, 0x6C);
-}
-
-// function to emit i32.div instruction
-void emit_i32_div(Vec<uint8_t> &code, Allocator &al) {
-    code.push_back(al, 0x6D);
-}
-
-void emit_i64_add(Vec<uint8_t> &code, Allocator &al) {
-    code.push_back(al, 0x7C);
-}
-
-void emit_i64_sub(Vec<uint8_t> &code, Allocator &al) {
-    code.push_back(al, 0x7D);
-}
-
-void emit_i64_mul(Vec<uint8_t> &code, Allocator &al) {
-    code.push_back(al, 0x7E);
-}
-
-void emit_i64_div(Vec<uint8_t> &code, Allocator &al) {
-    code.push_back(al, 0x7F);
-}
-
 // function to emit call instruction
 void emit_call(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
     code.push_back(al, 0x10);
@@ -202,6 +166,115 @@ void encode_section(Vec<uint8_t> &des, Vec<uint8_t> &section_content, Allocator 
         des.push_back(al, byte);
     }
 }
+
+
+// function to emit i32.clz instruction
+void emit_i32_clz(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x67); }
+
+// function to emit i32.ctz instruction
+void emit_i32_ctz(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x68); }
+
+// function to emit i32.popcnt instruction
+void emit_i32_popcnt(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x69); }
+
+// function to emit i32.add instruction
+void emit_i32_add(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x6A); }
+
+// function to emit i32.sub instruction
+void emit_i32_sub(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x6B); }
+
+// function to emit i32.mul instruction
+void emit_i32_mul(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x6C); }
+
+// function to emit i32.div_s instruction
+void emit_i32_div_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x6D); }
+
+// function to emit i32.div_u instruction
+void emit_i32_div_u(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x6E); }
+
+// function to emit i32.rem_s instruction
+void emit_i32_rem_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x6F); }
+
+// function to emit i32.rem_u instruction
+void emit_i32_rem_u(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x70); }
+
+// function to emit i32.and instruction
+void emit_i32_and(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x71); }
+
+// function to emit i32.or instruction
+void emit_i32_or(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x72); }
+
+// function to emit i32.xor instruction
+void emit_i32_xor(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x73); }
+
+// function to emit i32.shl instruction
+void emit_i32_shl(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x74); }
+
+// function to emit i32.shr_s instruction
+void emit_i32_shr_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x75); }
+
+// function to emit i32.shr_u instruction
+void emit_i32_shr_u(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x76); }
+
+// function to emit i32.rotl instruction
+void emit_i32_rotl(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x77); }
+
+// function to emit i32.rotr instruction
+void emit_i32_rotr(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x78); }
+
+// function to emit i64.clz instruction
+void emit_i64_clz(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x79); }
+
+// function to emit i64.ctz instruction
+void emit_i64_ctz(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x7A); }
+
+// function to emit i64.popcnt instruction
+void emit_i64_popcnt(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x7B); }
+
+// function to emit i64.add instruction
+void emit_i64_add(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x7C); }
+
+// function to emit i64.sub instruction
+void emit_i64_sub(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x7D); }
+
+// function to emit i64.mul instruction
+void emit_i64_mul(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x7E); }
+
+// function to emit i64.div_s instruction
+void emit_i64_div_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x7F); }
+
+// function to emit i64.div_u instruction
+void emit_i64_div_u(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x80); }
+
+// function to emit i64.rem_s instruction
+void emit_i64_rem_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x81); }
+
+// function to emit i64.rem_u instruction
+void emit_i64_rem_u(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x82); }
+
+// function to emit i64.and instruction
+void emit_i64_and(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x83); }
+
+// function to emit i64.or instruction
+void emit_i64_or(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x84); }
+
+// function to emit i64.xor instruction
+void emit_i64_xor(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x85); }
+
+// function to emit i64.shl instruction
+void emit_i64_shl(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x86); }
+
+// function to emit i64.shr_s instruction
+void emit_i64_shr_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x87); }
+
+// function to emit i64.shr_u instruction
+void emit_i64_shr_u(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x88); }
+
+// function to emit i64.rotl instruction
+void emit_i64_rotl(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x89); }
+
+// function to emit i64.rotr instruction
+void emit_i64_rotr(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x8A); }
 
 
 }  // namespace wasm

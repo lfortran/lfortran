@@ -85,6 +85,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        m_var_name_idx_map.clear(); // clear all previous variable and their indices
+
         wasm::emit_b8(m_type_section, m_al, 0x60);  // type section
 
         uint32_t len_idx_type_section_param_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
@@ -165,7 +167,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // this->visit_expr(*x.m_target);
         if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
             ASR::Variable_t *asr_target = LFortran::ASRUtils::EXPR2VAR(x.m_target);
-
+            LFORTRAN_ASSERT(m_var_name_idx_map.find(asr_target->m_name) != m_var_name_idx_map.end());
             wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[asr_target->m_name]);
         } else if (ASR::is_a<ASR::ArrayRef_t>(*x.m_target)) {
             throw CodeGenError("Assignment: Arrays not yet supported");
@@ -175,6 +177,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+        if (x.m_value) { 
+            visit_expr(*x.m_value); 
+            return; 
+        }
         this->visit_expr(*x.m_left);
         this->visit_expr(*x.m_right);
         ASR::Integer_t *i = ASR::down_cast<ASR::Integer_t>(x.m_type);
@@ -193,7 +199,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     break;
                 };
                 case ASR::binopType::Div: {
-                    wasm::emit_i32_div(m_code_section, m_al);
+                    wasm::emit_i32_div_s(m_code_section, m_al);
                     break;
                 };
                 default:
@@ -214,7 +220,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     break;
                 };
                 case ASR::binopType::Div: {
-                    wasm::emit_i64_div(m_code_section, m_al);
+                    wasm::emit_i64_div_s(m_code_section, m_al);
                     break;
                 };
                 default:
@@ -225,12 +231,34 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+         if (x.m_value) { 
+            visit_expr(*x.m_value); 
+            return; 
+        }
+        ASR::Integer_t *i = ASR::down_cast<ASR::Integer_t>(x.m_type);
+        // there seems no direct unary-minus inst in wasm, so subtracting from 0
+        if(i->m_kind == 4){
+            wasm::emit_i32_const(m_code_section, m_al, 0);
+            this->visit_expr(*x.m_arg);
+            wasm::emit_i32_sub(m_code_section, m_al);
+        }
+        else if(i->m_kind == 8){
+            wasm::emit_i64_const(m_code_section, m_al, 0LL);
+            this->visit_expr(*x.m_arg);
+            wasm::emit_i64_sub(m_code_section, m_al);
+        }
+        else{
+            throw CodeGenError("IntegerUnaryMinus: Only kind 4 and 8 supported");
+        }
+    }
+
     void visit_Var(const ASR::Var_t &x) {
         const ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
         auto v = ASR::down_cast<ASR::Variable_t>(s);
         switch (v->m_type->type) {
             case ASR::ttypeType::Integer:
-                // currently omitting check for 64 bit integers
+                LFORTRAN_ASSERT(m_var_name_idx_map.find(v->m_name) != m_var_name_idx_map.end());
                 wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[v->m_name]);
                 break;
 
@@ -240,6 +268,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Return(const ASR::Return_t & /* x */) {
+        LFORTRAN_ASSERT(m_var_name_idx_map.find(return_var->m_name) != m_var_name_idx_map.end());
         wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[return_var->m_name]);
         wasm::emit_b8(m_code_section, m_al, 0x0F);
     }
@@ -269,6 +298,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             visit_expr(*x.m_args[i].m_value);
         }
 
+        LFORTRAN_ASSERT(m_func_name_idx_map.find(fn->m_name) != m_func_name_idx_map.end())
         wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[fn->m_name]);
     }
 };
