@@ -33,6 +33,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
    public:
     Allocator &m_al;
     ASR::Variable_t *return_var;
+    bool is_return_visited;
 
     Vec<uint8_t> m_type_section;
     Vec<uint8_t> m_func_section;
@@ -137,6 +138,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         return_var = LFortran::ASRUtils::EXPR2VAR(x.m_return_var);
         emit_var_type(m_type_section, return_var);
         wasm::fixup_len(m_type_section, m_al, len_idx_type_section_return_types_list);
+        is_return_visited = false; // for every function initialize is_return_visited to false
 
         uint32_t len_idx_code_section_func_size = wasm::emit_len_placeholder(m_code_section, m_al);
         
@@ -159,6 +161,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         for (size_t i = 0; i < x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
+        }
+
+        if(!is_return_visited){
+            ASR::Return_t temp;
+            visit_Return(temp);
         }
 
         wasm::emit_expr_end(m_code_section, m_al);
@@ -360,7 +367,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     void visit_Return(const ASR::Return_t & /* x */) {
         LFORTRAN_ASSERT(m_var_name_idx_map.find(return_var->m_name) != m_var_name_idx_map.end());
         wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[return_var->m_name]);
-        wasm::emit_b8(m_code_section, m_al, 0x0F);
+        wasm::emit_b8(m_code_section, m_al, 0x0F); // return instruction
+        is_return_visited = true;
     }
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
