@@ -45,6 +45,22 @@ void emit_signed_leb128(Vec<uint8_t> &code, Allocator &al, int64_t n) { // for i
     } while (more);
 }
 
+void emit_ieee754_f32(Vec<uint8_t> &code, Allocator &al, float z) { // for f32
+    uint8_t encoded_float[sizeof(z)];
+    std::memcpy(&encoded_float, &z, sizeof(z));
+    for(auto &byte:encoded_float){
+        code.push_back(al, byte);
+    }
+}
+
+void emit_ieee754_f64(Vec<uint8_t> &code, Allocator &al, double z) { // for f64
+    uint8_t encoded_float[sizeof(z)];
+    std::memcpy(&encoded_float, &z, sizeof(z));
+    for(auto &byte:encoded_float){
+        code.push_back(al, byte);
+    }
+}
+
 // function to emit header of Wasm Binary Format
 void emit_header(Vec<uint8_t> &code, Allocator &al) {
     code.push_back(al, 0x00);
@@ -70,6 +86,16 @@ void emit_i32(Vec<uint8_t> &code, Allocator &al, int32_t x) {
 // function to emit signed 64 bit integer
 void emit_i64(Vec<uint8_t> &code, Allocator &al, int64_t x) {
     emit_signed_leb128(code, al, x);
+}
+
+// function to emit 32 bit float
+void emit_f32(Vec<uint8_t> &code, Allocator &al, float x) {
+    emit_ieee754_f32(code, al, x);
+}
+
+// function to emit 64 bit float
+void emit_f64(Vec<uint8_t> &code, Allocator &al, double x) {
+    emit_ieee754_f64(code, al, x);
 }
 
 // function to append a given bytecode to the end of the code
