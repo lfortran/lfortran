@@ -118,6 +118,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_var_name_idx_map.clear(); // clear all previous variable and their indices
 
         wasm::emit_b8(m_type_section, m_al, 0x60);  // type section
+        
+        m_func_name_idx_map[x.m_name] = cur_func_idx; // add func to map early to support recursive func calls
 
         /********************* Parameter Types List *********************/
         uint32_t len_idx_type_section_param_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
@@ -165,7 +167,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::emit_u32(m_func_section, m_al, cur_func_idx);
 
         wasm::emit_export_fn(m_export_section, m_al, x.m_name, cur_func_idx);
-        m_func_name_idx_map[x.m_name] = cur_func_idx++;
+
+        cur_func_idx++;
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
