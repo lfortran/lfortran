@@ -84,63 +84,61 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::emit_u32_b32_idx(m_code_section, m_al, len_idx_code_section, cur_func_idx);
     }
 
+    void emit_var_type(Vec<uint8_t> &code, ASR::Variable_t *v){
+        if (ASRUtils::is_integer(*v->m_type)) {
+            // checking for array is currently omitted
+            ASR::Integer_t* v_int = ASR::down_cast<ASR::Integer_t>(v->m_type);
+            if (v_int->m_kind == 4) {
+                wasm::emit_b8(code, m_al, 0x7F); // i32
+            }
+            else if (v_int->m_kind == 8) {
+                wasm::emit_b8(code, m_al, 0x7E); // i64
+            }
+            else{
+                throw CodeGenError("Integers of kind 4 and 8 only supported");
+            }
+        } else if (ASRUtils::is_real(*v->m_type)) {
+            // checking for array is currently omitted
+            ASR::Real_t* v_float = ASR::down_cast<ASR::Real_t>(v->m_type);
+            if (v_float->m_kind == 4) {
+                wasm::emit_b8(code, m_al, 0x7D); // f32
+            }
+            else if(v_float->m_kind == 8){
+                wasm::emit_b8(code, m_al, 0x7C); // f64
+            } 
+            else {
+                throw CodeGenError("Floating Points of kind 4 and 8 only supported");
+            }
+        } else {
+            throw CodeGenError("Param, Result, Var Types other than integer and floating point not yet supported");
+        }
+    }
+
     void visit_Function(const ASR::Function_t &x) {
         m_var_name_idx_map.clear(); // clear all previous variable and their indices
 
         wasm::emit_b8(m_type_section, m_al, 0x60);  // type section
 
+        /********************* Parameter Types List *********************/
         uint32_t len_idx_type_section_param_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
         int curIdx = 0;
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::Variable_t *arg = LFortran::ASRUtils::EXPR2VAR(x.m_args[i]);
             LFORTRAN_ASSERT(LFortran::ASRUtils::is_arg_dummy(arg->m_intent));
-            if (ASR::is_a<ASR::Integer_t>(*arg->m_type)) {
-                // checking for array is currently omitted
-                bool is_int32 = ASR::down_cast<ASR::Integer_t>(arg->m_type)->m_kind == 4;
-                if (is_int32) {
-                    wasm::emit_b8(m_type_section, m_al, 0x7F);  // i32
-                } else {
-                    wasm::emit_b8(m_type_section, m_al, 0x7E);  // i64
-                }
-                m_var_name_idx_map[arg->m_name] = curIdx++;
-            } else if (ASR::is_a<ASR::Real_t>(*arg->m_type)) {
-                // checking for array is currently omitted
-                bool is_float32 = ASR::down_cast<ASR::Real_t>(arg->m_type)->m_kind == 4;
-                if (is_float32) {
-                    wasm::emit_b8(m_type_section, m_al, 0x7D);  // f32
-                } else {
-                    wasm::emit_b8(m_type_section, m_al, 0x7C);  // f64
-                }
-                m_var_name_idx_map[arg->m_name] = curIdx++;
-            } else {
-                throw CodeGenError("Parameters other than integer and float not yet supported");
-            }
+            emit_var_type(m_type_section, arg);
+            m_var_name_idx_map[arg->m_name] = curIdx++;
         }
         wasm::fixup_len(m_type_section, m_al, len_idx_type_section_param_types_list);
 
+        /********************* Result Types List *********************/
         uint32_t len_idx_type_section_return_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
         return_var = LFortran::ASRUtils::EXPR2VAR(x.m_return_var);
-        if (ASRUtils::is_integer(*return_var->m_type)) {
-            bool is_int32 = ASR::down_cast<ASR::Integer_t>(return_var->m_type)->m_kind == 4;
-            if (is_int32) {
-                wasm::emit_b8(m_type_section, m_al, 0x7F);  // i32
-            } else {
-                wasm::emit_b8(m_type_section, m_al, 0x7E);  // i64
-            }
-        } else if (ASRUtils::is_real(*return_var->m_type)) {
-            // checking for array is currently omitted
-            bool is_float32 = ASR::down_cast<ASR::Real_t>(return_var->m_type)->m_kind == 4;
-            if (is_float32) {
-                wasm::emit_b8(m_type_section, m_al, 0x7D);  // f32
-            } else {
-                wasm::emit_b8(m_type_section, m_al, 0x7C);  // f64
-            }
-        } else {
-            throw CodeGenError("Return type not supported");
-        }
+        emit_var_type(m_type_section, return_var);
         wasm::fixup_len(m_type_section, m_al, len_idx_type_section_return_types_list);
 
         uint32_t len_idx_code_section_func_size = wasm::emit_len_placeholder(m_code_section, m_al);
+        
+        /********************* Local Vars Types List *********************/
         uint32_t len_idx_code_section_local_vars_list = wasm::emit_len_placeholder(m_code_section, m_al);
         int local_vars_cnt = 0;
         for (auto &item : x.m_symtab->get_scope()) {
@@ -148,24 +146,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
                 if (v->m_intent == LFortran::ASRUtils::intent_local || v->m_intent == LFortran::ASRUtils::intent_return_var) {
                     wasm::emit_u32(m_code_section, m_al, 1U);    // count of local vars of this type
-                    if (ASR::is_a<ASR::Integer_t>(*v->m_type)) {
-                        bool is_int32 = ASR::down_cast<ASR::Integer_t>(v->m_type)->m_kind == 4;
-                        if (is_int32) {
-                            wasm::emit_b8(m_code_section, m_al, 0x7F);  // i32
-                        } else {
-                            wasm::emit_b8(m_code_section, m_al, 0x7E);  // i64
-                        }
-                    } else if (ASR::is_a<ASR::Real_t>(*v->m_type)) {
-                        // checking for array is currently omitted
-                        bool is_float32 = ASR::down_cast<ASR::Real_t>(v->m_type)->m_kind == 4;
-                        if (is_float32) {
-                            wasm::emit_b8(m_code_section, m_al, 0x7D);  // f32
-                        } else {
-                            wasm::emit_b8(m_code_section, m_al, 0x7C);  // f64
-                        }
-                    }else {
-                        throw CodeGenError("Variables other than integer and float not yet supported");
-                    }
+                    emit_var_type(m_code_section, v); // emit the type of this var
                     m_var_name_idx_map[v->m_name] = curIdx++;
                     local_vars_cnt++;
                 }
