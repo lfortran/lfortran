@@ -1,0 +1,65 @@
+(module
+    (func $0
+        (param f64) (result f64)
+        (local f64)
+        local.get 0
+        local.get 0
+        f64.mul
+        local.set 1
+        local.get 1
+        return
+    )
+    (func $1
+        (param f32 f32) (result f32)
+        (local f32)
+        local.get 0
+        local.get 1
+        f32.add
+        local.set 2
+        local.get 2
+        return
+    )
+    (func $2
+        (param) (result f32)
+        (local f32)
+        f32.const -2.500000
+        local.set 0
+        local.get 0
+        return
+    )
+    (func $3
+        (param) (result f32)
+        (local f32)
+        f32.const 3.140000
+        local.set 0
+        local.get 0
+        return
+    )
+    (func $4
+        (param) (result f64)
+        (local f64)
+        f64.const 3.140000
+        local.set 0
+        local.get 0
+        return
+    )
+    (func $5
+        (param f64) (result f64)
+        (local f64 f64)
+        call 4
+        local.set 2
+        local.get 2
+        local.get 0
+        call 0
+        f64.mul
+        local.set 1
+        local.get 1
+        return
+    )
+    (export "a_sqr" (func $0))
+    (export "add_floats" (func $1))
+    (export "get_neg_f32" (func $2))
+    (export "get_pi" (func $3))
+    (export "get_pi_64" (func $4))
+    (export "z_computecirclearea" (func $5))
+)
