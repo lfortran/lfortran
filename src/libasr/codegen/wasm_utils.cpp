@@ -58,6 +58,20 @@ int64_t decode_signed_leb128_i64(Vec<uint8_t> &code, uint32_t &offset) {
     return result;
 }
 
+float decode_ieee754_f32(Vec<uint8_t> &code, uint32_t &offset) {
+    float value = 0.0;
+    std::memcpy(&value, &code.p[offset], sizeof(value));
+    offset += sizeof(value);
+    return value;
+}
+
+double decode_ieee754_f64(Vec<uint8_t> &code, uint32_t &offset) {
+    double value = 0.0;
+    std::memcpy(&value, &code.p[offset], sizeof(value));
+    offset += sizeof(value);
+    return value;
+}
+
 uint8_t read_byte(Vec<uint8_t> &code, uint32_t &offset) {
     if (offset >= code.size()) {
         throw LFortran::LFortranException("read_byte: offset out of bounds");
@@ -65,14 +79,14 @@ uint8_t read_byte(Vec<uint8_t> &code, uint32_t &offset) {
     return code.p[offset++];
 }
 
-float read_float(Vec<uint8_t> & /*code*/, uint32_t & /*offset*/) {
-    // to implement
-    return 0.00;
+float read_float(Vec<uint8_t> & code, uint32_t & offset) {
+    LFORTRAN_ASSERT(offset + sizeof(float) <= code.size());
+    return decode_ieee754_f32(code, offset);
 }
 
-double read_double(Vec<uint8_t> & /*code*/, uint32_t & /*offset*/) {
-    // to implement
-    return 0.00;
+double read_double(Vec<uint8_t> & code, uint32_t & offset) {
+    LFORTRAN_ASSERT(offset + sizeof(double) <= code.size());
+    return decode_ieee754_f64(code, offset);
 }
 
 int32_t read_signed_num_i32(Vec<uint8_t> &code, uint32_t &offset) { return decode_signed_leb128_i32(code, offset); }
