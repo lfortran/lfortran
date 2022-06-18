@@ -79,6 +79,51 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
         }
 
+        // Generate main program code
+        sprintf(x.m_name, "_lcompilers_main");
+        m_var_name_idx_map.clear(); // clear all previous variable and their indices
+        wasm::emit_b8(m_type_section, m_al, 0x60);  // new type starts
+        m_func_name_idx_map[x.m_name] = cur_func_idx;
+
+        /********************* Parameter Types List *********************/
+        uint32_t len_idx_type_section_param_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
+        wasm::fixup_len(m_type_section, m_al, len_idx_type_section_param_types_list);
+
+        /********************* Result Types List *********************/
+        uint32_t len_idx_type_section_return_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
+        wasm::fixup_len(m_type_section, m_al, len_idx_type_section_return_types_list);
+        
+        /********************* Function Body Starts Here *********************/
+        uint32_t len_idx_code_section_func_size = wasm::emit_len_placeholder(m_code_section, m_al);
+        
+        /********************* Local Vars Types List *********************/
+        uint32_t len_idx_code_section_local_vars_list = wasm::emit_len_placeholder(m_code_section, m_al);
+        int local_vars_cnt = 0, cur_idx = 0;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                wasm::emit_u32(m_code_section, m_al, 1U);    // count of local vars of this type
+                emit_var_type(m_code_section, v); // emit the type of this var
+                m_var_name_idx_map[v->m_name] = cur_idx++;
+                local_vars_cnt++;
+            }
+        }
+        // fixup length of local vars list
+        wasm::emit_u32_b32_idx(m_code_section, m_al, len_idx_code_section_local_vars_list, local_vars_cnt);
+
+        for (size_t i = 0; i < x.n_body; i++) {
+            this->visit_stmt(*x.m_body[i]);
+        }
+
+        wasm::emit_expr_end(m_code_section, m_al);
+        wasm::fixup_len(m_code_section, m_al, len_idx_code_section_func_size);
+
+        wasm::emit_u32(m_func_section, m_al, cur_func_idx);
+
+        wasm::emit_export_fn(m_export_section, m_al, x.m_name, cur_func_idx);
+
+        cur_func_idx++;
+
         wasm::emit_u32_b32_idx(m_type_section, m_al, len_idx_type_section, cur_func_idx);
         wasm::emit_u32_b32_idx(m_func_section, m_al, len_idx_func_section, cur_func_idx);
         wasm::emit_u32_b32_idx(m_export_section, m_al, len_idx_export_section, cur_func_idx);
