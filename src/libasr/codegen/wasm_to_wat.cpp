@@ -27,7 +27,7 @@ void WASMDecoder::load_file(std::string filename) {
 
 void WASMDecoder::decode_type_section(uint32_t offset) {
     // read type section contents
-    uint32_t no_of_func_types = read_unsigned_num(wasm_bytes, offset);
+    uint32_t no_of_func_types = read_u32(wasm_bytes, offset);
     DEBUG("no_of_func_types: " + std::to_string(no_of_func_types));
     func_types.resize(al, no_of_func_types);
 
@@ -38,14 +38,14 @@ void WASMDecoder::decode_type_section(uint32_t offset) {
         offset++;
 
         // read result type 1
-        uint32_t no_of_params = read_unsigned_num(wasm_bytes, offset);
+        uint32_t no_of_params = read_u32(wasm_bytes, offset);
         func_types.p[i].param_types.resize(al, no_of_params);
 
         for (uint32_t j = 0; j < no_of_params; j++) {
             func_types.p[i].param_types.p[j] = wasm_bytes[offset++];
         }
 
-        uint32_t no_of_results = read_unsigned_num(wasm_bytes, offset);
+        uint32_t no_of_results = read_u32(wasm_bytes, offset);
         func_types.p[i].result_types.resize(al, no_of_results);
 
         for (uint32_t j = 0; j < no_of_results; j++) {
@@ -56,23 +56,23 @@ void WASMDecoder::decode_type_section(uint32_t offset) {
 
 void WASMDecoder::decode_function_section(uint32_t offset) {
     // read function section contents
-    uint32_t no_of_indices = read_unsigned_num(wasm_bytes, offset);
+    uint32_t no_of_indices = read_u32(wasm_bytes, offset);
     DEBUG("no_of_indices: " + std::to_string(no_of_indices));
     type_indices.resize(al, no_of_indices);
 
     for (uint32_t i = 0; i < no_of_indices; i++) {
-        type_indices.p[i] = read_unsigned_num(wasm_bytes, offset);
+        type_indices.p[i] = read_u32(wasm_bytes, offset);
     }
 }
 
 void WASMDecoder::decode_export_section(uint32_t offset) {
     // read export section contents
-    uint32_t no_of_exports = read_unsigned_num(wasm_bytes, offset);
+    uint32_t no_of_exports = read_u32(wasm_bytes, offset);
     DEBUG("no_of_exports: " + std::to_string(no_of_exports));
     exports.resize(al, no_of_exports);
 
     for (uint32_t i = 0; i < no_of_exports; i++) {
-        uint32_t name_size = read_unsigned_num(wasm_bytes, offset);
+        uint32_t name_size = read_u32(wasm_bytes, offset);
         exports.p[i].name.resize(name_size); // do not pass al to this resize as it is std::string.resize()
         for (uint32_t j = 0; j < name_size; j++) {
             exports.p[i].name[j] = wasm_bytes[offset++];
@@ -80,27 +80,27 @@ void WASMDecoder::decode_export_section(uint32_t offset) {
         DEBUG("export name: " + exports.p[i].name);
         exports.p[i].kind = wasm_bytes[offset++];
         DEBUG("export kind: " + std::to_string(exports.p[i].kind));
-        exports.p[i].index = read_unsigned_num(wasm_bytes, offset);
+        exports.p[i].index = read_u32(wasm_bytes, offset);
         DEBUG("export index: " + std::to_string(exports.p[i].index));
     }
 }
 
 void WASMDecoder::decode_code_section(uint32_t offset) {
     // read code section contents
-    uint32_t no_of_codes = read_unsigned_num(wasm_bytes, offset);
+    uint32_t no_of_codes = read_u32(wasm_bytes, offset);
     DEBUG("no_of_codes: " + std::to_string(no_of_codes));
     codes.resize(al, no_of_codes);
 
     for (uint32_t i = 0; i < no_of_codes; i++) {
-        codes.p[i].size = read_unsigned_num(wasm_bytes, offset);
+        codes.p[i].size = read_u32(wasm_bytes, offset);
         uint32_t code_start_offset = offset;
-        uint32_t no_of_locals = read_unsigned_num(wasm_bytes, offset);
+        uint32_t no_of_locals = read_u32(wasm_bytes, offset);
         DEBUG("no_of_locals: " + std::to_string(no_of_locals));
         codes.p[i].locals.resize(al, no_of_locals);
 
         DEBUG("Entering loop");
         for (uint32_t j = 0U; j < no_of_locals; j++) {
-            codes.p[i].locals.p[j].count = read_unsigned_num(wasm_bytes, offset);
+            codes.p[i].locals.p[j].count = read_u32(wasm_bytes, offset);
             DEBUG("count: " + std::to_string(codes.p[i].locals.p[j].count));
             codes.p[i].locals.p[j].type = wasm_bytes[offset++];
             DEBUG("type: " + std::to_string(codes.p[i].locals.p[j].type));
@@ -120,8 +120,8 @@ void WASMDecoder::decode_wasm() {
     uint32_t index = 8U;
 
     while (index < wasm_bytes.size()) {
-        uint32_t section_id = read_unsigned_num(wasm_bytes, index);
-        uint32_t section_size = read_unsigned_num(wasm_bytes, index);
+        uint32_t section_id = read_u32(wasm_bytes, index);
+        uint32_t section_size = read_u32(wasm_bytes, index);
         switch (section_id) {
             case 1U:
                 decode_type_section(index);

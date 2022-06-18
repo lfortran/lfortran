@@ -7,7 +7,6 @@ program wasm1
         integer, intent(in):: x
         integer :: r
         r = x * x
-        return
     end function
 
     function add(x, y) result(r)
@@ -15,7 +14,6 @@ program wasm1
         integer, intent(in):: x, y
         integer :: r
         r = x + y
-        return
     end function
 
     function add64(x, y) result(r)
@@ -23,7 +21,6 @@ program wasm1
         integer(8), intent(in):: x, y
         integer(8) :: r
         r = x + y
-        return
     end function
 
     function computeCircleArea(radius) result(area)
@@ -32,12 +29,10 @@ program wasm1
         integer :: PI, area
         PI = 3
         area = PI * a_sqr(radius)
-        return
     end function
 
     integer function my_add(a, b) result(c)
         integer, intent(in) :: a, b
         c = a + b
-        return
     end function
 end program
