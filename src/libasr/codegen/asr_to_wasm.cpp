@@ -32,6 +32,8 @@ namespace {
 class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
    public:
     Allocator &m_al;
+    diag::Diagnostics &diag;
+    
     ASR::Variable_t *return_var;
     bool is_return_visited;
 
@@ -45,8 +47,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     std::map<std::string, int32_t> m_func_name_idx_map;
 
    public:
-    ASRToWASMVisitor(Allocator &al) : m_al{al} {
-        cur_func_idx = 0;
+    ASRToWASMVisitor(Allocator &al, diag::Diagnostics &diagnostics): m_al(al), diag(diagnostics) {
         m_type_section.reserve(m_al, 1024 * 128);
         m_func_section.reserve(m_al, 1024 * 128);
         m_export_section.reserve(m_al, 1024 * 128);
@@ -526,16 +527,16 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Print(const ASR::Print_t &x){
-        // if (x.m_fmt != nullptr) {
-        //     diag.codegen_warning_label("format string in `print` is not implemented yet and it is currently treated as '*'",
-        //         {x.m_fmt->base.loc}, "treated as '*'");
-        // }
+        if (x.m_fmt != nullptr) {
+            diag.codegen_warning_label("format string in `print` is not implemented yet and it is currently treated as '*'",
+                {x.m_fmt->base.loc}, "treated as '*'");
+        }
         handle_print(x);
     }
 };
 
 Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Allocator &al, diag::Diagnostics &diagnostics) {
-    ASRToWASMVisitor v(al);
+    ASRToWASMVisitor v(al, diagnostics);
     Vec<uint8_t> wasm_bytes;
     
     pass_wrap_global_stmts_into_function(al, asr, "f");
