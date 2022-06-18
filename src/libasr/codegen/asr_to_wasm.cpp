@@ -103,8 +103,17 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     wasm::emit_b8(m_type_section, m_al, 0x7E);  // i64
                 }
                 m_var_name_idx_map[arg->m_name] = curIdx++;
+            } else if (ASR::is_a<ASR::Real_t>(*arg->m_type)) {
+                // checking for array is currently omitted
+                bool is_float32 = ASR::down_cast<ASR::Real_t>(arg->m_type)->m_kind == 4;
+                if (is_float32) {
+                    wasm::emit_b8(m_type_section, m_al, 0x7D);  // f32
+                } else {
+                    wasm::emit_b8(m_type_section, m_al, 0x7C);  // f64
+                }
+                m_var_name_idx_map[arg->m_name] = curIdx++;
             } else {
-                throw CodeGenError("Parameters other than integer not yet supported");
+                throw CodeGenError("Parameters other than integer and float not yet supported");
             }
         }
         wasm::fixup_len(m_type_section, m_al, len_idx_type_section_param_types_list);
@@ -118,6 +127,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             } else {
                 wasm::emit_b8(m_type_section, m_al, 0x7E);  // i64
             }
+        } else if (ASRUtils::is_real(*return_var->m_type)) {
+            // checking for array is currently omitted
+            bool is_float32 = ASR::down_cast<ASR::Real_t>(return_var->m_type)->m_kind == 4;
+            if (is_float32) {
+                wasm::emit_b8(m_type_section, m_al, 0x7D);  // f32
+            } else {
+                wasm::emit_b8(m_type_section, m_al, 0x7C);  // f64
+            }
         } else {
             throw CodeGenError("Return type not supported");
         }
@@ -130,19 +147,27 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
                 if (v->m_intent == LFortran::ASRUtils::intent_local || v->m_intent == LFortran::ASRUtils::intent_return_var) {
+                    wasm::emit_u32(m_code_section, m_al, 1U);    // count of local vars of this type
                     if (ASR::is_a<ASR::Integer_t>(*v->m_type)) {
-                        wasm::emit_u32(m_code_section, m_al, 1);    // count of local vars of this type
                         bool is_int32 = ASR::down_cast<ASR::Integer_t>(v->m_type)->m_kind == 4;
                         if (is_int32) {
                             wasm::emit_b8(m_code_section, m_al, 0x7F);  // i32
                         } else {
                             wasm::emit_b8(m_code_section, m_al, 0x7E);  // i64
                         }
-                        m_var_name_idx_map[v->m_name] = curIdx++;
-                        local_vars_cnt++;
-                    } else {
-                        throw CodeGenError("Variables other than integer not yet supported");
+                    } else if (ASR::is_a<ASR::Real_t>(*v->m_type)) {
+                        // checking for array is currently omitted
+                        bool is_float32 = ASR::down_cast<ASR::Real_t>(v->m_type)->m_kind == 4;
+                        if (is_float32) {
+                            wasm::emit_b8(m_code_section, m_al, 0x7D);  // f32
+                        } else {
+                            wasm::emit_b8(m_code_section, m_al, 0x7C);  // f64
+                        }
+                    }else {
+                        throw CodeGenError("Variables other than integer and float not yet supported");
                     }
+                    m_var_name_idx_map[v->m_name] = curIdx++;
+                    local_vars_cnt++;
                 }
             }
         }
@@ -231,6 +256,61 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+        if (x.m_value) { 
+            visit_expr(*x.m_value); 
+            return; 
+        }
+        this->visit_expr(*x.m_left);
+        this->visit_expr(*x.m_right);
+        ASR::Real_t *f = ASR::down_cast<ASR::Real_t>(x.m_type);
+        if (f->m_kind == 4) {
+            switch (x.m_op) {
+                case ASR::binopType::Add: {
+                    wasm::emit_f32_add(m_code_section, m_al);
+                    break;
+                };
+                case ASR::binopType::Sub: {
+                    wasm::emit_f32_sub(m_code_section, m_al);
+                    break;
+                };
+                case ASR::binopType::Mul: {
+                    wasm::emit_f32_mul(m_code_section, m_al);
+                    break;
+                };
+                case ASR::binopType::Div: {
+                    wasm::emit_f32_div(m_code_section, m_al);
+                    break;
+                };
+                default:
+                    throw CodeGenError("RealBinop: Pow Operation not yet implemented");
+            }
+        } else if (f->m_kind == 8) {
+            switch (x.m_op) {
+                case ASR::binopType::Add: {
+                    wasm::emit_f64_add(m_code_section, m_al);
+                    break;
+                };
+                case ASR::binopType::Sub: {
+                    wasm::emit_f64_sub(m_code_section, m_al);
+                    break;
+                };
+                case ASR::binopType::Mul: {
+                    wasm::emit_f64_mul(m_code_section, m_al);
+                    break;
+                };
+                case ASR::binopType::Div: {
+                    wasm::emit_f64_div(m_code_section, m_al);
+                    break;
+                };
+                default:
+                    throw CodeGenError("RealBinop: Pow Operation not yet implemented");
+            }
+        } else {
+            throw CodeGenError("RealBinop: Real kind not supported");
+        }
+    }
+
     void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
          if (x.m_value) { 
             visit_expr(*x.m_value); 
@@ -253,17 +333,43 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+         if (x.m_value) { 
+            visit_expr(*x.m_value); 
+            return; 
+        }
+        ASR::Real_t *f = ASR::down_cast<ASR::Real_t>(x.m_type);
+        if(f->m_kind == 4){
+            this->visit_expr(*x.m_arg);
+            wasm::emit_f32_neg(m_code_section, m_al);
+        }
+        else if(f->m_kind == 8){
+            this->visit_expr(*x.m_arg);
+            wasm::emit_f64_neg(m_code_section, m_al);
+        }
+        else{
+            throw CodeGenError("RealUnaryMinus: Only kind 4 and 8 supported");
+        }
+    }
+
     void visit_Var(const ASR::Var_t &x) {
         const ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
         auto v = ASR::down_cast<ASR::Variable_t>(s);
         switch (v->m_type->type) {
-            case ASR::ttypeType::Integer:
+            case ASR::ttypeType::Integer:{
                 LFORTRAN_ASSERT(m_var_name_idx_map.find(v->m_name) != m_var_name_idx_map.end());
                 wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[v->m_name]);
                 break;
+            }
 
+            case ASR::ttypeType::Real: {
+                LFORTRAN_ASSERT(m_var_name_idx_map.find(v->m_name) != m_var_name_idx_map.end());
+                wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[v->m_name]);
+                break;
+            }
+            
             default:
-                throw CodeGenError("Variable type not supported");
+                throw CodeGenError("Only Integer and Float Variable types currently supported");
         }
     }
 
@@ -290,6 +396,25 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
         }
     }
+
+    void visit_RealConstant(const ASR::RealConstant_t &x) {
+        double val = x.m_r;
+        int a_kind = ((ASR::Real_t *)(&(x.m_type->base)))->m_kind;
+        switch (a_kind) {
+            case 4: {
+                wasm::emit_f32_const(m_code_section, m_al, val);
+                break;
+            }
+            case 8: {
+                wasm::emit_f64_const(m_code_section, m_al, val);
+                break;
+            }
+            default: {
+                throw CodeGenError("Constant Real: Only kind 4 and 8 supported");
+            }
+        }
+    }
+
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(LFortran::ASRUtils::symbol_get_past_external(x.m_name));
