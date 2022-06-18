@@ -51,6 +51,16 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_func_section.reserve(m_al, 1024 * 128);
         m_export_section.reserve(m_al, 1024 * 128);
         m_code_section.reserve(m_al, 1024 * 128);
+
+        m_func_name_idx_map = {
+            {"print_i32", 0},
+            {"print_i64", 1},
+            {"print_f32", 2},
+            {"print_f64", 3},
+            {"print_str", 4},
+            {"flush_buf", 5},
+        };
+        cur_func_idx = 6;
     }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
@@ -462,6 +472,65 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         LFORTRAN_ASSERT(m_func_name_idx_map.find(fn->m_name) != m_func_name_idx_map.end())
         wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[fn->m_name]);
+    }
+
+
+    void handle_print(const ASR::Print_t &x){
+        for (size_t i=0; i<x.n_values; i++) {
+            this->visit_expr(*x.m_values[i]);
+            ASR::expr_t *v = x.m_values[i];
+            ASR::ttype_t *t = ASRUtils::expr_type(v);
+            int a_kind = ASRUtils::extract_kind_from_ttype_t(t);
+
+            if (ASRUtils::is_integer(*t)) {
+                switch( a_kind ) {
+                    case 4 : {
+                        // the value is already on stack. call JavaScript print_i32
+                        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map["print_i32"]);
+                        break;
+                    }
+                    case 8 : {
+                        // the value is already on stack. call JavaScript print_i64
+                        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map["print_i64"]);
+                        break;
+                    }
+                    default: {
+                        throw CodeGenError(R"""(Printing support is currently available only
+                                            for 32, and 64 bit integer kinds.)""");
+                    }
+                }
+            } else if (ASRUtils::is_real(*t)) {
+                switch( a_kind ) {
+                    case 4 : {
+                        // the value is already on stack. call JavaScript print_f32
+                        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map["print_f32"]);
+                        break;
+                    }
+                    case 8 : {
+                        // the value is already on stack. call JavaScript print_f64
+                        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map["print_f64"]);
+                        break;
+                    }
+                    default: {
+                        throw CodeGenError(R"""(Printing support is available only
+                                            for 32, and 64 bit real kinds.)""");
+                    }
+                }
+            } else if (t->type == ASR::ttypeType::Character) {
+                // call JavaScript printStr
+            } 
+        }
+
+        // call JavaScript Flush
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map["flush_buf"]);
+    }
+
+    void visit_Print(const ASR::Print_t &x){
+        // if (x.m_fmt != nullptr) {
+        //     diag.codegen_warning_label("format string in `print` is not implemented yet and it is currently treated as '*'",
+        //         {x.m_fmt->base.loc}, "treated as '*'");
+        // }
+        handle_print(x);
     }
 };
 
