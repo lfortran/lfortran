@@ -56,9 +56,11 @@ class WASMDecoder {
     Vec<uint8_t> wasm_bytes;
 
     Vec<wasm::FuncType> func_types;
+    Vec<wasm::Import> imports;
     Vec<uint32_t> type_indices;
     Vec<wasm::Export> exports;
     Vec<wasm::Code> codes;
+    Vec<wasm::Data> data_segments;
 
     WASMDecoder(Allocator &al) : al(al) {
         var_type_to_string = {{0x7F, "i32"}, {0x7E, "i64"}, {0x7D, "f32"}, {0x7C, "f64"}};
@@ -73,9 +75,11 @@ class WASMDecoder {
 
     void load_file(std::string filename);
     void decode_type_section(uint32_t offset);
+    void decode_imports_section(uint32_t offset);
     void decode_function_section(uint32_t offset);
     void decode_export_section(uint32_t offset);
     void decode_code_section(uint32_t offset);
+    void decode_data_section(uint32_t offset);
     void decode_wasm();
     std::string get_wat();
 };

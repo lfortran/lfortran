@@ -54,6 +54,55 @@ void WASMDecoder::decode_type_section(uint32_t offset) {
     }
 }
 
+void WASMDecoder::decode_imports_section(uint32_t offset) {
+    // read imports section contents
+    uint32_t no_of_imports = read_u32(wasm_bytes, offset);
+    DEBUG("no_of_imports: " + std::to_string(no_of_imports));
+    imports.resize(al, no_of_imports);
+
+    for (uint32_t i = 0; i < no_of_imports; i++) {
+        uint32_t mod_name_size = read_u32(wasm_bytes, offset);
+        imports.p[i].mod_name.resize(mod_name_size); // do not pass al to this resize as it is std::string.resize()
+        for (uint32_t j = 0; j < mod_name_size; j++) {
+            imports.p[i].mod_name[j] = wasm_bytes[offset++];
+        }
+        
+        uint32_t name_size = read_u32(wasm_bytes, offset);
+        imports.p[i].name.resize(name_size); // do not pass al to this resize as it is std::string.resize()
+        for (uint32_t j = 0; j < name_size; j++) {
+            imports.p[i].name[j] = wasm_bytes[offset++];
+        }
+
+        imports.p[i].kind = read_b8(wasm_bytes, offset);
+
+        switch (imports.p[i].kind)
+        {
+            case 0x00: {
+                imports.p[i].type_idx = read_u32(wasm_bytes, offset);
+                break;
+            }
+            case 0x02: {
+                uint8_t byte = read_b8(wasm_bytes, offset);
+                if(byte == 0x00){
+                    imports.p[i].mem_page_size_limits.first = read_u32(wasm_bytes, offset);
+                    imports.p[i].mem_page_size_limits.second = imports.p[i].mem_page_size_limits.first;
+                }
+                else {
+                    LFORTRAN_ASSERT(byte == 0x01);
+                    imports.p[i].mem_page_size_limits.first = read_u32(wasm_bytes, offset);
+                    imports.p[i].mem_page_size_limits.second = read_u32(wasm_bytes, offset);
+                }
+                break;
+            }
+            
+            default: {
+                std::cout << "Only importing functions and memory are currently supported" << std::endl;
+                LFORTRAN_ASSERT(false);
+            }
+        }
+    }
+}
+
 void WASMDecoder::decode_function_section(uint32_t offset) {
     // read function section contents
     uint32_t no_of_indices = read_u32(wasm_bytes, offset);
@@ -114,6 +163,33 @@ void WASMDecoder::decode_code_section(uint32_t offset) {
     }
 }
 
+void WASMDecoder::decode_data_section(uint32_t offset) {
+    // read code section contents
+    uint32_t no_of_data_segments = read_u32(wasm_bytes, offset);
+    DEBUG("no_of_data_segments: " + std::to_string(no_of_data_segments));
+    data_segments.resize(al, no_of_data_segments);
+
+    for (uint32_t i = 0; i < no_of_data_segments; i++) {
+        uint32_t num = read_u32(wasm_bytes, offset);
+        if(num != 0){
+            throw LFortran::LFortranException("Only active default memory (index = 0) is currently supported");
+        }
+
+        {
+            WASM_INSTS_VISITOR::WATVisitor v = WASM_INSTS_VISITOR::WATVisitor();
+            v.indent = "";
+            v.decode_instructions(wasm_bytes, offset);
+            data_segments.p[i].insts = v.src;
+        }
+
+        uint32_t text_size = read_u32(wasm_bytes, offset);
+        data_segments.p[i].text.resize(text_size); // do not pass al to this resize as it is std::string.resize()
+        for (uint32_t j = 0; j < text_size; j++) {
+            data_segments.p[i].text[j] = wasm_bytes[offset++];
+        }
+    }
+}
+
 void WASMDecoder::decode_wasm() {
     // first 8 bytes are magic number and wasm version number
     // currently, in this first version, we are skipping them
@@ -127,6 +203,10 @@ void WASMDecoder::decode_wasm() {
                 decode_type_section(index);
                 // exit(0);
                 break;
+            case 2U:
+                decode_imports_section(index);
+                // exit(0);
+                break;
             case 3U:
                 decode_function_section(index);
                 // exit(0);
@@ -137,6 +217,10 @@ void WASMDecoder::decode_wasm() {
                 break;
             case 10U:
                 decode_code_section(index);
+                // exit(0)
+                break;
+            case 11U:
+                decode_data_section(index);
                 // exit(0)
                 break;
             default:
@@ -152,6 +236,16 @@ void WASMDecoder::decode_wasm() {
 
 std::string WASMDecoder::get_wat() {
     std::string result = "(module";
+    for(uint32_t i = 0; i < imports.size(); i++){
+        result += "\n    (import \"" + imports[i].mod_name + "\" \"" + imports[i].name + "\" ";
+        if(imports[i].kind == 0x00){
+            result += "(func (;" + std::to_string(i) + ";) (type " + std::to_string(imports[i].type_idx) + ")))";
+        }
+        else if(imports[i].kind == 0x02){
+            result += "(memory (;0;) " + std::to_string(imports[i].mem_page_size_limits.first) + "))";
+        }
+    }
+
     for (uint32_t i = 0; i < type_indices.size(); i++) {
         result += "\n    (func $" + std::to_string(i);
         result += "\n        (param";
@@ -185,6 +279,11 @@ std::string WASMDecoder::get_wat() {
     for (uint32_t i = 0; i < exports.size(); i++) {
         result += "\n    (export \"" + exports.p[i].name + "\" (" + kind_to_string[exports.p[i].kind] + " $" + std::to_string(exports.p[i].index) + "))";
     }
+
+    for(uint32_t i = 0; i < data_segments.size(); i++){
+        result += "\n    (data (;" + std::to_string(i) + ";) (" + data_segments[i].insts + ") \"" + data_segments[i].text + "\")"; 
+    }
+
     result += "\n)\n";
 
     return result;

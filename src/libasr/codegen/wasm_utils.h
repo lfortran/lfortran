@@ -33,6 +33,21 @@ struct Code {
     uint32_t insts_start_index;
 };
 
+struct Import {
+    std::string mod_name;
+    std::string name;
+    uint8_t kind;
+    union {
+        uint32_t type_idx;
+        std::pair<uint32_t, uint32_t> mem_page_size_limits;
+    };
+};
+
+struct Data {
+    std::string insts;
+    std::string text;
+};
+
 uint32_t decode_leb128_u32(Vec<uint8_t> &code, uint32_t &offset);
 int32_t decode_leb128_i32(Vec<uint8_t> &code, uint32_t &offset);
 int64_t decode_leb128_i64(Vec<uint8_t> &code, uint32_t &offset);
