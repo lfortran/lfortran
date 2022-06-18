@@ -29,56 +29,108 @@ namespace {
 
 }  // namespace
 
+
+struct import_func{
+    std::string name;
+    std::vector<uint8_t> param_types, result_types;
+};
+
+
 class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
    public:
     Allocator &m_al;
     diag::Diagnostics &diag;
-    
+
     ASR::Variable_t *return_var;
     bool is_return_visited;
 
     Vec<uint8_t> m_type_section;
+    Vec<uint8_t> m_import_section;
     Vec<uint8_t> m_func_section;
     Vec<uint8_t> m_export_section;
     Vec<uint8_t> m_code_section;
+    Vec<uint8_t> m_data_section;
 
     uint32_t cur_func_idx;
+    uint32_t no_of_functions;
+    uint32_t no_of_imports;
+    uint32_t no_of_data_segements;  
+    uint32_t last_str_len;
+    uint32_t avail_mem_loc;
+    
     std::map<std::string, int32_t> m_var_name_idx_map;
     std::map<std::string, int32_t> m_func_name_idx_map;
 
    public:
     ASRToWASMVisitor(Allocator &al, diag::Diagnostics &diagnostics): m_al(al), diag(diagnostics) {
+        cur_func_idx = 0;
+        avail_mem_loc = 0;
+        no_of_functions = 0;
+        no_of_imports = 0;
+        no_of_data_segements = 0;
         m_type_section.reserve(m_al, 1024 * 128);
+        m_import_section.reserve(m_al, 1024 * 128);
         m_func_section.reserve(m_al, 1024 * 128);
         m_export_section.reserve(m_al, 1024 * 128);
         m_code_section.reserve(m_al, 1024 * 128);
-
-        m_func_name_idx_map = {
-            {"print_i32", 0},
-            {"print_i64", 1},
-            {"print_f32", 2},
-            {"print_f64", 3},
-            {"print_str", 4},
-            {"flush_buf", 5},
-        };
-        cur_func_idx = 6;
+        m_data_section.reserve(m_al, 1024 * 128);
     }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+
+        uint32_t len_idx_type_section = wasm::emit_len_placeholder(m_type_section, m_al);
+        uint32_t len_idx_import_section = wasm::emit_len_placeholder(m_import_section, m_al);
+        
+        std::vector<import_func> import_funcs = {
+            {"print_i32", {0x7F}, {}},
+            {"print_i64", {0x7E}, {}},
+            {"print_f32", {0x7D}, {}},
+            {"print_f64", {0x7C}, {}},
+            {"print_str", {0x7F, 0x7F}, {}},
+            {"flush_buf", {}, {}}
+        };
+        
+        for(auto import_func:import_funcs){
+            wasm::emit_import_fn(m_import_section, m_al, "js", import_func.name, cur_func_idx);
+            // add their types to type section
+            wasm::emit_b8(m_type_section, m_al, 0x60);  // type section
+
+            wasm::emit_u32(m_type_section, m_al, import_func.param_types.size());
+            for(auto &param_type:import_func.param_types){
+                wasm::emit_b8(m_type_section, m_al, param_type);
+            }
+
+            wasm::emit_u32(m_type_section, m_al, import_func.result_types.size());
+            for(auto &result_type:import_func.result_types){
+                wasm::emit_b8(m_type_section, m_al, result_type);
+            }
+
+            m_func_name_idx_map[import_func.name] = cur_func_idx++;
+            no_of_imports++;
+        }
+
+        wasm::emit_import_mem(m_import_section, m_al, "js", "memory", 10U /* min page limit */, 10U /* max page limit */);
+        no_of_imports++;
+
         // the main program:
         for (auto &item : x.m_global_scope->get_scope()) {
             if (ASR::is_a<ASR::Program_t>(*item.second)) {
                 visit_symbol(*item.second);
             }
         }
+
+        wasm::emit_u32_b32_idx(m_type_section, m_al, len_idx_type_section, cur_func_idx); // cur_func_idx indicate the total number of functions present
+        wasm::emit_u32_b32_idx(m_import_section, m_al, len_idx_import_section, no_of_imports);
     }
 
     void visit_Program(const ASR::Program_t &x) {
         
-        uint32_t len_idx_type_section = wasm::emit_len_placeholder(m_type_section, m_al);
+        no_of_functions = 0;
+
         uint32_t len_idx_func_section = wasm::emit_len_placeholder(m_func_section, m_al);
         uint32_t len_idx_export_section = wasm::emit_len_placeholder(m_export_section, m_al);
         uint32_t len_idx_code_section = wasm::emit_len_placeholder(m_code_section, m_al);
+        uint32_t len_idx_data_section = wasm::emit_len_placeholder(m_data_section, m_al);
 
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
@@ -87,6 +139,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
                 visit_Function(*s);
+                no_of_functions++;
             }
         }
 
@@ -134,11 +187,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::emit_export_fn(m_export_section, m_al, x.m_name, cur_func_idx);
 
         cur_func_idx++;
+        no_of_functions++;
 
-        wasm::emit_u32_b32_idx(m_type_section, m_al, len_idx_type_section, cur_func_idx);
-        wasm::emit_u32_b32_idx(m_func_section, m_al, len_idx_func_section, cur_func_idx);
-        wasm::emit_u32_b32_idx(m_export_section, m_al, len_idx_export_section, cur_func_idx);
-        wasm::emit_u32_b32_idx(m_code_section, m_al, len_idx_code_section, cur_func_idx);
+        wasm::emit_u32_b32_idx(m_func_section, m_al, len_idx_func_section, no_of_functions);
+        wasm::emit_u32_b32_idx(m_export_section, m_al, len_idx_export_section, no_of_functions);
+        wasm::emit_u32_b32_idx(m_code_section, m_al, len_idx_code_section, no_of_functions);
+        wasm::emit_u32_b32_idx(m_data_section, m_al, len_idx_data_section, no_of_data_segements);
     }
 
     void emit_var_type(Vec<uint8_t> &code, ASR::Variable_t *v){
@@ -463,7 +517,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
-
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(LFortran::ASRUtils::symbol_get_past_external(x.m_name));
 
@@ -518,6 +571,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     }
                 }
             } else if (t->type == ASR::ttypeType::Character) {
+                
                 // call JavaScript printStr
             } 
         }
@@ -550,14 +604,17 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
     }
 
     {
-        wasm_bytes.reserve(al, 8U /* preamble size */ + 8U /* (section id + section size) */ * 4U /* number of sections */ 
-            + v.m_type_section.size() + v.m_func_section.size() + v.m_export_section.size() + v.m_code_section.size());
+        wasm_bytes.reserve(al, 8U /* preamble size */ + 8U /* (section id + section size) */ * 6U /* number of sections */ 
+            + v.m_type_section.size() + v.m_import_section.size() + v.m_func_section.size() 
+            + v.m_export_section.size() + v.m_code_section.size() + v.m_data_section.size());
         
         wasm::emit_header(wasm_bytes, al);  // emit header and version
         wasm::encode_section(wasm_bytes, v.m_type_section, al, 1U);
+        wasm::encode_section(wasm_bytes, v.m_import_section, al, 2U);
         wasm::encode_section(wasm_bytes, v.m_func_section, al, 3U);
         wasm::encode_section(wasm_bytes, v.m_export_section, al, 7U);
         wasm::encode_section(wasm_bytes, v.m_code_section, al, 10U);
+        wasm::encode_section(wasm_bytes, v.m_data_section, al, 11U);
     }
 
     return wasm_bytes;
