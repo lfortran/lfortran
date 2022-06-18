@@ -149,6 +149,45 @@ void emit_export_fn(Vec<uint8_t> &code, Allocator &al, const std::string& name,
     emit_u32(code, al, idx);
 }
 
+void emit_import_fn(Vec<uint8_t> &code, Allocator &al, const std::string &mod_name,
+                const std::string& fn_name, uint32_t type_idx) 
+{
+    std::vector<uint8_t> mod_name_bytes(mod_name.size());
+    std::memcpy(mod_name_bytes.data(), mod_name.data(), mod_name.size());
+    emit_u32(code, al, mod_name_bytes.size());
+    for(auto &byte:mod_name_bytes)
+        emit_b8(code, al, byte);
+    
+    std::vector<uint8_t> fn_name_bytes(fn_name.size());
+    std::memcpy(fn_name_bytes.data(), fn_name.data(), fn_name.size());
+    emit_u32(code, al, fn_name_bytes.size());
+    for(auto &byte:fn_name_bytes)
+        emit_b8(code, al, byte);
+    
+    emit_b8(code, al, 0x00); // for importing function
+    emit_u32(code, al, type_idx);
+}
+
+void emit_import_mem(Vec<uint8_t> &code, Allocator &al, const std::string &mod_name,
+                 const std::string& mem_name, uint32_t min_limit, uint32_t /* max_limit */) {
+    std::vector<uint8_t> mod_name_bytes(mod_name.size());
+    std::memcpy(mod_name_bytes.data(), mod_name.data(), mod_name.size());
+    emit_u32(code, al, mod_name_bytes.size());
+    for(auto &byte:mod_name_bytes)
+        emit_b8(code, al, byte);
+    
+    std::vector<uint8_t> mem_name_bytes(mem_name.size());
+    std::memcpy(mem_name_bytes.data(), mem_name.data(), mem_name.size());
+    emit_u32(code, al, mem_name_bytes.size());
+    for(auto &byte:mem_name_bytes)
+        emit_b8(code, al, byte);
+    
+    emit_b8(code, al, 0x02); // for importing memory
+    emit_b8(code, al, 0x00); // for specifying min page limit of memory
+    // max page limit can also be specifid, but currently omitting it.
+    emit_u32(code, al, min_limit);
+}
+
 void encode_section(Vec<uint8_t> &des, Vec<uint8_t> &section_content, Allocator &al, uint32_t section_id){
     // every section in WebAssembly is encoded by adding its section id, followed by the content size and lastly the contents
     emit_u32(des, al, section_id);
