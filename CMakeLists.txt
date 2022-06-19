@@ -80,6 +80,15 @@ set(WITH_LFORTRAN_BINARY_MODFILES YES
 set(WITH_RUNTIME_LIBRARY YES
     CACHE BOOL "Compile and install the runtime library")
 
+# Build to wasm
+set(LFORTRAN_BUILD_TO_WASM no 
+    CACHE BOOL "Compile LFortran To WASM")
+    
+if (LFORTRAN_BUILD_TO_WASM)
+    set(HAVE_BUILD_TO_WASM yes)
+    add_definitions("-DHAVE_BUILD_TO_WASM=1")
+endif()
+
 # Find ZLIB with our custom finder before including LLVM since the finder for LLVM
 # might search for ZLIB again and find the shared libraries instead of the static ones
 find_package(StaticZLIB REQUIRED)
@@ -262,6 +271,7 @@ endif ()
 message("Installation prefix: ${CMAKE_INSTALL_PREFIX}")
 message("WITH_LFORTRAN_ASSERT: ${WITH_LFORTRAN_ASSERT}")
 message("LFORTRAN_STATIC_BIN: ${LFORTRAN_STATIC_BIN}")
+message("LFORTRAN_BUILD_TO_WASM: ${LFORTRAN_BUILD_TO_WASM}")
 message("WITH_STACKTRACE: ${WITH_STACKTRACE}")
 message("WITH_UNWIND: ${WITH_UNWIND}")
 message("WITH_BFD: ${WITH_BFD}")
