@@ -444,6 +444,20 @@ void emit_f64_max(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0xA5);
 // function to emit f64.copysign instruction
 void emit_f64_copysign(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0xA6); }
 
+
+// function to emit string
+void emit_str_const(Vec<uint8_t> &code, Allocator &al, uint32_t mem_idx, const std::string &text) {
+    emit_u32(code, al, 0U);
+    emit_i32_const(code, al, (int32_t)mem_idx);
+    emit_expr_end(code, al);
+    std::vector<uint8_t> text_bytes(text.size());
+    std::memcpy(text_bytes.data(), text.data(), text.size());
+    emit_u32(code, al, text_bytes.size());
+    for(auto &byte:text_bytes)
+        emit_b8(code, al, byte);
+}
+
+
 }  // namespace wasm
 
 }  // namespace LFortran

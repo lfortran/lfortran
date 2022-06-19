@@ -517,6 +517,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void visit_StringConstant(const ASR::StringConstant_t &x){
+        // Todo: Add a check here if there is memory available to store the given string
+        wasm::emit_str_const(m_data_section, m_al, avail_mem_loc, x.m_s);
+        last_str_len = strlen(x.m_s);
+        no_of_data_segements++;
+    }
+
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(LFortran::ASRUtils::symbol_get_past_external(x.m_name));
 
@@ -571,8 +578,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     }
                 }
             } else if (t->type == ASR::ttypeType::Character) {
-                
+                // push string location and its size on function stack
+                wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
+                wasm::emit_i32_const(m_code_section, m_al, last_str_len);
+                avail_mem_loc += last_str_len;
+
                 // call JavaScript printStr
+                wasm::emit_call(m_code_section, m_al, m_func_name_idx_map["print_str"]);
+                
             } 
         }
 
