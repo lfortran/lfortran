@@ -47,6 +47,10 @@
 #include <cpp-terminal/terminal.h>
 #include <cpp-terminal/prompt0.h>
 
+#ifdef HAVE_BUILD_TO_WASM
+    #include <emscripten/emscripten.h>
+#endif
+
 namespace {
 
 using LFortran::endswith;
@@ -1283,6 +1287,100 @@ int emit_c_preprocessor(const std::string &infile, CompilerOptions &compiler_opt
 }
 
 } // anonymous namespace
+
+#ifdef HAVE_BUILD_TO_WASM
+
+namespace wasm {
+
+#define INITIALIZE_VARS CompilerOptions compiler_options; \
+                        compiler_options.use_colors = true; \
+                        compiler_options.indent = true; \
+                        LFortran::FortranEvaluator fe(compiler_options); \
+                        LFortran::LocationManager lm; \
+                        LFortran::diag::Diagnostics diagnostics; \
+                        lm.in_filename = "input";
+
+
+
+char *cnvrtToCStr(std::string ans) {
+    char *s = new char[ans.size() + 1];
+    for (size_t i = 0; i < ans.size(); i++) s[i] = ans[i];
+    s[ans.size()] = '\0';
+    return s;
+}
+
+extern "C" { // using extern "C" to prevent function name mangling
+
+EMSCRIPTEN_KEEPALIVE char* emit_ast_from_source(char *input) {
+    INITIALIZE_VARS;
+    LFortran::Result<std::string> r = fe.get_ast(input, lm, diagnostics);
+    std::string out = diagnostics.render(input, lm, compiler_options);
+    if (r.ok) { out += r.result; }
+    return cnvrtToCStr(out);
+}
+
+EMSCRIPTEN_KEEPALIVE char* emit_asr_from_source(char *input) {
+    INITIALIZE_VARS;
+    LFortran::Result<std::string> r = fe.get_asr(input, lm, diagnostics);
+    std::string out = diagnostics.render(input, lm, compiler_options);
+    if (r.ok) { out += r.result; }
+    return cnvrtToCStr(out);
+}
+
+EMSCRIPTEN_KEEPALIVE char* emit_wat_from_source(char *input) {
+    INITIALIZE_VARS;
+    LFortran::Result<std::string> r = fe.get_wat(input, lm, diagnostics);
+    std::string out = diagnostics.render(input, lm, compiler_options);
+    if (r.ok) { out += r.result; }
+    return cnvrtToCStr(out);
+}
+
+EMSCRIPTEN_KEEPALIVE char* emit_cpp_from_source(char *input) {
+    INITIALIZE_VARS;
+    LFortran::Result<std::string> r = fe.get_cpp(input, lm, diagnostics);
+    std::string out = diagnostics.render(input, lm, compiler_options);
+    if (r.ok) { out += r.result; }
+    return cnvrtToCStr(out);
+}
+
+EMSCRIPTEN_KEEPALIVE char* emit_llvm_from_source(char *input) {
+    INITIALIZE_VARS;
+    LFortran::Result<std::string> r = fe.get_llvm(input, lm, diagnostics);
+    std::string out = diagnostics.render(input, lm, compiler_options);
+    if (r.ok) { out += r.result; }
+    return cnvrtToCStr(out);
+}
+
+// EMSCRIPTEN_KEEPALIVE char* emit_py_from_source(char *input) {
+//     INITIALIZE_VARS;
+//     LFortran::Result<std::string> r = fe.get_py(input, lm, diagnostics);
+//     std::string out = diagnostics.render(input, lm, compiler_options);
+//     if (r.ok) { out += r.result; }
+//     return cnvrtToCStr(out);
+// }
+
+EMSCRIPTEN_KEEPALIVE char* emit_wasm_from_source(char *input) {
+    INITIALIZE_VARS;
+    LFortran::Result<LFortran::Vec<uint8_t>> r = fe.get_wasm(input, lm, diagnostics);
+    std::string out;
+    if(r.ok){
+        out = "0"; // exit code
+        for (size_t i = 0; i < r.result.size(); i++) {
+            out += "," + std::to_string(r.result[i]);
+        }
+    }
+    else{
+        out = "1"; // non-zero exit code
+        out += "," + diagnostics.render(input, lm, compiler_options);
+    }
+    return cnvrtToCStr(out);
+}
+
+}
+
+} // namespace wasm
+
+#endif
 
 int main(int argc, char *argv[])
 {
