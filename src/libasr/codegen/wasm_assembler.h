@@ -150,7 +150,7 @@ uint32_t emit_len_placeholder(Vec<uint8_t> &code, Allocator &al) {
 void emit_export_fn(Vec<uint8_t> &code, Allocator &al, const std::string& name,
                     uint32_t idx) {
     emit_str(code, al, name);
-    emit_b8(code, al, 0x00);
+    emit_b8(code, al, 0x00); // for exporting function
     emit_u32(code, al, idx);
 }
 
@@ -432,9 +432,9 @@ void emit_f64_copysign(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0
 
 // function to emit string
 void emit_str_const(Vec<uint8_t> &code, Allocator &al, uint32_t mem_idx, const std::string &text) {
-    emit_u32(code, al, 0U);
-    emit_i32_const(code, al, (int32_t)mem_idx);
-    emit_expr_end(code, al);
+    emit_u32(code, al, 0U); // for active mode of memory with default mem_idx of 0
+    emit_i32_const(code, al, (int32_t)mem_idx); // specifying memory location as instructions
+    emit_expr_end(code, al); // end instructions
     emit_str(code, al, text);
 }
 

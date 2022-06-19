@@ -148,7 +148,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // Generate main program code
         sprintf(x.m_name, "_lcompilers_main");
         m_var_name_idx_map.clear(); // clear all previous variable and their indices
-        wasm::emit_b8(m_type_section, m_al, 0x60);  // new type starts
+        wasm::emit_b8(m_type_section, m_al, 0x60);  // new type declaration starts here
         m_func_name_idx_map[x.m_name] = cur_func_idx;
 
         wasm::emit_u32(m_type_section, m_al, 0U); // emit parameter types length = 0
@@ -228,7 +228,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     void visit_Function(const ASR::Function_t &x) {
         m_var_name_idx_map.clear(); // clear all previous variable and their indices
 
-        wasm::emit_b8(m_type_section, m_al, 0x60);  // type section
+        wasm::emit_b8(m_type_section, m_al, 0x60);  // new type declaration starts here
         
         m_func_name_idx_map[x.m_name] = cur_func_idx; // add func to map early to support recursive func calls
 
@@ -250,6 +250,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::fixup_len(m_type_section, m_al, len_idx_type_section_return_types_list);
         is_return_visited = false; // for every function initialize is_return_visited to false
 
+        /********************* Function Body Starts Here *********************/
         uint32_t len_idx_code_section_func_size = wasm::emit_len_placeholder(m_code_section, m_al);
         
         /********************* Local Vars Types List *********************/
