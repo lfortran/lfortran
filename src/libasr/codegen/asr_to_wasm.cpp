@@ -81,6 +81,20 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         uint32_t len_idx_type_section = wasm::emit_len_placeholder(m_type_section, m_al);
         uint32_t len_idx_import_section = wasm::emit_len_placeholder(m_import_section, m_al);
         
+        emit_imports();
+        
+        // the main program:
+        for (auto &item : x.m_global_scope->get_scope()) {
+            if (ASR::is_a<ASR::Program_t>(*item.second)) {
+                visit_symbol(*item.second);
+            }
+        }
+
+        wasm::emit_u32_b32_idx(m_type_section, m_al, len_idx_type_section, cur_func_idx); // cur_func_idx indicate the total number of functions present
+        wasm::emit_u32_b32_idx(m_import_section, m_al, len_idx_import_section, no_of_imports);
+    }
+
+    void emit_imports(){
         std::vector<import_func> import_funcs = {
             {"print_i32", {0x7F}, {}},
             {"print_i64", {0x7E}, {}},
@@ -89,7 +103,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             {"print_str", {0x7F, 0x7F}, {}},
             {"flush_buf", {}, {}}
         };
-        
+
         for(auto import_func:import_funcs){
             wasm::emit_import_fn(m_import_section, m_al, "js", import_func.name, cur_func_idx);
             // add their types to type section
@@ -111,18 +125,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         wasm::emit_import_mem(m_import_section, m_al, "js", "memory", 10U /* min page limit */, 10U /* max page limit */);
         no_of_imports++;
-
-        // the main program:
-        for (auto &item : x.m_global_scope->get_scope()) {
-            if (ASR::is_a<ASR::Program_t>(*item.second)) {
-                visit_symbol(*item.second);
-            }
-        }
-
-        wasm::emit_u32_b32_idx(m_type_section, m_al, len_idx_type_section, cur_func_idx); // cur_func_idx indicate the total number of functions present
-        wasm::emit_u32_b32_idx(m_import_section, m_al, len_idx_import_section, no_of_imports);
     }
-
+    
+    
     void visit_Program(const ASR::Program_t &x) {
         
         no_of_functions = 0;
