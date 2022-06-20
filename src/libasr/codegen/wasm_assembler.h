@@ -103,6 +103,15 @@ void emit_f64(Vec<uint8_t> &code, Allocator &al, double x) {
     emit_ieee754_f64(code, al, x);
 }
 
+// function to emit string
+void emit_str(Vec<uint8_t> &code, Allocator &al, std::string text){
+    std::vector<uint8_t> text_bytes(text.size());
+    std::memcpy(text_bytes.data(), text.data(), text.size());
+    emit_u32(code, al, text_bytes.size());
+    for(auto &byte:text_bytes)
+        emit_b8(code, al, byte);
+}
+
 void emit_u32_b32_idx(Vec<uint8_t> &code, Allocator &al, uint32_t idx,
                       uint32_t section_size) {
     /*
@@ -140,13 +149,28 @@ uint32_t emit_len_placeholder(Vec<uint8_t> &code, Allocator &al) {
 
 void emit_export_fn(Vec<uint8_t> &code, Allocator &al, const std::string& name,
                     uint32_t idx) {
-    std::vector<uint8_t> name_bytes(name.size());
-    std::memcpy(name_bytes.data(), name.data(), name.size());
-    emit_u32(code, al, name_bytes.size());
-    for(auto &byte:name_bytes)
-        emit_b8(code, al, byte);
-    emit_b8(code, al, 0x00);
+    emit_str(code, al, name);
+    emit_b8(code, al, 0x00); // for exporting function
     emit_u32(code, al, idx);
+}
+
+void emit_import_fn(Vec<uint8_t> &code, Allocator &al, const std::string &mod_name,
+                const std::string& fn_name, uint32_t type_idx) 
+{
+    emit_str(code, al, mod_name);
+    emit_str(code, al, fn_name);
+    emit_b8(code, al, 0x00); // for importing function
+    emit_u32(code, al, type_idx);
+}
+
+void emit_import_mem(Vec<uint8_t> &code, Allocator &al, const std::string &mod_name,
+                 const std::string& mem_name, uint32_t min_limit, uint32_t /* max_limit */) {
+    emit_str(code, al, mod_name);
+    emit_str(code, al, mem_name);
+    emit_b8(code, al, 0x02); // for importing memory
+    emit_b8(code, al, 0x00); // for specifying min page limit of memory
+    // max page limit can also be specifid, but currently omitting it.
+    emit_u32(code, al, min_limit);
 }
 
 void encode_section(Vec<uint8_t> &des, Vec<uint8_t> &section_content, Allocator &al, uint32_t section_id){
@@ -404,6 +428,71 @@ void emit_f64_max(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0xA5);
 
 // function to emit f64.copysign instruction
 void emit_f64_copysign(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0xA6); }
+
+
+// function to emit string
+void emit_str_const(Vec<uint8_t> &code, Allocator &al, uint32_t mem_idx, const std::string &text) {
+    emit_u32(code, al, 0U); // for active mode of memory with default mem_idx of 0
+    emit_i32_const(code, al, (int32_t)mem_idx); // specifying memory location as instructions
+    emit_expr_end(code, al); // end instructions
+    emit_str(code, al, text);
+}
+
+
+void save_js_glue(std::string filename){
+    filename += ".js";
+    std::string js_glue = 
+R"(const fs = require("fs");
+
+var memory, importsObject, outputBuffer = [];
+
+function printNum(num) { outputBuffer.push(num.toString()); }
+
+function printStr(startIdx, strSize) {
+    var bytes = new Uint8Array(memory.buffer, startIdx, strSize);
+    var string = new TextDecoder("utf8").decode(bytes);
+    outputBuffer.push(string);
+}
+
+function flushBuffer() {
+    process.stdout.write(outputBuffer.join(" ") + "\n");
+    outputBuffer = [];
+}
+
+async function run_wasm() {
+    const wasmBuffer = fs.readFileSync("./a.out");
+    memory = new WebAssembly.Memory({ initial: 10, maximum: 100 }); // initial 640Kb and max 6.4Mb
+    importsObject = {
+        js: { 
+            memory: memory,
+            
+            /* functions */
+            print_i32: printNum,
+            print_i64: printNum,
+            print_f32: printNum,
+            print_f64: printNum,
+            print_str: printStr,
+            flush_buf: flushBuffer,
+        },
+    };
+    const res = await WebAssembly.instantiate(wasmBuffer, importsObject);
+    const { _lcompilers_main } = res.instance.exports;
+    _lcompilers_main();
+}
+
+run_wasm().then().catch((e) => console.log(e));
+)";
+    std::ofstream out(filename);
+    out << js_glue;
+    out.close();
+}
+
+void save_bin(Vec<uint8_t> &code, std::string filename){
+    std::ofstream out(filename);
+    out.write((const char*) code.p, code.size());
+    out.close();
+    save_js_glue(filename);
+}
 
 }  // namespace wasm
 

@@ -166,6 +166,7 @@ output
 *.out
 *.mod
 *.smod
+*.js
 /.ccls-cache/
 .cache/
 ext/
