@@ -507,9 +507,9 @@ run_wasm().then().catch((e) => console.log(e));
 }
 
 void save_bin(Vec<uint8_t> &code, std::string filename){
-    FILE *fp = fopen(filename.c_str(), "wb");
-    fwrite(code.data(), sizeof(uint8_t), code.size(), fp);
-    fclose(fp);
+    std::ofstream out(filename);
+    out.write((const char*) code.p, code.size());
+    out.close();
     save_js_glue(filename);
 }
 
