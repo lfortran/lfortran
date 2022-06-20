@@ -131,7 +131,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         uint32_t len_idx_data_section = wasm::emit_len_placeholder(m_data_section, m_al);
 
         emit_imports();
-        
+
         no_of_functions = 0;
 
         for (auto &item : x.m_symtab->get_scope()) {
@@ -151,13 +151,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::emit_b8(m_type_section, m_al, 0x60);  // new type starts
         m_func_name_idx_map[x.m_name] = cur_func_idx;
 
-        /********************* Parameter Types List *********************/
-        uint32_t len_idx_type_section_param_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
-        wasm::fixup_len(m_type_section, m_al, len_idx_type_section_param_types_list);
-
-        /********************* Result Types List *********************/
-        uint32_t len_idx_type_section_return_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
-        wasm::fixup_len(m_type_section, m_al, len_idx_type_section_return_types_list);
+        wasm::emit_u32(m_type_section, m_al, 0U); // emit parameter types length = 0
+        wasm::emit_u32(m_type_section, m_al, 0U); // emit result types length = 0
         
         /********************* Function Body Starts Here *********************/
         uint32_t len_idx_code_section_func_size = wasm::emit_len_placeholder(m_code_section, m_al);
