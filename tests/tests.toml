@@ -335,6 +335,10 @@ filename = "wasm_floats.f90"
 wat = true
 
 [[test]]
+filename = "wasm_main_program.f90"
+wat = true
+
+[[test]]
 filename = "stop.f90"
 asr = true
 llvm = true
