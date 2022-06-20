@@ -236,6 +236,18 @@ void WASMDecoder::decode_wasm() {
 
 std::string WASMDecoder::get_wat() {
     std::string result = "(module";
+    for(uint32_t i = 0U; i < func_types.size(); i++){
+        result += "\n    (type (;" + std::to_string(i)+ ";) (func (param";
+        for (uint32_t j = 0; j < func_types[i].param_types.size(); j++) {
+            result += " " + var_type_to_string[func_types[i].param_types.p[j]];
+        }
+        result += ") (result";
+        for (uint32_t j = 0; j < func_types[i].result_types.size(); j++) {
+            result += " " + var_type_to_string[func_types[i].result_types.p[j]];
+        }
+        result += ")))";
+    }
+
     for(uint32_t i = 0; i < imports.size(); i++){
         result += "\n    (import \"" + imports[i].mod_name + "\" \"" + imports[i].name + "\" ";
         if(imports[i].kind == 0x00){
@@ -247,9 +259,9 @@ std::string WASMDecoder::get_wat() {
     }
 
     for (uint32_t i = 0; i < type_indices.size(); i++) {
-        result += "\n    (func $" + std::to_string(i);
-        result += "\n        (param";
         uint32_t func_index = type_indices.p[i];
+        result += "\n    (func $" + std::to_string(func_index);
+        result += " (type " + std::to_string(func_index) + ") (param";
         for (uint32_t j = 0; j < func_types[func_index].param_types.size(); j++) {
             result += " " + var_type_to_string[func_types[func_index].param_types.p[j]];
         }
