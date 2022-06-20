@@ -648,9 +648,7 @@ Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al, const std::s
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        FILE *fp = fopen(filename.c_str(), "wb");
-        fwrite(wasm.result.data(), sizeof(uint8_t), wasm.result.size(), fp);
-        fclose(fp);
+        wasm::save_bin(wasm.result, filename);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_save = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     }

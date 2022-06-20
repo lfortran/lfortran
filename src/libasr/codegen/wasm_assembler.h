@@ -458,6 +458,61 @@ void emit_str_const(Vec<uint8_t> &code, Allocator &al, uint32_t mem_idx, const s
 }
 
 
+void save_js_glue(std::string filename){
+    filename += ".js";
+    std::string js_glue = 
+R"(const fs = require("fs");
+
+var memory, importsObject, outputBuffer = [];
+
+function printNum(num) { outputBuffer.push(num.toString()); }
+
+function printStr(startIdx, strSize) {
+    var bytes = new Uint8Array(memory.buffer, startIdx, strSize);
+    var string = new TextDecoder("utf8").decode(bytes);
+    outputBuffer.push(string);
+}
+
+function flushBuffer() {
+    process.stdout.write(outputBuffer.join(" ") + "\n");
+    outputBuffer = [];
+}
+
+async function run_wasm() {
+    const wasmBuffer = fs.readFileSync("./a.out");
+    memory = new WebAssembly.Memory({ initial: 10, maximum: 100 }); // initial 640Kb and max 6.4Mb
+    importsObject = {
+        js: { 
+            memory: memory,
+            
+            /* functions */
+            print_i32: printNum,
+            print_i64: printNum,
+            print_f32: printNum,
+            print_f64: printNum,
+            print_str: printStr,
+            flush_buf: flushBuffer,
+        },
+    };
+    const res = await WebAssembly.instantiate(wasmBuffer, importsObject);
+    const { _lcompilers_main } = res.instance.exports;
+    _lcompilers_main();
+}
+
+run_wasm().then().catch((e) => console.log(e));
+)";
+    std::ofstream out(filename);
+    out << js_glue;
+    out.close();
+}
+
+void save_bin(Vec<uint8_t> &code, std::string filename){
+    FILE *fp = fopen(filename.c_str(), "wb");
+    fwrite(code.data(), sizeof(uint8_t), code.size(), fp);
+    fclose(fp);
+    save_js_glue(filename);
+}
+
 }  // namespace wasm
 
 }  // namespace LFortran
