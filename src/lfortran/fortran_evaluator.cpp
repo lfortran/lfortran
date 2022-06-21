@@ -195,7 +195,7 @@ Result<std::string> FortranEvaluator::get_asr(const std::string &code,
 {
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     if (asr.ok) {
-        return LFortran::pickle(*asr.result, true);
+        return LFortran::pickle(*asr.result, compiler_options.use_colors, compiler_options.indent);
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
         return asr.error;
