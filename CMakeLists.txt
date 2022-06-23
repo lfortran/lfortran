@@ -92,7 +92,12 @@ set(LFORTRAN_BUILD_TO_WASM no
     
 if (LFORTRAN_BUILD_TO_WASM)
     set(HAVE_BUILD_TO_WASM yes)
+    SET(WITH_WHEREAMI no)
     add_definitions("-DHAVE_BUILD_TO_WASM=1")
+endif()
+
+if (WITH_WHEREAMI)
+    add_definitions("-DHAVE_WHEREAMI=1")
 endif()
 
 # Find ZLIB with our custom finder before including LLVM since the finder for LLVM
