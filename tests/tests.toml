@@ -871,6 +871,7 @@ ast = true
 asr = true
 llvm = true
 obj = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/line_continuation_01.f90"
