@@ -80,6 +80,12 @@ set(WITH_LFORTRAN_BINARY_MODFILES YES
 set(WITH_RUNTIME_LIBRARY YES
     CACHE BOOL "Compile and install the runtime library")
 
+set(WITH_WHEREAMI yes
+    CACHE BOOL "Include whereami.cpp")
+
+set(WITH_ZLIB yes
+    CACHE BOOL "Compile with ZLIB Library")
+
 # Build to wasm
 set(LFORTRAN_BUILD_TO_WASM no 
     CACHE BOOL "Compile LFortran To WASM")
@@ -285,6 +291,8 @@ message("WITH_JSON: ${WITH_JSON}")
 message("WITH_FMT: ${WITH_FMT}")
 message("WITH_LFORTRAN_BINARY_MODFILES: ${WITH_LFORTRAN_BINARY_MODFILES}")
 message("WITH_RUNTIME_LIBRARY: ${WITH_RUNTIME_LIBRARY}")
+message("WITH_WHEREAMI: ${WITH_WHEREAMI}")
+message("WITH_ZLIB: ${WITH_ZLIB}")
 message("WITH_TARGET_AARCH64: ${WITH_TARGET_AARCH64}")
 message("WITH_TARGET_X86: ${WITH_TARGET_X86}")
 message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
