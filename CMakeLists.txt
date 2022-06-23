@@ -94,6 +94,7 @@ if (LFORTRAN_BUILD_TO_WASM)
     set(HAVE_BUILD_TO_WASM yes)
     SET(WITH_WHEREAMI no)
     SET(WITH_ZLIB no)
+    SET(WITH_RUNTIME_LIBRARY no)
     add_definitions("-DHAVE_BUILD_TO_WASM=1")
 endif()
 
