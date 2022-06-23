@@ -54,7 +54,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     uint32_t cur_func_idx;
     uint32_t no_of_functions;
     uint32_t no_of_imports;
-    uint32_t no_of_data_segements;  
+    uint32_t no_of_data_segments;  
     uint32_t last_str_len;
     uint32_t avail_mem_loc;
     
@@ -67,7 +67,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         avail_mem_loc = 0;
         no_of_functions = 0;
         no_of_imports = 0;
-        no_of_data_segements = 0;
+        no_of_data_segments = 0;
         m_type_section.reserve(m_al, 1024 * 128);
         m_import_section.reserve(m_al, 1024 * 128);
         m_func_section.reserve(m_al, 1024 * 128);
@@ -189,7 +189,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::emit_u32_b32_idx(m_func_section, m_al, len_idx_func_section, no_of_functions);
         wasm::emit_u32_b32_idx(m_export_section, m_al, len_idx_export_section, no_of_functions);
         wasm::emit_u32_b32_idx(m_code_section, m_al, len_idx_code_section, no_of_functions);
-        wasm::emit_u32_b32_idx(m_data_section, m_al, len_idx_data_section, no_of_data_segements);
+        wasm::emit_u32_b32_idx(m_data_section, m_al, len_idx_data_section, no_of_data_segments);
         wasm::emit_u32_b32_idx(m_type_section, m_al, len_idx_type_section, cur_func_idx); // cur_func_idx indicate the total number of functions present
         wasm::emit_u32_b32_idx(m_import_section, m_al, len_idx_import_section, no_of_imports);
 
@@ -522,7 +522,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // Todo: Add a check here if there is memory available to store the given string
         wasm::emit_str_const(m_data_section, m_al, avail_mem_loc, x.m_s);
         last_str_len = strlen(x.m_s);
-        no_of_data_segements++;
+        no_of_data_segments++;
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
