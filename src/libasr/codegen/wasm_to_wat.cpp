@@ -42,14 +42,14 @@ void WASMDecoder::decode_type_section(uint32_t offset) {
         func_types.p[i].param_types.resize(al, no_of_params);
 
         for (uint32_t j = 0; j < no_of_params; j++) {
-            func_types.p[i].param_types.p[j] = wasm_bytes[offset++];
+            func_types.p[i].param_types.p[j] = read_b8(wasm_bytes, offset);
         }
 
         uint32_t no_of_results = read_u32(wasm_bytes, offset);
         func_types.p[i].result_types.resize(al, no_of_results);
 
         for (uint32_t j = 0; j < no_of_results; j++) {
-            func_types.p[i].result_types.p[j] = wasm_bytes[offset++];
+            func_types.p[i].result_types.p[j] = read_b8(wasm_bytes, offset);
         }
     }
 }
@@ -64,13 +64,13 @@ void WASMDecoder::decode_imports_section(uint32_t offset) {
         uint32_t mod_name_size = read_u32(wasm_bytes, offset);
         imports.p[i].mod_name.resize(mod_name_size); // do not pass al to this resize as it is std::string.resize()
         for (uint32_t j = 0; j < mod_name_size; j++) {
-            imports.p[i].mod_name[j] = wasm_bytes[offset++];
+            imports.p[i].mod_name[j] = read_b8(wasm_bytes, offset);
         }
         
         uint32_t name_size = read_u32(wasm_bytes, offset);
         imports.p[i].name.resize(name_size); // do not pass al to this resize as it is std::string.resize()
         for (uint32_t j = 0; j < name_size; j++) {
-            imports.p[i].name[j] = wasm_bytes[offset++];
+            imports.p[i].name[j] = read_b8(wasm_bytes, offset);
         }
 
         imports.p[i].kind = read_b8(wasm_bytes, offset);
@@ -124,10 +124,10 @@ void WASMDecoder::decode_export_section(uint32_t offset) {
         uint32_t name_size = read_u32(wasm_bytes, offset);
         exports.p[i].name.resize(name_size); // do not pass al to this resize as it is std::string.resize()
         for (uint32_t j = 0; j < name_size; j++) {
-            exports.p[i].name[j] = wasm_bytes[offset++];
+            exports.p[i].name[j] = read_b8(wasm_bytes, offset);
         }
         DEBUG("export name: " + exports.p[i].name);
-        exports.p[i].kind = wasm_bytes[offset++];
+        exports.p[i].kind = read_b8(wasm_bytes, offset);
         DEBUG("export kind: " + std::to_string(exports.p[i].kind));
         exports.p[i].index = read_u32(wasm_bytes, offset);
         DEBUG("export index: " + std::to_string(exports.p[i].index));
@@ -151,7 +151,7 @@ void WASMDecoder::decode_code_section(uint32_t offset) {
         for (uint32_t j = 0U; j < no_of_locals; j++) {
             codes.p[i].locals.p[j].count = read_u32(wasm_bytes, offset);
             DEBUG("count: " + std::to_string(codes.p[i].locals.p[j].count));
-            codes.p[i].locals.p[j].type = wasm_bytes[offset++];
+            codes.p[i].locals.p[j].type = read_b8(wasm_bytes, offset);
             DEBUG("type: " + std::to_string(codes.p[i].locals.p[j].type));
         }
         DEBUG("Exiting loop");
@@ -185,7 +185,7 @@ void WASMDecoder::decode_data_section(uint32_t offset) {
         uint32_t text_size = read_u32(wasm_bytes, offset);
         data_segments.p[i].text.resize(text_size); // do not pass al to this resize as it is std::string.resize()
         for (uint32_t j = 0; j < text_size; j++) {
-            data_segments.p[i].text[j] = wasm_bytes[offset++];
+            data_segments.p[i].text[j] = read_b8(wasm_bytes, offset);
         }
     }
 }
