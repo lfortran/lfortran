@@ -37,7 +37,12 @@ if (WITH_JSON)
     )
 endif()
 add_library(lfortran_lib ${SRC})
-target_link_libraries(lfortran_lib asr lfortran_runtime_static ZLIB::ZLIB)
+target_link_libraries(lfortran_lib asr lfortran_runtime_static)
+
+if (WITH_ZLIB)
+    target_link_libraries(lfortran_lib ZLIB::ZLIB)
+endif()
+
 target_include_directories(lfortran_lib BEFORE PUBLIC ${lfortran_SOURCE_DIR}/src)
 target_include_directories(lfortran_lib BEFORE PUBLIC ${lfortran_BINARY_DIR}/src)
 if (WITH_XEUS)

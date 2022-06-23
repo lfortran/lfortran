@@ -5,7 +5,9 @@
 #include <map>
 #include <memory>
 
-#include <zlib.h>
+#ifdef HAVE_ZLIB
+    #include <zlib.h>
+#endif
 
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
@@ -20,9 +22,15 @@ namespace LFortran {
 using ASR::down_cast;
 using ASR::down_cast2;
 
-int uncompress_gzip(uint8_t *out, uint64_t *out_size, uint8_t *in,
-        uint64_t in_size)
+int uncompress_gzip(
+#ifdef HAVE_ZLIB
+    uint8_t* out, uint64_t* out_size, uint8_t* in, uint64_t in_size
+#else
+    uint8_t* /*out*/, uint64_t* /*out_size*/, uint8_t* /*in*/, uint64_t /*in_size*/
+#endif
+)
 {
+#ifdef HAVE_ZLIB
     // The code below is roughly equivalent to:
     //     return uncompress(out, out_size, in, in_size);
     // except that it enables gzip support in inflateInit2().
@@ -41,10 +49,20 @@ int uncompress_gzip(uint8_t *out, uint64_t *out_size, uint8_t *in,
     inflateEnd(&strm);
     *out_size = *out_size - strm.avail_out;
     return zlib_status;
+#else
+    return 1;
+#endif
 }
 
-std::string extract_gzip(std::vector<uint8_t> &buffer)
+std::string extract_gzip(
+#ifdef HAVE_ZLIB    
+    std::vector<uint8_t>& buffer
+#else    
+    std::vector<uint8_t>& /*buffer*/
+#endif
+)
 {
+#ifdef HAVE_ZLIB    
     std::vector<uint8_t> data(1024*1024);
     uint64_t data_size = data.size();
     int res = uncompress_gzip(&data[0], &data_size, &buffer[0], buffer.size());
@@ -62,6 +80,9 @@ std::string extract_gzip(std::vector<uint8_t> &buffer)
             throw LFortranException("ZLIB: unknown error (" + std::to_string(res) + ")");
     }
     return std::string((char*) &data[0], data_size);
+#else
+    return "";
+#endif
 }
 
 // 'abc' -> abc
