@@ -339,6 +339,14 @@ filename = "wasm_main_program.f90"
 wat = true
 
 [[test]]
+filename = "wasm_stop.f90"
+wat = true
+
+[[test]]
+filename = "wasm_error_stop.f90"
+wat = true
+
+[[test]]
 filename = "stop.f90"
 asr = true
 llvm = true
