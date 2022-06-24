@@ -519,6 +519,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // Todo: Add a check here if there is memory available to store the given string
         wasm::emit_str_const(m_data_section, m_al, avail_mem_loc, x.m_s);
         last_str_len = strlen(x.m_s);
+        avail_mem_loc += last_str_len;
         no_of_data_segments++;
     }
 
@@ -577,9 +578,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
             } else if (t->type == ASR::ttypeType::Character) {
                 // push string location and its size on function stack
-                wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
+                wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc - last_str_len);
                 wasm::emit_i32_const(m_code_section, m_al, last_str_len);
-                avail_mem_loc += last_str_len;
 
                 // call JavaScript printStr
                 wasm::emit_call(m_code_section, m_al, m_func_name_idx_map["print_str"]);
