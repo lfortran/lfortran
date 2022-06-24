@@ -439,6 +439,10 @@ void emit_str_const(Vec<uint8_t> &code, Allocator &al, uint32_t mem_idx, const s
 }
 
 
+void emit_unreachable(Vec<uint8_t> &code, Allocator &al){
+    code.push_back(al, 0x00);
+}
+
 void save_js_glue(std::string filename){
     std::string js_glue = 
 R"(function define_imports(memory, outputBuffer, stdout_print) {
