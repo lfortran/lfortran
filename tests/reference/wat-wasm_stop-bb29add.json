@@ -1,0 +1,13 @@
+{
+    "basename": "wat-wasm_stop-bb29add",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/wasm_stop.f90",
+    "infile_hash": "fe2f6414224a63210faa5c36e91f9bcbc7d97501337d733f51221016",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-wasm_stop-bb29add.stdout",
+    "stdout_hash": "e36447e5cc377d55bf3dd8edf3125d08fdb76926484ac27dd5601637",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,13 @@
+{
+    "basename": "wat-wasm_error_stop-f811e56",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/wasm_error_stop.f90",
+    "infile_hash": "d81df24aedaf3501542ea463815007044f5d3a3490b86bcf6e5fa653",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-wasm_error_stop-f811e56.stdout",
+    "stdout_hash": "f45e6643fe487b0596088aabdef6564daefacfcd435e5aaf9064068b",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
