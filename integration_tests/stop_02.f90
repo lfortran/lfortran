@@ -1,4 +1,4 @@
-program wasm_stop
+program stop_02
     implicit none
 
     integer :: x
