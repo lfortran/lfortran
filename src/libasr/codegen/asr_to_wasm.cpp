@@ -519,6 +519,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // Todo: Add a check here if there is memory available to store the given string
         wasm::emit_str_const(m_data_section, m_al, avail_mem_loc, x.m_s);
         last_str_len = strlen(x.m_s);
+        avail_mem_loc += last_str_len;
         no_of_data_segments++;
     }
 
@@ -577,9 +578,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
             } else if (t->type == ASR::ttypeType::Character) {
                 // push string location and its size on function stack
-                wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
+                wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc - last_str_len);
                 wasm::emit_i32_const(m_code_section, m_al, last_str_len);
-                avail_mem_loc += last_str_len;
 
                 // call JavaScript printStr
                 wasm::emit_call(m_code_section, m_al, m_func_name_idx_map["print_str"]);
@@ -597,6 +597,40 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 {x.m_fmt->base.loc}, "treated as '*'");
         }
         handle_print(x);
+    }
+
+    void print_msg(std::string msg) {
+        ASR::StringConstant_t n;
+        n.m_s = new char[msg.length() + 1];
+        strcpy(n.m_s, msg.c_str());
+        visit_StringConstant(n);
+        wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc - last_str_len);
+        wasm::emit_i32_const(m_code_section, m_al, last_str_len);
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map["print_str"]);
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map["flush_buf"]);
+    }
+
+    void exit() {
+        // exit_code would be on stack, so add it to JavaScript Output buffer by printing it.
+        // this exit code would be read by JavaScript glue code
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map["print_i32"]);
+        wasm::emit_unreachable(m_code_section, m_al); // raise trap/exception
+    }
+
+    void visit_Stop(const ASR::Stop_t &x) {
+        print_msg("STOP");
+        if (x.m_code && ASRUtils::expr_type(x.m_code)->type == ASR::ttypeType::Integer) {
+            this->visit_expr(*x.m_code);
+        } else {
+            wasm::emit_i32_const(m_code_section, m_al, 0); // zero exit code
+        }
+        exit();
+    }
+
+    void visit_ErrorStop(const ASR::ErrorStop_t & /* x */) {
+        print_msg("ERROR STOP");
+        wasm::emit_i32_const(m_code_section, m_al, 1); // non-zero exit code
+        exit();
     }
 };
 

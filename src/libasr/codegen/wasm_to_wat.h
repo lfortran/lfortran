@@ -13,6 +13,7 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
 
     WATVisitor() : src(""), indent("") {}
 
+    void visit_Unreachable() { src += indent + "unreachable"; }
     void visit_Return() { src += indent + "return"; }
     void visit_Call(uint32_t func_index) { src += indent + "call " + std::to_string(func_index); }
     void visit_LocalGet(uint32_t localidx) { src += indent + "local.get " + std::to_string(localidx); }
