@@ -1,4 +1,4 @@
-program stop_02
+program error_stop_02
     implicit none
 
     integer :: x
@@ -9,7 +9,7 @@ program stop_02
     x = x + 2
     print *, x
 
-    stop
+    error stop
 
     x = x + 2
     print *, x
