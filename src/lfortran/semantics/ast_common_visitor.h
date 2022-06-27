@@ -2215,6 +2215,8 @@ public:
                         f->m_args, f->n_args, x.base.base.loc, f,
                         diags, x.n_member);
                     if( diags.has_error() ) {
+                        diag.diagnostics.insert(diag.diagnostics.end(),
+                            diags.diagnostics.begin(), diags.diagnostics.end());
                         throw SemanticAbort();
                     }
                 } else {
