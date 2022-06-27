@@ -694,7 +694,7 @@ derived_type_decl
 template_decl
     : KW_TEMPLATE id "(" id_list ")" sep decl_star
         contains_block_opt KW_END KW_TEMPLATE sep {
-            $$ = TEMPLATE($2, $4, $6, $7, @$); }
+            $$ = TEMPLATE($2, $4, $7, $8, @$); }
     ;
 
 end_type
