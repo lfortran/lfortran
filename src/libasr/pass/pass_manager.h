@@ -30,6 +30,8 @@
 #include <map>
 #include <vector>
 
+#include <iostream>
+
 namespace LCompilers {
 
     enum ASRPass {
@@ -67,9 +69,10 @@ namespace LCompilers {
         };
 
         bool is_fast;
+        bool apply_default_passes;
 
         void _apply_passes(Allocator& al, LFortran::ASR::TranslationUnit_t* asr,
-                           std::vector<ASRPass>& passes) {
+                           std::vector<ASRPass>& passes, std::string& run_fun) {
             for (size_t i = 0; i < passes.size(); i++) {
                 switch (passes[i]) {
                     case (ASRPass::do_loops) : {
@@ -77,7 +80,7 @@ namespace LCompilers {
                         break;
                     }
                     case (ASRPass::global_stmts) : {
-                        LFortran::pass_wrap_global_stmts_into_function(al, *asr, "f");
+                        LFortran::pass_wrap_global_stmts_into_function(al, *asr, run_fun);
                         break;
                     }
                     case (ASRPass::implied_do_loops) : {
@@ -146,7 +149,7 @@ namespace LCompilers {
 
         public:
 
-        PassManager(): is_fast{false} {
+        PassManager(): is_fast{false}, apply_default_passes{false} {
             _passes = {
                 ASRPass::global_stmts,
                 ASRPass::class_constructor,
@@ -183,20 +186,19 @@ namespace LCompilers {
             _user_defined_passes.clear();
         }
 
-        void parse_pass_arg(std::string& arg_pass, bool is_fast_) {
+        void parse_pass_arg(std::string& arg_pass) {
             _user_defined_passes.clear();
-            is_fast = is_fast_;
-            if (arg_pass != "") {
+            if (arg_pass == "") {
                 return ;
             }
 
             std::string current_pass = "";
-            for( auto ch: arg_pass ) {
+            for( size_t i = 0; i < arg_pass.size(); i++ ) {
+                char ch = arg_pass[i];
                 if( ch != ' ' ) {
                     current_pass.push_back(ch);
-                    continue ;
                 }
-                if( ch == ',' ) {
+                if( ch == ',' || i == arg_pass.size() - 1 ) {
                     current_pass = LFortran::to_lower(current_pass);
                     if( _passes_db.find(current_pass) == _passes_db.end() ) {
                         std::cerr << current_pass << " isn't supported yet.";
@@ -204,7 +206,7 @@ namespace LCompilers {
                         for( auto it: _passes_db ) {
                             std::cerr << it.first << std::endl;
                         }
-                        return ;
+                        exit(1);
                     }
                     _user_defined_passes.push_back(_passes_db[current_pass]);
                     current_pass.clear();
@@ -212,16 +214,33 @@ namespace LCompilers {
             }
         }
 
-        void apply_passes(Allocator& al, LFortran::ASR::TranslationUnit_t* asr) {
+        void apply_passes(Allocator& al, LFortran::ASR::TranslationUnit_t* asr,
+                          std::string run_fun="f") {
             if( !_user_defined_passes.empty() ) {
-                _apply_passes(al, asr, _user_defined_passes);
-            } else {
+                _apply_passes(al, asr, _user_defined_passes, run_fun);
+            } else if( apply_default_passes ) {
                 if( is_fast ) {
-                    _apply_passes(al, asr, _with_optimization_passes);
+                    _apply_passes(al, asr, _with_optimization_passes, run_fun);
                 } else {
-                    _apply_passes(al, asr, _passes);
+                    _apply_passes(al, asr, _passes, run_fun);
                 }
             }
+        }
+
+        void use_optimization_passes() {
+            is_fast = true;
+        }
+
+        void do_not_use_optimization_passes() {
+            is_fast = false;
+        }
+
+        void use_default_passes() {
+            apply_default_passes = true;
+        }
+
+        void do_not_use_default_passes() {
+            apply_default_passes = false;
         }
     };
 

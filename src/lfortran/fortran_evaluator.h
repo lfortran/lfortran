@@ -12,6 +12,7 @@
 #include <lfortran/utils.h>
 #include <libasr/config.h>
 #include <libasr/diagnostics.h>
+#include <libasr/pass/pass_manager.h>
 
 namespace LFortran {
 
@@ -55,7 +56,8 @@ public:
     // Evaluates `code`.
     // If `verbose=true`, it saves ast, asr and llvm_ir in Result.
     Result<EvalResult> evaluate(const std::string &code, bool verbose,
-        LocationManager &lm, diag::Diagnostics &diagnostics);
+        LocationManager &lm, LCompilers::PassManager& pass_manager,
+        diag::Diagnostics &diagnostics);
     Result<EvalResult> evaluate2(const std::string &code);
 
     Result<std::string> get_ast(const std::string &code,
@@ -69,12 +71,17 @@ public:
     Result<ASR::TranslationUnit_t*> get_asr2(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
     Result<std::string> get_llvm(const std::string &code,
-        LocationManager &lm, diag::Diagnostics &diagnostics);
-    Result<std::unique_ptr<LLVMModule>> get_llvm2(const std::string &code,
-        LocationManager &lm, diag::Diagnostics &diagnostics);
-    Result<std::unique_ptr<LLVMModule>> get_llvm3(ASR::TranslationUnit_t &asr,
+        LocationManager &lm, LCompilers::PassManager& pass_manager,
         diag::Diagnostics &diagnostics);
-    Result<std::string> get_asm(const std::string &code, LocationManager &lm,
+    Result<std::unique_ptr<LLVMModule>> get_llvm2(const std::string &code,
+        LocationManager &lm, LCompilers::PassManager& pass_manager,
+        diag::Diagnostics &diagnostics);
+    Result<std::unique_ptr<LLVMModule>> get_llvm3(ASR::TranslationUnit_t &asr,
+        LCompilers::PassManager& pass_manager,
+        diag::Diagnostics &diagnostics);
+    Result<std::string> get_asm(const std::string &code,
+        LocationManager &lm,
+        LCompilers::PassManager& pass_manager,
         diag::Diagnostics &diagnostics);
     Result<Vec<uint8_t>> get_wasm(const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics);
