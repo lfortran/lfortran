@@ -12,6 +12,10 @@ asr_indent = true
 ast = true
 
 [[test]]
+filename = "../examples/swap_m.f90"
+ast = true
+
+[[test]]
 filename = "subroutine2.f90"
 ast = true
 
