@@ -375,7 +375,7 @@ end function)";
     lpm.do_not_use_optimization_passes();
     LFortran::Result<std::unique_ptr<LFortran::LLVMModule>>
         res = LFortran::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            lpm, LFortran::get_platform(), true, LFortran::get_runtime_library_dir(), "f");
+            lpm, LFortran::get_platform(), "f");
     REQUIRE(res.ok);
     std::unique_ptr<LFortran::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
@@ -411,7 +411,7 @@ end function)";
     lpm.do_not_use_optimization_passes();
     LFortran::Result<std::unique_ptr<LFortran::LLVMModule>>
         res = LFortran::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            lpm, LFortran::get_platform(), true, LFortran::get_runtime_library_dir(), "f");
+            lpm, LFortran::get_platform(), "f");
     REQUIRE(res.ok);
     std::unique_ptr<LFortran::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
