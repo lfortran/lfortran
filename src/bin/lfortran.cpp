@@ -19,6 +19,7 @@
 #include <lfortran/ast_to_src.h>
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/evaluator.h>
+#include <libasr/pass/pass_manager.h>
 #include <libasr/pass/do_loops.h>
 #include <libasr/pass/for_all.h>
 #include <libasr/pass/global_stmts.h>
@@ -58,13 +59,6 @@ using LFortran::CompilerOptions;
 
 enum Backend {
     llvm, cpp, x86, wasm
-};
-
-enum ASRPass {
-    do_loops, global_stmts, implied_do_loops, array_op,
-    arr_slice, print_arr, class_constructor, unused_functions,
-    flip_sign, div_to_mul, fma, sign_from_value,
-    inline_function_calls, loop_unroll, dead_code_removal
 };
 
 std::string remove_extension(const std::string& filename) {
@@ -541,7 +535,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
 }
 
 int emit_asr(const std::string &infile,
-    const std::vector<ASRPass> &passes,
+    const std::vector<LCompilers::ASRPass> &passes,
     bool with_intrinsic_modules, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
@@ -562,63 +556,63 @@ int emit_asr(const std::string &infile,
     Allocator al(64*1024*1024);
     for (size_t i=0; i < passes.size(); i++) {
         switch (passes[i]) {
-            case (ASRPass::do_loops) : {
+            case (LCompilers::ASRPass::do_loops) : {
                 LFortran::pass_replace_do_loops(al, *asr);
                 break;
             }
-            case (ASRPass::global_stmts) : {
+            case (LCompilers::ASRPass::global_stmts) : {
                 LFortran::pass_wrap_global_stmts_into_function(al, *asr, "f");
                 break;
             }
-            case (ASRPass::implied_do_loops) : {
+            case (LCompilers::ASRPass::implied_do_loops) : {
                 LFortran::pass_replace_implied_do_loops(al, *asr, LFortran::get_runtime_library_dir());
                 break;
             }
-            case (ASRPass::array_op) : {
+            case (LCompilers::ASRPass::array_op) : {
                 LFortran::pass_replace_array_op(al, *asr, LFortran::get_runtime_library_dir());
                 break;
             }
-            case (ASRPass::flip_sign) : {
+            case (LCompilers::ASRPass::flip_sign) : {
                 LFortran::pass_replace_flip_sign(al, *asr, LFortran::get_runtime_library_dir());
                 break;
             }
-            case (ASRPass::fma) : {
+            case (LCompilers::ASRPass::fma) : {
                 LFortran::pass_replace_fma(al, *asr, LFortran::get_runtime_library_dir());
                 break;
             }
-            case (ASRPass::loop_unroll) : {
+            case (LCompilers::ASRPass::loop_unroll) : {
                 LFortran::pass_loop_unroll(al, *asr, LFortran::get_runtime_library_dir());
                 break;
             }
-            case (ASRPass::inline_function_calls) : {
+            case (LCompilers::ASRPass::inline_function_calls) : {
                 LFortran::pass_inline_function_calls(al, *asr, LFortran::get_runtime_library_dir());
                 break;
             }
-            case (ASRPass::dead_code_removal) : {
+            case (LCompilers::ASRPass::dead_code_removal) : {
                 LFortran::pass_dead_code_removal(al, *asr, LFortran::get_runtime_library_dir());
                 break;
             }
-            case (ASRPass::sign_from_value) : {
+            case (LCompilers::ASRPass::sign_from_value) : {
                 LFortran::pass_replace_sign_from_value(al, *asr, LFortran::get_runtime_library_dir());
                 break;
             }
-            case (ASRPass::div_to_mul) : {
+            case (LCompilers::ASRPass::div_to_mul) : {
                 LFortran::pass_replace_div_to_mul(al, *asr, LFortran::get_runtime_library_dir());
                 break;
             }
-            case (ASRPass::class_constructor) : {
+            case (LCompilers::ASRPass::class_constructor) : {
                 LFortran::pass_replace_class_constructor(al, *asr);
                 break;
             }
-            case (ASRPass::arr_slice) : {
+            case (LCompilers::ASRPass::arr_slice) : {
                 LFortran::pass_replace_arr_slice(al, *asr, LFortran::get_runtime_library_dir());
                 break;
             }
-            case (ASRPass::print_arr) : {
+            case (LCompilers::ASRPass::print_arr) : {
                 LFortran::pass_replace_print_arr(al, *asr, LFortran::get_runtime_library_dir());
                 break;
             }
-            case (ASRPass::unused_functions) : {
+            case (LCompilers::ASRPass::unused_functions) : {
                 LFortran::pass_unused_functions(al, *asr);
                 break;
             }
@@ -1641,38 +1635,38 @@ int main(int argc, char *argv[])
         if (show_ast_f90) {
             return emit_ast_f90(arg_file, compiler_options);
         }
-        std::vector<ASRPass> passes;
+        std::vector<LCompilers::ASRPass> passes;
         if (arg_pass != "") {
             if (arg_pass == "do_loops") {
-                passes.push_back(ASRPass::do_loops);
+                passes.push_back(LCompilers::ASRPass::do_loops);
             } else if (arg_pass == "global_stmts") {
-                passes.push_back(ASRPass::global_stmts);
+                passes.push_back(LCompilers::ASRPass::global_stmts);
             } else if (arg_pass == "implied_do_loops") {
-                passes.push_back(ASRPass::implied_do_loops);
+                passes.push_back(LCompilers::ASRPass::implied_do_loops);
             } else if (arg_pass == "array_op") {
-                passes.push_back(ASRPass::array_op);
+                passes.push_back(LCompilers::ASRPass::array_op);
             } else if (arg_pass == "flip_sign") {
-                passes.push_back(ASRPass::flip_sign);
+                passes.push_back(LCompilers::ASRPass::flip_sign);
             } else if (arg_pass == "fma") {
-                passes.push_back(ASRPass::fma);
+                passes.push_back(LCompilers::ASRPass::fma);
             } else if (arg_pass == "loop_unroll") {
-                passes.push_back(ASRPass::loop_unroll);
+                passes.push_back(LCompilers::ASRPass::loop_unroll);
             } else if (arg_pass == "inline_function_calls") {
-                passes.push_back(ASRPass::inline_function_calls);
+                passes.push_back(LCompilers::ASRPass::inline_function_calls);
             } else if (arg_pass == "dead_code_removal") {
-                passes.push_back(ASRPass::dead_code_removal);
+                passes.push_back(LCompilers::ASRPass::dead_code_removal);
             } else if (arg_pass == "sign_from_value") {
-                passes.push_back(ASRPass::sign_from_value);
+                passes.push_back(LCompilers::ASRPass::sign_from_value);
             } else if (arg_pass == "div_to_mul") {
-                passes.push_back(ASRPass::div_to_mul);
+                passes.push_back(LCompilers::ASRPass::div_to_mul);
             } else if (arg_pass == "class_constructor") {
-                passes.push_back(ASRPass::class_constructor);
+                passes.push_back(LCompilers::ASRPass::class_constructor);
             } else if (arg_pass == "print_arr") {
-                passes.push_back(ASRPass::print_arr);
+                passes.push_back(LCompilers::ASRPass::print_arr);
             } else if (arg_pass == "arr_slice") {
-                passes.push_back(ASRPass::arr_slice);
+                passes.push_back(LCompilers::ASRPass::arr_slice);
             } else if (arg_pass == "unused_functions") {
-                passes.push_back(ASRPass::unused_functions);
+                passes.push_back(LCompilers::ASRPass::unused_functions);
             } else {
                 std::cerr << "Pass must be one of: do_loops, global_stmts, implied_do_loops, array_op, flip_sign, fma, loop_unroll, inline_function_calls, dead_code_removal, sign_from_value, div_to_mul, class_constructor, print_arr, arr_slice, unused_functions" << std::endl;
                 return 1;
