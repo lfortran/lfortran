@@ -39,9 +39,9 @@ else
 end if
 end function
 
-integer function selected_real_kind(R) result(res)
-integer, intent(in) :: R
-if (R < 7) then
+integer function selected_real_kind(P) result(res)
+integer, intent(in) :: P
+if (P < 7) then
     res = 4
 else
     res = 8
