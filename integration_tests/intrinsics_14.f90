@@ -9,7 +9,9 @@ integer, parameter :: &
     k7 = selected_real_kind(5_4), &
     k8 = selected_real_kind(5_8), &
     k9 = selected_real_kind(8), &
-    k10 = selected_char_kind("default")
+    k10 = selected_char_kind("default"), &
+    k11 = selected_real_kind(p=5), &
+    k12 = selected_real_kind(p=10)
 
 integer :: i1
 character(7) :: s1
@@ -31,4 +33,7 @@ print*,selected_char_kind("default"), k10 ! 1
 print *, selected_int_kind(i1)
 print *, selected_real_kind(i1)
 print *, selected_char_kind(s1)
+
+print *, selected_real_kind(p=5), k11
+print *, selected_real_kind(p=10), k12
 end program
