@@ -59,7 +59,8 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
             LCompilers::PassManager& pass_manager, diag::Diagnostics &diagnostics
 #else
             const std::string &/*code_orig*/, bool /*verbose*/,
-                LocationManager &/*lm*/, diag::Diagnostics &/*diagnostics*/
+                LocationManager &/*lm*/, LCompilers::PassManager& /*pass_manager*/,
+                diag::Diagnostics &/*diagnostics*/
 #endif
             )
 {
@@ -337,8 +338,9 @@ Result<std::string> FortranEvaluator::get_asm(
     LCompilers::PassManager& lpm,
     diag::Diagnostics &diagnostics
 #else
-    const std::string &/*code*/, LCompilers::PassManager&/*lpm*/,
+    const std::string &/*code*/,
     LocationManager &/*lm*/,
+    LCompilers::PassManager&/*lpm*/,
     diag::Diagnostics &/*diagnostics*/
 #endif
     )
