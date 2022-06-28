@@ -1226,6 +1226,15 @@ int link_executable(const std::vector<std::string> &infiles,
             return 10;
         }
         return 0;
+    } else if (backend == Backend::wasm) {
+        std::string cmd = "cp " + infiles[0] + " " + outfile
+            + " && " + "cp " + infiles[0] + ".js" + " " + outfile + ".js";
+        int err = system(cmd.c_str());
+        if (err) {
+            std::cout << "The command '" + cmd + "' failed." << std::endl;
+            return 10;
+        }
+        return 0;
     } else {
         LFORTRAN_ASSERT(false);
         return 1;
