@@ -87,12 +87,12 @@ endmacro(RUN)
 
 # GFortran + LFortran LLVM + LFortran C++
 
-RUN(NAME program_cmake_01 LABELS gfortran llvm cpp x86)
+RUN(NAME program_cmake_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME program_cmake_02 LABELS gfortran llvm cpp x86)
 
-RUN(NAME error_stop_01 FAIL LABELS gfortran llvm cpp x86)
-RUN(NAME error_stop_02 FAIL LABELS llvm)
-RUN(NAME stop_01 LABELS llvm)
+RUN(NAME error_stop_01 FAIL LABELS gfortran llvm cpp x86 wasm)
+RUN(NAME error_stop_02 FAIL LABELS llvm wasm)
+RUN(NAME stop_01 LABELS llvm wasm)
 
 RUN(NAME print_01 LABELS gfortran llvm cpp)
 RUN(NAME print_02 LABELS gfortran llvm)
