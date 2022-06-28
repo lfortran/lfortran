@@ -16,8 +16,12 @@ make $jn
 ctest $jn --output-on-failure
 cd ..
 
-mkdir b2
-cd b2
-FC=lfortran cmake -DLFORTRAN_BACKEND=cpp ..
-make $jn
-ctest $jn --output-on-failure
+if [[ ! -z "${LFORTRAN_KOKKOS_DIR}" ]]
+then
+    mkdir b2
+    cd b2
+    FC=lfortran cmake -DLFORTRAN_BACKEND=cpp ..
+    make $jn
+    ctest $jn --output-on-failure
+    cd ..
+fi
