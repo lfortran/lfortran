@@ -19,22 +19,40 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 
 // Forward declarations
 namespace {
+float func1(float a, float b);
+float func2(float a, float b);
 }
 
 // Implementations
 namespace {
+float func1(float a, float b)
+{
+    float c;
+    c = a + b;
+    c = func2(c, c);
+    return c;
+}
+
+float func2(float a, float b)
+{
+    float c;
+    c = a*b;
+    return c;
+}
+
 
 void main2() {
-    Kokkos::View<float[5]> a("a");
-    Kokkos::View<float[5]> b("b");
-    Kokkos::View<int[3]> c("c");
-    Kokkos::View<bool[2]> d("d");
-    Kokkos::View<float[2][3]> e("e");
-    Kokkos::View<int[3][4]> f("f");
-    Kokkos::View<bool[5][2]> g("g");
-    Kokkos::View<float[2][3][4]> h("h");
-    Kokkos::View<int[3][4][3]> i("i");
-    Kokkos::View<bool[5][2][2]> j("j");
+    float x;
+    float y;
+    float z;
+    x =   5.00000000000000000e+00;
+    y =   2.00000000000000000e+00;
+    z = x*y;
+    std::cout << "10.0 ==" << z << std::endl;
+    z = func1(x, y);
+    std::cout << "49.0 ==" << z << std::endl;
+    z = func2(x, y);
+    std::cout << "10.0 ==" << z << std::endl;
 }
 
 }

@@ -17,6 +17,15 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     return r;
 }
 
+// Forward declarations
+int32_t a();
+float b();
+bool c();
+int32_t d();
+float e();
+bool f();
+
+// Implementations
 int32_t a()
 {
     int a;

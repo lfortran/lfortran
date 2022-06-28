@@ -176,11 +176,14 @@ R"(
         // Otherwise some function might not be found.
         unit_src += "// Forward declarations\n";
         unit_src += declare_all_functions(*x.m_global_scope);
-        // Now pre-declare all functions from modules
+        // Now pre-declare all functions from modules and programs
         for (auto &item : x.m_global_scope->get_scope()) {
             if (ASR::is_a<ASR::Module_t>(*item.second)) {
                 ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(item.second);
                 unit_src += declare_all_functions(*m->m_symtab);
+            } else if (ASR::is_a<ASR::Program_t>(*item.second)) {
+                ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(item.second);
+                unit_src += declare_all_functions(*p->m_symtab);
             }
         }
         unit_src += "\n";

@@ -370,6 +370,13 @@ filename = "program2.f90"
 ast = true
 
 [[test]]
+filename = "program3.f90"
+ast = true
+asr = true
+cpp = true
+c = true
+
+[[test]]
 filename = "../integration_tests/program_01.f90"
 ast = true
 ast_f90 = true
