@@ -84,6 +84,10 @@ public:
         diag::Diagnostics &diagnostics);
     Result<std::string> get_cpp2(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics);
+    Result<std::string> get_c(const std::string &code, LocationManager &lm,
+        diag::Diagnostics &diagnostics);
+    Result<std::string> get_c2(ASR::TranslationUnit_t &asr,
+        diag::Diagnostics &diagnostics);
     Result<std::string> get_fmt(const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics);
 

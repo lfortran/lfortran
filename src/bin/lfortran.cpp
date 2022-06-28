@@ -649,6 +649,25 @@ int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
+int emit_c(const std::string &infile, CompilerOptions &compiler_options)
+{
+    std::string input = read_file(infile);
+
+    LFortran::FortranEvaluator fe(compiler_options);
+    LFortran::LocationManager lm;
+    LFortran::diag::Diagnostics diagnostics;
+    lm.in_filename = infile;
+    LFortran::Result<std::string> cpp = fe.get_c(input, lm, diagnostics);
+    std::cerr << diagnostics.render(input, lm, compiler_options);
+    if (cpp.ok) {
+        std::cout << cpp.result;
+        return 0;
+    } else {
+        LFORTRAN_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+}
+
 
 int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
 {
@@ -1338,6 +1357,14 @@ EMSCRIPTEN_KEEPALIVE char* emit_cpp_from_source(char *input) {
     return &out[0];
 }
 
+EMSCRIPTEN_KEEPALIVE char* emit_c_from_source(char *input) {
+    INITIALIZE_VARS;
+    LFortran::Result<std::string> r = fe.get_c(input, lm, diagnostics);
+    out = diagnostics.render(input, lm, compiler_options);
+    if (r.ok) { out += r.result; }
+    return &out[0];
+}
+
 EMSCRIPTEN_KEEPALIVE char* emit_llvm_from_source(char *input) {
     INITIALIZE_VARS;
     LFortran::Result<std::string> r = fe.get_llvm(input, lm, diagnostics);
@@ -1412,6 +1439,7 @@ int main(int argc, char *argv[])
         bool arg_no_color = false;
         bool show_llvm = false;
         bool show_cpp = false;
+        bool show_c = false;
         bool show_asm = false;
         bool show_wat = false;
         bool time_report = false;
@@ -1466,6 +1494,7 @@ int main(int argc, char *argv[])
         app.add_option("--pass", arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)");
         app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
         app.add_flag("--show-cpp", show_cpp, "Show C++ translation source for the given file and exit");
+        app.add_flag("--show-c", show_c, "Show C translation source for the given file and exit");
         app.add_flag("--show-asm", show_asm, "Show assembly for the given file and exit");
         app.add_flag("--show-wat", show_wat, "Show WAT (WebAssembly Text Format) and exit");
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors");
@@ -1704,6 +1733,9 @@ int main(int argc, char *argv[])
         }
         if (show_cpp) {
             return emit_cpp(arg_file, compiler_options);
+        }
+        if (show_c) {
+            return emit_c(arg_file, compiler_options);
         }
         if (arg_S) {
             if (backend == Backend::llvm) {

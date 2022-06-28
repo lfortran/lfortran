@@ -1,0 +1,13 @@
+{
+    "basename": "cpp-program3-7ea69db",
+    "cmd": "lfortran --no-color --show-cpp {infile}",
+    "infile": "tests/program3.f90",
+    "infile_hash": "f5e4a3f2a2a6f406171d0aa3895b5d7342c4d87b73ffede073827f34",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "cpp-program3-7ea69db.stdout",
+    "stdout_hash": "957052309d4b23bc3f25a1894db6713a08b4bb85a19db08b05c42bf1",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
