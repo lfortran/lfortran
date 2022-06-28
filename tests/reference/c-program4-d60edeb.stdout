@@ -44,9 +44,11 @@ float func1(float a, float b)
 float func2(float a, float b)
 {
     float c;
+    static float d;
     static float saved=  2.00000000000000000e+00;
     saved = saved +   1.00000000000000000e+00;
-    c = c + a + b + saved;
+    c = d + c + a + b + saved;
+    d = d +   1.00000000000000000e+00;
     return c;
 }
 
@@ -64,6 +66,6 @@ int main(int argc, char* argv[])
     z = func2(x, y);
     printf("%s %f\n", "6.0 == ", z);
     z = func2(x, y);
-    printf("%s %f\n", "7.0 == ", z);
+    printf("%s %f\n", "8.0 == ", z);
     return 0;
 }

@@ -2,11 +2,11 @@
     "basename": "cpp-program4-1796cb6",
     "cmd": "lfortran --no-color --show-cpp {infile}",
     "infile": "tests/program4.f90",
-    "infile_hash": "afa6365d2897af26b3ed42ae31afab5b2410ac8136395013fb651958",
+    "infile_hash": "be69c6ee9c953aacb1c03a2e5360c082b09ff8d6d7c878fd476570e9",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "cpp-program4-1796cb6.stdout",
-    "stdout_hash": "3e8cf7a999f8bf54530669f43380414646558c6c83cb31b84257c4ab",
+    "stdout_hash": "4b8869a6674d730888522b144fc3cc67f229f7235070ecd78f6c4089",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
