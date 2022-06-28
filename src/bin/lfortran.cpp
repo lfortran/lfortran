@@ -19,6 +19,7 @@
 #include <lfortran/ast_to_src.h>
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/evaluator.h>
+#include <libasr/pass/pass_manager.h>
 #include <libasr/pass/do_loops.h>
 #include <libasr/pass/for_all.h>
 #include <libasr/pass/global_stmts.h>
@@ -58,13 +59,6 @@ using LFortran::CompilerOptions;
 
 enum Backend {
     llvm, cpp, x86, wasm
-};
-
-enum ASRPass {
-    do_loops, global_stmts, implied_do_loops, array_op,
-    arr_slice, print_arr, class_constructor, unused_functions,
-    flip_sign, div_to_mul, fma, sign_from_value,
-    inline_function_calls, loop_unroll, dead_code_removal
 };
 
 std::string remove_extension(const std::string& filename) {
@@ -285,9 +279,12 @@ int prompt(bool verbose)
 
         try {
             LFortran::LocationManager lm;
+            LCompilers::PassManager lpm;
+            lpm.use_default_passes();
+            lpm.do_not_use_optimization_passes();
             lm.in_filename = "input";
             LFortran::Result<LFortran::FortranEvaluator::EvalResult>
-            res = e.evaluate(input, verbose, lm, diagnostics);
+            res = e.evaluate(input, verbose, lm, lpm, diagnostics);
             std::cerr << diagnostics.render(input, lm, cu);
             if (res.ok) {
                 r = res.result;
@@ -541,7 +538,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
 }
 
 int emit_asr(const std::string &infile,
-    const std::vector<ASRPass> &passes,
+    LCompilers::PassManager& pass_manager,
     bool with_intrinsic_modules, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
@@ -560,71 +557,7 @@ int emit_asr(const std::string &infile,
     LFortran::ASR::TranslationUnit_t* asr = r.result;
 
     Allocator al(64*1024*1024);
-    for (size_t i=0; i < passes.size(); i++) {
-        switch (passes[i]) {
-            case (ASRPass::do_loops) : {
-                LFortran::pass_replace_do_loops(al, *asr);
-                break;
-            }
-            case (ASRPass::global_stmts) : {
-                LFortran::pass_wrap_global_stmts_into_function(al, *asr, "f");
-                break;
-            }
-            case (ASRPass::implied_do_loops) : {
-                LFortran::pass_replace_implied_do_loops(al, *asr, LFortran::get_runtime_library_dir());
-                break;
-            }
-            case (ASRPass::array_op) : {
-                LFortran::pass_replace_array_op(al, *asr, LFortran::get_runtime_library_dir());
-                break;
-            }
-            case (ASRPass::flip_sign) : {
-                LFortran::pass_replace_flip_sign(al, *asr, LFortran::get_runtime_library_dir());
-                break;
-            }
-            case (ASRPass::fma) : {
-                LFortran::pass_replace_fma(al, *asr, LFortran::get_runtime_library_dir());
-                break;
-            }
-            case (ASRPass::loop_unroll) : {
-                LFortran::pass_loop_unroll(al, *asr, LFortran::get_runtime_library_dir());
-                break;
-            }
-            case (ASRPass::inline_function_calls) : {
-                LFortran::pass_inline_function_calls(al, *asr, LFortran::get_runtime_library_dir());
-                break;
-            }
-            case (ASRPass::dead_code_removal) : {
-                LFortran::pass_dead_code_removal(al, *asr, LFortran::get_runtime_library_dir());
-                break;
-            }
-            case (ASRPass::sign_from_value) : {
-                LFortran::pass_replace_sign_from_value(al, *asr, LFortran::get_runtime_library_dir());
-                break;
-            }
-            case (ASRPass::div_to_mul) : {
-                LFortran::pass_replace_div_to_mul(al, *asr, LFortran::get_runtime_library_dir());
-                break;
-            }
-            case (ASRPass::class_constructor) : {
-                LFortran::pass_replace_class_constructor(al, *asr);
-                break;
-            }
-            case (ASRPass::arr_slice) : {
-                LFortran::pass_replace_arr_slice(al, *asr, LFortran::get_runtime_library_dir());
-                break;
-            }
-            case (ASRPass::print_arr) : {
-                LFortran::pass_replace_print_arr(al, *asr, LFortran::get_runtime_library_dir());
-                break;
-            }
-            case (ASRPass::unused_functions) : {
-                LFortran::pass_unused_functions(al, *asr);
-                break;
-            }
-            default : throw LFortran::LFortranException("Pass not implemened");
-        }
-    }
+    pass_manager.apply_passes(al, asr);
     std::cout << LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
             with_intrinsic_modules) << std::endl;
     return 0;
@@ -713,7 +646,8 @@ int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
 
 #ifdef HAVE_LFORTRAN_LLVM
 
-int emit_llvm(const std::string &infile, CompilerOptions &compiler_options)
+int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
+              CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -722,7 +656,7 @@ int emit_llvm(const std::string &infile, CompilerOptions &compiler_options)
     lm.in_filename = infile;
     LFortran::diag::Diagnostics diagnostics;
     LFortran::Result<std::string> llvm
-        = fe.get_llvm(input, lm, diagnostics);
+        = fe.get_llvm(input, lm, pass_manager, diagnostics);
     std::cerr << diagnostics.render(input, lm, compiler_options);
     if (llvm.ok) {
         std::cout << llvm.result;
@@ -739,9 +673,11 @@ int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
 
     LFortran::FortranEvaluator fe(compiler_options);
     LFortran::LocationManager lm;
+    // TODO: Remove this and accept pass manager in emit_asm
+    LCompilers::PassManager lpm;
     LFortran::diag::Diagnostics diagnostics;
     lm.in_filename = infile;
-    LFortran::Result<std::string> r = fe.get_asm(input, lm, diagnostics);
+    LFortran::Result<std::string> r = fe.get_asm(input, lm, lpm, diagnostics);
     std::cerr << diagnostics.render(input, lm, compiler_options);
     if (r.ok) {
         std::cout << r.result;
@@ -765,6 +701,9 @@ int compile_to_object_file(const std::string &infile,
 
     // Src -> AST -> ASR
     LFortran::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    lpm.do_not_use_optimization_passes();
     lm.in_filename = infile;
     LFortran::diag::Diagnostics diagnostics;
     LFortran::Result<LFortran::ASR::TranslationUnit_t*>
@@ -798,7 +737,7 @@ int compile_to_object_file(const std::string &infile,
     std::unique_ptr<LFortran::LLVMModule> m;
     diagnostics.diagnostics.clear();
     LFortran::Result<std::unique_ptr<LFortran::LLVMModule>>
-        res = fe.get_llvm3(*asr, diagnostics);
+        res = fe.get_llvm3(*asr, lpm, diagnostics);
     std::cerr << diagnostics.render(input, lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
@@ -1463,6 +1402,8 @@ int main(int argc, char *argv[])
 
         CompilerOptions compiler_options;
 
+        LCompilers::PassManager lfortran_pass_manager;
+
         CLI::App app{"LFortran: modern interactive LLVM-based Fortran compiler"};
         // Standard options compatible with gfortran, gcc or clang
         // We follow the established conventions
@@ -1509,6 +1450,9 @@ int main(int argc, char *argv[])
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
         app.add_flag("--print-targets", print_targets, "Print the registered targets");
 
+        if( compiler_options.fast ) {
+            lfortran_pass_manager.use_optimization_passes();
+        }
         /*
         * Subcommands:
         */
@@ -1670,51 +1614,16 @@ int main(int argc, char *argv[])
         if (show_ast_f90) {
             return emit_ast_f90(arg_file, compiler_options);
         }
-        std::vector<ASRPass> passes;
-        if (arg_pass != "") {
-            if (arg_pass == "do_loops") {
-                passes.push_back(ASRPass::do_loops);
-            } else if (arg_pass == "global_stmts") {
-                passes.push_back(ASRPass::global_stmts);
-            } else if (arg_pass == "implied_do_loops") {
-                passes.push_back(ASRPass::implied_do_loops);
-            } else if (arg_pass == "array_op") {
-                passes.push_back(ASRPass::array_op);
-            } else if (arg_pass == "flip_sign") {
-                passes.push_back(ASRPass::flip_sign);
-            } else if (arg_pass == "fma") {
-                passes.push_back(ASRPass::fma);
-            } else if (arg_pass == "loop_unroll") {
-                passes.push_back(ASRPass::loop_unroll);
-            } else if (arg_pass == "inline_function_calls") {
-                passes.push_back(ASRPass::inline_function_calls);
-            } else if (arg_pass == "dead_code_removal") {
-                passes.push_back(ASRPass::dead_code_removal);
-            } else if (arg_pass == "sign_from_value") {
-                passes.push_back(ASRPass::sign_from_value);
-            } else if (arg_pass == "div_to_mul") {
-                passes.push_back(ASRPass::div_to_mul);
-            } else if (arg_pass == "class_constructor") {
-                passes.push_back(ASRPass::class_constructor);
-            } else if (arg_pass == "print_arr") {
-                passes.push_back(ASRPass::print_arr);
-            } else if (arg_pass == "arr_slice") {
-                passes.push_back(ASRPass::arr_slice);
-            } else if (arg_pass == "unused_functions") {
-                passes.push_back(ASRPass::unused_functions);
-            } else {
-                std::cerr << "Pass must be one of: do_loops, global_stmts, implied_do_loops, array_op, flip_sign, fma, loop_unroll, inline_function_calls, dead_code_removal, sign_from_value, div_to_mul, class_constructor, print_arr, arr_slice, unused_functions" << std::endl;
-                return 1;
-            }
-            show_asr = true;
-        }
+        lfortran_pass_manager.parse_pass_arg(arg_pass);
         if (show_asr) {
-            return emit_asr(arg_file, passes,
+            return emit_asr(arg_file, lfortran_pass_manager,
                     with_intrinsic_modules, compiler_options);
         }
+        lfortran_pass_manager.use_default_passes();
         if (show_llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return emit_llvm(arg_file, compiler_options);
+            return emit_llvm(arg_file, lfortran_pass_manager,
+                             compiler_options);
 #else
             std::cerr << "The --show-llvm option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;

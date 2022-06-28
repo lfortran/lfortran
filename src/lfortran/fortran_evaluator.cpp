@@ -46,18 +46,22 @@ FortranEvaluator::~FortranEvaluator() = default;
 
 Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate2(const std::string &code) {
     LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    lpm.do_not_use_optimization_passes();
     lm.in_filename = "input";
     diag::Diagnostics diagnostics;
-    return evaluate(code, false, lm, diagnostics);
+    return evaluate(code, false, lm, lpm, diagnostics);
 }
 
 Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 #ifdef HAVE_LFORTRAN_LLVM
             const std::string &code_orig, bool verbose, LocationManager &lm,
-            diag::Diagnostics &diagnostics
+            LCompilers::PassManager& pass_manager, diag::Diagnostics &diagnostics
 #else
             const std::string &/*code_orig*/, bool /*verbose*/,
-                LocationManager &/*lm*/, diag::Diagnostics &/*diagnostics*/
+                LocationManager &/*lm*/, LCompilers::PassManager& /*pass_manager*/,
+                diag::Diagnostics &/*diagnostics*/
 #endif
             )
 {
@@ -94,7 +98,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 
     // ASR -> LLVM
     Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
-        diagnostics);
+        pass_manager, diagnostics);
     std::unique_ptr<LFortran::LLVMModule> m;
     if (res3.ok) {
         m = std::move(res3.result);
@@ -253,10 +257,11 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
 }
 
 Result<std::string> FortranEvaluator::get_llvm(
-    const std::string &code, LocationManager &lm, diag::Diagnostics &diagnostics
+    const std::string &code, LocationManager &lm, LCompilers::PassManager& pass_manager,
+    diag::Diagnostics &diagnostics
     )
 {
-    Result<std::unique_ptr<LLVMModule>> res = get_llvm2(code, lm, diagnostics);
+    Result<std::unique_ptr<LLVMModule>> res = get_llvm2(code, lm, pass_manager, diagnostics);
     if (res.ok) {
 #ifdef HAVE_LFORTRAN_LLVM
         return res.result->str();
@@ -270,13 +275,14 @@ Result<std::string> FortranEvaluator::get_llvm(
 }
 
 Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
-    const std::string &code, LocationManager &lm, diag::Diagnostics &diagnostics)
+    const std::string &code, LocationManager &lm, LCompilers::PassManager& pass_manager,
+    diag::Diagnostics &diagnostics)
 {
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     if (!asr.ok) {
         return asr.error;
     }
-    Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, diagnostics);
+    Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, pass_manager, diagnostics);
     if (res.ok) {
 #ifdef HAVE_LFORTRAN_LLVM
         std::unique_ptr<LLVMModule> m = std::move(res.result);
@@ -292,9 +298,11 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
 
 Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
 #ifdef HAVE_LFORTRAN_LLVM
-    ASR::TranslationUnit_t &asr, diag::Diagnostics &diagnostics
+    ASR::TranslationUnit_t &asr, LCompilers::PassManager& pass_manager,
+    diag::Diagnostics &diagnostics
 #else
-    ASR::TranslationUnit_t &/*asr*/, diag::Diagnostics &/*diagnostics*/
+    ASR::TranslationUnit_t &/*asr*/, LCompilers::PassManager &/*pass_manager*/,
+    diag::Diagnostics &/*diagnostics*/
 #endif
     )
 {
@@ -306,9 +314,8 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     std::unique_ptr<LFortran::LLVMModule> m;
     Result<std::unique_ptr<LFortran::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
-            e->get_context(), al, compiler_options.platform,
-            compiler_options.fast, get_runtime_library_dir(),
-            run_fn);
+            e->get_context(), al, pass_manager,
+            compiler_options.platform, run_fn);
     if (res.ok) {
         m = std::move(res.result);
     } else {
@@ -329,15 +336,18 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
 Result<std::string> FortranEvaluator::get_asm(
 #ifdef HAVE_LFORTRAN_LLVM
     const std::string &code, LocationManager &lm,
+    LCompilers::PassManager& lpm,
     diag::Diagnostics &diagnostics
 #else
-    const std::string &/*code*/, LocationManager &/*lm*/,
+    const std::string &/*code*/,
+    LocationManager &/*lm*/,
+    LCompilers::PassManager&/*lpm*/,
     diag::Diagnostics &/*diagnostics*/
 #endif
     )
 {
 #ifdef HAVE_LFORTRAN_LLVM
-    Result<std::unique_ptr<LLVMModule>> res = get_llvm2(code, lm, diagnostics);
+    Result<std::unique_ptr<LLVMModule>> res = get_llvm2(code, lm, lpm, diagnostics);
     if (res.ok) {
         return e->get_asm(*res.result->m_m);
     } else {
