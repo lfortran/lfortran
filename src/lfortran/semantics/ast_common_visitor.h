@@ -907,6 +907,9 @@ public:
                                     ::AttrPublic) {
                                 s_access = ASR::accessType::Public;
                             } else if (sa->m_attr == AST::simple_attributeType
+                                    ::AttrSave) {
+                                storage_type = ASR::storage_typeType::Save;
+                            } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrParameter) {
                                 storage_type = ASR::storage_typeType::Parameter;
                             } else if( sa->m_attr == AST::simple_attributeType
@@ -1124,10 +1127,10 @@ public:
                     ASR::ttype_t *init_type = LFortran::ASRUtils::expr_type(init_expr);
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &init_expr, init_type, type);
                     LFORTRAN_ASSERT(init_expr != nullptr);
-                    if (storage_type == ASR::storage_typeType::Parameter) {
+                    if (storage_type == ASR::storage_typeType::Save || storage_type == ASR::storage_typeType::Parameter) {
                         value = ASRUtils::expr_value(init_expr);
                         if (value == nullptr) {
-                            throw SemanticError("Value of a parameter variable must evaluate to a compile time constant",
+                            throw SemanticError("Value of a save or parameter variable must evaluate to a compile time constant",
                                 x.base.base.loc);
                         }
                         if (sym_type->m_type == AST::decl_typeType::TypeCharacter) {

@@ -111,26 +111,24 @@ public:
                 ASR::Character_t *t = ASR::down_cast<ASR::Character_t>(v.m_type);
                 std::string dims = convert_dims(t->n_dims, t->m_dims);
                 sub = format_type(dims, "std::string", v.m_name, use_ref, dummy);
-                if (v.m_symbolic_value) {
-                    this->visit_expr(*v.m_symbolic_value);
-                    std::string init = src;
-                    sub += "=" + init;
-                }
             } else if (ASR::is_a<ASR::Derived_t>(*v.m_type)) {
                 ASR::Derived_t *t = ASR::down_cast<ASR::Derived_t>(v.m_type);
                 std::string dims = convert_dims(t->n_dims, t->m_dims);
                 sub = format_type(dims, "struct", v.m_name, use_ref, dummy);
-                if (v.m_symbolic_value) {
-                    this->visit_expr(*v.m_symbolic_value);
-                    std::string init = src;
-                    sub += "=" + init;
-                }
             } else {
                 diag.codegen_error_label("Type number '"
                     + std::to_string(v.m_type->type)
                     + "' not supported", {v.base.base.loc}, "");
                 throw Abort();
             }
+        }
+        if (v.m_storage == ASR::storage_typeType::Save) {
+            sub = "static " + sub;
+        }
+        if (v.m_symbolic_value) {
+            this->visit_expr(*v.m_symbolic_value);
+            std::string init = src;
+            sub += "=" + init;
         }
         return sub;
     }
