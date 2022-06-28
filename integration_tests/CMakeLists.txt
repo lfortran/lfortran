@@ -63,11 +63,16 @@ macro(RUN)
 
     if (ADD_TEST)
         add_executable(${name} ${name}.f90 ${RUN_EXTRAFILES})
-        if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86"))
+        if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86") OR (LFORTRAN_BACKEND STREQUAL "wasm"))
             target_compile_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
             target_link_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
         endif()
-        add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+
+        if ((LFORTRAN_BACKEND STREQUAL "wasm"))
+            add_test(${name} node --experimental-wasm-bigint ${CURRENT_BINARY_DIR}/${name}.js)
+        else()
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+        endif()
 
         if (RUN_LABELS)
             set_tests_properties(${name} PROPERTIES LABELS "${RUN_LABELS}")
