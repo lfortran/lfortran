@@ -20,11 +20,21 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 // Forward declarations
 namespace {
 float func1(float a, float b);
+float func2(float a, float b);
 }
 
 // Implementations
 namespace {
 float func1(float a, float b)
+{
+    float c;
+    static float saved=  2.00000000000000000e+00;
+    saved = saved +   1.00000000000000000e+00;
+    c = c + a + b + saved;
+    return c;
+}
+
+float func2(float a, float b)
 {
     float c;
     static float saved=  2.00000000000000000e+00;
@@ -43,6 +53,10 @@ void main2() {
     z = func1(x, y);
     std::cout << "6.0 == " << z << std::endl;
     z = func1(x, y);
+    std::cout << "7.0 == " << z << std::endl;
+    z = func2(x, y);
+    std::cout << "6.0 == " << z << std::endl;
+    z = func2(x, y);
     std::cout << "7.0 == " << z << std::endl;
 }
 

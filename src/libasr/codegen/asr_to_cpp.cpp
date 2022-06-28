@@ -67,7 +67,7 @@ public:
     ASRToCPPVisitor(diag::Diagnostics &diag) : BaseCCPPVisitor(diag,
         true, true, false) {}
 
-    std::string convert_variable_decl(const ASR::Variable_t &v)
+    std::string convert_variable_decl(const ASR::Variable_t &v, bool use_static=true)
     {
         std::string sub;
         bool use_ref = (v.m_intent == LFortran::ASRUtils::intent_out || v.m_intent == LFortran::ASRUtils::intent_inout);
@@ -122,7 +122,7 @@ public:
                 throw Abort();
             }
         }
-        if (v.m_storage == ASR::storage_typeType::Save) {
+        if (v.m_storage == ASR::storage_typeType::Save && use_static) {
             sub = "static " + sub;
         }
         if (v.m_symbolic_value) {

@@ -25,7 +25,7 @@ namespace {
 namespace {
 
 void main2() {
-    std::string my_name="Dominic";
+    static std::string my_name="Dominic";
     std::cout << "My name is " << my_name << std::endl;
 }
 
