@@ -12,7 +12,6 @@
 #include <libasr/pass/select_case.h>
 #include <libasr/pass/global_stmts.h>
 #include <libasr/pass/param_to_const.h>
-#include <libasr/pass/nested_vars.h>
 #include <libasr/pass/print_arr.h>
 #include <libasr/pass/arr_slice.h>
 #include <libasr/pass/flip_sign.h>
