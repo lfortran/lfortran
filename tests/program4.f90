@@ -27,10 +27,12 @@ end function func1
 function func2(a, b) result(c)
     real, intent(in) :: a, b
     real :: c
-    real :: saved = 2.0
-    real, save :: d
-    saved = saved + 1.0
-    c = d + c + a + b + saved
-    d = d + 1.0
+    real :: saved1 = 2.0
+    real, save :: saved2
+    real :: d
+    saved1 = saved1 + 1.0
+    c = d + c + a + b + saved1 + saved2
+    saved2 = saved2 + 1.0
+    d = d + 3.0
 end function func2
 end program program4

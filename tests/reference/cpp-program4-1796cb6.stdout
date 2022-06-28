@@ -37,11 +37,13 @@ float func1(float a, float b)
 float func2(float a, float b)
 {
     float c;
-    static float d;
-    static float saved=  2.00000000000000000e+00;
-    saved = saved +   1.00000000000000000e+00;
-    c = d + c + a + b + saved;
-    d = d +   1.00000000000000000e+00;
+    float d;
+    static float saved1=  2.00000000000000000e+00;
+    static float saved2;
+    saved1 = saved1 +   1.00000000000000000e+00;
+    c = d + c + a + b + saved1 + saved2;
+    saved2 = saved2 +   1.00000000000000000e+00;
+    d = d +   3.00000000000000000e+00;
     return c;
 }
 
