@@ -2,7 +2,7 @@
 
 set -ex
 
-rm -rf b1 b2
+rm -rf b1 b2 b3
 
 # Append "-j4" or "-j" to run in parallel
 jn=$1
@@ -25,3 +25,9 @@ then
     ctest $jn --output-on-failure
     cd ..
 fi
+
+mkdir b3
+cd b3
+FC=lfortran cmake -DLFORTRAN_BACKEND=wasm -DCURRENT_BINARY_DIR=. ..
+make $jn
+ctest $jn --output-on-failure
