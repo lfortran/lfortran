@@ -1,5 +1,0 @@
-semantic error: The LHS character len=20 and the RHS character len=18 are not equal.
- --> tests/../integration_tests/intrinsics_open_close_read_write.f90:4:1
-  |
-4 | character(len=20) :: msg = 'Some error occured'
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

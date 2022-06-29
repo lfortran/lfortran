@@ -1,5 +1,0 @@
-semantic error: Value of a save or parameter variable must evaluate to a compile time constant
- --> tests/../integration_tests/intrinsics_36.f90:3:5
-  |
-3 |     character(len=25) :: empty = adjustl('')
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
