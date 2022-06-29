@@ -638,6 +638,19 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         handle_print(x);
     }
 
+    void visit_FileWrite(const ASR::FileWrite_t &x) {
+        if (x.m_fmt != nullptr) {
+            diag.codegen_warning_label("format string in `print` is not implemented yet and it is currently treated as '*'",
+                {x.m_fmt->base.loc}, "treated as '*'");
+        }
+        if (x.m_unit != nullptr) {
+            diag.codegen_error_label("unit in write() is not implemented yet",
+                {x.m_unit->base.loc}, "not implemented");
+            throw CodeGenAbort();
+        }
+        handle_print(x);
+    }
+
     void print_msg(std::string msg) {
         ASR::StringConstant_t n;
         n.m_s = new char[msg.length() + 1];
