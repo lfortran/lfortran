@@ -907,6 +907,9 @@ public:
                                     ::AttrPublic) {
                                 s_access = ASR::accessType::Public;
                             } else if (sa->m_attr == AST::simple_attributeType
+                                    ::AttrSave) {
+                                storage_type = ASR::storage_typeType::Save;
+                            } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrParameter) {
                                 storage_type = ASR::storage_typeType::Parameter;
                             } else if( sa->m_attr == AST::simple_attributeType
@@ -1163,6 +1166,8 @@ public:
                             LFORTRAN_ASSERT(lhs_len >= 0)
                             lhs_type->m_len = lhs_len;
                         }
+                    } else {
+                        storage_type = ASR::storage_typeType::Save; // implicit save
                     }
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
