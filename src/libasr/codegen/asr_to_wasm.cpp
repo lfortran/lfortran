@@ -573,8 +573,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[fn->m_name]);
     }
 
-
-    void handle_print(const ASR::Print_t &x){
+    template <typename T>
+    void handle_print(const T &x){
         for (size_t i=0; i<x.n_values; i++) {
             this->visit_expr(*x.m_values[i]);
             ASR::expr_t *v = x.m_values[i];
