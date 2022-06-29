@@ -101,11 +101,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     void emit_imports(){
         std::vector<import_func> import_funcs = {
-            {"print_i32", {0x7F}, {}},
-            {"print_i64", {0x7E}, {}},
-            {"print_f32", {0x7D}, {}},
-            {"print_f64", {0x7C}, {}},
-            {"print_str", {0x7F, 0x7F}, {}},
+            {"print_i32", { wasm::type::i32 }, {}},
+            {"print_i64", { wasm::type::i64 }, {}},
+            {"print_f32", { wasm::type::f32 }, {}},
+            {"print_f64", { wasm::type::f64 }, {}},
+            {"print_str", { wasm::type::i32, wasm::type::i32 }, {}},
             {"flush_buf", {}, {}}
         };
 
@@ -197,10 +197,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             // checking for array is currently omitted
             ASR::Integer_t* v_int = ASR::down_cast<ASR::Integer_t>(v->m_type);
             if (v_int->m_kind == 4) {
-                wasm::emit_b8(code, m_al, 0x7F); // i32
+                wasm::emit_b8(code, m_al, wasm::type::i32);
             }
             else if (v_int->m_kind == 8) {
-                wasm::emit_b8(code, m_al, 0x7E); // i64
+                wasm::emit_b8(code, m_al, wasm::type::i64);
             }
             else{
                 throw CodeGenError("Integers of kind 4 and 8 only supported");
@@ -209,10 +209,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             // checking for array is currently omitted
             ASR::Real_t* v_float = ASR::down_cast<ASR::Real_t>(v->m_type);
             if (v_float->m_kind == 4) {
-                wasm::emit_b8(code, m_al, 0x7D); // f32
+                wasm::emit_b8(code, m_al, wasm::type::f32);
             }
             else if(v_float->m_kind == 8){
-                wasm::emit_b8(code, m_al, 0x7C); // f64
+                wasm::emit_b8(code, m_al, wasm::type::f64);
             } 
             else {
                 throw CodeGenError("Floating Points of kind 4 and 8 only supported");
@@ -221,10 +221,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             // checking for array is currently omitted
             ASR::Logical_t* v_logical = ASR::down_cast<ASR::Logical_t>(v->m_type);
             if (v_logical->m_kind == 4) {
-                wasm::emit_b8(code, m_al, 0x7F); // i32
+                wasm::emit_b8(code, m_al, wasm::type::i32);
             }
             else if(v_logical->m_kind == 8){
-                wasm::emit_b8(code, m_al, 0x7E); // i64
+                wasm::emit_b8(code, m_al, wasm::type::i64);
             } 
             else {
                 throw CodeGenError("Logicals of kind 4 and 8 only supported");
