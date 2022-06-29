@@ -85,35 +85,36 @@ public:
                 throw Abort();
             }
         } else {
+            std::string dims;
             if (ASRUtils::is_integer(*v.m_type)) {
                 ASR::Integer_t *t = ASR::down_cast<ASR::Integer_t>(v.m_type);
-                std::string dims = convert_dims(t->n_dims, t->m_dims);
+                dims = convert_dims(t->n_dims, t->m_dims);
                 std::string type_name = "int";
                 if (t->m_kind == 8) type_name = "long long";
                 sub = format_type(dims, type_name, v.m_name, use_ref, dummy);
             } else if (ASRUtils::is_real(*v.m_type)) {
                 ASR::Real_t *t = ASR::down_cast<ASR::Real_t>(v.m_type);
-                std::string dims = convert_dims(t->n_dims, t->m_dims);
+                dims = convert_dims(t->n_dims, t->m_dims);
                 std::string type_name = "float";
                 if (t->m_kind == 8) type_name = "double";
                 sub = format_type(dims, type_name, v.m_name, use_ref, dummy);
             } else if (ASRUtils::is_complex(*v.m_type)) {
                 ASR::Complex_t *t = ASR::down_cast<ASR::Complex_t>(v.m_type);
-                std::string dims = convert_dims(t->n_dims, t->m_dims);
+                dims = convert_dims(t->n_dims, t->m_dims);
                 std::string type_name = "std::complex<float>";
                 if (t->m_kind == 8) type_name = "std::complex<double>";
                 sub = format_type(dims, type_name, v.m_name, use_ref, dummy);
             } else if (ASRUtils::is_logical(*v.m_type)) {
                 ASR::Logical_t *t = ASR::down_cast<ASR::Logical_t>(v.m_type);
-                std::string dims = convert_dims(t->n_dims, t->m_dims);
+                dims = convert_dims(t->n_dims, t->m_dims);
                 sub = format_type(dims, "bool", v.m_name, use_ref, dummy);
             } else if (ASRUtils::is_character(*v.m_type)) {
                 ASR::Character_t *t = ASR::down_cast<ASR::Character_t>(v.m_type);
-                std::string dims = convert_dims(t->n_dims, t->m_dims);
+                dims = convert_dims(t->n_dims, t->m_dims);
                 sub = format_type(dims, "std::string", v.m_name, use_ref, dummy);
             } else if (ASR::is_a<ASR::Derived_t>(*v.m_type)) {
                 ASR::Derived_t *t = ASR::down_cast<ASR::Derived_t>(v.m_type);
-                std::string dims = convert_dims(t->n_dims, t->m_dims);
+                dims = convert_dims(t->n_dims, t->m_dims);
                 sub = format_type(dims, "struct", v.m_name, use_ref, dummy);
             } else {
                 diag.codegen_error_label("Type number '"
@@ -121,14 +122,14 @@ public:
                     + "' not supported", {v.base.base.loc}, "");
                 throw Abort();
             }
-        }
-        if (v.m_storage == ASR::storage_typeType::Save && use_static) {
-            sub = "static " + sub;
-        }
-        if (v.m_symbolic_value) {
-            this->visit_expr(*v.m_symbolic_value);
-            std::string init = src;
-            sub += "=" + init;
+            if (v.m_storage == ASR::storage_typeType::Save && use_static) {
+                sub = "static " + sub;
+            }
+            if (dims.size() == 0 && v.m_symbolic_value) {
+                this->visit_expr(*v.m_symbolic_value);
+                std::string init = src;
+                sub += "=" + init;
+            }
         }
         return sub;
     }
