@@ -36,51 +36,36 @@ define i32 @main() {
   store double 0.000000e+00, double* %10, align 8
   %11 = load %complex_8, %complex_8* %8, align 8
   store %complex_8 %11, %complex_8* %zero, align 8
-  %12 = alloca %complex_4, align 8
-  %13 = getelementptr %complex_4, %complex_4* %12, i32 0, i32 0
-  %14 = getelementptr %complex_4, %complex_4* %12, i32 0, i32 1
-  store float 0x3FF0CCCCC0000000, float* %13, align 4
-  store float 0x3FF0CCCCC0000000, float* %14, align 4
-  %15 = load %complex_4, %complex_4* %12, align 4
-  %16 = alloca %complex_4, align 8
-  store %complex_4 %15, %complex_4* %16, align 4
-  %17 = getelementptr %complex_4, %complex_4* %16, i32 0, i32 0
-  %18 = load float, float* %17, align 4
-  %19 = fpext float %18 to double
-  %20 = alloca %complex_4, align 8
-  store %complex_4 %15, %complex_4* %20, align 4
-  %21 = getelementptr %complex_4, %complex_4* %20, i32 0, i32 1
-  %22 = load float, float* %21, align 4
-  %23 = fpext float %22 to double
-  %24 = alloca %complex_8, align 8
-  %25 = getelementptr %complex_8, %complex_8* %24, i32 0, i32 0
-  %26 = getelementptr %complex_8, %complex_8* %24, i32 0, i32 1
-  store double 1.050000e+00, double* %25, align 8
-  store double 1.050000e+00, double* %26, align 8
-  %27 = load %complex_8, %complex_8* %24, align 8
-  %28 = alloca %complex_8, align 8
-  store %complex_8 %27, %complex_8* %28, align 8
-  %29 = getelementptr %complex_8, %complex_8* %28, i32 0, i32 0
-  %30 = load double, double* %29, align 8
-  %31 = alloca %complex_8, align 8
-  store %complex_8 %27, %complex_8* %31, align 8
-  %32 = getelementptr %complex_8, %complex_8* %31, i32 0, i32 1
-  %33 = load double, double* %32, align 8
-  %34 = alloca %complex_8, align 8
-  %35 = getelementptr %complex_8, %complex_8* %34, i32 0, i32 0
-  %36 = getelementptr %complex_8, %complex_8* %34, i32 0, i32 1
-  store double 0.000000e+00, double* %35, align 8
-  store double 0.000000e+00, double* %36, align 8
-  %37 = load %complex_8, %complex_8* %34, align 8
-  %38 = alloca %complex_8, align 8
-  store %complex_8 %37, %complex_8* %38, align 8
-  %39 = getelementptr %complex_8, %complex_8* %38, i32 0, i32 0
-  %40 = load double, double* %39, align 8
-  %41 = alloca %complex_8, align 8
-  store %complex_8 %37, %complex_8* %41, align 8
-  %42 = getelementptr %complex_8, %complex_8* %41, i32 0, i32 1
-  %43 = load double, double* %42, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([29 x i8], [29 x i8]* @0, i32 0, i32 0), double %19, double %23, double %30, double %33, double %40, double %43)
+  %12 = load %complex_4, %complex_4* %u, align 4
+  %13 = alloca %complex_4, align 8
+  store %complex_4 %12, %complex_4* %13, align 4
+  %14 = getelementptr %complex_4, %complex_4* %13, i32 0, i32 0
+  %15 = load float, float* %14, align 4
+  %16 = fpext float %15 to double
+  %17 = alloca %complex_4, align 8
+  store %complex_4 %12, %complex_4* %17, align 4
+  %18 = getelementptr %complex_4, %complex_4* %17, i32 0, i32 1
+  %19 = load float, float* %18, align 4
+  %20 = fpext float %19 to double
+  %21 = load %complex_8, %complex_8* %v, align 8
+  %22 = alloca %complex_8, align 8
+  store %complex_8 %21, %complex_8* %22, align 8
+  %23 = getelementptr %complex_8, %complex_8* %22, i32 0, i32 0
+  %24 = load double, double* %23, align 8
+  %25 = alloca %complex_8, align 8
+  store %complex_8 %21, %complex_8* %25, align 8
+  %26 = getelementptr %complex_8, %complex_8* %25, i32 0, i32 1
+  %27 = load double, double* %26, align 8
+  %28 = load %complex_8, %complex_8* %zero, align 8
+  %29 = alloca %complex_8, align 8
+  store %complex_8 %28, %complex_8* %29, align 8
+  %30 = getelementptr %complex_8, %complex_8* %29, i32 0, i32 0
+  %31 = load double, double* %30, align 8
+  %32 = alloca %complex_8, align 8
+  store %complex_8 %28, %complex_8* %32, align 8
+  %33 = getelementptr %complex_8, %complex_8* %32, i32 0, i32 1
+  %34 = load double, double* %33, align 8
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([29 x i8], [29 x i8]* @0, i32 0, i32 0), double %16, double %20, double %24, double %27, double %31, double %34)
   ret i32 0
 }
 

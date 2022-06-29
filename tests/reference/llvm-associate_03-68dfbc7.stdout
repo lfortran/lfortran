@@ -13,8 +13,13 @@ define i32 @main() {
   store i32 2, i32* %t1, align 4
   %t2 = alloca i32, align 4
   store i32 1, i32* %t2, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([7 x i8], [7 x i8]* @0, i32 0, i32 0), i32 2, i32 1)
-  br i1 true, label %then, label %else
+  %0 = load i32, i32* %t1, align 4
+  %1 = load i32, i32* %t2, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([7 x i8], [7 x i8]* @0, i32 0, i32 0), i32 %0, i32 %1)
+  %2 = load i32, i32* %t1, align 4
+  %3 = load i32, i32* %t2, align 4
+  %4 = icmp sgt i32 %2, %3
+  br i1 %4, label %then, label %else
 
 then:                                             ; preds = %.entry
   store i32* %t1, i32** %p1, align 8
@@ -25,15 +30,16 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %0 = load i32*, i32** %p1, align 8
-  %1 = ptrtoint i32* %0 to i64
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([6 x i8], [6 x i8]* @1, i32 0, i32 0), i64 %1)
-  %2 = load i32*, i32** %p1, align 8
-  %3 = load i32, i32* %2, align 4
-  store i32 %3, i32* %i, align 4
-  %4 = load i32, i32* %i, align 4
-  %5 = icmp eq i32 %4, 1
-  br i1 %5, label %then1, label %else2
+  %5 = load i32*, i32** %p1, align 8
+  %6 = ptrtoint i32* %5 to i64
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([6 x i8], [6 x i8]* @1, i32 0, i32 0), i64 %6)
+  %7 = load i32*, i32** %p1, align 8
+  %8 = load i32, i32* %7, align 4
+  store i32 %8, i32* %i, align 4
+  %9 = load i32, i32* %i, align 4
+  %10 = load i32, i32* %t2, align 4
+  %11 = icmp eq i32 %9, %10
+  br i1 %11, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @2, i32 0, i32 0))

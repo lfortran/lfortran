@@ -40,14 +40,17 @@ define i32 @__module_nested_04_a_c(i32* %z) {
   %1 = load i32*, i32** getelementptr inbounds (%b_nstd_types, %b_nstd_types* @b_nstd_strct, i32 0, i32 0), align 8
   %2 = load i32, i32* %1, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @1, i32 0, i32 0), i32 %2)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0), double 0x401A666660000000)
-  %3 = load i32, i32* %z, align 4
-  store i32 %3, i32* %c, align 4
+  %3 = load float*, float** getelementptr inbounds (%b_nstd_types, %b_nstd_types* @b_nstd_strct, i32 0, i32 1), align 8
+  %4 = load float, float* %3, align 4
+  %5 = fpext float %4 to double
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0), double %5)
+  %6 = load i32, i32* %z, align 4
+  store i32 %6, i32* %c, align 4
   br label %return
 
 return:                                           ; preds = %.entry
-  %4 = load i32, i32* %c, align 4
-  ret i32 %4
+  %7 = load i32, i32* %c, align 4
+  ret i32 %7
 }
 
 declare void @_lfortran_printf(i8*, ...)
