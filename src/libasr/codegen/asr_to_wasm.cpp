@@ -17,6 +17,11 @@ namespace LFortran {
 
 namespace {
 
+    // This exception is used to abort the visitor pattern when an error occurs.
+    class CodeGenAbort
+    {
+    };
+
     // Local exception that is only used in this file to exit the visitor
     // pattern and caught later (not propagated outside)
     class CodeGenError {
@@ -24,7 +29,15 @@ namespace {
         diag::Diagnostic d;
 
     public:
-        CodeGenError(const std::string &msg) : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen)} {}
+        CodeGenError(const std::string &msg)
+            : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen)}
+        { }
+
+        CodeGenError(const std::string &msg, const Location &loc)
+            : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen, {
+                diag::Label("", {loc})
+            })}
+        { }
     };
 
 }  // namespace
@@ -101,11 +114,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     void emit_imports(){
         std::vector<import_func> import_funcs = {
-            {"print_i32", {0x7F}, {}},
-            {"print_i64", {0x7E}, {}},
-            {"print_f32", {0x7D}, {}},
-            {"print_f64", {0x7C}, {}},
-            {"print_str", {0x7F, 0x7F}, {}},
+            {"print_i32", { wasm::type::i32 }, {}},
+            {"print_i64", { wasm::type::i64 }, {}},
+            {"print_f32", { wasm::type::f32 }, {}},
+            {"print_f64", { wasm::type::f64 }, {}},
+            {"print_str", { wasm::type::i32, wasm::type::i32 }, {}},
             {"flush_buf", {}, {}}
         };
 
@@ -197,10 +210,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             // checking for array is currently omitted
             ASR::Integer_t* v_int = ASR::down_cast<ASR::Integer_t>(v->m_type);
             if (v_int->m_kind == 4) {
-                wasm::emit_b8(code, m_al, 0x7F); // i32
+                wasm::emit_b8(code, m_al, wasm::type::i32);
             }
             else if (v_int->m_kind == 8) {
-                wasm::emit_b8(code, m_al, 0x7E); // i64
+                wasm::emit_b8(code, m_al, wasm::type::i64);
             }
             else{
                 throw CodeGenError("Integers of kind 4 and 8 only supported");
@@ -209,10 +222,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             // checking for array is currently omitted
             ASR::Real_t* v_float = ASR::down_cast<ASR::Real_t>(v->m_type);
             if (v_float->m_kind == 4) {
-                wasm::emit_b8(code, m_al, 0x7D); // f32
+                wasm::emit_b8(code, m_al, wasm::type::f32);
             }
             else if(v_float->m_kind == 8){
-                wasm::emit_b8(code, m_al, 0x7C); // f64
+                wasm::emit_b8(code, m_al, wasm::type::f64);
             } 
             else {
                 throw CodeGenError("Floating Points of kind 4 and 8 only supported");
@@ -221,10 +234,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             // checking for array is currently omitted
             ASR::Logical_t* v_logical = ASR::down_cast<ASR::Logical_t>(v->m_type);
             if (v_logical->m_kind == 4) {
-                wasm::emit_b8(code, m_al, 0x7F); // i32
+                wasm::emit_b8(code, m_al, wasm::type::i32);
             }
             else if(v_logical->m_kind == 8){
-                wasm::emit_b8(code, m_al, 0x7E); // i64
+                wasm::emit_b8(code, m_al, wasm::type::i64);
             } 
             else {
                 throw CodeGenError("Logicals of kind 4 and 8 only supported");
@@ -560,8 +573,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[fn->m_name]);
     }
 
-
-    void handle_print(const ASR::Print_t &x){
+    template <typename T>
+    void handle_print(const T &x){
         for (size_t i=0; i<x.n_values; i++) {
             this->visit_expr(*x.m_values[i]);
             ASR::expr_t *v = x.m_values[i];
@@ -623,6 +636,34 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 {x.m_fmt->base.loc}, "treated as '*'");
         }
         handle_print(x);
+    }
+
+    void visit_FileWrite(const ASR::FileWrite_t &x) {
+        if (x.m_fmt != nullptr) {
+            diag.codegen_warning_label("format string in `print` is not implemented yet and it is currently treated as '*'",
+                {x.m_fmt->base.loc}, "treated as '*'");
+        }
+        if (x.m_unit != nullptr) {
+            diag.codegen_error_label("unit in write() is not implemented yet",
+                {x.m_unit->base.loc}, "not implemented");
+            throw CodeGenAbort();
+        }
+        handle_print(x);
+    }
+
+    void visit_FileRead(const ASR::FileRead_t &x) {
+        if (x.m_fmt != nullptr) {
+            diag.codegen_warning_label("format string in read() is not implemented yet and it is currently treated as '*'",
+                {x.m_fmt->base.loc}, "treated as '*'");
+        }
+        if (x.m_unit != nullptr) {
+            diag.codegen_error_label("unit in read() is not implemented yet",
+                {x.m_unit->base.loc}, "not implemented");
+            throw CodeGenAbort();
+        }
+        diag.codegen_error_label("The intrinsic function read() is not implemented yet in the LLVM backend",
+            {x.base.base.loc}, "not implemented");
+        throw CodeGenAbort();
     }
 
     void print_msg(std::string msg) {

@@ -6,6 +6,13 @@
 namespace LFortran {
 namespace wasm {
 
+enum type {
+    i32 = 0x7F,
+    i64 = 0x7E,
+    f32 = 0x7D,
+    f64 = 0x7C
+};
+
 void emit_leb128_u32(Vec<uint8_t> &code, Allocator &al, uint32_t n) { // for u32
     do {
         uint8_t byte = n & 0x7f;
