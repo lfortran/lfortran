@@ -176,10 +176,10 @@ void WASMDecoder::decode_data_section(uint32_t offset) {
         }
 
         {
-            WASM_INSTS_VISITOR::WATVisitor v = WASM_INSTS_VISITOR::WATVisitor();
-            v.indent = "";
-            v.decode_instructions(wasm_bytes, offset);
+            WASM_INSTS_VISITOR::WATVisitor v = WASM_INSTS_VISITOR::WATVisitor(wasm_bytes, offset, "", "");
+            v.decode_instructions();
             data_segments.p[i].insts = v.src;
+            offset = v.offset;
         }
 
         uint32_t text_size = read_u32(wasm_bytes, offset);
@@ -280,9 +280,8 @@ std::string WASMDecoder::get_wat() {
         result += ")";
 
         {
-            WASM_INSTS_VISITOR::WATVisitor v = WASM_INSTS_VISITOR::WATVisitor();
-            v.indent = indent + "    ";
-            v.decode_instructions(wasm_bytes, codes.p[i].insts_start_index);
+            WASM_INSTS_VISITOR::WATVisitor v = WASM_INSTS_VISITOR::WATVisitor(wasm_bytes, codes.p[i].insts_start_index, "", indent + "    ");
+            v.decode_instructions();
             result += v.src;
         }
 

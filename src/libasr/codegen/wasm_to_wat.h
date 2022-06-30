@@ -11,7 +11,7 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
    public:
     std::string src, indent;
 
-    WATVisitor() : src(""), indent("") {}
+    WATVisitor(Vec<uint8_t> &code, uint32_t offset, std::string src, std::string indent) : BaseWASMVisitor(code, offset), src(src), indent(indent) {}
 
     void visit_Unreachable() { src += indent + "unreachable"; }
     void visit_Return() { src += indent + "return"; }
