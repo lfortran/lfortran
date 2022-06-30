@@ -11,13 +11,25 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
    public:
     std::string src, indent;
 
-    WATVisitor() : src(""), indent("") {}
+    WATVisitor(Vec<uint8_t> &code, uint32_t offset, std::string src, std::string indent) : BaseWASMVisitor(code, offset), src(src), indent(indent) {}
 
     void visit_Unreachable() { src += indent + "unreachable"; }
     void visit_Return() { src += indent + "return"; }
     void visit_Call(uint32_t func_index) { src += indent + "call " + std::to_string(func_index); }
     void visit_LocalGet(uint32_t localidx) { src += indent + "local.get " + std::to_string(localidx); }
     void visit_LocalSet(uint32_t localidx) { src += indent + "local.set " + std::to_string(localidx); }
+    void visit_EmtpyBlockType() {}
+    void visit_If() {
+        src += indent + "if";
+        {
+            WATVisitor v = WATVisitor(code, offset, "", indent + "    ");
+            v.decode_instructions();
+            src += v.src;
+            offset = v.offset;
+        }
+        src += indent + "end";
+    }
+    void visit_Else() { src += indent + "\b\b\b\b" + "else"; }
 
     void visit_I32Const(int32_t value) { src += indent + "i32.const " + std::to_string(value); }
     void visit_I32Add() { src += indent + "i32.add"; }

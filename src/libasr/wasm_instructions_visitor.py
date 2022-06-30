@@ -41,11 +41,15 @@ class WASMInstructionsVisitor():
         self.emit("private:", 0)
         self.emit(    "Derived& self() { return static_cast<Derived&>(*this); }", 1)
         self.emit("public:", 0)
+        self.emit(    "Vec<uint8_t> &code;", 1)
+        self.emit(    "uint32_t offset;\n", 1)
 
+        self.emit(    "BaseWASMVisitor(Vec<uint8_t> &code, uint32_t offset): code(code), offset(offset) {}", 1)
+        
         for inst in mod["instructions"]:
             self.emit("void visit_%s(%s) {throw LFortran::LFortranException(\"visit_%s() not implemented\");}\n" % (inst["func"], make_param_list(inst["params"]), inst["func"]), 1)
 
-        self.emit(    "void decode_instructions(Vec<uint8_t> &code, uint32_t &offset) {", 1)
+        self.emit(    "void decode_instructions() {", 1)
         self.emit(        "uint8_t cur_byte = wasm::read_b8(code, offset);", 2)
         self.emit(        "while (cur_byte != 0x0B) {", 2)
         self.emit(            "switch (cur_byte) {", 3)

@@ -217,8 +217,20 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             else {
                 throw CodeGenError("Floating Points of kind 4 and 8 only supported");
             }
+        } else if (ASRUtils::is_logical(*v->m_type)) {
+            // checking for array is currently omitted
+            ASR::Logical_t* v_logical = ASR::down_cast<ASR::Logical_t>(v->m_type);
+            if (v_logical->m_kind == 4) {
+                wasm::emit_b8(code, m_al, 0x7F); // i32
+            }
+            else if(v_logical->m_kind == 8){
+                wasm::emit_b8(code, m_al, 0x7E); // i64
+            } 
+            else {
+                throw CodeGenError("Logicals of kind 4 and 8 only supported");
+            }
         } else {
-            throw CodeGenError("Param, Result, Var Types other than integer and floating point not yet supported");
+            throw CodeGenError("Param, Result, Var Types other than integer, floating point and logical not yet supported");
         }
     }
 
@@ -455,12 +467,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         const ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
         auto v = ASR::down_cast<ASR::Variable_t>(s);
         switch (v->m_type->type) {
-            case ASR::ttypeType::Integer:{
-                LFORTRAN_ASSERT(m_var_name_idx_map.find(v->m_name) != m_var_name_idx_map.end());
-                wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[v->m_name]);
-                break;
-            }
-
+            case ASR::ttypeType::Integer:
+            case ASR::ttypeType::Logical:
             case ASR::ttypeType::Real: {
                 LFORTRAN_ASSERT(m_var_name_idx_map.find(v->m_name) != m_var_name_idx_map.end());
                 wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[v->m_name]);
@@ -511,6 +519,24 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             default: {
                 throw CodeGenError("Constant Real: Only kind 4 and 8 supported");
+            }
+        }
+    }
+
+    void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
+        bool val = x.m_value;
+        int a_kind = ((ASR::Logical_t *)(&(x.m_type->base)))->m_kind;
+        switch (a_kind) {
+            case 4: {
+                wasm::emit_i32_const(m_code_section, m_al, val);
+                break;
+            }
+            case 8: {
+                wasm::emit_i64_const(m_code_section, m_al, val);
+                break;
+            }
+            default: {
+                throw CodeGenError("Constant Logical: Only kind 4 and 8 supported");
             }
         }
     }
@@ -631,6 +657,22 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         print_msg("ERROR STOP");
         wasm::emit_i32_const(m_code_section, m_al, 1); // non-zero exit code
         exit();
+    }
+
+    void visit_If(const ASR::If_t &x) {
+        this->visit_expr(*x.m_test);
+        wasm::emit_b8(m_code_section, m_al, 0x04);
+        wasm::emit_b8(m_code_section, m_al, 0x40); // empty block type
+        for (size_t i=0; i<x.n_body; i++) {
+            this->visit_stmt(*x.m_body[i]);
+        }
+        if(x.n_orelse){
+            wasm::emit_b8(m_code_section, m_al, 0x05); // starting of else
+            for (size_t i=0; i<x.n_orelse; i++) {
+                this->visit_stmt(*x.m_orelse[i]);
+            }
+        }
+        wasm::emit_expr_end(m_code_section, m_al);
     }
 };
 
