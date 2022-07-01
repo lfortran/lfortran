@@ -26,11 +26,9 @@ private:
 public:
     ASR::asr_t *asr;
     bool from_block;
-    ASRUtils::LabelGenerator *label_generator;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics)
-         : CommonVisitor(al, nullptr, diagnostics), asr{unit}, from_block{false},
-         label_generator(ASRUtils::LabelGenerator::get_instance()) {}
+         : CommonVisitor(al, nullptr, diagnostics), asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
         if( from_block ) {
@@ -59,10 +57,8 @@ public:
                                               body.p, body.size());
         current_scope = parent_scope;
         current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(block));
-        uint64_t block_call_label = label_generator->get_unique_label();
-        tmp = ASR::make_BlockCall_t(al, x.base.base.loc,  block_call_label,
+        tmp = ASR::make_BlockCall_t(al, x.base.base.loc,  -1,
                                     ASR::down_cast<ASR::symbol_t>(block));
-        label_generator->add_node_with_unique_label(tmp, block_call_label);
         from_block = false;
     }
 
