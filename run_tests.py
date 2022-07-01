@@ -121,9 +121,12 @@ def main():
             run_test("pass_{}".format(pass_), cmd,
                      filename, update_reference, extra_args)
             if pass_with_llvm:
-                cmd = "lfortran --pass=" + pass_ + " --show-llvm --no-color {infile} -o {outfile}"
-                run_test("pass_llvm_{}".format(pass_), cmd,
-                        filename, update_reference, extra_args)
+                if no_llvm:
+                    print("    * llvm   SKIPPED as requested")
+                else:
+                    cmd = "lfortran --pass=" + pass_ + " --show-llvm --no-color {infile} -o {outfile}"
+                    run_test("pass_llvm_{}".format(pass_), cmd,
+                            filename, update_reference, extra_args)
 
         if llvm:
             if no_llvm:
