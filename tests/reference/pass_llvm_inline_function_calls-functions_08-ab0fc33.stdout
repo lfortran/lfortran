@@ -1,0 +1,158 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+@0 = private unnamed_addr constant [4 x i8] c"%f\0A\00", align 1
+@1 = private unnamed_addr constant [4 x i8] c"%f\0A\00", align 1
+
+define float @f(float* %a) {
+.entry:
+  %call_arg_value = alloca float, align 4
+  %a_f_real = alloca float, align 4
+  %b = alloca float, align 4
+  %b_f_real = alloca float, align 4
+  %x = alloca float, align 4
+  store float 2.000000e+00, float* %x, align 4
+  store float 0.000000e+00, float* %a_f_real, align 4
+  %0 = load float, float* %a_f_real, align 4
+  %1 = fcmp ueq float %0, 0.000000e+00
+  br i1 %1, label %then, label %else
+
+then:                                             ; preds = %.entry
+  store float 2.000000e+00, float* %b_f_real, align 4
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %2 = load float, float* %a_f_real, align 4
+  store float 1.000000e+00, float* %call_arg_value, align 4
+  %3 = call float @f(float* %call_arg_value)
+  %4 = fadd float %2, %3
+  store float %4, float* %b_f_real, align 4
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %5 = load float, float* %a, align 4
+  %6 = load float, float* %b_f_real, align 4
+  %7 = fadd float %5, %6
+  store float %7, float* %b, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  %8 = load float, float* %b, align 4
+  ret float %8
+}
+
+define float @f_real(float* %a) {
+.entry:
+  %call_arg_value = alloca float, align 4
+  %a_f = alloca float, align 4
+  %a_f_real_f = alloca float, align 4
+  %b = alloca float, align 4
+  %b_f = alloca float, align 4
+  %b_f_real_f = alloca float, align 4
+  %x_f = alloca float, align 4
+  store float 1.000000e+00, float* %a_f, align 4
+  store float 2.000000e+00, float* %x_f, align 4
+  store float 0.000000e+00, float* %a_f_real_f, align 4
+  %0 = load float, float* %a_f_real_f, align 4
+  %1 = fcmp ueq float %0, 0.000000e+00
+  br i1 %1, label %then, label %else
+
+then:                                             ; preds = %.entry
+  store float 2.000000e+00, float* %b_f_real_f, align 4
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %2 = load float, float* %a_f_real_f, align 4
+  store float 1.000000e+00, float* %call_arg_value, align 4
+  %3 = call float @f(float* %call_arg_value)
+  %4 = fadd float %2, %3
+  store float %4, float* %b_f_real_f, align 4
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %5 = load float, float* %a_f, align 4
+  %6 = load float, float* %b_f_real_f, align 4
+  %7 = fadd float %5, %6
+  store float %7, float* %b_f, align 4
+  %8 = load float, float* %a, align 4
+  %9 = fcmp ueq float %8, 0.000000e+00
+  br i1 %9, label %then1, label %else2
+
+then1:                                            ; preds = %ifcont
+  store float 2.000000e+00, float* %b, align 4
+  br label %ifcont3
+
+else2:                                            ; preds = %ifcont
+  %10 = load float, float* %a, align 4
+  %11 = load float, float* %b_f, align 4
+  %12 = fadd float %10, %11
+  store float %12, float* %b, align 4
+  br label %ifcont3
+
+ifcont3:                                          ; preds = %else2, %then1
+  br label %return
+
+return:                                           ; preds = %ifcont3
+  %13 = load float, float* %b, align 4
+  ret float %13
+}
+
+define i32 @main() {
+.entry:
+  %call_arg_value1 = alloca float, align 4
+  %call_arg_value = alloca float, align 4
+  %a = alloca float, align 4
+  %a_f = alloca float, align 4
+  %a_f_real = alloca float, align 4
+  %b = alloca float, align 4
+  %b_f = alloca float, align 4
+  %b_f_real = alloca float, align 4
+  %c = alloca float, align 4
+  %p = alloca float, align 4
+  store float 5.000000e+00, float* %p, align 4
+  %q = alloca float, align 4
+  %x = alloca float, align 4
+  store float 5.000000e+00, float* %x, align 4
+  %x_f = alloca float, align 4
+  %y = alloca float, align 4
+  %0 = load float, float* %x, align 4
+  store float %0, float* %a_f, align 4
+  store float 2.000000e+00, float* %x_f, align 4
+  %1 = load float, float* %a_f, align 4
+  store float 0.000000e+00, float* %call_arg_value, align 4
+  %2 = call float @f_real(float* %call_arg_value)
+  %3 = fadd float %1, %2
+  store float %3, float* %b_f, align 4
+  %4 = load float, float* %b_f, align 4
+  store float %4, float* %y, align 4
+  %5 = load float, float* %y, align 4
+  %6 = fpext float %5 to double
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0), double %6)
+  %7 = load float, float* %p, align 4
+  store float %7, float* %a_f_real, align 4
+  %8 = load float, float* %a_f_real, align 4
+  %9 = fcmp ueq float %8, 0.000000e+00
+  br i1 %9, label %then, label %else
+
+then:                                             ; preds = %.entry
+  store float 2.000000e+00, float* %b_f_real, align 4
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %10 = load float, float* %a_f_real, align 4
+  store float 1.000000e+00, float* %call_arg_value1, align 4
+  %11 = call float @f(float* %call_arg_value1)
+  %12 = fadd float %10, %11
+  store float %12, float* %b_f_real, align 4
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %13 = load float, float* %b_f_real, align 4
+  store float %13, float* %q, align 4
+  %14 = load float, float* %q, align 4
+  %15 = fpext float %14 to double
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @1, i32 0, i32 0), double %15)
+  ret i32 0
+}
+
+declare void @_lfortran_printf(i8*, ...)

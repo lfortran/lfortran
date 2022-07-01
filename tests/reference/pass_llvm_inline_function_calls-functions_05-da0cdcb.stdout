@@ -1,0 +1,223 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+@0 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
+@1 = private unnamed_addr constant [4 x i8] c"%f\0A\00", align 1
+@2 = private unnamed_addr constant [4 x i8] c"%f\0A\00", align 1
+
+define i32 @f(i32* %a) {
+.entry:
+  %b = alloca i32, align 4
+  %x = alloca i32, align 4
+  store i32 2, i32* %x, align 4
+  %0 = load i32, i32* %a, align 4
+  %1 = load i32, i32* %x, align 4
+  %2 = add i32 %0, %1
+  store i32 %2, i32* %b, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  %3 = load i32, i32* %b, align 4
+  ret i32 %3
+}
+
+define float @f_real(float* %a) {
+.entry:
+  %b = alloca float, align 4
+  %r_signr32 = alloca float, align 4
+  %x_signr32 = alloca float, align 4
+  %y_signr32 = alloca float, align 4
+  store float 1.000000e+00, float* %x_signr32, align 4
+  %0 = load float, float* %a, align 4
+  store float %0, float* %y_signr32, align 4
+  %1 = load float, float* %x_signr32, align 4
+  store float %1, float* %r_signr32, align 4
+  %2 = load float, float* %x_signr32, align 4
+  %3 = fcmp uge float %2, 0.000000e+00
+  %4 = load float, float* %y_signr32, align 4
+  %5 = fcmp uge float %4, 0.000000e+00
+  %6 = and i1 %3, %5
+  %7 = load float, float* %x_signr32, align 4
+  %8 = fcmp ule float %7, 0.000000e+00
+  %9 = load float, float* %y_signr32, align 4
+  %10 = fcmp ule float %9, 0.000000e+00
+  %11 = and i1 %8, %10
+  %12 = or i1 %6, %11
+  br i1 %12, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %13 = load float, float* %x_signr32, align 4
+  store float %13, float* %r_signr32, align 4
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %14 = load float, float* %x_signr32, align 4
+  %15 = fsub float 0.000000e+00, %14
+  store float %15, float* %r_signr32, align 4
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %16 = load float, float* %a, align 4
+  %17 = load float, float* %r_signr32, align 4
+  %18 = fadd float %16, %17
+  store float %18, float* %b, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  %19 = load float, float* %b, align 4
+  ret float %19
+}
+
+define float @signr32(float* %x, float* %y) {
+.entry:
+  %r = alloca float, align 4
+  %0 = load float, float* %x, align 4
+  store float %0, float* %r, align 4
+  %1 = load float, float* %x, align 4
+  %2 = fcmp uge float %1, 0.000000e+00
+  %3 = load float, float* %y, align 4
+  %4 = fcmp uge float %3, 0.000000e+00
+  %5 = and i1 %2, %4
+  %6 = load float, float* %x, align 4
+  %7 = fcmp ule float %6, 0.000000e+00
+  %8 = load float, float* %y, align 4
+  %9 = fcmp ule float %8, 0.000000e+00
+  %10 = and i1 %7, %9
+  %11 = or i1 %5, %10
+  br i1 %11, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %12 = load float, float* %x, align 4
+  store float %12, float* %r, align 4
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %13 = load float, float* %x, align 4
+  %14 = fsub float 0.000000e+00, %13
+  store float %14, float* %r, align 4
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  br label %return
+
+return:                                           ; preds = %ifcont
+  %15 = load float, float* %r, align 4
+  ret float %15
+}
+
+define i32 @main() {
+.entry:
+  %a = alloca float, align 4
+  %a_f = alloca i32, align 4
+  %a_f_real = alloca float, align 4
+  %b = alloca float, align 4
+  %b_f = alloca i32, align 4
+  %b_f_real = alloca float, align 4
+  %c = alloca float, align 4
+  %p = alloca float, align 4
+  store float 5.000000e+00, float* %p, align 4
+  %q = alloca float, align 4
+  %r_signr32 = alloca float, align 4
+  %r_signr32_f_real = alloca float, align 4
+  %x = alloca i32, align 4
+  store i32 5, i32* %x, align 4
+  %x_f = alloca i32, align 4
+  %x_signr32 = alloca float, align 4
+  %x_signr32_f_real = alloca float, align 4
+  %y = alloca i32, align 4
+  %y_signr32 = alloca float, align 4
+  %y_signr32_f_real = alloca float, align 4
+  %0 = load i32, i32* %x, align 4
+  store i32 %0, i32* %a_f, align 4
+  store i32 2, i32* %x_f, align 4
+  %1 = load i32, i32* %a_f, align 4
+  %2 = load i32, i32* %x_f, align 4
+  %3 = add i32 %1, %2
+  store i32 %3, i32* %b_f, align 4
+  %4 = load i32, i32* %b_f, align 4
+  store i32 %4, i32* %y, align 4
+  %5 = load i32, i32* %y, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0), i32 %5)
+  %6 = load float, float* %p, align 4
+  store float %6, float* %a_f_real, align 4
+  store float 1.000000e+00, float* %x_signr32_f_real, align 4
+  %7 = load float, float* %a_f_real, align 4
+  store float %7, float* %y_signr32_f_real, align 4
+  %8 = load float, float* %x_signr32_f_real, align 4
+  store float %8, float* %r_signr32_f_real, align 4
+  %9 = load float, float* %x_signr32_f_real, align 4
+  %10 = fcmp uge float %9, 0.000000e+00
+  %11 = load float, float* %y_signr32_f_real, align 4
+  %12 = fcmp uge float %11, 0.000000e+00
+  %13 = and i1 %10, %12
+  %14 = load float, float* %x_signr32_f_real, align 4
+  %15 = fcmp ule float %14, 0.000000e+00
+  %16 = load float, float* %y_signr32_f_real, align 4
+  %17 = fcmp ule float %16, 0.000000e+00
+  %18 = and i1 %15, %17
+  %19 = or i1 %13, %18
+  br i1 %19, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %20 = load float, float* %x_signr32_f_real, align 4
+  store float %20, float* %r_signr32_f_real, align 4
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %21 = load float, float* %x_signr32_f_real, align 4
+  %22 = fsub float 0.000000e+00, %21
+  store float %22, float* %r_signr32_f_real, align 4
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %23 = load float, float* %a_f_real, align 4
+  %24 = load float, float* %r_signr32_f_real, align 4
+  %25 = fadd float %23, %24
+  store float %25, float* %b_f_real, align 4
+  %26 = load float, float* %b_f_real, align 4
+  store float %26, float* %q, align 4
+  %27 = load float, float* %q, align 4
+  %28 = fpext float %27 to double
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @1, i32 0, i32 0), double %28)
+  store float 2.000000e+01, float* %a, align 4
+  store float -3.000000e+01, float* %b, align 4
+  %29 = load float, float* %a, align 4
+  store float %29, float* %x_signr32, align 4
+  %30 = load float, float* %b, align 4
+  store float %30, float* %y_signr32, align 4
+  %31 = load float, float* %x_signr32, align 4
+  store float %31, float* %r_signr32, align 4
+  %32 = load float, float* %x_signr32, align 4
+  %33 = fcmp uge float %32, 0.000000e+00
+  %34 = load float, float* %y_signr32, align 4
+  %35 = fcmp uge float %34, 0.000000e+00
+  %36 = and i1 %33, %35
+  %37 = load float, float* %x_signr32, align 4
+  %38 = fcmp ule float %37, 0.000000e+00
+  %39 = load float, float* %y_signr32, align 4
+  %40 = fcmp ule float %39, 0.000000e+00
+  %41 = and i1 %38, %40
+  %42 = or i1 %36, %41
+  br i1 %42, label %then1, label %else2
+
+then1:                                            ; preds = %ifcont
+  %43 = load float, float* %x_signr32, align 4
+  store float %43, float* %r_signr32, align 4
+  br label %ifcont3
+
+else2:                                            ; preds = %ifcont
+  %44 = load float, float* %x_signr32, align 4
+  %45 = fsub float 0.000000e+00, %44
+  store float %45, float* %r_signr32, align 4
+  br label %ifcont3
+
+ifcont3:                                          ; preds = %else2, %then1
+  %46 = load float, float* %r_signr32, align 4
+  store float %46, float* %c, align 4
+  %47 = load float, float* %c, align 4
+  %48 = fpext float %47 to double
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0), double %48)
+  ret i32 0
+}
+
+declare void @_lfortran_printf(i8*, ...)

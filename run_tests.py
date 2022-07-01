@@ -121,7 +121,7 @@ def main():
             run_test("pass_{}".format(pass_), cmd,
                      filename, update_reference, extra_args)
             if pass_with_llvm:
-                cmd = "lpython --pass=" + pass_ + " --show-llvm --no-color {infile} -o {outfile}"
+                cmd = "lfortran --pass=" + pass_ + " --show-llvm --no-color {infile} -o {outfile}"
                 run_test("pass_llvm_{}".format(pass_), cmd,
                         filename, update_reference, extra_args)
 

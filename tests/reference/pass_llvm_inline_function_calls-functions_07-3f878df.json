@@ -1,0 +1,13 @@
+{
+    "basename": "pass_llvm_inline_function_calls-functions_07-3f878df",
+    "cmd": "lfortran --pass=inline_function_calls --show-llvm --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/functions_07.f90",
+    "infile_hash": "7353db41b76b1bb72bf3a708e5b317dec74af0ada289020227f88626",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_llvm_inline_function_calls-functions_07-3f878df.stdout",
+    "stdout_hash": "b512fe8ca580571e9faa6e211febca5a610e80e020e685c65c910374",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
