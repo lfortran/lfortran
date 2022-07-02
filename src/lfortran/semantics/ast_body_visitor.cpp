@@ -57,7 +57,8 @@ public:
                                               body.p, body.size());
         current_scope = parent_scope;
         current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(block));
-        tmp = ASR::make_BlockCall_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(block));
+        tmp = ASR::make_BlockCall_t(al, x.base.base.loc,  -1,
+                                    ASR::down_cast<ASR::symbol_t>(block));
         from_block = false;
     }
 

@@ -57,6 +57,7 @@ def main():
         x86 = test.get("x86", False)
         bin_ = test.get("bin", False)
         pass_ = test.get("pass", None)
+        pass_with_llvm = test.get("pass_with_llvm", None)
         optimization_passes = ["flip_sign", "div_to_mul", "fma", "sign_from_value",
                                "inline_function_calls", "loop_unroll",
                                "dead_code_removal"]
@@ -119,6 +120,13 @@ def main():
             cmd = "lfortran --pass=" + pass_ + " --show-asr --no-color {infile} -o {outfile}"
             run_test("pass_{}".format(pass_), cmd,
                      filename, update_reference, extra_args)
+            if pass_with_llvm:
+                if no_llvm:
+                    print("    * llvm   SKIPPED as requested")
+                else:
+                    cmd = "lfortran --pass=" + pass_ + " --show-llvm --no-color {infile} -o {outfile}"
+                    run_test("pass_llvm_{}".format(pass_), cmd,
+                            filename, update_reference, extra_args)
 
         if llvm:
             if no_llvm:
