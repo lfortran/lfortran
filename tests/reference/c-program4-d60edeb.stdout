@@ -62,12 +62,12 @@ int main(int argc, char* argv[])
     x =   1.00000000000000000e+00;
     y =   2.00000000000000000e+00;
     z = func1(x, y);
-    printf("%s %f\n", "6.0 == ", z);
+    printf("%s%s%f\n", "6.0 == ", " ", z);
     z = func1(x, y);
-    printf("%s %f\n", "7.0 == ", z);
+    printf("%s%s%f\n", "7.0 == ", " ", z);
     z = func2(x, y);
-    printf("%s %f\n", "6.0 == ", z);
+    printf("%s%s%f\n", "6.0 == ", " ", z);
     z = func2(x, y);
-    printf("%s %f\n", "8.0 == ", z);
+    printf("%s%s%f\n", "8.0 == ", " ", z);
     return 0;
 }
