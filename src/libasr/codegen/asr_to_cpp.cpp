@@ -64,8 +64,8 @@ std::string format_type(const std::string &dims, const std::string &type,
 class ASRToCPPVisitor : public BaseCCPPVisitor<ASRToCPPVisitor>
 {
 public:
-    ASRToCPPVisitor(diag::Diagnostics &diag) : BaseCCPPVisitor(diag,
-        true, true, false) {}
+    ASRToCPPVisitor(diag::Diagnostics &diag, Platform &platform)
+        : BaseCCPPVisitor(diag, platform, true, true, false) {}
 
     std::string convert_variable_decl(const ASR::Variable_t &v, bool use_static=true)
     {
@@ -136,6 +136,7 @@ public:
 
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        global_scope = x.m_global_scope;
         // All loose statements must be converted to a function, so the items
         // must be empty:
         LFORTRAN_ASSERT(x.n_items == 0);
@@ -377,10 +378,19 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 
     void visit_Print(const ASR::Print_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
-        std::string out = indent + "std::cout ";
+        std::string out = indent + "std::cout ", sep;
+        if (x.m_separator) {
+            this->visit_expr(*x.m_separator);
+            sep = src;
+        } else {
+            sep = "\" \"";
+        }
         for (size_t i=0; i<x.n_values; i++) {
             this->visit_expr(*x.m_values[i]);
             out += "<< " + src + " ";
+            if (i+1 != x.n_values) {
+                out += "<< " + sep + " ";
+            }
         }
         out += "<< std::endl;\n";
         src = out;
@@ -433,10 +443,10 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 };
 
 Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
-    diag::Diagnostics &diagnostics)
+    diag::Diagnostics &diagnostics, Platform &platform)
 {
-    pass_unused_functions(al, asr);
-    ASRToCPPVisitor v(diagnostics);
+    pass_unused_functions(al, asr, true);
+    ASRToCPPVisitor v(diagnostics, platform);
     try {
         v.visit_asr((ASR::asr_t &)asr);
     } catch (const CodeGenError &e) {

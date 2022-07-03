@@ -586,7 +586,7 @@ public:
                                                 al, x.base.base.loc,
                                                 ref_1, (ASR::logicalbinopType)x.m_op, ref_2, x.m_type, nullptr));
                             break;
-                        case ASR::exprType::IntegerCompare:
+                       case ASR::exprType::IntegerCompare:
                             op_el_wise = LFortran::ASRUtils::EXPR(ASR::make_IntegerCompare_t(
                                                     al, x.base.base.loc,
                                                     ref_1, (ASR::cmpopType)x.m_op, ref_2, x.m_type, nullptr));
@@ -617,7 +617,7 @@ public:
                     doloop_body.push_back(al, doloop);
                 }
                 ASR::expr_t* inc_expr = LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x.base.base.loc, idx_vars_value[i],
-                                                                 ASR::binopType::Add, const_1, int32_type, nullptr));
+                                                                ASR::binopType::Add, const_1, int32_type, nullptr));
                 ASR::stmt_t* assign_stmt = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, idx_vars_value[i], inc_expr, nullptr));
                 doloop_body.push_back(al, assign_stmt);
                 doloop = LFortran::ASRUtils::STMT(ASR::make_DoLoop_t(al, x.base.base.loc, head, doloop_body.p, doloop_body.size()));
@@ -723,7 +723,7 @@ public:
                     doloop_body.push_back(al, doloop);
                 }
                 ASR::expr_t* inc_expr = LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x.base.base.loc, idx_vars_value[i],
-                                                                 ASR::binopType::Add, const_1, int32_type, nullptr));
+                                                                ASR::binopType::Add, const_1, int32_type, nullptr));
                 ASR::stmt_t* assign_stmt = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, idx_vars_value[i], inc_expr, nullptr));
                 doloop_body.push_back(al, assign_stmt);
                 doloop = LFortran::ASRUtils::STMT(ASR::make_DoLoop_t(al, x.base.base.loc, head, doloop_body.p, doloop_body.size()));

@@ -63,7 +63,13 @@ namespace LFortran {
                                          SymbolTable*& current_scope, Location& loc,
                                          const std::function<void (const std::string &, const Location &)> err);
 
-        Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop);
+        ASR::stmt_t* get_vector_copy(ASR::symbol_t* array0, ASR::symbol_t* array1, ASR::expr_t* start,
+            ASR::expr_t* end, ASR::expr_t* step, ASR::expr_t* vector_length,
+            Allocator& al, ASR::TranslationUnit_t& unit,
+            SymbolTable*& global_scope, Location& loc);
+
+        Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
+                                         int comp=-1);
 
         template <class Derived>
         class PassVisitor: public ASR::BaseWalkVisitor<Derived> {
@@ -74,7 +80,7 @@ namespace LFortran {
 
             public:
 
-                bool asr_changed, retain_original_stmt;
+                bool asr_changed, retain_original_stmt, remove_original_stmt;
                 Allocator& al;
                 Vec<ASR::stmt_t*> pass_result;
                 SymbolTable* current_scope;
@@ -87,11 +93,19 @@ namespace LFortran {
                 void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
                     Vec<ASR::stmt_t*> body;
                     body.reserve(al, n_body);
+                    if (pass_result.size() > 0) {
+                        asr_changed = true;
+                        for (size_t j=0; j < pass_result.size(); j++) {
+                            body.push_back(al, pass_result[j]);
+                        }
+                        pass_result.n = 0;
+                    }
                     for (size_t i=0; i<n_body; i++) {
                         // Not necessary after we check it after each visit_stmt in every
                         // visitor method:
                         pass_result.n = 0;
                         retain_original_stmt = false;
+                        remove_original_stmt = false;
                         self().visit_stmt(*m_body[i]);
                         if (pass_result.size() > 0) {
                             asr_changed = true;
@@ -103,7 +117,7 @@ namespace LFortran {
                                 retain_original_stmt = false;
                             }
                             pass_result.n = 0;
-                        } else {
+                        } else if(!remove_original_stmt) {
                             body.push_back(al, m_body[i]);
                         }
                     }
