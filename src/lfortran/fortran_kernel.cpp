@@ -214,7 +214,7 @@ namespace LFortran
                 LocationManager lm;
                 diag::Diagnostics diagnostics;
                 Result<std::string>
-                res = e.get_cpp(code0, lm, diagnostics);
+                res = e.get_cpp(code0, lm, diagnostics, 1);
                 nl::json result;
                 if (res.ok) {
                     publish_stream("stdout", res.result);
