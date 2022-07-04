@@ -275,8 +275,7 @@ ASR::asr_t* getDerivedRef_t(Allocator& al, const Location& loc,
                     }
                     if( make_new_ext_sym ) {
                         der_ext = (ASR::symbol_t*)ASR::make_ExternalSymbol_t(al, loc, current_scope, mangled_name_char, m_external,
-                                                                            module_name, nullptr, 0, s2c(al, der_type_name),
-                                                                            ASR::accessType::Public);
+                                                                            module_name, nullptr, 0, s2c(al, der_type_name), ASR::accessType::Public);
                         current_scope->add_symbol(mangled_name.str(), der_ext);
                     } else {
                         LFORTRAN_ASSERT(der_tmp != nullptr);
