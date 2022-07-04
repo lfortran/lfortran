@@ -194,10 +194,10 @@ namespace LCompilers {
             std::string current_pass = "";
             for( size_t i = 0; i < arg_pass.size(); i++ ) {
                 char ch = arg_pass[i];
-                if( ch != ' ' ) {
+                if (ch != ' ' && ch != ',') {
                     current_pass.push_back(ch);
                 }
-                if( ch == ',' || i == arg_pass.size() - 1 ) {
+                if (ch == ',' || i == arg_pass.size() - 1) {
                     current_pass = LFortran::to_lower(current_pass);
                     if( _passes_db.find(current_pass) == _passes_db.end() ) {
                         std::cerr << current_pass << " isn't supported yet.";
