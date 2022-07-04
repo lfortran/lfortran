@@ -39,9 +39,9 @@ int32_t mysum(const Kokkos::View<const int*> &a)
 void main2() {
     int i;
     int s;
-    Kokkos::View<int[10]> x("x");
+    Kokkos::View<int[11]> x("x");
     for (i=1; i<=x.extent(0); i++) {
-        x[i - 1] = i;
+        x[i] = i;
     }
     s = mysum(x);
     std::cout << s << std::endl;

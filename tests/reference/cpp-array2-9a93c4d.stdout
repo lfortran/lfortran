@@ -25,16 +25,16 @@ namespace {
 namespace {
 
 void main2() {
-    Kokkos::View<float[5]> a("a");
-    Kokkos::View<float[5]> b("b");
-    Kokkos::View<int[3]> c("c");
-    Kokkos::View<bool[2]> d("d");
-    Kokkos::View<float[2][3]> e("e");
-    Kokkos::View<int[3][4]> f("f");
-    Kokkos::View<bool[5][2]> g("g");
-    Kokkos::View<float[2][3][4]> h("h");
-    Kokkos::View<int[3][4][3]> i("i");
-    Kokkos::View<bool[5][2][2]> j("j");
+    Kokkos::View<float[6]> a("a");
+    Kokkos::View<float[6]> b("b");
+    Kokkos::View<int[4]> c("c");
+    Kokkos::View<bool[3]> d("d");
+    Kokkos::View<float[3][4]> e("e");
+    Kokkos::View<int[4][5]> f("f");
+    Kokkos::View<bool[6][3]> g("g");
+    Kokkos::View<float[3][4][5]> h("h");
+    Kokkos::View<int[4][5][4]> i("i");
+    Kokkos::View<bool[6][3][3]> j("j");
 }
 
 }
