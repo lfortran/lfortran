@@ -598,10 +598,6 @@ R"(#include <stdio.h>
                 src = "/* FIXME right index */";
             }
             out += src;
-            if( m_dims[i].m_start ) {
-                this->visit_expr(*m_dims[i].m_start);
-                out += " - " + src;
-            }
             if (i < x.n_args-1) out += "][";
         }
         out += "]";

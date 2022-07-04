@@ -82,13 +82,13 @@ public:
                     int64_t start_int = -1, end_int = -1;
                     ASRUtils::extract_value(start_value, start_int);
                     ASRUtils::extract_value(end_value, end_int);
-                    dims += "[" + std::to_string(end_int - start_int + 1) + "]";
+                    dims += "[" + std::to_string(end_int + 1) + "]";
                 } else {
                     this->visit_expr(*start);
                     std::string start_expr = std::move(src);
                     this->visit_expr(*end);
                     std::string end_expr = std::move(src);
-                    dims += "[" + end_expr + " - " + start_expr + " + 1]";
+                    dims += "[" + end_expr + " + 1]";
                 }
             } else {
                 throw CodeGenError("Dimension type not supported");
