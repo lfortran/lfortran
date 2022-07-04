@@ -57,11 +57,7 @@ public:
                     ASRUtils::extract_value(end_value, end_int);
                     dims += "[" + std::to_string(end_int + 1) + "]";
                 } else {
-                    this->visit_expr(*start);
-                    std::string start_expr = std::move(src);
-                    this->visit_expr(*end);
-                    std::string end_expr = std::move(src);
-                    dims += "[" + end_expr + " + 1]";
+                    dims += "[ /* FIXME symbolic dimensions */ ]";
                 }
             } else {
                 throw CodeGenError("Dimension type not supported");
