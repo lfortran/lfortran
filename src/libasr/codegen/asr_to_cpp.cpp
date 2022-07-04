@@ -37,8 +37,10 @@ std::string format_type(const std::string &dims, const std::string &type,
 class ASRToCPPVisitor : public BaseCCPPVisitor<ASRToCPPVisitor>
 {
 public:
-    ASRToCPPVisitor(diag::Diagnostics &diag, Platform &platform)
-        : BaseCCPPVisitor(diag, platform, true, true, false) {}
+    ASRToCPPVisitor(diag::Diagnostics &diag, Platform &platform,
+                    int64_t default_lower_bound)
+        : BaseCCPPVisitor(diag, platform, true, true, false,
+                          default_lower_bound) {}
 
     std::string convert_dims(size_t n_dims, ASR::dimension_t *m_dims)
     {
@@ -55,7 +57,7 @@ public:
                     int64_t start_int = -1, end_int = -1;
                     ASRUtils::extract_value(start_value, start_int);
                     ASRUtils::extract_value(end_value, end_int);
-                    dims += "[" + std::to_string(end_int + 1) + "]";
+                    dims += "[" + std::to_string(end_int - start_int + 1) + "]";
                 } else {
                     dims += "[ /* FIXME symbolic dimensions */ ]";
                 }
@@ -235,6 +237,17 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     }
 
     void visit_Program(const ASR::Program_t &x) {
+        std::string src_copy = src;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                ASR::dimension_t* m_dims = nullptr;
+                int n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, m_dims);
+                convert_dims(n_dims, m_dims);
+            }
+        }
+        src.clear();
+        src = src_copy;
         // Generate code for nested subroutines and functions first:
         std::string contains;
         for (auto &item : x.m_symtab->get_scope()) {
@@ -442,10 +455,11 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 };
 
 Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
-    diag::Diagnostics &diagnostics, Platform &platform)
+    diag::Diagnostics &diagnostics, Platform &platform,
+    int64_t default_lower_bound)
 {
     pass_unused_functions(al, asr, true);
-    ASRToCPPVisitor v(diagnostics, platform);
+    ASRToCPPVisitor v(diagnostics, platform, default_lower_bound);
     try {
         v.visit_asr((ASR::asr_t &)asr);
     } catch (const CodeGenError &e) {

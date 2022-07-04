@@ -63,9 +63,10 @@ std::string format_type_c(const std::string &dims, const std::string &type,
 class ASRToCVisitor : public BaseCCPPVisitor<ASRToCVisitor>
 {
 public:
-
-    ASRToCVisitor(diag::Diagnostics &diag, Platform &platform)
-         : BaseCCPPVisitor(diag, platform, false, false, true) {}
+    ASRToCVisitor(diag::Diagnostics &diag, Platform &platform,
+                  int64_t default_lower_bound)
+         : BaseCCPPVisitor(diag, platform, false, false, true,
+                           default_lower_bound) {}
 
     std::string convert_dims_c(size_t n_dims, ASR::dimension_t *m_dims)
     {
@@ -82,13 +83,9 @@ public:
                     int64_t start_int = -1, end_int = -1;
                     ASRUtils::extract_value(start_value, start_int);
                     ASRUtils::extract_value(end_value, end_int);
-                    dims += "[" + std::to_string(end_int + 1) + "]";
+                    dims += "[" + std::to_string(end_int - start_int + 1) + "]";
                 } else {
-                    this->visit_expr(*start);
-                    std::string start_expr = std::move(src);
-                    this->visit_expr(*end);
-                    std::string end_expr = std::move(src);
-                    dims += "[" + end_expr + " + 1]";
+                    dims += "[ /* FIXME symbolic dimensions */ ]";
                 }
             } else {
                 throw CodeGenError("Dimension type not supported");
@@ -341,6 +338,17 @@ R"(
     }
 
     void visit_Program(const ASR::Program_t &x) {
+        std::string src_copy = src;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                ASR::dimension_t* m_dims = nullptr;
+                int n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, m_dims);
+                convert_dims_c(n_dims, m_dims);
+            }
+        }
+        src.clear();
+        src = src_copy;
         // Generate code for nested subroutines and functions first:
         std::string contains;
         for (auto &item : x.m_symtab->get_scope()) {
@@ -503,11 +511,12 @@ R"(
 };
 
 Result<std::string> asr_to_c(Allocator &al, ASR::TranslationUnit_t &asr,
-    diag::Diagnostics &diagnostics, Platform &platform)
+    diag::Diagnostics &diagnostics, Platform &platform,
+    int64_t default_lower_bound)
 {
     pass_unused_functions(al, asr, true);
     pass_replace_class_constructor(al, asr);
-    ASRToCVisitor v(diagnostics, platform);
+    ASRToCVisitor v(diagnostics, platform, default_lower_bound);
     try {
         v.visit_asr((ASR::asr_t &)asr);
     } catch (const CodeGenError &e) {

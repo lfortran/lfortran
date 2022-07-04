@@ -88,13 +88,13 @@ public:
     Result<std::string> get_wat(const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics);
     Result<std::string> get_cpp(const std::string &code, LocationManager &lm,
-        diag::Diagnostics &diagnostics);
+        diag::Diagnostics &diagnostics, int64_t default_lower_bound);
     Result<std::string> get_cpp2(ASR::TranslationUnit_t &asr,
-        diag::Diagnostics &diagnostics);
+        diag::Diagnostics &diagnostics, int64_t default_lower_bound);
     Result<std::string> get_c(const std::string &code, LocationManager &lm,
-        diag::Diagnostics &diagnostics);
+        diag::Diagnostics &diagnostics, int64_t default_lower_bound);
     Result<std::string> get_c2(ASR::TranslationUnit_t &asr,
-        diag::Diagnostics &diagnostics);
+        diag::Diagnostics &diagnostics, int64_t default_lower_bound);
     Result<std::string> get_fmt(const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics);
 
