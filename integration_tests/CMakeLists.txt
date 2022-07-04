@@ -172,10 +172,8 @@ RUN(NAME arrays_op_4 LABELS gfortran llvm)
 RUN(NAME arrays_op_5 LABELS gfortran llvm)
 RUN(NAME arrays_op_6 LABELS gfortran llvm)
 RUN(NAME arrays_op_7 LABELS gfortran llvm)
-# RUN(NAME arrays_03_func LABELS gfortran cpp llvm) Sync: fails for cpp
-RUN(NAME arrays_03_func LABELS gfortran llvm)
-# RUN(NAME arrays_04_func LABELS gfortran cpp llvm) Sync: fails for cpp
-RUN(NAME arrays_04_func LABELS gfortran llvm)
+RUN(NAME arrays_03_func LABELS gfortran cpp llvm)
+RUN(NAME arrays_04_func LABELS gfortran cpp llvm)
 RUN(NAME arrays_05 LABELS gfortran cpp)
 
 # GFortran
@@ -185,8 +183,7 @@ RUN(NAME arrays_07 LABELS gfortran llvm)
 RUN(NAME arrays_08_func LABELS gfortran llvm)
 RUN(NAME arrays_09 LABELS gfortran)
 RUN(NAME arrays_10 LABELS gfortran)
-# RUN(NAME arrays_11 LABELS gfortran llvm cpp) Sync: fails for cpp
-RUN(NAME arrays_11 LABELS gfortran llvm)
+RUN(NAME arrays_11 LABELS gfortran llvm cpp)
 RUN(NAME arrays_12 LABELS gfortran) # constant arrays
 RUN(NAME arrays_13 LABELS gfortran llvm) # constant arrays
 
