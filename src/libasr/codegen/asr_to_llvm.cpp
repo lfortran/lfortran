@@ -2608,6 +2608,12 @@ public:
     }
 
     llvm::Value* GetPointerCPtrUtil(llvm::Value* llvm_tmp) {
+        // If the input is a simple variable and not a pointer
+        // then this check will fail and load will not happen
+        // (which is what we want for simple variables).
+        // For pointers, the actual LLVM variable will be a
+        // double pointer, so we need to load one time and then
+        // use it later on.
         if( is_nested_pointer(llvm_tmp) ) {
             llvm_tmp = builder->CreateLoad(llvm_tmp);
         }
