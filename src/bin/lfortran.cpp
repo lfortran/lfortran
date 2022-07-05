@@ -106,7 +106,7 @@ void section(const std::string &s)
     std::cout << color(LFortran::style::bold) << color(LFortran::fg::blue) << s << color(LFortran::style::reset) << color(LFortran::fg::reset) << std::endl;
 }
 
-int emit_tokens(const std::string &input, std::vector<std::string>
+int emit_tokens2(const std::string &input, std::vector<std::string>
     &tok_strings, std::vector<int> &toks, std::vector<LFortran::YYSTYPE>
     &stypes)
 {
@@ -145,7 +145,7 @@ bool determine_completeness(std::string command)
     std::vector<int> toks;
     std::vector<LFortran::YYSTYPE> stypes;
     std::vector<std::string> token_strings;
-    int tok_ret = emit_tokens(command, token_strings, toks, stypes);
+    int tok_ret = emit_tokens2(command, token_strings, toks, stypes);
     // The token enumerators are in parser.tab.hh
     int do_blnc = 0;
     if (std::find(toks.begin(), toks.end(), KW_DO)!=toks.end()
