@@ -42,13 +42,11 @@
 #include <libasr/containers.h>
 #include <libasr/codegen/asr_to_llvm.h>
 #include <libasr/pass/nested_vars.h>
+#include <libasr/pass/pass_manager.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
-
-// Uncomment for ASR printing below
-//#include <lfortran/pickle.h>
 
 #if LLVM_VERSION_MAJOR >= 11
 #    define FIXED_VECTOR_TYPE llvm::FixedVectorType
@@ -505,6 +503,46 @@ public:
         return nullptr;
     }
 
+    llvm::Type* getMemberType(ASR::ttype_t* mem_type, ASR::Variable_t* member) {
+        llvm::Type* llvm_mem_type = nullptr;
+        switch( mem_type->type ) {
+            case ASR::ttypeType::Integer: {
+                int a_kind = down_cast<ASR::Integer_t>(mem_type)->m_kind;
+                llvm_mem_type = getIntType(a_kind);
+                break;
+            }
+            case ASR::ttypeType::Real: {
+                int a_kind = down_cast<ASR::Real_t>(mem_type)->m_kind;
+                llvm_mem_type = getFPType(a_kind);
+                break;
+            }
+            case ASR::ttypeType::Derived: {
+                llvm_mem_type = getDerivedType(mem_type);
+                break;
+            }
+            case ASR::ttypeType::Pointer: {
+                ASR::Pointer_t* ptr_type = ASR::down_cast<ASR::Pointer_t>(mem_type);
+                llvm_mem_type = getMemberType(ptr_type->m_type, member)->getPointerTo();
+                break;
+            }
+            case ASR::ttypeType::Complex: {
+                int a_kind = down_cast<ASR::Complex_t>(mem_type)->m_kind;
+                llvm_mem_type = getComplexType(a_kind);
+                break;
+            }
+            case ASR::ttypeType::Character: {
+                llvm_mem_type = character_type;
+                break;
+            }
+            default:
+                throw CodeGenError("Cannot identify the type of member, '" +
+                                    std::string(member->m_name) +
+                                    "' in derived type, '" + der_type_name + "'.",
+                                    member->base.base.loc);
+        }
+        return llvm_mem_type;
+    }
+
     llvm::Type* getDerivedType(ASR::DerivedType_t* der_type, bool is_pointer=false) {
         std::string der_type_name = std::string(der_type->m_name);
         llvm::StructType* der_type_llvm;
@@ -524,38 +562,8 @@ public:
             const std::map<std::string, ASR::symbol_t*>& scope = der_type->m_symtab->get_scope();
             for( auto itr = scope.begin(); itr != scope.end(); itr++ ) {
                 ASR::Variable_t* member = (ASR::Variable_t*)(&(itr->second->base));
-                llvm::Type* mem_type = nullptr;
-                switch( member->m_type->type ) {
-                    case ASR::ttypeType::Integer: {
-                        int a_kind = down_cast<ASR::Integer_t>(member->m_type)->m_kind;
-                        mem_type = getIntType(a_kind);
-                        break;
-                    }
-                    case ASR::ttypeType::Real: {
-                        int a_kind = down_cast<ASR::Real_t>(member->m_type)->m_kind;
-                        mem_type = getFPType(a_kind);
-                        break;
-                    }
-                    case ASR::ttypeType::Derived: {
-                        mem_type = getDerivedType(member->m_type);
-                        break;
-                    }
-                    case ASR::ttypeType::Complex: {
-                        int a_kind = down_cast<ASR::Complex_t>(member->m_type)->m_kind;
-                        mem_type = getComplexType(a_kind);
-                        break;
-                    }
-                    case ASR::ttypeType::Character: {
-                        mem_type = character_type;
-                        break;
-                    }
-                    default:
-                        throw CodeGenError("Cannot identify the type of member, '" +
-                                            std::string(member->m_name) +
-                                            "' in derived type, '" + der_type_name + "'.",
-                                            member->base.base.loc);
-                }
-                member_types.push_back(mem_type);
+                llvm::Type* llvm_mem_type = getMemberType(member->m_type, member);
+                member_types.push_back(llvm_mem_type);
                 name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
             }
@@ -1205,7 +1213,10 @@ public:
             std::vector<llvm::Value*> indices;
             for( size_t r = 0; r < x.n_args; r++ ) {
                 ASR::array_index_t curr_idx = x.m_args[r];
+                uint64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 2;
                 this->visit_expr_wrapper(curr_idx.m_right, true);
+                ptr_loads = ptr_loads_copy;
                 indices.push_back(tmp);
             }
             if (v->m_type->type == ASR::ttypeType::Pointer) {
@@ -1221,7 +1232,11 @@ public:
             return;
         }
         der_type_name = "";
+        ASR::ttype_t* x_m_v_type = ASRUtils::expr_type(x.m_v);
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = ptr_loads_copy - ASR::is_a<ASR::Pointer_t>(*x_m_v_type);
         this->visit_expr(*x.m_v);
+        ptr_loads = ptr_loads_copy;
         ASR::Variable_t* member = down_cast<ASR::Variable_t>(symbol_get_past_external(x.m_m));
         std::string member_name = std::string(member->m_name);
         LFORTRAN_ASSERT(der_type_name.size() != 0);
@@ -1237,9 +1252,17 @@ public:
         std::vector<llvm::Value*> idx_vec = {
             llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
             llvm::ConstantInt::get(context, llvm::APInt(32, member_idx))};
+        if( ASR::is_a<ASR::DerivedRef_t>(*x.m_v) &&
+            is_nested_pointer(tmp) ) {
+            tmp = builder->CreateLoad(tmp);
+        }
         llvm::Value* tmp1 = CreateGEP(tmp, idx_vec);
-        if( member->m_type->type == ASR::ttypeType::Derived ) {
-            ASR::Derived_t* der = (ASR::Derived_t*)(&(member->m_type->base));
+        ASR::ttype_t* member_type = member->m_type;
+        if( ASR::is_a<ASR::Pointer_t>(*member_type) ) {
+            member_type = ASR::down_cast<ASR::Pointer_t>(member_type)->m_type;
+        }
+        if( member_type->type == ASR::ttypeType::Derived ) {
+            ASR::Derived_t* der = (ASR::Derived_t*)(&(member_type->base));
             ASR::DerivedType_t* der_type = (ASR::DerivedType_t*)(&(der->m_derived_type->base));
             der_type_name = std::string(der_type->m_name);
             uint32_t h = get_hash((ASR::asr_t*)member);
@@ -1590,15 +1613,9 @@ public:
             }
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(asr_type)->m_type;
-                switch (t2->type) {
-                    case (ASR::ttypeType::Derived) : {
-                        throw CodeGenError("Pointers for Derived type not implemented yet in conversion.");
-                    }
-                    default :
-                        llvm_type = get_type_from_ttype_t(t2, m_storage, is_array_type,
+                llvm_type = get_type_from_ttype_t(t2, m_storage, is_array_type,
                                         is_malloc_array_type, m_dims, n_dims, a_kind);
-                        llvm_type = llvm_type->getPointerTo();
-                }
+                llvm_type = llvm_type->getPointerTo();
                 break;
             }
             case (ASR::ttypeType::List) : {
@@ -1691,8 +1708,10 @@ public:
                         // Set allocatable arrays as unallocated
                         arr_descr->set_is_allocated_flag(ptr, 0);
                     }
-                    if( v->m_symbolic_value != nullptr ) {
+                    if( v->m_symbolic_value != nullptr &&
+                        !ASR::is_a<ASR::List_t>(*v->m_type)) {
                         target_var = ptr;
+                        tmp = nullptr;
                         this->visit_expr_wrapper(v->m_symbolic_value, true);
                         llvm::Value *init_value = tmp;
                         if (ASR::is_a<ASR::ArrayConstant_t>(*v->m_symbolic_value)) {
@@ -2360,6 +2379,9 @@ public:
             case (ASR::ttypeType::Logical) :
                 return_type = llvm::Type::getInt1Ty(context);
                 break;
+            case (ASR::ttypeType::CPtr) :
+                return_type = llvm::Type::getVoidTy(context)->getPointerTo();
+                break;
             case (ASR::ttypeType::Derived) :
                 throw CodeGenError("Derived return type not implemented yet");
                 break;
@@ -2570,13 +2592,19 @@ public:
         }
     }
 
+    bool is_nested_pointer(llvm::Value* val) {
+        // TODO: Remove this in future
+        // Related issue, https://github.com/lcompilers/lpython/pull/707#issuecomment-1169773106.
+        return val->getType()->isPointerTy() &&
+               val->getType()->getContainedType(0)->isPointerTy();
+    }
+
     void visit_CLoc(const ASR::CLoc_t& x) {
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_arg);
         ptr_loads = ptr_loads_copy;
-        if( tmp->getType()->isPointerTy() &&
-            tmp->getType()->getContainedType(0)->isPointerTy() ) {
+        if( is_nested_pointer(tmp) ) {
             tmp = builder->CreateLoad(tmp);
         }
         if( arr_descr->is_array(tmp) ) {
@@ -2588,27 +2616,26 @@ public:
 
 
     llvm::Value* GetPointerCPtrUtil(llvm::Value* llvm_tmp) {
-        if( llvm_tmp->getType()->isPointerTy() &&
-            llvm_tmp->getType()->getContainedType(0)->isPointerTy() ) {
+        if( is_nested_pointer(llvm_tmp) ) {
             llvm_tmp = builder->CreateLoad(llvm_tmp);
         }
         if( arr_descr->is_array(llvm_tmp) ) {
             llvm_tmp = builder->CreateLoad(arr_descr->get_pointer_to_data(llvm_tmp));
         }
 
-        // TODO: refactor this into a function, it is being used a few times
-        llvm::Type *target_type = llvm_tmp->getType();
-        // Create alloca to get a pointer, but do it
-        // at the beginning of the function to avoid
-        // using alloca inside a loop, which would
-        // run out of stack
-        llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
-        llvm::IRBuilder<> builder0(context);
-        builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
-        llvm::AllocaInst *target = builder0.CreateAlloca(
-            target_type, nullptr, "call_arg_value_ptr");
-        builder->CreateStore(llvm_tmp, target);
-        llvm_tmp = target;
+        // // TODO: refactor this into a function, it is being used a few times
+        // llvm::Type *target_type = llvm_tmp->getType();
+        // // Create alloca to get a pointer, but do it
+        // // at the beginning of the function to avoid
+        // // using alloca inside a loop, which would
+        // // run out of stack
+        // llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
+        // llvm::IRBuilder<> builder0(context);
+        // builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
+        // llvm::AllocaInst *target = builder0.CreateAlloca(
+        //     target_type, nullptr, "call_arg_value_ptr");
+        // builder->CreateStore(llvm_tmp, target);
+        // llvm_tmp = target;
         return llvm_tmp;
     }
 
@@ -2635,9 +2662,14 @@ public:
 
     void visit_CPtrToPointer(const ASR::CPtrToPointer_t& x) {
         ASR::expr_t *cptr = x.m_cptr, *fptr = x.m_ptr, *shape = x.m_shape;
+        int reduce_loads = 0;
+        if( ASR::is_a<ASR::Var_t>(*cptr) ) {
+            ASR::Variable_t* cptr_var = ASRUtils::EXPR2VAR(cptr);
+            reduce_loads = cptr_var->m_intent == ASRUtils::intent_in;
+        }
         if( ASRUtils::is_array(ASRUtils::expr_type(fptr)) ) {
             uint64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 1;
+            ptr_loads = 1 - reduce_loads;
             this->visit_expr(*cptr);
             llvm::Value* llvm_cptr = tmp;
             ptr_loads = 0;
@@ -2687,7 +2719,7 @@ public:
             }
         } else {
             uint64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 1;
+            ptr_loads = 1 - reduce_loads;
             this->visit_expr(*cptr);
             llvm::Value* llvm_cptr = tmp;
             ptr_loads = 0;
@@ -2711,6 +2743,11 @@ public:
     void visit_Assignment(const ASR::Assignment_t &x) {
         if( x.m_overloaded ) {
             this->visit_stmt(*x.m_overloaded);
+            return ;
+        }
+
+        // TODO: Remove this check after supporting ListConstant
+        if( ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_value)) ) {
             return ;
         }
 
@@ -2983,7 +3020,7 @@ public:
                 break;
             }
             default : {
-                throw CodeGenError("Comparison operator not implemented.",
+                throw CodeGenError("Comparison operator not implemented",
                         x.base.base.loc);
             }
         }
@@ -3027,7 +3064,7 @@ public:
                 break;
             }
             default : {
-                throw CodeGenError("Comparison operator not implemented.",
+                throw CodeGenError("Comparison operator not implemented",
                         x.base.base.loc);
             }
         }
@@ -3268,6 +3305,26 @@ public:
                 tmp = builder->CreateFPToSI(tmp, type);
                 break;
             };
+            case ASR::binopType::BitOr: {
+                tmp = builder->CreateOr(left_val, right_val);
+                break;
+            }
+            case ASR::binopType::BitAnd: {
+                tmp = builder->CreateAnd(left_val, right_val);
+                break;
+            }
+            case ASR::binopType::BitXor: {
+                tmp = builder->CreateXor(left_val, right_val);
+                break;
+            }
+            case ASR::binopType::BitLShift: {
+                tmp = builder->CreateShl(left_val, right_val);
+                break;
+            }
+            case ASR::binopType::BitRShift: {
+                tmp = builder->CreateAShr(left_val, right_val);
+                break;
+            }
         }
     }
 
@@ -3315,6 +3372,10 @@ public:
                 tmp = builder->CreateCall(fn_pow, {left_val, right_val});
                 break;
             };
+            default: {
+                throw CodeGenError("Binary operator '" + ASRUtils::binop_to_str_python(x.m_op) + "' not supported",
+                    x.base.base.loc);
+            }
         }
     }
 
@@ -3380,6 +3441,10 @@ public:
                 }
                 break;
             };
+            default: {
+                throw CodeGenError("Binary operator '" + ASRUtils::binop_to_str_python(x.m_op) + "' not supported",
+                    x.base.base.loc);
+            }
         }
         tmp = lfortran_complex_bin_op(left_val, right_val, fn_name, type);
     }
@@ -3704,7 +3769,11 @@ public:
         if( arr_descr->is_array(x_v) ) {
             tmp = x_v;
         } else {
-            tmp = CreateLoad(x_v);
+            tmp = x_v;
+            // Load only once since its a value
+            if( ptr_loads > 0 ) {
+                tmp = CreateLoad(tmp);
+            }
         }
     }
 
@@ -3719,13 +3788,17 @@ public:
                 switch (t2->type) {
                     case ASR::ttypeType::Integer:
                     case ASR::ttypeType::Real:
-                    case ASR::ttypeType::Complex: {
+                    case ASR::ttypeType::Complex:
+                    case ASR::ttypeType::Derived: {
+                        if( t2->type == ASR::ttypeType::Derived ) {
+                            ASR::Derived_t* d = ASR::down_cast<ASR::Derived_t>(t2);
+                            der_type_name = ASRUtils::symbol_name(d->m_derived_type);
+                        }
                         fetch_ptr(x);
                         break;
                     }
                     case ASR::ttypeType::Character:
-                    case ASR::ttypeType::Logical:
-                    case ASR::ttypeType::Derived: {
+                    case ASR::ttypeType::Logical: {
                         break;
                     }
                     default:
@@ -3932,9 +4005,9 @@ public:
                 tmp = complex_from_floats(tmp, zero, complex_type);
                 break;
             }
-	    case (ASR::cast_kindType::IntegerToLogical) : {
+            case (ASR::cast_kindType::IntegerToLogical) : {
                 ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
-		LFORTRAN_ASSERT(curr_type != nullptr)
+                LFORTRAN_ASSERT(curr_type != nullptr)
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
                 switch (a_kind) {
                     case 1:
@@ -3950,6 +4023,19 @@ public:
                         tmp = builder->CreateICmpNE(tmp, builder->getInt64(0));
                         break;
                 }
+                break;
+            }
+            case (ASR::cast_kindType::RealToLogical) : {
+                llvm::Value *zero;
+                ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
+                LFORTRAN_ASSERT(curr_type != nullptr)
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
+                if (a_kind == 4) {
+                    zero = llvm::ConstantFP::get(context, llvm::APFloat((float)0.0));
+                } else {
+                    zero = llvm::ConstantFP::get(context, llvm::APFloat(0.0));
+                }
+                tmp = builder->CreateFCmpUNE(tmp, zero);
                 break;
             }
             case (ASR::cast_kindType::CharacterToLogical) : {
@@ -4149,9 +4235,36 @@ public:
     void handle_print(const T &x) {
         std::vector<llvm::Value *> args;
         std::vector<std::string> fmt;
+        llvm::Value *sep = nullptr;
+        llvm::Value *end = nullptr;
+        if (x.m_separator) {
+            this->visit_expr_wrapper(x.m_separator, true);
+            sep = tmp;
+        } else {
+            sep = builder->CreateGlobalStringPtr(" ");
+        }
+        if (x.m_end) {
+            this->visit_expr_wrapper(x.m_end, true);
+            end = tmp;
+        } else {
+            end = builder->CreateGlobalStringPtr("\n");
+        }
         for (size_t i=0; i<x.n_values; i++) {
             uint64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 1;
+            int reduce_loads = 0;
+            ptr_loads = 2;
+            if( ASR::is_a<ASR::Var_t>(*x.m_values[i]) ) {
+                ASR::Variable_t* var = ASRUtils::EXPR2VAR(x.m_values[i]);
+                reduce_loads = var->m_intent == ASRUtils::intent_in;
+                if( ASR::is_a<ASR::Pointer_t>(*var->m_type) ) {
+                    ptr_loads = 1;
+                }
+            }
+            if (i != 0) {
+                fmt.push_back("%s");
+                args.push_back(sep);
+            }
+            ptr_loads = ptr_loads - reduce_loads;
             this->visit_expr_wrapper(x.m_values[i], true);
             ptr_loads = ptr_loads_copy;
             ASR::expr_t *v = x.m_values[i];
@@ -4266,12 +4379,12 @@ public:
                     ASRUtils::type_to_str(t));
             }
         }
+        fmt.push_back("%s");
+        args.push_back(end);
         std::string fmt_str;
         for (size_t i=0; i<fmt.size(); i++) {
             fmt_str += fmt[i];
-            if (i < fmt.size()-1) fmt_str += " ";
         }
-        fmt_str += "\n";
         llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
         std::vector<llvm::Value *> printf_args;
         printf_args.push_back(fmt_ptr);
@@ -4306,11 +4419,13 @@ public:
     template <typename T>
     inline void set_func_subrout_params(T* func_subrout, ASR::abiType& x_abi,
                                         std::uint32_t& m_h, ASR::Variable_t*& orig_arg,
-                                        std::string& orig_arg_name, size_t arg_idx) {
+                                        std::string& orig_arg_name, ASR::intentType& arg_intent,
+                                        size_t arg_idx) {
         m_h = get_hash((ASR::asr_t*)func_subrout);
         orig_arg = EXPR2VAR(func_subrout->m_args[arg_idx]);
         orig_arg_name = orig_arg->m_name;
         x_abi = func_subrout->m_abi;
+        arg_intent = orig_arg->m_intent;
     }
 
 
@@ -4326,6 +4441,7 @@ public:
             ASR::Subroutine_t* sub = down_cast<ASR::Subroutine_t>(func_subrout);
             x_abi = sub->m_abi;
         }
+        // TODO: Below if check is dead. Remove.
         if( x_abi == ASR::abiType::Intrinsic ) {
             if( name == "lbound" || name == "ubound" ) {
                 ASR::Variable_t *arg = EXPR2VAR(x.m_args[0].m_value);
@@ -4354,23 +4470,24 @@ public:
                             tmp = llvm_symtab[h];
                             func_subrout = symbol_get_past_external(x.m_name);
                             x_abi = (ASR::abiType) 0;
+                            ASR::intentType orig_arg_intent = ASR::intentType::Unspecified;
                             std::uint32_t m_h;
                             ASR::Variable_t *orig_arg = nullptr;
                             std::string orig_arg_name = "";
                             if( func_subrout->type == ASR::symbolType::Function ) {
                                 ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
-                                set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, i);
+                                set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i);
                             } else if( func_subrout->type == ASR::symbolType::Subroutine ) {
                                 ASR::Subroutine_t* sub = down_cast<ASR::Subroutine_t>(func_subrout);
-                                set_func_subrout_params(sub, x_abi, m_h, orig_arg, orig_arg_name, i);
+                                set_func_subrout_params(sub, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i);
                             } else if( func_subrout->type == ASR::symbolType::ClassProcedure ) {
                                 ASR::ClassProcedure_t* clss_proc = ASR::down_cast<ASR::ClassProcedure_t>(func_subrout);
                                 if( clss_proc->m_proc->type == ASR::symbolType::Subroutine ) {
                                     ASR::Subroutine_t* sub = down_cast<ASR::Subroutine_t>(clss_proc->m_proc);
-                                    set_func_subrout_params(sub, x_abi, m_h, orig_arg, orig_arg_name, i);
+                                    set_func_subrout_params(sub, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i);
                                 } else if( clss_proc->m_proc->type == ASR::symbolType::Function ) {
                                     ASR::Function_t* func = down_cast<ASR::Function_t>(clss_proc->m_proc);
-                                    set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, i);
+                                    set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i);
                                 }
                             } else {
                                 LFORTRAN_ASSERT(false)
@@ -4716,6 +4833,35 @@ public:
         pop_nested_stack(s);
     }
 
+    void handle_bitwise_args(const ASR::FunctionCall_t& x, llvm::Value*& arg1,
+                             llvm::Value*& arg2) {
+        LFORTRAN_ASSERT(x.n_args == 2);
+        tmp = nullptr;
+        this->visit_expr_wrapper(x.m_args[0].m_value, true);
+        arg1 = tmp;
+        tmp = nullptr;
+        this->visit_expr_wrapper(x.m_args[1].m_value, true);
+        arg2 = tmp;
+    }
+
+    void handle_bitwise_xor(const ASR::FunctionCall_t& x) {
+        llvm::Value *arg1 = nullptr, *arg2 = nullptr;
+        handle_bitwise_args(x, arg1, arg2);
+        tmp = builder->CreateXor(arg1, arg2);
+    }
+
+    void handle_bitwise_and(const ASR::FunctionCall_t& x) {
+        llvm::Value *arg1 = nullptr, *arg2 = nullptr;
+        handle_bitwise_args(x, arg1, arg2);
+        tmp = builder->CreateAnd(arg1, arg2);
+    }
+
+    void handle_bitwise_or(const ASR::FunctionCall_t& x) {
+        llvm::Value *arg1 = nullptr, *arg2 = nullptr;
+        handle_bitwise_args(x, arg1, arg2);
+        tmp = builder->CreateOr(arg1, arg2);
+    }
+
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
             ASR::Function_t* routine = ASR::down_cast<ASR::Function_t>(
@@ -4745,6 +4891,21 @@ public:
         }
         if( s == nullptr ) {
             s = ASR::down_cast<ASR::Function_t>(symbol_get_past_external(x.m_name));
+        }
+        if( ASRUtils::is_intrinsic_function2(s) ) {
+            std::string symbol_name = ASRUtils::symbol_name(x.m_name);
+            if( startswith(symbol_name, "_bitwise_xor") ) {
+                handle_bitwise_xor(x);
+                return ;
+            }
+            if( startswith(symbol_name, "_bitwise_and") ) {
+                handle_bitwise_and(x);
+                return ;
+            }
+            if( startswith(symbol_name, "_bitwise_or") ) {
+                handle_bitwise_or(x);
+                return ;
+            }
         }
         if (parent_function){
             push_nested_stack(parent_function);
@@ -4866,7 +5027,7 @@ public:
         }
         int output_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         uint64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 2 -
+        ptr_loads = 2 - // Sync: instead of 2 - , should this be ptr_loads_copy -
                     (ASRUtils::expr_type(x.m_v)->type ==
                      ASR::ttypeType::Pointer);
         visit_expr_wrapper(x.m_v);
@@ -4933,7 +5094,7 @@ public:
             return ;
         }
         uint64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 2 -
+        ptr_loads = 2 - // Sync: instead of 2 - , should this be ptr_loads_copy -
                     (ASRUtils::expr_type(x.m_v)->type ==
                      ASR::ttypeType::Pointer);
         visit_expr_wrapper(x.m_v);
@@ -4965,7 +5126,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         Platform platform, const std::string &run_fn)
 {
     ASRToLLVMVisitor v(al, context, platform, diagnostics);
-    pass_manager.apply_passes(al, &asr, run_fn);
+    pass_manager.apply_passes(al, &asr, run_fn, false);
 
     // Uncomment for debugging the ASR after the transformation
     // std::cout << pickle(asr, true, true, true) << std::endl;

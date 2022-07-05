@@ -55,10 +55,10 @@ int main(int argc, char* argv[])
     x =   5.00000000000000000e+00;
     y =   2.00000000000000000e+00;
     z = x*y;
-    printf("%s %f\n", "10.0 ==", z);
+    printf("%s%s%f\n", "10.0 ==", " ", z);
     z = func1(x, y);
-    printf("%s %f\n", "49.0 ==", z);
+    printf("%s%s%f\n", "49.0 ==", " ", z);
     z = func2(x, y);
-    printf("%s %f\n", "10.0 ==", z);
+    printf("%s%s%f\n", "10.0 ==", " ", z);
     return 0;
 }

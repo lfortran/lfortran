@@ -4,7 +4,9 @@ source_filename = "LFortran"
 %array = type { float*, i32, %dimension_descriptor*, i1, i32 }
 %dimension_descriptor = type { i32, i32, i32, i32 }
 
-@0 = private unnamed_addr constant [10 x i8] c"%d %d %d\0A\00", align 1
+@0 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2 = private unnamed_addr constant [13 x i8] c"%d%s%d%s%d%s\00", align 1
 
 declare i32 @__module_lfortran_intrinsic_builtin_int(%array*, i32*)
 
@@ -21,7 +23,7 @@ define i32 @main() {
   %0 = load i32, i32* %boz_1, align 4
   %1 = load i32, i32* %boz_2, align 4
   %2 = load i32, i32* %boz_3, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([10 x i8], [10 x i8]* @0, i32 0, i32 0), i32 %0, i32 %1, i32 %2)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([13 x i8], [13 x i8]* @2, i32 0, i32 0), i32 %0, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 %1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
   ret i32 0
 }
 

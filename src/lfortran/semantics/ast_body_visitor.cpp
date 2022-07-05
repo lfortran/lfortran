@@ -268,8 +268,8 @@ public:
             m_values = r->m_values; n_values = r->n_values;
         }
 
-        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_id;
-        a_unit = a_fmt = a_iomsg = a_iostat = a_id = nullptr;
+        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_id, *a_separator, *a_end;
+        a_unit = a_fmt = a_iomsg = a_iostat = a_id = a_separator = a_end = nullptr;
         Vec<ASR::expr_t*> a_values_vec;
         a_values_vec.reserve(al, n_values);
 
@@ -360,7 +360,7 @@ public:
         }
         if( _type == AST::stmtType::Write ) {
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_fmt,
-                                    a_iomsg, a_iostat, a_id, a_values_vec.p, n_values);
+                                    a_iomsg, a_iostat, a_id, a_values_vec.p, n_values, a_separator, a_end);
         } else if( _type == AST::stmtType::Read ) {
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
                                    a_iomsg, a_iostat, a_id, a_values_vec.p, n_values);
@@ -1212,7 +1212,7 @@ public:
             fmt = ASRUtils::EXPR(tmp);
         }
         tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
-            body.p, body.size());
+            body.p, body.size(), nullptr, nullptr);
     }
 
     void visit_If(const AST::If_t &x) {

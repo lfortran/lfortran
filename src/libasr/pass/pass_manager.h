@@ -4,7 +4,16 @@
 #include <libasr/asr.h>
 #include <libasr/string_utils.h>
 #include <libasr/alloc.h>
-#include <lfortran/utils.h>
+
+// TODO: Remove lpython/lfortran includes, make it compiler agnostic
+#if __has_include(<lfortran/utils.h>)
+    #include <lfortran/utils.h>
+#endif
+
+#if __has_include(<lpython/utils.h>)
+    #include <lpython/utils.h>
+#endif
+
 #include <libasr/pass/do_loops.h>
 #include <libasr/pass/for_all.h>
 #include <libasr/pass/implied_do_loops.h>
@@ -25,11 +34,10 @@
 #include <libasr/pass/dead_code_removal.h>
 #include <libasr/pass/for_all.h>
 #include <libasr/pass/select_case.h>
+#include <libasr/pass/loop_vectorise.h>
 
 #include <map>
 #include <vector>
-
-#include <iostream>
 
 namespace LCompilers {
 
@@ -38,7 +46,7 @@ namespace LCompilers {
         arr_slice, print_arr, class_constructor, unused_functions,
         flip_sign, div_to_mul, fma, sign_from_value,
         inline_function_calls, loop_unroll, dead_code_removal,
-        forall, select_case
+        forall, select_case, loop_vectorise
     };
 
     class PassManager {
@@ -64,14 +72,16 @@ namespace LCompilers {
             {"loop_unroll", ASRPass::loop_unroll},
             {"dead_code_removal", ASRPass::dead_code_removal},
             {"forall", ASRPass::forall},
-            {"select_case", ASRPass::select_case}
+            {"select_case", ASRPass::select_case},
+            {"loop_vectorise", ASRPass::loop_vectorise}
         };
 
         bool is_fast;
         bool apply_default_passes;
 
         void _apply_passes(Allocator& al, LFortran::ASR::TranslationUnit_t* asr,
-                           std::vector<ASRPass>& passes, std::string& run_fun) {
+                           std::vector<ASRPass>& passes, std::string& run_fun,
+                           bool always_run) {
             for (size_t i = 0; i < passes.size(); i++) {
                 switch (passes[i]) {
                     case (ASRPass::do_loops) : {
@@ -131,7 +141,7 @@ namespace LCompilers {
                         break;
                     }
                     case (ASRPass::unused_functions) : {
-                        LFortran::pass_unused_functions(al, *asr);
+                        LFortran::pass_unused_functions(al, *asr, always_run);
                         break;
                     }
                     case (ASRPass::forall) : {
@@ -140,6 +150,10 @@ namespace LCompilers {
                     }
                     case (ASRPass::select_case) : {
                         LFortran::pass_replace_select_case(al, *asr);
+                        break;
+                    }
+                    case (ASRPass::loop_vectorise) : {
+                        LFortran::pass_loop_vectorise(al, *asr, LFortran::get_runtime_library_dir());
                         break;
                     }
                 }
@@ -169,6 +183,7 @@ namespace LCompilers {
                 ASRPass::arr_slice,
                 ASRPass::array_op,
                 ASRPass::print_arr,
+                ASRPass::loop_vectorise,
                 ASRPass::loop_unroll,
                 ASRPass::do_loops,
                 ASRPass::forall,
@@ -214,14 +229,14 @@ namespace LCompilers {
         }
 
         void apply_passes(Allocator& al, LFortran::ASR::TranslationUnit_t* asr,
-                          std::string run_fun="f") {
+                          std::string run_fun, bool always_run=false) {
             if( !_user_defined_passes.empty() ) {
-                _apply_passes(al, asr, _user_defined_passes, run_fun);
+                _apply_passes(al, asr, _user_defined_passes, run_fun, always_run);
             } else if( apply_default_passes ) {
                 if( is_fast ) {
-                    _apply_passes(al, asr, _with_optimization_passes, run_fun);
+                    _apply_passes(al, asr, _with_optimization_passes, run_fun, always_run);
                 } else {
-                    _apply_passes(al, asr, _passes, run_fun);
+                    _apply_passes(al, asr, _passes, run_fun, always_run);
                 }
             }
         }

@@ -48,11 +48,11 @@ void main2() {
     x =   5.00000000000000000e+00;
     y =   2.00000000000000000e+00;
     z = x*y;
-    std::cout << "10.0 ==" << z << std::endl;
+    std::cout << "10.0 ==" << " " << z << std::endl;
     z = func1(x, y);
-    std::cout << "49.0 ==" << z << std::endl;
+    std::cout << "49.0 ==" << " " << z << std::endl;
     z = func2(x, y);
-    std::cout << "10.0 ==" << z << std::endl;
+    std::cout << "10.0 ==" << " " << z << std::endl;
 }
 
 }

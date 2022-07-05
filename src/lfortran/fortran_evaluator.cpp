@@ -395,7 +395,7 @@ Result<std::string> FortranEvaluator::get_wat(const std::string &code,
 }
 
 Result<std::string> FortranEvaluator::get_cpp(const std::string &code,
-    LocationManager &lm, diag::Diagnostics &diagnostics)
+    LocationManager &lm, diag::Diagnostics &diagnostics, int64_t default_lower_bound)
 {
     // Src -> AST -> ASR
     SymbolTable *old_symbol_table = symbol_table;
@@ -403,7 +403,7 @@ Result<std::string> FortranEvaluator::get_cpp(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (asr.ok) {
-        return get_cpp2(*asr.result, diagnostics);
+        return get_cpp2(*asr.result, diagnostics, default_lower_bound);
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
         return asr.error;
@@ -411,14 +411,16 @@ Result<std::string> FortranEvaluator::get_cpp(const std::string &code,
 }
 
 Result<std::string> FortranEvaluator::get_cpp2(ASR::TranslationUnit_t &asr,
-        diag::Diagnostics &diagnostics)
+        diag::Diagnostics &diagnostics, int64_t default_lower_bound)
 {
     // ASR -> C++
-    return asr_to_cpp(al, asr, diagnostics);
+    return asr_to_cpp(al, asr, diagnostics, compiler_options.platform,
+                      default_lower_bound);
 }
 
 Result<std::string> FortranEvaluator::get_c(const std::string &code,
-    LocationManager &lm, diag::Diagnostics &diagnostics)
+    LocationManager &lm, diag::Diagnostics &diagnostics,
+    int64_t default_lower_bound)
 {
     // Src -> AST -> ASR
     SymbolTable *old_symbol_table = symbol_table;
@@ -426,7 +428,7 @@ Result<std::string> FortranEvaluator::get_c(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (asr.ok) {
-        return get_c2(*asr.result, diagnostics);
+        return get_c2(*asr.result, diagnostics, default_lower_bound);
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
         return asr.error;
@@ -434,10 +436,11 @@ Result<std::string> FortranEvaluator::get_c(const std::string &code,
 }
 
 Result<std::string> FortranEvaluator::get_c2(ASR::TranslationUnit_t &asr,
-        diag::Diagnostics &diagnostics)
+        diag::Diagnostics &diagnostics, int64_t default_lower_bound)
 {
     // ASR -> C++
-    return asr_to_c(al, asr, diagnostics);
+    return asr_to_c(al, asr, diagnostics, compiler_options.platform,
+                    default_lower_bound);
 }
 
 Result<std::string> FortranEvaluator::get_fmt(const std::string &code,

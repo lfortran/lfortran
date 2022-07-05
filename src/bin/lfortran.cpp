@@ -557,7 +557,7 @@ int emit_asr(const std::string &infile,
     LFortran::ASR::TranslationUnit_t* asr = r.result;
 
     Allocator al(64*1024*1024);
-    pass_manager.apply_passes(al, asr);
+    pass_manager.apply_passes(al, asr, "f", true);
     std::cout << LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
             with_intrinsic_modules) << std::endl;
     return 0;
@@ -571,7 +571,7 @@ int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
     LFortran::LocationManager lm;
     LFortran::diag::Diagnostics diagnostics;
     lm.in_filename = infile;
-    LFortran::Result<std::string> cpp = fe.get_cpp(input, lm, diagnostics);
+    LFortran::Result<std::string> cpp = fe.get_cpp(input, lm, diagnostics, 1);
     std::cerr << diagnostics.render(input, lm, compiler_options);
     if (cpp.ok) {
         std::cout << cpp.result;
@@ -590,7 +590,7 @@ int emit_c(const std::string &infile, CompilerOptions &compiler_options)
     LFortran::LocationManager lm;
     LFortran::diag::Diagnostics diagnostics;
     lm.in_filename = infile;
-    LFortran::Result<std::string> cpp = fe.get_c(input, lm, diagnostics);
+    LFortran::Result<std::string> cpp = fe.get_c(input, lm, diagnostics, 1);
     std::cerr << diagnostics.render(input, lm, compiler_options);
     if (cpp.ok) {
         std::cout << cpp.result;
@@ -1043,7 +1043,7 @@ int compile_to_object_file_cpp(const std::string &infile,
     std::string src;
     diagnostics.diagnostics.clear();
     LFortran::Result<std::string> res
-        = fe.get_cpp2(*asr, diagnostics);
+        = fe.get_cpp2(*asr, diagnostics, 1);
     std::cerr << diagnostics.render(input, lm, compiler_options);
     if (res.ok) {
         src = res.result;
@@ -1290,7 +1290,7 @@ EMSCRIPTEN_KEEPALIVE char* emit_wat_from_source(char *input) {
 
 EMSCRIPTEN_KEEPALIVE char* emit_cpp_from_source(char *input) {
     INITIALIZE_VARS;
-    LFortran::Result<std::string> r = fe.get_cpp(input, lm, diagnostics);
+    LFortran::Result<std::string> r = fe.get_cpp(input, lm, diagnostics, 1);
     out = diagnostics.render(input, lm, compiler_options);
     if (r.ok) { out += r.result; }
     return &out[0];
@@ -1298,7 +1298,7 @@ EMSCRIPTEN_KEEPALIVE char* emit_cpp_from_source(char *input) {
 
 EMSCRIPTEN_KEEPALIVE char* emit_c_from_source(char *input) {
     INITIALIZE_VARS;
-    LFortran::Result<std::string> r = fe.get_c(input, lm, diagnostics);
+    LFortran::Result<std::string> r = fe.get_c(input, lm, diagnostics, 1);
     out = diagnostics.render(input, lm, compiler_options);
     if (r.ok) { out += r.result; }
     return &out[0];

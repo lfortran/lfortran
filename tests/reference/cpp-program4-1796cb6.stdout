@@ -55,13 +55,13 @@ void main2() {
     x =   1.00000000000000000e+00;
     y =   2.00000000000000000e+00;
     z = func1(x, y);
-    std::cout << "6.0 == " << z << std::endl;
+    std::cout << "6.0 == " << " " << z << std::endl;
     z = func1(x, y);
-    std::cout << "7.0 == " << z << std::endl;
+    std::cout << "7.0 == " << " " << z << std::endl;
     z = func2(x, y);
-    std::cout << "6.0 == " << z << std::endl;
+    std::cout << "6.0 == " << " " << z << std::endl;
     z = func2(x, y);
-    std::cout << "8.0 == " << z << std::endl;
+    std::cout << "8.0 == " << " " << z << std::endl;
 }
 
 }

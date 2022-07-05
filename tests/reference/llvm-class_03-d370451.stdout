@@ -11,8 +11,12 @@ source_filename = "LFortran"
 @4 = private unnamed_addr constant [6 x i8] c"Smith\00", align 1
 @5 = private unnamed_addr constant [2 x i8] c"F\00", align 1
 @6 = private unnamed_addr constant [6 x i8] c"sales\00", align 1
-@7 = private unnamed_addr constant [13 x i8] c"%s %s %d %s\0A\00", align 1
-@8 = private unnamed_addr constant [19 x i8] c"%s %s %d %s %s %d\0A\00", align 1
+@7 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@8 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@9 = private unnamed_addr constant [17 x i8] c"%s%s%s%s%d%s%s%s\00", align 1
+@10 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@11 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@12 = private unnamed_addr constant [25 x i8] c"%s%s%s%s%d%s%s%s%s%s%d%s\00", align 1
 
 define i32 @main() {
 .entry:
@@ -50,7 +54,7 @@ define i32 @main() {
   %19 = load i32, i32* %18, align 4
   %20 = getelementptr %person, %person* %jack, i32 0, i32 3
   %21 = load i8*, i8** %20, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([13 x i8], [13 x i8]* @7, i32 0, i32 0), i8* %15, i8* %17, i32 %19, i8* %21)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([17 x i8], [17 x i8]* @9, i32 0, i32 0), i8* %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0), i8* %17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0), i32 %19, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0), i8* %21, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
   %22 = getelementptr %employee, %employee* %jill, i32 0, i32 2
   %23 = getelementptr %person, %person* %22, i32 0, i32 1
   %24 = load i8*, i8** %23, align 8
@@ -67,7 +71,7 @@ define i32 @main() {
   %35 = load i8*, i8** %34, align 8
   %36 = getelementptr %employee, %employee* %jill, i32 0, i32 1
   %37 = load i32, i32* %36, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([19 x i8], [19 x i8]* @8, i32 0, i32 0), i8* %24, i8* %27, i32 %30, i8* %33, i8* %35, i32 %37)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([25 x i8], [25 x i8]* @12, i32 0, i32 0), i8* %24, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i8* %27, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i32 %30, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i8* %33, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i8* %35, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i32 %37, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0))
   ret i32 0
 }
 
