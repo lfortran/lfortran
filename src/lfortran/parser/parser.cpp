@@ -190,6 +190,9 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos)
             skip_rest_of_line(s, pos);
             out += '\n';
             return;
+        } else if (s[pos] == ' ') {
+            // Skip white space in a fixed-form parser
+            pos++;
         } else {
             out += s[pos];
             pos++;
