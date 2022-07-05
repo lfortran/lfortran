@@ -2145,6 +2145,13 @@ public:
         std::vector<std::string> kwarg_names = {};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_loc"));
         ASR::expr_t *v_Var = args[0];
+        if( !ASR::is_a<ASR::GetPointer_t>(*v_Var) &&
+            !ASRUtils::is_pointer(ASRUtils::expr_type(v_Var)) ) {
+            ASR::ttype_t* ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc,
+                                        ASRUtils::expr_type(v_Var)));
+            v_Var = ASRUtils::EXPR(ASR::make_GetPointer_t(al, x.base.base.loc,
+                            v_Var, ptr_type, nullptr));
+        }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
         return ASR::make_PointerToCPtr_t(al, x.base.base.loc, v_Var, type, nullptr);
     }
