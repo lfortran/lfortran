@@ -17,14 +17,20 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     return r;
 }
 
+// Forward declarations
 namespace {
-int mysum(const Kokkos::View<const int*> &a)
+int32_t mysum(const Kokkos::View<const int*> &a);
+}
+
+// Implementations
+namespace {
+int32_t mysum(const Kokkos::View<const int*> &a)
 {
     int i;
     int r;
     r = 0;
     for (i=1; i<=a.extent(0); i++) {
-        r = r + a[i-1];
+        r = r + a[i - 1];
     }
     return r;
 }
@@ -35,7 +41,7 @@ void main2() {
     int s;
     Kokkos::View<int[10]> x("x");
     for (i=1; i<=x.extent(0); i++) {
-        x[i-1] = i;
+        x[i - 1] = i;
     }
     s = mysum(x);
     std::cout << s << std::endl;

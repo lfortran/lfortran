@@ -370,9 +370,12 @@ end function)";
 
     // ASR -> LLVM
     LFortran::LLVMEvaluator e;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    lpm.do_not_use_optimization_passes();
     LFortran::Result<std::unique_ptr<LFortran::LLVMModule>>
         res = LFortran::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            LFortran::get_platform(), true, LFortran::get_runtime_library_dir(), "f");
+            lpm, LFortran::get_platform(), "f");
     REQUIRE(res.ok);
     std::unique_ptr<LFortran::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
@@ -403,9 +406,12 @@ end function)";
     CHECK(LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [(= (Var 4 f) (IntegerConstant 4 (Integer 4 [])) ())] (Var 4 f) Source Public Implementation ())}) [])");
     // ASR -> LLVM
     LFortran::LLVMEvaluator e;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    lpm.do_not_use_optimization_passes();
     LFortran::Result<std::unique_ptr<LFortran::LLVMModule>>
         res = LFortran::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            LFortran::get_platform(), true, LFortran::get_runtime_library_dir(), "f");
+            lpm, LFortran::get_platform(), "f");
     REQUIRE(res.ok);
     std::unique_ptr<LFortran::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
@@ -525,23 +531,26 @@ TEST_CASE("FortranEvaluator 6") {
     FortranEvaluator e(cu);
 
     LFortran::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    lpm.do_not_use_optimization_passes();
     lm.in_filename = "input";
     LFortran::diag::Diagnostics diagnostics;
 
     LFortran::Result<FortranEvaluator::EvalResult>
-    r = e.evaluate("$", false, lm, diagnostics);
+    r = e.evaluate("$", false, lm, lpm, diagnostics);
     CHECK(!r.ok);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
     CHECK(diagnostics.diagnostics[0].stage == LFortran::diag::Stage::Tokenizer);
     diagnostics.diagnostics.clear();
 
-    r = e.evaluate("1x", false, lm, diagnostics);
+    r = e.evaluate("1x", false, lm, lpm, diagnostics);
     CHECK(!r.ok);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
     CHECK(diagnostics.diagnostics[0].stage == LFortran::diag::Stage::Parser);
     diagnostics.diagnostics.clear();
 
-    r = e.evaluate("x = 'x'", false, lm, diagnostics);
+    r = e.evaluate("x = 'x'", false, lm, lpm, diagnostics);
     CHECK(!r.ok);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
     CHECK(diagnostics.diagnostics[0].stage == LFortran::diag::Stage::Semantic);

@@ -1,0 +1,13 @@
+{
+    "basename": "c-program4-d60edeb",
+    "cmd": "lfortran --no-color --show-c {infile}",
+    "infile": "tests/program4.f90",
+    "infile_hash": "16adb5a498028ea668b9d513bb2ef0fa0b12e15bef4e2b5e30aa2740",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "c-program4-d60edeb.stdout",
+    "stdout_hash": "579ef94a5f6eb47a59138433c2f2ff7940b46dfd2201f52bd62004d6",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

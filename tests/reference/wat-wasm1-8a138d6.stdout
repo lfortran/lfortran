@@ -1,6 +1,24 @@
 (module
-    (func $0
-        (param i32) (result i32)
+    (type (;0;) (func (param i32) (result)))
+    (type (;1;) (func (param i64) (result)))
+    (type (;2;) (func (param f32) (result)))
+    (type (;3;) (func (param f64) (result)))
+    (type (;4;) (func (param i32 i32) (result)))
+    (type (;5;) (func (param) (result)))
+    (type (;6;) (func (param i32) (result i32)))
+    (type (;7;) (func (param i32 i32) (result i32)))
+    (type (;8;) (func (param i64 i64) (result i64)))
+    (type (;9;) (func (param i32) (result i32)))
+    (type (;10;) (func (param i32 i32) (result i32)))
+    (type (;11;) (func (param) (result)))
+    (import "js" "print_i32" (func (;0;) (type 0)))
+    (import "js" "print_i64" (func (;1;) (type 1)))
+    (import "js" "print_f32" (func (;2;) (type 2)))
+    (import "js" "print_f64" (func (;3;) (type 3)))
+    (import "js" "print_str" (func (;4;) (type 4)))
+    (import "js" "flush_buf" (func (;5;) (type 5)))
+    (import "js" "memory" (memory (;0;) 10))
+    (func $6 (type 6) (param i32) (result i32)
         (local i32)
         local.get 0
         local.get 0
@@ -9,8 +27,7 @@
         local.get 1
         return
     )
-    (func $1
-        (param i32 i32) (result i32)
+    (func $7 (type 7) (param i32 i32) (result i32)
         (local i32)
         local.get 0
         local.get 1
@@ -19,8 +36,7 @@
         local.get 2
         return
     )
-    (func $2
-        (param i64 i64) (result i64)
+    (func $8 (type 8) (param i64 i64) (result i64)
         (local i64)
         local.get 0
         local.get 1
@@ -29,21 +45,19 @@
         local.get 2
         return
     )
-    (func $3
-        (param i32) (result i32)
+    (func $9 (type 9) (param i32) (result i32)
         (local i32 i32)
         i32.const 3
         local.set 2
         local.get 2
         local.get 0
-        call 0
+        call 6
         i32.mul
         local.set 1
         local.get 1
         return
     )
-    (func $4
-        (param i32 i32) (result i32)
+    (func $10 (type 10) (param i32 i32) (result i32)
         (local i32)
         local.get 0
         local.get 1
@@ -52,9 +66,13 @@
         local.get 2
         return
     )
-    (export "a_sqr" (func $0))
-    (export "add" (func $1))
-    (export "add64" (func $2))
-    (export "computecirclearea" (func $3))
-    (export "my_add" (func $4))
+    (func $11 (type 11) (param) (result)
+        (local)
+    )
+    (export "a_sqr" (func $6))
+    (export "add" (func $7))
+    (export "add64" (func $8))
+    (export "computecirclearea" (func $9))
+    (export "my_add" (func $10))
+    (export "_lcompilers_main" (func $11))
 )

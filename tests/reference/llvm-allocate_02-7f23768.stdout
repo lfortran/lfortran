@@ -4,7 +4,9 @@ source_filename = "LFortran"
 %array = type { i32*, i32, %dimension_descriptor*, i1, i32 }
 %dimension_descriptor = type { i32, i32, i32, i32 }
 
-@0 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
+@0 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2 = private unnamed_addr constant [5 x i8] c"%d%s\00", align 1
 
 define i32 @whole_square(%array* %a, %array* %b, %array* %c) {
 .entry:
@@ -1852,7 +1854,7 @@ loop.end6:                                        ; preds = %loop.head4
   %175 = alloca %array, align 8
   %176 = alloca %array, align 8
   %177 = call i32 @whole_square(%array* %a, %array* %b, %array* %c)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0), i32 %177)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i32 %177, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
   %178 = getelementptr %array, %array* %a, i32 0, i32 3
   %179 = load i1, i1* %178, align 1
   br i1 %179, label %then, label %else

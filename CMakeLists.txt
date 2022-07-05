@@ -80,14 +80,42 @@ set(WITH_LFORTRAN_BINARY_MODFILES YES
 set(WITH_RUNTIME_LIBRARY YES
     CACHE BOOL "Compile and install the runtime library")
 
-# Find ZLIB with our custom finder before including LLVM since the finder for LLVM
-# might search for ZLIB again and find the shared libraries instead of the static ones
-find_package(StaticZLIB REQUIRED)
+set(WITH_WHEREAMI yes
+    CACHE BOOL "Include whereami.cpp")
+
+set(WITH_ZLIB yes
+    CACHE BOOL "Compile with ZLIB Library")
+
+# Build to wasm
+set(LFORTRAN_BUILD_TO_WASM no 
+    CACHE BOOL "Compile LFortran To WASM")
+    
+if (LFORTRAN_BUILD_TO_WASM)
+    set(HAVE_BUILD_TO_WASM yes)
+    SET(WITH_WHEREAMI no)
+    SET(WITH_ZLIB no)
+    SET(WITH_RUNTIME_LIBRARY no)
+    add_definitions("-DHAVE_BUILD_TO_WASM=1")
+endif()
+
+if (WITH_WHEREAMI)
+    add_definitions("-DHAVE_WHEREAMI=1")
+endif()
+
+if (WITH_ZLIB)
+    add_definitions("-DHAVE_ZLIB=1")
+
+    # Find ZLIB with our custom finder before including LLVM since the finder for LLVM
+    # might search for ZLIB again and find the shared libraries instead of the static ones
+    find_package(StaticZLIB REQUIRED)
+endif()
+
 
 # LLVM
 set(WITH_LLVM no CACHE BOOL "Build with LLVM support")
 set(WITH_TARGET_AARCH64 no CACHE BOOL "Enable target AARCH64")
 set(WITH_TARGET_X86 no CACHE BOOL "Enable target X86")
+set(WITH_TARGET_WASM no CACHE BOOL "Enable target WebAssembly")
 if (WITH_LLVM)
     set(LFORTRAN_LLVM_COMPONENTS core support mcjit orcjit native asmparser asmprinter)
     find_package(LLVM REQUIRED)
@@ -121,6 +149,15 @@ if (WITH_LLVM)
         add_definitions("-DHAVE_TARGET_X86=1")
     endif()
 
+    if (WITH_TARGET_WASM)
+        if (NOT ("${LLVM_TARGETS_TO_BUILD}" MATCHES "WebAssembly"))
+            message(FATAL_ERROR "The selected LLVM library doesn't have support for WebAssembly targets")
+        endif()
+
+        list(APPEND LFORTRAN_LLVM_COMPONENTS webassemblyasmparser webassemblycodegen webassemblydesc webassemblydisassembler webassemblyinfo)
+        add_definitions("-DHAVE_TARGET_WASM=1")
+    endif()
+    
     llvm_map_components_to_libnames(llvm_libs ${LFORTRAN_LLVM_COMPONENTS})
     unset(LFORTRAN_LLVM_COMPONENTS)
 
@@ -252,6 +289,7 @@ endif ()
 message("Installation prefix: ${CMAKE_INSTALL_PREFIX}")
 message("WITH_LFORTRAN_ASSERT: ${WITH_LFORTRAN_ASSERT}")
 message("LFORTRAN_STATIC_BIN: ${LFORTRAN_STATIC_BIN}")
+message("LFORTRAN_BUILD_TO_WASM: ${LFORTRAN_BUILD_TO_WASM}")
 message("WITH_STACKTRACE: ${WITH_STACKTRACE}")
 message("WITH_UNWIND: ${WITH_UNWIND}")
 message("WITH_BFD: ${WITH_BFD}")
@@ -265,8 +303,11 @@ message("WITH_JSON: ${WITH_JSON}")
 message("WITH_FMT: ${WITH_FMT}")
 message("WITH_LFORTRAN_BINARY_MODFILES: ${WITH_LFORTRAN_BINARY_MODFILES}")
 message("WITH_RUNTIME_LIBRARY: ${WITH_RUNTIME_LIBRARY}")
+message("WITH_WHEREAMI: ${WITH_WHEREAMI}")
+message("WITH_ZLIB: ${WITH_ZLIB}")
 message("WITH_TARGET_AARCH64: ${WITH_TARGET_AARCH64}")
 message("WITH_TARGET_X86: ${WITH_TARGET_X86}")
+message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
 
 
 add_subdirectory(src)

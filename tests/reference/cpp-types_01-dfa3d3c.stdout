@@ -17,13 +17,18 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     return r;
 }
 
+// Forward declarations
+namespace {
+}
+
+// Implementations
 namespace {
 
 void main2() {
     float r;
-    r = 1.000000;
-    r = 1.500000;
-    r = 1.000000;
+    r =   1.00000000000000000e+00;
+    r =   1.50000000000000000e+00;
+    r =   1.00000000000000000e+00;
 }
 
 }

@@ -323,6 +323,26 @@ filename = "wasm1.f90"
 wat = true
 
 [[test]]
+filename = "wasm_i64.f90"
+wat = true
+
+[[test]]
+filename = "wasm_unary_minus.f90"
+wat = true
+
+[[test]]
+filename = "wasm_floats.f90"
+wat = true
+
+[[test]]
+filename = "wasm_main_program.f90"
+wat = true
+
+[[test]]
+filename = "wasm_if.f90"
+wat = true
+
+[[test]]
 filename = "stop.f90"
 asr = true
 llvm = true
@@ -352,6 +372,20 @@ x86 = true
 [[test]]
 filename = "program2.f90"
 ast = true
+
+[[test]]
+filename = "program3.f90"
+ast = true
+asr = true
+cpp = true
+c = true
+
+[[test]]
+filename = "program4.f90"
+ast = true
+asr = true
+cpp = true
+c = true
 
 [[test]]
 filename = "../integration_tests/program_01.f90"
@@ -855,6 +889,7 @@ ast = true
 asr = true
 llvm = true
 obj = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/line_continuation_01.f90"
@@ -2008,6 +2043,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/functions_05.f90"
 asr = true
+pass_with_llvm = true
 pass = "inline_function_calls"
 
 [[test]]
@@ -2017,11 +2053,13 @@ asr = true
 [[test]]
 filename = "../integration_tests/functions_07.f90"
 asr = true
+pass_with_llvm = true
 pass = "inline_function_calls"
 
 [[test]]
 filename = "../integration_tests/functions_08.f90"
 asr = true
+pass_with_llvm = true
 pass = "inline_function_calls"
 
 [[test]]

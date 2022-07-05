@@ -51,11 +51,13 @@ def main():
         mod_to_asr = test.get("mod_to_asr", False)
         llvm = test.get("llvm", False)
         cpp = test.get("cpp", False)
+        c = test.get("c", False)
         wat = test.get("wat", False)
         obj = test.get("obj", False)
         x86 = test.get("x86", False)
         bin_ = test.get("bin", False)
         pass_ = test.get("pass", None)
+        pass_with_llvm = test.get("pass_with_llvm", None)
         optimization_passes = ["flip_sign", "div_to_mul", "fma", "sign_from_value",
                                "inline_function_calls", "loop_unroll",
                                "dead_code_removal"]
@@ -118,6 +120,13 @@ def main():
             cmd = "lfortran --pass=" + pass_ + " --show-asr --no-color {infile} -o {outfile}"
             run_test("pass_{}".format(pass_), cmd,
                      filename, update_reference, extra_args)
+            if pass_with_llvm:
+                if no_llvm:
+                    print("    * llvm   SKIPPED as requested")
+                else:
+                    cmd = "lfortran --pass=" + pass_ + " --show-llvm --no-color {infile} -o {outfile}"
+                    run_test("pass_llvm_{}".format(pass_), cmd,
+                            filename, update_reference, extra_args)
 
         if llvm:
             if no_llvm:
@@ -128,6 +137,10 @@ def main():
 
         if cpp:
             run_test("cpp", "lfortran --no-color --show-cpp {infile}",
+                    filename, update_reference, extra_args)
+
+        if c:
+            run_test("c", "lfortran --no-color --show-c {infile}",
                     filename, update_reference, extra_args)
 
         if wat:

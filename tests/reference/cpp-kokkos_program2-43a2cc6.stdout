@@ -17,13 +17,19 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     return r;
 }
 
+// Forward declarations
+namespace {
+void triad(const Kokkos::View<const float*> &a, const Kokkos::View<const float*> &b, float scalar, const Kokkos::View<float*> &c);
+}
+
+// Implementations
 namespace {
 void triad(const Kokkos::View<const float*> &a, const Kokkos::View<const float*> &b, float scalar, const Kokkos::View<float*> &c)
 {
     int n;
     n = a.extent(0);
     Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(1, n+1), KOKKOS_LAMBDA(const long i) {
-        c[i-1] = a[i-1] + scalar*b[i-1];
+        c[i - 1] = a[i - 1] + scalar*b[i - 1];
     });
 }
 
@@ -38,8 +44,8 @@ void main2() {
     scalar = (float)(10);
     nsize = a.extent(0);
     Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(1, nsize+1), KOKKOS_LAMBDA(const long i) {
-        a[i-1] = (float)(5);
-        b[i-1] = (float)(5);
+        a[i - 1] = (float)(5);
+        b[i - 1] = (float)(5);
     });
     triad(a, b, scalar, c);
     std::cout << "End Stream Triad" << std::endl;

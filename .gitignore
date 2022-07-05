@@ -166,6 +166,8 @@ output
 *.out
 *.mod
 *.smod
+*.js
+*.wasm
 /.ccls-cache/
 .cache/
 ext/
@@ -179,3 +181,5 @@ build.ninja
 .ninja_deps
 .ninja_log
 /compile_commands.json
+
+*.f[0-9A-Za-z]*

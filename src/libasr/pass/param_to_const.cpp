@@ -76,8 +76,29 @@ public:
         asr = const_cast<ASR::expr_t*>(&(x.base));
     }
 
-    void visit_Compare(const ASR::Compare_t& x) {
-        ASR::Compare_t& x_unconst = const_cast<ASR::Compare_t&>(x);
+    void visit_IntegerCompare(const ASR::IntegerCompare_t& x) {
+        handle_Compare(x);
+    }
+
+    void visit_RealCompare(const ASR::RealCompare_t &x) {
+        handle_Compare(x);
+    }
+
+    void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
+        handle_Compare(x);
+    }
+
+    void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {
+        handle_Compare(x);
+    }
+
+    void visit_StringCompare(const ASR::StringCompare_t &x) {
+        handle_Compare(x);
+    }
+
+    template <typename T>
+    void handle_Compare(const T& x) {
+        T& x_unconst = const_cast<T&>(x);
         asr = nullptr;
         this->visit_expr(*x.m_left);
         if( asr != nullptr ) {
@@ -91,8 +112,25 @@ public:
         asr = const_cast<ASR::expr_t*>(&(x.base));
     }
 
-    void visit_BinOp(const ASR::BinOp_t& x) {
-        ASR::BinOp_t& x_unconst = const_cast<ASR::BinOp_t&>(x);
+    void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x) {
+        handle_BinOp(x);
+    }
+
+    void visit_RealBinOp(const ASR::RealBinOp_t& x) {
+        handle_BinOp(x);
+    }
+
+    void visit_ComplexBinOp(const ASR::ComplexBinOp_t& x) {
+        handle_BinOp(x);
+    }
+
+    void visit_LogicalBinOp(const ASR::LogicalBinOp_t& x) {
+        handle_BinOp(x);
+    }
+
+    template <typename T>
+    void handle_BinOp(const T& x) {
+        T& x_unconst = const_cast<T&>(x);
         asr = nullptr;
         this->visit_expr(*x.m_left);
         if( asr != nullptr ) {

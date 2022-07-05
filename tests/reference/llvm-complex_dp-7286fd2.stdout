@@ -4,7 +4,9 @@ source_filename = "LFortran"
 %complex_8 = type { double, double }
 %complex_4 = type { float, float }
 
-@0 = private unnamed_addr constant [27 x i8] c"(%lf,%lf) (%f,%f) (%f,%f)\0A\00", align 1
+@0 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2 = private unnamed_addr constant [30 x i8] c"(%lf,%lf)%s(%f,%f)%s(%f,%f)%s\00", align 1
 
 define i32 @main() {
 .entry:
@@ -95,7 +97,7 @@ define i32 @main() {
   %58 = getelementptr %complex_4, %complex_4* %57, i32 0, i32 1
   %59 = load float, float* %58, align 4
   %60 = fpext float %59 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([27 x i8], [27 x i8]* @0, i32 0, i32 0), double %39, double %42, double %47, double %51, double %56, double %60)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([30 x i8], [30 x i8]* @2, i32 0, i32 0), double %39, double %42, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %47, double %51, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %56, double %60, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
   ret i32 0
 }
 

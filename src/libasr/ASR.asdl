@@ -177,7 +177,7 @@ stmt
     | GoToTarget(int id)
     | If(expr test, stmt* body, stmt* orelse)
     | IfArithmetic(expr test, int lt_label, int eq_label, int gt_label)
-    | Print(expr? fmt, expr* values)
+    | Print(expr? fmt, expr* values, expr? separator, expr? end)
     | FileOpen(int label, expr? newunit, expr? filename, expr? status)
     | FileClose(int label, expr? unit, expr? iostat, expr? iomsg, expr? err, expr? status)
     | FileRead(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat, expr? id, expr* values)
@@ -190,7 +190,7 @@ stmt
               expr? read, expr? write, expr? readwrite, expr? delim,
               expr? pad, expr? flen, expr? blocksize, expr? convert,
               expr? carriagecontrol, expr? iolength)
-    | FileWrite(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat, expr? id, expr* values)
+    | FileWrite(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat, expr? id, expr* values, expr? separator, expr? end)
     | Return()
     | Select(expr test, case_stmt* body, stmt* default)
     | Stop(expr? code)
@@ -200,25 +200,22 @@ stmt
     | WhileLoop(expr test, stmt* body)
     | Nullify(symbol* vars)
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
-    | ListAppend(symbol a, expr ele)
+    | ListAppend(expr a, expr ele)
     | AssociateBlockCall(symbol m)
     | CPtrToPointer(expr cptr, expr ptr, expr? shape)
-    | BlockCall(symbol m)
-    | SetInsert(symbol a, expr ele)
-    | SetRemove(symbol a, expr ele)
-    | ListInsert(symbol a, expr pos, expr ele)
-    | ListRemove(symbol a, expr ele)
-    | DictInsert(symbol a, expr key, expr value)
+    | BlockCall(int label, symbol m)
+    | SetInsert(expr a, expr ele)
+    | SetRemove(expr a, expr ele)
+    | ListInsert(expr a, expr pos, expr ele)
+    | ListRemove(expr a, expr ele)
+    | DictInsert(expr a, expr key, expr value)
 
 
 expr
-    = BoolOp(expr left, boolop op, expr right, ttype type, expr? value)
-    | BinOp(expr left, binop op, expr right, ttype type, expr? value, expr? overloaded)
+    = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
         -- Such as: (x, y+z), (3.0, 2.0) generally not known at compile time
     | ComplexConstructor(expr re, expr im, ttype type, expr? value)
     | NamedExpr(expr target, expr value, ttype type)
-    | Compare(expr left, cmpop op, expr right, ttype type, expr? value, expr? overloaded)
-    | IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
     | FunctionCall(symbol name, symbol? original_name,
             call_arg* args, ttype type, expr? value, expr? dt)
     | DerivedTypeConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
@@ -228,12 +225,20 @@ expr
     | IntegerBOZ(int v, integerboz intboz_type, ttype? type)
     | IntegerBitNot(expr arg, ttype type, expr? value)
     | IntegerUnaryMinus(expr arg, ttype type, expr? value)
+    | IntegerCompare(expr left, cmpop op, expr right, ttype type, expr? value)
+    | IntegerBinOp(expr left, binop op, expr right, ttype type, expr? value)
     | RealConstant(float r, ttype type)
     | RealUnaryMinus(expr arg, ttype type, expr? value)
+    | RealCompare(expr left, cmpop op, expr right, ttype type, expr? value)
+    | RealBinOp(expr left, binop op, expr right, ttype type, expr? value)
     | ComplexConstant(float re, float im, ttype type)
     | ComplexUnaryMinus(expr arg, ttype type, expr? value)
+    | ComplexCompare(expr left, cmpop op, expr right, ttype type, expr? value)
+    | ComplexBinOp(expr left, binop op, expr right, ttype type, expr? value)
     | LogicalConstant(bool value, ttype type)
     | LogicalNot(expr arg, ttype type, expr? value)
+    | LogicalCompare(expr left, cmpop op, expr right, ttype type, expr? value)
+    | LogicalBinOp(expr left, logicalbinop op, expr right, ttype type, expr? value)
 
     | ListConstant(expr* args, ttype type)
     | ListLen(expr arg, ttype type, expr? value)
@@ -253,6 +258,7 @@ expr
     | StringLen(expr arg, ttype type, expr? value)
     | StringItem(expr arg, expr idx, ttype type, expr? value)
     | StringSection(expr arg, expr start, expr end, expr step, ttype type, expr? value)
+    | StringCompare(expr left, cmpop op, expr right, ttype type, expr? value)
 
     | DictConstant(expr* keys, expr* values, ttype type)
     | DictLen(expr arg, ttype type, expr? value)
@@ -264,20 +270,23 @@ expr
     | ArrayTranspose(expr matrix, ttype type, expr? value)
     | ArrayMatMul(expr matrix_a, expr matrix_b, ttype type, expr? value)
     | ArrayPack(expr array, expr mask, expr? vector, ttype type, expr? value)
-    | Transfer(expr source, expr mold, expr? size, ttype type, expr? value)
+    | BitCast(expr source, expr mold, expr? size, ttype type, expr? value)
     | DerivedRef(expr v, symbol m, ttype type, expr? value)
+    | OverloadedCompare(expr left, cmpop op, expr right, ttype type, expr? value, expr overloaded)
+    | OverloadedBinOp(expr left, binop op, expr right, ttype type, expr? value, expr overloaded)
     | Cast(expr arg, cast_kind kind, ttype type, expr? value)
     | ComplexRe(expr arg, ttype type, expr? value)
     | ComplexIm(expr arg, ttype type, expr? value)
-    | DictItem(symbol a, expr key, expr? default, ttype type, expr? value)
+    | DictItem(expr a, expr key, expr? default, ttype type, expr? value)
+    | CLoc(expr arg, ttype type, expr? value)
     | PointerToCPtr(expr arg, ttype type, expr? value)
     | GetPointer(expr arg, ttype type, expr? value)
-    | ListItem(symbol a, expr pos, ttype type, expr? value)
-    | TupleItem(symbol a, expr pos, ttype type, expr? value)
+    | ListItem(expr a, expr pos, ttype type, expr? value)
+    | TupleItem(expr a, expr pos, ttype type, expr? value)
     | ListSection(expr a, array_index section, ttype type, expr? value)
-    | ListPop(symbol a, expr? index, ttype type, expr? value)
-    | DictPop(symbol a, expr key, ttype type, expr? value)
-    | SetPop(symbol a, ttype type, expr? value)
+    | ListPop(expr a, expr? index, ttype type, expr? value)
+    | DictPop(expr a, expr key, ttype type, expr? value)
+    | SetPop(expr a, ttype type, expr? value)
 
 
 -- `len` in Character:
@@ -314,9 +323,9 @@ ttype
     | Pointer(ttype type)
     | CPtr()
 
-boolop = And | Or | Xor | NEqv | Eqv
+binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift
 
-binop = Add | Sub | Mul | Div | Pow
+logicalbinop = And | Or | Xor | NEqv | Eqv
 
 cmpop = Eq | NotEq | Lt | LtE | Gt | GtE
 
@@ -332,6 +341,9 @@ cast_kind
     | RealToComplex
     | IntegerToComplex
     | IntegerToLogical
+    | RealToLogical
+    | CharacterToLogical
+    | ComplexToLogical
     | ComplexToComplex
     | ComplexToReal
     | LogicalToInteger
