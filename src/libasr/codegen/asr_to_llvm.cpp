@@ -1158,6 +1158,32 @@ public:
         uint32_t v_h = get_hash((ASR::asr_t*)v);
         LFORTRAN_ASSERT(llvm_symtab.find(v_h) != llvm_symtab.end());
         llvm::Value* array = llvm_symtab[v_h];
+        // Array indexing:
+        std::vector<llvm::Value*> indices;
+        for( size_t r = 0; r < x.n_args; r++ ) {
+            ASR::array_index_t curr_idx = x.m_args[r];
+            uint64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 2;
+            this->visit_expr_wrapper(curr_idx.m_right, true);
+            ptr_loads = ptr_loads_copy;
+            indices.push_back(tmp);
+        }
+        if (v->m_type->type == ASR::ttypeType::Pointer) {
+            array = builder->CreateLoad(array);
+        }
+        tmp = arr_descr->get_single_element(array, indices, x.n_args);
+    }
+
+    void visit_ArraySection(const ASR::ArraySection_t& x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(x.m_v);
+        uint32_t v_h = get_hash((ASR::asr_t*)v);
+        LFORTRAN_ASSERT(llvm_symtab.find(v_h) != llvm_symtab.end());
+        llvm::Value* array = llvm_symtab[v_h];
+        LFORTRAN_ASSERT(ASR::is_a<ASR::Character_t>(*x.m_type));
         if (is_a<ASR::Character_t>(*x.m_type)
              && ASR::down_cast<ASR::Character_t>(x.m_type)->n_dims == 0) {
             // String indexing:
@@ -1208,21 +1234,6 @@ public:
             } else {
                 throw CodeGenError("Only string(a:b) supported for now.", x.base.base.loc);
             }
-        } else {
-            // Array indexing:
-            std::vector<llvm::Value*> indices;
-            for( size_t r = 0; r < x.n_args; r++ ) {
-                ASR::array_index_t curr_idx = x.m_args[r];
-                uint64_t ptr_loads_copy = ptr_loads;
-                ptr_loads = 2;
-                this->visit_expr_wrapper(curr_idx.m_right, true);
-                ptr_loads = ptr_loads_copy;
-                indices.push_back(tmp);
-            }
-            if (v->m_type->type == ASR::ttypeType::Pointer) {
-                array = builder->CreateLoad(array);
-            }
-            tmp = arr_descr->get_single_element(array, indices, x.n_args);
         }
     }
 
@@ -2765,11 +2776,24 @@ public:
         uint32_t h;
         bool lhs_is_string_arrayref = false;
         if( x.m_target->type == ASR::exprType::ArrayItem ||
+            x.m_target->type == ASR::exprType::ArraySection ||
             x.m_target->type == ASR::exprType::DerivedRef ) {
             this->visit_expr(*x.m_target);
             target = tmp;
             if (is_a<ASR::ArrayItem_t>(*x.m_target)) {
                 ASR::ArrayItem_t *asr_target0 = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+                if (is_a<ASR::Variable_t>(*asr_target0->m_v)) {
+                    ASR::Variable_t *asr_target = ASR::down_cast<ASR::Variable_t>(asr_target0->m_v);
+                    if ( is_a<ASR::Character_t>(*asr_target->m_type) ) {
+                        ASR::Character_t *t = ASR::down_cast<ASR::Character_t>(asr_target->m_type);
+                        if (t->n_dims == 0) {
+                            target = CreateLoad(target);
+                            lhs_is_string_arrayref = true;
+                        }
+                    }
+                }
+            } else if (is_a<ASR::ArraySection_t>(*x.m_target)) {
+                ASR::ArraySection_t *asr_target0 = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
                 if (is_a<ASR::Variable_t>(*asr_target0->m_v)) {
                     ASR::Variable_t *asr_target = ASR::down_cast<ASR::Variable_t>(asr_target0->m_v);
                     if ( is_a<ASR::Character_t>(*asr_target->m_type) ) {
@@ -2860,6 +2884,7 @@ public:
     inline void visit_expr_wrapper(const ASR::expr_t* x, bool load_ref=false) {
         this->visit_expr(*x);
         if( x->type == ASR::exprType::ArrayItem ||
+            x->type == ASR::exprType::ArraySection ||
             x->type == ASR::exprType::DerivedRef ) {
             if( load_ref ) {
                 tmp = CreateLoad(tmp);
