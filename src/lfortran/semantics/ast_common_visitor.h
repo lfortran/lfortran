@@ -1222,9 +1222,21 @@ public:
                 m_step = LFortran::ASRUtils::EXPR(tmp);
                 ai.loc = m_step->base.loc;
             }
-            is_item = is_item && (m_start == nullptr &&
-                                  m_step == nullptr &&
-                                  m_end != nullptr);
+            if( m_start != nullptr &&
+                ASR::is_a<ASR::Var_t>(*m_start) &&
+                ASR::is_a<ASR::Var_t>(*m_end) ) {
+                ASR::Variable_t* startv = ASRUtils::EXPR2VAR(m_start);
+                ASR::Variable_t* endv = ASRUtils::EXPR2VAR(m_end);
+                is_item = is_item && (startv == endv);
+                if( is_item ) {
+                    m_start = nullptr;
+                    m_step = nullptr;
+                }
+            } else {
+                is_item = is_item && (m_start == nullptr &&
+                                      m_step == nullptr &&
+                                      m_end != nullptr);
+            }
             ai.m_left = m_start;
             ai.m_right = m_end;
             ai.m_step = m_step;
