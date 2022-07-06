@@ -1149,7 +1149,7 @@ public:
 
     }
 
-    void visit_ArrayRef(const ASR::ArrayRef_t& x) {
+    void visit_ArrayItem(const ASR::ArrayItem_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -2764,12 +2764,12 @@ public:
         llvm::Value *target, *value;
         uint32_t h;
         bool lhs_is_string_arrayref = false;
-        if( x.m_target->type == ASR::exprType::ArrayRef ||
+        if( x.m_target->type == ASR::exprType::ArrayItem ||
             x.m_target->type == ASR::exprType::DerivedRef ) {
             this->visit_expr(*x.m_target);
             target = tmp;
-            if (is_a<ASR::ArrayRef_t>(*x.m_target)) {
-                ASR::ArrayRef_t *asr_target0 = ASR::down_cast<ASR::ArrayRef_t>(x.m_target);
+            if (is_a<ASR::ArrayItem_t>(*x.m_target)) {
+                ASR::ArrayItem_t *asr_target0 = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
                 if (is_a<ASR::Variable_t>(*asr_target0->m_v)) {
                     ASR::Variable_t *asr_target = ASR::down_cast<ASR::Variable_t>(asr_target0->m_v);
                     if ( is_a<ASR::Character_t>(*asr_target->m_type) ) {
@@ -2859,7 +2859,7 @@ public:
 
     inline void visit_expr_wrapper(const ASR::expr_t* x, bool load_ref=false) {
         this->visit_expr(*x);
-        if( x->type == ASR::exprType::ArrayRef ||
+        if( x->type == ASR::exprType::ArrayItem ||
             x->type == ASR::exprType::DerivedRef ) {
             if( load_ref ) {
                 tmp = CreateLoad(tmp);
