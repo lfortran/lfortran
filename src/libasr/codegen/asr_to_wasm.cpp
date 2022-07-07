@@ -594,35 +594,41 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         this->visit_expr(*x.m_arg);
         switch (x.m_kind) {
             case (ASR::cast_kindType::IntegerToReal) : {
-                int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                switch (a_kind) {
-                    case 4 : {
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if( arg_kind > 0 && dest_kind > 0){
+                    if( arg_kind == 4 && dest_kind == 4 ) {
                         wasm::emit_f32_convert_i32_s(m_code_section, m_al);
-                        break;
-                    }
-                    case 8 : {
+                    } else if( arg_kind == 8 && dest_kind == 8 ) {
                         wasm::emit_f64_convert_i64_s(m_code_section, m_al);
-                        break;
-                    }
-                    default : {
-                        throw CodeGenError(R"""(Only 32 and 64 bit real kinds are implemented)""",
-                                            x.base.base.loc);
+                    } else if( arg_kind == 4 && dest_kind == 8 ) {
+                        wasm::emit_f64_convert_i32_s(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 4 ) {
+                        wasm::emit_f32_convert_i64_s(m_code_section, m_al);
+                    } else {
+                        std::string msg = "Conversion from " + std::to_string(arg_kind) +
+                                          " to " + std::to_string(dest_kind) + " not implemented yet.";
+                        throw CodeGenError(msg);
                     }
                 }
                 break;
             }
             case (ASR::cast_kindType::RealToInteger) : {
-                int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                switch (a_kind) {
-                    case 4:
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if( arg_kind > 0 && dest_kind > 0){
+                    if( arg_kind == 4 && dest_kind == 4 ) {
                         wasm::emit_i32_trunc_f32_s(m_code_section, m_al);
-                        break;
-                    case 8:
+                    } else if( arg_kind == 8 && dest_kind == 8 ) {
                         wasm::emit_i64_trunc_f64_s(m_code_section, m_al);
-                        break;
-                    default : {
-                        throw CodeGenError(R"""(Only 32 and 64 bit integer kinds are implemented)""",
-                                            x.base.base.loc);
+                    } else if( arg_kind == 4 && dest_kind == 8 ) {
+                        wasm::emit_i64_trunc_f32_s(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 4 ) {
+                        wasm::emit_i32_trunc_f64_s(m_code_section, m_al);
+                    } else {
+                        std::string msg = "Conversion from " + std::to_string(arg_kind) +
+                                          " to " + std::to_string(dest_kind) + " not implemented yet.";
+                        throw CodeGenError(msg);
                     }
                 }
                 break;
