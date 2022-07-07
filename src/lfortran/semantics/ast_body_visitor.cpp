@@ -547,10 +547,10 @@ public:
             } else if( x.m_args[i].m_start && !x.m_args[i].m_end && x.m_args[i].m_step ) {
                 this->visit_expr(*(x.m_args[i].m_step));
             }
-            // Assume that tmp is an `ArrayRef`
+            // Assume that tmp is an `ArraySection` or `ArrayItem`
             ASR::expr_t* tmp_stmt = LFortran::ASRUtils::EXPR(tmp);
-            if( ASR::is_a<ASR::ArrayRef_t>(*tmp_stmt) ) {
-                ASR::ArrayRef_t* array_ref = ASR::down_cast<ASR::ArrayRef_t>(tmp_stmt);
+            if( ASR::is_a<ASR::ArraySection_t>(*tmp_stmt) ) {
+                ASR::ArraySection_t* array_ref = ASR::down_cast<ASR::ArraySection_t>(tmp_stmt);
                 new_arg.m_a = array_ref->m_v;
                 Vec<ASR::dimension_t> dims_vec;
                 dims_vec.reserve(al, array_ref->n_args);
@@ -565,6 +565,21 @@ public:
                     }
                     ASR::expr_t* m_right = array_ref->m_args[j].m_right;
                     new_dim.m_end = m_right;
+                    dims_vec.push_back(al, new_dim);
+                }
+                new_arg.m_dims = dims_vec.p;
+                new_arg.n_dims = dims_vec.size();
+                alloc_args_vec.push_back(al, new_arg);
+            } else if( ASR::is_a<ASR::ArrayItem_t>(*tmp_stmt) ) {
+                ASR::ArrayItem_t* array_ref = ASR::down_cast<ASR::ArrayItem_t>(tmp_stmt);
+                new_arg.m_a = array_ref->m_v;
+                Vec<ASR::dimension_t> dims_vec;
+                dims_vec.reserve(al, array_ref->n_args);
+                for( size_t j = 0; j < array_ref->n_args; j++ ) {
+                    ASR::dimension_t new_dim;
+                    new_dim.loc = array_ref->m_args[j].loc;
+                    new_dim.m_start = const_1;
+                    new_dim.m_end = array_ref->m_args[j].m_right;
                     dims_vec.push_back(al, new_dim);
                 }
                 new_arg.m_dims = dims_vec.p;
@@ -965,7 +980,8 @@ public:
         }
         ASR::ttype_t *target_type = LFortran::ASRUtils::expr_type(target);
         if( target->type != ASR::exprType::Var &&
-            target->type != ASR::exprType::ArrayRef &&
+            target->type != ASR::exprType::ArrayItem &&
+            target->type != ASR::exprType::ArraySection &&
             target->type != ASR::exprType::DerivedRef )
         {
             throw SemanticError(
@@ -980,7 +996,8 @@ public:
         }
         if( overloaded_stmt == nullptr ) {
             if (target->type == ASR::exprType::Var ||
-                target->type == ASR::exprType::ArrayRef) {
+                target->type == ASR::exprType::ArrayItem ||
+                target->type == ASR::exprType::ArraySection) {
 
                 ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                                         value_type, target_type);
