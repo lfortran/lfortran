@@ -2612,18 +2612,16 @@ public:
         ptr_loads = 0;
         this->visit_expr(*x.m_arg);
         ptr_loads = ptr_loads_copy;
-        if( is_nested_pointer(tmp) ) {
-            tmp = builder->CreateLoad(tmp);
-        }
-        if( arr_descr->is_array(tmp) ) {
-            tmp = builder->CreateLoad(arr_descr->get_pointer_to_data(tmp));
-        }
-        tmp = builder->CreateBitCast(tmp,
-                    llvm::Type::getVoidTy(context)->getPointerTo());
+        tmp = GetPointerCPtrUtil(tmp);
     }
 
-
     llvm::Value* GetPointerCPtrUtil(llvm::Value* llvm_tmp) {
+        // If the input is a simple variable and not a pointer
+        // then this check will fail and load will not happen
+        // (which is what we want for simple variables).
+        // For pointers, the actual LLVM variable will be a
+        // double pointer, so we need to load one time and then
+        // use it later on.
         if( is_nested_pointer(llvm_tmp) ) {
             llvm_tmp = builder->CreateLoad(llvm_tmp);
         }
