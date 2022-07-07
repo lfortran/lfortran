@@ -1300,15 +1300,16 @@ public:
             }
         }
 
+        ASR::expr_t* v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
         if( is_item ) {
             Vec<ASR::dimension_t> empty_dims;
             empty_dims.reserve(al, 1);
             type = ASRUtils::duplicate_type(al, type, &empty_dims);
             return ASR::make_ArrayItem_t(al, loc,
-                v, args.p, args.size(), type, arr_ref_val);
+                v_Var, args.p, args.size(), type, arr_ref_val);
         } else {
             return ASR::make_ArraySection_t(al, loc,
-                v, args.p, args.size(), type, arr_ref_val);
+                v_Var, args.p, args.size(), type, arr_ref_val);
         }
     }
 
