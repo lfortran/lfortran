@@ -47,13 +47,13 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
     void visit_F32Add() { src += indent + "f32.add"; }
     void visit_F32Sub() { src += indent + "f32.sub"; }
     void visit_F32Mul() { src += indent + "f32.mul"; }
-    void visit_F32DivS() { src += indent + "f32.div_s"; }
+    void visit_F32Div() { src += indent + "f32.div"; }
     
     void visit_F64Const(double value) { src += indent + "f64.const " + std::to_string(value); }
     void visit_F64Add() { src += indent + "f64.add"; }
     void visit_F64Sub() { src += indent + "f64.sub"; }
     void visit_F64Mul() { src += indent + "f64.mul"; }
-    void visit_F64DivS() { src += indent + "f64.div_s"; }
+    void visit_F64Div() { src += indent + "f64.div"; }
 
     void visit_I32WrapI64() { src += indent + "i32.wrap_i64"; }
     void visit_I32TruncF32S() { src += indent + "i32.trunc_f32_s"; }
