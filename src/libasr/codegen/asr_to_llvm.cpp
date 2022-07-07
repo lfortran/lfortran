@@ -3956,20 +3956,7 @@ public:
         switch (x.m_kind) {
             case (ASR::cast_kindType::IntegerToReal) : {
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                switch (a_kind) {
-                    case 4 : {
-                        tmp = builder->CreateSIToFP(tmp, llvm::Type::getFloatTy(context));
-                        break;
-                    }
-                    case 8 : {
-                        tmp = builder->CreateSIToFP(tmp, llvm::Type::getDoubleTy(context));
-                        break;
-                    }
-                    default : {
-                        throw CodeGenError(R"""(Only 32 and 64 bit real kinds are implemented)""",
-                                            x.base.base.loc);
-                    }
-                }
+                tmp = builder->CreateSIToFP(tmp, getFPType(a_kind, false));
                 break;
             }
             case (ASR::cast_kindType::RealToInteger) : {
@@ -4085,23 +4072,7 @@ public:
             }
             case (ASR::cast_kindType::LogicalToInteger) : {
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                if (a_kind == 2) {
-                    tmp = builder->CreateSExt(tmp, llvm::Type::getInt16Ty(context));
-                    llvm::Value *zero = llvm::ConstantInt::get(context, llvm::APInt(16, 0, true));
-                    tmp = builder ->CreateSub(zero, tmp);
-                } else if (a_kind == 4) {
-                    tmp = builder->CreateSExt(tmp, llvm::Type::getInt32Ty(context));
-                    llvm::Value *zero = llvm::ConstantInt::get(context, llvm::APInt(32, 0, true));
-                    tmp = builder ->CreateSub(zero, tmp);
-                } else if (a_kind == 8) {
-                    tmp = builder->CreateSExt(tmp, llvm::Type::getInt64Ty(context));
-                    llvm::Value *zero = llvm::ConstantInt::get(context, llvm::APInt(64, 0, true));
-                    tmp = builder ->CreateSub(zero, tmp);
-                } else {
-                    std::string msg = "Conversion from i1 to"  +
-                                      std::to_string(a_kind) + " is not implemented yet.";
-                    throw CodeGenError(msg);
-                }
+                tmp = builder->CreateZExt(tmp, getIntType(a_kind));
                 break;
             }
             case (ASR::cast_kindType::RealToReal) : {
@@ -4128,22 +4099,10 @@ public:
                 if( arg_kind > 0 && dest_kind > 0 &&
                     arg_kind != dest_kind )
                 {
-                    if( arg_kind == 4 && dest_kind == 8 ) {
-                        tmp = builder->CreateSExt(tmp, llvm::Type::getInt64Ty(context));
-                    } else if( arg_kind == 8 && dest_kind == 4 ) {
-                        tmp = builder->CreateTrunc(tmp, llvm::Type::getInt32Ty(context));
-                    } else if( arg_kind == 2 && dest_kind == 4 ) {
-                        tmp = builder->CreateSExt(tmp, llvm::Type::getInt32Ty(context));
-                    } else if( arg_kind == 4 && dest_kind == 2 ) {
-                        tmp = builder->CreateTrunc(tmp, llvm::Type::getInt16Ty(context));
-                    } else if( arg_kind == 1 && dest_kind == 4 ) {
-                        tmp = builder->CreateSExt(tmp, llvm::Type::getInt32Ty(context));
-                    } else if( arg_kind == 4 && dest_kind == 1 ) {
-                        tmp = builder->CreateTrunc(tmp, llvm::Type::getInt8Ty(context));
+                    if (dest_kind > arg_kind) {
+                        tmp = builder->CreateSExt(tmp, getIntType(dest_kind));
                     } else {
-                        std::string msg = "Conversion from " + std::to_string(arg_kind) +
-                                          " to " + std::to_string(dest_kind) + " not implemented yet.";
-                        throw CodeGenError(msg);
+                        tmp = builder->CreateTrunc(tmp, getIntType(dest_kind));
                     }
                 }
                 break;
