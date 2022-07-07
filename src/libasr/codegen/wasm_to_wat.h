@@ -29,7 +29,7 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
         }
         src += indent + "end";
     }
-    void visit_Else() { src += indent + "\b\b\b\b" + "else"; }
+    void visit_Else() { src += indent.substr(0, indent.length() - 4U) + "else"; }
 
     void visit_I32Const(int32_t value) { src += indent + "i32.const " + std::to_string(value); }
     void visit_I32Add() { src += indent + "i32.add"; }
