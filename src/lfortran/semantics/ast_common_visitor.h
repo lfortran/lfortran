@@ -1199,6 +1199,7 @@ public:
                 AST::fnarg_t* m_args, size_t n_args,
                     ASR::symbol_t *v,
                     ASR::symbol_t *f2) {
+        bool is_item = true;
         Vec<ASR::array_index_t> args;
         args.reserve(al, n_args);
         for (size_t i=0; i<n_args; i++) {
@@ -1220,6 +1221,21 @@ public:
                 this->visit_expr(*(m_args[i].m_step));
                 m_step = LFortran::ASRUtils::EXPR(tmp);
                 ai.loc = m_step->base.loc;
+            }
+            if( m_start != nullptr &&
+                ASR::is_a<ASR::Var_t>(*m_start) &&
+                ASR::is_a<ASR::Var_t>(*m_end) ) {
+                ASR::Variable_t* startv = ASRUtils::EXPR2VAR(m_start);
+                ASR::Variable_t* endv = ASRUtils::EXPR2VAR(m_end);
+                is_item = is_item && (startv == endv);
+                if( is_item ) {
+                    m_start = nullptr;
+                    m_step = nullptr;
+                }
+            } else {
+                is_item = is_item && (m_start == nullptr &&
+                                      m_step == nullptr &&
+                                      m_end != nullptr);
             }
             ai.m_left = m_start;
             ai.m_right = m_end;
@@ -1283,8 +1299,14 @@ public:
                 }
             }
         }
-        return ASR::make_ArrayRef_t(al, loc,
-            v, args.p, args.size(), type, arr_ref_val);
+
+        if( is_item ) {
+            return ASR::make_ArrayItem_t(al, loc,
+                v, args.p, args.size(), type, arr_ref_val);
+        } else {
+            return ASR::make_ArraySection_t(al, loc,
+                v, args.p, args.size(), type, arr_ref_val);
+        }
     }
 
     void visit_ArrayInitializer(const AST::ArrayInitializer_t &x) {
