@@ -814,6 +814,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "../integration_tests/types_15.f90"
+wat = true
+
+[[test]]
 filename = "boz1.f90"
 tokens = true
 
