@@ -94,6 +94,20 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_data_section.reserve(m_al, 1024 * 128);
     }
 
+    void get_wasm(Vec<uint8_t> &code){
+        code.reserve(m_al, 8U /* preamble size */ + 8U /* (section id + section size) */ * 6U /* number of sections */
+            + m_type_section.size() + m_import_section.size() + m_func_section.size()
+            + m_export_section.size() + m_code_section.size() + m_data_section.size());
+
+        wasm::emit_header(code, m_al);  // emit header and version
+        wasm::encode_section(code, m_type_section, m_al, 1U);
+        wasm::encode_section(code, m_import_section, m_al, 2U);
+        wasm::encode_section(code, m_func_section, m_al, 3U);
+        wasm::encode_section(code, m_export_section, m_al, 7U);
+        wasm::encode_section(code, m_code_section, m_al, 10U);
+        wasm::encode_section(code, m_data_section, m_al, 11U);
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         uint32_t len_idx_type_section = wasm::emit_len_placeholder(m_type_section, m_al);
         uint32_t len_idx_import_section = wasm::emit_len_placeholder(m_import_section, m_al);
@@ -1117,20 +1131,8 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
         return Error();
     }
 
-    {
-        wasm_bytes.reserve(al, 8U /* preamble size */ + 8U /* (section id + section size) */ * 6U /* number of sections */
-            + v.m_type_section.size() + v.m_import_section.size() + v.m_func_section.size()
-            + v.m_export_section.size() + v.m_code_section.size() + v.m_data_section.size());
-
-        wasm::emit_header(wasm_bytes, al);  // emit header and version
-        wasm::encode_section(wasm_bytes, v.m_type_section, al, 1U);
-        wasm::encode_section(wasm_bytes, v.m_import_section, al, 2U);
-        wasm::encode_section(wasm_bytes, v.m_func_section, al, 3U);
-        wasm::encode_section(wasm_bytes, v.m_export_section, al, 7U);
-        wasm::encode_section(wasm_bytes, v.m_code_section, al, 10U);
-        wasm::encode_section(wasm_bytes, v.m_data_section, al, 11U);
-    }
-
+    v.get_wasm(wasm_bytes);
+    
     return wasm_bytes;
 }
 
