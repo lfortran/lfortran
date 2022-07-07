@@ -54,6 +54,15 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
     void visit_F64Sub() { src += indent + "f64.sub"; }
     void visit_F64Mul() { src += indent + "f64.mul"; }
     void visit_F64DivS() { src += indent + "f64.div_s"; }
+
+    void visit_I32WrapI64() { src += indent + "i32.wrap_i64"; }
+    void visit_I32TruncF32S() { src += indent + "i32.trunc_f32_s"; }
+    void visit_I64ExtendI32S() { src += indent + "i64.extend_i32_s"; }
+    void visit_I64TruncF64S() { src += indent + "i64.trunc_f64_s"; }
+    void visit_F32ConvertI32S() { src += indent + "f32.convert_i32_s"; }
+    void visit_F32DemoteF64() { src += indent + "f32.demote_f64"; }
+    void visit_F64ConvertI64S() { src += indent + "f64.convert_i64_s"; }
+    void visit_F64PromoteF32() { src += indent + "f64.promote_f32"; }
 };
 
 }  // namespace WASM_INSTS_VISITOR
