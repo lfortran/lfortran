@@ -587,11 +587,10 @@ R"(#include <stdio.h>
     }
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
-        const ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
-        ASR::Variable_t* sv = ASR::down_cast<ASR::Variable_t>(s);
-        std::string out = std::string(sv->m_name);
+        this->visit_expr(*x.m_v);
+        std::string out = src;
         ASR::dimension_t* m_dims;
-        ASRUtils::extract_dimensions_from_ttype(sv->m_type, m_dims);
+        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_v), m_dims);
         out += "[";
         for (size_t i=0; i<x.n_args; i++) {
             if (x.m_args[i].m_right) {
