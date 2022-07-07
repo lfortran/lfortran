@@ -1224,8 +1224,9 @@ public:
         ASR::dimension_t* m_dims;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(
                         ASRUtils::expr_type(x.m_v), m_dims);
-        LFORTRAN_ASSERT(ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_v)) &&
-                        n_dims == 0);
+        if( !(ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_v)) && n_dims == 0) ) {
+            LFORTRAN_ASSERT(false);
+        }
         // String indexing:
         if (x.n_args == 1) {
             throw CodeGenError("Only string(a:b) supported for now.", x.base.base.loc);
