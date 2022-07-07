@@ -100,35 +100,22 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             + m_export_section.size() + m_code_section.size() + m_data_section.size());
 
         wasm::emit_header(code, m_al);  // emit header and version
-        wasm::encode_section(code, m_type_section, m_al, 1U);
-        wasm::encode_section(code, m_import_section, m_al, 2U);
-        wasm::encode_section(code, m_func_section, m_al, 3U);
-        wasm::encode_section(code, m_export_section, m_al, 7U);
-        wasm::encode_section(code, m_code_section, m_al, 10U);
-        wasm::encode_section(code, m_data_section, m_al, 11U);
+        wasm::encode_section(code, m_type_section, m_al, 1U, cur_func_idx);  // cur_func_idx indicates total (imported + defined) no of functions
+        wasm::encode_section(code, m_import_section, m_al, 2U, no_of_imports);
+        wasm::encode_section(code, m_func_section, m_al, 3U, no_of_functions);
+        wasm::encode_section(code, m_export_section, m_al, 7U, no_of_functions);
+        wasm::encode_section(code, m_code_section, m_al, 10U, no_of_functions);
+        wasm::encode_section(code, m_data_section, m_al, 11U, no_of_data_segments);
     }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
-        uint32_t len_idx_type_section = wasm::emit_len_placeholder(m_type_section, m_al);
-        uint32_t len_idx_import_section = wasm::emit_len_placeholder(m_import_section, m_al);
-        uint32_t len_idx_func_section = wasm::emit_len_placeholder(m_func_section, m_al);
-        uint32_t len_idx_export_section = wasm::emit_len_placeholder(m_export_section, m_al);
-        uint32_t len_idx_code_section = wasm::emit_len_placeholder(m_code_section, m_al);
-        uint32_t len_idx_data_section = wasm::emit_len_placeholder(m_data_section, m_al);
-
+        
         // the main program:
         for (auto &item : x.m_global_scope->get_scope()) {
             if (ASR::is_a<ASR::Program_t>(*item.second)) {
                 visit_symbol(*item.second);
             }
         }
-
-        wasm::emit_u32_b32_idx(m_type_section, m_al, len_idx_type_section, cur_func_idx); // cur_func_idx indicates the total (imported + defined) no of functions
-        wasm::emit_u32_b32_idx(m_import_section, m_al, len_idx_import_section, no_of_imports);
-        wasm::emit_u32_b32_idx(m_func_section, m_al, len_idx_func_section, no_of_functions);
-        wasm::emit_u32_b32_idx(m_export_section, m_al, len_idx_export_section, no_of_functions);
-        wasm::emit_u32_b32_idx(m_code_section, m_al, len_idx_code_section, no_of_functions);
-        wasm::emit_u32_b32_idx(m_data_section, m_al, len_idx_data_section, no_of_data_segments);
     }
 
     void emit_imports(){
