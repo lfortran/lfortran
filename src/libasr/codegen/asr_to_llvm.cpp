@@ -1158,13 +1158,14 @@ public:
         uint32_t v_h = get_hash((ASR::asr_t*)v);
         LFORTRAN_ASSERT(llvm_symtab.find(v_h) != llvm_symtab.end());
         llvm::Value* array = llvm_symtab[v_h];
-        if (is_a<ASR::Character_t>(*x.m_type)
-             && ASR::down_cast<ASR::Character_t>(x.m_type)->n_dims == 0) {
+        ASR::dimension_t* m_dims;
+        int n_dims = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::symbol_type(x.m_v), m_dims);
+        if (ASR::is_a<ASR::Character_t>(*x.m_type) && n_dims == 0) {
             // String indexing:
             if (x.n_args != 1) {
                 throw CodeGenError("Only string(a) supported for now.", x.base.base.loc);
             }
-            LFORTRAN_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_args[0].m_right));
             this->visit_expr_wrapper(x.m_args[0].m_right, true);
             llvm::Value *idx = tmp;
             idx = builder->CreateSub(idx, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
