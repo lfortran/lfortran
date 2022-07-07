@@ -573,6 +573,165 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[fn->m_name]);
     }
 
+    inline ASR::ttype_t* extract_ttype_t_from_expr(ASR::expr_t* expr) {
+        return ASRUtils::expr_type(expr);
+    }
+    
+    void extract_kinds(const ASR::Cast_t& x,
+                       int& arg_kind, int& dest_kind)
+    {
+        dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
+        LFORTRAN_ASSERT(curr_type != nullptr)
+        arg_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
+    }
+
+    void visit_Cast(const ASR::Cast_t &x) {
+        if (x.m_value) {
+            this->visit_expr(*x.m_value);
+            return;
+        }
+        this->visit_expr(*x.m_arg);
+        switch (x.m_kind) {
+            case (ASR::cast_kindType::IntegerToReal) : {
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (a_kind) {
+                    case 4 : {
+                        wasm::emit_f32_convert_i32_s(m_code_section, m_al);
+                        break;
+                    }
+                    case 8 : {
+                        wasm::emit_f64_convert_i64_s(m_code_section, m_al);
+                        break;
+                    }
+                    default : {
+                        throw CodeGenError(R"""(Only 32 and 64 bit real kinds are implemented)""",
+                                            x.base.base.loc);
+                    }
+                }
+                break;
+            }
+            case (ASR::cast_kindType::RealToInteger) : {
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (a_kind) {
+                    case 4:
+                        wasm::emit_i32_trunc_f32_s(m_code_section, m_al);
+                        break;
+                    case 8:
+                        wasm::emit_i64_trunc_f64_s(m_code_section, m_al);
+                        break;
+                    default : {
+                        throw CodeGenError(R"""(Only 32 and 64 bit integer kinds are implemented)""",
+                                            x.base.base.loc);
+                    }
+                }
+                break;
+            }
+            case (ASR::cast_kindType::RealToComplex) : {
+                throw CodeGenError("Complex types are not supported yet.");
+                break;
+            }
+            case (ASR::cast_kindType::IntegerToComplex) : {
+                throw CodeGenError("Complex types are not supported yet.");
+                break;
+            }
+            case (ASR::cast_kindType::IntegerToLogical) : {
+                ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
+                LFORTRAN_ASSERT(curr_type != nullptr)
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
+                switch (a_kind) {
+                    // case 4:
+                    //     tmp = builder->CreateICmpNE(tmp, builder->getInt32(0));
+                    //     break;
+                    // case 8:
+                    //     tmp = builder->CreateICmpNE(tmp, builder->getInt64(0));
+                    //     break;
+                    default : {
+                        throw CodeGenError(R"""(Only 32 and 64 bit integer kinds are implemented)""",
+                                            x.base.base.loc);
+                    }
+                }
+                break;
+            }
+            case (ASR::cast_kindType::RealToLogical) : {
+                ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
+                LFORTRAN_ASSERT(curr_type != nullptr)
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
+                switch (a_kind) {
+                    // case 4:
+                    //     tmp = builder->CreateICmpNE(tmp, builder->getInt32(0));
+                    //     break;
+                    // case 8:
+                    //     tmp = builder->CreateICmpNE(tmp, builder->getInt64(0));
+                    //     break;
+                    default : {
+                        throw CodeGenError(R"""(Only 32 and 64 bit real kinds are implemented)""",
+                                            x.base.base.loc);
+                    }
+                }
+                break;
+            }
+            case (ASR::cast_kindType::CharacterToLogical) : {
+                throw CodeGenError(R"""(STrings are not supported yet)""",
+                                            x.base.base.loc);
+                break;
+            }
+            case (ASR::cast_kindType::ComplexToLogical) : {
+               throw CodeGenError("Complex types are not supported yet.");
+                break;
+            }
+            case (ASR::cast_kindType::LogicalToInteger) : {
+                // do nothing as logicals are already implemented as integers in wasm backend
+                break;
+            }
+            case (ASR::cast_kindType::IntegerToInteger) : {
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if( arg_kind > 0 && dest_kind > 0 &&
+                    arg_kind != dest_kind )
+                {
+                    if( arg_kind == 4 && dest_kind == 8 ) {
+                        wasm::emit_i64_extend_i32_s(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 4 ) {
+                        wasm::emit_i32_wrap_i64(m_code_section, m_al);
+                    } else {
+                        std::string msg = "Conversion from " + std::to_string(arg_kind) +
+                                          " to " + std::to_string(dest_kind) + " not implemented yet.";
+                        throw CodeGenError(msg);
+                    }
+                }
+                break;
+            }
+            case (ASR::cast_kindType::RealToReal) : {
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if( arg_kind > 0 && dest_kind > 0 &&
+                    arg_kind != dest_kind )
+                {
+                    if( arg_kind == 4 && dest_kind == 8 ) {
+                        wasm::emit_f64_promote_f32(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 4 ) {
+                        wasm::emit_f32_demote_f64(m_code_section, m_al);
+                    } else {
+                        std::string msg = "Conversion from " + std::to_string(arg_kind) +
+                                          " to " + std::to_string(dest_kind) + " not implemented yet.";
+                        throw CodeGenError(msg);
+                    }
+                }
+                break;
+            }
+            case (ASR::cast_kindType::ComplexToComplex) : {
+                throw CodeGenError("Complex types are not supported yet.");
+                break;
+            }
+            case (ASR::cast_kindType::ComplexToReal) : {
+                throw CodeGenError("Complex types are not supported yet.");
+                break;
+            }
+            default : throw CodeGenError("Cast kind not implemented");
+        }
+    }
+
     template <typename T>
     void handle_print(const T &x){
         for (size_t i=0; i<x.n_values; i++) {
