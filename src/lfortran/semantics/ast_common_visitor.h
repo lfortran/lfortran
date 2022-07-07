@@ -1244,7 +1244,7 @@ public:
         }
 
         ASR::ttype_t *type;
-        type = ASRUtils::type_get_past_pointer(ASR::down_cast<ASR::Variable_t>(f2)->m_type);
+        type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(f2));
         ASR::expr_t *arr_ref_val = nullptr;
         bool all_args_eval = ASRUtils::all_args_evaluated(args);
         for( auto& a : args ) {
@@ -1301,6 +1301,9 @@ public:
         }
 
         if( is_item ) {
+            Vec<ASR::dimension_t> empty_dims;
+            empty_dims.reserve(al, 1);
+            type = ASRUtils::duplicate_type(al, type, &empty_dims);
             return ASR::make_ArrayItem_t(al, loc,
                 v, args.p, args.size(), type, arr_ref_val);
         } else {

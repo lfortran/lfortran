@@ -1028,6 +1028,13 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                         tnew->m_kind, tnew->m_len, tnew->m_len_expr,
                         dimsp, dimsn));
         }
+        case ASR::ttypeType::Derived: {
+            ASR::Derived_t* tnew = ASR::down_cast<ASR::Derived_t>(t);
+            ASR::dimension_t* dimsp = dims ? dims->p : tnew->m_dims;
+            size_t dimsn = dims ? dims->n : tnew->n_dims;
+            return ASRUtils::TYPE(ASR::make_Derived_t(al, t->base.loc,
+                        tnew->m_derived_type, dimsp, dimsn));
+        }
         default : throw LFortranException("Not implemented");
     }
 }

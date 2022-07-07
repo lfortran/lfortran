@@ -173,9 +173,12 @@ namespace LFortran {
                 ai.m_step = nullptr;
                 args.push_back(al, ai);
             }
+            Vec<ASR::dimension_t> empty_dims;
+            empty_dims.reserve(al, 1);
+            _type = ASRUtils::duplicate_type(al, _type, &empty_dims);
             ASR::expr_t* array_ref = LFortran::ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, arr,
-                                                                args.p, args.size(),
-                                                                _type, nullptr));
+                                                              args.p, args.size(),
+                                                              _type, nullptr));
             return array_ref;
         }
 

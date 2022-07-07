@@ -127,9 +127,13 @@ public:
             ai.m_step = nullptr;
             args.reserve(al, 1);
             args.push_back(al, ai);
+            ASR::ttype_t* array_ref_type = ASRUtils::expr_type(ASRUtils::EXPR((ASR::asr_t*)arr_var));
+            Vec<ASR::dimension_t> empty_dims;
+            empty_dims.reserve(al, 1);
+            array_ref_type = ASRUtils::duplicate_type(al, array_ref_type, &empty_dims);
             ASR::expr_t* array_ref = LFortran::ASRUtils::EXPR(ASR::make_ArrayItem_t(al, arr_var->base.base.loc, arr,
-                                                                args.p, args.size(),
-                                                                LFortran::ASRUtils::expr_type(LFortran::ASRUtils::EXPR((ASR::asr_t*)arr_var)), nullptr));
+                                                              args.p, args.size(),
+                                                              array_ref_type, nullptr));
             if( idoloop->m_values[i]->type == ASR::exprType::ImpliedDoLoop ) {
                 throw LFortranException("Pass for nested ImpliedDoLoop nodes isn't implemented yet."); // idoloop->m_values[i]->base.loc
             }
@@ -191,9 +195,13 @@ public:
                         ai.m_step = nullptr;
                         args.reserve(al, 1);
                         args.push_back(al, ai);
+                        ASR::ttype_t* array_ref_type = ASRUtils::expr_type(ASRUtils::EXPR((ASR::asr_t*)arr_var));
+                        Vec<ASR::dimension_t> empty_dims;
+                        empty_dims.reserve(al, 1);
+                        array_ref_type = ASRUtils::duplicate_type(al, array_ref_type, &empty_dims);
                         ASR::expr_t* array_ref = LFortran::ASRUtils::EXPR(ASR::make_ArrayItem_t(al, arr_var->base.base.loc, arr_var->m_v,
-                                                                            args.p, args.size(),
-                                                                            LFortran::ASRUtils::expr_type(LFortran::ASRUtils::EXPR((ASR::asr_t*)arr_var)), nullptr));
+                                                                          args.p, args.size(),
+                                                                          array_ref_type, nullptr));
                         ASR::stmt_t* assign_stmt = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, arr_var->base.base.loc, array_ref, arr_init->m_args[k], nullptr));
                         pass_result.push_back(al, assign_stmt);
                         ASR::expr_t* increment = LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.base.loc, idx_var, ASR::binopType::Add, const_1, LFortran::ASRUtils::expr_type(idx_var), nullptr));
