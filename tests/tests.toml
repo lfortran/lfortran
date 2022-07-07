@@ -1078,6 +1078,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/if_04.f90"
 ast = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/case_01.f90"
