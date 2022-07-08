@@ -493,7 +493,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 case (ASR::cmpopType::Lt) : { wasm::emit_i32_lt_s(m_code_section, m_al);  break; }
                 case (ASR::cmpopType::LtE) : { wasm::emit_i32_le_s(m_code_section,m_al); break; }
                 case (ASR::cmpopType::NotEq): { wasm::emit_i32_ne(m_code_section, m_al); break; }
-                default : LFORTRAN_ASSERT(false); // should never happen
+                default : throw CodeGenError("handle_integer_compare: Kind 4: Unhandled switch case");
             }
         } else if (a_kind == 8) {
             switch (x.m_op) {
@@ -503,7 +503,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 case (ASR::cmpopType::Lt) : { wasm::emit_i64_lt_s(m_code_section, m_al);  break; }
                 case (ASR::cmpopType::LtE) : { wasm::emit_i64_le_s(m_code_section,m_al); break; }
                 case (ASR::cmpopType::NotEq): { wasm::emit_i64_ne(m_code_section, m_al); break; }
-                default : LFORTRAN_ASSERT(false); // should never happen
+                default : throw CodeGenError("handle_integer_compare: Kind 8: Unhandled switch case");
             }
         } else {
             throw CodeGenError("IntegerCompare: kind 4 and 8 supported only");
@@ -526,7 +526,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 case (ASR::cmpopType::Lt) : { wasm::emit_f32_lt(m_code_section, m_al);  break; }
                 case (ASR::cmpopType::LtE) : { wasm::emit_f32_le(m_code_section,m_al); break; }
                 case (ASR::cmpopType::NotEq): { wasm::emit_f32_ne(m_code_section, m_al); break; }
-                default : LFORTRAN_ASSERT(false); // should never happen
+                default : throw CodeGenError("handle_real_compare: Kind 4: Unhandled switch case");
             }
         } else if (a_kind == 8) {
             switch (x.m_op) {
@@ -536,7 +536,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 case (ASR::cmpopType::Lt) : { wasm::emit_f64_lt(m_code_section, m_al);  break; }
                 case (ASR::cmpopType::LtE) : { wasm::emit_f64_le(m_code_section,m_al); break; }
                 case (ASR::cmpopType::NotEq): { wasm::emit_f64_ne(m_code_section, m_al); break; }
-                default : LFORTRAN_ASSERT(false); // should never happen
+                default : throw CodeGenError("handle_real_compare: Kind 8: Unhandled switch case");
             }
         } else {
             throw CodeGenError("RealCompare: kind 4 and 8 supported only");
