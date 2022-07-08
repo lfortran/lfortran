@@ -776,37 +776,57 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 break;
             }
             case (ASR::cast_kindType::IntegerToLogical) : {
-                ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
-                LFORTRAN_ASSERT(curr_type != nullptr)
-                int a_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
-                switch (a_kind) {
-                    // case 4:
-                    //     tmp = builder->CreateICmpNE(tmp, builder->getInt32(0));
-                    //     break;
-                    // case 8:
-                    //     tmp = builder->CreateICmpNE(tmp, builder->getInt64(0));
-                    //     break;
-                    default : {
-                        throw CodeGenError(R"""(Only 32 and 64 bit integer kinds are implemented)""",
-                                            x.base.base.loc);
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if( arg_kind > 0 && dest_kind > 0){
+                    if( arg_kind == 4 && dest_kind == 4 ) {
+                        wasm::emit_i32_eqz(m_code_section, m_al);
+                        wasm::emit_i32_eqz(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 8 ) {
+                        wasm::emit_i64_eqz(m_code_section, m_al);
+                        wasm::emit_i64_eqz(m_code_section, m_al);
+                    } else if( arg_kind == 4 && dest_kind == 8 ) {
+                        wasm::emit_i64_eqz(m_code_section, m_al);
+                        wasm::emit_i64_eqz(m_code_section, m_al);
+                        wasm::emit_i32_wrap_i64(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 4 ) {
+                        wasm::emit_i32_eqz(m_code_section, m_al);
+                        wasm::emit_i32_eqz(m_code_section, m_al);
+                        wasm::emit_i64_extend_i32_s(m_code_section, m_al);
+                    } else {
+                        std::string msg = "Conversion from " + std::to_string(arg_kind) +
+                                          " to " + std::to_string(dest_kind) + " not implemented yet.";
+                        throw CodeGenError(msg);
                     }
                 }
                 break;
             }
             case (ASR::cast_kindType::RealToLogical) : {
-                ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
-                LFORTRAN_ASSERT(curr_type != nullptr)
-                int a_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
-                switch (a_kind) {
-                    // case 4:
-                    //     tmp = builder->CreateICmpNE(tmp, builder->getInt32(0));
-                    //     break;
-                    // case 8:
-                    //     tmp = builder->CreateICmpNE(tmp, builder->getInt64(0));
-                    //     break;
-                    default : {
-                        throw CodeGenError(R"""(Only 32 and 64 bit real kinds are implemented)""",
-                                            x.base.base.loc);
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if( arg_kind > 0 && dest_kind > 0){
+                    if( arg_kind == 4 && dest_kind == 4 ) {
+                        wasm::emit_f32_const(m_code_section, m_al, 0.0);
+                        wasm::emit_f32_eq(m_code_section, m_al);
+                        wasm::emit_i32_eqz(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 8 ) {
+                        wasm::emit_f64_const(m_code_section, m_al, 0.0);
+                        wasm::emit_f64_eq(m_code_section, m_al);
+                        wasm::emit_i64_eqz(m_code_section, m_al);
+                    } else if( arg_kind == 4 && dest_kind == 8 ) {
+                        wasm::emit_f32_const(m_code_section, m_al, 0.0);
+                        wasm::emit_f32_eq(m_code_section, m_al);
+                        wasm::emit_i32_eqz(m_code_section, m_al);
+                        wasm::emit_i64_extend_i32_s(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 4 ) {
+                        wasm::emit_f64_const(m_code_section, m_al, 0.0);
+                        wasm::emit_f64_eq(m_code_section, m_al);
+                        wasm::emit_i64_eqz(m_code_section, m_al);
+                        wasm::emit_i32_wrap_i64(m_code_section, m_al);
+                    } else {
+                        std::string msg = "Conversion from " + std::to_string(arg_kind) +
+                                          " to " + std::to_string(dest_kind) + " not implemented yet.";
+                        throw CodeGenError(msg);
                     }
                 }
                 break;
