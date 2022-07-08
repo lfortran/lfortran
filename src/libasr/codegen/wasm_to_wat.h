@@ -29,31 +29,66 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
         }
         src += indent + "end";
     }
-    void visit_Else() { src += indent + "\b\b\b\b" + "else"; }
+    void visit_Else() { src += indent.substr(0, indent.length() - 4U) + "else"; }
 
     void visit_I32Const(int32_t value) { src += indent + "i32.const " + std::to_string(value); }
     void visit_I32Add() { src += indent + "i32.add"; }
     void visit_I32Sub() { src += indent + "i32.sub"; }
     void visit_I32Mul() { src += indent + "i32.mul"; }
     void visit_I32DivS() { src += indent + "i32.div_s"; }
+    void visit_I32Eqz() { src += indent + "i32.eqz"; }
+    void visit_I32Eq() { src += indent + "i32.eq"; }
+    void visit_I32Ne() { src += indent + "i32.ne"; }
+    void visit_I32LtS() { src += indent + "i32.lt_s"; }
+    void visit_I32LtU() { src += indent + "i32.lt_u"; }
+    void visit_I32GtS() { src += indent + "i32.gt_s"; }
+    void visit_I32GtU() { src += indent + "i32.gt_u"; }
+    void visit_I32LeS() { src += indent + "i32.le_s"; }
+    void visit_I32LeU() { src += indent + "i32.le_u"; }
+    void visit_I32GeS() { src += indent + "i32.ge_s"; }
+    void visit_I32GeU() { src += indent + "i32.ge_u"; }
 
     void visit_I64Const(int64_t value) { src += indent + "i64.const " + std::to_string(value); }
     void visit_I64Add() { src += indent + "i64.add"; }
     void visit_I64Sub() { src += indent + "i64.sub"; }
     void visit_I64Mul() { src += indent + "i64.mul"; }
     void visit_I64DivS() { src += indent + "i64.div_s"; }
+    void visit_I64Eqz() { src += indent + "i64.eqz"; }
+    void visit_I64Eq() { src += indent + "i64.eq"; }
+    void visit_I64Ne() { src += indent + "i64.ne"; }
+    void visit_I64LtS() { src += indent + "i64.lt_s"; }
+    void visit_I64LtU() { src += indent + "i64.lt_u"; }
+    void visit_I64GtS() { src += indent + "i64.gt_s"; }
+    void visit_I64GtU() { src += indent + "i64.gt_u"; }
+    void visit_I64LeS() { src += indent + "i64.le_s"; }
+    void visit_I64LeU() { src += indent + "i64.le_u"; }
+    void visit_I64GeS() { src += indent + "i64.ge_s"; }
+    void visit_I64GeU() { src += indent + "i64.ge_u"; }
 
     void visit_F32Const(float value) { src += indent + "f32.const " + std::to_string(value); }
     void visit_F32Add() { src += indent + "f32.add"; }
     void visit_F32Sub() { src += indent + "f32.sub"; }
     void visit_F32Mul() { src += indent + "f32.mul"; }
     void visit_F32DivS() { src += indent + "f32.div_s"; }
+    void visit_F32Eq() { src += indent + "f32.eq"; }
+    void visit_F32Ne() { src += indent + "f32.ne"; }
+    void visit_F32Lt() { src += indent + "f32.lt"; }
+    void visit_F32Gt() { src += indent + "f32.gt"; }
+    void visit_F32Le() { src += indent + "f32.le"; }
+    void visit_F32Ge() { src += indent + "f32.ge"; }
     
     void visit_F64Const(double value) { src += indent + "f64.const " + std::to_string(value); }
     void visit_F64Add() { src += indent + "f64.add"; }
     void visit_F64Sub() { src += indent + "f64.sub"; }
     void visit_F64Mul() { src += indent + "f64.mul"; }
     void visit_F64DivS() { src += indent + "f64.div_s"; }
+    void visit_F64Eq() { src += indent + "f64.eq"; }
+    void visit_F64Ne() { src += indent + "f64.ne"; }
+    void visit_F64Lt() { src += indent + "f64.lt"; }
+    void visit_F64Gt() { src += indent + "f64.gt"; }
+    void visit_F64Le() { src += indent + "f64.le"; }
+    void visit_F64Ge() { src += indent + "f64.ge"; }
+
 };
 
 }  // namespace WASM_INSTS_VISITOR
