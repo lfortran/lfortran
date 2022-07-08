@@ -880,7 +880,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             ASR::ttype_t *t = ASRUtils::expr_type(v);
             int a_kind = ASRUtils::extract_kind_from_ttype_t(t);
 
-            if (ASRUtils::is_integer(*t)) {
+            if (ASRUtils::is_integer(*t) || ASRUtils::is_logical(*t)) {
                 switch( a_kind ) {
                     case 4 : {
                         // the value is already on stack. call JavaScript print_i32
