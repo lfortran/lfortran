@@ -69,6 +69,7 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
     void visit_F32Add() { src += indent + "f32.add"; }
     void visit_F32Sub() { src += indent + "f32.sub"; }
     void visit_F32Mul() { src += indent + "f32.mul"; }
+    void visit_F32Div() { src += indent + "f32.div"; }
     void visit_F32DivS() { src += indent + "f32.div_s"; }
     void visit_F32Eq() { src += indent + "f32.eq"; }
     void visit_F32Ne() { src += indent + "f32.ne"; }
@@ -81,6 +82,20 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
     void visit_F64Add() { src += indent + "f64.add"; }
     void visit_F64Sub() { src += indent + "f64.sub"; }
     void visit_F64Mul() { src += indent + "f64.mul"; }
+    void visit_F64Div() { src += indent + "f64.div"; }
+
+    void visit_I32WrapI64() { src += indent + "i32.wrap_i64"; }
+    void visit_I32TruncF32S() { src += indent + "i32.trunc_f32_s"; }
+    void visit_I32TruncF64S() { src += indent + "i32.trunc_f64_s"; }
+    void visit_I64ExtendI32S() { src += indent + "i64.extend_i32_s"; }
+    void visit_I64TruncF32S() { src += indent + "i64.trunc_f32_s"; }
+    void visit_I64TruncF64S() { src += indent + "i64.trunc_f64_s"; }
+    void visit_F32ConvertI32S() { src += indent + "f32.convert_i32_s"; }
+    void visit_F32ConvertI64S() { src += indent + "f32.convert_i64_s"; }
+    void visit_F32DemoteF64() { src += indent + "f32.demote_f64"; }
+    void visit_F64ConvertI32S() { src += indent + "f64.convert_i32_s"; }
+    void visit_F64ConvertI64S() { src += indent + "f64.convert_i64_s"; }
+    void visit_F64PromoteF32() { src += indent + "f64.promote_f32"; }
     void visit_F64DivS() { src += indent + "f64.div_s"; }
     void visit_F64Eq() { src += indent + "f64.eq"; }
     void visit_F64Ne() { src += indent + "f64.ne"; }
