@@ -3978,6 +3978,11 @@ public:
                 tmp = builder->CreateSIToFP(tmp, getFPType(a_kind, false));
                 break;
             }
+            case (ASR::cast_kindType::LogicalToReal) : {
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                tmp = builder->CreateUIToFP(tmp, getFPType(a_kind, false));
+                break;
+            }
             case (ASR::cast_kindType::RealToInteger) : {
                 llvm::Type *target_type;
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
