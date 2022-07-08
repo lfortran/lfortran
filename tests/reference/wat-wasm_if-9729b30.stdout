@@ -39,7 +39,7 @@
             i32.const 32
             call 4
             call 5
-            else
+        else
             i32.const 66
             i32.const 33
             call 4
@@ -51,7 +51,7 @@
             i32.const 32
             call 4
             call 5
-            else
+        else
             i32.const 131
             i32.const 33
             call 4
@@ -63,7 +63,7 @@
             i32.const 10
             call 4
             call 5
-            else
+        else
             local.get 0
             if
                 i32.const 174
@@ -78,14 +78,14 @@
             i32.const 10
             call 4
             call 5
-            else
+        else
             local.get 0
             if
                 i32.const 199
                 i32.const 15
                 call 4
                 call 5
-                else
+            else
                 i32.const 214
                 i32.const 9
                 call 4
@@ -98,14 +98,14 @@
             i32.const 10
             call 4
             call 5
-            else
+        else
             local.get 1
             if
                 i32.const 233
                 i32.const 15
                 call 4
                 call 5
-                else
+            else
                 i32.const 248
                 i32.const 9
                 call 4

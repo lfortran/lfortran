@@ -335,6 +335,73 @@ void emit_i64_rotl(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x89)
 // function to emit i64.rotr instruction
 void emit_i64_rotr(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x8A); }
 
+/******** Integer Relational Operations ********/
+
+// function to emit i32.eqz instruction
+void emit_i32_eqz(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x45); }
+
+// function to emit i32.eq instruction
+void emit_i32_eq(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x46); }
+
+// function to emit i32.ne instruction
+void emit_i32_ne(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x47); }
+
+// function to emit i32.lt_s instruction
+void emit_i32_lt_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x48); }
+
+// function to emit i32.lt_u instruction
+void emit_i32_lt_u(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x49); }
+
+// function to emit i32.gt_s instruction
+void emit_i32_gt_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x4A); }
+
+// function to emit i32.gt_u instruction
+void emit_i32_gt_u(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x4B); }
+
+// function to emit i32.le_s instruction
+void emit_i32_le_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x4C); }
+
+// function to emit i32.le_u instruction
+void emit_i32_le_u(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x4D); }
+
+// function to emit i32.ge_s instruction
+void emit_i32_ge_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x4E); }
+
+// function to emit i32.ge_u instruction
+void emit_i32_ge_u(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x4F); }
+
+// function to emit i64.eqz instruction
+void emit_i64_eqz(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x50); }
+
+// function to emit i64.eq instruction
+void emit_i64_eq(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x51); }
+
+// function to emit i64.ne instruction
+void emit_i64_ne(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x52); }
+
+// function to emit i64.lt_s instruction
+void emit_i64_lt_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x53); }
+
+// function to emit i64.lt_u instruction
+void emit_i64_lt_u(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x54); }
+
+// function to emit i64.gt_s instruction
+void emit_i64_gt_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x55); }
+
+// function to emit i64.gt_u instruction
+void emit_i64_gt_u(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x56); }
+
+// function to emit i64.le_s instruction
+void emit_i64_le_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x57); }
+
+// function to emit i64.le_u instruction
+void emit_i64_le_u(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x58); }
+
+// function to emit i64.ge_s instruction
+void emit_i64_ge_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x59); }
+
+// function to emit i64.ge_u instruction
+void emit_i64_ge_u(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x5A); }
 
 
 /**************************** Floating Point Operations ****************************/
@@ -435,6 +502,44 @@ void emit_f64_max(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0xA5);
 
 // function to emit f64.copysign instruction
 void emit_f64_copysign(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0xA6); }
+
+/******** Float Relational Operations ********/
+
+// function to emit f32.eq instruction
+void emit_f32_eq(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x5B); }
+
+// function to emit f32.ne instruction
+void emit_f32_ne(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x5C); }
+
+// function to emit f32.lt instruction
+void emit_f32_lt(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x5D); }
+
+// function to emit f32.gt instruction
+void emit_f32_gt(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x5E); }
+
+// function to emit f32.le instruction
+void emit_f32_le(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x5F); }
+
+// function to emit f32.ge instruction
+void emit_f32_ge(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x60); }
+
+// function to emit f64.eq instruction
+void emit_f64_eq(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x61); }
+
+// function to emit f64.ne instruction
+void emit_f64_ne(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x62); }
+
+// function to emit f64.lt instruction
+void emit_f64_lt(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x63); }
+
+// function to emit f64.gt instruction
+void emit_f64_gt(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x64); }
+
+// function to emit f64.le instruction
+void emit_f64_le(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x65); }
+
+// function to emit f64.ge instruction
+void emit_f64_ge(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0x66); }
 
 
 // function to emit string
