@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import subprocess as sp
 import os
 
 # Initialization
@@ -15,7 +16,8 @@ def run_test(backend):
     FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DCURRENT_BINARY_DIR={base_dir}/test-{backend} -S {base_dir} -B {base_dir}/test-{backend}
     make -j{no_of_threads}
     ctest -j{no_of_threads} --output-on-failure"""
-    os.system(run_command)
+    process = sp.run(run_command, shell=True)
+    if process.returncode: exit()
 
 
 def test_backend(backend):
