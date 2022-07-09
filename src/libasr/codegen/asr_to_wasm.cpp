@@ -844,6 +844,26 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 // do nothing as logicals are already implemented as integers in wasm backend
                 break;
             }
+            case (ASR::cast_kindType::LogicalToReal) : {
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if( arg_kind > 0 && dest_kind > 0){
+                    if( arg_kind == 4 && dest_kind == 4 ) {
+                        wasm::emit_f32_convert_i32_s(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 8 ) {
+                        wasm::emit_f64_convert_i64_s(m_code_section, m_al);
+                    } else if( arg_kind == 4 && dest_kind == 8 ) {
+                        wasm::emit_f64_convert_i32_s(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 4 ) {
+                        wasm::emit_f32_convert_i64_s(m_code_section, m_al);
+                    } else {
+                        std::string msg = "Conversion from " + std::to_string(arg_kind) +
+                                          " to " + std::to_string(dest_kind) + " not implemented yet.";
+                        throw CodeGenError(msg);
+                    }
+                }
+                break;
+            }
             case (ASR::cast_kindType::IntegerToInteger) : {
                 int arg_kind = -1, dest_kind = -1;
                 extract_kinds(x, arg_kind, dest_kind);
