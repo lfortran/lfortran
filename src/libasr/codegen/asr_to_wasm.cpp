@@ -493,7 +493,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 case (ASR::cmpopType::Lt) : { wasm::emit_i32_lt_s(m_code_section, m_al);  break; }
                 case (ASR::cmpopType::LtE) : { wasm::emit_i32_le_s(m_code_section,m_al); break; }
                 case (ASR::cmpopType::NotEq): { wasm::emit_i32_ne(m_code_section, m_al); break; }
-                default : LFORTRAN_ASSERT(false); // should never happen
+                default : throw CodeGenError("handle_integer_compare: Kind 4: Unhandled switch case");
             }
         } else if (a_kind == 8) {
             switch (x.m_op) {
@@ -503,7 +503,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 case (ASR::cmpopType::Lt) : { wasm::emit_i64_lt_s(m_code_section, m_al);  break; }
                 case (ASR::cmpopType::LtE) : { wasm::emit_i64_le_s(m_code_section,m_al); break; }
                 case (ASR::cmpopType::NotEq): { wasm::emit_i64_ne(m_code_section, m_al); break; }
-                default : LFORTRAN_ASSERT(false); // should never happen
+                default : throw CodeGenError("handle_integer_compare: Kind 8: Unhandled switch case");
             }
         } else {
             throw CodeGenError("IntegerCompare: kind 4 and 8 supported only");
@@ -526,7 +526,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 case (ASR::cmpopType::Lt) : { wasm::emit_f32_lt(m_code_section, m_al);  break; }
                 case (ASR::cmpopType::LtE) : { wasm::emit_f32_le(m_code_section,m_al); break; }
                 case (ASR::cmpopType::NotEq): { wasm::emit_f32_ne(m_code_section, m_al); break; }
-                default : LFORTRAN_ASSERT(false); // should never happen
+                default : throw CodeGenError("handle_real_compare: Kind 4: Unhandled switch case");
             }
         } else if (a_kind == 8) {
             switch (x.m_op) {
@@ -536,7 +536,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 case (ASR::cmpopType::Lt) : { wasm::emit_f64_lt(m_code_section, m_al);  break; }
                 case (ASR::cmpopType::LtE) : { wasm::emit_f64_le(m_code_section,m_al); break; }
                 case (ASR::cmpopType::NotEq): { wasm::emit_f64_ne(m_code_section, m_al); break; }
-                default : LFORTRAN_ASSERT(false); // should never happen
+                default : throw CodeGenError("handle_real_compare: Kind 8: Unhandled switch case");
             }
         } else {
             throw CodeGenError("RealCompare: kind 4 and 8 supported only");
@@ -561,6 +561,53 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     void visit_StringCompare(const ASR::StringCompare_t & /*x*/) {
         throw CodeGenError("String Types not yet supported");
+    }
+
+    void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
+        if(x.m_value){
+            visit_expr(*x.m_value);
+            return;
+        }
+        this->visit_expr(*x.m_left);
+        this->visit_expr(*x.m_right);
+        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        if (a_kind == 4) {
+            switch (x.m_op) {
+                case (ASR::logicalbinopType::And): { wasm::emit_i32_and(m_code_section, m_al); break; }
+                case (ASR::logicalbinopType::Or): { wasm::emit_i32_or(m_code_section, m_al); break; }
+                case ASR::logicalbinopType::Xor: { wasm::emit_i32_xor(m_code_section, m_al); break; }
+                case (ASR::logicalbinopType::NEqv): { wasm::emit_i32_xor(m_code_section, m_al); break; }
+                case (ASR::logicalbinopType::Eqv): { wasm::emit_i32_eq(m_code_section, m_al); break; }
+                default : throw CodeGenError("LogicalBinOp: Kind 4: Unhandled switch case");
+            }
+        } else if (a_kind == 8) {
+            switch (x.m_op) {
+                case (ASR::logicalbinopType::And): { wasm::emit_i64_and(m_code_section, m_al); break; }
+                case (ASR::logicalbinopType::Or): { wasm::emit_i64_or(m_code_section, m_al); break; }
+                case ASR::logicalbinopType::Xor: { wasm::emit_i64_xor(m_code_section, m_al); break; }
+                case (ASR::logicalbinopType::NEqv): { wasm::emit_i64_xor(m_code_section, m_al); break; }
+                case (ASR::logicalbinopType::Eqv): { wasm::emit_i64_eq(m_code_section, m_al); break; }
+                default : throw CodeGenError("LogicalBinOp: Kind 8: Unhandled switch case");
+            }
+        } else {
+            throw CodeGenError("LogicalBinOp: kind 4 and 8 supported only");
+        }
+    }
+
+    void visit_LogicalNot(const ASR::LogicalNot_t &x) {
+        if (x.m_value) {
+            this->visit_expr(*x.m_value);
+            return;
+        }
+        this->visit_expr(*x.m_arg);
+        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        if (a_kind == 4) {
+            wasm::emit_i32_eqz(m_code_section, m_al);
+        } else if (a_kind == 8) {
+            wasm::emit_i64_eqz(m_code_section, m_al);
+        } else {
+            throw CodeGenError("LogicalNot: kind 4 and 8 supported only");
+        }
     }
 
     void visit_Var(const ASR::Var_t &x) {
@@ -729,37 +776,57 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 break;
             }
             case (ASR::cast_kindType::IntegerToLogical) : {
-                ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
-                LFORTRAN_ASSERT(curr_type != nullptr)
-                int a_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
-                switch (a_kind) {
-                    // case 4:
-                    //     tmp = builder->CreateICmpNE(tmp, builder->getInt32(0));
-                    //     break;
-                    // case 8:
-                    //     tmp = builder->CreateICmpNE(tmp, builder->getInt64(0));
-                    //     break;
-                    default : {
-                        throw CodeGenError(R"""(Only 32 and 64 bit integer kinds are implemented)""",
-                                            x.base.base.loc);
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if( arg_kind > 0 && dest_kind > 0){
+                    if( arg_kind == 4 && dest_kind == 4 ) {
+                        wasm::emit_i32_eqz(m_code_section, m_al);
+                        wasm::emit_i32_eqz(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 8 ) {
+                        wasm::emit_i64_eqz(m_code_section, m_al);
+                        wasm::emit_i64_eqz(m_code_section, m_al);
+                    } else if( arg_kind == 4 && dest_kind == 8 ) {
+                        wasm::emit_i64_eqz(m_code_section, m_al);
+                        wasm::emit_i64_eqz(m_code_section, m_al);
+                        wasm::emit_i32_wrap_i64(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 4 ) {
+                        wasm::emit_i32_eqz(m_code_section, m_al);
+                        wasm::emit_i32_eqz(m_code_section, m_al);
+                        wasm::emit_i64_extend_i32_s(m_code_section, m_al);
+                    } else {
+                        std::string msg = "Conversion from " + std::to_string(arg_kind) +
+                                          " to " + std::to_string(dest_kind) + " not implemented yet.";
+                        throw CodeGenError(msg);
                     }
                 }
                 break;
             }
             case (ASR::cast_kindType::RealToLogical) : {
-                ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
-                LFORTRAN_ASSERT(curr_type != nullptr)
-                int a_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
-                switch (a_kind) {
-                    // case 4:
-                    //     tmp = builder->CreateICmpNE(tmp, builder->getInt32(0));
-                    //     break;
-                    // case 8:
-                    //     tmp = builder->CreateICmpNE(tmp, builder->getInt64(0));
-                    //     break;
-                    default : {
-                        throw CodeGenError(R"""(Only 32 and 64 bit real kinds are implemented)""",
-                                            x.base.base.loc);
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if( arg_kind > 0 && dest_kind > 0){
+                    if( arg_kind == 4 && dest_kind == 4 ) {
+                        wasm::emit_f32_const(m_code_section, m_al, 0.0);
+                        wasm::emit_f32_eq(m_code_section, m_al);
+                        wasm::emit_i32_eqz(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 8 ) {
+                        wasm::emit_f64_const(m_code_section, m_al, 0.0);
+                        wasm::emit_f64_eq(m_code_section, m_al);
+                        wasm::emit_i64_eqz(m_code_section, m_al);
+                    } else if( arg_kind == 4 && dest_kind == 8 ) {
+                        wasm::emit_f32_const(m_code_section, m_al, 0.0);
+                        wasm::emit_f32_eq(m_code_section, m_al);
+                        wasm::emit_i32_eqz(m_code_section, m_al);
+                        wasm::emit_i64_extend_i32_s(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 4 ) {
+                        wasm::emit_f64_const(m_code_section, m_al, 0.0);
+                        wasm::emit_f64_eq(m_code_section, m_al);
+                        wasm::emit_i64_eqz(m_code_section, m_al);
+                        wasm::emit_i32_wrap_i64(m_code_section, m_al);
+                    } else {
+                        std::string msg = "Conversion from " + std::to_string(arg_kind) +
+                                          " to " + std::to_string(dest_kind) + " not implemented yet.";
+                        throw CodeGenError(msg);
                     }
                 }
                 break;
@@ -775,6 +842,26 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
             case (ASR::cast_kindType::LogicalToInteger) : {
                 // do nothing as logicals are already implemented as integers in wasm backend
+                break;
+            }
+            case (ASR::cast_kindType::LogicalToReal) : {
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if( arg_kind > 0 && dest_kind > 0){
+                    if( arg_kind == 4 && dest_kind == 4 ) {
+                        wasm::emit_f32_convert_i32_s(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 8 ) {
+                        wasm::emit_f64_convert_i64_s(m_code_section, m_al);
+                    } else if( arg_kind == 4 && dest_kind == 8 ) {
+                        wasm::emit_f64_convert_i32_s(m_code_section, m_al);
+                    } else if( arg_kind == 8 && dest_kind == 4 ) {
+                        wasm::emit_f32_convert_i64_s(m_code_section, m_al);
+                    } else {
+                        std::string msg = "Conversion from " + std::to_string(arg_kind) +
+                                          " to " + std::to_string(dest_kind) + " not implemented yet.";
+                        throw CodeGenError(msg);
+                    }
+                }
                 break;
             }
             case (ASR::cast_kindType::IntegerToInteger) : {
@@ -833,7 +920,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             ASR::ttype_t *t = ASRUtils::expr_type(v);
             int a_kind = ASRUtils::extract_kind_from_ttype_t(t);
 
-            if (ASRUtils::is_integer(*t)) {
+            if (ASRUtils::is_integer(*t) || ASRUtils::is_logical(*t)) {
                 switch( a_kind ) {
                     case 4 : {
                         // the value is already on stack. call JavaScript print_i32

@@ -1,0 +1,13 @@
+{
+    "basename": "wat-logical4-64da104",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/../integration_tests/logical4.f90",
+    "infile_hash": "b7d7e719c411795f29b9664e000f2530e011215d65991c8e2b477707",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-logical4-64da104.stdout",
+    "stdout_hash": "cee9d4bfbffe93c1721540be82339fa4cb52d726cb3443540b1a37d1",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
