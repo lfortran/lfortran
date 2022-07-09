@@ -115,6 +115,7 @@ RUN(NAME variables_03 LABELS gfortran llvm cpp)
 RUN(NAME if_01 LABELS gfortran llvm cpp x86)
 RUN(NAME if_02 FAIL LABELS gfortran llvm cpp x86)
 RUN(NAME if_03 FAIL LABELS gfortran llvm cpp x86)
+RUN(NAME if_05 LABELS gfortran llvm cpp wasm)
 
 RUN(NAME while_01 LABELS gfortran llvm cpp x86)
 RUN(NAME while_02 LABELS gfortran llvm cpp)
