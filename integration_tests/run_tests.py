@@ -37,7 +37,8 @@ def get_args():
     parser.add_argument("-j", "-n", "--no_of_threads", type=int,
                 help="Parallel testing on given number of threads")
     parser.add_argument("-b", "--backends", nargs="*", default=["llvm"], type=str,
-                help="Test the requested backends")
+                help="Test the requested backends (%s)" % \
+                        ", ".join(supported_backends))
     return parser.parse_args()
 
 def main():
