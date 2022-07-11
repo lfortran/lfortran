@@ -41,6 +41,8 @@ def get_args():
     return parser.parse_args()
 
 def main():
+    args = get_args()
+
     # Setup
     global no_of_threads
     os.environ["PATH"] += os.pathsep + lfortran_path
@@ -48,7 +50,6 @@ def main():
     for backend in supported_backends:
         run_cmd(f"rm -rf {base_dir}/test-{backend}")
 
-    args = get_args()
     no_of_threads = args.no_of_threads or no_of_threads
     for backend in args.backends:
         test_backend(backend)
