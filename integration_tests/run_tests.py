@@ -10,14 +10,20 @@ supported_backends = ['llvm', 'cpp', 'x86', 'wasm']
 base_dir = os.path.dirname(os.path.realpath(__file__))
 lfortran_path = f"{base_dir}/../src/bin:$PATH"
 
+def run_cmd(cmd, cwd=None):
+    print(f"+ {cmd}")
+    process = sp.run(cmd, shell=True, cwd=cwd)
+    if process.returncode != 0:
+        print("Command failed.")
+        exit(1)
+
 def run_test(backend):
-    run_command = f"""mkdir {base_dir}/test-{backend}
-    cd {base_dir}/test-{backend}
-    FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DCURRENT_BINARY_DIR={base_dir}/test-{backend} -S {base_dir} -B {base_dir}/test-{backend}
-    make -j{no_of_threads}
-    ctest -j{no_of_threads} --output-on-failure"""
-    process = sp.run(run_command, shell=True)
-    if process.returncode: exit()
+    run_cmd(f"mkdir {base_dir}/test-{backend}")
+    cwd=f"{base_dir}/test-{backend}"
+    run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DCURRENT_BINARY_DIR={base_dir}/test-{backend} -S {base_dir} -B {base_dir}/test-{backend}",
+            cwd=cwd)
+    run_cmd(f"make -j{no_of_threads}", cwd=cwd)
+    run_cmd(f"ctest -j{no_of_threads} --output-on-failure", cwd=cwd)
 
 
 def test_backend(backend):
@@ -40,7 +46,7 @@ def main():
     os.environ["PATH"] += os.pathsep + lfortran_path
     # delete previously created directories (if any)
     for backend in supported_backends:
-        os.system(f"rm -rf {base_dir}/test-{backend}")
+        run_cmd(f"rm -rf {base_dir}/test-{backend}")
 
     args = get_args()
     no_of_threads = args.no_of_threads or no_of_threads
