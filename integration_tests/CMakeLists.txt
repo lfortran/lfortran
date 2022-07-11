@@ -63,11 +63,16 @@ macro(RUN)
 
     if (ADD_TEST)
         add_executable(${name} ${name}.f90 ${RUN_EXTRAFILES})
-        if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86"))
+        if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86") OR (LFORTRAN_BACKEND STREQUAL "wasm"))
             target_compile_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
             target_link_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
         endif()
-        add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+
+        if ((LFORTRAN_BACKEND STREQUAL "wasm"))
+            add_test(${name} node --experimental-wasm-bigint ${CURRENT_BINARY_DIR}/${name}.js)
+        else()
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+        endif()
 
         if (RUN_LABELS)
             set_tests_properties(${name} PROPERTIES LABELS "${RUN_LABELS}")
@@ -82,12 +87,12 @@ endmacro(RUN)
 
 # GFortran + LFortran LLVM + LFortran C++
 
-RUN(NAME program_cmake_01 LABELS gfortran llvm cpp x86)
+RUN(NAME program_cmake_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME program_cmake_02 LABELS gfortran llvm cpp x86)
 
-RUN(NAME error_stop_01 FAIL LABELS gfortran llvm cpp x86)
-RUN(NAME error_stop_02 FAIL LABELS llvm)
-RUN(NAME stop_01 LABELS llvm)
+RUN(NAME error_stop_01 FAIL LABELS gfortran llvm cpp x86 wasm)
+RUN(NAME error_stop_02 FAIL LABELS llvm wasm)
+RUN(NAME stop_01 LABELS llvm wasm)
 
 RUN(NAME print_01 LABELS gfortran llvm cpp)
 RUN(NAME print_02 LABELS gfortran llvm)

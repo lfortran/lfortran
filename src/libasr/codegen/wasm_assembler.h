@@ -598,10 +598,17 @@ async function execute_code(bytes, stdout_print) {
     return (exec_status ? outputBuffer[0] : 0); // the last element denotes the actual execution status
 }
 
-const fs = require("fs");
-const wasmBuffer = fs.readFileSync(")" + filename + 
-R"(");
-execute_code(wasmBuffer, (text) => process.stdout.write(text)).then().catch((e) => console.log(e))
+function main() {
+    const fs = require("fs");
+    const wasmBuffer = fs.readFileSync(")" + filename + R"(");
+    execute_code(wasmBuffer, (text) => process.stdout.write(text))
+        .then((exit_code) => {
+            process.exit(exit_code);
+        })
+        .catch((e) => console.log(e))
+}
+
+main();
 )";
     filename += ".js";
     std::ofstream out(filename);
