@@ -117,7 +117,7 @@ int emit_tokens2(const std::string &input, std::vector<std::string>
     //std::vector<int> toks;
     //std::vector<LFortran::YYSTYPE> stypes;
     LFortran::diag::Diagnostics diagnostics;
-    auto res = LFortran::tokens(al, input, diagnostics, &stypes);
+    auto res = LFortran::tokens(al, input, diagnostics, &stypes, nullptr, false);
     LFortran::LocationManager lm;
     lm.in_filename = "input";
     lm.init_simple(input);
@@ -390,7 +390,8 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
     if (compiler_options.prescan || compiler_options.fixed_form) {
         input = fix_continuation(input, lm, compiler_options.fixed_form);
     }
-    auto res = LFortran::tokens(al, input, diagnostics, &stypes, &locations);
+    auto res = LFortran::tokens(al, input, diagnostics, &stypes, &locations,
+        compiler_options.fixed_form);
     lm.in_filename = infile;
     lm.init_simple(input);
     std::cerr << diagnostics.render(input, lm, compiler_options);

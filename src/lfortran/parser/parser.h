@@ -41,8 +41,9 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al,
 // Tokenizes the `input` and return a list of tokens
 Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         diag::Diagnostics &diagnostics,
-        std::vector<YYSTYPE> *stypes=nullptr,
-        std::vector<Location> *locations=nullptr);
+        std::vector<YYSTYPE> *stypes,
+        std::vector<Location> *locations,
+        bool fixed_form);
 
 // Converts token number to text
 std::string token2text(const int token);

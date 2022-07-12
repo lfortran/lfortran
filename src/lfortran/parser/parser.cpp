@@ -55,7 +55,8 @@ void Parser::parse(const std::string &input)
 Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         diag::Diagnostics &diagnostics,
         std::vector<YYSTYPE> *stypes,
-        std::vector<Location> *locations)
+        std::vector<Location> *locations,
+        bool fixed_form)
 {
     Tokenizer t;
     t.set_string(input);
