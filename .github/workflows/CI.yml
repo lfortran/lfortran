@@ -93,3 +93,48 @@ jobs:
             set MACOS=0
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\test.xsh
+
+  debug:
+    name: Check Debug build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: "3.10"
+          mamba-version: "*"
+          channels: conda-forge,defaults
+          channel-priority: true
+          activate-environment: anaconda-client-env
+          environment-file: ci/environment_linux.yml
+
+      - name: Conda info
+        shell: bash -l {0}
+        run: |
+            conda info
+            conda list
+
+      - name: Build Linux
+        shell: bash -l {0}
+        run: |
+            ./build0.sh
+            cmake \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              .
+            cmake --build . -j16 --target install
+
+      - name: Test Linux
+        shell: bash -l {0}
+        run: |
+            ctest
+            ./run_tests.py
+            cd integration_tests
+            ./run_tests.py -b llvm
