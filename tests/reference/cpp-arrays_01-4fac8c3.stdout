@@ -17,6 +17,31 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     return r;
 }
 
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, upper_bound;
+};
+
+struct i32_3_1
+{
+    Kokkos::View<int32_t*>* data;
+    dimension_descriptor dims[1];
+    bool is_allocated;
+
+    i32_3_1(Kokkos::View<int32_t*>* data_): data{data_} {};
+};
+
+
+struct i32_4_1
+{
+    Kokkos::View<int32_t*>* data;
+    dimension_descriptor dims[1];
+    bool is_allocated;
+
+    i32_4_1(Kokkos::View<int32_t*>* data_): data{data_} {};
+};
+
 // Forward declarations
 namespace {
 }
@@ -25,65 +50,73 @@ namespace {
 namespace {
 
 void main2() {
-    Kokkos::View<int[3]> a("a");
-    Kokkos::View<int[4]> b("b");
-    int i;
+    Kokkos::View<int32_t*> a_data("a_data", 3);
+    i32_3_1 a_value(&a_data);
+    i32_3_1* a = &a_value;
+    a->dims[0].lower_bound = 1;
+    a->dims[0].upper_bound = 3;
+    Kokkos::View<int32_t*> b_data("b_data", 4);
+    i32_4_1 b_value(&b_data);
+    i32_4_1* b = &b_value;
+    b->dims[0].lower_bound = 1;
+    b->dims[0].upper_bound = 4;
+    int32_t i;
     for (i=1; i<=3; i++) {
-        a[i - 1] = i + 10;
+        a->data->operator[](i - a->dims[0].lower_bound) = i + 10;
     }
-    if (a[1 - 1] != 11) {
+    if (a->data->operator[](1 - a->dims[0].lower_bound) != 11) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (a[2 - 1] != 12) {
+    if (a->data->operator[](2 - a->dims[0].lower_bound) != 12) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (a[3 - 1] != 13) {
+    if (a->data->operator[](3 - a->dims[0].lower_bound) != 13) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
     for (i=11; i<=14; i++) {
-        b[i - 10 - 1] = i;
+        b->data->operator[](i - 10 - b->dims[0].lower_bound) = i;
     }
-    if (b[1 - 1] != 11) {
+    if (b->data->operator[](1 - b->dims[0].lower_bound) != 11) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (b[2 - 1] != 12) {
+    if (b->data->operator[](2 - b->dims[0].lower_bound) != 12) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (b[3 - 1] != 13) {
+    if (b->data->operator[](3 - b->dims[0].lower_bound) != 13) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (b[4 - 1] != 14) {
+    if (b->data->operator[](4 - b->dims[0].lower_bound) != 14) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
     for (i=1; i<=3; i++) {
-        b[i - 1] = a[i - 1] - 10;
+        b->data->operator[](i - b->dims[0].lower_bound) = a->data->operator[](i - a->dims[0].lower_bound) - 10;
     }
-    if (b[1 - 1] != 1) {
+    if (b->data->operator[](1 - b->dims[0].lower_bound) != 1) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (b[2 - 1] != 2) {
+    if (b->data->operator[](2 - b->dims[0].lower_bound) != 2) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (b[3 - 1] != 3) {
+    if (b->data->operator[](3 - b->dims[0].lower_bound) != 3) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    b[4 - 1] = b[1 - 1] + b[2 - 1] + b[3 - 1] + a[1 - 1];
-    if (b[4 - 1] != 17) {
+    b->data->operator[](4 - b->dims[0].lower_bound) = b->data->operator[](1 - b->dims[0].lower_bound) + b->data->operator[](2 - b->dims[0].lower_bound) + b->data->operator[](3 - b->dims[0].lower_bound) + a->data->operator[](1 - a->dims[0].lower_bound);
+    if (b->data->operator[](4 - b->dims[0].lower_bound) != 17) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    b[4 - 1] = a[1 - 1];
-    if (b[4 - 1] != 11) {
+    b->data->operator[](4 - b->dims[0].lower_bound) = a->data->operator[](1 - a->dims[0].lower_bound);
+    if (b->data->operator[](4 - b->dims[0].lower_bound) != 11) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }

@@ -17,6 +17,11 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     return r;
 }
 
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, upper_bound;
+};
 // Forward declarations
 namespace {
 }
@@ -25,11 +30,11 @@ namespace {
 namespace {
 
 void main2() {
-    int a;
-    int b;
-    int c;
+    int32_t a;
+    int32_t b;
+    int32_t c;
     bool l;
-    int x;
+    int32_t x;
     a = 3;
     b = 4;
     c = 5;
