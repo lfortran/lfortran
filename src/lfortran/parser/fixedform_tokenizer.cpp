@@ -54,18 +54,68 @@ struct FixedFormRecursiveDescent {
         while (*cur != '\n' && *cur != '\0') {
             cur++;
         }
+        if (*cur == '\n') cur++;
+    }
+
+    bool contains(unsigned char *start, unsigned char *end, char ch) {
+        unsigned char *cur = start;
+        while (*cur != '\0' && cur < end) {
+            if (*cur == ch) {
+                return true;
+            }
+            cur++;
+        }
+        return false;
+    }
+
+    std::string tostr(unsigned char *start, unsigned char *end) {
+        return std::string((char *)start, end-start);
     }
 
     void lex_subroutine(unsigned char */*cur*/) {
         std::cout << "subroutine" << std::endl;
     }
 
-    void lex_function(unsigned char *cur) {
-        std::cout << "function" << std::endl;
+    bool lex_declaration(unsigned char *&cur) {
+        std::cout << "declaration" << std::endl;
+        unsigned char *tok = cur;
         next_line(cur);
-        // parse declarations in a loop here
-        // then parse body
-        // then find "end function"
+        if (contains(tok, cur, '=')) {
+            cur = tok;
+            return false;
+        }
+        if (
+                next_is(cur, "integer") ||
+                next_is(cur, "real") ||
+                next_is(cur, "complex")
+            ) {
+            return true;
+        }
+        return false;
+    }
+
+    bool lex_body_statement(unsigned char *&cur) {
+        std::cout << "body statement" << std::endl;
+        unsigned char *tok = cur;
+        next_line(cur);
+        if (!contains(tok, cur, '=')) {
+            cur = tok;
+            return false;
+        }
+        return true;
+    }
+
+    void lex_function(unsigned char *cur) {
+        unsigned char *start=cur;
+        next_line(cur);
+        std::cout << "function: " << tostr(start, cur-1) << std::endl;
+        while (lex_declaration(cur));
+        while (lex_body_statement(cur));
+        if (next_is(cur, "end")) {
+            next_line(cur);
+        } else {
+            error(cur, "end of function expected");
+        }
     }
 
     void lex_program(unsigned char */*cur*/) {
