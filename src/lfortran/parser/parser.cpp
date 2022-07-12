@@ -62,6 +62,7 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
     if (fixed_form) {
         FixedFormTokenizer t;
         t.set_string(input);
+        t.tokenize_input();
         std::vector<int> tst;
         int token = yytokentype::END_OF_FILE + 1; // Something different from EOF
         while (token != yytokentype::END_OF_FILE) {

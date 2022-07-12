@@ -24,8 +24,13 @@ void FixedFormTokenizer::set_string(const std::string &str)
 #define RET(x) token_loc(loc); last_token=yytokentype::x; return yytokentype::x;
 #define WARN_REL(x) add_rel_warning(diagnostics, yytokentype::TK_##x);
 
+void FixedFormTokenizer::tokenize_input() {
+    //
+}
+
 int FixedFormTokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnostics &diagnostics)
 {
+    return yytokentype::END_OF_FILE;
     for (;;) {
         tok = cur;
 

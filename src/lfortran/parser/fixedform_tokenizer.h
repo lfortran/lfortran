@@ -23,10 +23,17 @@ public:
     int enddo_state = 0;
     int enddo_insert_count = 0;
 
+    std::vector<int> tokens;
+
 public:
     // Set the string to tokenize. The caller must ensure `str` will stay valid
     // as long as `lex` is being called.
     void set_string(const std::string &str);
+
+    // Tokenizes the whole input and saves all tokens into an internal array
+    // The lex function then just iterates on this array and returns the next
+    // token
+    void tokenize_input();
 
     // Get next token. Token ID is returned as function result, the semantic
     // value is put into `yylval`.
