@@ -17,17 +17,26 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     return r;
 }
 
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, upper_bound;
+};
 // Forward declarations
-void sum_reduce(const Kokkos::View<const float*> &a, float &s);
+
+template <typename T0>
+void sum_reduce(T0* a, float &s);
 
 // Implementations
-void sum_reduce(const Kokkos::View<const float*> &a, float &s)
+
+template <typename T0>
+void sum_reduce(T0* a, float &s)
 {
-    int n;
-    n = a.extent(0);
+    int32_t n;
+    n = a->data->extent(0);
     s = (float)(0);
     Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(1, n+1), KOKKOS_LAMBDA(const long i) {
-        s = s + a[i - 1];
+        s = s + a->data->operator[](i - a->dims[0].lower_bound);
     });
 }
 

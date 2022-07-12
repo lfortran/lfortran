@@ -27,6 +27,11 @@
         }                                                                      \
     }
 
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, upper_bound;
+};
 // Forward declarations
 float func1(float a, float b);
 float func2(float a, float b);
