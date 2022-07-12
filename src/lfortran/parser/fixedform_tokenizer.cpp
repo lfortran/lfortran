@@ -52,15 +52,30 @@ struct FixedFormRecursiveDescent {
 
 
     void lex_subroutine(unsigned char */*cur*/) {
-    //    std::cout << token2(cur, cur+5) << std::endl;
-        std::cout << "SUBROUTINE" << std::endl;
+        std::cout << "subroutine" << std::endl;
+    }
+
+    void lex_function(unsigned char */*cur*/) {
+        std::cout << "function" << std::endl;
+    }
+
+    void lex_program(unsigned char */*cur*/) {
+        std::cout << "program" << std::endl;
     }
 
     void lex_global_scope(unsigned char *cur) {
         if (next_is(cur, "subroutine")) {
             lex_subroutine(cur);
+        } else if (next_is(cur, "program")) {
+            lex_program(cur);
+        } else if (
+                next_is(cur, "function") ||
+                next_is(cur, "integer") ||
+                next_is(cur, "real") ||
+                next_is(cur, "complex")) {
+            lex_function(cur);
         } else {
-            error(cur, "Unknown global scope entity");
+            error(cur, "Cannot recognize the global scope entity");
         }
     }
 
