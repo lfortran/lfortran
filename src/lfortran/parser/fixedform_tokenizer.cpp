@@ -50,13 +50,22 @@ struct FixedFormRecursiveDescent {
         return next_str == str;
     }
 
+    void next_line(unsigned char *&cur) {
+        while (*cur != '\n' && *cur != '\0') {
+            cur++;
+        }
+    }
 
     void lex_subroutine(unsigned char */*cur*/) {
         std::cout << "subroutine" << std::endl;
     }
 
-    void lex_function(unsigned char */*cur*/) {
+    void lex_function(unsigned char *cur) {
         std::cout << "function" << std::endl;
+        next_line(cur);
+        // parse declarations in a loop here
+        // then parse body
+        // then find "end function"
     }
 
     void lex_program(unsigned char */*cur*/) {
