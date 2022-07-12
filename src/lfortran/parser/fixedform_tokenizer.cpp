@@ -29,40 +29,54 @@ static inline std::string token2(unsigned char *tok, unsigned char* cur)
     return std::string((char *)tok, cur - tok);
 }
 
-// Are the next characters in the `cur` stream equal to `str`?
-bool next_is(unsigned char *cur, const std::string &str) {
-    unsigned char *tok = cur;
-    unsigned char *cur2 = cur;
-    while ((size_t)(cur2-tok) < str.size()) {
-        if (*cur2 == '\0') {
-            return false;
-        }
-        cur2++;
+struct FixedFormRecursiveDescent {
+
+    unsigned char *string_start;
+
+    void error(unsigned char *cur, const std::string &text) {
+        uint32_t loc_first = cur-string_start;
+        Location loc;
+        loc.first = loc_first;
+        loc.last = loc_first;
+        throw LFortran::parser_local::TokenizerError(text, loc);
     }
-    std::string next_str = std::string((char *)tok, cur2 - tok);
-    return next_str == str;
-}
 
-void error(uint32_t loc_first, const std::string &text) {
-    Location loc;
-    loc.first = loc_first;
-    loc.last = loc_first;
-    throw LFortran::parser_local::TokenizerError(text, loc);
-}
+    // Are the next characters in the `cur` stream equal to `str`?
+    bool next_is(unsigned char *cur, const std::string &str) {
+        unsigned char *tok = cur;
+        unsigned char *cur2 = cur;
+        while ((size_t)(cur2-tok) < str.size()) {
+            if (*cur2 == '\0') {
+                return false;
+            }
+            cur2++;
+        }
+        std::string next_str = std::string((char *)tok, cur2 - tok);
+        return next_str == str;
+    }
 
-void lex_subroutine(unsigned char */*cur*/) {
-//    std::cout << token2(cur, cur+5) << std::endl;
-    std::cout << "SUBROUTINE" << std::endl;
-}
+
+    void lex_subroutine(unsigned char */*cur*/) {
+    //    std::cout << token2(cur, cur+5) << std::endl;
+        std::cout << "SUBROUTINE" << std::endl;
+    }
+
+    void lex_global_scope(unsigned char *cur) {
+        if (next_is(cur, "subroutine")) {
+            lex_subroutine(cur);
+        } else {
+            error(cur, "Unknown global scope entity");
+        }
+    }
+
+};
 
 bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics) {
     // We use a recursive descent parser.  We are starting at the global scope
     try {
-        if (next_is(cur, "subroutine")) {
-            lex_subroutine(cur);
-        } else {
-            error(cur-string_start, "Unknown global scope entity");
-        }
+        FixedFormRecursiveDescent f;
+        f.string_start = string_start;
+        f.lex_global_scope(cur);
     } catch (const parser_local::TokenizerError &e) {
         diagnostics.diagnostics.push_back(e.d);
         return false;
