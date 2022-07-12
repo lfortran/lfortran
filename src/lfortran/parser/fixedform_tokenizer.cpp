@@ -24,11 +24,6 @@ void FixedFormTokenizer::set_string(const std::string &str)
 #define RET(x) token_loc(loc); last_token=yytokentype::x; return yytokentype::x;
 #define WARN_REL(x) add_rel_warning(diagnostics, yytokentype::TK_##x);
 
-static inline std::string token2(unsigned char *tok, unsigned char* cur)
-{
-    return std::string((char *)tok, cur - tok);
-}
-
 struct FixedFormRecursiveDescent {
 
     unsigned char *string_start;
