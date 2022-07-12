@@ -24,11 +24,19 @@ void FixedFormTokenizer::set_string(const std::string &str)
 #define RET(x) token_loc(loc); last_token=yytokentype::x; return yytokentype::x;
 #define WARN_REL(x) add_rel_warning(diagnostics, yytokentype::TK_##x);
 
-void FixedFormTokenizer::tokenize_input() {
-    //
+static inline std::string token2(unsigned char *tok, unsigned char* cur)
+{
+    return std::string((char *)tok, cur - tok);
 }
 
-int FixedFormTokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnostics &diagnostics)
+
+void FixedFormTokenizer::tokenize_input() {
+    // We use a recursive descent parser.  We are starting at the global scope
+    std::cout << token2(cur, cur+5) << std::endl;
+}
+
+int FixedFormTokenizer::lex(Allocator &/*al*/, YYSTYPE &/*yylval*/,
+        Location &/*loc*/, diag::Diagnostics &/*diagnostics*/)
 {
     return yytokentype::END_OF_FILE;
     for (;;) {
@@ -94,7 +102,7 @@ int FixedFormTokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag:
         // These two variables are needed by the re2c block below internally,
         // initialization is not needed. One can think of them as local
         // variables of the re2c block.
-        unsigned char *mar, *ctxmar;
+//        unsigned char *mar, *ctxmar;
         /*!re2c
             re2c:define:YYCURSOR = cur;
             re2c:define:YYMARKER = mar;
@@ -545,11 +553,6 @@ int FixedFormTokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag:
             name { token(yylval.string); RET(TK_NAME) }
         */
     }
-}
-
-static inline std::string token(unsigned char *tok, unsigned char* cur)
-{
-    return std::string((char *)tok, cur - tok);
 }
 
 
