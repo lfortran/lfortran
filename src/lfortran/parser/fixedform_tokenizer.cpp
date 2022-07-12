@@ -24,7 +24,7 @@ void FixedFormTokenizer::set_string(const std::string &str)
 #define RET(x) token_loc(loc); last_token=yytokentype::x; return yytokentype::x;
 #define WARN_REL(x) add_rel_warning(diagnostics, yytokentype::TK_##x);
 
-int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnostics &diagnostics)
+int FixedFormTokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnostics &diagnostics)
 {
     for (;;) {
         tok = cur;
@@ -542,7 +542,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
     }
 }
 
-std::string token(unsigned char *tok, unsigned char* cur)
+static inline std::string token(unsigned char *tok, unsigned char* cur)
 {
     return std::string((char *)tok, cur - tok);
 }
