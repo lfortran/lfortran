@@ -55,13 +55,19 @@ void lex_subroutine(unsigned char */*cur*/) {
     std::cout << "SUBROUTINE" << std::endl;
 }
 
-void FixedFormTokenizer::tokenize_input() {
+bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics) {
     // We use a recursive descent parser.  We are starting at the global scope
-    if (next_is(cur, "subroutine")) {
-        lex_subroutine(cur);
-    } else {
-        error(cur-string_start, "Unknown global scope entity");
+    try {
+        if (next_is(cur, "subroutine")) {
+            lex_subroutine(cur);
+        } else {
+            error(cur-string_start, "Unknown global scope entity");
+        }
+    } catch (const parser_local::TokenizerError &e) {
+        diagnostics.diagnostics.push_back(e.d);
+        return false;
     }
+    return true;
 }
 
 int FixedFormTokenizer::lex(Allocator &/*al*/, YYSTYPE &/*yylval*/,

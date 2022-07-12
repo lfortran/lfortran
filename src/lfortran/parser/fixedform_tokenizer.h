@@ -33,7 +33,9 @@ public:
     // Tokenizes the whole input and saves all tokens into an internal array
     // The lex function then just iterates on this array and returns the next
     // token
-    void tokenize_input();
+    // Returns True if successful, otherwise there will be errors in
+    // `diagnostics`
+    bool tokenize_input(diag::Diagnostics &diagnostics);
 
     // Get next token. Token ID is returned as function result, the semantic
     // value is put into `yylval`.
