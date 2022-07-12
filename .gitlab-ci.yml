@@ -254,6 +254,7 @@ cxx_binary_min:
 cxx_binary_min_tests:
   stage: build
   image: registry.gitlab.com/lfortran/ci-images:full2-1.7.0
+
   script:
     - export CONDA_PREFIX="$HOME/conda_root"
     - export PATH="$HOME/conda_root/bin:$PATH"
