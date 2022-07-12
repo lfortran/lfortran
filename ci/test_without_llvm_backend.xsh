@@ -3,9 +3,12 @@
 $RAISE_SUBPROC_ERROR = True
 trace on
 
+import os
+os.environ['CXXFLAGS'] = "-Werror"
+
 tar xzf dist/lfortran-*.tar.gz
 cd lfortran-*
-CXXFLAGS="-Werror" cmake -DCMAKE_BUILD_TYPE=Debug .
+cmake -DCMAKE_BUILD_TYPE=Debug .
 make
 
 ctest --output-on-failure
