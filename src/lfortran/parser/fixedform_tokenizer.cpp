@@ -133,34 +133,24 @@ struct FixedFormRecursiveDescent {
 
         // Now the first word cannot be an identifier, and must be a keyword
 
-        if (next_is(cur, "print*")) {
-            next_line(cur);
-            std::cout << "body print statement: " << tostr(start, cur-1) << std::endl;
-            return true;
-        }
-
+        // Next we have to handle multiline statements (and consume their "end")
         if (next_is(cur, "if(")) {
             lex_if_statement(cur);
             return true;
         }
+        // TODO: add `do`, `where`, etc.
 
-        if (next_is(cur, "call")) {
-            lex_call_statement(cur);
-            return true;
+        // Now an "end" must be the end statement for the program/function/etc
+        if (next_is(cur, "end")) {
+            // not a body statement, return false
+            return false;
         }
 
-        if (next_is(cur, "goto")) {
-            lex_goto_statement(cur);
-            return true;
-        }
+        // Otherwise it must be a single line statement
+        next_line(cur);
+        std::cout << "body statement: " << tostr(start, cur-1) << std::endl;
 
-        if (next_is(cur, " ")) {
-            // labeled statement
-            next_line(cur);
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
     void lex_if_statement(unsigned char *&cur) {
@@ -169,18 +159,6 @@ struct FixedFormRecursiveDescent {
         // TODO: Implement multiline if
         next_line(cur);
         std::cout << "body if statement: " << tostr(start, cur-1) << std::endl;
-    }
-
-    void lex_call_statement(unsigned char *&cur) {
-        unsigned char *start = cur;
-        next_line(cur);
-        std::cout << "body call statement: " << tostr(start, cur-1) << std::endl;
-    }
-
-    void lex_goto_statement(unsigned char *&cur) {
-        unsigned char *start = cur;
-        next_line(cur);
-        std::cout << "body goto statement: " << tostr(start, cur-1) << std::endl;
     }
 
     void lex_function(unsigned char *&cur) {
