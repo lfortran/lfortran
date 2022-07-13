@@ -57,6 +57,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     ASR::Variable_t *return_var;
     bool is_return_visited;
+    uint32_t nesting_level;
+    uint32_t cur_loop_nesting_level;
 
     Vec<uint8_t> m_type_section;
     Vec<uint8_t> m_import_section;
@@ -77,6 +79,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
    public:
     ASRToWASMVisitor(Allocator &al, diag::Diagnostics &diagnostics): m_al(al), diag(diagnostics) {
+        nesting_level = 0;
+        cur_loop_nesting_level = 0;
         cur_func_idx = 0;
         avail_mem_loc = 0;
         no_of_functions = 0;
@@ -1044,6 +1048,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         this->visit_expr(*x.m_test);
         wasm::emit_b8(m_code_section, m_al, 0x04); // emit if start
         wasm::emit_b8(m_code_section, m_al, 0x40); // empty block type
+        nesting_level++;
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
@@ -1053,14 +1058,18 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 this->visit_stmt(*x.m_orelse[i]);
             }
         }
+        nesting_level--;
         wasm::emit_expr_end(m_code_section, m_al); // emit if end
     }
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        uint32_t prev_cur_loop_nesting_level = cur_loop_nesting_level;
+        cur_loop_nesting_level = nesting_level;
 
         wasm::emit_b8(m_code_section, m_al, 0x03); // emit loop start
         wasm::emit_b8(m_code_section, m_al, 0x40); // empty block type
 
+        nesting_level++;
 
         this->visit_expr(*x.m_test); // emit test condition
 
@@ -1076,10 +1085,20 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // that is, label 0 refers to the innermost structured control instruction enclosing
         // the referring branch instruction, while increasing indices refer to those farther out.
 
-        wasm::emit_branch(m_code_section, m_al, 1U); // emit_branch and label the loop
+        wasm::emit_branch(m_code_section, m_al, nesting_level - cur_loop_nesting_level); // emit_branch and label the loop
         wasm::emit_expr_end(m_code_section, m_al); // end if
 
+        nesting_level--;
         wasm::emit_expr_end(m_code_section, m_al); // end loop
+        cur_loop_nesting_level = prev_cur_loop_nesting_level;
+    }
+
+    void visit_Exit(const ASR::Exit_t & /* x */) {
+        wasm::emit_branch(m_code_section, m_al, nesting_level - cur_loop_nesting_level - 1U); // branch to end of if
+    }
+
+    void visit_Cycle(const ASR::Cycle_t & /* x */) {
+        wasm::emit_branch(m_code_section, m_al, nesting_level - cur_loop_nesting_level); // branch to start of loop
     }
 };
 
