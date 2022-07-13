@@ -1055,6 +1055,32 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         wasm::emit_expr_end(m_code_section, m_al); // emit if end
     }
+
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+
+        wasm::emit_b8(m_code_section, m_al, 0x03); // emit loop start
+        wasm::emit_b8(m_code_section, m_al, 0x40); // empty block type
+
+
+        this->visit_expr(*x.m_test); // emit test condition
+
+        wasm::emit_b8(m_code_section, m_al, 0x04); // emit if
+        wasm::emit_b8(m_code_section, m_al, 0x40); // empty block type
+
+        for (size_t i=0; i<x.n_body; i++) {
+            this->visit_stmt(*x.m_body[i]);
+        }
+
+        // From WebAssembly Docs:
+        // Unlike with other index spaces, indexing of labels is relative by nesting depth,
+        // that is, label 0 refers to the innermost structured control instruction enclosing
+        // the referring branch instruction, while increasing indices refer to those farther out.
+
+        wasm::emit_branch(m_code_section, m_al, 1U); // emit_branch and label the loop
+        wasm::emit_expr_end(m_code_section, m_al); // end if
+
+        wasm::emit_expr_end(m_code_section, m_al); // end loop
+    }
 };
 
 Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Allocator &al, diag::Diagnostics &diagnostics) {
