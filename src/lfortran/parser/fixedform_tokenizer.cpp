@@ -83,7 +83,7 @@ struct FixedFormRecursiveDescent {
     // errors, and returns true (parsed, `cur` progressed) or false (not-parsed,
     // `cur` unchanged).
 
-    void lex_subroutine(unsigned char */*cur*/) {
+    void lex_subroutine(unsigned char *&/*cur*/) {
         std::cout << "subroutine" << std::endl;
     }
 
@@ -117,7 +117,7 @@ struct FixedFormRecursiveDescent {
         return true;
     }
 
-    void lex_function(unsigned char *cur) {
+    void lex_function(unsigned char *&cur) {
         unsigned char *start=cur;
         next_line(cur);
         std::cout << "function: " << tostr(start, cur-1) << std::endl;
@@ -131,11 +131,11 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    void lex_program(unsigned char */*cur*/) {
+    void lex_program(unsigned char *&/*cur*/) {
         std::cout << "program" << std::endl;
     }
 
-    void lex_global_scope(unsigned char *cur) {
+    void lex_global_scope_item(unsigned char *&cur) {
         if (next_is(cur, "subroutine")) {
             lex_subroutine(cur);
         } else if (next_is(cur, "program")) {
@@ -148,6 +148,12 @@ struct FixedFormRecursiveDescent {
             lex_function(cur);
         } else {
             error(cur, "Cannot recognize the global scope entity");
+        }
+    }
+
+    void lex_global_scope(unsigned char *&cur) {
+        while (*cur != '\0') {
+            lex_global_scope_item(cur);
         }
     }
 
