@@ -122,11 +122,16 @@ struct FixedFormRecursiveDescent {
     bool lex_body_statement(unsigned char *&cur) {
         unsigned char *start = cur;
         next_line(cur);
+        // TODO: this must be made more robust:
+        // we parse an "id", then optional "(...)", then there must be "="
+        // the current implementation parses if(..) a=5 as assignment
         if (contains(start, cur, '=')) {
             std::cout << "body assignment statement: " << tostr(start, cur-1) << std::endl;
             return true;
         }
         cur = start;
+
+        // Now the first word cannot be an identifier, and must be a keyword
 
         if (next_is(cur, "print*")) {
             next_line(cur);
@@ -161,6 +166,7 @@ struct FixedFormRecursiveDescent {
     void lex_if_statement(unsigned char *&cur) {
         unsigned char *start = cur;
         // Assume single line if for now
+        // TODO: Implement multiline if
         next_line(cur);
         std::cout << "body if statement: " << tostr(start, cur-1) << std::endl;
     }
