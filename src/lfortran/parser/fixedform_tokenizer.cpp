@@ -28,6 +28,8 @@ struct FixedFormRecursiveDescent {
 
     unsigned char *string_start;
 
+    // Auxiliary functions:
+
     void error(unsigned char *cur, const std::string &text) {
         uint32_t loc_first = cur-string_start;
         Location loc;
@@ -71,6 +73,15 @@ struct FixedFormRecursiveDescent {
     std::string tostr(unsigned char *start, unsigned char *end) {
         return std::string((char *)start, end-start);
     }
+
+
+    // Recursive descent parser with backtracking
+    //
+    // If a function returns void, then it will always parse the given grammar
+    // rule (and `cur` progressed), or give a compiler error (via the `error`
+    // function).  If a function returns bool, then it does not raise any
+    // errors, and returns true (parsed, `cur` progressed) or false (not-parsed,
+    // `cur` unchanged).
 
     void lex_subroutine(unsigned char */*cur*/) {
         std::cout << "subroutine" << std::endl;
