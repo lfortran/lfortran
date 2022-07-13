@@ -83,8 +83,18 @@ struct FixedFormRecursiveDescent {
     // errors, and returns true (parsed, `cur` progressed) or false (not-parsed,
     // `cur` unchanged).
 
-    void lex_subroutine(unsigned char *&/*cur*/) {
-        std::cout << "subroutine" << std::endl;
+    void lex_subroutine(unsigned char *&cur) {
+        unsigned char *start=cur;
+        next_line(cur);
+        std::cout << "subroutine: " << tostr(start, cur-1) << std::endl;
+        while (lex_declaration(cur));
+        while (lex_body_statement(cur));
+        if (next_is(cur, "end")) {
+            next_line(cur);
+        } else {
+            //std::cout << "?: " << tostr(cur, cur+5) << std::endl;
+            error(cur, "end of subroutine expected");
+        }
     }
 
     bool lex_declaration(unsigned char *&cur) {
@@ -97,7 +107,10 @@ struct FixedFormRecursiveDescent {
         if (
                 next_is(start, "integer") ||
                 next_is(start, "real") ||
-                next_is(start, "complex")
+                next_is(start, "complex") ||
+                next_is(start, "doubleprecision") ||
+                next_is(start, "external") ||
+                next_is(start, "dimension")
             ) {
             std::cout << "declaration: " << tostr(start, cur-1) << std::endl;
             return true;
