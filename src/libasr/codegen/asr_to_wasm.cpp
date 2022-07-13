@@ -8,6 +8,7 @@
 #include <libasr/containers.h>
 #include <libasr/codegen/asr_to_wasm.h>
 #include <libasr/codegen/wasm_assembler.h>
+#include <libasr/pass/implied_do_loops.h>
 #include <libasr/pass/do_loops.h>
 #include <libasr/pass/global_stmts.h>
 #include <libasr/exception.h>
@@ -1061,6 +1062,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
     Vec<uint8_t> wasm_bytes;
 
     pass_wrap_global_stmts_into_function(al, asr, "f");
+    pass_replace_implied_do_loops(al, asr, "f");
     pass_replace_do_loops(al, asr);
 
     try {
