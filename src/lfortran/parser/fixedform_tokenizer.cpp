@@ -134,7 +134,19 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "if(")) {
+            lex_if_statement(cur);
+            return true;
+        }
+
         return false;
+    }
+
+    void lex_if_statement(unsigned char *&cur) {
+        unsigned char *start = cur;
+        // Assume single line if for now
+        next_line(cur);
+        std::cout << "body if statement: " << tostr(start, cur-1) << std::endl;
     }
 
     void lex_function(unsigned char *&cur) {
