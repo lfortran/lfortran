@@ -88,31 +88,32 @@ struct FixedFormRecursiveDescent {
     }
 
     bool lex_declaration(unsigned char *&cur) {
-        std::cout << "declaration" << std::endl;
-        unsigned char *tok = cur;
+        unsigned char *start = cur;
         next_line(cur);
-        if (contains(tok, cur, '=')) {
-            cur = tok;
+        if (contains(start, cur, '=')) {
+            cur = start;
             return false;
         }
         if (
-                next_is(cur, "integer") ||
-                next_is(cur, "real") ||
-                next_is(cur, "complex")
+                next_is(start, "integer") ||
+                next_is(start, "real") ||
+                next_is(start, "complex")
             ) {
+            std::cout << "declaration: " << tostr(start, cur-1) << std::endl;
             return true;
         }
+        cur = start;
         return false;
     }
 
     bool lex_body_statement(unsigned char *&cur) {
-        std::cout << "body statement" << std::endl;
-        unsigned char *tok = cur;
+        unsigned char *start = cur;
         next_line(cur);
-        if (!contains(tok, cur, '=')) {
-            cur = tok;
+        if (!contains(start, cur, '=')) {
+            cur = start;
             return false;
         }
+        std::cout << "body statement: " << tostr(start, cur-1) << std::endl;
         return true;
     }
 
@@ -125,6 +126,7 @@ struct FixedFormRecursiveDescent {
         if (next_is(cur, "end")) {
             next_line(cur);
         } else {
+            //std::cout << "?: " << tostr(cur, cur+5) << std::endl;
             error(cur, "end of function expected");
         }
     }
