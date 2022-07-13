@@ -1,12 +1,12 @@
 {
-    "basename": "asr-doloop_03-9c463c5",
-    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "basename": "wat-doloop_03-e0c63db",
+    "cmd": "lfortran --no-color --show-wat {infile}",
     "infile": "tests/../integration_tests/doloop_03.f90",
     "infile_hash": "eafcb3d9dca52d81012b124f360aa148c946ed2e7ed8de07041aba1d",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "asr-doloop_03-9c463c5.stdout",
-    "stdout_hash": "5d687abeccc317ba9c6c23cd593e387edeb40fc80911ba7907cc15a0",
+    "stdout": "wat-doloop_03-e0c63db.stdout",
+    "stdout_hash": "2738f4434d17f2fe1fce0cd80127caa4a6414a98168e979e5bb7f538",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
