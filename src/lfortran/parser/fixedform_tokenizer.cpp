@@ -122,6 +122,10 @@ struct FixedFormRecursiveDescent {
     bool lex_body_statement(unsigned char *&cur) {
         unsigned char *start = cur;
         next_line(cur);
+
+        // Handle assignment first, and return TK_NAME if matched,
+        // as this identifier can be composed of keywords, so we do not
+        // want to return them as keywords.
         // TODO: this must be made more robust:
         // we parse an "id", then optional "(...)", then there must be "="
         // the current implementation parses if(..) a=5 as assignment
@@ -131,9 +135,11 @@ struct FixedFormRecursiveDescent {
         }
         cur = start;
 
-        // Now the first word cannot be an identifier, and must be a keyword
+        // Now the first word cannot be an identifier, and must be a keyword,
+        // so we can use it to figure out what kind of statement we have
 
         // Next we have to handle multiline statements (and consume their "end")
+        // Tokenization: the first word as KW_*, then specific to each case
         if (next_is(cur, "if(")) {
             lex_if_statement(cur);
             return true;
@@ -147,6 +153,8 @@ struct FixedFormRecursiveDescent {
         }
 
         // Otherwise it must be a single line statement
+        // Tokenization: We use the longest match, either TK_NAME or KW_*,
+        // whichever is longer.
         next_line(cur);
         std::cout << "body statement: " << tostr(start, cur-1) << std::endl;
 
