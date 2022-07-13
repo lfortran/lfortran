@@ -2,7 +2,7 @@
 0x00 ⇒ unreachable
 0x01 ⇒ nop
 -- 0x02 bt:blocktype (in:instr)* 0x0B ⇒ block bt in* end
--- 0x03 bt:blocktype (in:instr)* 0x0B ⇒ loop bt in* end
+0x03 ⇒ loop
 0x04 ⇒ if
 0x05 ⇒ else
 0x0C u32:labelidx:𝑙 ⇒ br 𝑙
