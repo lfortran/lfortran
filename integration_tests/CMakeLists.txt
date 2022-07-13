@@ -121,9 +121,9 @@ RUN(NAME if_05 LABELS gfortran llvm cpp wasm)
 RUN(NAME while_01 LABELS gfortran llvm cpp x86)
 RUN(NAME while_02 LABELS gfortran llvm cpp)
 
-RUN(NAME doloop_01 LABELS gfortran llvm cpp x86)
-RUN(NAME doloop_02 LABELS gfortran llvm cpp x86)
-RUN(NAME doloop_03 LABELS gfortran llvm cpp)
+RUN(NAME doloop_01 LABELS gfortran llvm cpp x86 wasm)
+RUN(NAME doloop_02 LABELS gfortran llvm cpp x86 wasm)
+RUN(NAME doloop_03 LABELS gfortran llvm cpp wasm)
 RUN(NAME doloop_04 LABELS gfortran llvm)
 RUN(NAME doloop_05 LABELS gfortran llvm cpp)
 
