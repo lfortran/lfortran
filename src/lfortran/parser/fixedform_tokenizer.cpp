@@ -139,6 +139,22 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "call")) {
+            lex_call_statement(cur);
+            return true;
+        }
+
+        if (next_is(cur, "goto")) {
+            lex_goto_statement(cur);
+            return true;
+        }
+
+        if (next_is(cur, " ")) {
+            // labeled statement
+            next_line(cur);
+            return true;
+        }
+
         return false;
     }
 
@@ -147,6 +163,18 @@ struct FixedFormRecursiveDescent {
         // Assume single line if for now
         next_line(cur);
         std::cout << "body if statement: " << tostr(start, cur-1) << std::endl;
+    }
+
+    void lex_call_statement(unsigned char *&cur) {
+        unsigned char *start = cur;
+        next_line(cur);
+        std::cout << "body call statement: " << tostr(start, cur-1) << std::endl;
+    }
+
+    void lex_goto_statement(unsigned char *&cur) {
+        unsigned char *start = cur;
+        next_line(cur);
+        std::cout << "body goto statement: " << tostr(start, cur-1) << std::endl;
     }
 
     void lex_function(unsigned char *&cur) {
