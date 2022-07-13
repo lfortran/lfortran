@@ -1042,7 +1042,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     void visit_If(const ASR::If_t &x) {
         this->visit_expr(*x.m_test);
-        wasm::emit_b8(m_code_section, m_al, 0x04);
+        wasm::emit_b8(m_code_section, m_al, 0x04); // emit if start
         wasm::emit_b8(m_code_section, m_al, 0x40); // empty block type
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
@@ -1053,7 +1053,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 this->visit_stmt(*x.m_orelse[i]);
             }
         }
-        wasm::emit_expr_end(m_code_section, m_al);
+        wasm::emit_expr_end(m_code_section, m_al); // emit if end
     }
 };
 
