@@ -109,12 +109,19 @@ struct FixedFormRecursiveDescent {
     bool lex_body_statement(unsigned char *&cur) {
         unsigned char *start = cur;
         next_line(cur);
-        if (!contains(start, cur, '=')) {
-            cur = start;
-            return false;
+        if (contains(start, cur, '=')) {
+            std::cout << "body assignment statement: " << tostr(start, cur-1) << std::endl;
+            return true;
         }
-        std::cout << "body statement: " << tostr(start, cur-1) << std::endl;
-        return true;
+        cur = start;
+
+        if (next_is(cur, "print*")) {
+            next_line(cur);
+            std::cout << "body print statement: " << tostr(start, cur-1) << std::endl;
+            return true;
+        }
+
+        return false;
     }
 
     void lex_function(unsigned char *&cur) {
@@ -131,8 +138,17 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    void lex_program(unsigned char *&/*cur*/) {
+    void lex_program(unsigned char *&cur) {
         std::cout << "program" << std::endl;
+        next_line(cur);
+        while (lex_declaration(cur));
+        while (lex_body_statement(cur));
+        if (next_is(cur, "end")) {
+            next_line(cur);
+        } else {
+            //std::cout << "?: " << tostr(cur, cur+5) << std::endl;
+            error(cur, "end of program expected");
+        }
     }
 
     void lex_global_scope_item(unsigned char *&cur) {
