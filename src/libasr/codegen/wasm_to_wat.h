@@ -16,6 +16,8 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
     void visit_Unreachable() { src += indent + "unreachable"; }
     void visit_Return() { src += indent + "return"; }
     void visit_Call(uint32_t func_index) { src += indent + "call " + std::to_string(func_index); }
+    void visit_Br(uint32_t label_index) { src += indent + "br " + std::to_string(label_index); }
+    void visit_BrIf(uint32_t label_index) { src += indent + "br_if " + std::to_string(label_index); }
     void visit_LocalGet(uint32_t localidx) { src += indent + "local.get " + std::to_string(localidx); }
     void visit_LocalSet(uint32_t localidx) { src += indent + "local.set " + std::to_string(localidx); }
     void visit_EmtpyBlockType() {}
@@ -30,6 +32,16 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
         src += indent + "end";
     }
     void visit_Else() { src += indent.substr(0, indent.length() - 4U) + "else"; }
+    void visit_Loop() {
+        src += indent + "loop";
+        {
+            WATVisitor v = WATVisitor(code, offset, "", indent + "    ");
+            v.decode_instructions();
+            src += v.src;
+            offset = v.offset;
+        }
+        src += indent + "end";
+    }
 
     void visit_I32Const(int32_t value) { src += indent + "i32.const " + std::to_string(value); }
     void visit_I32Clz() { src += indent + "i32.clz"; }
@@ -105,7 +117,7 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
     void visit_F32Gt() { src += indent + "f32.gt"; }
     void visit_F32Le() { src += indent + "f32.le"; }
     void visit_F32Ge() { src += indent + "f32.ge"; }
-    
+
     void visit_F64Const(double value) { src += indent + "f64.const " + std::to_string(value); }
     void visit_F64Add() { src += indent + "f64.add"; }
     void visit_F64Sub() { src += indent + "f64.sub"; }
@@ -156,7 +168,7 @@ class WASMDecoder {
     WASMDecoder(Allocator &al) : al(al) {
         var_type_to_string = {{0x7F, "i32"}, {0x7E, "i64"}, {0x7D, "f32"}, {0x7C, "f64"}};
         kind_to_string = {{0x00, "func"}, {0x01, "table"}, {0x02, "mem"}, {0x03, "global"}};
-        
+
         // wasm_bytes.reserve(al, 1024 * 128);
         // func_types.reserve(al, 1024 * 128);
         // type_indices.reserve(al, 1024 * 128);
