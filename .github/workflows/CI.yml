@@ -158,3 +158,29 @@ jobs:
         shell: bash -l {0}
         run: |
           xonsh ci/test_without_llvm_backend.xsh
+
+  test_cpp:
+    name: Test CPP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          environment-file: ci/environment_linux.yml
+          python-version: "3.10"
+          auto-activate-base: false
+
+      - name: Conda info
+        shell: bash -l {0}
+        run: |
+            conda info
+            conda list
+
+      - name: Test CPP
+        shell: bash -l {0}
+        run: |
+            xonsh ci/test_cpp_version.xsh
