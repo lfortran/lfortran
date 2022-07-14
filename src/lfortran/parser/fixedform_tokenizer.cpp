@@ -5,6 +5,9 @@
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/bigint.h>
 
+int position = 0;
+#define TOK(pos, arg) std::cout << std::string(pos, ' ') << "TOKEN: " << arg << std::endl;
+
 namespace LFortran
 {
 
@@ -49,10 +52,77 @@ struct FixedFormRecursiveDescent {
             cur2++;
         }
         std::string next_str = std::string((char *)tok, cur2 - tok);
+        // std::cout << "next is " << next_str << std::endl;
         return next_str == str;
     }
 
+    bool next_is_advance(unsigned char *cur, const std::string &str) {
+        unsigned char *tok = cur;
+        unsigned char *cur2 = cur;
+        while ((size_t)(cur2-tok) < str.size()) {
+            if (*cur2 == '\0') {
+                return false;
+            }
+            cur2++;
+        }
+        std::string next_str = std::string((char *)tok, cur2 - tok);
+        // std::cout << "next is " << next_str << std::endl;
+        if (next_str == str) cur = cur2;
+        return next_str == str;
+    }
+
+    
+
+    bool is_integer(const std::string &s) const {
+        return !s.empty() && std::all_of(s.begin(), s.end(), [](char c) {
+            return ::isdigit(c) || c == ' ';
+        });
+    }
+
+    // TODO figure out if we can reuse existing infrastructure for numbers
+    // from free-form tokenizer
+    // bool is_decimal(const std::string &s) const {
+    // }
+
+    // placeholder for the occasions:
+    // - multiline if statement
+    // - multiline argument list for subroutine / function / function call
+    void parentheses_wrap_line(unsigned char *cur) {
+
+    }
+
+    bool eat_label(unsigned char *&cur) {
+        // consume label if it is available
+        // for line beginnings
+        std::string label;
+        label.assign((char*)cur, 6);
+        if (is_integer(label)) {
+            TOK(position, label);
+            cur+=6;
+            return true;
+        }
+        return false;
+    }
+
+    bool eat_label_inline(unsigned char *&cur) {
+        // consume label if it is available
+        // for labels
+        std::string label;
+        unsigned long long count = 0;
+        while(*(cur++) != '\n') count++;
+        label.assign((char*)cur, count);
+        if (is_integer(label)) {
+            TOK(position, label);
+            cur+=count;
+            return true;
+        }
+        return false;
+    }
+
     void next_line(unsigned char *&cur) {
+        eat_label(cur);
+        // TODO check if right time for this call, as next_line is called several times
+        // sometimes even if the line is NOT advanced
         while (*cur != '\n' && *cur != '\0') {
             cur++;
         }
@@ -74,7 +144,42 @@ struct FixedFormRecursiveDescent {
         return std::string((char *)start, end-start);
     }
 
+    // extract and return substring that is between cur and c, advance cur by substring.size() characters
+    std::string scan_next(unsigned char *&cur, unsigned char c) {
+        unsigned char *start = cur;
+        long long unsigned count = 0;
+        while (*(cur++) != c) count++;
+        TOK(position, c);
+        return tostr(start, cur-1);
+    }
+   
+    bool lex_arg(unsigned char *&cur) {
+        unsigned char *start = cur;
+        long long unsigned count = 0;
+        if (*cur == '(') {
+            TOK(position, '(');
+            return true;
+        }
+        // we can easily extract all ',' and ')' and tokenize
+        while (*(cur++) != ',') {
+            // we have found the end of the argument list
+            if (*cur == ')') {
+                TOK(position, ')');
+                return false;
+            }
+            if (*cur == '\0') {
+                return false;
+            }
+            count++;
+        }
 
+        TOK(position, ',');
+        
+        if (count > 0) {
+            TOK(position, tostr(start, start + count));
+        }
+        return true;
+    }
     // Recursive descent parser with backtracking
     //
     // If a function returns void, then it will always parse the given grammar
@@ -85,16 +190,25 @@ struct FixedFormRecursiveDescent {
 
     void lex_subroutine(unsigned char *&cur) {
         unsigned char *start=cur;
+        cur += std::string("subroutine").size();
+        TOK(position, "subroutine");
+        position += 2;
+        // subroutine name is scanned
+        TOK(position, scan_next(cur, '('));
+        while(lex_arg(cur));
         next_line(cur);
-        std::cout << "subroutine: " << tostr(start, cur-1) << std::endl;
-        while (lex_declaration(cur));
-        while (lex_body_statement(cur));
-        if (next_is(cur, "end")) {
-            next_line(cur);
-        } else {
-            //std::cout << "?: " << tostr(cur, cur+5) << std::endl;
-            error(cur, "end of subroutine expected");
-        }
+        // TODO this needs to be reworked
+        for(;;) {
+            while (lex_declaration(cur));
+            while (lex_body_statement(cur));
+            if (next_is(cur, "end")) {
+                next_line(cur);
+                position -= 2;
+                return;
+            }
+        } 
+        //std::cout << "?: " << tostr(cur, cur+5) << std::endl;
+        error(cur, "end of subroutine expected");
     }
 
     bool lex_declaration(unsigned char *&cur) {
@@ -110,8 +224,14 @@ struct FixedFormRecursiveDescent {
                 next_is(start, "complex") ||
                 next_is(start, "doubleprecision") ||
                 next_is(start, "external") ||
-                next_is(start, "dimension")
+                next_is(start, "dimension") ||
+                next_is(start, "character") ||
+                next_is(start, "logical")
             ) {
+            unsigned char *start2= start;
+            lex_declarator(start2);
+            while(lex_declarator_list(start2));
+            
             std::cout << "declaration: " << tostr(start, cur-1) << std::endl;
             return true;
         }
@@ -119,10 +239,105 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
+    bool lex_declarator(unsigned char *&cur) {
+        std::vector<std::string> declarators{
+            "integer",
+            "real",
+            "complex",
+            "doubleprecision",
+            "external",
+            "dimension",
+            "character",
+            "logical"
+        };
+        // TODO rewrite
+        for(const auto& declarator : declarators) {
+            if(next_is(cur, declarator)) {
+                cur += declarator.size();
+                TOK(position, declarator);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool lex_declarator_list(unsigned char *&cur) {
+        unsigned char *start = cur;
+        long long unsigned count = 0;
+        for(;;) {
+            switch (*cur) {
+                case ',':
+                    TOK(position, tostr(start, start + count));
+                    TOK(position, ',')
+                    cur++;
+                    return true;
+                case '\n':
+                    TOK(position, tostr(start, start + count));
+                    return false;
+            }
+            count++;
+            cur++;
+        }
+        return false;
+    }
+
+
+    // TODO: Blocked on these or now. Need better strategy to make progress here.
+
+    // bool is_comp_single_binary(unsigned char c) {
+    //     std::vector<unsigned char> comparator_list {
+    //         '<', '>'
+    //     };
+    // }
+
+    // bool is_comp_double_binary(std::string c) {
+    //     std::vector<std::string> comparator_list {
+    //         "<=", ">=", "=>", "=<" 
+    //     };
+    // }
+
+    // bool is_comp_quadruple_binary(std::string c) {
+    //     std::vector<std::string> comparator_list {
+    //         ".le.", ".ge."
+    //     };
+    // }
+
+    // // helper function for '<=' etc
+    // void peek_two(unsigned char *&cur, unsigned char *write) {
+    //     write = cur;
+    // }
+
+    // // helper function for '.le.'
+    // void peek_four(unsigned char *&cur, unsigned char *write) {
+    //     write = cur;
+    // }
+
+    // void lex_math(unsigned char *&cur) {
+    //     unsigned char *start = cur;
+    //     unsigned char *cpy = cur;
+    //     for(;;) {
+    //         if ::isdigit(*cpy) {}
+    //         if 
+
+
+    //         cpy++;
+    //         if(*cpy == '\n') break;
+    //     }
+    // }
+
+    void lex_math_or_expression(unsigned char *&cur) {
+        unsigned char *cpy = cur;
+        while(*cpy != '\n') {
+           cpy++;
+        }
+
+    }
+
     bool lex_body_statement(unsigned char *&cur) {
         unsigned char *start = cur;
+        unsigned char *cpy = cur;
         next_line(cur);
-
+        eat_label(start);
         // Handle assignment first, and return TK_NAME if matched,
         // as this identifier can be composed of keywords, so we do not
         // want to return them as keywords.
@@ -130,6 +345,9 @@ struct FixedFormRecursiveDescent {
         // we parse an "id", then optional "(...)", then there must be "="
         // the current implementation parses if(..) a=5 as assignment
         if (contains(start, cur, '=')) {
+            TOK(position, scan_next(cpy, '='));
+            lex_math_or_expression(cpy);
+
             std::cout << "body assignment statement: " << tostr(start, cur-1) << std::endl;
             return true;
         }
@@ -144,8 +362,28 @@ struct FixedFormRecursiveDescent {
             lex_if_statement(cur);
             return true;
         }
-        // TODO: add `do`, `where`, etc.
+        if (next_is(cur, "call")) {
+            lex_call_statement(cur);
+            return true;
+        }
+        if (next_is(cur, "open") ||
+            next_is(cur, "read") ||
+            next_is(cur, "write") ||
+            next_is(cur, "format") ||
+            next_is(cur, "close")) {
+            lex_io(cur);
+            return true;
+        }
 
+       if (next_is(cur, "goto")) {
+           TOK(position, "GOTO");
+           cur += std::string("goto").size();
+           eat_label_inline(cur);
+       }
+
+
+        // TODO: add `do`, `where`, etc.
+        // TODO: print / read statements
         // Now an "end" must be the end statement for the program/function/etc
         if (next_is(cur, "end")) {
             // not a body statement, return false
@@ -165,12 +403,72 @@ struct FixedFormRecursiveDescent {
         unsigned char *start = cur;
         // Assume single line if for now
         // TODO: Implement multiline if
+        position += 2;
+        if (!eat_label(cur)) {
+            TOK(position, "NO LABEL GIVEN IN IF STATEMENT");
+        }
+        scan_next(cur, '(');
+        lex_cond(cur);
+        scan_next(cur, ')');
+        if (next_is(cur, "goto")) lex_goto(cur);
+        
+        // lex_condition(cur);        eat_label(cur);
         next_line(cur);
-        std::cout << "body if statement: " << tostr(start, cur-1) << std::endl;
+        // TOK(position, tostr(start, cur-1));
+        // std::cout << "body if statement: " << tostr(start, cur-1) << std::endl;
+        position -= 2;
+    }
+
+    void lex_goto(unsigned char *&cur, bool newline = true) {
+        // flag for in-line statements ie. for IF  statements
+        cur += std::string("goto").size();
+        TOK(position, "GOTO");
+        eat_label(cur);
+        if (newline)
+            next_line(cur);
+    }
+
+    void lex_cond(unsigned char *&cur) {
+        // recursive -- split along precedence: 1) logical 2) mathematical 3) symbolical
+        // lex_math(cur);
+        // lex_logic_or_none(cur);
+        std::cout << "NOT IMPLEMENTED \n";
+
+    }
+
+    void lex_condition(unsigned char *&cur) {
+        scan_next(cur, '(');
+        while (*cur != ')')
+        {
+            // needs LOGICAL expression (not C-like values)
+            cur++;
+        }
+    }
+
+    void lex_call_statement(unsigned char *&cur) {
+        unsigned char *start = cur;
+        TOK(position, "call");
+        start += std::string("call").size();
+        TOK(position, scan_next(start, '('));
+        TOK(position, '(');
+        while(lex_arg(start));
+        next_line(cur);
+    }
+
+    void lex_data(unsigned char *&cur) {
+        std::cout << "data\n";
+        next_line(cur);
+    }
+
+    void lex_io(unsigned char *&cur) {
+        std::cout << "io\n";
+        next_line(cur);
     }
 
     void lex_function(unsigned char *&cur) {
         unsigned char *start=cur;
+        scan_next(cur, '(');
+        while(lex_arg(cur));
         next_line(cur);
         std::cout << "function: " << tostr(start, cur-1) << std::endl;
         while (lex_declaration(cur));
@@ -184,7 +482,8 @@ struct FixedFormRecursiveDescent {
     }
 
     void lex_program(unsigned char *&cur) {
-        std::cout << "program" << std::endl;
+        TOK(position, "program");
+
         next_line(cur);
         while (lex_declaration(cur));
         while (lex_body_statement(cur));
@@ -207,6 +506,14 @@ struct FixedFormRecursiveDescent {
                 next_is(cur, "real") ||
                 next_is(cur, "complex")) {
             lex_function(cur);
+        } else if (next_is(cur, "blockdata")) {
+            lex_data(cur);
+        } else if (next_is(cur, "print")) {
+            lex_io(cur);
+        } else if (next_is(cur, "if")){
+            lex_if_statement(cur);
+        } else if (next_is(cur, "goto")) {
+            lex_goto(cur);
         } else {
             error(cur, "Cannot recognize the global scope entity");
         }
@@ -214,6 +521,7 @@ struct FixedFormRecursiveDescent {
 
     void lex_global_scope(unsigned char *&cur) {
         while (*cur != '\0') {
+            eat_label(cur);
             lex_global_scope_item(cur);
         }
     }
