@@ -9,7 +9,7 @@ os.environ['CXXFLAGS'] = "-Werror"
 tar xzf dist/lfortran-*.tar.gz
 cd lfortran-*
 cmake -DCMAKE_BUILD_TYPE=Debug .
-make
+make -j8
 
 ctest --output-on-failure
 
