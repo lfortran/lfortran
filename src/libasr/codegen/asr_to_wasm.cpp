@@ -314,6 +314,21 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         // fixup length of local vars list
         wasm::emit_u32_b32_idx(m_code_section, m_al, len_idx_code_section_local_vars_list, local_vars_cnt);
+
+        // initialize the value for local variables if initialization exists
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if (is_main_func || v->m_intent == LFortran::ASRUtils::intent_local
+                                 || v->m_intent == LFortran::ASRUtils::intent_return_var) {
+                    if(v->m_symbolic_value) {
+                        this->visit_expr(*v->m_symbolic_value);
+                        // Todo: Checking for Array is currently omitted
+                        wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[v->m_name]);
+                    }
+                }
+            }
+        }
     }
 
     void visit_Function(const ASR::Function_t &x) {
