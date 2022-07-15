@@ -97,8 +97,8 @@ RUN(NAME stop_01 LABELS llvm wasm)
 RUN(NAME print_01 LABELS gfortran llvm cpp)
 RUN(NAME print_02 LABELS gfortran llvm)
 
-RUN(NAME cond_01 LABELS gfortran llvm cpp x86)
-RUN(NAME cond_02 LABELS gfortran llvm)
+RUN(NAME cond_01 LABELS gfortran llvm cpp x86 wasm)
+RUN(NAME cond_02 LABELS gfortran llvm wasm)
 
 RUN(NAME expr_01 FAIL LABELS gfortran llvm cpp x86)
 RUN(NAME expr_02 LABELS gfortran llvm cpp x86)
@@ -114,8 +114,8 @@ RUN(NAME variables_03 LABELS gfortran llvm cpp)
 
 RUN(NAME if_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME if_02 FAIL LABELS gfortran llvm cpp x86 wasm)
-RUN(NAME if_03 FAIL LABELS gfortran llvm cpp x86)
-RUN(NAME if_04 LABELS gfortran llvm cpp x86)
+RUN(NAME if_03 FAIL LABELS gfortran llvm cpp x86 wasm)
+RUN(NAME if_04 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME if_05 LABELS gfortran llvm cpp wasm)
 
 RUN(NAME while_01 LABELS gfortran llvm cpp x86)
