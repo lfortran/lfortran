@@ -56,6 +56,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     Allocator &m_al;
     diag::Diagnostics &diag;
 
+    bool intrinsic_module;
     ASR::Variable_t *return_var;
     bool is_return_visited;
     uint32_t nesting_level;
@@ -80,6 +81,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
    public:
     ASRToWASMVisitor(Allocator &al, diag::Diagnostics &diagnostics): m_al(al), diag(diagnostics) {
+        intrinsic_module = false;
         nesting_level = 0;
         cur_loop_nesting_level = 0;
         cur_func_idx = 0;
@@ -110,14 +112,57 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
-        
-        // the main program:
+        // All loose statements must be converted to a function, so the items
+        // must be empty:
+        LFORTRAN_ASSERT(x.n_items == 0);
+
+        {
+            // Process intrinsic modules in the right order
+            std::vector<std::string> build_order
+                = LFortran::ASRUtils::determine_module_dependencies(x);
+            for (auto &item : build_order) {
+                LFORTRAN_ASSERT(x.m_global_scope->get_scope().find(item)
+                    != x.m_global_scope->get_scope().end());
+                if (startswith(item, "lfortran_intrinsic")) {
+                    ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
+                    this->visit_symbol(*mod);
+                }
+            }
+        }
+
+        // then the main program:
         for (auto &item : x.m_global_scope->get_scope()) {
             if (ASR::is_a<ASR::Program_t>(*item.second)) {
                 visit_symbol(*item.second);
             }
         }
     }
+
+    void visit_Module(const ASR::Module_t &x) {
+        if (startswith(x.m_name, "lfortran_intrinsic_")) {
+            intrinsic_module = true;
+        } else {
+            intrinsic_module = false;
+        }
+
+        std::string contains;
+
+        // Generate the bodies of subroutines
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
+                ASR::Subroutine_t *s = ASR::down_cast<ASR::Subroutine_t>(item.second);
+                std::cout << "Subroutine: " << s->m_name << std::endl;
+                this->visit_Subroutine(*s);
+            }
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
+                std::cout << "Function: " << s->m_name << std::endl;
+                this->visit_Function(*s);
+            }
+        }
+        intrinsic_module = false;
+    }
+
 
     void emit_imports(){
         std::vector<import_func> import_funcs = {
