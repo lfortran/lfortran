@@ -109,7 +109,6 @@ namespace LFortran {
             std::vector<llvm::Type*>(
                 {llvm::Type::getInt32Ty(context),
                  llvm::Type::getInt32Ty(context),
-                 llvm::Type::getInt32Ty(context),
                  llvm::Type::getInt32Ty(context)}),
                  "dimension_descriptor")
         ) {
@@ -284,7 +283,7 @@ namespace LFortran {
 
         llvm::Value* SimpleCMODescriptor::
         get_dimension_size(llvm::Value* dim_des_arr, llvm::Value* dim, bool load) {
-            llvm::Value* dim_size = llvm_utils->create_gep(llvm_utils->create_ptr_gep(dim_des_arr, dim), 3);
+            llvm::Value* dim_size = llvm_utils->create_gep(llvm_utils->create_ptr_gep(dim_des_arr, dim), 2);
             if( !load ) {
                 return dim_size;
             }
@@ -308,12 +307,10 @@ namespace LFortran {
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep(dim_des_val, r);
                 llvm::Value* s_val = llvm_utils->create_gep(dim_val, 0);
                 llvm::Value* l_val = llvm_utils->create_gep(dim_val, 1);
-                llvm::Value* u_val = llvm_utils->create_gep(dim_val, 2);
-                llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 3);
+                llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 2);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), s_val);
                 builder->CreateStore(llvm_dims[r].first, l_val);
-                builder->CreateStore(llvm_dims[r].second, u_val);
-                u_val = LLVM::CreateLoad(*builder, u_val);
+                llvm::Value* u_val = llvm_dims[r].second;
                 l_val = LLVM::CreateLoad(*builder, l_val);
                 llvm::Value* dim_size = builder->CreateAdd(builder->CreateSub(u_val, l_val),
                                                         llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
@@ -359,12 +356,10 @@ namespace LFortran {
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep(dim_des_val, r);
                 llvm::Value* s_val = llvm_utils->create_gep(dim_val, 0);
                 llvm::Value* l_val = llvm_utils->create_gep(dim_val, 1);
-                llvm::Value* u_val = llvm_utils->create_gep(dim_val, 2);
-                llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 3);
+                llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 2);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), s_val);
                 builder->CreateStore(llvm_dims[r].first, l_val);
-                builder->CreateStore(llvm_dims[r].second, u_val);
-                u_val = LLVM::CreateLoad(*builder, u_val);
+                llvm::Value* u_val = llvm_dims[r].second;
                 l_val = LLVM::CreateLoad(*builder, l_val);
                 llvm::Value* dim_size = builder->CreateAdd(builder->CreateSub(u_val, l_val),
                                                             llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
@@ -419,12 +414,11 @@ namespace LFortran {
             return LLVM::CreateLoad(*builder, lb);
         }
 
-        llvm::Value* SimpleCMODescriptor::get_upper_bound(llvm::Value* dim_des, bool load) {
-            llvm::Value* ub = llvm_utils->create_gep(dim_des, 2);
-            if( !load ) {
-                return ub;
-            }
-            return LLVM::CreateLoad(*builder, ub);
+        llvm::Value* SimpleCMODescriptor::get_upper_bound(llvm::Value* dim_des) {
+            llvm::Value* lb = LLVM::CreateLoad(*builder, llvm_utils->create_gep(dim_des, 1));
+            llvm::Value* dim_size = LLVM::CreateLoad(*builder, llvm_utils->create_gep(dim_des, 2));
+            return builder->CreateSub(builder->CreateAdd(dim_size, lb),
+                                      llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
         }
 
         llvm::Value* SimpleCMODescriptor::get_stride(llvm::Value*) {
@@ -450,7 +444,7 @@ namespace LFortran {
                     // check_single_element(curr_llvm_idx, arr); TODO: To be implemented
                 }
                 idx = builder->CreateAdd(idx, builder->CreateMul(prod, curr_llvm_idx));
-                llvm::Value* dim_size = LLVM::CreateLoad(*builder, llvm_utils->create_gep(dim_des_ptr, 3));
+                llvm::Value* dim_size = LLVM::CreateLoad(*builder, llvm_utils->create_gep(dim_des_ptr, 2));
                 prod = builder->CreateMul(prod, dim_size);
             }
             return idx;
