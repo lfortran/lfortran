@@ -248,6 +248,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             else {
                 throw CodeGenError("Logicals of kind 4 and 8 only supported");
             }
+        } else if (ASRUtils::is_character(*v->m_type)) {
+            // Todo: Implement this
+            std::cout << "emit_var_type: is_character: FIXME" << std::endl;
+        } else if (ASRUtils::is_complex(*v->m_type)) {
+            // Todo: Implement this
+            std::cout << "emit_var_type: is_complex: FIXME" << std::endl;
         } else {
             throw CodeGenError("Param, Result, Var Types other than integer, floating point and logical not yet supported");
         }
@@ -317,6 +323,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         cur_func_idx++;
     }
 
+    void visit_Subroutine(const ASR::Subroutine_t & /* x */) {
+        // Todo: Implement this
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         this->visit_expr(*x.m_value);
         // this->visit_expr(*x.m_target);
@@ -357,8 +367,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     wasm::emit_i32_div_s(m_code_section, m_al);
                     break;
                 };
-                default:
+                default: {
+                    // Todo: Implement Pow Operation
                     throw CodeGenError("IntegerBinop: Pow Operation not yet implemented");
+                }
             }
         } else if (i->m_kind == 8) {
             switch (x.m_op) {
@@ -378,8 +390,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     wasm::emit_i64_div_s(m_code_section, m_al);
                     break;
                 };
-                default:
+                default: {
+                    // Todo: Implement Pow Operation
                     throw CodeGenError("IntegerBinop: Pow Operation not yet implemented");
+                }
             }
         } else {
             throw CodeGenError("IntegerBinop: Integer kind not supported");
@@ -412,8 +426,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     wasm::emit_f32_div(m_code_section, m_al);
                     break;
                 };
-                default:
+                default: {
+                    // Todo: Implement Pow Operation
                     throw CodeGenError("RealBinop: Pow Operation not yet implemented");
+                }
             }
         } else if (f->m_kind == 8) {
             switch (x.m_op) {
@@ -433,8 +449,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     wasm::emit_f64_div(m_code_section, m_al);
                     break;
                 };
-                default:
+                default: {
+                    // Todo: Implement Pow Operation
                     throw CodeGenError("RealBinop: Pow Operation not yet implemented");
+                }
             }
         } else {
             throw CodeGenError("RealBinop: Real kind not supported");
