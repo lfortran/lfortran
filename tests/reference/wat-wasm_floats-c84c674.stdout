@@ -80,6 +80,9 @@
     )
     (func $13 (type 13) (param) (result)
         (local i32)
+        f64.const 0.000000
+        call 6
+        local.set 0
         f32.const -2.300000
         f32.const 5.600000
         call 8
