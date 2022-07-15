@@ -11,6 +11,7 @@
 #include <libasr/pass/implied_do_loops.h>
 #include <libasr/pass/do_loops.h>
 #include <libasr/pass/global_stmts.h>
+#include <libasr/pass/unused_functions.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 
@@ -1125,6 +1126,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
     ASRToWASMVisitor v(al, diagnostics);
     Vec<uint8_t> wasm_bytes;
 
+    pass_unused_functions(al, asr, true);
     pass_wrap_global_stmts_into_function(al, asr, "f");
     pass_replace_implied_do_loops(al, asr, "f");
     pass_replace_do_loops(al, asr);
