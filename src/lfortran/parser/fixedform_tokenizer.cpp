@@ -3,6 +3,7 @@
 #include <lfortran/parser/parser_exception.h>
 #include <lfortran/parser/fixedform_tokenizer.h>
 #include <lfortran/parser/parser.tab.hh>
+#include <lfortran/parser/tokenizer.h>
 #include <libasr/bigint.h>
 
 int position = 0;
@@ -23,13 +24,19 @@ void FixedFormTokenizer::set_string(const std::string &str)
     line_num = 1;
 }
 
-#define KW(x) token(yylval.string); RET(KW_##x);
+#define KW(x) RET(KW_##x);
+//#define KW(x) token(yylval.string); RET(KW_##x);
 #define RET(x) token_loc(loc); last_token=yytokentype::x; return yytokentype::x;
 #define WARN_REL(x) add_rel_warning(diagnostics, yytokentype::TK_##x);
 
 struct FixedFormRecursiveDescent {
-
+    Tokenizer t;
+    diag::Diagnostics &diag;
+    Allocator &m_a;
     unsigned char *string_start;
+
+    FixedFormRecursiveDescent(diag::Diagnostics &diag,
+        Allocator &m_a) : diag{diag}, m_a{m_a} {};
 
     // Auxiliary functions:
 
@@ -97,7 +104,7 @@ struct FixedFormRecursiveDescent {
         std::string label;
         label.assign((char*)cur, 6);
         if (is_integer(label)) {
-            TOK(position, label);
+            // TOK(position, label);
             cur+=6;
             return true;
         }
@@ -112,7 +119,7 @@ struct FixedFormRecursiveDescent {
         while(*(cur++) != '\n') count++;
         label.assign((char*)cur, count);
         if (is_integer(label)) {
-            TOK(position, label);
+            // TOK(position, label);
             cur+=count;
             return true;
         }
@@ -149,7 +156,7 @@ struct FixedFormRecursiveDescent {
         unsigned char *start = cur;
         long long unsigned count = 0;
         while (*(cur++) != c) count++;
-        TOK(position, c);
+        // TOK(position, c);
         return tostr(start, cur-1);
     }
    
@@ -157,14 +164,14 @@ struct FixedFormRecursiveDescent {
         unsigned char *start = cur;
         long long unsigned count = 0;
         if (*cur == '(') {
-            TOK(position, '(');
+            // TOK(position, '(');
             return true;
         }
         // we can easily extract all ',' and ')' and tokenize
         while (*(cur++) != ',') {
             // we have found the end of the argument list
             if (*cur == ')') {
-                TOK(position, ')');
+                // TOK(position, ')');
                 return false;
             }
             if (*cur == '\0') {
@@ -173,10 +180,10 @@ struct FixedFormRecursiveDescent {
             count++;
         }
 
-        TOK(position, ',');
+        // TOK(position, ',');
         
         if (count > 0) {
-            TOK(position, tostr(start, start + count));
+            // TOK(position, tostr(start, start + count));
         }
         return true;
     }
@@ -188,49 +195,80 @@ struct FixedFormRecursiveDescent {
     // errors, and returns true (parsed, `cur` progressed) or false (not-parsed,
     // `cur` unchanged).
 
-    void lex_subroutine(unsigned char *&cur) {
-        unsigned char *start=cur;
-        cur += std::string("subroutine").size();
-        TOK(position, "subroutine");
-        position += 2;
-        // subroutine name is scanned
-        TOK(position, scan_next(cur, '('));
-        while(lex_arg(cur));
-        next_line(cur);
-        // TODO this needs to be reworked
+    void tokenize_line(const std::string &chop, unsigned char *&cur) {
+        // TODO keep a list of weird assignments that duplicate / substring with keywords
+        // examples: 'result' used as a variable, 'doubleprecisioninteger' used as a variable
+        // GOAL: double check to get the KW_XXX right (ie. the defining category)
+        // Q: would we need to this for every line we land upon?
+
+        TOK(position, chop);
+        unsigned char *start = cur + std::string(chop).size();
+        // move the cur pointer to the next line after
+        next_line(cur);     
+        // need to have the line string stay alive for function scope
+        // adding the newline to make it easy for us to walk through the line
+        std::string line{tostr(start, cur)};
+        t.set_string(line);
+        std::cout << line;
+        YYSTYPE y;
+        Location l;
+        ptrdiff_t len = 1;
         for(;;) {
-            while (lex_declaration(cur));
-            while (lex_body_statement(cur));
-            if (next_is(cur, "end")) {
-                next_line(cur);
-                position -= 2;
-                return;
+            if(*t.cur == '\n') break;
+            TOK(position,t.lex(m_a, y, l, diag));
+            len = t.cur - t.tok;
+            TOK(position, tostr(t.tok, t.tok + len));
+            // for now, this double check is needed as the usual tokenizer does not
+            // like newlines '\n'
+            // we have the check for ';' to be able to have multiple expressions per line
+            if(*(t.cur+1) == '\n' || *(t.cur + 1) == ';') {
+                TOK(position,t.lex(m_a, y, l, diag));
+                len = t.cur - t.tok;
+                TOK(position, tostr(t.tok, t.tok + len));
+                break;
             }
-        } 
-        //std::cout << "?: " << tostr(cur, cur+5) << std::endl;
-        error(cur, "end of subroutine expected");
+        }
+    }
+
+    void lex_subroutine(unsigned char *&cur) {
+        tokenize_line("subroutine", cur);
+        // TODO check if this is sufficient or if we need an eternal loop to get
+        // all possible combinations right
+        while (lex_declaration(cur));
+        while (lex_body_statement(cur));
+        if (next_is(cur, "end")) {
+            next_line(cur);
+            position -= 2;
+            return;
+        }
     }
 
     bool lex_declaration(unsigned char *&cur) {
         unsigned char *start = cur;
         next_line(cur);
-        if (contains(start, cur, '=')) {
-            cur = start;
-            return false;
-        }
         if (
                 next_is(start, "integer") ||
                 next_is(start, "real") ||
                 next_is(start, "complex") ||
                 next_is(start, "doubleprecision") ||
                 next_is(start, "external") ||
-                next_is(start, "dimension") ||
+                next_is(start, "dimension") || // problematic case? dimension rg(25) has tokens:
+                                               // ...
+                                               // TOKEN: rg
+                                               // TOKEN: 273
+                                               // TOKEN: (
+                                               // TOKEN: 261
+                                               // TOKEN: 25
+                                               // TOKEN: 274
+                                               // TOKEN: )
+
                 next_is(start, "character") ||
                 next_is(start, "logical")
             ) {
             unsigned char *start2= start;
             lex_declarator(start2);
-            while(lex_declarator_list(start2));
+            // call with empty string as we found out the declarator
+            tokenize_line("", start2);
             
             std::cout << "declaration: " << tostr(start, cur-1) << std::endl;
             return true;
@@ -239,6 +277,7 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
+    // TODO: put declaration lexers together
     bool lex_declarator(unsigned char *&cur) {
         std::vector<std::string> declarators{
             "integer",
@@ -254,6 +293,7 @@ struct FixedFormRecursiveDescent {
         for(const auto& declarator : declarators) {
             if(next_is(cur, declarator)) {
                 cur += declarator.size();
+                // TODO find out id of declarator
                 TOK(position, declarator);
                 return true;
             }
@@ -267,12 +307,12 @@ struct FixedFormRecursiveDescent {
         for(;;) {
             switch (*cur) {
                 case ',':
-                    TOK(position, tostr(start, start + count));
-                    TOK(position, ',')
+                    // TOK(position, tostr(start, start + count));
+                    // TOK(position, ',')
                     cur++;
                     return true;
                 case '\n':
-                    TOK(position, tostr(start, start + count));
+                    // TOK(position, tostr(start, start + count));
                     return false;
             }
             count++;
@@ -345,10 +385,9 @@ struct FixedFormRecursiveDescent {
         // we parse an "id", then optional "(...)", then there must be "="
         // the current implementation parses if(..) a=5 as assignment
         if (contains(start, cur, '=')) {
-            TOK(position, scan_next(cpy, '='));
-            lex_math_or_expression(cpy);
-
+            // TOK(position, scan_next(cpy, '='));
             std::cout << "body assignment statement: " << tostr(start, cur-1) << std::endl;
+            tokenize_line("", start);
             return true;
         }
         cur = start;
@@ -359,11 +398,12 @@ struct FixedFormRecursiveDescent {
         // Next we have to handle multiline statements (and consume their "end")
         // Tokenization: the first word as KW_*, then specific to each case
         if (next_is(cur, "if(")) {
-            lex_if_statement(cur);
+            // lex_if_statement(cur);
+            tokenize_line("if", cur);
             return true;
         }
         if (next_is(cur, "call")) {
-            lex_call_statement(cur);
+            tokenize_line("call", cur);
             return true;
         }
         if (next_is(cur, "open") ||
@@ -371,14 +411,15 @@ struct FixedFormRecursiveDescent {
             next_is(cur, "write") ||
             next_is(cur, "format") ||
             next_is(cur, "close")) {
-            lex_io(cur);
+            // CHECK: tokenizer _should_ be able to handle it
+            tokenize_line("", cur);
             return true;
         }
 
        if (next_is(cur, "goto")) {
-           TOK(position, "GOTO");
-           cur += std::string("goto").size();
-           eat_label_inline(cur);
+           // TOK(position, "GOTO");
+           tokenize_line("goto", cur);
+            return true;
        }
 
 
@@ -405,7 +446,7 @@ struct FixedFormRecursiveDescent {
         // TODO: Implement multiline if
         position += 2;
         if (!eat_label(cur)) {
-            TOK(position, "NO LABEL GIVEN IN IF STATEMENT");
+            // TOK(position, "NO LABEL GIVEN IN IF STATEMENT");
         }
         scan_next(cur, '(');
         lex_cond(cur);
@@ -414,7 +455,7 @@ struct FixedFormRecursiveDescent {
         
         // lex_condition(cur);        eat_label(cur);
         next_line(cur);
-        // TOK(position, tostr(start, cur-1));
+        // // TOK(position, tostr(start, cur-1));
         // std::cout << "body if statement: " << tostr(start, cur-1) << std::endl;
         position -= 2;
     }
@@ -422,7 +463,7 @@ struct FixedFormRecursiveDescent {
     void lex_goto(unsigned char *&cur, bool newline = true) {
         // flag for in-line statements ie. for IF  statements
         cur += std::string("goto").size();
-        TOK(position, "GOTO");
+        // TOK(position, "GOTO");
         eat_label(cur);
         if (newline)
             next_line(cur);
@@ -447,10 +488,10 @@ struct FixedFormRecursiveDescent {
 
     void lex_call_statement(unsigned char *&cur) {
         unsigned char *start = cur;
-        TOK(position, "call");
+        // TOK(position, "call");
         start += std::string("call").size();
-        TOK(position, scan_next(start, '('));
-        TOK(position, '(');
+        // TOK(position, scan_next(start, '('));
+        // TOK(position, '(');
         while(lex_arg(start));
         next_line(cur);
     }
@@ -482,7 +523,7 @@ struct FixedFormRecursiveDescent {
     }
 
     void lex_program(unsigned char *&cur) {
-        TOK(position, "program");
+        // TOK(position, "program");
 
         next_line(cur);
         while (lex_declaration(cur));
@@ -531,7 +572,8 @@ struct FixedFormRecursiveDescent {
 bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics) {
     // We use a recursive descent parser.  We are starting at the global scope
     try {
-        FixedFormRecursiveDescent f;
+        Allocator al(1024);
+        FixedFormRecursiveDescent f(diagnostics, al);
         f.string_start = string_start;
         f.lex_global_scope(cur);
     } catch (const parser_local::TokenizerError &e) {

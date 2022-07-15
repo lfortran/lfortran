@@ -13,7 +13,7 @@ C Comment 2
       integer :: a ! Comment 4
       print *, "OK1"
      !, "OK2" ! The first ! is not a comment, but line continuation
-      print *, "OK1"
+500     print *, "OK1"
 !    !, "F2" ! This whole line is a comment
 c    !, "F3" ! This whole line is a comment
 C    !, "F4" ! This whole line is a comment
