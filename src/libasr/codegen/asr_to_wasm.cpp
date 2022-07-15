@@ -775,7 +775,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     inline ASR::ttype_t* extract_ttype_t_from_expr(ASR::expr_t* expr) {
         return ASRUtils::expr_type(expr);
     }
-    
+
     void extract_kinds(const ASR::Cast_t& x,
                        int& arg_kind, int& dest_kind)
     {
@@ -1179,7 +1179,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
     }
 
     v.get_wasm(wasm_bytes);
-    
+
     return wasm_bytes;
 }
 
