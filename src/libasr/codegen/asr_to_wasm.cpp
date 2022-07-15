@@ -115,6 +115,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // must be empty:
         LFORTRAN_ASSERT(x.n_items == 0);
 
+        emit_imports();
+
         {
             // Process intrinsic modules in the right order
             std::vector<std::string> build_order
@@ -198,8 +200,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
 
     void visit_Program(const ASR::Program_t &x) {
-
-        emit_imports();
 
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
