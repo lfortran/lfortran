@@ -488,9 +488,9 @@ RUN(NAME kwargs_02 LABELS gfortran)
 RUN(NAME test_iso_c_binding LABELS gfortran llvm)
 RUN(NAME test_iso_fortran_env LABELS gfortran llvm)
 
-RUN(NAME abs_01 LABELS gfortran llvm)
-RUN(NAME abs_02 LABELS gfortran llvm)
-RUN(NAME abs_03 LABELS gfortran llvm)
+RUN(NAME abs_01 LABELS gfortran llvm wasm)
+RUN(NAME abs_02 LABELS gfortran llvm) # for wasm, currently we get type mismatch error
+RUN(NAME abs_03 LABELS gfortran llvm wasm)
 RUN(NAME sqrt_01 LABELS gfortran llvm)
 RUN(NAME sqrt_02 LABELS gfortran llvm)
 RUN(NAME sin_01 LABELS gfortran llvm)
