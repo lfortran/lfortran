@@ -152,12 +152,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
                 ASR::Subroutine_t *s = ASR::down_cast<ASR::Subroutine_t>(item.second);
-                std::cout << "Subroutine: " << s->m_name << std::endl;
                 this->visit_Subroutine(*s);
             }
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
-                std::cout << "Function: " << s->m_name << std::endl;
                 this->visit_Function(*s);
             }
         }
