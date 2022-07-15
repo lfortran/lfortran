@@ -221,20 +221,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         /********************* Function Body Starts Here *********************/
         uint32_t len_idx_code_section_func_size = wasm::emit_len_placeholder(m_code_section, m_al);
 
-        /********************* Local Vars Types List *********************/
-        uint32_t len_idx_code_section_local_vars_list = wasm::emit_len_placeholder(m_code_section, m_al);
-        int local_vars_cnt = 0, cur_idx = 0;
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
-                wasm::emit_u32(m_code_section, m_al, 1U);    // count of local vars of this type
-                emit_var_type(m_code_section, v); // emit the type of this var
-                m_var_name_idx_map[v->m_name] = cur_idx++;
-                local_vars_cnt++;
-            }
-        }
-        // fixup length of local vars list
-        wasm::emit_u32_b32_idx(m_code_section, m_al, len_idx_code_section_local_vars_list, local_vars_cnt);
+        emit_local_vars(x, 0 /* cur_idx */, true);
 
         for (size_t i = 0; i < x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
@@ -308,6 +295,27 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    template<typename T>
+    void emit_local_vars(const T& x, int cur_idx, bool is_main_func) {
+        /********************* Local Vars Types List *********************/
+        uint32_t len_idx_code_section_local_vars_list = wasm::emit_len_placeholder(m_code_section, m_al);
+        int local_vars_cnt = 0;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if (is_main_func || v->m_intent == LFortran::ASRUtils::intent_local
+                                 || v->m_intent == LFortran::ASRUtils::intent_return_var) {
+                    wasm::emit_u32(m_code_section, m_al, 1U);    // count of local vars of this type
+                    emit_var_type(m_code_section, v); // emit the type of this var
+                    m_var_name_idx_map[v->m_name] = cur_idx++;
+                    local_vars_cnt++;
+                }
+            }
+        }
+        // fixup length of local vars list
+        wasm::emit_u32_b32_idx(m_code_section, m_al, len_idx_code_section_local_vars_list, local_vars_cnt);
+    }
+
     void visit_Function(const ASR::Function_t &x) {
         m_var_name_idx_map.clear(); // clear all previous variable and their indices
 
@@ -335,22 +343,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         /********************* Function Body Starts Here *********************/
         uint32_t len_idx_code_section_func_size = wasm::emit_len_placeholder(m_code_section, m_al);
 
-        /********************* Local Vars Types List *********************/
-        uint32_t len_idx_code_section_local_vars_list = wasm::emit_len_placeholder(m_code_section, m_al);
-        int local_vars_cnt = 0;
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
-                if (v->m_intent == LFortran::ASRUtils::intent_local || v->m_intent == LFortran::ASRUtils::intent_return_var) {
-                    wasm::emit_u32(m_code_section, m_al, 1U);    // count of local vars of this type
-                    emit_var_type(m_code_section, v); // emit the type of this var
-                    m_var_name_idx_map[v->m_name] = cur_idx++;
-                    local_vars_cnt++;
-                }
-            }
-        }
-        // fixup length of local vars list
-        wasm::emit_u32_b32_idx(m_code_section, m_al, len_idx_code_section_local_vars_list, local_vars_cnt);
+        emit_local_vars(x, cur_idx, false);
 
         for (size_t i = 0; i < x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
