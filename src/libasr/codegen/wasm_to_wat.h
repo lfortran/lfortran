@@ -123,6 +123,12 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
     void visit_F64Sub() { src += indent + "f64.sub"; }
     void visit_F64Mul() { src += indent + "f64.mul"; }
     void visit_F64Div() { src += indent + "f64.div"; }
+    void visit_F64Eq() { src += indent + "f64.eq"; }
+    void visit_F64Ne() { src += indent + "f64.ne"; }
+    void visit_F64Lt() { src += indent + "f64.lt"; }
+    void visit_F64Gt() { src += indent + "f64.gt"; }
+    void visit_F64Le() { src += indent + "f64.le"; }
+    void visit_F64Ge() { src += indent + "f64.ge"; }
 
     void visit_I32WrapI64() { src += indent + "i32.wrap_i64"; }
     void visit_I32TruncF32S() { src += indent + "i32.trunc_f32_s"; }
@@ -137,12 +143,6 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
     void visit_F64ConvertI64S() { src += indent + "f64.convert_i64_s"; }
     void visit_F64PromoteF32() { src += indent + "f64.promote_f32"; }
     void visit_F64DivS() { src += indent + "f64.div_s"; }
-    void visit_F64Eq() { src += indent + "f64.eq"; }
-    void visit_F64Ne() { src += indent + "f64.ne"; }
-    void visit_F64Lt() { src += indent + "f64.lt"; }
-    void visit_F64Gt() { src += indent + "f64.gt"; }
-    void visit_F64Le() { src += indent + "f64.le"; }
-    void visit_F64Ge() { src += indent + "f64.ge"; }
 
 };
 
