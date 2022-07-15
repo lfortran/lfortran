@@ -292,7 +292,16 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
         } else if (ASRUtils::is_character(*v->m_type)) {
             // Todo: Implement this
-            std::cout << "emit_var_type: is_character: FIXME" << std::endl;
+
+            // checking for array is currently omitted
+            ASR::Character_t* v_int = ASR::down_cast<ASR::Character_t>(v->m_type);
+            /* Currently Assuming character as integer of kind 1 */
+            if (v_int->m_kind == 1) {
+                wasm::emit_b8(code, m_al, wasm::type::i32);
+            }
+            else{
+                throw CodeGenError("Characters of kind 1 only supported");
+            }
         } else if (ASRUtils::is_complex(*v->m_type)) {
             // Todo: Implement this
             std::cout << "emit_var_type: is_complex: FIXME" << std::endl;
