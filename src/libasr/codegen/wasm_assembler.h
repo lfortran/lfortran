@@ -180,10 +180,12 @@ void emit_import_mem(Vec<uint8_t> &code, Allocator &al, const std::string &mod_n
     emit_u32(code, al, min_limit);
 }
 
-void encode_section(Vec<uint8_t> &des, Vec<uint8_t> &section_content, Allocator &al, uint32_t section_id){
+void encode_section(Vec<uint8_t> &des, Vec<uint8_t> &section_content, Allocator &al, uint32_t section_id, uint32_t no_of_elements){
     // every section in WebAssembly is encoded by adding its section id, followed by the content size and lastly the contents
     emit_u32(des, al, section_id);
-    emit_u32(des, al, section_content.size());
+    emit_u32(des, al, 4U /* size of no_of_elements */ + section_content.size());
+    uint32_t len_idx = emit_len_placeholder(des, al);
+    emit_u32_b32_idx(des, al, len_idx, no_of_elements);
     for(auto &byte:section_content){
         des.push_back(al, byte);
     }

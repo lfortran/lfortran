@@ -1,5 +1,12 @@
 program wasm1
     implicit none
+
+    print *, a_sqr(5)
+    print *, add(5, 4)
+    print *, add64(4_8, 5_8)
+    print *, computeCircleArea(5)
+    print *, my_add(5, 4)
+
     contains
 
     function a_sqr(x) result(r)
