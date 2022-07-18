@@ -42,11 +42,3 @@ Main mailinglist:
 https://groups.io/g/lfortran
 
 You can also chat with us on Zulip ([![project chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://lfortran.zulipchat.com/)).
-
-CI status on master: [![pipeline status](https://gitlab.com/lfortran/lfortran/badges/master/pipeline.svg)](https://gitlab.com/lfortran/lfortran/-/commits/master)
-
-
-We maintain an official GitHub read-only
-[mirror](https://github.com/lfortran/lfortran)
-(please do not send pull
-requests there, use our GitLab repository instead).
