@@ -10,92 +10,8 @@ on:
 
 
 jobs:
-  Build:
-    name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["ubuntu-latest", "macos-latest", "windows-2019"]
-        python-version: ["3.10"]
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          auto-update-conda: true
-          environment-file: ci/environment.yml
-          python-version: ${{ matrix.python-version }}
-          auto-activate-base: false
-
-      - name: Install Windows Conda Packages
-        if: contains(matrix.os, 'windows')
-        shell: bash -l {0}
-        run: conda install m2-bison=3.0.4 ninja rapidjson
-
-      - name: Install Linux / macOS Conda Packages
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        shell: bash -l {0}
-        run: conda install bison=3.4 rapidjson
-
-      - name: Conda info
-        shell: bash -l {0}
-        run: |
-            conda info
-            conda list
-      - name: Setup Platform (Linux)
-        if: contains(matrix.os, 'ubuntu')
-        shell: bash -l {0}
-        run: |
-            echo "LFORTRAN_CMAKE_GENERATOR=Unix Makefiles" >> $GITHUB_ENV
-            echo "WIN=0" >> $GITHUB_ENV
-            echo "MACOS=0" >> $GITHUB_ENV
-      - name: Setup Platform (macOS)
-        if: contains(matrix.os, 'macos')
-        shell: bash -l {0}
-        run: |
-            echo "LFORTRAN_CMAKE_GENERATOR=Unix Makefiles" >> $GITHUB_ENV
-            echo "WIN=0" >> $GITHUB_ENV
-            echo "MACOS=1" >> $GITHUB_ENV
-      - name: Build (Linux / macOS)
-        shell: bash -l {0}
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        run: |
-            xonsh ci/build_tmp.xsh
-      - name: Build (Windows)
-        if: contains(matrix.os, 'windows')
-        shell: cmd
-        run: |
-            set CONDA_INSTALL_LOCN=C:\\Miniconda
-            call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
-            call conda activate test
-            set LFORTRAN_CMAKE_GENERATOR=Ninja
-            set WIN=1
-            set MACOS=0
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci\build_tmp.xsh
-      - name: Test (Linux / macOS)
-        shell: bash -l {0}
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        run: |
-            xonsh ci/test.xsh
-      - name: Test (Windows)
-        if: contains(matrix.os, 'windows')
-        shell: cmd
-        run: |
-            set CONDA_INSTALL_LOCN=C:\\Miniconda
-            call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
-            call conda activate test
-            set LFORTRAN_CMAKE_GENERATOR=Ninja
-            set WIN=1
-            set MACOS=0
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci\test.xsh
-
-  debug:
-    name: Check Debug build
+  upload_tarball:
+    name: Upload Tarball
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -104,83 +20,17 @@ jobs:
 
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          python-version: "3.10"
-          mamba-version: "*"
-          channels: conda-forge,defaults
-          channel-priority: true
-          activate-environment: anaconda-client-env
+          auto-update-conda: true
           environment-file: ci/environment_linux.yml
+          python-version: "3.10"
+          auto-activate-base: false
 
-      - name: Conda info
+      - name: Upload tarball
         shell: bash -l {0}
         run: |
-            conda info
-            conda list
-
-      - name: Build Linux
-        shell: bash -l {0}
-        run: |
+            export SSH_DEPLOY_KEY=${{ secrets.SSH_DEPLOY_KEY }}
             ./build0.sh
-            cmake \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              .
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
-        shell: bash -l {0}
-        run: |
-            ctest
-            ./run_tests.py
-            cd integration_tests
-            ./run_tests.py -b llvm
-
-  test_without_llvm:
-    name: Test without LLVM Backend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          auto-update-conda: true
-          environment-file: ci/environment_linux.yml
-          python-version: "3.10"
-          auto-activate-base: false
-
-      - name: Test
-        shell: bash -l {0}
-        run: |
-          xonsh ci/test_without_llvm_backend.xsh
-
-  test_cpp:
-    name: Test CPP
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          auto-update-conda: true
-          environment-file: ci/environment_linux.yml
-          python-version: "3.10"
-          auto-activate-base: false
-
-      - name: Conda info
-        shell: bash -l {0}
-        run: |
-            conda info
-            conda list
-
-      - name: Test CPP
-        shell: bash -l {0}
-        run: |
-            xonsh ci/test_cpp_version.xsh
+            lfortran_version=$(<version)
+            sudo apk add --no-cache cmake
+            ci/create_source_tarball.sh $lfortran_version
+            ci/upload_tarball.sh
