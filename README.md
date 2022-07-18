@@ -25,11 +25,16 @@ Which is generated using the files in the `doc` directory.
 # Development
 
 We welcome all contributions.
-The main development repository is at GitLab:
+The main development repository is at GitHub:
 
-https://gitlab.com/lfortran/lfortran
+https://github.com/lfortran/lfortran
 
-Please use it to open issues or send merge requests.
+Please send Pull Requests (PRs) there.
+
+We moved to the above GitHub repository from GitLab on July 18, 2022. For now
+we are still using our old GitLab repository as an issue tracker:
+https://gitlab.com/lfortran/lfortran,
+please use it to open issues.
 See the [CONTRIBUTING](CONTRIBUTING.md) document for more information.
 
 Main mailinglist:
