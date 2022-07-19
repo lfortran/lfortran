@@ -1,5 +1,10 @@
 program wasm1
     implicit none
+
+    print *, a_sqr_i64(1000000_8)
+    print *, add_i64(1000000000000_8, 1000000000000_8)
+    print *, test_i64()
+
     contains
 
     function a_sqr_i64(x) result(r)

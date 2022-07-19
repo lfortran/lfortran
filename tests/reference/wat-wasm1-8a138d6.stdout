@@ -68,6 +68,29 @@
     )
     (func $11 (type 11) (param) (result)
         (local)
+        i32.const 5
+        call 6
+        call 0
+        call 5
+        i32.const 5
+        i32.const 4
+        call 7
+        call 0
+        call 5
+        i64.const 4
+        i64.const 5
+        call 8
+        call 1
+        call 5
+        i32.const 5
+        call 9
+        call 0
+        call 5
+        i32.const 5
+        i32.const 4
+        call 10
+        call 0
+        call 5
     )
     (export "a_sqr" (func $6))
     (export "add" (func $7))
