@@ -27,13 +27,13 @@ namespace LFortran {
             }
             bool is_ok = true;
             for( int r = 0; r < n_dims; r++ ) {
-                if( m_dims[r].m_end == nullptr &&
+                if( m_dims[r].m_length == nullptr &&
                     m_dims[r].m_start == nullptr ) {
                     is_ok = false;
                     break;
                 }
-                if( (m_dims[r].m_end != nullptr &&
-                    m_dims[r].m_end->type != ASR::exprType::IntegerConstant) ||
+                if( (m_dims[r].m_length != nullptr &&
+                    m_dims[r].m_length->type != ASR::exprType::IntegerConstant) ||
                     (m_dims[r].m_start != nullptr &&
                     m_dims[r].m_start->type != ASR::exprType::IntegerConstant) ) {
                     is_ok = false;
@@ -310,10 +310,7 @@ namespace LFortran {
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 2);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), s_val);
                 builder->CreateStore(llvm_dims[r].first, l_val);
-                llvm::Value* u_val = llvm_dims[r].second;
-                l_val = LLVM::CreateLoad(*builder, l_val);
-                llvm::Value* dim_size = builder->CreateAdd(builder->CreateSub(u_val, l_val),
-                                                        llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                llvm::Value* dim_size = llvm_dims[r].second;
                 builder->CreateStore(dim_size, dim_size_ptr);
             }
 
@@ -321,16 +318,7 @@ namespace LFortran {
             llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             llvm::Value* prod = const_1;
             for( int r = 0; r < n_dims; r++ ) {
-                llvm::Value *m_start, *m_end;
-                ASR::dimension_t m_dim = m_dims[r];
-                if( m_dim.m_start != nullptr ) {
-                    m_start = llvm_dims[r].first;
-                } else {
-                    m_start = const_1;
-                }
-                m_end = llvm_dims[r].second;
-                llvm::Value* dim_size_1 = builder->CreateSub(m_end, m_start);
-                llvm::Value* dim_size = builder->CreateAdd(dim_size_1, const_1);
+                llvm::Value* dim_size = llvm_dims[r].second;
                 prod = builder->CreateMul(prod, dim_size);
             }
             builder->CreateStore(prod, llvm_size);
@@ -359,10 +347,7 @@ namespace LFortran {
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 2);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), s_val);
                 builder->CreateStore(llvm_dims[r].first, l_val);
-                llvm::Value* u_val = llvm_dims[r].second;
-                l_val = LLVM::CreateLoad(*builder, l_val);
-                llvm::Value* dim_size = builder->CreateAdd(builder->CreateSub(u_val, l_val),
-                                                            llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                llvm::Value* dim_size = llvm_dims[r].second;
                 num_elements = builder->CreateMul(num_elements, dim_size);
                 builder->CreateStore(dim_size, dim_size_ptr);
             }

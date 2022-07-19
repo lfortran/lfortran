@@ -301,7 +301,7 @@ public:
         }
         bool is_ok = true;
         for( int r = 0; r < n_dims; r++ ) {
-            if( m_dims[r].m_end == nullptr ) {
+            if( m_dims[r].m_length == nullptr ) {
                 is_ok = false;
                 break;
             }
@@ -382,7 +382,7 @@ public:
             ASR::dimension_t m_dim = m_dims[r];
             visit_expr(*(m_dim.m_start));
             llvm::Value* start = tmp;
-            visit_expr(*(m_dim.m_end));
+            visit_expr(*(m_dim.m_length));
             llvm::Value* end = tmp;
             llvm_dims.push_back(std::make_pair(start, end));
         }
@@ -401,7 +401,7 @@ public:
             ASR::dimension_t m_dim = m_dims[r];
             visit_expr(*(m_dim.m_start));
             llvm::Value* start = tmp;
-            visit_expr(*(m_dim.m_end));
+            visit_expr(*(m_dim.m_length));
             llvm::Value* end = tmp;
             llvm_dims.push_back(std::make_pair(start, end));
         }

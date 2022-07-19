@@ -693,9 +693,10 @@ public:
             }
             if (m_dim[i].m_end) {
                 this->visit_expr(*m_dim[i].m_end);
-                dim.m_end = LFortran::ASRUtils::EXPR(tmp);
+                dim.m_length = ASRUtils::compute_length_from_start_end(al, dim.m_start,
+                                    LFortran::ASRUtils::EXPR(tmp));
             } else {
-                dim.m_end = nullptr;
+                dim.m_length = nullptr;
             }
             dims.push_back(al, dim);
         }
@@ -1339,7 +1340,7 @@ public:
         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
         ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.n_args, int32_type));
         dim.m_start = one;
-        dim.m_end = x_n_args;
+        dim.m_length = x_n_args;
         dims.push_back(al, dim);
         type = ASRUtils::duplicate_type(al, type, &dims);
         tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
@@ -1349,7 +1350,7 @@ public:
     void fill_expr_in_ttype_t(std::vector<ASR::expr_t*>& exprs, ASR::dimension_t* dims, size_t n_dims) {
         for( size_t i = 0; i < n_dims; i++ ) {
             exprs.push_back(dims[i].m_start);
-            exprs.push_back(dims[i].m_end);
+            exprs.push_back(dims[i].m_length);
         }
     }
 
@@ -1390,7 +1391,7 @@ public:
                     ASR::dimension_t new_dim;
                     new_dim.loc = func_calls[i]->base.loc;
                     new_dim.m_start = func_calls[i];
-                    new_dim.m_end = func_calls[i + 1];
+                    new_dim.m_length = func_calls[i + 1];
                     new_dims.push_back(al, new_dim);
                 }
                 int64_t a_len = t->m_len;
@@ -1409,7 +1410,7 @@ public:
                     ASR::dimension_t new_dim;
                     new_dim.loc = func_calls[i]->base.loc;
                     new_dim.m_start = func_calls[i];
-                    new_dim.m_end = func_calls[i + 1];
+                    new_dim.m_length = func_calls[i + 1];
                     new_dims.push_back(al, new_dim);
                 }
                 return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t->m_kind, new_dims.p, new_dims.size()));
@@ -1424,7 +1425,7 @@ public:
                     ASR::dimension_t new_dim;
                     new_dim.loc = func_calls[i]->base.loc;
                     new_dim.m_start = func_calls[i];
-                    new_dim.m_end = func_calls[i + 1];
+                    new_dim.m_length = func_calls[i + 1];
                     new_dims.push_back(al, new_dim);
                 }
                 return ASRUtils::TYPE(ASR::make_Real_t(al, loc, t->m_kind, new_dims.p, new_dims.size()));
@@ -2011,7 +2012,7 @@ public:
         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
         ASR::dimension_t default_dim;
         default_dim.m_start = one;
-        default_dim.m_end = one;
+        default_dim.m_length = one;
         default_dim.loc = one->base.loc;
         std::vector<ASR::dimension_t> pair_a(2), pair_b(2);
         if( matrix_a_rank == 1 ) {
@@ -2056,7 +2057,7 @@ public:
         ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
         new_dim.loc = x.base.base.loc;
         new_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
-        new_dim.m_end = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.base.base.loc,
+        new_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.base.base.loc,
                             vector ? vector : mask, nullptr,
                             int32_type, nullptr));
         new_dims.push_back(al, new_dim);
@@ -2084,7 +2085,7 @@ public:
             ASR::dimension_t size_dim;
             size_dim.loc = size->base.loc;
             size_dim.m_start = one;
-            size_dim.m_end = size;
+            size_dim.m_length = size;
             new_dims.push_back(al, size_dim);
         } else {
             if( ASR::is_a<ASR::ArrayConstant_t>(*mold) ||
@@ -2103,7 +2104,7 @@ public:
                 ASR::dimension_t size_dim;
                 size_dim.loc = x.base.base.loc;
                 size_dim.m_start = one;
-                size_dim.m_end = b64;
+                size_dim.m_length = b64;
                 new_dims.push_back(al, size_dim);
             }
         }
