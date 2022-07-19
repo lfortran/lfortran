@@ -129,7 +129,6 @@ int emit_tokens2(const std::string &input, std::vector<std::string>
         LFORTRAN_ASSERT(diagnostics.has_error())
         return 1;
     }
-
     for (size_t i=0; i < toks.size(); i++) {
         tok_strings.push_back(LFortran::pickle(toks[i], stypes[i]));
         //std::cout << LFortran::pickle(toks[i], stypes[i]) << std::endl;
@@ -401,7 +400,6 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
         LFORTRAN_ASSERT(diagnostics.has_error())
         return 1;
     }
-
     for (size_t i=0; i < toks.size(); i++) {
         std::cout << LFortran::pickle(toks[i], stypes[i]);
         if (line_numbers) {

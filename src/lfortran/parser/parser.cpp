@@ -61,36 +61,11 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
 {
     if (fixed_form) {
         FixedFormTokenizer t;
-        std::vector<int> tst;
         t.set_string(input);
-        if (!t.tokenize_input(diagnostics)) {
+        if (!t.tokenize_input(diagnostics, stypes, al)) {
             return Error();
         };
-        // set string for every line -> but WITHIN FixedFormRecursiveDescent
-        // try and get all tokens out of line
-        // push all tokens onto tst
-        // error handling for this
-
-
-
-        // TODO return filled container
-        return tst;
-        // std::vector<int> tst;
-        // int token = yytokentype::END_OF_FILE + 1; // Something different from EOF
-        // while (token != yytokentype::END_OF_FILE) {
-        //     YYSTYPE y;
-        //     Location l;
-        //     try {
-        //         token = t.lex(al, y, l, diagnostics);
-        //     } catch (const parser_local::TokenizerError &e) {
-        //         diagnostics.diagnostics.push_back(e.d);
-        //         return Error();
-        //     }
-        //     tst.push_back(token);
-        //     if (stypes) stypes->push_back(y);
-        //     if (locations) locations->push_back(l);
-        // }
-        // return tst;
+        return t.tokens;
     } else {
         Tokenizer t;
         t.set_string(input);

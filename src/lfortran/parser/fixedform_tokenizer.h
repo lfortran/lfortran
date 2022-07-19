@@ -6,7 +6,6 @@
 
 namespace LFortran
 {
-
 class FixedFormTokenizer
 {
 public:
@@ -24,6 +23,7 @@ public:
     int enddo_insert_count = 0;
 
     std::vector<int> tokens;
+    std::vector<YYSTYPE> *stypes;
 
 public:
     // Set the string to tokenize. The caller must ensure `str` will stay valid
@@ -35,7 +35,7 @@ public:
     // token
     // Returns True if successful, otherwise there will be errors in
     // `diagnostics`
-    bool tokenize_input(diag::Diagnostics &diagnostics);
+    bool tokenize_input(diag::Diagnostics &diagnostics, std::vector<YYSTYPE> *stypes, Allocator &al);
 
     // Get next token. Token ID is returned as function result, the semantic
     // value is put into `yylval`.
