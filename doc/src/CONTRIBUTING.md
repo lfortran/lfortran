@@ -15,20 +15,20 @@ To contribute, make sure your set up:
 
 ### Fork LFortran
 
-Step 1. Create a fork of the [project repository](https://gitlab.com/lfortran/lfortran)
+Step 1. Create a fork of the [project repository](https://github.com/lfortran/lfortran)
 
-Step 2. Set up your [SSH key](https://docs.gitlab.com/ee/ssh/) with GitLab
+Step 2. Set up your [SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) with GitHub
 
-Step 3. Clone the project repository from GitLab and set up your remote repository
+Step 3. Clone the project repository from GitHub and set up your remote repository
 
 ```
-git clone https://gitlab.com/lfortran/lfortran.git
+git clone https://github.com/lfortran/lfortran.git
 cd lfortran
-git remote add REMOTE_NAME git@gitlab.com:YOUR_GITLAB_ID/lfortran.git
+git remote add REMOTE_NAME git@github.com:YOUR_GITHUB_ID/lfortran.git
 ```
 :fontawesome-solid-edit: `REMOTE_NAME` is the name of your remote repository and could be any name you like, for example your first name.
 
-:fontawesome-solid-edit: `YOUR_GITLAB_ID` is your user ID on GitLab and should be part of your account path.
+:fontawesome-solid-edit: `YOUR_GITHUB_ID` is your user ID on GitHub and should be part of your account path.
 
 You can use `git remote -v` to check if the new remote is set up correctly.
 
@@ -249,5 +249,5 @@ Please note that all participants of this project are expected to follow our
 Code of Conduct. By participating in this project you agree to abide by its
 terms. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
-By submitting an MR you agree to license your contribution under
+By submitting a PR you agree to license your contribution under
 the LFortran's BSD [license](LICENSE) unless explicitly noted otherwise.

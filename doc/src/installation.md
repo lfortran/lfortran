@@ -76,7 +76,7 @@ conda activate lf
 ```
 Clone the LFortran git repository:
 ```
-git clone https://gitlab.com/lfortran/lfortran.git
+git clone https://github.com/lfortran/lfortran.git
 cd lfortran
 ```
 Generate files that are needed for the build (this step depends on `re2c`, `bison` and `python`):
