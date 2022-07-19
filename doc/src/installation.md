@@ -41,8 +41,8 @@ First we have to install dependencies, for example using Conda:
 conda create -n lf python cmake llvmdev
 conda activate lf
 ```
-Then download a tarball from 
-[https://lfortran.org/download/](https://lfortran.org/download/), 
+Then download a tarball from
+[https://lfortran.org/download/](https://lfortran.org/download/),
 e.g.:
 ```bash
 wget https://lfortran.github.io/tarballs/dev/lfortran-0.9.0.tar.gz
