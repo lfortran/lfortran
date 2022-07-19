@@ -19,9 +19,9 @@ std::map<std::string, int> identifiers_map = {
     {"\n" ,258},
     {"name",259},
 {"def_op",260},
-{"integer",261},
-{"label",262},
-{"real",263},
+{"tk_integer",261},
+{"tk_label",262},
+{"tk_real",263},
 {"boz_constant",264},
 {"plus",265},
 {"minus",266},
@@ -41,8 +41,8 @@ std::map<std::string, int> identifiers_map = {
 {"string",280},
 {"comment",281},
 {"eolcomment",282},
-{"dbl_dot",283},
-{"dbl_colon",284},
+{":",283},
+{";;",284},
 {"pow",285},
 {"concat",286},
 {"arrow",287},
@@ -96,7 +96,7 @@ std::map<std::string, int> identifiers_map = {
 {"do",335},
 {"dowhile",336},
 {"double",337},
-{"double_precision",338},
+{"doubleprecision",338},
 {"elemental",339},
 {"else",340},
 {"elseif",341},
@@ -271,6 +271,8 @@ std::vector<std::string> declarators{
             "logical"
         };
 
+std::vector<std::string> io_names{"open", "read", "write", "format", "close"};
+
 void FixedFormTokenizer::set_string(const std::string &str)
 {
     // The input string must be NULL terminated, otherwise the tokenizer will
@@ -320,6 +322,19 @@ struct FixedFormRecursiveDescent {
         }
         std::string next_str = std::string((char *)tok, cur2 - tok);
         // std::cout << "next is " << next_str << std::endl;
+        return next_str == str;
+    }
+
+    bool next_is(char *cur, const std::string &str) {
+        char *tok = cur;
+        char *cur2 = cur;
+        while ((size_t)(cur2-tok) < str.size()) {
+            if (*cur2 == '\0') {
+                return false;
+            }
+            cur2++;
+        }
+        std::string next_str = std::string(tok, cur2 - tok);
         return next_str == str;
     }
    
@@ -400,22 +415,42 @@ struct FixedFormRecursiveDescent {
     // errors, and returns true (parsed, `cur` progressed) or false (not-parsed,
     // `cur` unchanged).
 
+    void check_goto() {
+        auto tsize = tokens.size()-1;
+        auto ssize = stypes.size()-1;
+        auto last_token = tokens[tsize];
+        auto last_stype = stypes[ssize].string.str();
+        if (last_token != 259) return; // TK_NAME
+        char *last_s = &last_stype[0];
+        if (next_is(last_s, "goto")) {
+            YYSTYPE y;
+            y.string.from_str(m_a, std::string(last_s, 4));
+            last_s += 4;
+            tokens[tsize] = 404;
+            stypes[ssize] = y;
+            auto start = last_s;
+            while(::isdigit(*(last_s++)));
+
+
+            YYSTYPE yy;
+            yy.string.from_str(m_a, std::string(start, ptrdiff_t(last_s-1 - start)));
+            stypes.push_back(yy);
+            tokens.push_back(261);
+        }
+    }
+
     void tokenize_line(const std::string &chop, unsigned char *&cur) {
+        // !!!
         // TODO keep a list of weird assignments that duplicate / substring with keywords
         // examples: 'result' used as a variable, 'doubleprecisioninteger' used as a variable
-        // GOAL: double check to get the KW_XXX right (ie. the defining category)
-        // Q: would we need to this for every line we land upon?
 
-
-        // TODO check how to get the actual tokens out when parsing (`y`)
         // TOK(position, chop);
         YYSTYPE y;
         if (chop != "") {
             y.string.from_str(m_a, chop);
-            stypes.emplace_back(y);
-            tokens.emplace_back(identifiers_map[chop]);
+            stypes.push_back(y);
+            tokens.push_back(identifiers_map[chop]);
         }
-
         unsigned char *start = cur + std::string(chop).size();
         // move the cur pointer to the next line after
         next_line(cur);     
@@ -428,27 +463,28 @@ struct FixedFormRecursiveDescent {
         Location l;
         ptrdiff_t len = 1;
         for(;;) {
+            // check_goto();
             if(*t.cur == '\n') break;
             auto token = t.lex(m_a, y, l, diag);
             // TOK(position, token);
             len = t.cur - t.tok;
             // TOK(position, tostr(t.tok, t.tok + len));
             
-            tokens.emplace_back(token);
+            tokens.push_back(token);
             y.string.from_str(m_a, tostr(t.tok, t.tok + len));
-            stypes.emplace_back(y); // NEEDS CORRECTION
+            stypes.push_back(y); // NEEDS CORRECTION
             // for now, this double check is needed as the usual tokenizer does not
             // like newlines '\n'
             // we have the check for ';' to be able to have multiple expressions per line
             if(*(t.cur+1) == '\n' || *(t.cur + 1) == ';') {
+                // check_goto();
                 token = t.lex(m_a, y, l, diag);
                 // TOK(position, token);
                 len = t.cur - t.tok;
                 // TOK(position, tostr(t.tok, t.tok + len));
-                std::cout << "tokenize_line: allocating for " << tostr(t.tok, t.tok + len) <<std::endl;
-                tokens.emplace_back(token);
+                tokens.push_back(token);
                 y.string.from_str(m_a, tostr(t.tok, t.tok + len));
-                stypes.emplace_back(y); // NEEDS CORRECTION
+                stypes.push_back(y); // NEEDS CORRECTION
                 break;
             }
         }
@@ -462,7 +498,8 @@ struct FixedFormRecursiveDescent {
         while (lex_declaration(cur));
         while (lex_body_statement(cur));
         if (next_is(cur, "end")) {
-            next_line(cur);
+            tokenize_line("end", cur);
+            // next_line(cur);
             position -= 2;
             return;
         }
@@ -471,16 +508,9 @@ struct FixedFormRecursiveDescent {
     bool lex_declaration(unsigned char *&cur) {
         unsigned char *start = cur;
         next_line(cur);
-        for (const auto& declarator : declarators) {
-            if (next_is(start, declarator)) {
-                unsigned char *start2= start;
-                lex_declarator(start2);
-                // call with empty string as we found out the declarator
-                tokenize_line("", start2);
-
-                std::cout << "declaration: " << tostr(start, cur-1) << std::endl;
-                return true;
-            }
+        if (lex_declarator(start)) {
+            tokenize_line("", start);
+            return true;
         }
         cur = start;
         return false;
@@ -490,12 +520,13 @@ struct FixedFormRecursiveDescent {
     bool lex_declarator(unsigned char *&cur) {
         for(const auto& declarator : declarators) {
             if(next_is(cur, declarator)) {
-                tokens.emplace_back(identifiers_map[declarator]);
+                tokens.push_back(identifiers_map[declarator]);
                 YYSTYPE y;
-                y.string.from_str(m_a, declarator); 
-                stypes.emplace_back(y);
+                Str tmp;
+                tmp.from_str_view(declarator);
+                y.string =tmp; 
+                stypes.push_back(y);
                 cur += declarator.size();
-                
                 // TOK(position, declarator);
                 return true;
             }
@@ -516,6 +547,8 @@ struct FixedFormRecursiveDescent {
         // TODO: this must be made more robust:
         // we parse an "id", then optional "(...)", then there must be "="
         // the current implementation parses if(..) a=5 as assignment
+
+        // TODO this procedure needs to backtrack
         if (contains(start, cur, '=')) {
             // // TOK(position, scan_next(cpy, '='));
             std::cout << "body assignment statement: " << tostr(start, cur-1) << std::endl;
@@ -555,7 +588,8 @@ struct FixedFormRecursiveDescent {
             next_is(cur, "format") ||
             next_is(cur, "close")) {
             // CHECK: tokenizer _should_ be able to handle it
-            tokenize_line("", cur);
+            lex_io(cur);
+
             return true;
         }
 
@@ -605,11 +639,13 @@ struct FixedFormRecursiveDescent {
 
     void lex_goto(unsigned char *&cur, bool newline = true) {
         // flag for in-line statements ie. for IF  statements
-        cur += std::string("goto").size();
-        // // TOK(position, "GOTO");
-        eat_label(cur);
-        if (newline)
-            next_line(cur);
+        // cur += std::string("goto").size();
+        // // // TOK(position, "GOTO");
+        // eat_label(cur);
+        // if (newline)
+        //     next_line(cur);
+        tokenize_line("goto", cur);
+        if(newline) next_line(cur);
     }
 
     void lex_cond(unsigned char *&cur) {
@@ -635,13 +671,18 @@ struct FixedFormRecursiveDescent {
     }
 
     void lex_data(unsigned char *&cur) {
-        std::cout << "data\n";
+        tokenize_line("data", cur);
         next_line(cur);
     }
 
     void lex_io(unsigned char *&cur) {
-        std::cout << "io\n";
-        next_line(cur);
+        for(const auto &io_str: io_names) {
+            if (next_is(cur, io_str)) {
+                tokenize_line(io_str, cur);
+                next_line(cur);
+                return;
+            }
+        }
     }
 
     void lex_function(unsigned char *&cur) {
@@ -653,6 +694,7 @@ struct FixedFormRecursiveDescent {
         while (lex_declaration(cur));
         while (lex_body_statement(cur));
         if (next_is(cur, "end")) {
+            tokenize_line("endfunction", cur);
             next_line(cur);
         } else {
             //std::cout << "?: " << tostr(cur, cur+5) << std::endl;
@@ -667,6 +709,7 @@ struct FixedFormRecursiveDescent {
         while (lex_declaration(cur));
         while (lex_body_statement(cur));
         if (next_is(cur, "end")) {
+            tokenize_line("endprogram", cur);
             next_line(cur);
         } else {
             //std::cout << "?: " << tostr(cur, cur+5) << std::endl;
@@ -681,14 +724,15 @@ struct FixedFormRecursiveDescent {
             lex_program(cur);
         } else if (
                 next_is(cur, "function") ||
-                next_is(cur, "integer") ||
-                next_is(cur, "real") ||
-                next_is(cur, "complex") ||
                 next_is(cur, "integerfunction") ||
                 next_is(cur, "realfunction") ||
                 next_is(cur, "complexfunction") ||
                 next_is(cur, "doubleprecisionfunction") ||
-                next_is(cur, "externalfunction")) {
+                next_is(cur, "externalfunction") ||
+                next_is(cur, "doubleprecision") ||
+                next_is(cur, "integer") ||
+                next_is(cur, "real") ||
+                next_is(cur, "complex")) {
             lex_function(cur);
         } else if (next_is(cur, "blockdata")) {
             lex_data(cur);
@@ -708,6 +752,11 @@ struct FixedFormRecursiveDescent {
             eat_label(cur);
             lex_global_scope_item(cur);
         }
+        YYSTYPE yy;
+        yy.string.from_str(m_a, "\n");
+        stypes.push_back(yy);
+        tokens.push_back(0);
+        
     }
 
 };
@@ -721,7 +770,7 @@ bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, std::vec
         tokens = std::move(f.tokens);
         
         if (stypes)
-            for(auto & el : f.stypes)
+            for(const auto & el : f.stypes)
                 stypes->push_back(el);
     } catch (const parser_local::TokenizerError &e) {
         diagnostics.diagnostics.push_back(e.d);
