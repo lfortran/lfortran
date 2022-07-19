@@ -153,150 +153,141 @@ define i32 @main() {
   %10 = getelementptr %dimension_descriptor, %dimension_descriptor* %7, i32 0, i32 2
   store i32 1, i32* %8, align 4
   store i32 1, i32* %9, align 4
-  %11 = load i32, i32* %9, align 4
-  %12 = sub i32 2, %11
-  %13 = add i32 %12, 1
-  store i32 %13, i32* %10, align 4
-  %14 = alloca i32, align 4
-  store i32 2, i32* %14, align 4
-  %15 = getelementptr %array.0, %array.0* %iv, i32 0, i32 0
-  %16 = load i32, i32* %14, align 4
-  %17 = alloca i32, i32 %16, align 4
-  store i32* %17, i32** %15, align 8
+  store i32 2, i32* %10, align 4
+  %11 = alloca i32, align 4
+  store i32 2, i32* %11, align 4
+  %12 = getelementptr %array.0, %array.0* %iv, i32 0, i32 0
+  %13 = load i32, i32* %11, align 4
+  %14 = alloca i32, i32 %13, align 4
+  store i32* %14, i32** %12, align 8
   %r = alloca %array*, align 8
   %rv = alloca %array, align 8
-  %18 = getelementptr %array, %array* %rv, i32 0, i32 1
-  store i32 0, i32* %18, align 4
-  %19 = getelementptr %array, %array* %rv, i32 0, i32 2
-  %20 = alloca i32, align 4
+  %15 = getelementptr %array, %array* %rv, i32 0, i32 1
+  store i32 0, i32* %15, align 4
+  %16 = getelementptr %array, %array* %rv, i32 0, i32 2
+  %17 = alloca i32, align 4
+  store i32 2, i32* %17, align 4
+  %18 = load i32, i32* %17, align 4
+  %19 = alloca %dimension_descriptor, i32 %18, align 8
+  %20 = getelementptr %array, %array* %rv, i32 0, i32 4
   store i32 2, i32* %20, align 4
-  %21 = load i32, i32* %20, align 4
-  %22 = alloca %dimension_descriptor, i32 %21, align 8
-  %23 = getelementptr %array, %array* %rv, i32 0, i32 4
-  store i32 2, i32* %23, align 4
-  store %dimension_descriptor* %22, %dimension_descriptor** %19, align 8
-  %24 = load %dimension_descriptor*, %dimension_descriptor** %19, align 8
-  %25 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %24, i32 0
-  %26 = getelementptr %dimension_descriptor, %dimension_descriptor* %25, i32 0, i32 0
-  %27 = getelementptr %dimension_descriptor, %dimension_descriptor* %25, i32 0, i32 1
-  %28 = getelementptr %dimension_descriptor, %dimension_descriptor* %25, i32 0, i32 2
-  store i32 1, i32* %26, align 4
+  store %dimension_descriptor* %19, %dimension_descriptor** %16, align 8
+  %21 = load %dimension_descriptor*, %dimension_descriptor** %16, align 8
+  %22 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %21, i32 0
+  %23 = getelementptr %dimension_descriptor, %dimension_descriptor* %22, i32 0, i32 0
+  %24 = getelementptr %dimension_descriptor, %dimension_descriptor* %22, i32 0, i32 1
+  %25 = getelementptr %dimension_descriptor, %dimension_descriptor* %22, i32 0, i32 2
+  store i32 1, i32* %23, align 4
+  store i32 1, i32* %24, align 4
+  store i32 2, i32* %25, align 4
+  %26 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %21, i32 1
+  %27 = getelementptr %dimension_descriptor, %dimension_descriptor* %26, i32 0, i32 0
+  %28 = getelementptr %dimension_descriptor, %dimension_descriptor* %26, i32 0, i32 1
+  %29 = getelementptr %dimension_descriptor, %dimension_descriptor* %26, i32 0, i32 2
   store i32 1, i32* %27, align 4
-  %29 = load i32, i32* %27, align 4
-  %30 = sub i32 2, %29
-  %31 = add i32 %30, 1
-  store i32 %31, i32* %28, align 4
-  %32 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %24, i32 1
-  %33 = getelementptr %dimension_descriptor, %dimension_descriptor* %32, i32 0, i32 0
-  %34 = getelementptr %dimension_descriptor, %dimension_descriptor* %32, i32 0, i32 1
-  %35 = getelementptr %dimension_descriptor, %dimension_descriptor* %32, i32 0, i32 2
-  store i32 1, i32* %33, align 4
-  store i32 1, i32* %34, align 4
-  %36 = load i32, i32* %34, align 4
-  %37 = sub i32 3, %36
-  %38 = add i32 %37, 1
-  store i32 %38, i32* %35, align 4
-  %39 = alloca i32, align 4
-  store i32 6, i32* %39, align 4
-  %40 = getelementptr %array, %array* %rv, i32 0, i32 0
-  %41 = load i32, i32* %39, align 4
-  %42 = alloca float, i32 %41, align 4
-  store float* %42, float** %40, align 8
+  store i32 1, i32* %28, align 4
+  store i32 3, i32* %29, align 4
+  %30 = alloca i32, align 4
+  store i32 6, i32* %30, align 4
+  %31 = getelementptr %array, %array* %rv, i32 0, i32 0
+  %32 = load i32, i32* %30, align 4
+  %33 = alloca float, i32 %32, align 4
+  store float* %33, float** %31, align 8
   %u = alloca i32, align 4
   %v = alloca i32, align 4
   store %array.0* %iv, %array.0** %i, align 8
   store %array* %rv, %array** %r, align 8
-  %43 = load %array.0*, %array.0** %i, align 8
-  %44 = getelementptr %array.0, %array.0* %43, i32 0, i32 2
-  %45 = load %dimension_descriptor*, %dimension_descriptor** %44, align 8
-  %46 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %45, i32 0
-  %47 = getelementptr %dimension_descriptor, %dimension_descriptor* %46, i32 0, i32 1
-  %48 = load i32, i32* %47, align 4
-  %49 = sub i32 1, %48
-  %50 = mul i32 1, %49
-  %51 = add i32 0, %50
-  %52 = getelementptr %dimension_descriptor, %dimension_descriptor* %46, i32 0, i32 2
-  %53 = load i32, i32* %52, align 4
-  %54 = mul i32 1, %53
-  %55 = getelementptr %array.0, %array.0* %43, i32 0, i32 0
-  %56 = load i32*, i32** %55, align 8
-  %57 = getelementptr inbounds i32, i32* %56, i32 %51
-  store i32 1, i32* %57, align 4
-  %58 = load %array.0*, %array.0** %i, align 8
-  %59 = getelementptr %array.0, %array.0* %58, i32 0, i32 2
-  %60 = load %dimension_descriptor*, %dimension_descriptor** %59, align 8
-  %61 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %60, i32 0
-  %62 = getelementptr %dimension_descriptor, %dimension_descriptor* %61, i32 0, i32 1
-  %63 = load i32, i32* %62, align 4
-  %64 = sub i32 1, %63
-  %65 = mul i32 1, %64
-  %66 = add i32 0, %65
-  %67 = getelementptr %dimension_descriptor, %dimension_descriptor* %61, i32 0, i32 2
-  %68 = load i32, i32* %67, align 4
-  %69 = mul i32 1, %68
-  %70 = getelementptr %array.0, %array.0* %58, i32 0, i32 0
-  %71 = load i32*, i32** %70, align 8
-  %72 = getelementptr inbounds i32, i32* %71, i32 %66
-  %73 = load i32, i32* %72, align 4
-  %74 = icmp ne i32 %73, 1
-  br i1 %74, label %then, label %else
+  %34 = load %array.0*, %array.0** %i, align 8
+  %35 = getelementptr %array.0, %array.0* %34, i32 0, i32 2
+  %36 = load %dimension_descriptor*, %dimension_descriptor** %35, align 8
+  %37 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %36, i32 0
+  %38 = getelementptr %dimension_descriptor, %dimension_descriptor* %37, i32 0, i32 1
+  %39 = load i32, i32* %38, align 4
+  %40 = sub i32 1, %39
+  %41 = mul i32 1, %40
+  %42 = add i32 0, %41
+  %43 = getelementptr %dimension_descriptor, %dimension_descriptor* %37, i32 0, i32 2
+  %44 = load i32, i32* %43, align 4
+  %45 = mul i32 1, %44
+  %46 = getelementptr %array.0, %array.0* %34, i32 0, i32 0
+  %47 = load i32*, i32** %46, align 8
+  %48 = getelementptr inbounds i32, i32* %47, i32 %42
+  store i32 1, i32* %48, align 4
+  %49 = load %array.0*, %array.0** %i, align 8
+  %50 = getelementptr %array.0, %array.0* %49, i32 0, i32 2
+  %51 = load %dimension_descriptor*, %dimension_descriptor** %50, align 8
+  %52 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %51, i32 0
+  %53 = getelementptr %dimension_descriptor, %dimension_descriptor* %52, i32 0, i32 1
+  %54 = load i32, i32* %53, align 4
+  %55 = sub i32 1, %54
+  %56 = mul i32 1, %55
+  %57 = add i32 0, %56
+  %58 = getelementptr %dimension_descriptor, %dimension_descriptor* %52, i32 0, i32 2
+  %59 = load i32, i32* %58, align 4
+  %60 = mul i32 1, %59
+  %61 = getelementptr %array.0, %array.0* %49, i32 0, i32 0
+  %62 = load i32*, i32** %61, align 8
+  %63 = getelementptr inbounds i32, i32* %62, i32 %57
+  %64 = load i32, i32* %63, align 4
+  %65 = icmp ne i32 %64, 1
+  br i1 %65, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %75 = load %array.0*, %array.0** %i, align 8
-  %76 = getelementptr %array.0, %array.0* %75, i32 0, i32 2
-  %77 = load %dimension_descriptor*, %dimension_descriptor** %76, align 8
-  %78 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %77, i32 0
-  %79 = getelementptr %dimension_descriptor, %dimension_descriptor* %78, i32 0, i32 1
-  %80 = load i32, i32* %79, align 4
-  %81 = sub i32 2, %80
-  %82 = mul i32 1, %81
-  %83 = add i32 0, %82
-  %84 = getelementptr %dimension_descriptor, %dimension_descriptor* %78, i32 0, i32 2
-  %85 = load i32, i32* %84, align 4
-  %86 = mul i32 1, %85
-  %87 = getelementptr %array.0, %array.0* %75, i32 0, i32 0
-  %88 = load i32*, i32** %87, align 8
-  %89 = getelementptr inbounds i32, i32* %88, i32 %83
-  store i32 3, i32* %89, align 4
+  %66 = load %array.0*, %array.0** %i, align 8
+  %67 = getelementptr %array.0, %array.0* %66, i32 0, i32 2
+  %68 = load %dimension_descriptor*, %dimension_descriptor** %67, align 8
+  %69 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %68, i32 0
+  %70 = getelementptr %dimension_descriptor, %dimension_descriptor* %69, i32 0, i32 1
+  %71 = load i32, i32* %70, align 4
+  %72 = sub i32 2, %71
+  %73 = mul i32 1, %72
+  %74 = add i32 0, %73
+  %75 = getelementptr %dimension_descriptor, %dimension_descriptor* %69, i32 0, i32 2
+  %76 = load i32, i32* %75, align 4
+  %77 = mul i32 1, %76
+  %78 = getelementptr %array.0, %array.0* %66, i32 0, i32 0
+  %79 = load i32*, i32** %78, align 8
+  %80 = getelementptr inbounds i32, i32* %79, i32 %74
+  store i32 3, i32* %80, align 4
   br label %ifcont
 
 else:                                             ; preds = %.entry
-  %90 = load %array.0*, %array.0** %i, align 8
-  %91 = getelementptr %array.0, %array.0* %90, i32 0, i32 2
-  %92 = load %dimension_descriptor*, %dimension_descriptor** %91, align 8
-  %93 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %92, i32 0
-  %94 = getelementptr %dimension_descriptor, %dimension_descriptor* %93, i32 0, i32 1
-  %95 = load i32, i32* %94, align 4
-  %96 = sub i32 2, %95
-  %97 = mul i32 1, %96
-  %98 = add i32 0, %97
-  %99 = getelementptr %dimension_descriptor, %dimension_descriptor* %93, i32 0, i32 2
-  %100 = load i32, i32* %99, align 4
-  %101 = mul i32 1, %100
-  %102 = getelementptr %array.0, %array.0* %90, i32 0, i32 0
-  %103 = load i32*, i32** %102, align 8
-  %104 = getelementptr inbounds i32, i32* %103, i32 %98
-  store i32 7, i32* %104, align 4
+  %81 = load %array.0*, %array.0** %i, align 8
+  %82 = getelementptr %array.0, %array.0* %81, i32 0, i32 2
+  %83 = load %dimension_descriptor*, %dimension_descriptor** %82, align 8
+  %84 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %83, i32 0
+  %85 = getelementptr %dimension_descriptor, %dimension_descriptor* %84, i32 0, i32 1
+  %86 = load i32, i32* %85, align 4
+  %87 = sub i32 2, %86
+  %88 = mul i32 1, %87
+  %89 = add i32 0, %88
+  %90 = getelementptr %dimension_descriptor, %dimension_descriptor* %84, i32 0, i32 2
+  %91 = load i32, i32* %90, align 4
+  %92 = mul i32 1, %91
+  %93 = getelementptr %array.0, %array.0* %81, i32 0, i32 0
+  %94 = load i32*, i32** %93, align 8
+  %95 = getelementptr inbounds i32, i32* %94, i32 %89
+  store i32 7, i32* %95, align 4
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %105 = getelementptr %array.0, %array.0* %iv, i32 0, i32 2
-  %106 = load %dimension_descriptor*, %dimension_descriptor** %105, align 8
-  %107 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %106, i32 0
-  %108 = getelementptr %dimension_descriptor, %dimension_descriptor* %107, i32 0, i32 1
-  %109 = load i32, i32* %108, align 4
-  %110 = sub i32 1, %109
-  %111 = mul i32 1, %110
-  %112 = add i32 0, %111
-  %113 = getelementptr %dimension_descriptor, %dimension_descriptor* %107, i32 0, i32 2
-  %114 = load i32, i32* %113, align 4
-  %115 = mul i32 1, %114
-  %116 = getelementptr %array.0, %array.0* %iv, i32 0, i32 0
-  %117 = load i32*, i32** %116, align 8
-  %118 = getelementptr inbounds i32, i32* %117, i32 %112
-  %119 = load i32, i32* %118, align 4
-  %120 = icmp ne i32 %119, 1
-  br i1 %120, label %then1, label %else2
+  %96 = getelementptr %array.0, %array.0* %iv, i32 0, i32 2
+  %97 = load %dimension_descriptor*, %dimension_descriptor** %96, align 8
+  %98 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %97, i32 0
+  %99 = getelementptr %dimension_descriptor, %dimension_descriptor* %98, i32 0, i32 1
+  %100 = load i32, i32* %99, align 4
+  %101 = sub i32 1, %100
+  %102 = mul i32 1, %101
+  %103 = add i32 0, %102
+  %104 = getelementptr %dimension_descriptor, %dimension_descriptor* %98, i32 0, i32 2
+  %105 = load i32, i32* %104, align 4
+  %106 = mul i32 1, %105
+  %107 = getelementptr %array.0, %array.0* %iv, i32 0, i32 0
+  %108 = load i32*, i32** %107, align 8
+  %109 = getelementptr inbounds i32, i32* %108, i32 %103
+  %110 = load i32, i32* %109, align 4
+  %111 = icmp ne i32 %110, 1
+  br i1 %111, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @1, i32 0, i32 0))
@@ -307,23 +298,23 @@ else2:                                            ; preds = %ifcont
   br label %ifcont3
 
 ifcont3:                                          ; preds = %else2, %then1
-  %121 = getelementptr %array.0, %array.0* %iv, i32 0, i32 2
-  %122 = load %dimension_descriptor*, %dimension_descriptor** %121, align 8
-  %123 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %122, i32 0
-  %124 = getelementptr %dimension_descriptor, %dimension_descriptor* %123, i32 0, i32 1
-  %125 = load i32, i32* %124, align 4
-  %126 = sub i32 2, %125
-  %127 = mul i32 1, %126
-  %128 = add i32 0, %127
-  %129 = getelementptr %dimension_descriptor, %dimension_descriptor* %123, i32 0, i32 2
-  %130 = load i32, i32* %129, align 4
-  %131 = mul i32 1, %130
-  %132 = getelementptr %array.0, %array.0* %iv, i32 0, i32 0
-  %133 = load i32*, i32** %132, align 8
-  %134 = getelementptr inbounds i32, i32* %133, i32 %128
-  %135 = load i32, i32* %134, align 4
-  %136 = icmp ne i32 %135, 7
-  br i1 %136, label %then4, label %else5
+  %112 = getelementptr %array.0, %array.0* %iv, i32 0, i32 2
+  %113 = load %dimension_descriptor*, %dimension_descriptor** %112, align 8
+  %114 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %113, i32 0
+  %115 = getelementptr %dimension_descriptor, %dimension_descriptor* %114, i32 0, i32 1
+  %116 = load i32, i32* %115, align 4
+  %117 = sub i32 2, %116
+  %118 = mul i32 1, %117
+  %119 = add i32 0, %118
+  %120 = getelementptr %dimension_descriptor, %dimension_descriptor* %114, i32 0, i32 2
+  %121 = load i32, i32* %120, align 4
+  %122 = mul i32 1, %121
+  %123 = getelementptr %array.0, %array.0* %iv, i32 0, i32 0
+  %124 = load i32*, i32** %123, align 8
+  %125 = getelementptr inbounds i32, i32* %124, i32 %119
+  %126 = load i32, i32* %125, align 4
+  %127 = icmp ne i32 %126, 7
+  br i1 %127, label %then4, label %else5
 
 then4:                                            ; preds = %ifcont3
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @2, i32 0, i32 0))
@@ -334,96 +325,96 @@ else5:                                            ; preds = %ifcont3
   br label %ifcont6
 
 ifcont6:                                          ; preds = %else5, %then4
+  %128 = load %array*, %array** %r, align 8
+  %129 = getelementptr %array, %array* %128, i32 0, i32 2
+  %130 = load %dimension_descriptor*, %dimension_descriptor** %129, align 8
+  %131 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %130, i32 0
+  %132 = getelementptr %dimension_descriptor, %dimension_descriptor* %131, i32 0, i32 1
+  %133 = load i32, i32* %132, align 4
+  %134 = sub i32 %133, 1
+  store i32 %134, i32* %u, align 4
+  br label %loop.head
+
+loop.head:                                        ; preds = %loop.end, %ifcont6
+  %135 = load i32, i32* %u, align 4
+  %136 = add i32 %135, 1
   %137 = load %array*, %array** %r, align 8
   %138 = getelementptr %array, %array* %137, i32 0, i32 2
   %139 = load %dimension_descriptor*, %dimension_descriptor** %138, align 8
   %140 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %139, i32 0
   %141 = getelementptr %dimension_descriptor, %dimension_descriptor* %140, i32 0, i32 1
   %142 = load i32, i32* %141, align 4
-  %143 = sub i32 %142, 1
-  store i32 %143, i32* %u, align 4
-  br label %loop.head
-
-loop.head:                                        ; preds = %loop.end, %ifcont6
-  %144 = load i32, i32* %u, align 4
-  %145 = add i32 %144, 1
-  %146 = load %array*, %array** %r, align 8
-  %147 = getelementptr %array, %array* %146, i32 0, i32 2
-  %148 = load %dimension_descriptor*, %dimension_descriptor** %147, align 8
-  %149 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %148, i32 0
-  %150 = getelementptr %dimension_descriptor, %dimension_descriptor* %149, i32 0, i32 1
-  %151 = load i32, i32* %150, align 4
-  %152 = getelementptr %dimension_descriptor, %dimension_descriptor* %149, i32 0, i32 2
-  %153 = load i32, i32* %152, align 4
-  %154 = add i32 %153, %151
-  %155 = sub i32 %154, 1
-  %156 = icmp sle i32 %145, %155
-  br i1 %156, label %loop.body, label %loop.end9
+  %143 = getelementptr %dimension_descriptor, %dimension_descriptor* %140, i32 0, i32 2
+  %144 = load i32, i32* %143, align 4
+  %145 = add i32 %144, %142
+  %146 = sub i32 %145, 1
+  %147 = icmp sle i32 %136, %146
+  br i1 %147, label %loop.body, label %loop.end9
 
 loop.body:                                        ; preds = %loop.head
-  %157 = load i32, i32* %u, align 4
+  %148 = load i32, i32* %u, align 4
+  %149 = add i32 %148, 1
+  store i32 %149, i32* %u, align 4
+  %150 = load %array*, %array** %r, align 8
+  %151 = getelementptr %array, %array* %150, i32 0, i32 2
+  %152 = load %dimension_descriptor*, %dimension_descriptor** %151, align 8
+  %153 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %152, i32 1
+  %154 = getelementptr %dimension_descriptor, %dimension_descriptor* %153, i32 0, i32 1
+  %155 = load i32, i32* %154, align 4
+  %156 = sub i32 %155, 1
+  store i32 %156, i32* %v, align 4
+  br label %loop.head7
+
+loop.head7:                                       ; preds = %loop.body8, %loop.body
+  %157 = load i32, i32* %v, align 4
   %158 = add i32 %157, 1
-  store i32 %158, i32* %u, align 4
   %159 = load %array*, %array** %r, align 8
   %160 = getelementptr %array, %array* %159, i32 0, i32 2
   %161 = load %dimension_descriptor*, %dimension_descriptor** %160, align 8
   %162 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %161, i32 1
   %163 = getelementptr %dimension_descriptor, %dimension_descriptor* %162, i32 0, i32 1
   %164 = load i32, i32* %163, align 4
-  %165 = sub i32 %164, 1
-  store i32 %165, i32* %v, align 4
-  br label %loop.head7
-
-loop.head7:                                       ; preds = %loop.body8, %loop.body
-  %166 = load i32, i32* %v, align 4
-  %167 = add i32 %166, 1
-  %168 = load %array*, %array** %r, align 8
-  %169 = getelementptr %array, %array* %168, i32 0, i32 2
-  %170 = load %dimension_descriptor*, %dimension_descriptor** %169, align 8
-  %171 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %170, i32 1
-  %172 = getelementptr %dimension_descriptor, %dimension_descriptor* %171, i32 0, i32 1
-  %173 = load i32, i32* %172, align 4
-  %174 = getelementptr %dimension_descriptor, %dimension_descriptor* %171, i32 0, i32 2
-  %175 = load i32, i32* %174, align 4
-  %176 = add i32 %175, %173
-  %177 = sub i32 %176, 1
-  %178 = icmp sle i32 %167, %177
-  br i1 %178, label %loop.body8, label %loop.end
+  %165 = getelementptr %dimension_descriptor, %dimension_descriptor* %162, i32 0, i32 2
+  %166 = load i32, i32* %165, align 4
+  %167 = add i32 %166, %164
+  %168 = sub i32 %167, 1
+  %169 = icmp sle i32 %158, %168
+  br i1 %169, label %loop.body8, label %loop.end
 
 loop.body8:                                       ; preds = %loop.head7
-  %179 = load i32, i32* %v, align 4
-  %180 = add i32 %179, 1
-  store i32 %180, i32* %v, align 4
-  %181 = load i32, i32* %u, align 4
-  %182 = load i32, i32* %v, align 4
-  %183 = getelementptr %array, %array* %rv, i32 0, i32 2
-  %184 = load %dimension_descriptor*, %dimension_descriptor** %183, align 8
-  %185 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %184, i32 0
+  %170 = load i32, i32* %v, align 4
+  %171 = add i32 %170, 1
+  store i32 %171, i32* %v, align 4
+  %172 = load i32, i32* %u, align 4
+  %173 = load i32, i32* %v, align 4
+  %174 = getelementptr %array, %array* %rv, i32 0, i32 2
+  %175 = load %dimension_descriptor*, %dimension_descriptor** %174, align 8
+  %176 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %175, i32 0
+  %177 = getelementptr %dimension_descriptor, %dimension_descriptor* %176, i32 0, i32 1
+  %178 = load i32, i32* %177, align 4
+  %179 = sub i32 %172, %178
+  %180 = mul i32 1, %179
+  %181 = add i32 0, %180
+  %182 = getelementptr %dimension_descriptor, %dimension_descriptor* %176, i32 0, i32 2
+  %183 = load i32, i32* %182, align 4
+  %184 = mul i32 1, %183
+  %185 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %175, i32 1
   %186 = getelementptr %dimension_descriptor, %dimension_descriptor* %185, i32 0, i32 1
   %187 = load i32, i32* %186, align 4
-  %188 = sub i32 %181, %187
-  %189 = mul i32 1, %188
-  %190 = add i32 0, %189
+  %188 = sub i32 %173, %187
+  %189 = mul i32 %184, %188
+  %190 = add i32 %181, %189
   %191 = getelementptr %dimension_descriptor, %dimension_descriptor* %185, i32 0, i32 2
   %192 = load i32, i32* %191, align 4
-  %193 = mul i32 1, %192
-  %194 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %184, i32 1
-  %195 = getelementptr %dimension_descriptor, %dimension_descriptor* %194, i32 0, i32 1
-  %196 = load i32, i32* %195, align 4
-  %197 = sub i32 %182, %196
-  %198 = mul i32 %193, %197
-  %199 = add i32 %190, %198
-  %200 = getelementptr %dimension_descriptor, %dimension_descriptor* %194, i32 0, i32 2
-  %201 = load i32, i32* %200, align 4
-  %202 = mul i32 %193, %201
-  %203 = getelementptr %array, %array* %rv, i32 0, i32 0
-  %204 = load float*, float** %203, align 8
-  %205 = getelementptr inbounds float, float* %204, i32 %199
-  %206 = load i32, i32* %u, align 4
-  %207 = load i32, i32* %v, align 4
-  %208 = mul i32 %206, %207
-  %209 = sitofp i32 %208 to float
-  store float %209, float* %205, align 4
+  %193 = mul i32 %184, %192
+  %194 = getelementptr %array, %array* %rv, i32 0, i32 0
+  %195 = load float*, float** %194, align 8
+  %196 = getelementptr inbounds float, float* %195, i32 %190
+  %197 = load i32, i32* %u, align 4
+  %198 = load i32, i32* %v, align 4
+  %199 = mul i32 %197, %198
+  %200 = sitofp i32 %199 to float
+  store float %200, float* %196, align 4
   br label %loop.head7
 
 loop.end:                                         ; preds = %loop.head7
