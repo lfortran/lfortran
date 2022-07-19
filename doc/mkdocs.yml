@@ -9,7 +9,7 @@ nav:
         - design.md
         - developer_tutorial.md
         - AST and ASR.md
-        - CONTRIBUTING.md
+        - contributing.md
     - LFortran Intrinsics:
         - Array Intrinsic Functions:
             - intrinsics/array/size.md
