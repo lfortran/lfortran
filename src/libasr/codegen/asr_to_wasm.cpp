@@ -354,8 +354,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     template<typename T>
     void emit_function_prototype(const T& x) {
-        wasm::emit_b8(m_type_section, m_al, 0x60);  // new type declaration starts here
-        SymbolInfo s(no_of_types);
+        /********************* New Type Declaration *********************/
+        wasm::emit_b8(m_type_section, m_al, 0x60);
 
         /********************* Parameter Types List *********************/
         wasm::emit_u32(m_type_section, m_al, x.n_args);
@@ -376,6 +376,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             return_var = nullptr;
         }
 
+        /********************* Add Type to Map *********************/
+        SymbolInfo s(no_of_types);
         m_func_name_idx_map[get_hash((ASR::asr_t *)&x)] = s; // add function to map
         no_of_types++;
     }
@@ -386,7 +388,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         auto sym_info =  m_func_name_idx_map[get_hash((ASR::asr_t *)&x)];
 
-        wasm::emit_u32(m_func_section, m_al, sym_info.index); // reference the added type
+        /********************* Reference Function Prototype *********************/
+        wasm::emit_u32(m_func_section, m_al, sym_info.index);
 
         /********************* Function Body Starts Here *********************/
         uint32_t len_idx_code_section_func_size = wasm::emit_len_placeholder(m_code_section, m_al);
@@ -405,8 +408,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::emit_expr_end(m_code_section, m_al);
         wasm::fixup_len(m_code_section, m_al, len_idx_code_section_func_size);
 
+        /********************* Export the function *********************/
         wasm::emit_export_fn(m_export_section, m_al, x.m_name, sym_info.index); //  add function to export
-
         no_of_functions++;
     }
 
