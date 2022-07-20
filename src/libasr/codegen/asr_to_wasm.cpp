@@ -376,9 +376,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             return_var = nullptr;
         }
 
-        wasm::emit_u32(m_func_section, m_al, no_of_types); // reference the added type
         m_func_name_idx_map[get_hash((ASR::asr_t *)&x)] = s; // add function to map
-
         no_of_types++;
     }
 
@@ -386,10 +384,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     void emit_function_body(const T& x) {
         LFORTRAN_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)&x)) != m_func_name_idx_map.end());
 
+        auto sym_info =  m_func_name_idx_map[get_hash((ASR::asr_t *)&x)];
+
+        wasm::emit_u32(m_func_section, m_al, sym_info.index); // reference the added type
+
         /********************* Function Body Starts Here *********************/
         uint32_t len_idx_code_section_func_size = wasm::emit_len_placeholder(m_code_section, m_al);
 
-        emit_local_vars(x, m_func_name_idx_map[get_hash((ASR::asr_t *)&x)].no_of_variables, false);
+        emit_local_vars(x, sym_info.no_of_variables, false);
 
         for (size_t i = 0; i < x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
@@ -403,7 +405,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::emit_expr_end(m_code_section, m_al);
         wasm::fixup_len(m_code_section, m_al, len_idx_code_section_func_size);
 
-        wasm::emit_export_fn(m_export_section, m_al, x.m_name, no_of_types); //  add function to export
+        wasm::emit_export_fn(m_export_section, m_al, x.m_name, sym_info.index); //  add function to export
 
         no_of_functions++;
     }
