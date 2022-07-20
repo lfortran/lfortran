@@ -391,8 +391,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
 
         if(x.n_body <= 0 || (x.m_body[x.n_body - 1]->type != ASR::stmtType::Return)){
-            ASR::Return_t temp;
-            visit_Return(temp);
+            handle_return();
         }
 
         wasm::emit_expr_end(m_code_section, m_al);
@@ -738,10 +737,16 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void handle_return() {
+        if (return_var) {
+            LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)return_var)) != m_var_name_idx_map.end());
+            wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)return_var)]);
+            wasm::emit_b8(m_code_section, m_al, 0x0F); // emit wasm return instruction
+        }
+    }
+
     void visit_Return(const ASR::Return_t & /* x */) {
-        LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)return_var)) != m_var_name_idx_map.end());
-        wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)return_var)]);
-        wasm::emit_b8(m_code_section, m_al, 0x0F); // return instruction
+        handle_return();
     }
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
