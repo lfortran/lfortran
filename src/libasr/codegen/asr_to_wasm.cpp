@@ -125,6 +125,45 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::encode_section(code, m_data_section, m_al, 11U, no_of_data_segments);
     }
 
+    void emit_imports(const ASR::TranslationUnit_t &x){
+        std::vector<import_func> import_funcs = {
+            {"print_i32", { wasm::type::i32 }, {}},
+            {"print_i64", { wasm::type::i64 }, {}},
+            {"print_f32", { wasm::type::f32 }, {}},
+            {"print_f64", { wasm::type::f64 }, {}},
+            {"print_str", { wasm::type::i32, wasm::type::i32 }, {}},
+            {"flush_buf", {}, {}}
+        };
+
+        for(auto import_func:import_funcs){
+            wasm::emit_import_fn(m_import_section, m_al, "js", import_func.name, cur_func_idx);
+            // add their types to type section
+            wasm::emit_b8(m_type_section, m_al, 0x60);  // type section
+
+            wasm::emit_u32(m_type_section, m_al, import_func.param_types.size());
+            for(auto &param_type:import_func.param_types){
+                wasm::emit_b8(m_type_section, m_al, param_type);
+            }
+
+            wasm::emit_u32(m_type_section, m_al, import_func.result_types.size());
+            for(auto &result_type:import_func.result_types){
+                wasm::emit_b8(m_type_section, m_al, result_type);
+            }
+
+            auto func = ASR::make_Function_t(m_al, x.base.base.loc, x.m_global_scope, s2c(m_al, import_func.name),
+                    nullptr, 0, nullptr, 0, nullptr, ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::deftypeType::Implementation, nullptr);
+            m_import_func_asr_map[import_func.name] = func;
+
+            SymbolInfo s(cur_func_idx++);
+            m_func_name_idx_map[get_hash(func)] = s;
+            no_of_imports++;
+        }
+
+        wasm::emit_import_mem(m_import_section, m_al, "js", "memory", 10U /* min page limit */, 10U /* max page limit */);
+        no_of_imports++;
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         // All loose statements must be converted to a function, so the items
         // must be empty:
@@ -176,47 +215,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         intrinsic_module = false;
     }
-
-
-    void emit_imports(const ASR::TranslationUnit_t &x){
-        std::vector<import_func> import_funcs = {
-            {"print_i32", { wasm::type::i32 }, {}},
-            {"print_i64", { wasm::type::i64 }, {}},
-            {"print_f32", { wasm::type::f32 }, {}},
-            {"print_f64", { wasm::type::f64 }, {}},
-            {"print_str", { wasm::type::i32, wasm::type::i32 }, {}},
-            {"flush_buf", {}, {}}
-        };
-
-        for(auto import_func:import_funcs){
-            wasm::emit_import_fn(m_import_section, m_al, "js", import_func.name, cur_func_idx);
-            // add their types to type section
-            wasm::emit_b8(m_type_section, m_al, 0x60);  // type section
-
-            wasm::emit_u32(m_type_section, m_al, import_func.param_types.size());
-            for(auto &param_type:import_func.param_types){
-                wasm::emit_b8(m_type_section, m_al, param_type);
-            }
-
-            wasm::emit_u32(m_type_section, m_al, import_func.result_types.size());
-            for(auto &result_type:import_func.result_types){
-                wasm::emit_b8(m_type_section, m_al, result_type);
-            }
-
-            auto func = ASR::make_Function_t(m_al, x.base.base.loc, x.m_global_scope, s2c(m_al, import_func.name),
-                    nullptr, 0, nullptr, 0, nullptr, ASR::abiType::Source, ASR::accessType::Public,
-                    ASR::deftypeType::Implementation, nullptr);
-            m_import_func_asr_map[import_func.name] = func;
-
-            SymbolInfo s(cur_func_idx++);
-            m_func_name_idx_map[get_hash(func)] = s;
-            no_of_imports++;
-        }
-
-        wasm::emit_import_mem(m_import_section, m_al, "js", "memory", 10U /* min page limit */, 10U /* max page limit */);
-        no_of_imports++;
-    }
-
 
     void visit_Program(const ASR::Program_t &x) {
 
