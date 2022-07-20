@@ -383,16 +383,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         uint32_t len_idx_code_section_func_size = wasm::emit_len_placeholder(m_code_section, m_al);
 
         emit_local_vars(x, sym_info.no_of_variables);
-
         for (size_t i = 0; i < x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
-
-        if(x.n_body <= 0 || (x.m_body[x.n_body - 1]->type != ASR::stmtType::Return)){
+        if ((x.n_body > 0) && (x.m_body[x.n_body - 1]->type != ASR::stmtType::Return)) {
             handle_return();
         }
-
         wasm::emit_expr_end(m_code_section, m_al);
+
         wasm::fixup_len(m_code_section, m_al, len_idx_code_section_func_size);
 
         /********************* Export the function *********************/
