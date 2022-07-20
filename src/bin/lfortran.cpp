@@ -1170,7 +1170,7 @@ int link_executable(const std::vector<std::string> &infiles,
             char *env_CC = std::getenv("LFORTRAN_CC");
             if (env_CC) CC = env_CC;
             std::string base_path = "\"" + runtime_library_dir + "\"";
-            std::string options;
+            std::string options = " --target " + compiler_options.target;
             std::string runtime_lib = "lfortran_runtime";
             if (static_executable) {
                 if (compiler_options.platform != LFortran::Platform::macOS_Intel
