@@ -63,6 +63,7 @@ struct SymbolInfo
     uint32_t no_of_variables = 0;
     SymbolInfo(){}
     SymbolInfo(uint32_t idx): index(idx) {}
+    SymbolInfo(uint32_t idx, uint32_t no_of_vars): index(idx), no_of_variables(no_of_vars) {}
 };
 
 class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
@@ -363,7 +364,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
             LFORTRAN_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent));
             emit_var_type(m_type_section, arg);
-            m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = s.no_of_variables++;
+            m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = i;
         }
 
         /********************* Result Types List *********************/
@@ -377,7 +378,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
 
         /********************* Add Type to Map *********************/
-        SymbolInfo s(no_of_types);
+        SymbolInfo s(no_of_types, x.n_args);
         m_func_name_idx_map[get_hash((ASR::asr_t *)&x)] = s; // add function to map
         no_of_types++;
     }
