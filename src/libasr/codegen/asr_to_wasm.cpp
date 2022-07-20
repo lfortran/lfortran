@@ -44,12 +44,16 @@ namespace {
 
 }  // namespace
 
+// Platform dependent fast unique hash:
+static uint64_t get_hash(ASR::asr_t *node)
+{
+    return (uint64_t)node;
+}
 
 struct import_func{
     std::string name;
     std::vector<uint8_t> param_types, result_types;
 };
-
 
 class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
    public:
