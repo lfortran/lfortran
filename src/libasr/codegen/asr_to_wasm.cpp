@@ -358,20 +358,23 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         SymbolInfo s(cur_func_idx);
 
         /********************* Parameter Types List *********************/
-        uint32_t len_idx_type_section_param_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
+        wasm::emit_u32(m_type_section, m_al, x.n_args);
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
             LFORTRAN_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent));
             emit_var_type(m_type_section, arg);
             m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = s.no_of_variables++;
         }
-        wasm::fixup_len(m_type_section, m_al, len_idx_type_section_param_types_list);
 
         /********************* Result Types List *********************/
-        uint32_t len_idx_type_section_return_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
-        return_var = ASRUtils::EXPR2VAR(x.m_return_var);
-        emit_var_type(m_type_section, return_var);
-        wasm::fixup_len(m_type_section, m_al, len_idx_type_section_return_types_list);
+        if (x.m_return_var) {
+            wasm::emit_u32(m_type_section, m_al, 1U); // there is just one return variable
+            return_var = ASRUtils::EXPR2VAR(x.m_return_var);
+            emit_var_type(m_type_section, return_var);
+        } else {
+            wasm::emit_u32(m_type_section, m_al, 0U); // the function does not return
+            return_var = nullptr;
+        }
 
         wasm::emit_u32(m_func_section, m_al, cur_func_idx); // reference the added type
         m_func_name_idx_map[get_hash((ASR::asr_t *)&x)] = s; // add function to map
