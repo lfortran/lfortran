@@ -306,14 +306,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     template<typename T>
-    void emit_local_vars(const T& x, int cur_idx, bool is_main_func) {
+    void emit_local_vars(const T& x, int cur_idx) {
         /********************* Local Vars Types List *********************/
         uint32_t len_idx_code_section_local_vars_list = wasm::emit_len_placeholder(m_code_section, m_al);
         int local_vars_cnt = 0;
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
-                if (is_main_func || v->m_intent == LFortran::ASRUtils::intent_local
+                if (v->m_intent == LFortran::ASRUtils::intent_local
                                  || v->m_intent == LFortran::ASRUtils::intent_return_var) {
                     wasm::emit_u32(m_code_section, m_al, 1U);    // count of local vars of this type
                     emit_var_type(m_code_section, v); // emit the type of this var
@@ -329,7 +329,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
-                if (is_main_func || v->m_intent == LFortran::ASRUtils::intent_local
+                if (v->m_intent == LFortran::ASRUtils::intent_local
                                  || v->m_intent == LFortran::ASRUtils::intent_return_var) {
                     if(v->m_symbolic_value) {
                         this->visit_expr(*v->m_symbolic_value);
@@ -384,7 +384,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         /********************* Function Body Starts Here *********************/
         uint32_t len_idx_code_section_func_size = wasm::emit_len_placeholder(m_code_section, m_al);
 
-        emit_local_vars(x, sym_info.no_of_variables, false);
+        emit_local_vars(x, sym_info.no_of_variables);
 
         for (size_t i = 0; i < x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
