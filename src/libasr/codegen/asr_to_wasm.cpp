@@ -52,7 +52,7 @@ static uint64_t get_hash(ASR::asr_t *node)
 
 struct import_func{
     std::string name;
-    std::vector<uint8_t> param_types, result_types;
+    std::vector<std::pair<ASR::ttypeType, uint32_t>> param_types, result_types;
 };
 
 struct SymbolInfo
@@ -126,38 +126,49 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::encode_section(code, m_data_section, m_al, 11U, no_of_data_segments);
     }
 
+    ASR::asr_t* get_import_func_var_type(const ASR::TranslationUnit_t &x, std::pair<ASR::ttypeType, uint32_t> &type) {
+        switch (type.first)
+        {
+            case ASR::ttypeType::Integer: return ASR::make_Integer_t(m_al, x.base.base.loc, type.second, nullptr, 0);
+            case ASR::ttypeType::Real: return ASR::make_Real_t(m_al, x.base.base.loc, type.second, nullptr, 0);
+            default: throw CodeGenError("Unsupported Type in Import Function");
+        }
+        return nullptr;
+    }
+
     void emit_imports(const ASR::TranslationUnit_t &x){
         std::vector<import_func> import_funcs = {
-            {"print_i32", { wasm::type::i32 }, {}},
-            {"print_i64", { wasm::type::i64 }, {}},
-            {"print_f32", { wasm::type::f32 }, {}},
-            {"print_f64", { wasm::type::f64 }, {}},
-            {"print_str", { wasm::type::i32, wasm::type::i32 }, {}},
+            {"print_i32", { {ASR::ttypeType::Integer, 4} }, {}},
+            {"print_i64", { {ASR::ttypeType::Integer, 8} }, {}},
+            {"print_f32", { {ASR::ttypeType::Real, 4} }, {}},
+            {"print_f64", { {ASR::ttypeType::Real, 8} }, {}},
+            {"print_str", { {ASR::ttypeType::Integer, 4}, {ASR::ttypeType::Integer, 4} }, {}},
             {"flush_buf", {}, {}}
-        };
+         };
 
-        for(auto import_func:import_funcs){
-            wasm::emit_import_fn(m_import_section, m_al, "js", import_func.name, no_of_types);
-            // add their types to type section
-            wasm::emit_b8(m_type_section, m_al, 0x60);  // type section
-
-            wasm::emit_u32(m_type_section, m_al, import_func.param_types.size());
-            for(auto &param_type:import_func.param_types){
-                wasm::emit_b8(m_type_section, m_al, param_type);
-            }
-
-            wasm::emit_u32(m_type_section, m_al, import_func.result_types.size());
-            for(auto &result_type:import_func.result_types){
-                wasm::emit_b8(m_type_section, m_al, result_type);
+        for (auto import_func:import_funcs) {
+            Vec<ASR::expr_t*> params;
+            params.reserve(m_al, import_func.param_types.size());
+            uint32_t var_idx;
+            for(var_idx = 0; var_idx < import_func.param_types.size(); var_idx++) {
+                auto param = import_func.param_types[var_idx];
+                auto type = get_import_func_var_type(x, param);
+                auto variable = ASR::make_Variable_t(m_al, x.base.base.loc, nullptr, s2c(m_al, std::to_string(var_idx)),
+                    ASR::intentType::In, nullptr, nullptr, ASR::storage_typeType::Default,
+                    ASRUtils::TYPE(type), ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::presenceType::Required, false);
+                auto var = ASR::make_Var_t(m_al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(variable));
+                params.push_back(m_al, ASRUtils::EXPR(var));
             }
 
             auto func = ASR::make_Function_t(m_al, x.base.base.loc, x.m_global_scope, s2c(m_al, import_func.name),
-                    nullptr, 0, nullptr, 0, nullptr, ASR::abiType::Source, ASR::accessType::Public,
+                    params.data(), params.size(), nullptr, 0, nullptr, ASR::abiType::Source, ASR::accessType::Public,
                     ASR::deftypeType::Implementation, nullptr);
             m_import_func_asr_map[import_func.name] = func;
 
-            SymbolInfo s(no_of_types++);
-            m_func_name_idx_map[get_hash(func)] = s;
+
+            wasm::emit_import_fn(m_import_section, m_al, "js", import_func.name, no_of_types);
+            emit_function_prototype(*((ASR::Function_t *)func));
             no_of_imports++;
         }
 
