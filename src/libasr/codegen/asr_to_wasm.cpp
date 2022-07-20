@@ -306,7 +306,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     template<typename T>
-    void emit_local_vars(const T& x, int cur_idx) {
+    void emit_local_vars(const T& x, int var_idx /* starting index for local vars */) {
         /********************* Local Vars Types List *********************/
         uint32_t len_idx_code_section_local_vars_list = wasm::emit_len_placeholder(m_code_section, m_al);
         int local_vars_cnt = 0;
@@ -316,7 +316,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 if (v->m_intent == ASRUtils::intent_local || v->m_intent == ASRUtils::intent_return_var) {
                     wasm::emit_u32(m_code_section, m_al, 1U);    // count of local vars of this type
                     emit_var_type(m_code_section, v); // emit the type of this var
-                    m_var_name_idx_map[get_hash((ASR::asr_t *)v)] = cur_idx++;
+                    m_var_name_idx_map[get_hash((ASR::asr_t *)v)] = var_idx++;
                     local_vars_cnt++;
                 }
             }
