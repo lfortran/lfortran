@@ -378,6 +378,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         wasm::emit_u32(m_func_section, m_al, no_of_types); // reference the added type
         m_func_name_idx_map[get_hash((ASR::asr_t *)&x)] = s; // add function to map
+
+        no_of_types++;
     }
 
     template<typename T>
@@ -402,6 +404,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::fixup_len(m_code_section, m_al, len_idx_code_section_func_size);
 
         wasm::emit_export_fn(m_export_section, m_al, x.m_name, no_of_types); //  add function to export
+
+        no_of_functions++;
     }
 
     void visit_Function(const ASR::Function_t &x) {
@@ -409,9 +413,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         emit_function_prototype(x);
         emit_function_body(x);
-
-        no_of_types++;
-        no_of_functions++;
     }
 
     void visit_Subroutine(const ASR::Subroutine_t & /* x */) {
