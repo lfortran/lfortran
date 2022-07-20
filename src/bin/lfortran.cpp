@@ -118,6 +118,7 @@ int emit_tokens2(const std::string &input, std::vector<std::string>
     //std::vector<LFortran::YYSTYPE> stypes;
     LFortran::diag::Diagnostics diagnostics;
     auto res = LFortran::tokens(al, input, diagnostics, &stypes, nullptr, false);
+    for(int i=0;i<5;++i) std::cout << "stypes after " << &stypes[i] << std::endl;
     LFortran::LocationManager lm;
     lm.in_filename = "input";
     lm.init_simple(input);
