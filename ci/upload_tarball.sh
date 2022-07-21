@@ -72,7 +72,7 @@ ssh-add <(echo "$SSH_DEPLOY_KEY" | base64 -d)
 set -x
 
 
-git push ${deploy_repo_push} main:main
+git push ${deploy_repo_push} master:master
 echo "New commit pushed at:"
 echo "https://github.com/lfortran/tarballs/commit/${dest_commit}"
 
