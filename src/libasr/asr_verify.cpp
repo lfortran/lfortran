@@ -256,6 +256,28 @@ public:
         current_symtab = parent_symtab;
     }
 
+    void visit_Template(const Template_t &x){
+        SymbolTable *parent_symtab = current_symtab;
+        current_symtab = x.m_symtab;
+
+        require(x.m_symtab != nullptr,
+            "The Subroutine::m_symtab cannot be nullptr");
+        require(x.m_symtab->parent == parent_symtab,
+            "The Subroutine::m_symtab->parent is not the right parent");
+        require(x.m_symtab->asr_owner == (ASR::asr_t*)&x,
+            "The X::m_symtab::asr_owner must point to X");
+        require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
+            "Subroutine::m_symtab->counter must be unique");
+        require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
+            "The asr_owner invariant failed");
+
+        for (auto &a : x.m_symtab->get_scope()) {
+            this->visit_symbol(*a.second);
+        }
+
+        current_symtab = parent_symtab;
+    }
+
     void visit_Function(const Function_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;

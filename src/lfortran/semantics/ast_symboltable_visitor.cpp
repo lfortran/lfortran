@@ -262,7 +262,7 @@ public:
         current_scope = parent_scope;
         fix_type_info();
     }
-
+    
     void visit_Subroutine(const AST::Subroutine_t &x) {
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
@@ -1265,6 +1265,32 @@ public:
             std::string x_m_name = std::string(x.m_names[i]);
             generic_class_procedures[dt_name][generic_name].push_back(to_lower(x_m_name));
         }
+    }
+
+    void visit_Template(const AST::Template_t &x){
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        for (size_t i=0; i<x.n_decl; i++) {
+            this->visit_unit_decl2(*x.m_decl[i]);
+        }
+
+        for (size_t i=0; i<x.n_contains; i++) {
+            this->visit_program_unit(*x.m_contains[i]);
+        }
+
+        tmp = ASR::make_Template_t(
+            al, x.base.base.loc,
+            /* a_symtab */ current_scope,
+            /* type_parameter_t */ nullptr,
+            /* n_type_parameters */ 0,
+            /* a_restrictions */ nullptr,
+            /* n_restrictions */ 0,
+            /* a_fn */ nullptr,
+            /* n_fn */ 0);
+        parent_scope->add_symbol(x.m_name, ASR::down_cast<ASR::symbol_t>(tmp));
+
+        current_scope = parent_scope;
     }
 
 };

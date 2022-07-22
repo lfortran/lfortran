@@ -10,12 +10,9 @@ module swap_m
         type :: T
         end type
 
-        interface swap
-            module procedure swap_
-        end interface
     contains
         subroutine swap_(x, y)
-            type(T), intent(inout) :: x
+            type(T), intent(inout) :: x, y
             type(T) :: tmp
 
             tmp = x

@@ -91,7 +91,7 @@ symbol
 -- restrictions is a list of Restriction
 -- fn is a list of TempaltedFunction
 
-    | Template(type_parameter *type_parameters,
+    | Template(symbol_table symtab, type_parameter *type_parameters,
         symbol *restrictions, symbol *fn)
     | Restriction(type_parameter *type_parameters, symbol *fn)
     | TemplatedFunction(symbol_table symtab, identifier name, expr* args,

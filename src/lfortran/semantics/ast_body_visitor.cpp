@@ -831,6 +831,11 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
         }
+        for (size_t i=0; i<x.n_decl; i++) {
+            visit_unit_decl2(*x.m_decl[i]);
+        }
+        // We have to visit unit_decl_2 because in the example, the Template is directly inside the module and 
+        // Template is a unit_decl_2
 
         current_scope = old_scope;
         current_module = nullptr;
@@ -1493,6 +1498,29 @@ public:
         tmp = ASR::make_Nullify_t(al, x.base.base.loc, arg_vec.p, arg_vec.size());
     }
 
+    void visit_Template(const AST::Template_t &x){
+
+        SymbolTable *old_scope = current_scope;
+        ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
+        ASR::Template_t *v = ASR::down_cast<ASR::Template_t>(t);
+        current_scope = v->m_symtab;
+
+        for (size_t i=0; i<x.n_contains; i++) {
+            this->visit_program_unit(*x.m_contains[i]);
+        }
+
+        current_scope = old_scope;
+    }
+
+    void visit_Interface(const AST::Interface_t &x) {
+
+    }
+
+    void visit_DerivedType(const AST::DerivedType_t &x) {
+
+    }
+    // The above two methods should be implemented here because unit_decl_2 to the module and they didn't need
+    // body visitors before.
 };
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
