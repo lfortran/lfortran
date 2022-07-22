@@ -61,6 +61,8 @@ struct SymbolInfo
     bool intrinsic_function = false;
     uint32_t index = 0;
     uint32_t no_of_variables = 0;
+
+    ASR::Variable_t *return_var;
     SymbolInfo(){}
     SymbolInfo(uint32_t idx): index(idx) {}
     SymbolInfo(uint32_t idx, uint32_t no_of_vars): index(idx), no_of_variables(no_of_vars) {}
@@ -72,7 +74,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     diag::Diagnostics &diag;
 
     bool intrinsic_module;
-    ASR::Variable_t *return_var;
     SymbolInfo* cur_sym_info;
     uint32_t nesting_level;
     uint32_t cur_loop_nesting_level;
@@ -360,11 +361,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         /********************* Result Types List *********************/
         if (x.m_return_var) {
             wasm::emit_u32(m_type_section, m_al, 1U); // there is just one return variable
-            return_var = ASRUtils::EXPR2VAR(x.m_return_var);
-            emit_var_type(m_type_section, return_var);
+            s->return_var = ASRUtils::EXPR2VAR(x.m_return_var);
+            emit_var_type(m_type_section, s->return_var);
         } else {
             wasm::emit_u32(m_type_section, m_al, 0U); // the function does not return
-            return_var = nullptr;
+            s->return_var = nullptr;
         }
 
         /********************* Add Type to Map *********************/
@@ -736,9 +737,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void handle_return() {
-        if (return_var) {
-            LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)return_var)) != m_var_name_idx_map.end());
-            wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)return_var)]);
+        if (cur_sym_info->return_var) {
+            LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)cur_sym_info->return_var)) != m_var_name_idx_map.end());
+            wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)cur_sym_info->return_var)]);
             wasm::emit_b8(m_code_section, m_al, 0x0F); // emit wasm return instruction
         }
     }
