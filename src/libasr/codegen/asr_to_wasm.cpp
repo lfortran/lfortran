@@ -779,6 +779,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)cur_sym_info->return_var)) != m_var_name_idx_map.end());
             wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)cur_sym_info->return_var)]);
             wasm::emit_b8(m_code_section, m_al, 0x0F); // emit wasm return instruction
+        } else if(cur_sym_info->is_subroutine) {
+            for(auto return_var:cur_sym_info->subroutine_return_vars) {
+                wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)(return_var))]);
+            }
+            wasm::emit_b8(m_code_section, m_al, 0x0F); // emit wasm return instruction
         }
     }
 
