@@ -59,10 +59,12 @@ struct SymbolInfo
 {
     bool needs_declaration = true;
     bool intrinsic_function = false;
+    bool is_subroutine = false;
     uint32_t index = 0;
     uint32_t no_of_variables = 0;
-
     ASR::Variable_t *return_var;
+    std::vector<ASR::Variable_t *> subroutine_return_vars;
+
     SymbolInfo(){}
     SymbolInfo(uint32_t idx): index(idx) {}
     SymbolInfo(uint32_t idx, uint32_t no_of_vars): index(idx), no_of_variables(no_of_vars) {}
