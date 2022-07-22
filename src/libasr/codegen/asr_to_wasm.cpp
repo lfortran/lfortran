@@ -859,6 +859,27 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash((ASR::asr_t *)fn)]->index);
     }
 
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        ASR::Subroutine_t *s = ASR::down_cast<ASR::Subroutine_t>(ASRUtils::symbol_get_past_external(x.m_name));
+        // TODO: use a mapping with a hash(s) instead:
+        // std::string sym_name = s->m_name;
+        // if (sym_name == "exit") {
+        //     sym_name = "_xx_lcompilers_changed_exit_xx";
+        // }
+
+        for (size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i].m_value);
+        }
+
+        LFORTRAN_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)s)) != m_func_name_idx_map.end());
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash((ASR::asr_t *)s)]->index);
+
+        for(auto return_var:cur_sym_info->subroutine_return_vars) {
+            LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)return_var)) != m_var_name_idx_map.end());
+            wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)return_var)]);
+        }
+    }
+
     inline ASR::ttype_t* extract_ttype_t_from_expr(ASR::expr_t* expr) {
         return ASRUtils::expr_type(expr);
     }
