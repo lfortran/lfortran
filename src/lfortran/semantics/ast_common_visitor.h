@@ -2066,6 +2066,33 @@ public:
                                      vector, type, nullptr);
     }
 
+    ASR::asr_t* create_ArrayReshape(const AST::FuncCallOrArray_t& x) {
+        if( x.n_args != 2 ) {
+             throw SemanticError("reshape accepts only 2 arguments, got " +
+                                 std::to_string(x.n_args) + " arguments instead.",
+                                 x.base.base.loc);
+         }
+         this->visit_expr(*x.m_args[0].m_end);
+         ASR::expr_t* array = ASRUtils::EXPR(tmp);
+         this->visit_expr(*x.m_args[1].m_end);
+         ASR::expr_t* newshape = ASRUtils::EXPR(tmp);
+         if( !ASRUtils::is_array(ASRUtils::expr_type(newshape)) ) {
+             throw SemanticError("reshape only accept arrays for shape "
+                                 "arguments, found " +
+                                 ASRUtils::type_to_str_python(ASRUtils::expr_type(newshape)) +
+                                 " instead.",
+                                 x.base.base.loc);
+         }
+         Vec<ASR::dimension_t> dims;
+         dims.reserve(al, 1);
+         ASR::dimension_t newdim;
+         newdim.loc = x.base.base.loc;
+         newdim.m_start = nullptr, newdim.m_length = nullptr;
+         dims.push_back(al, newdim);
+         ASR::ttype_t* empty_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(array), &dims);
+         return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, empty_type, nullptr);
+    }
+
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
         std::vector<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"size"};
@@ -2159,6 +2186,8 @@ public:
                 tmp = create_BitCast(x);
             } else if( var_name == "cmplx" ) {
                 tmp = create_Cmplx(x);
+            } else if( var_name == "reshape" ) {
+                tmp = create_ArrayReshape(x);
             } else {
                 LCompilersException("create_" + var_name + " not implemented yet.");
             }
