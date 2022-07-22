@@ -410,6 +410,42 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         emit_function_body(x);
     }
 
+    void emit_subroutine_prototype(const ASR::Subroutine_t & x) {
+        /********************* New Type Declaration *********************/
+        wasm::emit_b8(m_type_section, m_al, 0x60);
+        SymbolInfo* s = new SymbolInfo;
+        s->is_subroutine = true;
+
+        /********************* Parameter Types List *********************/
+        uint32_t len_idx_type_section_param_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
+            if (arg->m_intent == ASR::intentType::In) {
+                emit_var_type(m_type_section, arg);
+                m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = i;
+                s->no_of_variables++;
+            }
+        }
+        wasm::fixup_len(m_type_section, m_al, len_idx_type_section_param_types_list);
+
+        /********************* Result Types List *********************/
+        uint32_t len_idx_type_section_return_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
+        s->subroutine_return_vars.reserve(x.n_args);
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
+            if (arg->m_intent == ASR::intentType::Out) {
+                emit_var_type(m_type_section, arg);
+                m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = i;
+                s->subroutine_return_vars.push_back(arg);
+            }
+        }
+        wasm::fixup_len(m_type_section, m_al, len_idx_type_section_return_types_list);
+
+        /********************* Add Type to Map *********************/
+        s->index = no_of_types++;
+        m_func_name_idx_map[get_hash((ASR::asr_t *)&x)] = s; // add function to map
+    }
+
     void visit_Subroutine(const ASR::Subroutine_t & /* x */) {
         // Todo: Implement this
     }
