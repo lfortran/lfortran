@@ -35,7 +35,12 @@
 
 int yylex(LFortran::YYSTYPE *yylval, YYLTYPE *yyloc, LFortran::Parser &p)
 {
-    return p.m_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
+    if (p.fixed_form) {
+        if (!p.f_tokenizer.tokenized) p.f_tokenizer.tokenize_input(p.diag, p.f_tokenizer.stypes, p.m_a);
+        return p.f_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
+    } else {
+        return p.m_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
+    }
 } // ylex
 
 void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)

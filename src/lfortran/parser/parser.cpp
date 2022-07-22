@@ -12,9 +12,9 @@ namespace LFortran
 {
 
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
-        diag::Diagnostics &diagnostics)
+        diag::Diagnostics &diagnostics, const bool &fixed_form)
 {
-    Parser p(al, diagnostics);
+    Parser p(al, diagnostics, fixed_form);
     try {
         p.parse(s);
     } catch (const parser_local::TokenizerError &e) {
@@ -46,8 +46,14 @@ void Parser::parse(const std::string &input)
     } else {
         inp.append("\n");
     }
-    m_tokenizer.set_string(inp);
-    if (yyparse(*this) == 0) {
+    if (!fixed_form) {
+        m_tokenizer.set_string(inp);
+        if (yyparse(*this) == 0) {
+            return;
+        }
+    } else {
+        f_tokenizer.set_string(inp);
+        // what to call to kick off parsing?
         return;
     }
     throw parser_local::ParserError("Parsing unsuccessful (internal compiler error)");
@@ -65,6 +71,8 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         if (!t.tokenize_input(diagnostics, stypes, al)) {
             return Error();
         };
+
+
         return t.tokens;
     } else {
         Tokenizer t;

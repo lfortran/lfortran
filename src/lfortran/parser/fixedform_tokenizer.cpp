@@ -513,9 +513,8 @@ struct FixedFormRecursiveDescent {
             if(next_is(cur, declarator)) {
                 tokens.push_back(identifiers_map[declarator]);
                 YYSTYPE y;
-                Str tmp;
-                tmp.from_str_view(declarator);
-                y.string =tmp; 
+                std::string decl(declarator);
+                y.string.from_str(m_a, decl);
                 stypes.push_back(y);
                 cur += declarator.size();
                 return true;
@@ -745,6 +744,7 @@ bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, std::vec
         if (stypes)
             for(const auto & el : f.stypes)
                 stypes->push_back(el);
+        tokenized = true;
     } catch (const parser_local::TokenizerError &e) {
         diagnostics.diagnostics.push_back(e.d);
         return false;
@@ -752,9 +752,16 @@ bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, std::vec
     return true;
 }
 
-int FixedFormTokenizer::lex(Allocator &/*al*/, YYSTYPE &/*yylval*/,
+int FixedFormTokenizer::lex(Allocator &/*al*/, YYSTYPE &yylval,
         Location &/*loc*/, diag::Diagnostics &/*diagnostics*/)
 {
+    if (!tokens.empty()) {
+        auto tok = tokens[0];
+        tokens.erase(tokens.begin());
+        yylval = stypes->at(0);
+        stypes->erase(stypes->begin());
+        return tok;
+    }
     return yytokentype::END_OF_FILE;
     for (;;) {
         tok = cur;

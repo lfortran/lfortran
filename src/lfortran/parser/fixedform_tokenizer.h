@@ -25,6 +25,8 @@ public:
     std::vector<int> tokens;
     std::vector<YYSTYPE> *stypes;
 
+    bool tokenized = false;
+
 public:
     // Set the string to tokenize. The caller must ensure `str` will stay valid
     // as long as `lex` is being called.
