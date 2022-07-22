@@ -73,6 +73,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     bool intrinsic_module;
     ASR::Variable_t *return_var;
+    SymbolInfo* cur_sym_info;
     uint32_t nesting_level;
     uint32_t cur_loop_nesting_level;
 
@@ -91,7 +92,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     uint32_t avail_mem_loc;
 
     std::map<uint64_t, uint32_t> m_var_name_idx_map;
-    std::map<uint64_t, SymbolInfo> m_func_name_idx_map;
+    std::map<uint64_t, SymbolInfo *> m_func_name_idx_map;
     std::map<std::string, ASR::asr_t *> m_import_func_asr_map;
 
    public:
@@ -344,6 +345,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     void emit_function_prototype(const T& x) {
         /********************* New Type Declaration *********************/
         wasm::emit_b8(m_type_section, m_al, 0x60);
+        SymbolInfo* s = new SymbolInfo;
 
         /********************* Parameter Types List *********************/
         wasm::emit_u32(m_type_section, m_al, x.n_args);
@@ -352,6 +354,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             LFORTRAN_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent));
             emit_var_type(m_type_section, arg);
             m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = i;
+            s->no_of_variables++;
         }
 
         /********************* Result Types List *********************/
@@ -365,24 +368,23 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
 
         /********************* Add Type to Map *********************/
-        SymbolInfo s(no_of_types, x.n_args);
+        s->index = no_of_types++;
         m_func_name_idx_map[get_hash((ASR::asr_t *)&x)] = s; // add function to map
-        no_of_types++;
     }
 
     template<typename T>
     void emit_function_body(const T& x) {
         LFORTRAN_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)&x)) != m_func_name_idx_map.end());
 
-        auto sym_info =  m_func_name_idx_map[get_hash((ASR::asr_t *)&x)];
+        cur_sym_info =  m_func_name_idx_map[get_hash((ASR::asr_t *)&x)];
 
         /********************* Reference Function Prototype *********************/
-        wasm::emit_u32(m_func_section, m_al, sym_info.index);
+        wasm::emit_u32(m_func_section, m_al, cur_sym_info->index);
 
         /********************* Function Body Starts Here *********************/
         uint32_t len_idx_code_section_func_size = wasm::emit_len_placeholder(m_code_section, m_al);
 
-        emit_local_vars(x, sym_info.no_of_variables);
+        emit_local_vars(x, cur_sym_info->no_of_variables);
         for (size_t i = 0; i < x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
@@ -394,7 +396,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::fixup_len(m_code_section, m_al, len_idx_code_section_func_size);
 
         /********************* Export the function *********************/
-        wasm::emit_export_fn(m_export_section, m_al, x.m_name, sym_info.index); //  add function to export
+        wasm::emit_export_fn(m_export_section, m_al, x.m_name, cur_sym_info->index); //  add function to export
         no_of_functions++;
     }
 
@@ -815,7 +817,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
 
         LFORTRAN_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)fn)) != m_func_name_idx_map.end())
-        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash((ASR::asr_t *)fn)].index);
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash((ASR::asr_t *)fn)]->index);
     }
 
     inline ASR::ttype_t* extract_ttype_t_from_expr(ASR::expr_t* expr) {
@@ -1035,12 +1037,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 switch( a_kind ) {
                     case 4 : {
                         // the value is already on stack. call JavaScript print_i32
-                        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_i32"])].index);
+                        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_i32"])]->index);
                         break;
                     }
                     case 8 : {
                         // the value is already on stack. call JavaScript print_i64
-                        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_i64"])].index);
+                        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_i64"])]->index);
                         break;
                     }
                     default: {
@@ -1052,12 +1054,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 switch( a_kind ) {
                     case 4 : {
                         // the value is already on stack. call JavaScript print_f32
-                        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_f32"])].index);
+                        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_f32"])]->index);
                         break;
                     }
                     case 8 : {
                         // the value is already on stack. call JavaScript print_f64
-                        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_f64"])].index);
+                        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_f64"])]->index);
                         break;
                     }
                     default: {
@@ -1071,13 +1073,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 wasm::emit_i32_const(m_code_section, m_al, last_str_len);
 
                 // call JavaScript print_str
-                wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_str"])].index);
+                wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_str"])]->index);
 
             }
         }
 
         // call JavaScript flush_buf
-        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["flush_buf"])].index);
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["flush_buf"])]->index);
     }
 
     void visit_Print(const ASR::Print_t &x){
@@ -1123,14 +1125,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         visit_StringConstant(n);
         wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc - last_str_len);
         wasm::emit_i32_const(m_code_section, m_al, last_str_len);
-        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_str"])].index);
-        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["flush_buf"])].index);
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_str"])]->index);
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["flush_buf"])]->index);
     }
 
     void exit() {
         // exit_code would be on stack, so add it to JavaScript Output buffer by printing it.
         // this exit code would be read by JavaScript glue code
-        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_i32"])].index);
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_i32"])]->index);
         wasm::emit_unreachable(m_code_section, m_al); // raise trap/exception
     }
 
