@@ -317,7 +317,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
-                if (v->m_intent == ASRUtils::intent_local || v->m_intent == ASRUtils::intent_return_var) {
+                if (v->m_intent == ASRUtils::intent_local || v->m_intent == ASRUtils::intent_return_var
+                        || v->m_intent == ASRUtils::intent_out) {
                     wasm::emit_u32(m_code_section, m_al, 1U);    // count of local vars of this type
                     emit_var_type(m_code_section, v); // emit the type of this var
                     m_var_name_idx_map[get_hash((ASR::asr_t *)v)] = var_idx++;
