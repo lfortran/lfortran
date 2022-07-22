@@ -446,8 +446,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_func_name_idx_map[get_hash((ASR::asr_t *)&x)] = s; // add function to map
     }
 
-    void visit_Subroutine(const ASR::Subroutine_t & /* x */) {
-        // Todo: Implement this
+    void visit_Subroutine(const ASR::Subroutine_t & x) {
+        emit_subroutine_prototype(x);
+        emit_function_body(x);
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
