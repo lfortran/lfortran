@@ -421,8 +421,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
             if (arg->m_intent == ASR::intentType::In) {
                 emit_var_type(m_type_section, arg);
-                m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = i;
-                s->no_of_variables++;
+                m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = s->no_of_variables++;
             }
         }
         wasm::fixup_len(m_type_section, m_al, len_idx_type_section_param_types_list);
@@ -434,7 +433,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
             if (arg->m_intent == ASR::intentType::Out) {
                 emit_var_type(m_type_section, arg);
-                m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = i;
+                m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = s->no_of_variables++;
                 s->subroutine_return_vars.push_back(arg);
             }
         }
