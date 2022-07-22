@@ -7,7 +7,9 @@ source_filename = "LFortran"
 @closuretest_nstd_strct = global %closuretest_nstd_types zeroinitializer
 @closuretest_nstd_strct_stack = global [1000 x %closuretest_vals] zeroinitializer
 @sp_closuretest = global i32 0
-@0 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
+@0 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2 = private unnamed_addr constant [5 x i8] c"%d%s\00", align 1
 
 define i32 @add_z(i32* %x) {
 .entry:
@@ -59,7 +61,7 @@ loop.body:                                        ; preds = %loop.head
   store i32* %z, i32** getelementptr inbounds (%closuretest_nstd_types, %closuretest_nstd_types* @closuretest_nstd_strct, i32 0, i32 0), align 8
   store i32 1, i32* %call_arg_value, align 4
   %5 = call i32 @apply(i32 (i32*)* @add_z, i32* %call_arg_value)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0), i32 %5)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i32 %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head

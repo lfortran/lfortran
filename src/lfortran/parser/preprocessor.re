@@ -68,14 +68,14 @@ std::string parse_argument(unsigned char *&cur) {
     while (*cur == ' ' && *cur != '\0') cur++;
     while (*cur != ')' && *cur != ',' && *cur != ' ') {
         if (*cur == '\0') {
-            throw LFortranException("C preprocessor: runaway argument");
+            throw LCompilersException("C preprocessor: runaway argument");
         }
         arg += *cur;
         cur++;
     }
     while (*cur == ' ' && *cur != '\0') cur++;
     if (*cur == '\0') {
-        throw LFortranException("C preprocessor: runaway argument");
+        throw LCompilersException("C preprocessor: runaway argument");
     }
     return arg;
 }
@@ -87,7 +87,7 @@ std::string match_parentheses(unsigned char *&cur) {
     cur++;
     while (*cur != ')') {
         if (*cur == '\0') {
-            throw LFortranException("C preprocessor: unmatched parentheses");
+            throw LCompilersException("C preprocessor: unmatched parentheses");
         }
         if (*cur == '(') {
             arg += match_parentheses(cur);
@@ -107,7 +107,7 @@ std::string parse_argument2(unsigned char *&cur) {
     std::string arg;
     while (*cur != ')' && *cur != ',') {
         if (*cur == '\0') {
-            throw LFortranException("C preprocessor: runaway argument");
+            throw LCompilersException("C preprocessor: runaway argument");
         }
         if (*cur == '(') {
             arg += match_parentheses(cur);
@@ -318,7 +318,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
             }
             "#" whitespace? "else" whitespace? newline  {
                 if (ifdef_stack.size() == 0) {
-                    throw LFortranException("C preprocessor: #else encountered outside of #ifdef or #ifndef");
+                    throw LCompilersException("C preprocessor: #else encountered outside of #ifdef or #ifndef");
                 }
                 IfDef ifdef = ifdef_stack[ifdef_stack.size()-1];
                 if (ifdef.active) {
@@ -333,7 +333,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
             }
             "#" whitespace? "endif" whitespace? newline  {
                 if (ifdef_stack.size() == 0) {
-                    throw LFortranException("C preprocessor: #endif encountered outside of #ifdef or #ifndef");
+                    throw LCompilersException("C preprocessor: #endif encountered outside of #ifdef or #ifndef");
                 }
                 IfDef ifdef = ifdef_stack[ifdef_stack.size()-1];
                 ifdef_stack.pop_back();
@@ -359,7 +359,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 }
                 std::string include;
                 if (!read_file(filename, include)) {
-                    throw LFortranException("C preprocessor: include file '" + filename + "' cannot be opened");
+                    throw LCompilersException("C preprocessor: include file '" + filename + "' cannot be opened");
                 }
 
                 LocationManager lm_tmp = lm; // Make a copy
@@ -387,12 +387,12 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                     std::string expansion;
                     if (macro_definitions[t].function_like) {
                         if (*cur != '(') {
-                            throw LFortranException("C preprocessor: function-like macro invocation must have argument list");
+                            throw LCompilersException("C preprocessor: function-like macro invocation must have argument list");
                         }
                         std::vector<std::string> args;
                         args = parse_arguments(cur, false);
                         if (*cur != ')') {
-                            throw LFortranException("C preprocessor: expected )");
+                            throw LCompilersException("C preprocessor: expected )");
                         }
                         cur++;
                         expansion = function_like_macro_expansion(
@@ -430,7 +430,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                         expansion = run(expansion2, lm_tmp, macro_definitions);
                         i++;
                         if (i == 40) {
-                            throw LFortranException("C preprocessor: maximum recursion limit reached");
+                            throw LCompilersException("C preprocessor: maximum recursion limit reached");
                         }
                     }
 
@@ -559,7 +559,7 @@ void get_next_token(unsigned char *&cur, CPPTokenType &type, std::string &str) {
 
             * {
                 std::string t = token(tok, cur);
-                throw LFortranException("Unknown token: " + t);
+                throw LCompilersException("Unknown token: " + t);
             }
             end { type = CPPTokenType::TK_EOF; return; }
             newline { type = CPPTokenType::TK_EOF; return; }
@@ -602,7 +602,7 @@ void accept(unsigned char *&cur, CPPTokenType type_expected) {
     std::string str;
     get_next_token(cur, type, str);
     if (type != type_expected) {
-        throw LFortranException("Unexpected token type "
+        throw LCompilersException("Unexpected token type "
             + std::to_string((int)type)
             + ", expected type "
             + std::to_string((int)type_expected) );
@@ -614,7 +614,7 @@ std::string accept_name(unsigned char *&cur) {
     std::string str;
     get_next_token(cur, type, str);
     if (type != CPPTokenType::TK_NAME) {
-        throw LFortranException("Unexpected token type "
+        throw LCompilersException("Unexpected token type "
             + std::to_string((int)type)
             + ", expected TK_NAME");
     }
@@ -741,9 +741,9 @@ int parse_factor(unsigned char *&cur, const cpp_symtab &macro_definitions) {
     // handle them here:
     } else if (type == CPPTokenType::TK_EOF) {
         // EOF means the expression
-        throw LFortranException("factor(): The expression is not complete, expecting integer, name, +, - or (");
+        throw LCompilersException("factor(): The expression is not complete, expecting integer, name, +, - or (");
     } else {
-        throw LFortranException("Unexpected token type " + std::to_string((int)type) + " in factor()");
+        throw LCompilersException("Unexpected token type " + std::to_string((int)type) + " in factor()");
     }
 }
 
@@ -775,7 +775,7 @@ int parse_relation(unsigned char *&cur, const cpp_symtab &macro_definitions) {
         } else if (type == CPPTokenType::TK_EQ) {
             return lhs == rhs;
         } else {
-            throw LFortranException("Inconsistent ifs");
+            throw LCompilersException("Inconsistent ifs");
         }
     } else {
         cur = old_cur; // Revert the last token, as we will not consume it

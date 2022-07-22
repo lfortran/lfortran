@@ -72,7 +72,7 @@ static inline int64_t stmt_label(AST::stmt_t *f)
         LFORTRAN_STMT_LABEL_TYPE(SelectType)
         LFORTRAN_STMT_LABEL_TYPE(Where)
         LFORTRAN_STMT_LABEL_TYPE(WhileLoop)
-        default : throw LFortranException("Not implemented");
+        default : throw LCompilersException("Not implemented");
     }
 }
 
@@ -693,9 +693,10 @@ public:
             }
             if (m_dim[i].m_end) {
                 this->visit_expr(*m_dim[i].m_end);
-                dim.m_end = LFortran::ASRUtils::EXPR(tmp);
+                dim.m_length = ASRUtils::compute_length_from_start_end(al, dim.m_start,
+                                    LFortran::ASRUtils::EXPR(tmp));
             } else {
-                dim.m_end = nullptr;
+                dim.m_length = nullptr;
             }
             dims.push_back(al, dim);
         }
@@ -906,6 +907,9 @@ public:
                             } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrPublic) {
                                 s_access = ASR::accessType::Public;
+                            } else if (sa->m_attr == AST::simple_attributeType
+                                    ::AttrSave) {
+                                storage_type = ASR::storage_typeType::Save;
                             } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrParameter) {
                                 storage_type = ASR::storage_typeType::Parameter;
@@ -1163,6 +1167,8 @@ public:
                             LFORTRAN_ASSERT(lhs_len >= 0)
                             lhs_type->m_len = lhs_len;
                         }
+                    } else {
+                        storage_type = ASR::storage_typeType::Save; // implicit save
                     }
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
@@ -1194,6 +1200,7 @@ public:
                 AST::fnarg_t* m_args, size_t n_args,
                     ASR::symbol_t *v,
                     ASR::symbol_t *f2) {
+        bool is_item = true;
         Vec<ASR::array_index_t> args;
         args.reserve(al, n_args);
         for (size_t i=0; i<n_args; i++) {
@@ -1216,6 +1223,21 @@ public:
                 m_step = LFortran::ASRUtils::EXPR(tmp);
                 ai.loc = m_step->base.loc;
             }
+            if( m_start != nullptr &&
+                ASR::is_a<ASR::Var_t>(*m_start) &&
+                ASR::is_a<ASR::Var_t>(*m_end) ) {
+                ASR::Variable_t* startv = ASRUtils::EXPR2VAR(m_start);
+                ASR::Variable_t* endv = ASRUtils::EXPR2VAR(m_end);
+                is_item = is_item && (startv == endv);
+                if( is_item ) {
+                    m_start = nullptr;
+                    m_step = nullptr;
+                }
+            } else {
+                is_item = is_item && (m_start == nullptr &&
+                                      m_step == nullptr &&
+                                      m_end != nullptr);
+            }
             ai.m_left = m_start;
             ai.m_right = m_end;
             ai.m_step = m_step;
@@ -1223,7 +1245,7 @@ public:
         }
 
         ASR::ttype_t *type;
-        type = ASRUtils::type_get_past_pointer(ASR::down_cast<ASR::Variable_t>(f2)->m_type);
+        type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(f2));
         ASR::expr_t *arr_ref_val = nullptr;
         bool all_args_eval = ASRUtils::all_args_evaluated(args);
         for( auto& a : args ) {
@@ -1278,8 +1300,18 @@ public:
                 }
             }
         }
-        return ASR::make_ArrayRef_t(al, loc,
-            v, args.p, args.size(), type, arr_ref_val);
+
+        ASR::expr_t* v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
+        if( is_item ) {
+            Vec<ASR::dimension_t> empty_dims;
+            empty_dims.reserve(al, 1);
+            type = ASRUtils::duplicate_type(al, type, &empty_dims);
+            return ASR::make_ArrayItem_t(al, loc,
+                v_Var, args.p, args.size(), type, arr_ref_val);
+        } else {
+            return ASR::make_ArraySection_t(al, loc,
+                v_Var, args.p, args.size(), type, arr_ref_val);
+        }
     }
 
     void visit_ArrayInitializer(const AST::ArrayInitializer_t &x) {
@@ -1308,7 +1340,7 @@ public:
         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
         ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.n_args, int32_type));
         dim.m_start = one;
-        dim.m_end = x_n_args;
+        dim.m_length = x_n_args;
         dims.push_back(al, dim);
         type = ASRUtils::duplicate_type(al, type, &dims);
         tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
@@ -1318,7 +1350,7 @@ public:
     void fill_expr_in_ttype_t(std::vector<ASR::expr_t*>& exprs, ASR::dimension_t* dims, size_t n_dims) {
         for( size_t i = 0; i < n_dims; i++ ) {
             exprs.push_back(dims[i].m_start);
-            exprs.push_back(dims[i].m_end);
+            exprs.push_back(dims[i].m_length);
         }
     }
 
@@ -1359,7 +1391,7 @@ public:
                     ASR::dimension_t new_dim;
                     new_dim.loc = func_calls[i]->base.loc;
                     new_dim.m_start = func_calls[i];
-                    new_dim.m_end = func_calls[i + 1];
+                    new_dim.m_length = func_calls[i + 1];
                     new_dims.push_back(al, new_dim);
                 }
                 int64_t a_len = t->m_len;
@@ -1378,7 +1410,7 @@ public:
                     ASR::dimension_t new_dim;
                     new_dim.loc = func_calls[i]->base.loc;
                     new_dim.m_start = func_calls[i];
-                    new_dim.m_end = func_calls[i + 1];
+                    new_dim.m_length = func_calls[i + 1];
                     new_dims.push_back(al, new_dim);
                 }
                 return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t->m_kind, new_dims.p, new_dims.size()));
@@ -1393,7 +1425,7 @@ public:
                     ASR::dimension_t new_dim;
                     new_dim.loc = func_calls[i]->base.loc;
                     new_dim.m_start = func_calls[i];
-                    new_dim.m_end = func_calls[i + 1];
+                    new_dim.m_length = func_calls[i + 1];
                     new_dims.push_back(al, new_dim);
                 }
                 return ASRUtils::TYPE(ASR::make_Real_t(al, loc, t->m_kind, new_dims.p, new_dims.size()));
@@ -1980,7 +2012,7 @@ public:
         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
         ASR::dimension_t default_dim;
         default_dim.m_start = one;
-        default_dim.m_end = one;
+        default_dim.m_length = one;
         default_dim.loc = one->base.loc;
         std::vector<ASR::dimension_t> pair_a(2), pair_b(2);
         if( matrix_a_rank == 1 ) {
@@ -2025,13 +2057,40 @@ public:
         ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
         new_dim.loc = x.base.base.loc;
         new_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
-        new_dim.m_end = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.base.base.loc,
+        new_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.base.base.loc,
                             vector ? vector : mask, nullptr,
                             int32_type, nullptr));
         new_dims.push_back(al, new_dim);
         ASR::ttype_t *type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(array), &new_dims);
         return ASR::make_ArrayPack_t(al, x.base.base.loc, array, mask,
                                      vector, type, nullptr);
+    }
+
+    ASR::asr_t* create_ArrayReshape(const AST::FuncCallOrArray_t& x) {
+        if( x.n_args != 2 ) {
+             throw SemanticError("reshape accepts only 2 arguments, got " +
+                                 std::to_string(x.n_args) + " arguments instead.",
+                                 x.base.base.loc);
+         }
+         this->visit_expr(*x.m_args[0].m_end);
+         ASR::expr_t* array = ASRUtils::EXPR(tmp);
+         this->visit_expr(*x.m_args[1].m_end);
+         ASR::expr_t* newshape = ASRUtils::EXPR(tmp);
+         if( !ASRUtils::is_array(ASRUtils::expr_type(newshape)) ) {
+             throw SemanticError("reshape only accept arrays for shape "
+                                 "arguments, found " +
+                                 ASRUtils::type_to_str_python(ASRUtils::expr_type(newshape)) +
+                                 " instead.",
+                                 x.base.base.loc);
+         }
+         Vec<ASR::dimension_t> dims;
+         dims.reserve(al, 1);
+         ASR::dimension_t newdim;
+         newdim.loc = x.base.base.loc;
+         newdim.m_start = nullptr, newdim.m_length = nullptr;
+         dims.push_back(al, newdim);
+         ASR::ttype_t* empty_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(array), &dims);
+         return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, empty_type, nullptr);
     }
 
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
@@ -2053,7 +2112,7 @@ public:
             ASR::dimension_t size_dim;
             size_dim.loc = size->base.loc;
             size_dim.m_start = one;
-            size_dim.m_end = size;
+            size_dim.m_length = size;
             new_dims.push_back(al, size_dim);
         } else {
             if( ASR::is_a<ASR::ArrayConstant_t>(*mold) ||
@@ -2072,7 +2131,7 @@ public:
                 ASR::dimension_t size_dim;
                 size_dim.loc = x.base.base.loc;
                 size_dim.m_start = one;
-                size_dim.m_end = b64;
+                size_dim.m_length = b64;
                 new_dims.push_back(al, size_dim);
             }
         }
@@ -2127,21 +2186,30 @@ public:
                 tmp = create_BitCast(x);
             } else if( var_name == "cmplx" ) {
                 tmp = create_Cmplx(x);
+            } else if( var_name == "reshape" ) {
+                tmp = create_ArrayReshape(x);
             } else {
-                LFortranException("create_" + var_name + " not implemented yet.");
+                LCompilersException("create_" + var_name + " not implemented yet.");
             }
             return nullptr;
         }
         return resolve_intrinsic_function(x.base.base.loc, var_name);
     }
 
-    ASR::asr_t* create_CLoc(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_PointerToCptr(const AST::FuncCallOrArray_t& x) {
         std::vector<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_loc"));
         ASR::expr_t *v_Var = args[0];
+        if( !ASR::is_a<ASR::GetPointer_t>(*v_Var) &&
+            !ASRUtils::is_pointer(ASRUtils::expr_type(v_Var)) ) {
+            ASR::ttype_t* ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc,
+                                        ASRUtils::expr_type(v_Var)));
+            v_Var = ASRUtils::EXPR(ASR::make_GetPointer_t(al, x.base.base.loc,
+                            v_Var, ptr_type, nullptr));
+        }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
-        return ASR::make_CLoc_t(al, x.base.base.loc, v_Var, type, nullptr);
+        return ASR::make_PointerToCPtr_t(al, x.base.base.loc, v_Var, type, nullptr);
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
@@ -2173,7 +2241,7 @@ public:
             if (ASRUtils::is_intrinsic_procedure(f)) {
                 if (intrinsic_module_procedures_as_asr_nodes.find(var_name) != intrinsic_module_procedures_as_asr_nodes.end()) {
                     if (var_name == "c_loc") {
-                        tmp = create_CLoc(x);
+                        tmp = create_PointerToCptr(x);
                     } else {
                         LFORTRAN_ASSERT(false)
                     }

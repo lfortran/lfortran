@@ -326,7 +326,7 @@ class ASTVisitorVisitor2(ASDLVisitor):
             self.emit("void visit_%s(const %s_t &b) { visit_%s_t(b, self()); }"\
                     % (base, base, base), 1)
             for type_ in sum.types:
-                self.emit("""void visit_%s(const %s_t & /* x */) { throw LFortran::LFortranException("visit_%s() not implemented"); }""" \
+                self.emit("""void visit_%s(const %s_t & /* x */) { throw LFortran::LCompilersException("visit_%s() not implemented"); }""" \
                         % (type_.name, type_.name, type_.name), 2)
 
 
@@ -913,6 +913,96 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
                     self.emit("self().replace_%s(x->m_%s);" % (field.type, field.name), level)
                     self.emit("current_expr = current_expr_copy;", level)
 
+class StmtBaseReplacerVisitor(ASDLVisitor):
+
+     def __init__(self, stream, data):
+         self.replace_stmt = []
+         self.is_stmt = False
+         self.is_product = False
+         super(StmtBaseReplacerVisitor, self).__init__(stream, data)
+
+     def visitModule(self, mod):
+         self.emit("/" + "*"*78 + "/")
+         self.emit("// Statement Replacer Base class")
+         self.emit("")
+         self.emit("template <class Derived>")
+         self.emit("class BaseStmtReplacer {")
+         self.emit("public:")
+         self.emit("    Derived& self() { return static_cast<Derived&>(*this); }")
+         self.emit("")
+         self.emit("    ASR::stmt_t** current_stmt;")
+         self.emit("    ASR::stmt_t** current_stmt_copy;")
+         self.emit("    bool has_replacement_happened;")
+         self.emit("")
+         self.emit("    BaseStmtReplacer() : current_stmt(nullptr), has_replacement_happened(false) {}")
+         self.emit("")
+
+         self.replace_stmt.append(("    void replace_stmt(ASR::stmt_t* x) {", 0))
+         self.replace_stmt.append(("    if( !x ) {", 1))
+         self.replace_stmt.append(("    return ;", 2))
+         self.replace_stmt.append(("    }", 1))
+         self.replace_stmt.append(("", 0))
+         self.replace_stmt.append(("    switch(x->type) {", 1))
+
+         super(StmtBaseReplacerVisitor, self).visitModule(mod)
+
+         self.replace_stmt.append(("    default: {", 2))
+         self.replace_stmt.append(('    LFORTRAN_ASSERT_MSG(false, "Replacement of " + std::to_string(x->type) + " statement is not supported yet.");', 3))
+         self.replace_stmt.append(("    }", 2))
+         self.replace_stmt.append(("    }", 1))
+         self.replace_stmt.append(("", 0))
+         self.replace_stmt.append(("    }", 0))
+         for line, level in self.replace_stmt:
+             self.emit(line, level=level)
+         self.emit("")
+         self.emit("};")
+
+     def visitType(self, tp):
+         if not (isinstance(tp.value, asdl.Sum) and
+                 is_simple_sum(tp.value)):
+             super(StmtBaseReplacerVisitor, self).visitType(tp, tp.name)
+
+     def visitSum(self, sum, *args):
+         self.is_stmt = args[0] == 'stmt'
+         if self.is_stmt:
+             for tp in sum.types:
+                 self.visit(tp, *args)
+
+     def visitProduct(self, prod, name):
+         pass
+
+     def visitConstructor(self, cons, _):
+         self.make_visitor(cons.name, cons.fields)
+
+     def make_visitor(self, name, fields):
+         self.emit("")
+         self.emit("void replace_%s(%s_t* x) {" % (name, name), 1)
+         self.used = False
+         for field in fields:
+             self.visitField(field)
+         if not self.used:
+             self.emit("if (x) { }", 2)
+
+         if self.is_stmt:
+             self.replace_stmt.append(("    case ASR::stmtType::%s: {" % name, 2))
+             self.replace_stmt.append(("    self().replace_%s(down_cast<ASR::%s_t>(x));" % (name, name), 3))
+             self.replace_stmt.append(("    break;", 3))
+             self.replace_stmt.append(("    }", 2))
+         self.emit("}", 1)
+         self.emit("")
+
+     def visitField(self, field):
+         arguments = None
+         if field.type == "stmt":
+             level = 2
+             if field.seq:
+                 self.used = True
+                 self.emit("for (size_t i = 0; i < x->n_%s; i++) {" % field.name, level)
+                 self.emit("    current_stmt_copy = current_stmt;", level)
+                 self.emit("    current_stmt = &(x->m_%s[i]);" % (field.name), level)
+                 self.emit("    self().replace_stmt(x->m_%s[i]);"%(field.name), level)
+                 self.emit("    current_stmt = current_stmt_copy;", level)
+                 self.emit("}", level)
 
 class PickleVisitorVisitor(ASDLVisitor):
 
@@ -1420,9 +1510,9 @@ class DeserializationVisitorVisitor(ASDLVisitor):
             for tp in sum.types:
                 self.emit(    'case (%s::%sType::%s) : return self().deserialize_%s();' \
                     % (subs["mod"].upper(), args[0], tp.name, tp.name), 3)
-            self.emit(    'default : throw LFortranException("Unknown type in deserialize_%s()");' % args[0], 3)
+            self.emit(    'default : throw LCompilersException("Unknown type in deserialize_%s()");' % args[0], 3)
             self.emit(  '}', 2)
-            self.emit(  'throw LFortranException("Switch statement above was not exhaustive.");', 2)
+            self.emit(  'throw LCompilersException("Switch statement above was not exhaustive.");', 2)
 
             self.emit("}", 1)
 
@@ -1436,9 +1526,9 @@ class DeserializationVisitorVisitor(ASDLVisitor):
         for tp in sums:
             self.emit(    'case (%s::%sType::%s) : return self().deserialize_%s();' \
                 % (subs["mod"].upper(), subs["mod"], tp, tp), 3)
-        self.emit(    'default : throw LFortranException("Unknown type in deserialize_%s()");' % name, 3)
+        self.emit(    'default : throw LCompilersException("Unknown type in deserialize_%s()");' % name, 3)
         self.emit(  '}', 2)
-        self.emit(  'throw LFortranException("Switch statement above was not exhaustive.");', 2)
+        self.emit(  'throw LCompilersException("Switch statement above was not exhaustive.");', 2)
         self.emit(  '}', 1)
 
     def visitProduct(self, prod, name):
@@ -1694,7 +1784,7 @@ static inline ASR::ttype_t* expr_type0(const ASR::expr_t *f)
 
         super(ExprTypeVisitor, self).visitModule(mod)
 
-        self.emit("""        default : throw LFortranException("Not implemented");
+        self.emit("""        default : throw LCompilersException("Not implemented");
     }
 }
 """)
@@ -1761,7 +1851,7 @@ static inline ASR::expr_t* expr_value0(ASR::expr_t *f)
 
         super(ExprValueVisitor, self).visitModule(mod)
 
-        self.emit("""        default : throw LFortranException("Not implemented");
+        self.emit("""        default : throw LCompilersException("Not implemented");
     }
 }
 """)
@@ -1959,6 +2049,8 @@ def main(argv):
             ExprStmtDuplicatorVisitor(fp, data).visit(mod)
             fp.write("\n\n")
             ExprBaseReplacerVisitor(fp, data).visit(mod)
+            fp.write("\n\n")
+            StmtBaseReplacerVisitor(fp, data).visit(mod)
             fp.write("\n\n")
             ExprTypeVisitor(fp, data).visit(mod)
             fp.write("\n\n")

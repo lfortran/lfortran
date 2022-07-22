@@ -46,7 +46,7 @@ namespace LFortran
 #else
             if (pipe(out_pipe) != 0) {
 #endif
-                throw LFortranException("pipe() failed");
+                throw LCompilersException("pipe() failed");
             }
             dup2(out_pipe[1], stdout_fileno);
             close(out_pipe[1]);
@@ -162,9 +162,12 @@ namespace LFortran
             if (startswith(code, "%%showllvm")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
+                LCompilers::PassManager lpm;
+                lpm.use_default_passes();
+                lpm.do_not_use_optimization_passes();
                 diag::Diagnostics diagnostics;
                 Result<std::string>
-                res = e.get_llvm(code0, lm, diagnostics);
+                res = e.get_llvm(code0, lm, lpm, diagnostics);
                 nl::json result;
                 if (res.ok) {
                     publish_stream("stdout", res.result);
@@ -184,9 +187,12 @@ namespace LFortran
             if (startswith(code, "%%showasm")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
+                LCompilers::PassManager lpm;
+                lpm.use_default_passes();
+                lpm.do_not_use_optimization_passes();
                 diag::Diagnostics diagnostics;
                 Result<std::string>
-                res = e.get_asm(code0, lm, diagnostics);
+                res = e.get_asm(code0, lm, lpm, diagnostics);
                 nl::json result;
                 if (res.ok) {
                     publish_stream("stdout", res.result);
@@ -208,7 +214,7 @@ namespace LFortran
                 LocationManager lm;
                 diag::Diagnostics diagnostics;
                 Result<std::string>
-                res = e.get_cpp(code0, lm, diagnostics);
+                res = e.get_cpp(code0, lm, diagnostics, 1);
                 nl::json result;
                 if (res.ok) {
                     publish_stream("stdout", res.result);
@@ -251,9 +257,12 @@ namespace LFortran
             RedirectStdout s(std_out);
             code0 = code;
             LocationManager lm;
+            LCompilers::PassManager lpm;
+            lpm.use_default_passes();
+            lpm.do_not_use_optimization_passes();
             diag::Diagnostics diagnostics;
             Result<FortranEvaluator::EvalResult>
-            res = e.evaluate(code0, false, lm, diagnostics);
+            res = e.evaluate(code0, false, lm, lpm, diagnostics);
             if (res.ok) {
                 r = res.result;
             } else {
@@ -266,11 +275,11 @@ namespace LFortran
                 result["traceback"] = nl::json::array();
                 return result;
             }
-        } catch (const LFortranException &e) {
+        } catch (const LCompilersException &e) {
             publish_stream("stderr", "LFortran Exception: " + e.msg());
             nl::json result;
             result["status"] = "error";
-            result["ename"] = "LFortranException";
+            result["ename"] = "LCompilersException";
             result["evalue"] = e.msg();
             result["traceback"] = nl::json::array();
             return result;
@@ -323,7 +332,7 @@ namespace LFortran
             case (LFortran::FortranEvaluator::EvalResult::none) : {
                 break;
             }
-            default : throw LFortranException("Return type not supported");
+            default : throw LCompilersException("Return type not supported");
         }
 
         nl::json result;

@@ -328,10 +328,9 @@ public:
                 m_a.asm_div_r32(X86Reg::ecx);
                 break;
             };
-            case ASR::binopType::Pow: {
-                throw CodeGenError("Pow not implemented yet.");
-                break;
-            };
+            default: {
+                throw CodeGenError("Binary operator '" + ASRUtils::binop_to_str_python(x.m_op) + "' not supported yet");
+            }
         }
     }
 
@@ -424,11 +423,11 @@ public:
                 m_a.asm_call_label("print_int");
                 m_a.asm_add_r32_imm8(LFortran::X86Reg::esp, 4);
             } else if (t->type == ASR::ttypeType::Real) {
-                throw LFortranException("Type not implemented");
+                throw LCompilersException("Type not implemented");
             } else if (t->type == ASR::ttypeType::Character) {
-                throw LFortranException("Type not implemented");
+                throw LCompilersException("Type not implemented");
             } else {
-                throw LFortranException("Type not implemented");
+                throw LCompilersException("Type not implemented");
             }
 
 

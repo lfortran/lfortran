@@ -3,6 +3,7 @@
 
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/asr_to_cpp.h>
+#include <libasr/codegen/asr_to_c.h>
 #include <libasr/codegen/asr_to_wasm.h>
 #include <libasr/codegen/wasm_to_wat.h>
 #include <lfortran/ast_to_src.h>
@@ -45,18 +46,22 @@ FortranEvaluator::~FortranEvaluator() = default;
 
 Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate2(const std::string &code) {
     LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    lpm.do_not_use_optimization_passes();
     lm.in_filename = "input";
     diag::Diagnostics diagnostics;
-    return evaluate(code, false, lm, diagnostics);
+    return evaluate(code, false, lm, lpm, diagnostics);
 }
 
 Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 #ifdef HAVE_LFORTRAN_LLVM
             const std::string &code_orig, bool verbose, LocationManager &lm,
-            diag::Diagnostics &diagnostics
+            LCompilers::PassManager& pass_manager, diag::Diagnostics &diagnostics
 #else
             const std::string &/*code_orig*/, bool /*verbose*/,
-                LocationManager &/*lm*/, diag::Diagnostics &/*diagnostics*/
+                LocationManager &/*lm*/, LCompilers::PassManager& /*pass_manager*/,
+                diag::Diagnostics &/*diagnostics*/
 #endif
             )
 {
@@ -93,7 +98,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 
     // ASR -> LLVM
     Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
-        diagnostics);
+        pass_manager, diagnostics);
     std::unique_ptr<LFortran::LLVMModule> m;
     if (res3.ok) {
         m = std::move(res3.result);
@@ -142,11 +147,11 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     } else if (return_type == "none") {
         result.type = EvalResult::none;
     } else {
-        throw LFortranException("FortranEvaluator::evaluate(): Return type not supported");
+        throw LCompilersException("FortranEvaluator::evaluate(): Return type not supported");
     }
     return result;
 #else
-    throw LFortranException("LLVM is not enabled");
+    throw LCompilersException("LLVM is not enabled");
 #endif
 }
 
@@ -252,15 +257,16 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
 }
 
 Result<std::string> FortranEvaluator::get_llvm(
-    const std::string &code, LocationManager &lm, diag::Diagnostics &diagnostics
+    const std::string &code, LocationManager &lm, LCompilers::PassManager& pass_manager,
+    diag::Diagnostics &diagnostics
     )
 {
-    Result<std::unique_ptr<LLVMModule>> res = get_llvm2(code, lm, diagnostics);
+    Result<std::unique_ptr<LLVMModule>> res = get_llvm2(code, lm, pass_manager, diagnostics);
     if (res.ok) {
 #ifdef HAVE_LFORTRAN_LLVM
         return res.result->str();
 #else
-        throw LFortranException("LLVM is not enabled");
+        throw LCompilersException("LLVM is not enabled");
 #endif
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
@@ -269,19 +275,20 @@ Result<std::string> FortranEvaluator::get_llvm(
 }
 
 Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
-    const std::string &code, LocationManager &lm, diag::Diagnostics &diagnostics)
+    const std::string &code, LocationManager &lm, LCompilers::PassManager& pass_manager,
+    diag::Diagnostics &diagnostics)
 {
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     if (!asr.ok) {
         return asr.error;
     }
-    Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, diagnostics);
+    Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, pass_manager, diagnostics);
     if (res.ok) {
 #ifdef HAVE_LFORTRAN_LLVM
         std::unique_ptr<LLVMModule> m = std::move(res.result);
         return m;
 #else
-        throw LFortranException("LLVM is not enabled");
+        throw LCompilersException("LLVM is not enabled");
 #endif
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
@@ -291,9 +298,11 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
 
 Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
 #ifdef HAVE_LFORTRAN_LLVM
-    ASR::TranslationUnit_t &asr, diag::Diagnostics &diagnostics
+    ASR::TranslationUnit_t &asr, LCompilers::PassManager& pass_manager,
+    diag::Diagnostics &diagnostics
 #else
-    ASR::TranslationUnit_t &/*asr*/, diag::Diagnostics &/*diagnostics*/
+    ASR::TranslationUnit_t &/*asr*/, LCompilers::PassManager &/*pass_manager*/,
+    diag::Diagnostics &/*diagnostics*/
 #endif
     )
 {
@@ -305,9 +314,8 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     std::unique_ptr<LFortran::LLVMModule> m;
     Result<std::unique_ptr<LFortran::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
-            e->get_context(), al, compiler_options.platform,
-            compiler_options.fast, get_runtime_library_dir(),
-            run_fn);
+            e->get_context(), al, pass_manager,
+            compiler_options.platform, run_fn);
     if (res.ok) {
         m = std::move(res.result);
     } else {
@@ -321,22 +329,25 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
 
     return m;
 #else
-    throw LFortranException("LLVM is not enabled");
+    throw LCompilersException("LLVM is not enabled");
 #endif
 }
 
 Result<std::string> FortranEvaluator::get_asm(
 #ifdef HAVE_LFORTRAN_LLVM
     const std::string &code, LocationManager &lm,
+    LCompilers::PassManager& lpm,
     diag::Diagnostics &diagnostics
 #else
-    const std::string &/*code*/, LocationManager &/*lm*/,
+    const std::string &/*code*/,
+    LocationManager &/*lm*/,
+    LCompilers::PassManager&/*lpm*/,
     diag::Diagnostics &/*diagnostics*/
 #endif
     )
 {
 #ifdef HAVE_LFORTRAN_LLVM
-    Result<std::unique_ptr<LLVMModule>> res = get_llvm2(code, lm, diagnostics);
+    Result<std::unique_ptr<LLVMModule>> res = get_llvm2(code, lm, lpm, diagnostics);
     if (res.ok) {
         return e->get_asm(*res.result->m_m);
     } else {
@@ -344,7 +355,7 @@ Result<std::string> FortranEvaluator::get_asm(
         return res.error;
     }
 #else
-    throw LFortranException("LLVM is not enabled");
+    throw LCompilersException("LLVM is not enabled");
 #endif
 }
 
@@ -384,7 +395,7 @@ Result<std::string> FortranEvaluator::get_wat(const std::string &code,
 }
 
 Result<std::string> FortranEvaluator::get_cpp(const std::string &code,
-    LocationManager &lm, diag::Diagnostics &diagnostics)
+    LocationManager &lm, diag::Diagnostics &diagnostics, int64_t default_lower_bound)
 {
     // Src -> AST -> ASR
     SymbolTable *old_symbol_table = symbol_table;
@@ -392,7 +403,7 @@ Result<std::string> FortranEvaluator::get_cpp(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (asr.ok) {
-        return get_cpp2(*asr.result, diagnostics);
+        return get_cpp2(*asr.result, diagnostics, default_lower_bound);
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
         return asr.error;
@@ -400,10 +411,36 @@ Result<std::string> FortranEvaluator::get_cpp(const std::string &code,
 }
 
 Result<std::string> FortranEvaluator::get_cpp2(ASR::TranslationUnit_t &asr,
-        diag::Diagnostics &diagnostics)
+        diag::Diagnostics &diagnostics, int64_t default_lower_bound)
 {
     // ASR -> C++
-    return asr_to_cpp(al, asr, diagnostics);
+    return asr_to_cpp(al, asr, diagnostics, compiler_options.platform,
+                      default_lower_bound);
+}
+
+Result<std::string> FortranEvaluator::get_c(const std::string &code,
+    LocationManager &lm, diag::Diagnostics &diagnostics,
+    int64_t default_lower_bound)
+{
+    // Src -> AST -> ASR
+    SymbolTable *old_symbol_table = symbol_table;
+    symbol_table = nullptr;
+    Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
+    symbol_table = old_symbol_table;
+    if (asr.ok) {
+        return get_c2(*asr.result, diagnostics, default_lower_bound);
+    } else {
+        LFORTRAN_ASSERT(diagnostics.has_error())
+        return asr.error;
+    }
+}
+
+Result<std::string> FortranEvaluator::get_c2(ASR::TranslationUnit_t &asr,
+        diag::Diagnostics &diagnostics, int64_t default_lower_bound)
+{
+    // ASR -> C++
+    return asr_to_c(al, asr, diagnostics, compiler_options.platform,
+                    default_lower_bound);
 }
 
 Result<std::string> FortranEvaluator::get_fmt(const std::string &code,

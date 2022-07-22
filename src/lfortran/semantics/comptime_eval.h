@@ -24,7 +24,8 @@ struct IntrinsicProceduresAsASRNodes {
 
         IntrinsicProceduresAsASRNodes() {
             intrinsics_present_in_ASR = {"size", "lbound", "ubound",
-                "transpose", "matmul", "pack", "transfer", "cmplx"};
+                "transpose", "matmul", "pack", "transfer", "cmplx",
+                "reshape"};
         }
 
         bool is_intrinsic_present_in_ASR(std::string& name) {

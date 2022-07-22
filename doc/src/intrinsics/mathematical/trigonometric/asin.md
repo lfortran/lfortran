@@ -1,10 +1,4 @@
----
-layout: book
-title: asin
-permalink: intrinsics/mathematics/trigonometric
----
-
-## asin(x)
+# asin(x)
 
 Trigonometric arcsine function.
 
@@ -66,16 +60,16 @@ end interface
 ## Examples
 
 ```fortran
-program intrinsics\_asin
-implicit none
-integer, parameter :: arg_x = kind(0.0)
-real(arg_x) :: x1
-real :: retval_x
-real :: arg_x
-retval_x = asin(0.84147098)
-print *, ret_val_x
-retval_x = asin(x1)
-print *, ret_val_x
+program intrinsics_asin
+    implicit none
+    integer, parameter :: arg_x = kind(0.0)
+    real(arg_x) :: x1
+    real :: retval_x
+    real :: arg_x
+    retval_x = asin(0.84147098)
+    print *, ret_val_x
+    retval_x = asin(x1)
+    print *, ret_val_x
 end program
 ```
 

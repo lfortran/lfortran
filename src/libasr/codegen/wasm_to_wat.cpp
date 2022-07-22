@@ -33,7 +33,7 @@ void WASMDecoder::decode_type_section(uint32_t offset) {
 
     for (uint32_t i = 0; i < no_of_func_types; i++) {
         if (wasm_bytes[offset] != 0x60) {
-            throw LFortran::LFortranException("Invalid type section");
+            throw LFortran::LCompilersException("Invalid type section");
         }
         offset++;
 
@@ -172,14 +172,14 @@ void WASMDecoder::decode_data_section(uint32_t offset) {
     for (uint32_t i = 0; i < no_of_data_segments; i++) {
         uint32_t num = read_u32(wasm_bytes, offset);
         if(num != 0){
-            throw LFortran::LFortranException("Only active default memory (index = 0) is currently supported");
+            throw LFortran::LCompilersException("Only active default memory (index = 0) is currently supported");
         }
 
         {
-            WASM_INSTS_VISITOR::WATVisitor v = WASM_INSTS_VISITOR::WATVisitor();
-            v.indent = "";
-            v.decode_instructions(wasm_bytes, offset);
+            WASM_INSTS_VISITOR::WATVisitor v = WASM_INSTS_VISITOR::WATVisitor(wasm_bytes, offset, "", "");
+            v.decode_instructions();
             data_segments.p[i].insts = v.src;
+            offset = v.offset;
         }
 
         uint32_t text_size = read_u32(wasm_bytes, offset);
@@ -280,9 +280,8 @@ std::string WASMDecoder::get_wat() {
         result += ")";
 
         {
-            WASM_INSTS_VISITOR::WATVisitor v = WASM_INSTS_VISITOR::WATVisitor();
-            v.indent = indent + "    ";
-            v.decode_instructions(wasm_bytes, codes.p[i].insts_start_index);
+            WASM_INSTS_VISITOR::WATVisitor v = WASM_INSTS_VISITOR::WATVisitor(wasm_bytes, codes.p[i].insts_start_index, "", indent + "    ");
+            v.decode_instructions();
             result += v.src;
         }
 

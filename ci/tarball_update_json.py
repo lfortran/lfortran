@@ -7,7 +7,7 @@ dest_dir = sys.argv[1]
 version = sys.argv[2]
 lfortran_commit_sha = sys.argv[3]
 
-filename = "data.json"
+filename = "data_test.json"
 if os.path.exists(filename):
     d = load(open(filename))
 else:

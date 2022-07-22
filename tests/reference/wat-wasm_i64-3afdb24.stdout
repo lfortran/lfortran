@@ -49,6 +49,18 @@
     )
     (func $9 (type 9) (param) (result)
         (local)
+        i64.const 1000000
+        call 6
+        call 1
+        call 5
+        i64.const 1000000000000
+        i64.const 1000000000000
+        call 7
+        call 1
+        call 5
+        call 8
+        call 1
+        call 5
     )
     (export "a_sqr_i64" (func $6))
     (export "add_i64" (func $7))

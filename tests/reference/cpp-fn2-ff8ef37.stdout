@@ -17,39 +17,11 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     return r;
 }
 
-int32_t a()
-{
-    int a;
-    return a;
-}
 
-float b()
+struct dimension_descriptor
 {
-    float b;
-    return b;
-}
+    int32_t lower_bound, length;
+};
+// Forward declarations
 
-bool c()
-{
-    bool c;
-    return c;
-}
-
-int32_t d()
-{
-    int r;
-    return r;
-}
-
-float e()
-{
-    float r;
-    return r;
-}
-
-bool f()
-{
-    bool r;
-    return r;
-}
-
+// Implementations

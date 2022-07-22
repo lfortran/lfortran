@@ -17,11 +17,21 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     return r;
 }
 
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, length;
+};
+// Forward declarations
+namespace {
+}
+
+// Implementations
 namespace {
 
 void main2() {
-    std::string my_name="Dominic";
-    std::cout << "My name is " << my_name << std::endl;
+    static std::string my_name="Dominic";
+    std::cout << "My name is " << " " << my_name << std::endl;
 }
 
 }

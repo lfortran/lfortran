@@ -343,6 +343,10 @@ filename = "wasm_main_program.f90"
 wat = true
 
 [[test]]
+filename = "../integration_tests/if_05.f90"
+wat = true
+
+[[test]]
 filename = "stop.f90"
 asr = true
 llvm = true
@@ -372,6 +376,20 @@ x86 = true
 [[test]]
 filename = "program2.f90"
 ast = true
+
+[[test]]
+filename = "program3.f90"
+ast = true
+asr = true
+cpp = true
+c = true
+
+[[test]]
+filename = "program4.f90"
+ast = true
+asr = true
+cpp = true
+c = true
 
 [[test]]
 filename = "../integration_tests/program_01.f90"
@@ -421,16 +439,19 @@ filename = "../integration_tests/doloop_01.f90"
 asr = true
 llvm = true
 pass = "do_loops"
+wat = true
 
 [[test]]
 filename = "../integration_tests/doloop_02.f90"
 asr = true
 llvm = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/doloop_03.f90"
 asr = true
 llvm = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/doloop_04.f90"
@@ -689,6 +710,10 @@ asr = true
 llvm = true
 
 [[test]]
+filename = "../integration_tests/arrays_reshape_14.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/arrays_02.f90"
 ast = true
 ast_f90 = true
@@ -738,30 +763,35 @@ filename = "../integration_tests/types_01.f90"
 asr = true
 llvm = true
 cpp = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/types_02.f90"
 asr = true
 llvm = true
 cpp = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/types_03.f90"
 asr = true
 llvm = true
 cpp = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/types_04.f90"
 asr = true
 llvm = true
 cpp = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/types_05.f90"
 asr = true
 llvm = true
 cpp = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/types_06.f90"
@@ -793,6 +823,10 @@ ast = true
 filename = "../integration_tests/types_12.f90"
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "../integration_tests/types_15.f90"
+wat = true
 
 [[test]]
 filename = "boz1.f90"
@@ -1064,6 +1098,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/if_04.f90"
 ast = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/case_01.f90"
@@ -1286,21 +1321,25 @@ llvm = true
 filename = "../integration_tests/logical1.f90"
 asr = true
 llvm = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/logical2.f90"
 asr = true
 llvm = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/logical3.f90"
 asr = true
 llvm = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/logical4.f90"
 asr = true
 llvm = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/real_dp.f90"
@@ -2029,6 +2068,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/functions_05.f90"
 asr = true
+pass_with_llvm = true
 pass = "inline_function_calls"
 
 [[test]]
@@ -2038,11 +2078,13 @@ asr = true
 [[test]]
 filename = "../integration_tests/functions_07.f90"
 asr = true
+pass_with_llvm = true
 pass = "inline_function_calls"
 
 [[test]]
 filename = "../integration_tests/functions_08.f90"
 asr = true
+pass_with_llvm = true
 pass = "inline_function_calls"
 
 [[test]]
