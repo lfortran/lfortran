@@ -514,7 +514,7 @@ R"(
                             return "%lli";
                         }
                     }
-                    default: { throw LFortranException("Integer kind not supported"); }
+                    default: { throw LCompilersException("Integer kind not supported"); }
                 }
             }
             case ASR::ttypeType::Real: {
@@ -522,7 +522,7 @@ R"(
                 switch (r->m_kind) {
                     case 4: { return "%f"; }
                     case 8: { return "%lf"; }
-                    default: { throw LFortranException("Float kind not supported"); }
+                    default: { throw LCompilersException("Float kind not supported"); }
                 }
             }
             case ASR::ttypeType::Logical: {
@@ -542,7 +542,7 @@ R"(
                     return get_print_type(type_ptr->m_type, false);
                 }
             }
-            default : throw LFortranException("Not implemented");
+            default : throw LCompilersException("Not implemented");
         }
     }
 

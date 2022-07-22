@@ -72,7 +72,7 @@ static inline int64_t stmt_label(AST::stmt_t *f)
         LFORTRAN_STMT_LABEL_TYPE(SelectType)
         LFORTRAN_STMT_LABEL_TYPE(Where)
         LFORTRAN_STMT_LABEL_TYPE(WhileLoop)
-        default : throw LFortranException("Not implemented");
+        default : throw LCompilersException("Not implemented");
     }
 }
 
@@ -2160,7 +2160,7 @@ public:
             } else if( var_name == "cmplx" ) {
                 tmp = create_Cmplx(x);
             } else {
-                LFortranException("create_" + var_name + " not implemented yet.");
+                LCompilersException("create_" + var_name + " not implemented yet.");
             }
             return nullptr;
         }

@@ -597,7 +597,7 @@ std::string token2text(const int token)
         T(KW_WRITE, "write")
         default : {
             std::cout << "TOKEN: " << token << std::endl;
-            throw LFortranException("Token conversion not implemented yet.");
+            throw LCompilersException("Token conversion not implemented yet.");
         }
     }
 }

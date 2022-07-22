@@ -29,7 +29,7 @@ void get_executable_path(std::string &executable_path, int &dirname_length)
             executable_path = executable_path.substr(0,executable_path.size()-1);
         }
     } else {
-        throw LFortranException("Cannot determine executable path.");
+        throw LCompilersException("Cannot determine executable path.");
     }
 #else
     executable_path = "src/bin/lfortran.js";

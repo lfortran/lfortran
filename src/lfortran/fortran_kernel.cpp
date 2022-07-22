@@ -46,7 +46,7 @@ namespace LFortran
 #else
             if (pipe(out_pipe) != 0) {
 #endif
-                throw LFortranException("pipe() failed");
+                throw LCompilersException("pipe() failed");
             }
             dup2(out_pipe[1], stdout_fileno);
             close(out_pipe[1]);
@@ -275,11 +275,11 @@ namespace LFortran
                 result["traceback"] = nl::json::array();
                 return result;
             }
-        } catch (const LFortranException &e) {
+        } catch (const LCompilersException &e) {
             publish_stream("stderr", "LFortran Exception: " + e.msg());
             nl::json result;
             result["status"] = "error";
-            result["ename"] = "LFortranException";
+            result["ename"] = "LCompilersException";
             result["evalue"] = e.msg();
             result["traceback"] = nl::json::array();
             return result;
@@ -332,7 +332,7 @@ namespace LFortran
             case (LFortran::FortranEvaluator::EvalResult::none) : {
                 break;
             }
-            default : throw LFortranException("Return type not supported");
+            default : throw LCompilersException("Return type not supported");
         }
 
         nl::json result;
