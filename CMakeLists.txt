@@ -80,6 +80,9 @@ set(WITH_LFORTRAN_BINARY_MODFILES YES
 set(WITH_RUNTIME_LIBRARY YES
     CACHE BOOL "Compile and install the runtime library")
 
+set(WITH_RUNTIME_LIBRARY_ONLY NO
+    CACHE BOOL "Compile and install only the runtime library (for cross-compiling)")
+
 set(WITH_WHEREAMI yes
     CACHE BOOL "Include whereami.cpp")
 
@@ -303,6 +306,7 @@ message("WITH_JSON: ${WITH_JSON}")
 message("WITH_FMT: ${WITH_FMT}")
 message("WITH_LFORTRAN_BINARY_MODFILES: ${WITH_LFORTRAN_BINARY_MODFILES}")
 message("WITH_RUNTIME_LIBRARY: ${WITH_RUNTIME_LIBRARY}")
+message("WITH_RUNTIME_LIBRARY_ONLY: ${WITH_RUNTIME_LIBRARY_ONLY}")
 message("WITH_WHEREAMI: ${WITH_WHEREAMI}")
 message("WITH_ZLIB: ${WITH_ZLIB}")
 message("WITH_TARGET_AARCH64: ${WITH_TARGET_AARCH64}")
