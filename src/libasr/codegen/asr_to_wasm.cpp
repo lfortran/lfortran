@@ -404,8 +404,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Function(const ASR::Function_t &x) {
-        m_var_name_idx_map.clear(); // clear all previous variable and their indices
-
         emit_function_prototype(x);
         emit_function_body(x);
     }
