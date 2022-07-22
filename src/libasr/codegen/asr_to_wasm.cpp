@@ -388,7 +388,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         for (size_t i = 0; i < x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
-        if ((x.n_body > 0) && (x.m_body[x.n_body - 1]->type != ASR::stmtType::Return)) {
+        if ((x.n_body > 0) && !ASR::is_a<ASR::Return_t>(*x.m_body[x.n_body - 1])) {
             handle_return();
         }
         wasm::emit_expr_end(m_code_section, m_al);
