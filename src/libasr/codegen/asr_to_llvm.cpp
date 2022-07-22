@@ -5073,7 +5073,6 @@ public:
         ptr_loads = ptr_loads_copy;
         llvm::Value* llvm_arg = tmp;
         llvm::Value* llvm_dim = nullptr;
-        llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_arg);
         if( x.m_dim ) {
             visit_expr_wrapper(x.m_dim, true);
             dim_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_dim));
