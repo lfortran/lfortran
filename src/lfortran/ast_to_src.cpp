@@ -25,7 +25,7 @@ namespace {
             case (operatorType::Div) : return "/";
             case (operatorType::Pow) : return "**";
         }
-        throw LFortranException("Unknown type");
+        throw LCompilersException("Unknown type");
     }
 
     std::string boolop2str(const AST::boolopType type)
@@ -37,7 +37,7 @@ namespace {
             case (AST::boolopType::Eqv) : return " .eqv. ";
             case (AST::boolopType::NEqv) : return " .neqv. ";
         }
-        throw LFortranException("Unknown type");
+        throw LCompilersException("Unknown type");
     }
 
     std::string cmpop2str(const AST::cmpopType type)
@@ -50,7 +50,7 @@ namespace {
             case (AST::cmpopType::LtE) : return " <= ";
             case (AST::cmpopType::NotEq) : return " /= ";
         }
-        throw LFortranException("Unknown type");
+        throw LCompilersException("Unknown type");
     }
 
     std::string strop2str(const AST::stroperatorType type)
@@ -58,7 +58,7 @@ namespace {
         switch (type) {
             case (AST::stroperatorType::Concat) : return " // ";
         }
-        throw LFortranException("Unknown type");
+        throw LCompilersException("Unknown type");
     }
 
     std::string intrinsicop2str(const AST::intrinsicopType type)
@@ -83,7 +83,7 @@ namespace {
             case (AST::intrinsicopType::NOTEQ) : return "/=";
             case (AST::intrinsicopType::CONCAT) : return "//";
         }
-        throw LFortranException("Unknown type");
+        throw LCompilersException("Unknown type");
     }
 
     std::string symbol2str(const AST::symbolType type)
@@ -96,7 +96,7 @@ namespace {
             case (AST::symbolType::DoubleAsterisk) : return "*(*)";
             case (AST::symbolType::Slash) : return "/";
         }
-        throw LFortranException("Unknown type");
+        throw LCompilersException("Unknown type");
     }
 }
 
@@ -205,7 +205,7 @@ public:
                 } ;
 
                 default : {
-                    throw LFortranException("Syntax Group not implemented");
+                    throw LCompilersException("Syntax Group not implemented");
                 }
             }
         }
@@ -1488,7 +1488,7 @@ public:
             ATTRTYPE(Value)
             ATTRTYPE(Volatile)
             default :
-                throw LFortranException("Attribute type not implemented");
+                throw LCompilersException("Attribute type not implemented");
         }
         r += syn();
         s = r;
@@ -1513,7 +1513,7 @@ public:
             ATTRTYPE2(Real, "real")
             ATTRTYPE2(Type, "type")
             default :
-                throw LFortranException("Attribute type not implemented");
+                throw LCompilersException("Attribute type not implemented");
         }
         r += syn();
         if (x.n_kind > 0) {
@@ -1832,7 +1832,7 @@ public:
                     this->visit_expr(*end);
                     r.append(s);
                 } else {
-                    throw LFortranException("Incorrect array elements");
+                    throw LCompilersException("Incorrect array elements");
                 }
                 r += ")";
             }
@@ -2581,7 +2581,7 @@ public:
 
     void visit_DoConcurrentLoop(const DoConcurrentLoop_t &x) {
         if (x.n_control != 1) {
-            throw LFortranException("Do concurrent: exactly one control statement is implemented for now");
+            throw LCompilersException("Do concurrent: exactly one control statement is implemented for now");
         }
         std::string r = indent;
         r += print_label(x);
@@ -3517,7 +3517,7 @@ public:
                 s = ".not.(" + s + ")";
             }
         } else {
-            throw LFortranException("Unary op type not implemented");
+            throw LCompilersException("Unary op type not implemented");
         }
     }
 
@@ -3626,7 +3626,7 @@ public:
                             this->visit_expr(*end);
                             r.append(s);
                         } else {
-                            throw LFortranException("Incorrect coarray elements");
+                            throw LCompilersException("Incorrect coarray elements");
                         }
                         if (i < x.m_member[i].n_args-1) r.append(",");
                     }
@@ -3808,7 +3808,7 @@ public:
                             this->visit_expr(*end);
                             r.append(s);
                         } else {
-                            throw LFortranException("Incorrect array elements");
+                            throw LCompilersException("Incorrect array elements");
                         }
                         if (i < x.m_member[i].n_args-1) r.append(",");
                     }
@@ -3846,7 +3846,7 @@ public:
             case (AST::kind_item_typeType::Star) :
                 return "*";
             default :
-                throw LFortranException("Unknown type");
+                throw LCompilersException("Unknown type");
         }
     }
 
