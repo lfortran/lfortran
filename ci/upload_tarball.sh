@@ -7,16 +7,14 @@ deploy_repo_pull="https://github.com/lfortran/tarballs"
 deploy_repo_push="git@github.com:lfortran/tarballs.git"
 
 git_hash=$(git rev-parse --short "$GITHUB_SHA")
-git_branch=${GITHUB_REF#refs/heads/}
-tag=${GITHUB_REF/refs\/tags\//}
+git_ref=${GITHUB_REF}
 
-
-if [[ $tag == "" ]]; then
-    # Development version
-    dest_dir="testing1"
-else
+if [[ ${git_ref:0:11} == "refs/tags/v" ]]; then
     # Release version
-    dest_dir="testing2"
+    dest_dir="release"
+else
+    # Development version
+    dest_dir="dev"
 fi
 
 lfortran_version=$(<version)
@@ -49,10 +47,10 @@ git commit -m "${COMMIT_MESSAGE}"
 git show HEAD -p --stat
 dest_commit=$(git show HEAD -s --format=%H)
 
-if [[ ${git_branch} == "main" ]]; then
+if [[ ${git_ref} == "refs/heads/main" ]]; then
     echo "The pipeline was triggered from the main branch"
 else
-    if [[ $tag != "" && ${tag:0:1} == "v" ]]; then
+    if [[ ${git_ref:0:11} == "refs/tags/v" ]]; then
         echo "The pipeline was triggered from a tag 'v*'"
     else
         # We are either on a non-master branch, or tagged with a tag that does
