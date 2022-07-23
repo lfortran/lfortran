@@ -2,9 +2,13 @@ cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
 project(lfortran_unif_runtime C Fortran)
 
-set(CMAKE_Fortran_COMPILER ${CMAKE_CURRENT_BINARY_DIR}/../bin/lfortran)
+# If we are only building the runtime library the user
+# should provide a lfortran binary.
+if(NOT WITH_RUNTIME_LIBRARY_ONLY)
+  set(CMAKE_Fortran_COMPILER ${CMAKE_CURRENT_BINARY_DIR}/../bin/lfortran)
+endif()
 
-# Ideally this setting would be able to auto install .mod files
+# Ideally this setting would be enough to auto install .mod files
 # but I was not able to make it work. I don't think it's very well
 # documented.
 # set(CMAKE_Fortran_MODULE_DIRECTORY "share/lfortran/lib")
@@ -14,7 +18,17 @@ macro(lfrotran_compile_runtime name dir)
   target_compile_options(${name} PUBLIC "--backend=cpp")
   set_target_properties(${name} PROPERTIES
     POSITION_INDEPENDENT_CODE False)
-  add_dependencies(${name} lfortran ${ARGN})
+
+  # If we are only building the runtime libraries assume
+  # the user already built lfortran and don't require
+  # it as a dependency.
+  if(NOT WITH_RUNTIME_LIBRARY_ONLY)
+      if(ARGN)
+	add_dependencies(${name} lfortran ${ARGN})
+      else()
+	add_dependencies(${name} ${ARGN})
+      endif()
+  endif()
 endmacro(lfrotran_compile_runtime)
 
 macro(lfortran_install_runtime)
