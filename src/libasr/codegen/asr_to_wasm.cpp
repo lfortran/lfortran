@@ -63,7 +63,7 @@ struct SymbolInfo
     uint32_t index;
     uint32_t no_of_variables;
     ASR::Variable_t *return_var;
-    std::vector<ASR::Variable_t *> subroutine_return_vars;
+    Vec<ASR::Variable_t *> subroutine_return_vars;
 
     SymbolInfo(bool is_subroutine) {
         this->needs_declaration = true;
@@ -420,14 +420,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         /********************* Parameter Types List *********************/
         uint32_t len_idx_type_section_param_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
-        s->subroutine_return_vars.reserve(x.n_args);
+        s->subroutine_return_vars.reserve(m_al, x.n_args);
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
             if (arg->m_intent == ASR::intentType::In || arg->m_intent == ASR::intentType::Out) {
                 emit_var_type(m_type_section, arg);
                 m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = s->no_of_variables++;
                 if (arg->m_intent == ASR::intentType::Out) {
-                    s->subroutine_return_vars.push_back(arg);
+                    s->subroutine_return_vars.push_back(m_al, arg);
                 }
             }
         }
