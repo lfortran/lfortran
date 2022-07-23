@@ -471,7 +471,39 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         no_of_functions++;
     }
 
+    template <typename T>
+    bool is_unsupported_function(const T& x) {
+        std::string func_or_sub = "";
+        if (x.class_type == ASR::symbolType::Function) {
+            func_or_sub = "Function";
+        } else if (x.class_type == ASR::symbolType::Subroutine) {
+            func_or_sub = "Subroutine";
+        } else {
+            throw CodeGenError("has_c_function_call: C call unknown type");
+        }
+        if(!x.n_body) {
+            diag.codegen_warning_label(func_or_sub + " with no body", {x.base.base.loc}, std::string(x.m_name));
+            return true;
+        }
+        if (x.m_abi == ASR::abiType::BindC
+                && x.m_deftype == ASR::deftypeType::Interface) {
+                diag.codegen_warning_label("WASM: BindC and Interface " + func_or_sub + " not yet spported", { x.base.base.loc }, std::string(x.m_name));
+                return true;
+        }
+        for (size_t i = 0; i < x.n_body; i++) {
+            if (x.m_body[i]->type == ASR::stmtType::SubroutineCall) {
+                diag.codegen_warning_label("WASM: Calls to C " + func_or_sub + " are not yet supported", {x.base.base.loc}, std::string(x.m_name));
+                return true;
+            }
+        }
+        return false;
+    }
+
     void visit_Function(const ASR::Function_t &x) {
+        if (is_unsupported_function(x)) {
+            return;
+        }
+
         emit_function_prototype(x);
         emit_function_body(x);
     }
@@ -512,6 +544,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Subroutine(const ASR::Subroutine_t & x) {
+        if (is_unsupported_function(x)) {
+            return;
+        }
+
         emit_subroutine_prototype(x);
         emit_function_body(x);
     }
