@@ -280,13 +280,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void emit_var_type(Vec<uint8_t> &code, ASR::Variable_t *v){
-        bool is_array = ASRUtils::is_array(v->m_type);
-        bool dummy = ASRUtils::is_arg_dummy(v->m_intent);
+        // bool is_array = ASRUtils::is_array(v->m_type);
+        // bool dummy = ASRUtils::is_arg_dummy(v->m_intent);
         if (ASRUtils::is_pointer(v->m_type)) {
             ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(v->m_type)->m_type;
             if (ASRUtils::is_integer(*t2)) {
                 ASR::Integer_t *t = ASR::down_cast<ASR::Integer_t>(t2);
-                size_t size;
+                // size_t size;
                 diag.codegen_warning_label("Pointers are not currently supported",
                     {v->base.base.loc}, "emitting integer for now");
                 if (t->m_kind == 4) {
