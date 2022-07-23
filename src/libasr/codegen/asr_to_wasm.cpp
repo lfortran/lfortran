@@ -529,8 +529,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         for (size_t i = 0; i < x.n_body; i++) {
             if (x.m_body[i]->type == ASR::stmtType::SubroutineCall) {
-                diag.codegen_warning_label("WASM: Calls to C " + func_or_sub + " are not yet supported", {x.base.base.loc}, std::string(x.m_name));
-                return true;
+                auto sub_call = (const ASR::SubroutineCall_t &)(*x.m_body[i]);
+                ASR::Subroutine_t *s = ASR::down_cast<ASR::Subroutine_t>(ASRUtils::symbol_get_past_external(sub_call.m_name));
+                if (s->m_abi == ASR::abiType::BindC && s->m_deftype == ASR::deftypeType::Interface) {
+                    diag.codegen_warning_label("WASM: Calls to C subroutine are not yet supported", {s->base.base.loc}, func_or_sub + ": calls " + std::string(s->m_name));
+                    return true;
+                }
             }
         }
         return false;
