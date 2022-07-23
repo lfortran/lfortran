@@ -57,15 +57,23 @@ struct import_func{
 
 struct SymbolInfo
 {
-    bool needs_declaration = true;
-    bool intrinsic_function = false;
-    bool is_subroutine = false;
-    uint32_t index = 0;
-    uint32_t no_of_variables = 0;
+    bool needs_declaration;
+    bool intrinsic_function;
+    bool is_subroutine;
+    uint32_t index;
+    uint32_t no_of_variables;
     ASR::Variable_t *return_var;
     std::vector<ASR::Variable_t *> subroutine_return_vars;
 
-    SymbolInfo(){}
+    SymbolInfo(bool is_subroutine) {
+        this->needs_declaration = true;
+        this->intrinsic_function = false;
+        this->is_subroutine = is_subroutine;
+        this->index = 0;
+        this->no_of_variables = 0;
+        this->return_var = nullptr;
+    }
+
     SymbolInfo(uint32_t idx): index(idx) {}
     SymbolInfo(uint32_t idx, uint32_t no_of_vars): index(idx), no_of_variables(no_of_vars) {}
 };
@@ -349,8 +357,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     void emit_function_prototype(const T& x) {
         /********************* New Type Declaration *********************/
         wasm::emit_b8(m_type_section, m_al, 0x60);
-        SymbolInfo* s = new SymbolInfo;
-        s->is_subroutine = false;
+        SymbolInfo* s = new SymbolInfo(false);
 
         /********************* Parameter Types List *********************/
         wasm::emit_u32(m_type_section, m_al, x.n_args);
@@ -413,8 +420,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     void emit_subroutine_prototype(const ASR::Subroutine_t & x) {
         /********************* New Type Declaration *********************/
         wasm::emit_b8(m_type_section, m_al, 0x60);
-        SymbolInfo* s = new SymbolInfo;
-        s->is_subroutine = true;
+        SymbolInfo* s = new SymbolInfo(true);
 
         /********************* Parameter Types List *********************/
         uint32_t len_idx_type_section_param_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
