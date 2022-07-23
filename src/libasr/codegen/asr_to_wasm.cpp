@@ -414,9 +414,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     template<typename T>
     void emit_function_prototype(const T& x) {
+        SymbolInfo* s = new SymbolInfo(false);
+
         /********************* New Type Declaration *********************/
         wasm::emit_b8(m_type_section, m_al, 0x60);
-        SymbolInfo* s = new SymbolInfo(false);
 
         /********************* Parameter Types List *********************/
         wasm::emit_u32(m_type_section, m_al, x.n_args);
@@ -444,9 +445,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void emit_subroutine_prototype(const ASR::Subroutine_t & x) {
+        SymbolInfo* s = new SymbolInfo(true);
+
         /********************* New Type Declaration *********************/
         wasm::emit_b8(m_type_section, m_al, 0x60);
-        SymbolInfo* s = new SymbolInfo(true);
 
         /********************* Parameter Types List *********************/
         uint32_t len_idx_type_section_param_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
