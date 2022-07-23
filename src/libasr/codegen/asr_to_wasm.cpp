@@ -443,6 +443,41 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_func_name_idx_map[get_hash((ASR::asr_t *)&x)] = s; // add function to map
     }
 
+    void emit_subroutine_prototype(const ASR::Subroutine_t & x) {
+        /********************* New Type Declaration *********************/
+        wasm::emit_b8(m_type_section, m_al, 0x60);
+        SymbolInfo* s = new SymbolInfo(true);
+
+        /********************* Parameter Types List *********************/
+        uint32_t len_idx_type_section_param_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
+        s->subroutine_return_vars.reserve(m_al, x.n_args);
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
+            if (arg->m_intent == ASR::intentType::In || arg->m_intent == ASR::intentType::Out) {
+                emit_var_type(m_type_section, arg);
+                m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = s->no_of_variables++;
+                if (arg->m_intent == ASR::intentType::Out) {
+                    s->subroutine_return_vars.push_back(m_al, arg);
+                }
+            }
+        }
+        wasm::fixup_len(m_type_section, m_al, len_idx_type_section_param_types_list);
+
+        /********************* Result Types List *********************/
+        uint32_t len_idx_type_section_return_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
+            if (arg->m_intent == ASR::intentType::Out) {
+                emit_var_type(m_type_section, arg);
+            }
+        }
+        wasm::fixup_len(m_type_section, m_al, len_idx_type_section_return_types_list);
+
+        /********************* Add Type to Map *********************/
+        s->index = no_of_types++;
+        m_func_name_idx_map[get_hash((ASR::asr_t *)&x)] = s; // add function to map
+    }
+
     template<typename T>
     void emit_function_body(const T& x) {
         LFORTRAN_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)&x)) != m_func_name_idx_map.end());
@@ -506,41 +541,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         emit_function_prototype(x);
         emit_function_body(x);
-    }
-
-    void emit_subroutine_prototype(const ASR::Subroutine_t & x) {
-        /********************* New Type Declaration *********************/
-        wasm::emit_b8(m_type_section, m_al, 0x60);
-        SymbolInfo* s = new SymbolInfo(true);
-
-        /********************* Parameter Types List *********************/
-        uint32_t len_idx_type_section_param_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
-        s->subroutine_return_vars.reserve(m_al, x.n_args);
-        for (size_t i = 0; i < x.n_args; i++) {
-            ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
-            if (arg->m_intent == ASR::intentType::In || arg->m_intent == ASR::intentType::Out) {
-                emit_var_type(m_type_section, arg);
-                m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = s->no_of_variables++;
-                if (arg->m_intent == ASR::intentType::Out) {
-                    s->subroutine_return_vars.push_back(m_al, arg);
-                }
-            }
-        }
-        wasm::fixup_len(m_type_section, m_al, len_idx_type_section_param_types_list);
-
-        /********************* Result Types List *********************/
-        uint32_t len_idx_type_section_return_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
-        for (size_t i = 0; i < x.n_args; i++) {
-            ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
-            if (arg->m_intent == ASR::intentType::Out) {
-                emit_var_type(m_type_section, arg);
-            }
-        }
-        wasm::fixup_len(m_type_section, m_al, len_idx_type_section_return_types_list);
-
-        /********************* Add Type to Map *********************/
-        s->index = no_of_types++;
-        m_func_name_idx_map[get_hash((ASR::asr_t *)&x)] = s; // add function to map
     }
 
     void visit_Subroutine(const ASR::Subroutine_t & x) {
