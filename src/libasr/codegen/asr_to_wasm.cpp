@@ -73,9 +73,6 @@ struct SymbolInfo
         this->no_of_variables = 0;
         this->return_var = nullptr;
     }
-
-    SymbolInfo(uint32_t idx): index(idx) {}
-    SymbolInfo(uint32_t idx, uint32_t no_of_vars): index(idx), no_of_variables(no_of_vars) {}
 };
 
 class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
