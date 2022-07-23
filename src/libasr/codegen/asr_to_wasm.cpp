@@ -872,14 +872,24 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         //     sym_name = "_xx_lcompilers_changed_exit_xx";
         // }
 
-        for (size_t i = 0; i < x.n_args; i++) {
-            visit_expr(*x.m_args[i].m_value);
+        Vec<ASR::Variable_t *> intent_out_passed_vars;
+        intent_out_passed_vars.reserve(m_al, s->n_args);
+        if (x.n_args == s->n_args) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                ASR::Variable_t *arg = ASRUtils::EXPR2VAR(s->m_args[i]);
+                if (arg->m_intent == ASRUtils::intent_out) {
+                    intent_out_passed_vars.push_back(m_al, ASRUtils::EXPR2VAR(x.m_args[i].m_value));
+                }
+                visit_expr(*x.m_args[i].m_value);
+            }
+        } else {
+            throw CodeGenError("visitSubroutineCall: Number of arguments passed do not match the number of parameters");
         }
 
         LFORTRAN_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)s)) != m_func_name_idx_map.end());
         wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash((ASR::asr_t *)s)]->index);
 
-        for(auto return_var:cur_sym_info->subroutine_return_vars) {
+        for(auto return_var:intent_out_passed_vars) {
             LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)return_var)) != m_var_name_idx_map.end());
             wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)return_var)]);
         }
