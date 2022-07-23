@@ -482,7 +482,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     void emit_function_body(const T& x) {
         LFORTRAN_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)&x)) != m_func_name_idx_map.end());
 
-        cur_sym_info =  m_func_name_idx_map[get_hash((ASR::asr_t *)&x)];
+        cur_sym_info = m_func_name_idx_map[get_hash((ASR::asr_t *)&x)];
 
         /********************* Reference Function Prototype *********************/
         wasm::emit_u32(m_func_section, m_al, cur_sym_info->index);
