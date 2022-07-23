@@ -374,7 +374,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             // Todo: Implement this
             std::cout << "emit_var_type: is_complex: FIXME" << std::endl;
         } else {
-            throw CodeGenError("Param, Result, Var Types other than integer, floating point and logical not yet supported");
+            // throw CodeGenError("Param, Result, Var Types other than integer, floating point and logical not yet supported");
+            diag.codegen_warning_label("Unsupported variable type: " + ASRUtils::type_to_str(v->m_type),
+                    {v->base.base.loc}, "here");
         }
     }
 
