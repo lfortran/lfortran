@@ -350,6 +350,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         /********************* New Type Declaration *********************/
         wasm::emit_b8(m_type_section, m_al, 0x60);
         SymbolInfo* s = new SymbolInfo;
+        s->is_subroutine = false;
 
         /********************* Parameter Types List *********************/
         wasm::emit_u32(m_type_section, m_al, x.n_args);
