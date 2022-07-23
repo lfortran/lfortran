@@ -418,24 +418,25 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         /********************* Parameter Types List *********************/
         uint32_t len_idx_type_section_param_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
+        s->subroutine_return_vars.reserve(x.n_args);
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
-            if (arg->m_intent == ASR::intentType::In) {
+            if (arg->m_intent == ASR::intentType::In || arg->m_intent == ASR::intentType::Out) {
                 emit_var_type(m_type_section, arg);
                 m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = s->no_of_variables++;
+                if (arg->m_intent == ASR::intentType::Out) {
+                    s->subroutine_return_vars.push_back(arg);
+                }
             }
         }
         wasm::fixup_len(m_type_section, m_al, len_idx_type_section_param_types_list);
 
         /********************* Result Types List *********************/
         uint32_t len_idx_type_section_return_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
-        s->subroutine_return_vars.reserve(x.n_args);
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
             if (arg->m_intent == ASR::intentType::Out) {
                 emit_var_type(m_type_section, arg);
-                m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = s->no_of_variables++;
-                s->subroutine_return_vars.push_back(arg);
             }
         }
         wasm::fixup_len(m_type_section, m_al, len_idx_type_section_return_types_list);
