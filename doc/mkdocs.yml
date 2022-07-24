@@ -8,8 +8,8 @@ nav:
     - Developer's Guide:
         - design.md
         - developer_tutorial.md
-        - AST and ASR.md
-        - CONTRIBUTING.md
+        - ast_and_asr.md
+        - contributing.md
     - LFortran Intrinsics:
         - Array Intrinsic Functions:
             - intrinsics/array/size.md
