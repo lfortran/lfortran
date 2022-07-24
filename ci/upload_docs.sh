@@ -8,11 +8,11 @@ branch_name=${GITHUB_REF##*/}
 if [[ $branch_name != "main" ]]; then
     # Development version
     dest_branch=${branch_name}
-    deploy_repo="git@github.com:Shaikh-Ubaid/lfortran_docs_testing.git" # Todo: update this to testing repo
+    deploy_repo="git@gitlab.com:lfortran/web/docs.lfortran.org-testing.git"
 else
     # Release version
     dest_branch="master"
-    deploy_repo="git@github.com:Shaikh-Ubaid/lfortran_docs_testing.git"
+    deploy_repo="git@github.com:lfortran/docs.lfortran.org.git"
 fi
 
 mkdir ~/.ssh
