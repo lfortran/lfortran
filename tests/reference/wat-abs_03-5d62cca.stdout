@@ -69,6 +69,7 @@
             call 0
             unreachable
         end
+        return
     )
     (export "iabs" (func $6))
     (export "_lcompilers_main" (func $7))

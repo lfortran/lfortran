@@ -101,6 +101,7 @@
         call 12
         call 3
         call 5
+        return
     )
     (export "kind" (func $6))
     (export "a_sqr" (func $7))

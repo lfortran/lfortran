@@ -68,6 +68,7 @@
             call 0
             unreachable
         end
+        return
     )
     (export "sabs" (func $6))
     (export "_lcompilers_main" (func $7))
