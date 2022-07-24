@@ -3,14 +3,16 @@
 set -e
 set -x
 
-if [[ $CI_COMMIT_REF_NAME != "master" ]]; then
+branch_name=${GITHUB_REF##*/}
+
+if [[ $branch_name != "main" ]]; then
     # Development version
-    dest_branch=${CI_COMMIT_REF_NAME}
-    deploy_repo="git@gitlab.com:lfortran/web/docs.lfortran.org-testing.git"
+    dest_branch=${branch_name}
+    deploy_repo="git@github.com:Shaikh-Ubaid/lfortran_docs_testing.git" # Todo: update this to testing repo
 else
     # Release version
     dest_branch="master"
-    deploy_repo="git@github.com:lfortran/docs.lfortran.org.git"
+    deploy_repo="git@github.com:Shaikh-Ubaid/lfortran_docs_testing.git"
 fi
 
 mkdir ~/.ssh
