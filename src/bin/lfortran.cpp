@@ -1166,12 +1166,15 @@ int link_executable(const std::vector<std::string> &infiles,
                 return 10;
             }
         } else {
-            std::string CC = "cc";
+            std::string CC = "clang";
             char *env_CC = std::getenv("LFORTRAN_CC");
             if (env_CC) CC = env_CC;
             std::string base_path = "\"" + runtime_library_dir + "\"";
             std::string options;
             std::string runtime_lib = "lfortran_runtime";
+            if (compiler_options.target != "") {
+                options = " -target " + compiler_options.target;
+            }
             if (static_executable) {
                 if (compiler_options.platform != LFortran::Platform::macOS_Intel
                 && compiler_options.platform != LFortran::Platform::macOS_ARM) {
