@@ -236,6 +236,7 @@ jobs:
       - name: Build Kernel
         shell: bash -l {0}
         run: |
+          ./build0.sh
           CXXFLAGS="-Werror" cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX .
           make
           make install
