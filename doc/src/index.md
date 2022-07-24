@@ -7,9 +7,9 @@ Python, MATLAB or Julia) as well as compile to binaries with the goal to run
 user's code on modern architectures such as multi-core CPUs and GPUs.
 
 Website:
-[https://lfortran.org/](https://lfortran.org/)
+[https://lfortran.org/](https://lfortran.org/)  
 Main repository:
-[https://github.com/lfortran/lfortran](https://github.com/lfortran/lfortran)
+[https://github.com/lfortran/lfortran](https://github.com/lfortran/lfortran)  
 Try online using Binder:
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gl/lfortran%2Fweb%2Flfortran-binder/master?filepath=Demo.ipynb)
 
