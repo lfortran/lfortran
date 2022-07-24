@@ -1172,9 +1172,9 @@ int link_executable(const std::vector<std::string> &infiles,
             std::string base_path = "\"" + runtime_library_dir + "\"";
             std::string options;
             std::string runtime_lib = "lfortran_runtime";
-	    if (compiler_options.target != "") {
-	      options = " -target " + compiler_options.target;
-	    }
+            if (compiler_options.target != "") {
+                options = " -target " + compiler_options.target;
+            }
             if (static_executable) {
                 if (compiler_options.platform != LFortran::Platform::macOS_Intel
                 && compiler_options.platform != LFortran::Platform::macOS_ARM) {
