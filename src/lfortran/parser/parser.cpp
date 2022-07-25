@@ -53,7 +53,8 @@ void Parser::parse(const std::string &input)
         }
     } else {
         f_tokenizer.set_string(inp);
-        // what to call to kick off parsing?
+        // do we have the right structures here (ie. wrong allocator??)??
+        f_tokenizer.tokenize_input(diag, this->stypes, m_a);
         return;
     }
     throw parser_local::ParserError("Parsing unsuccessful (internal compiler error)");

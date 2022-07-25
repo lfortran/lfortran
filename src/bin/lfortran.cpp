@@ -114,11 +114,8 @@ int emit_tokens2(const std::string &input, std::vector<std::string>
     // elsewhere
     // Src -> Tokens
     Allocator al(64*1024*1024);
-    //std::vector<int> toks;
-    //std::vector<LFortran::YYSTYPE> stypes;
     LFortran::diag::Diagnostics diagnostics;
     auto res = LFortran::tokens(al, input, diagnostics, &stypes, nullptr, false);
-    for(int i=0;i<5;++i) std::cout << "stypes after " << &stypes[i] << std::endl;
     LFortran::LocationManager lm;
     lm.in_filename = "input";
     lm.init_simple(input);
@@ -1354,8 +1351,11 @@ EMSCRIPTEN_KEEPALIVE char* emit_wasm_from_source(char *input) {
 
 #endif
 
+
 int main(int argc, char *argv[])
 {
+    // extern int yydebug;
+    // yydebug=1;
     LFortran::initialize();
 #if defined(HAVE_LFORTRAN_STACKTRACE)
     LFortran::print_stack_on_segfault();

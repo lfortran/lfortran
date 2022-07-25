@@ -26,10 +26,14 @@ public:
     FixedFormTokenizer f_tokenizer;
     Vec<AST::ast_t*> result;
     bool fixed_form;
+    // for 
+    std::vector<YYSTYPE> *stypes;
 
     Parser(Allocator &al, diag::Diagnostics &diagnostics, const bool &fixed_form=false)
             : diag{diagnostics}, m_a{al}, fixed_form{fixed_form}{
         result.reserve(al, 32);
+        std::vector<YYSTYPE> A; A.reserve(32);
+        stypes = &A;
     }
 
     // TODO pass fixed form flag somewhere here

@@ -744,6 +744,8 @@ bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, std::vec
         if (stypes)
             for(const auto & el : f.stypes)
                 stypes->push_back(el);
+        else
+            stypes = &f.stypes;
         tokenized = true;
     } catch (const parser_local::TokenizerError &e) {
         diagnostics.diagnostics.push_back(e.d);
