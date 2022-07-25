@@ -7,6 +7,11 @@ module swap_m
         private
         public :: swap
 
+        type :: t_pair
+            integer :: i
+            real :: x
+        end type
+
         type :: T
         end type
 
