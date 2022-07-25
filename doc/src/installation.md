@@ -41,8 +41,8 @@ First we have to install dependencies, for example using Conda:
 conda create -n lf python cmake llvmdev
 conda activate lf
 ```
-Then download a tarball from 
-[https://lfortran.org/download/](https://lfortran.org/download/), 
+Then download a tarball from
+[https://lfortran.org/download/](https://lfortran.org/download/),
 e.g.:
 ```bash
 wget https://lfortran.github.io/tarballs/dev/lfortran-0.9.0.tar.gz
@@ -76,7 +76,7 @@ conda activate lf
 ```
 Clone the LFortran git repository:
 ```
-git clone https://gitlab.com/lfortran/lfortran.git
+git clone https://github.com/lfortran/lfortran.git
 cd lfortran
 ```
 Generate files that are needed for the build (this step depends on `re2c`, `bison` and `python`):

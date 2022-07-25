@@ -123,6 +123,7 @@
         local.get 5
         call 3
         call 5
+        return
     )
     (export "kind" (func $6))
     (export "_lcompilers_main" (func $7))

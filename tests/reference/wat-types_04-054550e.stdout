@@ -95,6 +95,7 @@
         f32.convert_i32_s
         f32.div
         local.set 2
+        return
     )
     (export "_lcompilers_main" (func $6))
 )

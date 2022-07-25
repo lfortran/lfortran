@@ -3,9 +3,11 @@
 set -e
 set -x
 
-if [[ $CI_COMMIT_REF_NAME != "master" ]]; then
+branch_name=${GITHUB_REF##*/}
+
+if [[ $branch_name != "main" ]]; then
     # Development version
-    dest_branch=${CI_COMMIT_REF_NAME}
+    dest_branch=${branch_name}
     deploy_repo="git@gitlab.com:lfortran/web/docs.lfortran.org-testing.git"
 else
     # Release version

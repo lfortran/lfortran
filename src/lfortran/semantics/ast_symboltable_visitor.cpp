@@ -189,7 +189,7 @@ public:
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             std::string unsupported_sym_name = import_all(m);
             if( !unsupported_sym_name.empty() ) {
-                throw LFortranException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
+                throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
             }
         }
         for (size_t i=0; i<x.n_use; i++) {
@@ -1178,7 +1178,7 @@ public:
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
         } else {
-            throw LFortranException("Only Subroutines, Functions, Variables and Derived supported in 'use'");
+            throw LCompilersException("Only Subroutines, Functions, Variables and Derived supported in 'use'");
         }
     }
 
@@ -1205,7 +1205,7 @@ public:
         if (x.n_symbols == 0) {
             std::string unsupported_sym_name = import_all(m);
             if( !unsupported_sym_name.empty() ) {
-                throw LFortranException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
+                throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
             }
         } else {
             // Only import individual symbols from the module, e.g.:

@@ -26,6 +26,7 @@
         local.get 0
         call 0
         call 5
+        return
     )
     (export "_lcompilers_main" (func $6))
 )
