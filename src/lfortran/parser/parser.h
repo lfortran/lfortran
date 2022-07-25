@@ -32,11 +32,9 @@ public:
     Parser(Allocator &al, diag::Diagnostics &diagnostics, const bool &fixed_form=false)
             : diag{diagnostics}, m_a{al}, fixed_form{fixed_form}{
         result.reserve(al, 32);
-        std::vector<YYSTYPE> A; A.reserve(32);
-        stypes = &A;
+        stypes = new std::vector<YYSTYPE>; // FIXME for now we're leaking memory?
     }
 
-    // TODO pass fixed form flag somewhere here
     void parse(const std::string &input);
     void handle_yyerror(const Location &loc, const std::string &msg);
 };

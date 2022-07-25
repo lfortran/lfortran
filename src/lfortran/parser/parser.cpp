@@ -53,8 +53,17 @@ void Parser::parse(const std::string &input)
         }
     } else {
         f_tokenizer.set_string(inp);
-        // do we have the right structures here (ie. wrong allocator??)??
+        // TODO -- actually pass all tokens to parser -- Bison YYHOW?
         f_tokenizer.tokenize_input(diag, this->stypes, m_a);
+        unsigned int t = 0;
+        for(auto iter = stypes->begin(); iter != stypes->end(); ++iter) {
+            std::cout << iter->string.str() << " <" << f_tokenizer.tokens[t] << "> ";
+            if (iter->string.str() == ")") std::cout << "\n";
+            t++;
+            // line break for readability
+            if (t % 7 == 0) std::cout << "\n";
+        }
+        std::cout << "\n";
         return;
     }
     throw parser_local::ParserError("Parsing unsuccessful (internal compiler error)");

@@ -361,21 +361,20 @@ struct FixedFormRecursiveDescent {
     bool eat_label_inline(unsigned char *&cur) {
         // consume label if it is available
         auto start = cur;
-            std::string label;
+        auto cur2 = cur;
+        std::string label;
         unsigned long long count = 0;
-        if (::isdigit(*cur)) {
-            while(*cur == ' ' || ::isdigit(*(cur++))) count++;
-            cur--;count--; // we advance one too much
+        if (::isdigit(*cur2)) {
+            while(*cur2 == ' ' || ::isdigit(*(cur2++))) count++;
+            cur2--;//count--; // we advance one too much
         }
         label.assign((char*)start, count);
-        if (is_integer(label)) {
+        if (is_integer(label) && count > 0) {
             YYSTYPE yy;
-            lines.push_back(label);
-            yy.string.n = label.size();
-            yy.string.p = &label[0];
+            yy.string.from_str(m_a, label);
             stypes.push_back(yy);
             tokens.push_back(262);
-            cur+=count;
+            cur+=count+1; // TODO revisit
             return true;
         }
         return false;
@@ -454,7 +453,7 @@ struct FixedFormRecursiveDescent {
                 tokens.push_back(token_goto);
     
                 YYSTYPE y3;
-                std::string ll{tostr(t.tok, t.tok + 4)};
+                std::string ll{tostr(t.tok+4, t.cur)};
                 // lines.push_back(ll);
                 // y3.string.n = ll.size();
                 // y3.string.p = &ll[0];
@@ -588,8 +587,7 @@ struct FixedFormRecursiveDescent {
         YYSTYPE yy;
         std::string l{"do"};
         lines.push_back(l);
-        yy.string.n = l.size();
-        yy.string.p = &l[0];
+        yy.string.from_str(m_a, l);
         stypes.push_back(yy);
         tokens.push_back(identifiers_map[l]);
         cur += l.size();

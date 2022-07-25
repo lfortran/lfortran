@@ -38,17 +38,14 @@
 
 int yylex(LFortran::YYSTYPE *yylval, YYLTYPE *yyloc, LFortran::Parser &p)
 {
-    std::cout << "Parser is for fixed form " << p.fixed_form << "\n";
     if (p.fixed_form) {
-        std::cout << "first stype" << p.f_tokenizer.stypes->at(0).string.str() << "\n";
-        if (!p.f_tokenizer.tokenized) p.f_tokenizer.tokenize_input(p.diag, p.f_tokenizer.stypes, p.m_a);
+        std::cout << "getting into yylex fixed form\n";
+        /* if (!p.f_tokenizer.tokenized) p.f_tokenizer.tokenize_input(p.diag, p.stypes, p.m_a); */
         auto tok = p.f_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
         std::cout << "tok is " << tok << "\n";
         return tok;
     } else {
-        auto tok = p.m_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
-        std::cout << "tok is " << tok << "\n";
-        return tok;
+        return p.m_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
     }
 } // ylex
 
