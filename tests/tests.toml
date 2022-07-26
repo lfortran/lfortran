@@ -2100,6 +2100,10 @@ filename = "../integration_tests/functions_10.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/arrays_elemental_15.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/bindc1.f90"
 asr = true
 llvm = true

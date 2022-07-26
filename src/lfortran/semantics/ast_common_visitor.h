@@ -1484,8 +1484,14 @@ public:
         if (!ASR::is_a<ASR::Function_t>(*final_sym)) {
             throw SemanticError("ExternalSymbol must point to a Function", loc);
         }
-        ASR::ttype_t *return_type = LFortran::ASRUtils::EXPR2VAR(ASR::down_cast<ASR::Function_t>(final_sym)->m_return_var)->m_type;
-        return_type = handle_return_type(return_type, loc, args, ASR::down_cast<ASR::Function_t>(final_sym));
+        ASR::ttype_t *return_type = nullptr;
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
+        if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+            return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+        } else {
+            return_type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+            return_type = handle_return_type(return_type, loc, args, func);
+        }
         // Create ExternalSymbol for the final subroutine:
         // We mangle the new ExternalSymbol's local name as:
         //   generic_procedure_local_name @
@@ -1570,9 +1576,14 @@ public:
                     ASR::expr_t *v_expr) {
         Vec<ASR::call_arg_t> args;
         visit_expr_list(m_args, n_args, args);
-        ASR::ttype_t *type = nullptr;
         ASR::ClassProcedure_t *v_class_proc = ASR::down_cast<ASR::ClassProcedure_t>(v);
-        type = LFortran::ASRUtils::EXPR2VAR(ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc)->m_return_var)->m_type;
+        ASR::ttype_t *type = nullptr;
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
+        if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+            type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+        } else {
+            type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+        }
         return ASR::make_FunctionCall_t(al, loc,
                 v, nullptr, args.p, args.size(), type, nullptr,
                 v_expr);
@@ -1599,9 +1610,14 @@ public:
             }
             ASR::symbol_t *final_sym = p->m_procs[idx];
 
-            ASR::ttype_t *type;
-            type = LFortran::ASRUtils::EXPR2VAR(ASR::down_cast<ASR::Function_t>(final_sym)->m_return_var)->m_type;
-            type = handle_return_type(type, loc, args, ASR::down_cast<ASR::Function_t>(final_sym));
+            ASR::ttype_t *type = nullptr;
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
+            if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+            } else {
+                type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+                type = handle_return_type(type, loc, args, func);
+            }
             return ASR::make_FunctionCall_t(al, loc,
                 final_sym, v, args.p, args.size(), type,
                 nullptr, nullptr);
@@ -1629,9 +1645,14 @@ public:
             }
             ASR::symbol_t *final_sym = p->m_procs[idx];
 
-            ASR::ttype_t *type;
-            type = LFortran::ASRUtils::EXPR2VAR(ASR::down_cast<ASR::Function_t>(final_sym)->m_return_var)->m_type;
-            type = handle_return_type(type, loc, args, ASR::down_cast<ASR::Function_t>(final_sym));
+            ASR::ttype_t *type = nullptr;
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
+            if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+            } else {
+                type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+                type = handle_return_type(type, loc, args, func);
+            }
             return ASR::make_FunctionCall_t(al, loc,
                 final_sym, v, args.p, args.size(), type,
                 nullptr, nullptr);
@@ -1641,8 +1662,14 @@ public:
     ASR::asr_t* create_Function(const Location &loc,
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
-        ASR::ttype_t *return_type = ASRUtils::EXPR2VAR(ASR::down_cast<ASR::Function_t>(f2)->m_return_var)->m_type;
-        return_type = handle_return_type(return_type, loc, args, ASR::down_cast<ASR::Function_t>(f2));
+        ASR::ttype_t *return_type = nullptr;
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
+        if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+            return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+        } else {
+            return_type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+            return_type = handle_return_type(return_type, loc, args, func);
+        }
         ASR::expr_t* value = nullptr;
         if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
             // Populate value
