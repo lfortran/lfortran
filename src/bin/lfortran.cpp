@@ -1171,10 +1171,11 @@ int link_executable(const std::vector<std::string> &infiles,
             std::string options;
             std::string runtime_lib = "lfortran_runtime";
 
-            if (link_with_gcc)
-              CC = "gcc";
-            else
-              CC = "clang";
+            if (link_with_gcc) {
+                CC = "gcc";
+            } else {
+                CC = "clang";
+            }  
 	    
             char *env_CC = std::getenv("LFORTRAN_CC");
             if (env_CC) CC = env_CC;
