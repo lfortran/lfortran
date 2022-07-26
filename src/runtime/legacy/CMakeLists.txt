@@ -25,3 +25,9 @@ if(WITH_RUNTIME_LIBRARY)
         LIBRARY DESTINATION share/lfortran/lib
     )
 endif()
+
+# Install the header
+install(
+    FILES ../impure/lfortran_intrinsics.h
+    DESTINATION share/lfortran/lib/impure
+)
