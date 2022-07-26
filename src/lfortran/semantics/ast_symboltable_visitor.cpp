@@ -550,6 +550,14 @@ public:
             }
         }
 
+        bool is_elemental = false;
+        for(size_t i = 0; i < x.n_attributes && !is_elemental; i++) {
+            AST::decl_attribute_t* func_attr = x.m_attributes[i];
+            if( AST::is_a<AST::SimpleAttribute_t>(*func_attr) ) {
+                AST::SimpleAttribute_t* simple_func_attr = AST::down_cast<AST::SimpleAttribute_t>(func_attr);
+                is_elemental = is_elemental || simple_func_attr->m_attr == AST::simple_attributeType::AttrElemental;
+            }
+        }
 
         tmp = ASR::make_Function_t(
             al, x.base.base.loc,
@@ -560,7 +568,8 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ LFortran::ASRUtils::EXPR(return_var_ref),
-            current_procedure_abi_type, s_access, deftype, bindc_name);
+            current_procedure_abi_type, s_access, deftype, is_elemental,
+            bindc_name);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         current_procedure_args.clear();
