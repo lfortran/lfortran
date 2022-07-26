@@ -1184,8 +1184,9 @@ int link_executable(const std::vector<std::string> &infiles,
                 options = " --target " + compiler_options.target;
             }
 
-            if (compiler_options.target != "" && !link_with_gcc)
-              options = " -target " + compiler_options.target;
+            if (compiler_options.target != "" && !link_with_gcc) {
+                options = " -target " + compiler_options.target;
+            }
 
             if (static_executable) {
                 if (compiler_options.platform != LFortran::Platform::macOS_Intel
