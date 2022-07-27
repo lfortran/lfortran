@@ -355,6 +355,7 @@ void LLVMEvaluator::save_object_file(llvm::Module &m, const std::string &filenam
     std::error_code EC;
     llvm::raw_fd_ostream dest(filename, EC, llvm::sys::fs::OF_None);
     if (EC) {
+        std::cout << "FILENAME IS " << filename << std::endl;
         throw std::runtime_error("raw_fd_ostream failed");
     }
     if (TM->addPassesToEmitFile(pass, dest, nullptr, ft)) {
