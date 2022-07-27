@@ -61,6 +61,7 @@
         call 8
         call 1
         call 5
+        return
     )
     (export "a_sqr_i64" (func $6))
     (export "add_i64" (func $7))

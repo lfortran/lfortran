@@ -33,6 +33,7 @@
             call 4
             call 5
         end
+        return
     )
     (export "_lcompilers_main" (func $6))
     (data (;0;) (i32.const 0) "Line 1 - Condition is true")

@@ -91,6 +91,7 @@
         call 10
         call 0
         call 5
+        return
     )
     (export "a_sqr" (func $6))
     (export "add" (func $7))

@@ -101,7 +101,7 @@ symbol
         string? bindc_name)
 
     | Function(symbol_table symtab, identifier name, expr* args, stmt* body,
-        expr return_var, abi abi, access access, deftype deftype,
+        expr return_var, abi abi, access access, deftype deftype, bool elemental,
         string? bindc_name)
     | GenericProcedure(symbol_table parent_symtab, identifier name,
         symbol* procs, access access)
@@ -272,6 +272,8 @@ expr
     | StringItem(expr arg, expr idx, ttype type, expr? value)
     | StringSection(expr arg, expr start, expr end, expr step, ttype type, expr? value)
     | StringCompare(expr left, cmpop op, expr right, ttype type, expr? value)
+    | StringOrd(expr arg, ttype type, expr? value)
+    | StringChr(expr arg, ttype type, expr? value)
 
     | DictConstant(expr* keys, expr* values, ttype type)
     | DictLen(expr arg, ttype type, expr? value)

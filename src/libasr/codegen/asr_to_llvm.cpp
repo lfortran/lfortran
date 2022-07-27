@@ -386,7 +386,7 @@ public:
             llvm::Value* end = tmp;
             llvm_dims.push_back(std::make_pair(start, end));
         }
-        arr_descr->fill_array_details(arr, m_dims, n_dims, llvm_dims);
+        arr_descr->fill_array_details(arr, n_dims, llvm_dims);
     }
 
     /*
@@ -785,6 +785,36 @@ public:
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getInt32Ty(context), {
                         character_type->getPointerTo()
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        return builder->CreateCall(fn, {str});
+    }
+
+    llvm::Value* lfortran_str_ord(llvm::Value* str)
+    {
+        std::string runtime_func_name = "_lfortran_str_ord";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getInt32Ty(context), {
+                        character_type->getPointerTo()
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        return builder->CreateCall(fn, {str});
+    }
+
+    llvm::Value* lfortran_str_chr(llvm::Value* str)
+    {
+        std::string runtime_func_name = "_lfortran_str_chr";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    character_type, {
+                        llvm::Type::getInt32Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
@@ -3297,6 +3327,26 @@ public:
         tmp = lfortran_str_len(parg);
     }
 
+    void visit_StringOrd(const ASR::StringOrd_t &x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        this->visit_expr_wrapper(x.m_arg, true);
+        llvm::AllocaInst *parg = builder->CreateAlloca(character_type, nullptr);
+        builder->CreateStore(tmp, parg);
+        tmp = lfortran_str_ord(parg);
+    }
+
+    void visit_StringChr(const ASR::StringChr_t &x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        this->visit_expr_wrapper(x.m_arg, true);
+        tmp = lfortran_str_chr(tmp);
+    }
+
     void visit_StringItem(const ASR::StringItem_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
@@ -4732,6 +4782,9 @@ public:
                                     builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
                                     llvm::AllocaInst *target = builder0.CreateAlloca(
                                         target_type, nullptr, "call_arg_value");
+                                    if( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ) {
+                                        value = builder->CreateLoad(value);
+                                    }
                                     builder->CreateStore(value, target);
                                     tmp = target;
                                 }

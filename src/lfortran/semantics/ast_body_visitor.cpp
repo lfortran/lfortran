@@ -1460,7 +1460,7 @@ public:
                     x.base.base.loc);
             }
         } else {
-            throw SemanticError("Currently only 'goto INTEGER' is supported",
+            throw SemanticError("Only 'goto INTEGER' is supported currently",
                 x.base.base.loc);
         }
     }

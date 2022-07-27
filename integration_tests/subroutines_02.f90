@@ -4,14 +4,17 @@ integer :: i, j
 i = 1
 j = 1
 call f(i, j)
+print *, i, j
 if (i /= 1) error stop
 if (j /= 2) error stop
 
 call g(i, j)
+print *, i, j
 if (i /= 1) error stop
 if (j /= 0) error stop
 
 call h(i, j)
+print *, i, j
 if (i /= 1) error stop
 if (j /= 0) error stop
 

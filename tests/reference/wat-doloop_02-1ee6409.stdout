@@ -178,6 +178,7 @@
         local.get 0
         call 0
         call 5
+        return
     )
     (export "_lcompilers_main" (func $6))
     (data (;0;) (i32.const 0) "ERROR STOP")

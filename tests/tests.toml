@@ -348,6 +348,14 @@ filename = "../integration_tests/if_05.f90"
 wat = true
 
 [[test]]
+filename = "../integration_tests/abs_01.f90"
+wat = true
+
+[[test]]
+filename = "../integration_tests/abs_03.f90"
+wat = true
+
+[[test]]
 filename = "stop.f90"
 asr = true
 llvm = true
@@ -2094,6 +2102,10 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/functions_10.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/arrays_elemental_15.f90"
 asr = true
 
 [[test]]
