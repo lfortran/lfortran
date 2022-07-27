@@ -89,7 +89,7 @@ symbol
         bool module)
 
 -- restrictions is a list of Restriction
--- fn is a list of TempaltedFunction
+-- fn is a list of TemplatedFunction
 
     | Template(symbol_table symtab, type_parameter *type_parameters,
         symbol *restrictions, symbol *fn)
