@@ -1415,7 +1415,7 @@ int main(int argc, char *argv[])
         std::string arg_backend = "llvm";
         std::string arg_kernel_f;
         bool print_targets = false;
-        bool link_with_gcc = true;
+        bool link_with_gcc = false;
 
         std::string arg_fmt_file;
         int arg_fmt_indent = 4;
