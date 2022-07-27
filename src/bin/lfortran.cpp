@@ -5,6 +5,7 @@
 #define CLI11_HAS_FILESYSTEM 0
 #include <bin/CLI11.hpp>
 
+#include <reproc++/run.hpp>
 #include <libasr/stacktrace.h>
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/preprocessor.h>
@@ -1026,7 +1027,7 @@ int compile_to_object_file_cpp(const std::string &infile,
                 out.open(outfile_empty);
                 out << " ";
             }
-	    std::string CC = "cc";
+            std::string CC = "cc";
             char *env_CC = std::getenv("LFORTRAN_CC");
             if (env_CC) CC = env_CC;
             std::string cmd = CC + " -c '" + outfile_empty + "' -o '" + outfile + "'";
@@ -1167,43 +1168,51 @@ int link_executable(const std::vector<std::string> &infiles,
             }
         } else {
             std::string CC;
-            std::string base_path = "\"" + runtime_library_dir + "\"";
-            std::string options;
+            std::vector<std::string> args;
             std::string runtime_lib = "lfortran_runtime";
 
             if (link_with_gcc) {
                 CC = "gcc";
             } else {
                 CC = "clang";
-            }  
-	    
+            }
+
             char *env_CC = std::getenv("LFORTRAN_CC");
             if (env_CC) CC = env_CC;
 
+            args.push_back(CC);
+
             if (compiler_options.target != "" && link_with_gcc) {
-                options = " --target " + compiler_options.target;
+                args.insert(args.end(), {"--target", compiler_options.target});
             }
 
             if (compiler_options.target != "" && !link_with_gcc) {
-                options = " -target " + compiler_options.target;
+                args.insert(args.end(), {"-target", compiler_options.target});
             }
 
             if (static_executable) {
                 if (compiler_options.platform != LFortran::Platform::macOS_Intel
                 && compiler_options.platform != LFortran::Platform::macOS_ARM) {
-                    options += " -static ";
+                    args.push_back("-static");
                 }
                 runtime_lib = "lfortran_runtime_static";
             }
-            std::string cmd = CC + options + " -o " + outfile + " ";
+
+            args.insert(args.end(), {"-o", outfile});
+
             for (auto &s : infiles) {
-                cmd += s + " ";
+                args.push_back(s);
             }
-            cmd += + " -L"
-                + base_path + " -Wl,-rpath," + base_path + " -l" + runtime_lib + " -lm";
-            int err = system(cmd.c_str());
-            if (err) {
-                std::cout << "The command '" + cmd + "' failed." << std::endl;
+            args.insert(args.end(), {"-L", runtime_library_dir, "-Wl,-rpath," + runtime_library_dir, "-l", runtime_lib, "-lm"});
+            auto [status, ec] = reproc::run(args);
+
+            if (status != 0 || ec) {
+                for (auto& a : args) std::cout << a << " ";
+                std::cout << std::endl;
+                if (status)
+                    std::cout << "The command ... returned status " << status << std::endl;
+                if (ec)
+                    std::cout << "The command '...' failed: " << ec.message() << std::endl;
                 return 10;
             }
         }
@@ -1598,7 +1607,6 @@ int main(int argc, char *argv[])
         // TODO: for now we ignore the other filenames, only handle
         // the first:
         std::string arg_file = arg_files[0];
-
         std::string outfile;
         std::string basename;
         basename = remove_extension(arg_file);
