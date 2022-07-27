@@ -1089,7 +1089,7 @@ int compile_to_object_file_cpp(const std::string &infile,
 int link_executable(const std::vector<std::string> &infiles,
     const std::string &outfile,
     const std::string &runtime_library_dir, Backend backend,
-    bool static_executable, bool kokkos,
+    bool static_executable, bool link_with_gcc, bool kokkos,
     CompilerOptions &compiler_options)
 {
     /*
@@ -1166,15 +1166,28 @@ int link_executable(const std::vector<std::string> &infiles,
                 return 10;
             }
         } else {
-            std::string CC = "clang";
-            char *env_CC = std::getenv("LFORTRAN_CC");
-            if (env_CC) CC = env_CC;
+            std::string CC;
             std::string base_path = "\"" + runtime_library_dir + "\"";
             std::string options;
             std::string runtime_lib = "lfortran_runtime";
-            if (compiler_options.target != "") {
+
+            if (link_with_gcc) {
+                CC = "gcc";
+            } else {
+                CC = "clang";
+            }  
+	    
+            char *env_CC = std::getenv("LFORTRAN_CC");
+            if (env_CC) CC = env_CC;
+
+            if (compiler_options.target != "" && link_with_gcc) {
+                options = " --target " + compiler_options.target;
+            }
+
+            if (compiler_options.target != "" && !link_with_gcc) {
                 options = " -target " + compiler_options.target;
             }
+
             if (static_executable) {
                 if (compiler_options.platform != LFortran::Platform::macOS_Intel
                 && compiler_options.platform != LFortran::Platform::macOS_ARM) {
@@ -1398,6 +1411,7 @@ int main(int argc, char *argv[])
         std::string arg_backend = "llvm";
         std::string arg_kernel_f;
         bool print_targets = false;
+        bool link_with_gcc = false;
 
         std::string arg_fmt_file;
         int arg_fmt_indent = 4;
@@ -1459,6 +1473,7 @@ int main(int argc, char *argv[])
         app.add_option("--backend", arg_backend, "Select a backend (llvm, cpp, x86, wasm)")->capture_default_str();
         app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
         app.add_flag("--fast", compiler_options.fast, "Best performance (disable strict standard compliance)");
+        app.add_flag("--link-with-gcc", link_with_gcc, "Calls GCC for linking instead of clang");
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
         app.add_flag("--print-targets", print_targets, "Print the registered targets");
 
@@ -1721,10 +1736,10 @@ int main(int argc, char *argv[])
             }
             if (err) return err;
             return link_executable({tmp_o}, outfile, runtime_library_dir,
-                    backend, static_link, true, compiler_options);
+                    backend, static_link, link_with_gcc, true, compiler_options);
         } else {
             return link_executable(arg_files, outfile, runtime_library_dir,
-                    backend, static_link, true, compiler_options);
+                    backend, static_link, link_with_gcc, true, compiler_options);
         }
     } catch(const LFortran::LCompilersException &e) {
         std::cerr << "Internal Compiler Error: Unhandled exception" << std::endl;
