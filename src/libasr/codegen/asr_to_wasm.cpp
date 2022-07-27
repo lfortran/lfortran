@@ -281,7 +281,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     void emit_var_type(Vec<uint8_t> &code, ASR::Variable_t *v){
         // bool is_array = ASRUtils::is_array(v->m_type);
-        // bool dummy = ASRUtils::is_arg_dummy(v->m_intent);
         if (ASRUtils::is_pointer(v->m_type)) {
             ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(v->m_type)->m_type;
             if (ASRUtils::is_integer(*t2)) {
@@ -298,24 +297,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 else{
                     throw CodeGenError("Integers of kind 4 and 8 only supported");
                 }
-                // throw CodeGenError("Pointers are not yet supported");
-                // std::string dims = convert_dims(t->n_dims, t->m_dims, size);
-                // std::string type_name = "int" + std::to_string(t->m_kind * 8) + "_t";
-                // if( is_array ) {
-                //     if( use_templates_for_arrays ) {
-                //         sub += generate_templates_for_arrays(std::string(v->m_name));
-                //     } else {
-                //         std::string encoded_type_name = "i" + std::to_string(t->m_kind * 8);
-                //         generate_array_decl(sub, std::string(v->m_name), type_name, dims,
-                //                             encoded_type_name, t->m_dims, t->n_dims, size,
-                //                             use_ref, dummy,
-                //                             v->m_intent != ASRUtils::intent_in &&
-                //                             v->m_intent != ASRUtils::intent_inout &&
-                //                             v->m_intent != ASRUtils::intent_out, true);
-                //     }
-                // } else {
-                //     sub = format_type(dims, type_name, v->m_name, use_ref, dummy);
-                // }
             } else {
                 diag.codegen_error_label("Type number '"
                     + std::to_string(v->m_type->type)
