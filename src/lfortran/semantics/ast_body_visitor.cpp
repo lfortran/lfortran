@@ -1512,6 +1512,19 @@ public:
         tmp = ASR::make_Nullify_t(al, x.base.base.loc, arg_vec.p, arg_vec.size());
     }
 
+    void visit_Template(const AST::Template_t &x){
+
+        SymbolTable *old_scope = current_scope;
+        ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
+        ASR::Template_t *v = ASR::down_cast<ASR::Template_t>(t);
+        current_scope = v->m_symtab;
+
+        for (size_t i=0; i<x.n_contains; i++) {
+            this->visit_program_unit(*x.m_contains[i]);
+        }
+
+        current_scope = old_scope;
+    }
 };
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,

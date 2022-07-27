@@ -620,9 +620,12 @@ public:
             }
             parent_sym = parent_scope->get_symbol(parent_sym_name);
         }
+        if(is_template && data_member_names.size() == 0){
+            type_parameters.push_back(ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name))));
+        }
         tmp = ASR::make_DerivedType_t(al, x.base.base.loc, current_scope,
-                s2c(al, to_lower(x.m_name)), data_member_names.p, data_member_names.size(),
-                ASR::abiType::Source, dflt_access, parent_sym);
+            s2c(al, to_lower(x.m_name)), data_member_names.p, data_member_names.size(),
+            ASR::abiType::Source, dflt_access, parent_sym);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         is_derived_type = false;
@@ -1274,6 +1277,40 @@ public:
             std::string x_m_name = std::string(x.m_names[i]);
             generic_class_procedures[dt_name][generic_name].push_back(to_lower(x_m_name));
         }
+    }
+
+    void visit_Template(const AST::Template_t &x){
+        is_template = true;
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        for (size_t i=0; i<x.n_decl; i++) {
+            this->visit_unit_decl2(*x.m_decl[i]);
+        }
+
+        for (size_t i=0; i<x.n_contains; i++) {
+            this->visit_program_unit(*x.m_contains[i]);
+        }
+
+        Vec<ASR::type_parameter_t*> params;
+        params.reserve(al, type_parameters.size()); 
+        for(const ASR::asr_t* param : type_parameters){
+            params.push_back(al, ASR::down_cast<ASR::type_parameter_t>(param));
+        }
+
+        tmp = ASR::make_Template_t(
+            al, x.base.base.loc,
+            /* a_symtab */ current_scope,
+            /* type_parameter_t */ params.p,
+            /* n_type_parameters */ params.size(),
+            /* a_restrictions */ nullptr,
+            /* n_restrictions */ 0,
+            /* a_fn */ nullptr,
+            /* n_fn */ 0);
+        parent_scope->add_symbol(x.m_name, ASR::down_cast<ASR::symbol_t>(tmp));
+
+        current_scope = parent_scope;
+        is_template = false;
     }
 
 };
