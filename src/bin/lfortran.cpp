@@ -1029,7 +1029,7 @@ int compile_to_object_file_cpp(const std::string &infile,
 	    std::string CC = "cc";
             char *env_CC = std::getenv("LFORTRAN_CC");
             if (env_CC) CC = env_CC;
-            std::string cmd = CC + " -c " + outfile_empty + " -o " + outfile;
+            std::string cmd = CC + " -c '" + outfile_empty + "' -o '" + outfile + "'";
             int err = system(cmd.c_str());
             if (err) {
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
