@@ -848,14 +848,6 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
         }
-        if(!is_body_visitor){
-            for (size_t i=0; i<x.n_decl; i++) {
-                visit_unit_decl2(*x.m_decl[i]);
-            }
-        }
-        
-        // We have to visit unit_decl_2 because in the example, the Template is directly inside the module and 
-        // Template is a unit_decl_2
 
         current_scope = old_scope;
         current_module = nullptr;
@@ -1542,9 +1534,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
 {
     BodyVisitor b(al, unit, diagnostics);
     try {
-        b.is_body_visitor = true;
         b.visit_TranslationUnit(ast);
-        b.is_body_visitor = false;
     } catch (const SemanticError &e) {
         Error error;
         diagnostics.diagnostics.push_back(e.d);

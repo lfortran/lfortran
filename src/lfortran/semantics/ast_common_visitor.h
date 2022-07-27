@@ -658,7 +658,6 @@ public:
     std::vector<TypeMissingData*> type_info;
     ASR::abiType current_procedure_abi_type = ASR::abiType::Source;
     bool is_derived_type = false;
-    bool is_body_visitor = false;
     bool is_template = false;
     std::vector<ASR::asr_t*> type_parameters;
     Vec<char*> data_member_names;
