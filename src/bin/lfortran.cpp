@@ -1039,7 +1039,7 @@ int compile_to_object_file_cpp(const std::string &infile,
                 out.open(outfile_empty);
                 out << " ";
             }
-            std::string CC = "cc";
+            std::string CC = LFortran::which("cc");
             char *env_CC = std::getenv("LFORTRAN_CC");
             if (env_CC) CC = env_CC;
             std::vector<std::string> args{
