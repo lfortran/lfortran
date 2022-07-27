@@ -303,58 +303,60 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     + "' not supported", {v->base.base.loc}, "");
                 throw CodeGenAbort();
             }
-        } else if (ASRUtils::is_integer(*v->m_type)) {
-            // checking for array is currently omitted
-            ASR::Integer_t* v_int = ASR::down_cast<ASR::Integer_t>(v->m_type);
-            if (v_int->m_kind == 4) {
-                wasm::emit_b8(code, m_al, wasm::type::i32);
-            }
-            else if (v_int->m_kind == 8) {
-                wasm::emit_b8(code, m_al, wasm::type::i64);
-            }
-            else{
-                throw CodeGenError("Integers of kind 4 and 8 only supported");
-            }
-        } else if (ASRUtils::is_real(*v->m_type)) {
-            // checking for array is currently omitted
-            ASR::Real_t* v_float = ASR::down_cast<ASR::Real_t>(v->m_type);
-            if (v_float->m_kind == 4) {
-                wasm::emit_b8(code, m_al, wasm::type::f32);
-            }
-            else if(v_float->m_kind == 8){
-                wasm::emit_b8(code, m_al, wasm::type::f64);
-            }
-            else {
-                throw CodeGenError("Floating Points of kind 4 and 8 only supported");
-            }
-        } else if (ASRUtils::is_logical(*v->m_type)) {
-            // checking for array is currently omitted
-            ASR::Logical_t* v_logical = ASR::down_cast<ASR::Logical_t>(v->m_type);
-            if (v_logical->m_kind == 4) {
-                wasm::emit_b8(code, m_al, wasm::type::i32);
-            }
-            else if(v_logical->m_kind == 8){
-                wasm::emit_b8(code, m_al, wasm::type::i64);
-            }
-            else {
-                throw CodeGenError("Logicals of kind 4 and 8 only supported");
-            }
-        } else if (ASRUtils::is_character(*v->m_type)) {
-            // Todo: Implement this
-
-            // checking for array is currently omitted
-            ASR::Character_t* v_int = ASR::down_cast<ASR::Character_t>(v->m_type);
-            /* Currently Assuming character as integer of kind 1 */
-            if (v_int->m_kind == 1) {
-                wasm::emit_b8(code, m_al, wasm::type::i32);
-            }
-            else{
-                throw CodeGenError("Characters of kind 1 only supported");
-            }
         } else {
-            // throw CodeGenError("Param, Result, Var Types other than integer, floating point and logical not yet supported");
-            diag.codegen_warning_label("Unsupported variable type: " + ASRUtils::type_to_str(v->m_type),
-                    {v->base.base.loc}, "here");
+            if (ASRUtils::is_integer(*v->m_type)) {
+                // checking for array is currently omitted
+                ASR::Integer_t* v_int = ASR::down_cast<ASR::Integer_t>(v->m_type);
+                if (v_int->m_kind == 4) {
+                    wasm::emit_b8(code, m_al, wasm::type::i32);
+                }
+                else if (v_int->m_kind == 8) {
+                    wasm::emit_b8(code, m_al, wasm::type::i64);
+                }
+                else{
+                    throw CodeGenError("Integers of kind 4 and 8 only supported");
+                }
+            } else if (ASRUtils::is_real(*v->m_type)) {
+                // checking for array is currently omitted
+                ASR::Real_t* v_float = ASR::down_cast<ASR::Real_t>(v->m_type);
+                if (v_float->m_kind == 4) {
+                    wasm::emit_b8(code, m_al, wasm::type::f32);
+                }
+                else if(v_float->m_kind == 8){
+                    wasm::emit_b8(code, m_al, wasm::type::f64);
+                }
+                else {
+                    throw CodeGenError("Floating Points of kind 4 and 8 only supported");
+                }
+            } else if (ASRUtils::is_logical(*v->m_type)) {
+                // checking for array is currently omitted
+                ASR::Logical_t* v_logical = ASR::down_cast<ASR::Logical_t>(v->m_type);
+                if (v_logical->m_kind == 4) {
+                    wasm::emit_b8(code, m_al, wasm::type::i32);
+                }
+                else if(v_logical->m_kind == 8){
+                    wasm::emit_b8(code, m_al, wasm::type::i64);
+                }
+                else {
+                    throw CodeGenError("Logicals of kind 4 and 8 only supported");
+                }
+            } else if (ASRUtils::is_character(*v->m_type)) {
+                // Todo: Implement this
+
+                // checking for array is currently omitted
+                ASR::Character_t* v_int = ASR::down_cast<ASR::Character_t>(v->m_type);
+                /* Currently Assuming character as integer of kind 1 */
+                if (v_int->m_kind == 1) {
+                    wasm::emit_b8(code, m_al, wasm::type::i32);
+                }
+                else{
+                    throw CodeGenError("Characters of kind 1 only supported");
+                }
+            } else {
+                // throw CodeGenError("Param, Result, Var Types other than integer, floating point and logical not yet supported");
+                diag.codegen_warning_label("Unsupported variable type: " + ASRUtils::type_to_str(v->m_type),
+                        {v->base.base.loc}, "here");
+            }
         }
     }
 
