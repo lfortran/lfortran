@@ -5,7 +5,6 @@
 #define CLI11_HAS_FILESYSTEM 0
 #include <bin/CLI11.hpp>
 
-#include <reproc++/run.hpp>
 #include <libasr/stacktrace.h>
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/preprocessor.h>
@@ -48,6 +47,8 @@
 
 #include <cpp-terminal/terminal.h>
 #include <cpp-terminal/prompt0.h>
+
+#include <reproc++/run.hpp>
 
 #ifdef HAVE_BUILD_TO_WASM
     #include <emscripten/emscripten.h>
@@ -980,6 +981,17 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
     return 0;
 }
 
+int run_with_args(const std::vector<std::string> &args, const int &err) {
+    auto [status, ec] = reproc::run(args);
+    if (status != 0 || ec) {
+        if (status)
+            std::cout << "The command " << LFortran::join(" ", args) << " returned status: " << status << std::endl;
+        if (ec)
+            std::cout << "The command " << LFortran::join(" ", args) << "failed: " << ec.message() << std::endl;
+        return err;
+    }
+    return 0;
+}
 
 int compile_to_object_file_cpp(const std::string &infile,
         const std::string &outfile,
@@ -987,7 +999,7 @@ int compile_to_object_file_cpp(const std::string &infile,
         CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
-
+    const int failure_code = 11;
     LFortran::FortranEvaluator fe(compiler_options);
     LFortran::ASR::TranslationUnit_t* asr;
 
@@ -1030,12 +1042,11 @@ int compile_to_object_file_cpp(const std::string &infile,
             std::string CC = "cc";
             char *env_CC = std::getenv("LFORTRAN_CC");
             if (env_CC) CC = env_CC;
-            std::string cmd = CC + " -c '" + outfile_empty + "' -o '" + outfile + "'";
-            int err = system(cmd.c_str());
-            if (err) {
-                std::cout << "The command '" + cmd + "' failed." << std::endl;
-                return 11;
-            }
+            std::vector<std::string> args{
+                CC, "-c", outfile_empty, "-o", outfile
+            };
+            int err_code = run_with_args(args, failure_code);
+            if (err_code) return err_code;
         }
         return 0;
     }
@@ -1063,23 +1074,20 @@ int compile_to_object_file_cpp(const std::string &infile,
             out.open(cppfile);
             out << src;
         }
-
+        
         std::string CXX = "g++";
-        std::string options;
+        std::vector<std::string> args{CXX};
         if (compiler_options.openmp) {
-            options += "-fopenmp ";
+            args.push_back("-fopenmp ");
         }
         if (kokkos) {
             std::string kokkos_dir = get_kokkos_dir();
-            options += "-std=c++17 -I" + kokkos_dir + "/include";
+            args.push_back("-std=c++17 -I" + kokkos_dir + "/include");
         }
-        options += " -I" + rtlib_header_dir;
-        std::string cmd = CXX + " " + options + " -o " + outfile + " -c " + cppfile;
-        int err = system(cmd.c_str());
-        if (err) {
-            std::cout << "The command '" + cmd + "' failed." << std::endl;
-            return 11;
-        }
+        args.push_back(" -I" + rtlib_header_dir);
+        args.insert(args.end(), {"-o", outfile, "-c", cppfile});
+        int err_code = run_with_args(args, failure_code);
+        if (err_code) return err_code;
     }
 
     return 0;
@@ -1153,19 +1161,17 @@ int link_executable(const std::vector<std::string> &infiles,
 #else
     std::string t = (compiler_options.platform == LFortran::Platform::Windows) ? "x86_64-pc-windows-msvc" : compiler_options.target;
 #endif
-
+    const int failure_code = 10;
     if (backend == Backend::llvm) {
         if (t == "x86_64-pc-windows-msvc") {
             std::string cmd = "link /NOLOGO /OUT:" + outfile + " ";
+            std::vector<std::string> args{cmd};
             for (auto &s : infiles) {
-                cmd += s + " ";
+                args.push_back(s);
             }
-            cmd += runtime_library_dir + "\\lfortran_runtime_static.lib";
-            int err = system(cmd.c_str());
-            if (err) {
-                std::cout << "The command '" + cmd + "' failed." << std::endl;
-                return 10;
-            }
+            args.push_back(runtime_library_dir + "\\lfortran_runtime_static.lib");
+            int err_code = run_with_args(args, failure_code);
+            if (err_code) return err_code;
         } else {
             std::string CC;
             std::vector<std::string> args;
@@ -1176,10 +1182,8 @@ int link_executable(const std::vector<std::string> &infiles,
             } else {
                 CC = "clang";
             }
-
             char *env_CC = std::getenv("LFORTRAN_CC");
             if (env_CC) CC = env_CC;
-
             args.push_back(CC);
 
             if (compiler_options.target != "" && link_with_gcc) {
@@ -1199,66 +1203,57 @@ int link_executable(const std::vector<std::string> &infiles,
             }
 
             args.insert(args.end(), {"-o", outfile});
-
             for (auto &s : infiles) {
                 args.push_back(s);
             }
             args.insert(args.end(), {"-L", runtime_library_dir, "-Wl,-rpath," + runtime_library_dir, "-l", runtime_lib, "-lm"});
-            auto [status, ec] = reproc::run(args);
-
-            if (status != 0 || ec) {
-                for (auto& a : args) std::cout << a << " ";
-                std::cout << std::endl;
-                if (status)
-                    std::cout << "The command ... returned status " << status << std::endl;
-                if (ec)
-                    std::cout << "The command '...' failed: " << ec.message() << std::endl;
-                return 10;
-            }
+            int err_code = run_with_args(args, failure_code);
+            if (err_code) return err_code;
         }
         return 0;
     } else if (backend == Backend::cpp) {
         std::string CXX = "g++";
         std::string options, post_options;
+        std::vector<std::string> args{CXX};
+        std::vector<std::string> post_args;
         if (static_executable) {
-            options += " -static ";
+            args.push_back("-static");
         }
         if (compiler_options.openmp) {
-            options += " -fopenmp ";
+            args.push_back("-fopenmp");
         }
         if (kokkos) {
             std::string kokkos_dir = get_kokkos_dir();
-            post_options += kokkos_dir + "/lib/libkokkoscontainers.a "
-                + kokkos_dir + "/lib/libkokkoscore.a -ldl";
+            post_args.insert(
+                post_args.end(),
+                {
+                    kokkos_dir + "/lib/libkokkoscontainers.a",
+                    kokkos_dir + "/lib/libkokkoscore.a", "-ldl"
+                });
         }
-        std::string cmd = CXX + options + " -o " + outfile + " ";
+        args.insert(args.end(), {"-o", outfile});
         for (auto &s : infiles) {
-            cmd += s + " ";
+            args.push_back(s);
         }
-        cmd += + " -L";
-        cmd += " " + post_options + " -lm";
-        int err = system(cmd.c_str());
-        if (err) {
-            std::cout << "The command '" + cmd + "' failed." << std::endl;
-            return 10;
-        }
+        args.push_back("-L");
+        args.insert(args.end(), post_args.begin(), post_args.end());
+        args.push_back("-lm");
+        int err_code = run_with_args(args, failure_code);
+        if (err_code) return err_code;
         return 0;
+
     } else if (backend == Backend::x86) {
-        std::string cmd = "cp " + infiles[0] + " " + outfile;
-        int err = system(cmd.c_str());
-        if (err) {
-            std::cout << "The command '" + cmd + "' failed." << std::endl;
-            return 10;
-        }
+        std::vector<std::string> args{"cp", infiles[0], outfile};
+        int err_code = run_with_args(args, failure_code);
+        if (err_code) return err_code;
         return 0;
     } else if (backend == Backend::wasm) {
-        std::string cmd = "cp " + infiles[0] + " " + outfile
-            + " && " + "cp " + infiles[0] + ".js" + " " + outfile + ".js";
-        int err = system(cmd.c_str());
-        if (err) {
-            std::cout << "The command '" + cmd + "' failed." << std::endl;
-            return 10;
-        }
+        std::vector<std::string> args{
+            "cp", infiles[0], outfile, "&&",
+            "cp", infiles[0] + ".js", outfile + ".js"
+        };
+        int err_code = run_with_args(args, failure_code);
+        if (err_code) return err_code;
         return 0;
     } else {
         LFORTRAN_ASSERT(false);
@@ -1485,7 +1480,7 @@ int main(int argc, char *argv[])
         app.add_flag("--link-with-gcc", link_with_gcc, "Calls GCC for linking instead of clang");
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
         app.add_flag("--print-targets", print_targets, "Print the registered targets");
-
+        
         if( compiler_options.fast ) {
             lfortran_pass_manager.use_optimization_passes();
         }

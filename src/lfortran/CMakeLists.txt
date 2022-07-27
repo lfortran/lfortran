@@ -37,7 +37,9 @@ if (WITH_JSON)
     )
 endif()
 add_library(lfortran_lib ${SRC})
-target_link_libraries(lfortran_lib asr lfortran_runtime_static)
+find_package(reproc++ REQUIRED)
+
+target_link_libraries(lfortran_lib asr lfortran_runtime_static reproc++)
 
 if (WITH_ZLIB)
     target_link_libraries(lfortran_lib ZLIB::ZLIB)
