@@ -4,6 +4,7 @@ repos:
     rev: v4.1.0
     hooks:
     -   id: trailing-whitespace
+        exclude: ".md"
     -   id: end-of-file-fixer
     -   id: fix-encoding-pragma
         args: [--remove]
