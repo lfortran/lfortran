@@ -53,7 +53,7 @@ void Parser::parse(const std::string &input)
         }
     } else {
         f_tokenizer.set_string(inp);
-        f_tokenizer.tokenize_input(diag, this->stypes, m_a);
+        f_tokenizer.tokenize_input(diag, m_a);
         if (yyparse(*this) == 0) {
             return;
         }
@@ -70,7 +70,13 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
     if (fixed_form) {
         FixedFormTokenizer t;
         t.set_string(input);
-        if (!t.tokenize_input(diagnostics, stypes, al)) {
+        if (t.tokenize_input(diagnostics, al)) {
+            if (stypes) {
+                for(const auto & el : t.stypes) {
+                    stypes->push_back(el);
+                }
+            }
+        } else {
             return Error();
         };
 

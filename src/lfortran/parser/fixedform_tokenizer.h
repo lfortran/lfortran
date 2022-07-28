@@ -23,7 +23,7 @@ public:
     int enddo_insert_count = 0;
 
     std::vector<int> tokens;
-    std::vector<YYSTYPE> *stypes;
+    std::vector<YYSTYPE> stypes;
 
     bool tokenized = false;
 
@@ -37,7 +37,7 @@ public:
     // token
     // Returns True if successful, otherwise there will be errors in
     // `diagnostics`
-    bool tokenize_input(diag::Diagnostics &diagnostics, std::vector<YYSTYPE> *stypes, Allocator &al);
+    bool tokenize_input(diag::Diagnostics &diagnostics, Allocator &al);
 
     // Get next token. Token ID is returned as function result, the semantic
     // value is put into `yylval`.

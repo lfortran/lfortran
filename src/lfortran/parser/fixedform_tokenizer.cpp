@@ -753,19 +753,13 @@ struct FixedFormRecursiveDescent {
 
 };
 
-bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, std::vector<YYSTYPE> *stypes, Allocator &al) {
+bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, Allocator &al) {
     // We use a recursive descent parser.  We are starting at the global scope
     try {
         FixedFormRecursiveDescent f(diagnostics, al);
         f.string_start = string_start;
         f.lex_global_scope(cur);
         tokens = std::move(f.tokens);
-
-        if (stypes)
-            for(const auto & el : f.stypes)
-                stypes->push_back(el);
-        else
-            stypes = &f.stypes;
         tokenized = true;
     } catch (const parser_local::TokenizerError &e) {
         diagnostics.diagnostics.push_back(e.d);
@@ -780,8 +774,8 @@ int FixedFormTokenizer::lex(Allocator &/*al*/, YYSTYPE &yylval,
     if (!tokens.empty()) {
         auto tok = tokens[0];
         tokens.erase(tokens.begin());
-        yylval = stypes->at(0);
-        stypes->erase(stypes->begin());
+        yylval = stypes.at(0);
+        stypes.erase(stypes.begin());
         return tok;
     }
     return yytokentype::END_OF_FILE;
