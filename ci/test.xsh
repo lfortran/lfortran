@@ -1,9 +1,11 @@
 #!/usr/bin/env xonsh
 
-import platform
-
 $RAISE_SUBPROC_ERROR = True
 trace on
+
+$CURRENT_OS=$(uname).strip()
+$IS_MAC = $CURRENT_OS == "Darwin"
+$IS_WIN = $CURRENT_OS == "Windows"
 
 # Run some simple compilation tests, works everywhere:
 src/bin/lfortran --version
@@ -16,9 +18,9 @@ src/bin/lfortran -o expr2 expr2.o
 src/bin/lfortran -c integration_tests/modules_15b.f90 -o modules_15b.o
 src/bin/lfortran -c integration_tests/modules_15.f90 -o modules_15.o
 
-if platform.system() == "Windows":
+if $IS_WIN:
     cl /MD /c integration_tests/modules_15c.c /Fomodules_15c.o
-elif platform.system() == "Darwin": # macOS
+elif $IS_MAC: # macOS
     clang -c integration_tests/modules_15c.c -o modules_15c.o
 else:
     # Linux
@@ -38,7 +40,7 @@ src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
 
 # Run all tests (does not work on Windows yet):
 cmake --version
-if platform.system() != "Windows":
+if not $IS_WIN:
     ./run_tests.py
 
     cd integration_tests
