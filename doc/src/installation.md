@@ -71,7 +71,7 @@ export PATH="$HOME/conda_root/bin:$PATH"
 ```
 Then prepare the environment:
 ```bash
-conda create -n lf -c conda-forge llvmdev=11.0.1 bison=3.4 re2c python cmake make toml
+conda create -n lf -c conda-forge llvmdev=11.0.1 bison=3.4 re2c python cmake make toml reproc-cpp
 conda activate lf
 ```
 Clone the LFortran git repository:
@@ -108,7 +108,7 @@ First, clone the repo to a local folder.
 Launch a Conda command interpreter and run the following commands:
 ```bash
 conda update -q conda
-conda install -c conda-forge python=3.7 re2c m2-bison xonsh llvmdev=11.1.0 jupyter xeus=1.0.1 xtl nlohmann_json cppzmq jupyter_kernel_test pytest
+conda install -c conda-forge python=3.7 re2c m2-bison xonsh llvmdev=11.1.0 jupyter xeus=1.0.1 xtl nlohmann_json cppzmq jupyter_kernel_test pytest reproc-cpp
 ```
 Next, `cd` to the root of the repository and run
 ```bash

@@ -7,6 +7,10 @@
 
 #include <fstream>
 
+#ifndef _WIN32
+#include <unistd.h>
+#endif
+
 #include <bin/tpl/whereami/whereami.h>
 
 #include <libasr/exception.h>
@@ -36,6 +40,58 @@ void get_executable_path(std::string &executable_path, int &dirname_length)
     dirname_length = 7;
 #endif
 }
+
+        constexpr inline const char* pathsep()
+        {
+#ifdef _WIN32
+            return ";";
+#else
+            return ":";
+#endif
+        }
+
+        fs::path which(const std::string& exe, const std::string& override_path)
+        {
+            // TODO maybe add a cache?
+            auto env_path = std::getenv("PATH");
+            if (env_path)
+            {
+                std::string path = env_path;
+                auto parts = split(path, pathsep());
+                for (auto& p : parts)
+                {
+                    if (!fs::exists(p) || !fs::is_directory(p))
+                    {
+                        continue;
+                    }
+                    for (const auto& entry : fs::directory_iterator(p))
+                    {
+                        if (entry.path().filename() == exe)
+                        {
+                            return entry.path();
+                        }
+                    }
+                }
+            }
+
+#ifndef _WIN32
+            if (override_path == "")
+            {
+                char* pathbuf;
+                size_t n = confstr(_CS_PATH, NULL, (size_t) 0);
+                pathbuf = (char*) malloc(n);
+                if (pathbuf != NULL)
+                {
+                    confstr(_CS_PATH, pathbuf, n);
+                    return which(exe, pathbuf);
+                }
+            }
+#endif
+
+            return "";  // empty path
+        }
+
+
 
 std::string get_runtime_library_dir()
 {

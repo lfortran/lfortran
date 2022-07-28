@@ -1,7 +1,6 @@
 name: lf
 channels:
   - conda-forge
-  - defaults
 dependencies:
   - llvmdev=11.1.0
   - toml
@@ -15,5 +14,6 @@ dependencies:
   - xonsh
   - re2c
   - numpy
+  - reproc-cpp
 #  - bison=3.4  [not win]
 #  - m2-bison=3.4  [win]
