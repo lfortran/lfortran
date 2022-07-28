@@ -3,6 +3,10 @@
 $RAISE_SUBPROC_ERROR = True
 trace on
 
+import platform
+$IS_MAC = platform.system() == "Darwin"
+$IS_WIN = platform.system() == "Windows"
+
 # Run some simple compilation tests, works everywhere:
 src/bin/lfortran --version
 # Compile and link separately
@@ -13,12 +17,15 @@ src/bin/lfortran -o expr2 expr2.o
 # Compile C and Fortran
 src/bin/lfortran -c integration_tests/modules_15b.f90 -o modules_15b.o
 src/bin/lfortran -c integration_tests/modules_15.f90 -o modules_15.o
-if $WIN == "1": # Windows
+
+if $IS_WIN:
     cl /MD /c integration_tests/modules_15c.c /Fomodules_15c.o
-elif $MACOS == "1": # macOS
+elif $IS_MAC: # macOS
     clang -c integration_tests/modules_15c.c -o modules_15c.o
-else: # Linux
+else:
+    # Linux
     gcc -c integration_tests/modules_15c.c -o modules_15c.o
+
 src/bin/lfortran modules_15.o modules_15b.o modules_15c.o -o modules_15
 ./modules_15
 
@@ -33,7 +40,7 @@ src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
 
 # Run all tests (does not work on Windows yet):
 cmake --version
-if $WIN != "1":
+if not $IS_WIN:
     ./run_tests.py
 
     cd integration_tests

@@ -23,6 +23,10 @@
 $RAISE_SUBPROC_ERROR = True
 trace on
 
+import platform
+$IS_MAC = platform.system() == "Darwin"
+$IS_WIN = platform.system() == "Windows"
+
 echo "CONDA_PREFIX=$CONDA_PREFIX"
 llvm-config --components
 
@@ -75,7 +79,7 @@ cd ../../..
 
 cp lfortran-$lfortran_version/test-bld/src/bin/lfortran src/bin
 cp lfortran-$lfortran_version/test-bld/src/bin/cpptranslate src/bin
-if $WIN == "1":
+if uname == "Windows":
     cp lfortran-$lfortran_version/test-bld/src/runtime/legacy/lfortran_runtime* src/runtime/
 else:
     cp lfortran-$lfortran_version/test-bld/src/runtime/liblfortran_runtime* src/runtime/
@@ -91,12 +95,16 @@ src/bin/lfortran -o expr2 expr2.o
 # Compile C and Fortran
 src/bin/lfortran -c integration_tests/modules_15b.f90 -o modules_15b.o
 src/bin/lfortran -c integration_tests/modules_15.f90 -o modules_15.o
-if $WIN == "1": # Windows
+
+
+if $IS_WIN:
     cl /MD /c integration_tests/modules_15c.c /Fomodules_15c.o
-elif $MACOS == "1": # macOS
+elif $IS_MAC:
+    # This is macOS
     clang -c integration_tests/modules_15c.c -o modules_15c.o
-else: # Linux
+else:
     gcc -c integration_tests/modules_15c.c -o modules_15c.o
+
 src/bin/lfortran modules_15.o modules_15b.o modules_15c.o -o modules_15
 ./modules_15
 
@@ -111,7 +119,7 @@ src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
 
 # Run all tests (does not work on Windows yet):
 cmake --version
-if $WIN != "1":
+if not $IS_WIN:
     ./run_tests.py
 
     cd integration_tests
