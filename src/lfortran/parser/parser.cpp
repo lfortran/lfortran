@@ -71,6 +71,7 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         FixedFormTokenizer t;
         t.set_string(input);
         if (t.tokenize_input(diagnostics, al)) {
+            LFORTRAN_ASSERT(t.tokens.size() == t.stypes.size())
             if (stypes) {
                 for(const auto & el : t.stypes) {
                     stypes->push_back(el);

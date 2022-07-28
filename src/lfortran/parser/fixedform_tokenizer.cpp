@@ -760,6 +760,7 @@ bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, Allocato
         f.string_start = string_start;
         f.lex_global_scope(cur);
         tokens = std::move(f.tokens);
+        stypes = std::move(f.stypes);
         tokenized = true;
     } catch (const parser_local::TokenizerError &e) {
         diagnostics.diagnostics.push_back(e.d);
