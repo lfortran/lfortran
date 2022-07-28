@@ -12,7 +12,7 @@ asr_indent = true
 ast = true
 
 [[test]]
-filename = "swap1.f90"
+filename = "../examples/swap_m.f90"
 ast = true
 asr = true
 

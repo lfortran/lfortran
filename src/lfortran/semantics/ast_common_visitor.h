@@ -10,6 +10,7 @@
 #include <lfortran/semantics/comptime_eval.h>
 
 #include <string>
+#include <unordered_set>
 
 using LFortran::diag::Level;
 using LFortran::diag::Stage;
@@ -658,8 +659,12 @@ public:
     std::vector<TypeMissingData*> type_info;
     ASR::abiType current_procedure_abi_type = ASR::abiType::Source;
     bool is_derived_type = false;
+    bool is_body_visitor = false;
     bool is_template = false;
-    std::vector<ASR::asr_t*> type_parameters;
+    bool is_current_procedure_templated = false;
+    std::vector<ASR::asr_t*> current_template_type_parameters;
+    std::unordered_set<int> current_procedure_used_type_parameter_indices;
+
     Vec<char*> data_member_names;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
@@ -1082,6 +1087,19 @@ public:
                 } else if (sym_type->m_type == AST::decl_typeType::TypeType) {
                     LFORTRAN_ASSERT(sym_type->m_name);
                     std::string derived_type_name = to_lower(sym_type->m_name);
+                    
+                    if(is_template){
+                        for(size_t i = 0; i < current_template_type_parameters.size(); i++){
+                            ASR::TypeParameter_t* param = ASR::down_cast2<ASR::TypeParameter_t>(current_template_type_parameters[i]);
+                            std::string name = std::string(param->m_name);
+
+                            if(name.compare(derived_type_name) == 0){
+                                current_procedure_used_type_parameter_indices.insert(i);
+                                is_current_procedure_templated = true;
+                            }
+                        }
+                    }
+
                     ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
                     if( is_c_ptr(v, derived_type_name) ) {
                         type = LFortran::ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
