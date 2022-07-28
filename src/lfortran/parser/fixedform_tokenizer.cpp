@@ -487,11 +487,17 @@ struct FixedFormRecursiveDescent {
             len = t.cur - t.tok;
 
             tokens.push_back(token);
-            std::string tk{tostr(t.tok, t.tok + len)};
             // lines.push_back(tk);
             // y2.string.n = tk.size();
             // y2.string.p = &tk[0];
-            y2.string.from_str(m_a, tk);
+            if (token == yytokentype::TK_INTEGER) {
+                lex_int_large(m_a, t.tok, t.cur,
+                    y2.int_suffix.int_n,
+                    y2.int_suffix.int_kind);
+            } else {
+                std::string tk{tostr(t.tok, t.tok + len)};
+                y2.string.from_str(m_a, tk);
+            }
 
             stypes.push_back(y2);
             // for now, this double check is needed as the usual tokenizer does not

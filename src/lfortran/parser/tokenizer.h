@@ -63,6 +63,8 @@ public:
 
 bool lex_int(const unsigned char *s, const unsigned char *e, uint64_t &u,
     Str &suffix);
+void lex_int_large(Allocator &al, const unsigned char *s,
+    const unsigned char *e, BigInt::BigInt &u, Str &suffix);
 
 } // namespace LFortran
 
