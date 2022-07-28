@@ -289,8 +289,14 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Subroutine: {
             return ASR::down_cast<ASR::Subroutine_t>(f)->m_symtab;
         }
+        case ASR::symbolType::TemplatedSubroutine: {
+            return ASR::down_cast<ASR::TemplatedSubroutine_t>(f)->m_symtab;
+        }
         case ASR::symbolType::Function: {
             return ASR::down_cast<ASR::Function_t>(f)->m_symtab;
+        }
+        case ASR::symbolType::TemplatedFunction: {
+            return ASR::down_cast<ASR::TemplatedFunction_t>(f)->m_symtab;
         }
         case ASR::symbolType::Template: {
             return ASR::down_cast<ASR::Template_t>(f)->m_symtab;

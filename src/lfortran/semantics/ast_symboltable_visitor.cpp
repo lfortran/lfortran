@@ -262,7 +262,7 @@ public:
         current_scope = parent_scope;
         fix_type_info();
     }
-
+    
     void visit_Subroutine(const AST::Subroutine_t &x) {
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
@@ -344,8 +344,30 @@ public:
             sym_name = sym_name + "~genericprocedure";
         }
 
+        Vec<ASR::type_parameter_t*> params;
+        params.reserve(al, current_procedure_used_type_parameter_indices.size()); 
+        for(auto i = current_procedure_used_type_parameter_indices.begin(); i != current_procedure_used_type_parameter_indices.end(); i++){
+            ASR::asr_t* param = current_template_type_parameters[*i];
+            params.push_back(al, ASR::down_cast<ASR::type_parameter_t>(param));
+        }
 
-        tmp = ASR::make_Subroutine_t(
+        if(is_current_procedure_templated){
+            tmp = ASR::make_TemplatedSubroutine_t(
+                al, x.base.base.loc,
+                /* a_symtab */ current_scope,
+                /* a_name */ s2c(al, to_lower(sym_name)),
+                /* a_args */ args.p,
+                /* n_args */ args.size(),
+                /* a_body */ nullptr,
+                /* n_body */ 0,
+                /* a_type_parameters */ params.p,
+                /* n_type_parameters */ params.size(),
+                current_procedure_abi_type,
+                s_access, deftype, bindc_name,
+                is_pure, is_module);
+        }
+        else{
+            tmp = ASR::make_Subroutine_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, to_lower(sym_name)),
@@ -356,6 +378,7 @@ public:
             current_procedure_abi_type,
             s_access, deftype, bindc_name,
             is_pure, is_module);
+        }
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         /* FIXME: This can become incorrect/get cleared prematurely, perhaps
@@ -363,6 +386,8 @@ public:
            matter since we would have already checked the intent */
         current_procedure_args.clear();
         current_procedure_abi_type = ASR::abiType::Source;
+        current_procedure_used_type_parameter_indices.clear();
+        is_current_procedure_templated = false;
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
@@ -504,6 +529,18 @@ public:
                     }
                     type = LFortran::ASRUtils::TYPE(ASR::make_Derived_t(al, x.base.base.loc, v,
                         nullptr, 0));
+                    // Check whether to return a Function or a TemplatedFunction if inside a template
+                    if(is_template){
+                        for(size_t i = 0; i < current_template_type_parameters.size(); i++){
+                            ASR::TypeParameter_t* param = ASR::down_cast2<ASR::TypeParameter_t>(current_template_type_parameters[i]);
+                            std::string name = std::string(param->m_name);
+
+                            if(name.compare(derived_type_name) == 0){
+                                current_procedure_used_type_parameter_indices.insert(i);
+                                is_current_procedure_templated = true;
+                            }
+                        }
+                    }
                     break;
                 }
                 default :
@@ -568,23 +605,45 @@ public:
                 is_elemental = is_elemental || simple_func_attr->m_attr == AST::simple_attributeType::AttrElemental;
             }
         }
+        Vec<ASR::type_parameter_t*> params;
+        params.reserve(al, current_procedure_used_type_parameter_indices.size()); 
+        for(auto i = current_procedure_used_type_parameter_indices.begin(); i != current_procedure_used_type_parameter_indices.end(); i++){
+            ASR::asr_t* param = current_template_type_parameters[*i];
+            params.push_back(al, ASR::down_cast<ASR::type_parameter_t>(param));
+        }
 
-        tmp = ASR::make_Function_t(
-            al, x.base.base.loc,
-            /* a_symtab */ current_scope,
-            /* a_name */ s2c(al, to_lower(sym_name)),
-            /* a_args */ args.p,
-            /* n_args */ args.size(),
-            /* a_body */ nullptr,
-            /* n_body */ 0,
-            /* a_return_var */ LFortran::ASRUtils::EXPR(return_var_ref),
-            current_procedure_abi_type, s_access, deftype, is_elemental,
-            bindc_name);
+        if(is_current_procedure_templated){
+            tmp = ASR::make_TemplatedFunction_t(
+                al, x.base.base.loc,
+                /* a_symtab */ current_scope,
+                /* a_name */ s2c(al, to_lower(sym_name)),
+                /* a_args */ args.p,
+                /* n_args */ args.size(),
+                /* a_type_parameters */ params.p,
+                /* n_type_parameters */ params.size(),
+                /* a_body */ nullptr,
+                /* n_body */ 0,
+                /* a_return_var */LFortran::ASRUtils::EXPR(return_var_ref),
+                current_procedure_abi_type, s_access, deftype, is_elemental, bindc_name);
+        } else {
+            tmp = ASR::make_Function_t(
+                al, x.base.base.loc,
+                /* a_symtab */ current_scope,
+                /* a_name */ s2c(al, to_lower(sym_name)),
+                /* a_args */ args.p,
+                /* n_args */ args.size(),
+                /* a_body */ nullptr,
+                /* n_body */ 0,
+                /* a_return_var */ LFortran::ASRUtils::EXPR(return_var_ref),
+                current_procedure_abi_type, s_access, deftype, is_elemental, bindc_name);
+        }
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         current_procedure_args.clear();
         current_procedure_abi_type = ASR::abiType::Source;
         current_symbol = -1;
+        current_procedure_used_type_parameter_indices.clear();
+        is_current_procedure_templated = false;
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -631,7 +690,7 @@ public:
             parent_sym = parent_scope->get_symbol(parent_sym_name);
         }
         if(is_template && data_member_names.size() == 0){
-            type_parameters.push_back(ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name))));
+            current_template_type_parameters.push_back(ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name))));
         }
         tmp = ASR::make_DerivedType_t(al, x.base.base.loc, current_scope,
             s2c(al, to_lower(x.m_name)), data_member_names.p, data_member_names.size(),
@@ -1303,8 +1362,8 @@ public:
         }
 
         Vec<ASR::type_parameter_t*> params;
-        params.reserve(al, type_parameters.size()); 
-        for(const ASR::asr_t* param : type_parameters){
+        params.reserve(al, current_template_type_parameters.size()); 
+        for(const ASR::asr_t* param : current_template_type_parameters){
             params.push_back(al, ASR::down_cast<ASR::type_parameter_t>(param));
         }
 
@@ -1321,6 +1380,7 @@ public:
 
         current_scope = parent_scope;
         is_template = false;
+        current_template_type_parameters.clear();
     }
 
 };
