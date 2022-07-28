@@ -3,9 +3,9 @@
 $RAISE_SUBPROC_ERROR = True
 trace on
 
-$CURRENT_OS=$(uname).strip()
-$IS_MAC = $CURRENT_OS == "Darwin"
-$IS_WIN = $CURRENT_OS == "Windows"
+import platform
+$IS_MAC = platform.system() == "Darwin"
+$IS_WIN = platform.system() == "Windows"
 
 # Run some simple compilation tests, works everywhere:
 src/bin/lfortran --version
