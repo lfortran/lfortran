@@ -1,7 +1,6 @@
 name: lf
 channels:
   - conda-forge
-  - defaults
 dependencies:
   - llvmdev=11.1.0
   - toml
