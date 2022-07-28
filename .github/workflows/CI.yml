@@ -26,7 +26,7 @@ jobs:
           fetch-depth: 0
 
       # revert to main provision-with-micromamba once fixes are merged
-      - uses: wolfv/provision-with-micromamba@unix_sel
+      - uses: mamba-org/provision-with-micromamba@main
         with:
           environment-file: ci/environment.yml
           extra-specs: |
