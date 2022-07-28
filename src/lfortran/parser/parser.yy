@@ -10,7 +10,7 @@
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
 
-/*
+/* 
 // Uncomment this to enable parser tracing. Then in the main code, set
 // extern int yydebug;
 // yydebug=1;
@@ -18,8 +18,7 @@
 %printer { fprintf(yyo, "%s", $$.str().c_str()); } <string>
 %printer { fprintf(yyo, "%d", $$); } <n>
 %printer { std::cerr << "AST TYPE: " << $$->type; } <ast>
-*/
-
+ */
 
 
 %code requires // *.h
@@ -34,14 +33,15 @@
 #include <lfortran/parser/tokenizer.h>
 #include <lfortran/parser/semantics.h>
 
+#include <lfortran/pickle.h>
+
 #include <iostream>
 
 int yylex(LFortran::YYSTYPE *yylval, YYLTYPE *yyloc, LFortran::Parser &p)
 {
     if (p.fixed_form) {
-        std::cout << "getting into yylex fixed form\n";
         auto tok = p.f_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
-        std::cout << "tok is " << tok << "\n";
+        /* std::cout << "LEX: " << pickle(tok, *yylval) << std::endl; */
         return tok;
     } else {
         return p.m_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);

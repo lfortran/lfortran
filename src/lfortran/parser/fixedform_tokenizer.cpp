@@ -312,7 +312,7 @@ struct FixedFormRecursiveDescent {
         Location loc;
         loc.first = loc_first;
         loc.last = loc_first;
-        std::cout << cur << std::endl;
+        auto next=cur; next_line(next); std::cout << "error line " << tostr(cur,next-1) << std::endl;
         throw LFortran::parser_local::TokenizerError(text, loc);
     }
 
@@ -327,7 +327,6 @@ struct FixedFormRecursiveDescent {
             cur2++;
         }
         std::string next_str = std::string((char *)tok, cur2 - tok);
-        // std::cout << "next is " << next_str << std::endl;
         return next_str == str;
     }
 
@@ -346,12 +345,19 @@ struct FixedFormRecursiveDescent {
         if (is_integer(label)) {
             lines.push_back(label);
             YYSTYPE y;
-            int token = 262; // TK_LABEL
+            int token = yytokentype::TK_LABEL;
             tokens.push_back(token);
             std::string::iterator end = std::remove(label.begin(), label.end(), ' ');
             label.erase(end, label.end());
-            y.string.from_str(m_a, label);
+            unsigned char *t = (unsigned char*)&label[0];
+            unsigned char *e = (unsigned char*)&label[label.size()];
+            // std::cout << "stype should be " << label << ", t is " << t << ", e is " << e << std::endl;
+            lex_int_large(m_a, t,e,
+                    y.int_suffix.int_n,
+                    y.int_suffix.int_kind);
+            // std::cout << "str is " << y.n << std::endl;
             stypes.push_back(y);
+            
             cur+=reserved_cols;
             return true;
         }
@@ -371,9 +377,11 @@ struct FixedFormRecursiveDescent {
         label.assign((char*)start, count);
         if (is_integer(label) && count > 0) {
             YYSTYPE yy;
-            yy.string.from_str(m_a, label);
+            lex_int_large(m_a, cur, cur2,
+                    yy.int_suffix.int_n,
+                    yy.int_suffix.int_kind);
             stypes.push_back(yy);
-            tokens.push_back(262);
+            tokens.push_back(yytokentype::TK_LABEL);
             cur+=count+1; // TODO revisit
             return true;
         }
@@ -481,6 +489,7 @@ struct FixedFormRecursiveDescent {
             // TODO: handle
             //        - integer
             //        - bigint
+            //        - chars ',' etc
             //        - float / decimal
             //        - other types (bytes?)
 
@@ -556,7 +565,21 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
+    bool has_terminal(unsigned char *&cur) {
+        auto cpy = cur; cpy += 6; // advance cpy the reserved cols
+        std::vector<std::string> terminals {
+            "end"
+        };
+        for (const auto &terminal : terminals) {
+            if (next_is(cpy, terminal))
+                return true;
+        }
+        return false;
+    }
+
     bool lex_body_statement(unsigned char *&cur) {
+        if (has_terminal(cur)) return false;
+
         eat_label(cur);
         if (lex_declaration(cur)) return true;
         if (lex_io(cur)) return true;
@@ -615,11 +638,8 @@ struct FixedFormRecursiveDescent {
         stypes.push_back(yy);
         tokens.push_back(identifiers_map[l]);
         cur += l.size();
-        // bool has_label = false; -- do loops can have labels, we check below
         if (eat_label_inline(cur)) {
-            // has_label = true;
             cur--; // un-advance
-            // eat_label_inline pushes label to internal data structures on success
         }
         tokenize_line("", cur); // tokenize rest of line where `do` starts
         while (lex_body_statement(cur));
@@ -635,11 +655,10 @@ struct FixedFormRecursiveDescent {
             return true;
         }
         if (next_is(cur, "else")) {
-            tokenize_line("elseif", cur);
+            tokenize_line("else", cur);
             return true;
         }
-        // do we actually need a terminal symbol for if statements?
-        // in F77, this is fuzzily defined
+        // TODO: check for other if terminals
         if (next_is(cur, "endif")) {
             tokenize_line("endif", cur);
             return false;
@@ -654,7 +673,9 @@ struct FixedFormRecursiveDescent {
 
     void lex_if(unsigned char *&cur) {
         tokenize_line("if", cur);
-        if (tokens[tokens.size()-1] != 483) return; // single line if statement
+        // check if it's a single line if statement
+        // take the second-to-last as we MAYBE tokens = {..., "THEN", "newline"}
+        if (tokens[tokens.size()-2] != yytokentype::KW_THEN) return;
         while(if_advance_or_terminate(cur));
     }
 
@@ -704,6 +725,7 @@ struct FixedFormRecursiveDescent {
     void lex_global_scope_item(unsigned char *&cur) {
         // we can define a global assignment
         unsigned char *nline = cur; next_line(nline);
+        eat_label(cur);
         if (lex_declaration(cur)) return;
         if (next_is(cur, "subroutine")) {
             lex_subroutine(cur);
