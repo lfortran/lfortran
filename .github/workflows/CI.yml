@@ -25,74 +25,54 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: conda-incubator/setup-miniconda@v2
+      # revert to main provision-with-micromamba once fixes are merged
+      - uses: wolfv/provision-with-micromamba@unix_sel
         with:
-          auto-update-conda: true
           environment-file: ci/environment.yml
-          python-version: ${{ matrix.python-version }}
-          auto-activate-base: false
+          extra-specs: |
+            python=${{ matrix.python-version }}
+            sel(unix): bison=3.4
+            sel(unix): rapidjson
+            sel(win): m2-bison=3.0.4
+            sel(win): rapidjson
 
-      - name: Install Windows Conda Packages
-        if: contains(matrix.os, 'windows')
-        shell: bash -l {0}
-        run: conda install m2-bison=3.0.4 ninja rapidjson
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
 
-      - name: Install Linux / macOS Conda Packages
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        shell: bash -l {0}
-        run: conda install bison=3.4 rapidjson
-
-      - name: Conda info
+      - name: Setup Platform
         shell: bash -l {0}
         run: |
-            conda info
-            conda list
-      - name: Setup Platform (Linux)
-        if: contains(matrix.os, 'ubuntu')
-        shell: bash -l {0}
-        run: |
-            echo "LFORTRAN_CMAKE_GENERATOR=Unix Makefiles" >> $GITHUB_ENV
-            echo "WIN=0" >> $GITHUB_ENV
-            echo "MACOS=0" >> $GITHUB_ENV
-      - name: Setup Platform (macOS)
-        if: contains(matrix.os, 'macos')
-        shell: bash -l {0}
-        run: |
-            echo "LFORTRAN_CMAKE_GENERATOR=Unix Makefiles" >> $GITHUB_ENV
-            echo "WIN=0" >> $GITHUB_ENV
-            echo "MACOS=1" >> $GITHUB_ENV
+            echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
+            echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+            echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+
       - name: Build (Linux / macOS)
         shell: bash -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             xonsh ci/build_tmp.xsh
+
       - name: Build (Windows)
         if: contains(matrix.os, 'windows')
-        shell: cmd
+        shell: cmd /C CALL {0}
         run: |
-            set CONDA_INSTALL_LOCN=C:\\Miniconda
-            call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
-            call conda activate test
-            set LFORTRAN_CMAKE_GENERATOR=Ninja
-            set WIN=1
-            set MACOS=0
+            call micromamba activate lf
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\build_tmp.xsh
+
       - name: Test (Linux / macOS)
         shell: bash -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             xonsh ci/test.xsh
+
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')
-        shell: cmd
+        shell: cmd /C CALL {0}
         run: |
-            set CONDA_INSTALL_LOCN=C:\\Miniconda
-            call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
-            call conda activate test
-            set LFORTRAN_CMAKE_GENERATOR=Ninja
-            set WIN=1
-            set MACOS=0
+            call micromamba activate lf
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\test.xsh
 
@@ -104,33 +84,31 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: mamba-org/provision-with-micromamba@v12
         with:
-          python-version: "3.10"
-          mamba-version: "*"
-          channels: conda-forge,defaults
-          channel-priority: true
-          activate-environment: anaconda-client-env
           environment-file: ci/environment_linux.yml
+          extra-specs: |
+            python=3.10
 
-      - name: Conda info
-        shell: bash -l {0}
-        run: |
-            conda info
-            conda list
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
 
       - name: Build Linux
         shell: bash -l {0}
         run: |
             ./build0.sh
-            cmake \
+            cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              .
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
             cmake --build . -j16 --target install
 
       - name: Test Linux
@@ -149,12 +127,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: mamba-org/provision-with-micromamba@v12
         with:
-          auto-update-conda: true
           environment-file: ci/environment_linux.yml
-          python-version: "3.10"
-          auto-activate-base: false
+          extra-specs: |
+            python=3.10
 
       - name: Test
         shell: bash -l {0}
@@ -169,18 +146,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: mamba-org/provision-with-micromamba@v12
         with:
-          auto-update-conda: true
           environment-file: ci/environment_linux.yml
-          python-version: "3.10"
-          auto-activate-base: false
-
-      - name: Conda info
-        shell: bash -l {0}
-        run: |
-            conda info
-            conda list
+          extra-specs: |
+            python=3.10
 
       - name: Test CPP
         shell: bash -l {0}
@@ -195,12 +165,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: mamba-org/provision-with-micromamba@v12
         with:
-          auto-update-conda: true
           environment-file: ci/environment_linux.yml
-          python-version: "3.10"
-          auto-activate-base: false
+          extra-specs: |
+            python=3.10
 
       - name: Upload Tarball
         shell: bash -l {0}
@@ -220,28 +189,42 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: mamba-org/provision-with-micromamba@v12
         with:
-          auto-update-conda: true
           environment-file: ci/environment_linux.yml
-          python-version: "3.10"
-          auto-activate-base: false
+          extra-specs: |
+            python=3.10
+            nbconvert=5.6.0
+            mkdocs=1.3.0
 
       - name: Install Dependencies
         shell: bash -l {0}
         run: |
-          conda install -c conda-forge nbconvert=5.6.0 mkdocs=1.3.0
           pip install mkdocs-material==8.2.16
           pip install 'jinja2 < 3.1'
           pip install jupyter-client==6.1.12
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
 
       - name: Build Kernel
         shell: bash -l {0}
         run: |
           ./build0.sh
-          CXXFLAGS="-Werror" cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX .
-          make
-          make install
+          export CXXFLAGS="-Werror"
+          cmake . -GNinja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DWITH_LLVM=yes \
+            -DWITH_XEUS=yes \
+            -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+            -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+          ninja install
           ctest --output-on-failure
           jupyter kernelspec list --json
 
