@@ -162,7 +162,7 @@ void emit_export_fn(Vec<uint8_t> &code, Allocator &al, const std::string& name,
 }
 
 void emit_import_fn(Vec<uint8_t> &code, Allocator &al, const std::string &mod_name,
-                const std::string& fn_name, uint32_t type_idx) 
+                const std::string& fn_name, uint32_t type_idx)
 {
     emit_str(code, al, mod_name);
     emit_str(code, al, fn_name);
@@ -568,7 +568,7 @@ void emit_branch_if(Vec<uint8_t> &code, Allocator &al, uint32_t label_idx){
 }
 
 void save_js_glue(std::string filename){
-    std::string js_glue = 
+    std::string js_glue =
 R"(function define_imports(memory, outputBuffer, stdout_print) {
     const printNum = (num) => outputBuffer.push(num.toString());
     const printStr = (startIdx, strSize) => outputBuffer.push(
