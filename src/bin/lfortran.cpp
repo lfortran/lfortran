@@ -394,6 +394,7 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
     std::cerr << diagnostics.render(input, lm, compiler_options);
     if (res.ok) {
         toks = res.result;
+        LFORTRAN_ASSERT(toks.size() == stypes.size())
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
         return 1;
