@@ -83,12 +83,11 @@ jobs:
         env:
           CMAKE_C_COMPILER_LAUNCHER: sccache
           CMAKE_CXX_COMPILER_LAUNCHER: sccache
+          LFORTRAN_CMAKE_GENERATOR: Ninja
+          WIN: "1"
+          MACOS: "0"
         run: |
-            call %MAMBA_ROOT_PREFIX%\Scripts\activate.bat
-            call micromamba activate test
-            set LFORTRAN_CMAKE_GENERATOR=Ninja
-            set WIN=1
-            set MACOS=0
+            call micromamba activate lf
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\build_tmp.xsh
 
@@ -101,12 +100,12 @@ jobs:
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')
         shell: cmd /C CALL {0}
+        env:
+          LFORTRAN_CMAKE_GENERATOR: Ninja
+          WIN: "1"
+          MACOS: "0"
         run: |
-            call %MAMBA_ROOT_PREFIX%\Scripts\activate.bat
-            call micromamba activate test
-            set LFORTRAN_CMAKE_GENERATOR=Ninja
-            set WIN=1
-            set MACOS=0
+            call micromamba activate lf
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\test.xsh
 
