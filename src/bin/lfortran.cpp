@@ -1378,6 +1378,26 @@ int main(int argc, char *argv[])
     LFortran::print_stack_on_segfault();
 #endif
     try {
+        std::vector<std::string> args;
+        std::vector<char*> charArgs;
+        for (int i = 0; i < argc; i++)
+        {
+            // TODO: adapt this placeholder and actually implement these options
+            if (std::string(argv[i]) == "-module" ||
+                std::string(argv[i]) == "-O0" ||
+                std::string(argv[i]) == "-ffree-form") {
+                // std::string arg = "-"; arg += std::string(argv[i]);
+                // args.push_back(arg.data());
+                continue;
+            }
+            args.push_back(argv[i]);
+        }
+        for (int i = 0; i < argc; ++i)
+        {
+            charArgs.push_back(args[i].data());
+        }
+        char **char_argv = charArgs.data();
+
         int dirname_length;
         LFortran::get_executable_path(LFortran::binary_executable_path, dirname_length);
 
@@ -1515,7 +1535,7 @@ int main(int argc, char *argv[])
 
         app.get_formatter()->column_width(25);
         app.require_subcommand(0, 1);
-        CLI11_PARSE(app, argc, argv);
+        CLI11_PARSE(app, argc, char_argv);
 
         if (arg_version) {
             std::string version = LFORTRAN_VERSION;
