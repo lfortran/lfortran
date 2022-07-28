@@ -147,11 +147,11 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     } else if (return_type == "none") {
         result.type = EvalResult::none;
     } else {
-        throw LFortranException("FortranEvaluator::evaluate(): Return type not supported");
+        throw LCompilersException("FortranEvaluator::evaluate(): Return type not supported");
     }
     return result;
 #else
-    throw LFortranException("LLVM is not enabled");
+    throw LCompilersException("LLVM is not enabled");
 #endif
 }
 
@@ -266,7 +266,7 @@ Result<std::string> FortranEvaluator::get_llvm(
 #ifdef HAVE_LFORTRAN_LLVM
         return res.result->str();
 #else
-        throw LFortranException("LLVM is not enabled");
+        throw LCompilersException("LLVM is not enabled");
 #endif
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
@@ -288,7 +288,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
         std::unique_ptr<LLVMModule> m = std::move(res.result);
         return m;
 #else
-        throw LFortranException("LLVM is not enabled");
+        throw LCompilersException("LLVM is not enabled");
 #endif
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
@@ -329,7 +329,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
 
     return m;
 #else
-    throw LFortranException("LLVM is not enabled");
+    throw LCompilersException("LLVM is not enabled");
 #endif
 }
 
@@ -355,7 +355,7 @@ Result<std::string> FortranEvaluator::get_asm(
         return res.error;
     }
 #else
-    throw LFortranException("LLVM is not enabled");
+    throw LCompilersException("LLVM is not enabled");
 #endif
 }
 

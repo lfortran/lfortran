@@ -112,6 +112,7 @@
                 call 5
             end
         end
+        return
     )
     (export "_lcompilers_main" (func $6))
     (data (;0;) (i32.const 0) "x: Single Line If")

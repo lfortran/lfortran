@@ -343,6 +343,14 @@ filename = "../integration_tests/if_05.f90"
 wat = true
 
 [[test]]
+filename = "../integration_tests/abs_01.f90"
+wat = true
+
+[[test]]
+filename = "../integration_tests/abs_03.f90"
+wat = true
+
+[[test]]
 filename = "stop.f90"
 asr = true
 llvm = true
@@ -435,16 +443,19 @@ filename = "../integration_tests/doloop_01.f90"
 asr = true
 llvm = true
 pass = "do_loops"
+wat = true
 
 [[test]]
 filename = "../integration_tests/doloop_02.f90"
 asr = true
 llvm = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/doloop_03.f90"
 asr = true
 llvm = true
+wat = true
 
 [[test]]
 filename = "../integration_tests/doloop_04.f90"
@@ -701,6 +712,10 @@ llvm = true
 filename = "../integration_tests/arrays_op_7.f90"
 asr = true
 llvm = true
+
+[[test]]
+filename = "../integration_tests/arrays_reshape_14.f90"
+asr = true
 
 [[test]]
 filename = "../integration_tests/arrays_02.f90"
@@ -2082,6 +2097,10 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/functions_10.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/arrays_elemental_15.f90"
 asr = true
 
 [[test]]

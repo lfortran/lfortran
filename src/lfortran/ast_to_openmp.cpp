@@ -275,7 +275,7 @@ public:
             ATTRTYPE(Target)
             ATTRTYPE(Value)
             default :
-                throw LFortranException("Attribute type not implemented");
+                throw LCompilersException("Attribute type not implemented");
         }
         s = r;
     }
@@ -298,7 +298,7 @@ public:
             ATTRTYPE2(Real, "real")
             ATTRTYPE2(Type, "type")
             default :
-                throw LFortranException("Attribute type not implemented");
+                throw LCompilersException("Attribute type not implemented");
         }
         if (x.n_kind > 0) {
             r.append("(");
@@ -410,7 +410,7 @@ public:
             case (AST::kind_item_typeType::Star) :
                 return "*";
             default :
-                throw LFortranException("Unknown type");
+                throw LCompilersException("Unknown type");
         }
     }
 
@@ -588,7 +588,7 @@ public:
     //Converts do concurrent to a regular do loop. Adds OpenMP pragmas.
     void visit_DoConcurrentLoop(const DoConcurrentLoop_t &x) {
         if (x.n_control != 1) {
-            throw LFortranException("Do concurrent: exactly one control statement is implemented for now");
+            throw LCompilersException("Do concurrent: exactly one control statement is implemented for now");
         }
         AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[0];
         AST::ConcurrentReduce_t *red=nullptr;

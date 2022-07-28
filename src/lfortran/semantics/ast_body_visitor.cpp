@@ -564,7 +564,7 @@ public:
                         new_dim.m_start = const_1;
                     }
                     ASR::expr_t* m_right = array_ref->m_args[j].m_right;
-                    new_dim.m_end = m_right;
+                    new_dim.m_length = ASRUtils::compute_length_from_start_end(al, new_dim.m_start, m_right);
                     dims_vec.push_back(al, new_dim);
                 }
                 new_arg.m_dims = dims_vec.p;
@@ -579,7 +579,8 @@ public:
                     ASR::dimension_t new_dim;
                     new_dim.loc = array_ref->m_args[j].loc;
                     new_dim.m_start = const_1;
-                    new_dim.m_end = array_ref->m_args[j].m_right;
+                    new_dim.m_length = ASRUtils::compute_length_from_start_end(al, new_dim.m_start,
+                                            array_ref->m_args[j].m_right);
                     dims_vec.push_back(al, new_dim);
                 }
                 new_arg.m_dims = dims_vec.p;
@@ -1451,7 +1452,7 @@ public:
                     x.base.base.loc);
             }
         } else {
-            throw SemanticError("Currently only 'goto INTEGER' is supported",
+            throw SemanticError("Only 'goto INTEGER' is supported currently",
                 x.base.base.loc);
         }
     }

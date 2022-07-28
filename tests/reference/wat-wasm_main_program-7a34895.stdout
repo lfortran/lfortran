@@ -67,6 +67,7 @@
         i32.const 4
         call 4
         call 5
+        return
     )
     (export "sqr" (func $6))
     (export "_lcompilers_main" (func $7))

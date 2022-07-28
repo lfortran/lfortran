@@ -43,6 +43,7 @@
         local.set 0
         i32.const 0
         local.set 0
+        return
     )
     (export "_lcompilers_main" (func $6))
 )

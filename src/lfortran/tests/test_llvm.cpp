@@ -51,7 +51,7 @@ define i64 @f1()
     ; FAIL: "=x" is incorrect syntax
     %1 =x alloca i64
 }
-        )"""), LFortran::LFortranException);
+        )"""), LFortran::LCompilersException);
     CHECK_THROWS_WITH(e.add_module(R"""(
 define i64 @f1()
 {
@@ -94,7 +94,7 @@ define i64 @f3()
     %1 = load i64, i64* @count
     ret i64 %1
 }
-        )"""), LFortran::LFortranException);
+        )"""), LFortran::LCompilersException);
 }
 
 TEST_CASE("llvm 3") {
@@ -233,7 +233,7 @@ define void @inc2()
     call void @inc()
     ret void
 }
-        )"""), LFortran::LFortranException);
+        )"""), LFortran::LCompilersException);
 }
 
 TEST_CASE("llvm array 1") {
@@ -366,7 +366,7 @@ end function)";
     LFortran::SymbolTable::reset_global_counter();
     LFortran::ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *tu,
         diagnostics));
-    CHECK(LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [(= (Var 2 f) (IntegerConstant 5 (Integer 4 [])) ())] (Var 2 f) Source Public Implementation ())}) [])");
+    CHECK(LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [(= (Var 2 f) (IntegerConstant 5 (Integer 4 [])) ())] (Var 2 f) Source Public Implementation .false. ())}) [])");
 
     // ASR -> LLVM
     LFortran::LLVMEvaluator e;
@@ -403,7 +403,7 @@ end function)";
     // AST -> ASR
     LFortran::ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *tu,
         diagnostics));
-    CHECK(LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [(= (Var 4 f) (IntegerConstant 4 (Integer 4 [])) ())] (Var 4 f) Source Public Implementation ())}) [])");
+    CHECK(LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [(= (Var 4 f) (IntegerConstant 4 (Integer 4 [])) ())] (Var 4 f) Source Public Implementation .false. ())}) [])");
     // ASR -> LLVM
     LFortran::LLVMEvaluator e;
     LCompilers::PassManager lpm;

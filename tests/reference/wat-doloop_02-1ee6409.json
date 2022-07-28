@@ -1,0 +1,13 @@
+{
+    "basename": "wat-doloop_02-1ee6409",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/../integration_tests/doloop_02.f90",
+    "infile_hash": "3f887434509231f48fbbbda31f34778f17ddb6871b39c44626d54f2e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-doloop_02-1ee6409.stdout",
+    "stdout_hash": "eb1e20c69a395aca061cc83faa5d3728342324071484f415c266de6e",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

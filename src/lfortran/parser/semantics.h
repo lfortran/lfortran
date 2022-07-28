@@ -1361,7 +1361,7 @@ return make_Program_t(al, a_loc,
         std::string first = name2char(id_first), \
                     last  = name2char(id_last); \
         if (LFortran::to_lower(first) != LFortran::to_lower(last)) { \
-            throw LFortran::LFortranException("statement name is inconsistent"); \
+            throw LFortran::LCompilersException("statement name is inconsistent"); \
         }
 
 #define LABEL(stmt, label) ((Print_t*)stmt)->m_label = label
@@ -2093,7 +2093,7 @@ void set_m_trivia(stmt_t *s, trivia_t *trivia) {
         TRIVIA_SET(SelectType)
         TRIVIA_SET(Where)
         TRIVIA_SET(WhileLoop)
-        default : { throw LFortran::LFortranException("Not implemented"); }
+        default : { throw LFortran::LCompilersException("Not implemented"); }
     }
 }
 

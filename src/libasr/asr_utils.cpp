@@ -70,7 +70,7 @@ ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
         LFORTRAN_ASSERT(ASR::is_a<ASR::Module_t>(*a.second));
         return ASR::down_cast<ASR::Module_t>(a.second);
     }
-    throw LFortranException("ICE: Module not found");
+    throw LCompilersException("ICE: Module not found");
 }
 
 ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
@@ -340,9 +340,15 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             if( a_name == nullptr ) {
                                 err("Unable to resolve matched function for operator overloading, " + matched_func_name, loc);
                             }
+                            ASR::ttype_t *return_type = nullptr;
+                            if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
+                                return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(a_args[0].m_value));
+                            } else {
+                                return_type = ASRUtils::expr_type(func->m_return_var);
+                            }
                             asr = ASR::make_FunctionCall_t(al, loc, a_name, sym,
                                                             a_args.p, 2,
-                                                            ASRUtils::expr_type(func->m_return_var),
+                                                            return_type,
                                                             nullptr, nullptr);
                         }
                     }
@@ -393,7 +399,7 @@ bool is_op_overloaded(ASR::binopType op, std::string& intrinsic_op_name,
             break;
         }
         default: {
-            throw LFortranException("Binary operator '" + ASRUtils::binop_to_str_python(op) + "' not supported yet");
+            throw LCompilersException("Binary operator '" + ASRUtils::binop_to_str_python(op) + "' not supported yet");
         }
     }
     if( result && curr_scope->get_symbol(intrinsic_op_name) == nullptr ) {
@@ -492,9 +498,15 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             if( a_name == nullptr ) {
                                 err("Unable to resolve matched function for operator overloading, " + matched_func_name, loc);
                             }
+                            ASR::ttype_t *return_type = nullptr;
+                            if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
+                                return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(a_args[0].m_value));
+                            } else {
+                                return_type = ASRUtils::expr_type(func->m_return_var);
+                            }
                             asr = ASR::make_FunctionCall_t(al, loc, a_name, sym,
                                                             a_args.p, 2,
-                                                            ASRUtils::expr_type(func->m_return_var),
+                                                            return_type,
                                                             nullptr, nullptr);
                         }
                     }
@@ -789,7 +801,12 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
     bool is_subroutine = ASR::is_a<ASR::Subroutine_t>(*final_sym);
     ASR::ttype_t *return_type = nullptr;
     if( ASR::is_a<ASR::Function_t>(*final_sym) ) {
-        return_type = LFortran::ASRUtils::EXPR2VAR(ASR::down_cast<ASR::Function_t>(final_sym)->m_return_var)->m_type;
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
+        if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+            return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+        } else {
+            return_type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+        }
     }
     // Create ExternalSymbol for the final subroutine:
     // We mangle the new ExternalSymbol's local name as:

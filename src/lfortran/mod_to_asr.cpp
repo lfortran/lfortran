@@ -71,13 +71,13 @@ std::string extract_gzip(
         case Z_STREAM_END:
             break;
         case Z_MEM_ERROR:
-            throw LFortranException("ZLIB: out of memory");
+            throw LCompilersException("ZLIB: out of memory");
         case Z_BUF_ERROR:
-            throw LFortranException("ZLIB: output buffer was not large enough");
+            throw LCompilersException("ZLIB: output buffer was not large enough");
         case Z_DATA_ERROR:
-            throw LFortranException("ZLIB: the input data was corrupted or incomplete");
+            throw LCompilersException("ZLIB: the input data was corrupted or incomplete");
         default:
-            throw LFortranException("ZLIB: unknown error (" + std::to_string(res) + ")");
+            throw LCompilersException("ZLIB: unknown error (" + std::to_string(res) + ")");
     }
     return std::string((char*) &data[0], data_size);
 #else
@@ -107,7 +107,7 @@ struct Item {
 
 #define EXPECT(arg_i, arg_kind)                                  \
     if ((arg_i).kind != (arg_kind)) {                            \
-        throw LFortranException("Unexpected item kind"); \
+        throw LCompilersException("Unexpected item kind"); \
     }
 
 uint64_t item_integer(const Item &i)
@@ -137,7 +137,7 @@ const std::vector<Item>& item_list(const Item &i)
 Item read_from_tokens(const std::vector<std::string> &tokens, size_t &pos)
 {
     if (pos == tokens.size()) {
-        throw LFortranException("Unexpected EOF while reading");
+        throw LCompilersException("Unexpected EOF while reading");
     }
     std::string token = tokens[pos];
     LFORTRAN_ASSERT(token.size() > 0);
@@ -151,7 +151,7 @@ Item read_from_tokens(const std::vector<std::string> &tokens, size_t &pos)
         pos++; // pop off ')'
         return r;
     } else if (token == ")") {
-        throw LFortranException("Unexpected )");
+        throw LCompilersException("Unexpected )");
     } else {
         Item r;
         if (token[0] == '\'') {
@@ -230,7 +230,7 @@ ASR::ttype_t* parse_type(Allocator &al, const std::vector<Item> &l)
         ASR::asr_t *t = ASR::make_Integer_t(al, loc, 4, nullptr, 0);
         return down_cast<ASR::ttype_t>(t);
     } else {
-        throw LFortranException("Type not supported yet");
+        throw LCompilersException("Type not supported yet");
     }
 }
 
@@ -239,7 +239,7 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
     std::vector<std::string> s2 = split(s);
     int version = std::atoi(&str_(s2[3])[0]);
     if (version != 14) {
-        throw LFortranException("Only GFortran module version 14 is implemented so far");
+        throw LCompilersException("Only GFortran module version 14 is implemented so far");
     }
     std::vector<std::string> s3 = slice(s2, 7);
     std::string s4 = "(" + join(" ", s3) + ")";
@@ -252,7 +252,7 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
     if (mod.l.size() == 8) {
         std::vector<Item> symtab = item_list(mod.l[6]);
         if (symtab.size() % 6 != 0) {
-            throw LFortranException("Symtab not multiple of 6");
+            throw LCompilersException("Symtab not multiple of 6");
         }
         for (size_t i=0; i < symtab.size(); i+=6) {
             GSymbol s;
@@ -293,7 +293,7 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
                 s.p.proc = down_cast<ASR::symbol_t>(asr);
                 std::string sym_name = s.name;
                 if (parent_scope->get_symbol(sym_name) != nullptr) {
-                    throw LFortranException("Procedure already defined");
+                    throw LCompilersException("Procedure already defined");
                 }
                 parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(asr));
 
@@ -304,36 +304,36 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
             } else if (kind == "MODULE") {
                 s.kind = GSymbol::module;
             } else {
-                throw LFortranException("Symbol kind not supported");
+                throw LCompilersException("Symbol kind not supported");
             }
 
             if (gsymtab.find(s.id) != gsymtab.end()) {
-                throw LFortranException("Symbol redeclared");
+                throw LCompilersException("Symbol redeclared");
             }
             gsymtab[s.id] = s;
         }
 
         std::vector<Item> public_symbols = item_list(mod.l[7]);
         if (public_symbols.size() % 3 != 0) {
-            throw LFortranException("Public symbols list not multiple of 3");
+            throw LCompilersException("Public symbols list not multiple of 3");
         }
         for (size_t i=0; i < public_symbols.size(); i+=3) {
             std::string symbol_name = item_string(public_symbols[i]);
             uint64_t ambiguous_flag = item_integer(public_symbols[i+1]);
             uint64_t symbol_id = item_integer(public_symbols[i+2]);
             if (ambiguous_flag != 0) {
-                throw LFortranException("Ambiguous symbols not supported yet");
+                throw LCompilersException("Ambiguous symbols not supported yet");
             }
             if (gsymtab.find(symbol_id) == gsymtab.end()) {
-                throw LFortranException("Public symbol not defined in the symbol table");
+                throw LCompilersException("Public symbol not defined in the symbol table");
             }
             gsymtab[symbol_id].is_public = true;
             if (gsymtab[symbol_id].name != symbol_name) {
-                throw LFortranException("Public symbol name mismatch");
+                throw LCompilersException("Public symbol name mismatch");
             }
         }
     } else {
-        throw LFortranException("Unexpected number of items");
+        throw LCompilersException("Unexpected number of items");
     }
 
     /*
@@ -381,7 +381,7 @@ ASR::TranslationUnit_t *mod_to_asr(Allocator &al, std::string filename)
     if (startswith(s, "GFORTRAN module")) {
         return parse_gfortran_mod_file(al, s);
     } else {
-        throw LFortranException("Unknown module file format");
+        throw LCompilersException("Unknown module file format");
     }
 }
 

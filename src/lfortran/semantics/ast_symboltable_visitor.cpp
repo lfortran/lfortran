@@ -189,7 +189,7 @@ public:
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             std::string unsupported_sym_name = import_all(m);
             if( !unsupported_sym_name.empty() ) {
-                throw LFortranException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
+                throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
             }
         }
         for (size_t i=0; i<x.n_use; i++) {
@@ -550,6 +550,14 @@ public:
             }
         }
 
+        bool is_elemental = false;
+        for(size_t i = 0; i < x.n_attributes && !is_elemental; i++) {
+            AST::decl_attribute_t* func_attr = x.m_attributes[i];
+            if( AST::is_a<AST::SimpleAttribute_t>(*func_attr) ) {
+                AST::SimpleAttribute_t* simple_func_attr = AST::down_cast<AST::SimpleAttribute_t>(func_attr);
+                is_elemental = is_elemental || simple_func_attr->m_attr == AST::simple_attributeType::AttrElemental;
+            }
+        }
 
         tmp = ASR::make_Function_t(
             al, x.base.base.loc,
@@ -560,7 +568,8 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ LFortran::ASRUtils::EXPR(return_var_ref),
-            current_procedure_abi_type, s_access, deftype, bindc_name);
+            current_procedure_abi_type, s_access, deftype, is_elemental,
+            bindc_name);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         current_procedure_args.clear();
@@ -1178,7 +1187,7 @@ public:
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
         } else {
-            throw LFortranException("Only Subroutines, Functions, Variables and Derived supported in 'use'");
+            throw LCompilersException("Only Subroutines, Functions, Variables and Derived supported in 'use'");
         }
     }
 
@@ -1205,7 +1214,7 @@ public:
         if (x.n_symbols == 0) {
             std::string unsupported_sym_name = import_all(m);
             if( !unsupported_sym_name.empty() ) {
-                throw LFortranException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
+                throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
             }
         } else {
             // Only import individual symbols from the module, e.g.:

@@ -60,6 +60,7 @@
         call 8
         call 1
         call 5
+        return
     )
     (export "get_num_neg_i32" (func $6))
     (export "get_num_neg_i64" (func $7))
