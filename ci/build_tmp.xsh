@@ -20,6 +20,8 @@
 #   cannot find the script, it will return success, making the CI tests
 #   "succeed" (https://github.com/xonsh/xonsh/issues/3292)
 
+import platform
+
 $RAISE_SUBPROC_ERROR = True
 trace on
 
@@ -75,7 +77,7 @@ cd ../../..
 
 cp lfortran-$lfortran_version/test-bld/src/bin/lfortran src/bin
 cp lfortran-$lfortran_version/test-bld/src/bin/cpptranslate src/bin
-if $WIN == "1":
+if platform.system() == "Windows":
     cp lfortran-$lfortran_version/test-bld/src/runtime/legacy/lfortran_runtime* src/runtime/
 else:
     cp lfortran-$lfortran_version/test-bld/src/runtime/liblfortran_runtime* src/runtime/

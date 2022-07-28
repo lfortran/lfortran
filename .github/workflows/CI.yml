@@ -30,62 +30,33 @@ jobs:
           environment-file: ci/environment.yml
           extra-specs: |
             python=${{ matrix.python-version }}
+            sel(unix): bison=3.4
+            sel(unix): rapidjson
+            sel(win): m2-bison=3.0.4
+            sel(win): rapidjson
 
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
-      - name: Install Windows Conda Packages
-        if: contains(matrix.os, 'windows')
-        shell: bash -l {0}
-        run: micromamba install m2-bison=3.0.4 ninja rapidjson
-
-      - name: Install Linux / macOS Conda Packages
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        shell: bash -l {0}
-        run: micromamba install bison=3.4 rapidjson
-
-      - name: Conda info
+      - name: Setup Platform
         shell: bash -l {0}
         run: |
-            micromamba info
-            micromamba list
-
-      - name: Setup Platform (Linux)
-        if: contains(matrix.os, 'ubuntu')
-        shell: bash -l {0}
-        run: |
-            echo "LFORTRAN_CMAKE_GENERATOR=Unix Makefiles" >> $GITHUB_ENV
-            echo "WIN=0" >> $GITHUB_ENV
-            echo "MACOS=0" >> $GITHUB_ENV
-
-      - name: Setup Platform (macOS)
-        if: contains(matrix.os, 'macos')
-        shell: bash -l {0}
-        run: |
-            echo "LFORTRAN_CMAKE_GENERATOR=Unix Makefiles" >> $GITHUB_ENV
-            echo "WIN=0" >> $GITHUB_ENV
-            echo "MACOS=1" >> $GITHUB_ENV
+            echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
+            echo "CMAKE_C_COMPILER_LAUNCHER=sscache" >> $GITHUB_ENV
+            echo "CMAKE_CXX_COMPILER_LAUNCHER=sscache" >> $GITHUB_ENV
 
       - name: Build (Linux / macOS)
         shell: bash -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         env:
-          CMAKE_C_COMPILER_LAUNCHER: sccache
-          CMAKE_CXX_COMPILER_LAUNCHER: sccache
         run: |
             xonsh ci/build_tmp.xsh
 
       - name: Build (Windows)
         if: contains(matrix.os, 'windows')
         shell: cmd /C CALL {0}
-        env:
-          CMAKE_C_COMPILER_LAUNCHER: sccache
-          CMAKE_CXX_COMPILER_LAUNCHER: sccache
-          LFORTRAN_CMAKE_GENERATOR: Ninja
-          WIN: "1"
-          MACOS: "0"
         run: |
             call micromamba activate lf
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
@@ -100,10 +71,6 @@ jobs:
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')
         shell: cmd /C CALL {0}
-        env:
-          LFORTRAN_CMAKE_GENERATOR: Ninja
-          WIN: "1"
-          MACOS: "0"
         run: |
             call micromamba activate lf
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
