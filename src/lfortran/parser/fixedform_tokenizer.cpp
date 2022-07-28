@@ -449,6 +449,7 @@ struct FixedFormRecursiveDescent {
         for(;;) {
             YYSTYPE y2;
             if(*t.cur == '\n') {
+                y2.string.from_str(m_a, "\n");
                 stypes.push_back(y2);
                 tokens.push_back(yytokentype::TK_NEWLINE);
                 break;
@@ -745,6 +746,7 @@ struct FixedFormRecursiveDescent {
             lex_global_scope_item(cur);
         }
         YYSTYPE y2;
+        y2.string.from_str(m_a, "EOF");
         stypes.push_back(y2);
         tokens.push_back(yytokentype::END_OF_FILE);
     }
