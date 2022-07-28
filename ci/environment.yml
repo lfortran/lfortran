@@ -15,5 +15,6 @@ dependencies:
   - re2c
   - numpy
   - ninja
+  - reproc-cpp
 #  - bison=3.4  [not win]
 #  - m2-bison=3.4  [win]
