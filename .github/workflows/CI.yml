@@ -31,6 +31,11 @@ jobs:
           extra-specs: |
             python=${{ matrix.python-version }}
 
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
       - name: Install Windows Conda Packages
         if: contains(matrix.os, 'windows')
         shell: bash -l {0}
@@ -44,8 +49,8 @@ jobs:
       - name: Conda info
         shell: bash -l {0}
         run: |
-            conda info
-            conda list
+            micromamba info
+            micromamba list
 
       - name: Setup Platform (Linux)
         if: contains(matrix.os, 'ubuntu')
@@ -64,11 +69,17 @@ jobs:
       - name: Build (Linux / macOS)
         shell: bash -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        env:
+          CMAKE_C_COMPILER_LAUNCHER=sccache
+          CMAKE_CXX_COMPILER_LAUNCHER=sccache
         run: |
             xonsh ci/build_tmp.xsh
       - name: Build (Windows)
         if: contains(matrix.os, 'windows')
         shell: cmd /C CALL {0}
+        env:
+          CMAKE_C_COMPILER_LAUNCHER=sccache
+          CMAKE_CXX_COMPILER_LAUNCHER=sccache
         run: |
             call %MAMBA_ROOT_PREFIX%\Scripts\activate.bat
             call micromamba activate test
@@ -110,6 +121,11 @@ jobs:
           extra-specs: |
             python=3.10
 
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
       - name: Build Linux
         shell: bash -l {0}
         run: |
@@ -121,6 +137,8 @@ jobs:
               -DWITH_STACKTRACE=no \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
               .
             cmake --build . -j16 --target install
 
@@ -164,12 +182,6 @@ jobs:
           environment-file: ci/environment_linux.yml
           extra-specs: |
             python=3.10
-
-      - name: Conda info
-        shell: bash -l {0}
-        run: |
-            conda info
-            conda list
 
       - name: Test CPP
         shell: bash -l {0}
@@ -223,13 +235,27 @@ jobs:
           pip install 'jinja2 < 3.1'
           pip install jupyter-client==6.1.12
 
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+
       - name: Build Kernel
         shell: bash -l {0}
         run: |
           ./build0.sh
-          CXXFLAGS="-Werror" cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX .
-          make
-          make install
+          export CXXFLAGS="-Werror"
+          cmake -GNinja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DWITH_LLVM=yes \
+            -DWITH_XEUS=yes \
+            -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+            -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+          ninja install
           ctest --output-on-failure
           jupyter kernelspec list --json
 
