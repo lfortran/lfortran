@@ -351,7 +351,7 @@ struct FixedFormRecursiveDescent {
             std::string::iterator end = std::remove(label.begin(), label.end(), ' ');
             label.erase(end, label.end());
             y.string.from_str(m_a, label);
-            stypes.push_back(y); 
+            stypes.push_back(y);
             cur+=reserved_cols;
             return true;
         }
@@ -401,7 +401,14 @@ struct FixedFormRecursiveDescent {
     std::string tostr(unsigned char *start, unsigned char *end) {
         return std::string((char *)start, end-start);
     }
-   
+
+    // Return the current token's location
+    void token_loc(unsigned char *tok, unsigned char *cur, Location &loc) const
+    {
+        loc.first = tok-string_start;
+        loc.last = cur-string_start-1;
+    }
+
     // Recursive descent parser with backtracking
     //
     // If a function returns void, then it will always parse the given grammar
@@ -414,7 +421,7 @@ struct FixedFormRecursiveDescent {
     void tokenize_line(const std::string &chop, unsigned char *&cur) {
         YYSTYPE y1;
         if (chop != "") {
-            std::string l(chop); // copy 
+            std::string l(chop); // copy
             // lines.push_back(l);
             // yy.string.from_str_view(l);
             // y1.string.n = l.size();
@@ -425,33 +432,41 @@ struct FixedFormRecursiveDescent {
         }
         unsigned char *start = cur + chop.size();
         // move the cur pointer to the next line after
-        next_line(cur);     
-        if (start >= cur) return;
-        // TODO: throw error as semantics are wrong then
+        next_line(cur);
+        if (start >= cur) {
+            Location loc;
+            token_loc(cur, cur, loc);
+            throw LFortran::parser_local::TokenizerError("ICE: chop longer than a line: '" + chop + "'",
+                loc);
+        }
 
         std::string line{tostr(start, cur)};
         lines.push_back(line);
         t.set_string(lines[lines.size()-1]);
-        
+
         Location l;
         ptrdiff_t len = 1;
         for(;;) {
             YYSTYPE y2;
-            if(*t.cur == '\n') break;
+            if(*t.cur == '\n') {
+                stypes.push_back(y2);
+                tokens.push_back(yytokentype::TK_NEWLINE);
+                break;
+            }
             auto token = t.lex(m_a, y2, l, diag);
-            // we need to disentangle "goto999" as the tokenizer cannot do it 
+            // we need to disentangle "goto999" as the tokenizer cannot do it
             // on its own
             if (next_is(t.tok, "goto") && token != 404) {
                 int token_label = 262;
                 int token_goto = 404;
-                std::string l("goto"); // copy 
+                std::string l("goto"); // copy
                 // lines.push_back(l);
                 // y2.string.n = l.size();
                 // y2.string.p = &l[0];
                 y2.string.from_str(m_a, l);
-                stypes.push_back(y2);            
+                stypes.push_back(y2);
                 tokens.push_back(token_goto);
-    
+
                 YYSTYPE y3;
                 std::string ll{tostr(t.tok+4, t.cur)};
                 // lines.push_back(ll);
@@ -476,11 +491,12 @@ struct FixedFormRecursiveDescent {
             // y2.string.n = tk.size();
             // y2.string.p = &tk[0];
             y2.string.from_str(m_a, tk);
-            
+
             stypes.push_back(y2);
             // for now, this double check is needed as the usual tokenizer does not
             // like newlines '\n'
             // we have the check for ';' to be able to have multiple expressions per line
+            /*
             if(*(t.cur+1) == '\n' || *(t.cur + 1) == ';') {
                 token = t.lex(m_a, y2, l, diag);
                 len = t.cur - t.tok;
@@ -493,11 +509,12 @@ struct FixedFormRecursiveDescent {
                 stypes.push_back(y2);
                 break;
             }
+            */
         }
     }
 
     bool lex_declaration(unsigned char *&cur) {
-        unsigned char *start = cur;  
+        unsigned char *start = cur;
         next_line(cur);
         if (lex_declarator(start)) {
             tokenize_line("", start);
@@ -559,7 +576,7 @@ struct FixedFormRecursiveDescent {
         /*
          * explicitly DO NOT tokenize `CONTINUE`
          */
-        
+
         if (next_is(cur, "call")) {
             tokenize_line("call", cur);
             return true;
@@ -710,13 +727,13 @@ struct FixedFormRecursiveDescent {
         } else if (next_is(cur, "end")) {
             tokenize_line("end", cur);
             return;
-        } 
+        }
 
           // these are making it difficult to maintain context within the specific lex_* functions
           else if (next_is(cur, "goto")) {tokenize_line("", cur);}
           else if (next_is(cur, "continue")) {tokenize_line("", cur);}
-        
-        
+
+
         else {
             error(cur, "Cannot recognize the global scope entity");
         }
@@ -727,6 +744,9 @@ struct FixedFormRecursiveDescent {
             eat_label(cur);
             lex_global_scope_item(cur);
         }
+        YYSTYPE y2;
+        stypes.push_back(y2);
+        tokens.push_back(yytokentype::END_OF_FILE);
     }
 
 };
@@ -738,7 +758,7 @@ bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, std::vec
         f.string_start = string_start;
         f.lex_global_scope(cur);
         tokens = std::move(f.tokens);
-        
+
         if (stypes)
             for(const auto & el : f.stypes)
                 stypes->push_back(el);
