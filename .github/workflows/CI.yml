@@ -156,8 +156,6 @@ jobs:
       - name: Test Linux
         shell: bash -l {0}
         run: |
-            ctest
-            ./run_tests.py
             cd integration_tests
             ./run_tests.py -b llvm
 
