@@ -353,6 +353,9 @@ cast_kind
     | ComplexToComplex
     | ComplexToReal
     | LogicalToInteger
+    | RealToCharacter
+    | IntegerToCharacter
+    | LogicalToCharacter
 
 dimension = (expr? start, expr? length)
 
