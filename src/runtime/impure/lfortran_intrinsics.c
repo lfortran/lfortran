@@ -652,7 +652,7 @@ LFORTRAN_API char* _lfortran_int_to_str4(int32_t num)
 LFORTRAN_API char* _lfortran_int_to_str8(int64_t num)
 {
     char* res = (char*)malloc(40);
-    sprintf(res, "%lld", num);
+    sprintf(res, "%ld", num);
     return res;
 }
 
