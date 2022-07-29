@@ -639,21 +639,26 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
     if (msg == "syntax is ambiguous") {
         message = "Internal Compiler Error: syntax is ambiguous in the parser";
     } else if (msg == "syntax error") {
-        LFortran::YYSTYPE yylval_;
-        YYLTYPE yyloc_;
-        this->m_tokenizer.cur = this->m_tokenizer.tok;
-        int token = this->m_tokenizer.lex(this->m_a, yylval_, yyloc_, diag);
-        if (token == yytokentype::END_OF_FILE) {
-            message =  "End of file is unexpected here";
-        } else if (token == yytokentype::TK_NEWLINE) {
-            message =  "Newline is unexpected here";
+        if (this->fixed_form) {
+            message = "Syntax error in the fixed-form parser";
+            throw parser_local::ParserError(message, loc);
         } else {
-            std::string token_str = this->m_tokenizer.token();
-            std::string token_type = token2text(token);
-            if (token_str == token_type) {
-                message =  "Token '" + token_str + "' is unexpected here";
+            LFortran::YYSTYPE yylval_;
+            YYLTYPE yyloc_;
+            this->m_tokenizer.cur = this->m_tokenizer.tok;
+            int token = this->m_tokenizer.lex(this->m_a, yylval_, yyloc_, diag);
+            if (token == yytokentype::END_OF_FILE) {
+                message =  "End of file is unexpected here";
+            } else if (token == yytokentype::TK_NEWLINE) {
+                message =  "Newline is unexpected here";
             } else {
-                message =  "Token '" + token_str + "' (of type '" + token2text(token) + "') is unexpected here";
+                std::string token_str = this->m_tokenizer.token();
+                std::string token_type = token2text(token);
+                if (token_str == token_type) {
+                    message =  "Token '" + token_str + "' is unexpected here";
+                } else {
+                    message =  "Token '" + token_str + "' (of type '" + token2text(token) + "') is unexpected here";
+                }
             }
         }
     } else {
