@@ -403,6 +403,22 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         // Todo: Checking for Array is currently omitted
                         LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)v)) != m_var_name_idx_map.end())
                         wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
+                    } else if (ASRUtils::is_array(v->m_type)) {
+                        ASR::dimension_t* m_dims;
+                        uint32_t kind = ASRUtils::extract_kind_from_ttype_t(v->m_type);
+                        uint32_t n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, m_dims);
+
+                        uint64_t total_array_size = 1;
+                        for (uint32_t i = 0; i < n_dims; i++) {
+                            ASR::expr_t* length_value = ASRUtils::expr_value(m_dims[i].m_length);
+                            uint64_t len_in_this_dim = -1;
+                            ASRUtils::extract_value(length_value, len_in_this_dim);
+                            total_array_size *=  len_in_this_dim;
+                        }
+                        LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)v)) != m_var_name_idx_map.end());
+                        wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
+                        wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
+                        avail_mem_loc += kind * total_array_size;
                     }
                 }
             }
