@@ -976,8 +976,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     element_size_in_bytes = kind * 8;
                     switch (kind)
                     {
-                        case 4: wasm::emit_i32_store(m_code_section, m_al, 0, 0); break;
-                        case 8:  wasm::emit_i64_store(m_code_section, m_al, 0, 0); break;
+                        case 4: wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                        case 8:  wasm::emit_i64_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
                         default: throw CodeGenError("ArrayConstant: Unsupported Integer kind");
                     }
                     break;
@@ -987,8 +987,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     element_size_in_bytes = kind * 8;
                     switch (kind)
                     {
-                        case 4: wasm::emit_f32_store(m_code_section, m_al, 0, 0); break;
-                        case 8:  wasm::emit_f64_store(m_code_section, m_al, 0, 0); break;
+                        case 4: wasm::emit_f32_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                        case 8:  wasm::emit_f64_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
                         default: throw CodeGenError("ArrayConstant: Unsupported Real kind");
                     }
                     break;
@@ -998,8 +998,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     element_size_in_bytes = kind * 8;
                     switch (kind)
                     {
-                        case 4: wasm::emit_i32_store(m_code_section, m_al, 0, 0); break;
-                        case 8:  wasm::emit_i64_store(m_code_section, m_al, 0, 0); break;
+                        case 4: wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                        case 8:  wasm::emit_i64_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
                         default: throw CodeGenError("ArrayConstant: Unsupported Integer kind");
                     }
                     break;
@@ -1010,8 +1010,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     element_size_in_bytes = kind * 8;
                     switch (kind)
                     {
-                        case 4: wasm::emit_i32_store(m_code_section, m_al, 0, 0); break;
-                        case 8:  wasm::emit_i64_store(m_code_section, m_al, 0, 0); break;
+                        case 4: wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                        case 8:  wasm::emit_i64_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
                         default: throw CodeGenError("ArrayConstant: Unsupported Integer kind");
                     }
                     break;

@@ -13,6 +13,13 @@ enum type {
     f64 = 0x7C
 };
 
+enum mem_align {
+    b8 = 0,
+    b16 = 1,
+    b32 = 2,
+    b64 = 3
+};
+
 void emit_leb128_u32(Vec<uint8_t> &code, Allocator &al, uint32_t n) { // for u32
     do {
         uint8_t byte = n & 0x7f;
