@@ -184,10 +184,13 @@ struct Diagnostics {
 };
 
 std::string render_diagnostic_human(const Diagnostic &d, bool use_colors);
+std::string render_diagnostic_short(const Diagnostic &d);
 
 // Fills Diagnostic with span details and renders it
 std::string render_diagnostic_human(Diagnostic &d, const std::string &input,
         const LocationManager &lm, bool use_colors, bool show_stacktrace); 
+std::string render_diagnostic_short(Diagnostic &d, const std::string &input,
+        const LocationManager &lm); 
 
 } // namespace diag
 } // namespace LFortran
