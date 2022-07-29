@@ -572,14 +572,16 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
-        this->visit_expr(*x.m_value);
         // this->visit_expr(*x.m_target);
         if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+            this->visit_expr(*x.m_value);
             ASR::Variable_t *asr_target = ASRUtils::EXPR2VAR(x.m_target);
             LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)asr_target)) != m_var_name_idx_map.end());
             wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)asr_target)]);
         } else if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
-            throw CodeGenError("Assignment: Arrays not yet supported");
+            emit_array_item_address_onto_stack(*(ASR::down_cast<ASR::ArrayItem_t>(x.m_target)));
+            this->visit_expr(*x.m_value);
+            wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0);
         } else {
             LFORTRAN_ASSERT(false)
         }
