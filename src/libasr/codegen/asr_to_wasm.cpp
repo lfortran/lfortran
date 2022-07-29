@@ -881,6 +881,34 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void emit_array_item_address_onto_stack(const ASR::ArrayItem_t &x) {
+        this->visit_expr(*x.m_v);
+        ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_v);
+        uint32_t kind = ASRUtils::extract_kind_from_ttype_t(ttype);
+        // ASR::dimension_t* m_dims;
+        // uint32_t n_dims = ASRUtils::extract_dimensions_from_ttype(ttype, m_dims);
+        // ASR::expr_t* length_value = ASRUtils::expr_value(m_dims[0].m_length);
+        // uint64_t array_size = -1;
+        // ASRUtils::extract_value(length_value, array_size);
+        for(uint32_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_right) {
+                this->visit_expr(*x.m_args[i].m_right);
+                wasm::emit_i32_const(m_code_section, m_al, 1);
+                wasm::emit_i32_sub(m_code_section, m_al);
+                wasm::emit_i32_const(m_code_section, m_al, kind);
+                wasm::emit_i32_mul(m_code_section, m_al);
+            } else {
+                diag.codegen_warning_label("/* FIXME right index */", {x.base.base.loc}, "");
+            }
+        }
+        wasm::emit_i32_add(m_code_section, m_al);
+    }
+
+    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+        emit_array_item_address_onto_stack(x);
+        wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0);
+    }
+
     void handle_return() {
         if (cur_sym_info->return_var) {
             LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)cur_sym_info->return_var)) != m_var_name_idx_map.end());
