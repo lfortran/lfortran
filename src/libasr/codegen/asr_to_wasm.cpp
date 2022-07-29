@@ -999,7 +999,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             {
                 case ASR::ttypeType::Integer: {
                     auto kind = ASRUtils::extract_kind_from_ttype_t(ttype);
-                    element_size_in_bytes = kind * 8;
+                    element_size_in_bytes = kind;
                     switch (kind)
                     {
                         case 4: wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
@@ -1010,7 +1010,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
                 case ASR::ttypeType::Real: {
                     auto kind = ASRUtils::extract_kind_from_ttype_t(ttype);
-                    element_size_in_bytes = kind * 8;
+                    element_size_in_bytes = kind;
                     switch (kind)
                     {
                         case 4: wasm::emit_f32_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
@@ -1021,7 +1021,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
                 case ASR::ttypeType::Logical: {
                     auto kind = ASRUtils::extract_kind_from_ttype_t(ttype);
-                    element_size_in_bytes = kind * 8;
+                    element_size_in_bytes = kind;
                     switch (kind)
                     {
                         case 4: wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
@@ -1033,7 +1033,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 case ASR::ttypeType::Character: {
                     // auto kind = ASRUtils::extract_kind_from_ttype_t(ttype);
                     auto kind = 4 /* temporarily fix kind as 4 */;
-                    element_size_in_bytes = kind * 8;
+                    element_size_in_bytes = kind;
                     switch (kind)
                     {
                         case 4: wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
