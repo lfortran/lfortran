@@ -161,7 +161,7 @@ RUN(NAME types_06 LABELS gfortran llvm cpp)
 # GFortran + LFortran C++
 RUN(NAME doconcurrentloop_01 LABELS gfortran cpp)
 
-RUN(NAME arrays_01 LABELS gfortran cpp llvm)
+RUN(NAME arrays_01 LABELS gfortran cpp llvm wasm)
 RUN(NAME arrays_01_size LABELS gfortran llvm)
 RUN(NAME arrays_02_size LABELS gfortran llvm)
 RUN(NAME matrix_01_transpose LABELS gfortran)

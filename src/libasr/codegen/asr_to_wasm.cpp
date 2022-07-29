@@ -8,9 +8,7 @@
 #include <libasr/containers.h>
 #include <libasr/codegen/asr_to_wasm.h>
 #include <libasr/codegen/wasm_assembler.h>
-#include <libasr/pass/implied_do_loops.h>
 #include <libasr/pass/do_loops.h>
-#include <libasr/pass/global_stmts.h>
 #include <libasr/pass/unused_functions.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
@@ -280,8 +278,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void emit_var_type(Vec<uint8_t> &code, ASR::Variable_t *v){
-        // bool is_array = ASRUtils::is_array(v->m_type);
-        // bool dummy = ASRUtils::is_arg_dummy(v->m_intent);
+        // bool use_ref = (v->m_intent == LFortran::ASRUtils::intent_out ||
+        //                 v->m_intent == LFortran::ASRUtils::intent_inout);
+        bool is_array = ASRUtils::is_array(v->m_type);
+
         if (ASRUtils::is_pointer(v->m_type)) {
             ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(v->m_type)->m_type;
             if (ASRUtils::is_integer(*t2)) {
@@ -298,82 +298,79 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 else{
                     throw CodeGenError("Integers of kind 4 and 8 only supported");
                 }
-                // throw CodeGenError("Pointers are not yet supported");
-                // std::string dims = convert_dims(t->n_dims, t->m_dims, size);
-                // std::string type_name = "int" + std::to_string(t->m_kind * 8) + "_t";
-                // if( is_array ) {
-                //     if( use_templates_for_arrays ) {
-                //         sub += generate_templates_for_arrays(std::string(v->m_name));
-                //     } else {
-                //         std::string encoded_type_name = "i" + std::to_string(t->m_kind * 8);
-                //         generate_array_decl(sub, std::string(v->m_name), type_name, dims,
-                //                             encoded_type_name, t->m_dims, t->n_dims, size,
-                //                             use_ref, dummy,
-                //                             v->m_intent != ASRUtils::intent_in &&
-                //                             v->m_intent != ASRUtils::intent_inout &&
-                //                             v->m_intent != ASRUtils::intent_out, true);
-                //     }
-                // } else {
-                //     sub = format_type(dims, type_name, v->m_name, use_ref, dummy);
-                // }
             } else {
                 diag.codegen_error_label("Type number '"
                     + std::to_string(v->m_type->type)
                     + "' not supported", {v->base.base.loc}, "");
                 throw CodeGenAbort();
             }
-        } else if (ASRUtils::is_integer(*v->m_type)) {
-            // checking for array is currently omitted
-            ASR::Integer_t* v_int = ASR::down_cast<ASR::Integer_t>(v->m_type);
-            if (v_int->m_kind == 4) {
-                wasm::emit_b8(code, m_al, wasm::type::i32);
-            }
-            else if (v_int->m_kind == 8) {
-                wasm::emit_b8(code, m_al, wasm::type::i64);
-            }
-            else{
-                throw CodeGenError("Integers of kind 4 and 8 only supported");
-            }
-        } else if (ASRUtils::is_real(*v->m_type)) {
-            // checking for array is currently omitted
-            ASR::Real_t* v_float = ASR::down_cast<ASR::Real_t>(v->m_type);
-            if (v_float->m_kind == 4) {
-                wasm::emit_b8(code, m_al, wasm::type::f32);
-            }
-            else if(v_float->m_kind == 8){
-                wasm::emit_b8(code, m_al, wasm::type::f64);
-            }
-            else {
-                throw CodeGenError("Floating Points of kind 4 and 8 only supported");
-            }
-        } else if (ASRUtils::is_logical(*v->m_type)) {
-            // checking for array is currently omitted
-            ASR::Logical_t* v_logical = ASR::down_cast<ASR::Logical_t>(v->m_type);
-            if (v_logical->m_kind == 4) {
-                wasm::emit_b8(code, m_al, wasm::type::i32);
-            }
-            else if(v_logical->m_kind == 8){
-                wasm::emit_b8(code, m_al, wasm::type::i64);
-            }
-            else {
-                throw CodeGenError("Logicals of kind 4 and 8 only supported");
-            }
-        } else if (ASRUtils::is_character(*v->m_type)) {
-            // Todo: Implement this
-
-            // checking for array is currently omitted
-            ASR::Character_t* v_int = ASR::down_cast<ASR::Character_t>(v->m_type);
-            /* Currently Assuming character as integer of kind 1 */
-            if (v_int->m_kind == 1) {
-                wasm::emit_b8(code, m_al, wasm::type::i32);
-            }
-            else{
-                throw CodeGenError("Characters of kind 1 only supported");
-            }
         } else {
-            // throw CodeGenError("Param, Result, Var Types other than integer, floating point and logical not yet supported");
-            diag.codegen_warning_label("Unsupported variable type: " + ASRUtils::type_to_str(v->m_type),
-                    {v->base.base.loc}, "here");
+            if (ASRUtils::is_integer(*v->m_type)) {
+                ASR::Integer_t* v_int = ASR::down_cast<ASR::Integer_t>(v->m_type);
+                if (is_array) {
+                    wasm::emit_b8(code, m_al, wasm::type::i32);
+                } else {
+                    if (v_int->m_kind == 4) {
+                        wasm::emit_b8(code, m_al, wasm::type::i32);
+                    }
+                    else if (v_int->m_kind == 8) {
+                        wasm::emit_b8(code, m_al, wasm::type::i64);
+                    }
+                    else{
+                        throw CodeGenError("Integers of kind 4 and 8 only supported");
+                    }
+                }
+            } else if (ASRUtils::is_real(*v->m_type)) {
+                ASR::Real_t* v_float = ASR::down_cast<ASR::Real_t>(v->m_type);
+
+                if (is_array) {
+                    wasm::emit_b8(code, m_al, wasm::type::i32);
+                } else {
+                    if (v_float->m_kind == 4) {
+                        wasm::emit_b8(code, m_al, wasm::type::f32);
+                    }
+                    else if(v_float->m_kind == 8){
+                        wasm::emit_b8(code, m_al, wasm::type::f64);
+                    }
+                    else {
+                        throw CodeGenError("Floating Points of kind 4 and 8 only supported");
+                    }
+                }
+            } else if (ASRUtils::is_logical(*v->m_type)) {
+                ASR::Logical_t* v_logical = ASR::down_cast<ASR::Logical_t>(v->m_type);
+
+                if (is_array) {
+                    wasm::emit_b8(code, m_al, wasm::type::i32);
+                } else {
+                    if (v_logical->m_kind == 4) {
+                        wasm::emit_b8(code, m_al, wasm::type::i32);
+                    }
+                    else if(v_logical->m_kind == 8){
+                        wasm::emit_b8(code, m_al, wasm::type::i64);
+                    }
+                    else {
+                        throw CodeGenError("Logicals of kind 4 and 8 only supported");
+                    }
+                }
+            } else if (ASRUtils::is_character(*v->m_type)) {
+                ASR::Character_t* v_int = ASR::down_cast<ASR::Character_t>(v->m_type);
+                /* Currently Assuming character as integer of kind 1 */
+
+                if (is_array) {
+                        wasm::emit_b8(code, m_al, wasm::type::i32);
+                } else {
+                    if (v_int->m_kind == 1) {
+                        wasm::emit_b8(code, m_al, wasm::type::i32);
+                    }
+                    else{
+                        throw CodeGenError("Characters of kind 1 only supported");
+                    }
+                }
+            } else {
+                // throw CodeGenError("Param, Result, Var Types other than integer, floating point and logical not yet supported");
+                diag.codegen_warning_label("Unsupported variable type: " + ASRUtils::type_to_str(v->m_type),
+                        {v->base.base.loc}, "here");
+            }
         }
     }
 
@@ -406,6 +403,22 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         // Todo: Checking for Array is currently omitted
                         LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)v)) != m_var_name_idx_map.end())
                         wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
+                    } else if (ASRUtils::is_array(v->m_type)) {
+                        ASR::dimension_t* m_dims;
+                        uint32_t kind = ASRUtils::extract_kind_from_ttype_t(v->m_type);
+                        uint32_t n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, m_dims);
+
+                        uint64_t total_array_size = 1;
+                        for (uint32_t i = 0; i < n_dims; i++) {
+                            ASR::expr_t* length_value = ASRUtils::expr_value(m_dims[i].m_length);
+                            uint64_t len_in_this_dim = -1;
+                            ASRUtils::extract_value(length_value, len_in_this_dim);
+                            total_array_size *=  len_in_this_dim;
+                        }
+                        LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)v)) != m_var_name_idx_map.end());
+                        wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
+                        wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
+                        avail_mem_loc += kind * total_array_size;
                     }
                 }
             }
@@ -559,14 +572,16 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
-        this->visit_expr(*x.m_value);
         // this->visit_expr(*x.m_target);
         if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+            this->visit_expr(*x.m_value);
             ASR::Variable_t *asr_target = ASRUtils::EXPR2VAR(x.m_target);
             LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)asr_target)) != m_var_name_idx_map.end());
             wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)asr_target)]);
         } else if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
-            throw CodeGenError("Assignment: Arrays not yet supported");
+            emit_array_item_address_onto_stack(*(ASR::down_cast<ASR::ArrayItem_t>(x.m_target)));
+            this->visit_expr(*x.m_value);
+            wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0);
         } else {
             LFORTRAN_ASSERT(false)
         }
@@ -882,6 +897,34 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void emit_array_item_address_onto_stack(const ASR::ArrayItem_t &x) {
+        this->visit_expr(*x.m_v);
+        ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_v);
+        uint32_t kind = ASRUtils::extract_kind_from_ttype_t(ttype);
+        // ASR::dimension_t* m_dims;
+        // uint32_t n_dims = ASRUtils::extract_dimensions_from_ttype(ttype, m_dims);
+        // ASR::expr_t* length_value = ASRUtils::expr_value(m_dims[0].m_length);
+        // uint64_t array_size = -1;
+        // ASRUtils::extract_value(length_value, array_size);
+        for(uint32_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_right) {
+                this->visit_expr(*x.m_args[i].m_right);
+                wasm::emit_i32_const(m_code_section, m_al, 1);
+                wasm::emit_i32_sub(m_code_section, m_al);
+                wasm::emit_i32_const(m_code_section, m_al, kind);
+                wasm::emit_i32_mul(m_code_section, m_al);
+            } else {
+                diag.codegen_warning_label("/* FIXME right index */", {x.base.base.loc}, "");
+            }
+        }
+        wasm::emit_i32_add(m_code_section, m_al);
+    }
+
+    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+        emit_array_item_address_onto_stack(x);
+        wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0);
+    }
+
     void handle_return() {
         if (cur_sym_info->return_var) {
             LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)cur_sym_info->return_var)) != m_var_name_idx_map.end());
@@ -958,6 +1001,73 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         last_str_len = strlen(x.m_s);
         avail_mem_loc += last_str_len;
         no_of_data_segments++;
+    }
+
+    void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
+        // Todo: Add a check here if there is memory available to store the given string
+        uint32_t cur_mem_loc = avail_mem_loc;
+        uint32_t element_size_in_bytes;
+        for (size_t i=0; i<x.n_args; i++) {
+            // emit memory location to store array element
+            wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
+
+            this->visit_expr(*x.m_args[i]);
+            auto ttype = extract_ttype_t_from_expr(x.m_args[i]);
+            switch (ttype->type)
+            {
+                case ASR::ttypeType::Integer: {
+                    auto kind = ASRUtils::extract_kind_from_ttype_t(ttype);
+                    element_size_in_bytes = kind;
+                    switch (kind)
+                    {
+                        case 4: wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                        case 8:  wasm::emit_i64_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                        default: throw CodeGenError("ArrayConstant: Unsupported Integer kind");
+                    }
+                    break;
+                }
+                case ASR::ttypeType::Real: {
+                    auto kind = ASRUtils::extract_kind_from_ttype_t(ttype);
+                    element_size_in_bytes = kind;
+                    switch (kind)
+                    {
+                        case 4: wasm::emit_f32_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                        case 8:  wasm::emit_f64_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                        default: throw CodeGenError("ArrayConstant: Unsupported Real kind");
+                    }
+                    break;
+                }
+                case ASR::ttypeType::Logical: {
+                    auto kind = ASRUtils::extract_kind_from_ttype_t(ttype);
+                    element_size_in_bytes = kind;
+                    switch (kind)
+                    {
+                        case 4: wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                        case 8:  wasm::emit_i64_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                        default: throw CodeGenError("ArrayConstant: Unsupported Integer kind");
+                    }
+                    break;
+                }
+                case ASR::ttypeType::Character: {
+                    // auto kind = ASRUtils::extract_kind_from_ttype_t(ttype);
+                    auto kind = 4 /* temporarily fix kind as 4 */;
+                    element_size_in_bytes = kind;
+                    switch (kind)
+                    {
+                        case 4: wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                        case 8:  wasm::emit_i64_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                        default: throw CodeGenError("ArrayConstant: Unsupported Integer kind");
+                    }
+                    break;
+                }
+                default: {
+                    throw CodeGenError("ArrayConstant: Type " + ASRUtils::type_to_str(ttype) + " not yet supported");
+                }
+            }
+            avail_mem_loc += element_size_in_bytes;
+        }
+        // leave array location in memory on the stack
+        wasm::emit_i32_const(m_code_section, m_al, cur_mem_loc);
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
@@ -1397,8 +1507,6 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
     Vec<uint8_t> wasm_bytes;
 
     pass_unused_functions(al, asr, true);
-    pass_wrap_global_stmts_into_function(al, asr, "f");
-    pass_replace_implied_do_loops(al, asr, "f");
     pass_replace_do_loops(al, asr);
 
     try {

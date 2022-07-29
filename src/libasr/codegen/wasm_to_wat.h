@@ -164,6 +164,76 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
     void visit_F64PromoteF32() { src += indent + "f64.promote_f32"; }
     void visit_F64DivS() { src += indent + "f64.div_s"; }
 
+    void visit_I32Load(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i32.load " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I64Load(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i64.load " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_F32Load(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "f32.load " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_F64Load(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "f64.load " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I32Load8S(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i32.load8_s " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I32Load8U(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i32.load8_u " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I32Load16S(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i32.load16_s " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I32Load16U(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i32.load16_u " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I64Load8S(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i64.load8_s " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I64Load8U(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i64.load8_u " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I64Load16S(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i64.load16_s " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I64Load16U(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i64.load16_u " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I64Load32S(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i64.load32_s " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I64Load32U(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i64.load32_u " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I32Store(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i32.store " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I64Store(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i64.store " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_F32Store(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "f32.store " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_F64Store(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "f64.store " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I32Store8(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i32.store8 " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I32Store16(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i32.store16 " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I64Store8(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i64.store8 " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I64Store16(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i64.store16 " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+    void visit_I64Store32(uint32_t mem_align, uint32_t mem_offset) {
+        src += indent + "i64.store32 " + std::to_string(mem_align) + " " + std::to_string(mem_offset);
+    }
+
 };
 
 }  // namespace WASM_INSTS_VISITOR
