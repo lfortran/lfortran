@@ -17,15 +17,22 @@ nav:
             - intrinsics/bit/shiftl.md
             - intrinsics/bit/shiftr.md
         - Character Intrinsic Functions:
-            - intrinsics/character/len_trim.md
+            - intrinsics/character/achar.md
+            - intrinsics/character/adjustl.md
+            - intrinsics/character/adjustr.md
             - intrinsics/character/lge.md
+            - intrinsics/character/len_trim.md
         - Kind Type Intrinsic Functions:
             - intrinsics/kind-type/kind.md
         - Mathematical Intrinsic Functions:
             - intrinsics/mathematical/trigonometric/acos.md
+            - intrinsics/mathematical/trigonometric/acosh.md
             - intrinsics/mathematical/trigonometric/asin.md
             - intrinsics/mathematical/trigonometric/atan.md
         - Numeric Intrinsic Functions:
+            - intrinsics/numeric/abs.md
+            - intrinsics/numeric/aimag.md
+            - intrinsics/numeric/aint.md
             - intrinsics/numeric/ceiling.md
             - intrinsics/numeric/floor.md
             - intrinsics/numeric/mod.md
