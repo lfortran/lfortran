@@ -721,16 +721,63 @@ struct FixedFormRecursiveDescent {
             error(cur, "Expecting terminating symbol for function");
         }
     }
+    // ENTRY statement: result
+
+    // FUNCTION statements: recursive, result, character, complex, integer, doubleprecision (KW_DOUBLE_PRECISION), external
+
+    // SUBROUTINE statements: recursive (the only one?)
+
+    // EXTERNAL statement: in lex_body
+
+    bool is_declaration(unsigned char *&cur, std::string type /*function, subroutine, program*/, const std::vector<std::string>& keywords) {
+        unsigned char *cpy = cur;
+        unsigned char *nextline = cur; next_line(nextline);
+        std::string line{tostr(cur, nextline-1)};
+        // current line does not contain type -> we abort
+        if (!(line.find(std::string(type)) != std::string::npos)) return false;
+
+        std::vector<std::string> kw_found;
+        std::vector<std::string> decls{keywords.begin(), keywords.end()};
+        while(decls.size() != 0) {
+            for (unsigned int i=0;i<decls.size();++i) {
+                if (next_is(cpy, decls[i])) {
+                    kw_found.push_back(decls[i]);
+                    cpy += decls[i].size();
+                    decls.erase(decls.begin() + i);
+                    break;
+                }
+            }
+            if (next_is(cpy, type))
+                break;
+        }
+
+        if (kw_found.size() == 0 && !next_is(cpy, type))
+            return false;
+     
+        // tokenize all keywords -- will not iterate at all if kw_found is empty
+        for(auto iter = kw_found.begin(); iter != kw_found.end(); ++iter) {
+            tokens.push_back(identifiers_map[*iter]);
+            YYSTYPE y;
+            std::string decl(*iter);
+            y.string.from_str(m_a, decl);
+            stypes.push_back(y);
+        }
+        
+        cur = cpy;
+        tokenize_line(type, cur);
+        return true;
+    }
+
 
     void lex_global_scope_item(unsigned char *&cur) {
         // we can define a global assignment
         unsigned char *nline = cur; next_line(nline);
         eat_label(cur);
-        if (lex_declaration(cur)) return;
+        if (lex_declaration(cur)) return; // TODO to be moved into lex_body
         if (next_is(cur, "subroutine")) {
-            lex_subroutine(cur);
+            lex_subroutine(cur); // TODO -- check subroutine keywords, then if(is_subroutine_declaration(cur))
         } else if (next_is(cur, "program")) {
-            lex_program(cur);
+            lex_program(cur); // TODO -- check for program keywords, then if(is_program_declaration(cur))
         } else if (
                 next_is(cur, "function") ||
                 next_is(cur, "integerfunction") ||
@@ -738,8 +785,10 @@ struct FixedFormRecursiveDescent {
                 next_is(cur, "complexfunction") ||
                 next_is(cur, "doubleprecisionfunction") ||
                 next_is(cur, "externalfunction")) {
-            lex_function(cur);
+            lex_function(cur); // TODO -- check for function keywords, then if(is_function_declaration(cur))
         }
+        // TODO move the below in lex_body -> then do the implicit main program thing
+
         // check for condition "do VAR=start,end"
         else if (next_is(cur, "do") && contains(cur, nline, '=') && contains(cur, nline, ',')) {
             lex_do(cur);
@@ -801,10 +850,11 @@ int FixedFormTokenizer::lex(Allocator &/*al*/, YYSTYPE &yylval,
         Location &/*loc*/, diag::Diagnostics &/*diagnostics*/)
 {
     if (!tokens.empty()) {
-        auto tok = tokens[0];
-        tokens.erase(tokens.begin());
-        yylval = stypes.at(0);
-        stypes.erase(stypes.begin());
+        token_pos++;
+        auto tok = tokens[token_pos];
+        // tokens.erase(tokens.begin());
+        yylval = stypes.at(token_pos);
+        // stypes.erase(stypes.begin());
         return tok;
     }
     return yytokentype::END_OF_FILE;

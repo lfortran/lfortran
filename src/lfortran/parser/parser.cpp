@@ -640,7 +640,13 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
         message = "Internal Compiler Error: syntax is ambiguous in the parser";
     } else if (msg == "syntax error") {
         if (this->fixed_form) {
+            auto invalid_token = this->f_tokenizer.token_pos-1;
             message = "Syntax error in the fixed-form parser";
+            for(unsigned int i=5;i>0;--i) {
+                if (invalid_token-i <= 0) break;
+                auto tok =this->f_tokenizer.tokens[invalid_token-i];
+                message += "\n " + std::to_string(i) + "-to-last token: " + token2text(tok) + "\n";
+            }
             throw parser_local::ParserError(message, loc);
         } else {
             LFortran::YYSTYPE yylval_;

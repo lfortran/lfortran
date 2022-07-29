@@ -26,6 +26,7 @@ public:
     std::vector<YYSTYPE> stypes;
 
     bool tokenized = false;
+    unsigned int token_pos = 0;
 
 public:
     // Set the string to tokenize. The caller must ensure `str` will stay valid
