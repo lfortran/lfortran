@@ -68,7 +68,7 @@ std::string Diagnostics::render(const std::string &input,
         if (compiler_options.no_warnings && d.level != Level::Error) {
             continue;
         }
-        out += render_diagnostic(d, input, lm,
+        out += render_diagnostic_human(d, input, lm,
             compiler_options.use_colors,
             compiler_options.show_stacktrace);
         if (&d != &this->diagnostics.back()) out += "\n";
@@ -124,7 +124,7 @@ void populate_spans(diag::Diagnostic &d, const LocationManager &lm,
 }
 
 // Fills Diagnostic with span details and renders it
-std::string render_diagnostic(Diagnostic &d, const std::string &input,
+std::string render_diagnostic_human(Diagnostic &d, const std::string &input,
         const LocationManager &lm, bool use_colors, bool show_stacktrace) {
     std::string out;
     if (show_stacktrace) {
@@ -133,11 +133,11 @@ std::string render_diagnostic(Diagnostic &d, const std::string &input,
     // Convert to line numbers and get source code strings
     populate_spans(d, lm, input);
     // Render the message
-    out += render_diagnostic(d, use_colors);
+    out += render_diagnostic_human(d, use_colors);
     return out;
 }
 
-std::string render_diagnostic(const Diagnostic &d, bool use_colors) {
+std::string render_diagnostic_human(const Diagnostic &d, bool use_colors) {
     std::string bold  = "\033[0;1m";
     std::string red_bold  = "\033[0;31;1m";
     std::string yellow_bold  = "\033[0;33;1m";
