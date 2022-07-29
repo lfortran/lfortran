@@ -1261,7 +1261,7 @@ public:
                 indices.push_back(tmp);
             }
             if (ASRUtils::expr_type(x.m_v)->type == ASR::ttypeType::Pointer) {
-                array = builder->CreateLoad(array);
+                array = CreateLoad(array);
             }
             tmp = arr_descr->get_single_element(array, indices, x.n_args);
         }
@@ -1349,7 +1349,7 @@ public:
             llvm::ConstantInt::get(context, llvm::APInt(32, member_idx))};
         if( ASR::is_a<ASR::DerivedRef_t>(*x.m_v) &&
             is_nested_pointer(tmp) ) {
-            tmp = builder->CreateLoad(tmp);
+            tmp = CreateLoad(tmp);
         }
         llvm::Value* tmp1 = CreateGEP(tmp, idx_vec);
         ASR::ttype_t* member_type = member->m_type;
@@ -2710,10 +2710,10 @@ public:
         // double pointer, so we need to load one time and then
         // use it later on.
         if( is_nested_pointer(llvm_tmp) ) {
-            llvm_tmp = builder->CreateLoad(llvm_tmp);
+            llvm_tmp = CreateLoad(llvm_tmp);
         }
         if( arr_descr->is_array(llvm_tmp) ) {
-            llvm_tmp = builder->CreateLoad(arr_descr->get_pointer_to_data(llvm_tmp));
+            llvm_tmp = CreateLoad(arr_descr->get_pointer_to_data(llvm_tmp));
         }
 
         // // TODO: refactor this into a function, it is being used a few times
@@ -2792,7 +2792,7 @@ public:
             llvm::Value* fptr_des = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_fptr);
             llvm::Value* shape_data = llvm_shape;
             if( llvm_shape && arr_descr->is_array(llvm_shape) ) {
-                shape_data = builder->CreateLoad(arr_descr->get_pointer_to_data(llvm_shape));
+                shape_data = CreateLoad(arr_descr->get_pointer_to_data(llvm_shape));
             }
             llvm_cptr = builder->CreateBitCast(llvm_cptr,
                             static_cast<llvm::PointerType*>(fptr_data->getType())->getElementType());
@@ -2804,7 +2804,7 @@ public:
                 llvm::Value* desi_size = arr_descr->get_dimension_size(fptr_des, curr_dim, false);
                 llvm::Value* i32_one = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 llvm::Value* new_lb = i32_one;
-                llvm::Value* new_ub = shape_data ? builder->CreateLoad(llvm_utils->create_ptr_gep(shape_data, i)) : i32_one;
+                llvm::Value* new_ub = shape_data ? CreateLoad(llvm_utils->create_ptr_gep(shape_data, i)) : i32_one;
                 builder->CreateStore(new_lb, desi_lb);
                 builder->CreateStore(builder->CreateAdd(builder->CreateSub(new_ub, new_lb), i32_one), desi_size);
             }
@@ -4398,7 +4398,7 @@ public:
             int a_kind = ASRUtils::extract_kind_from_ttype_t(t);
             if( ASR::is_a<ASR::Pointer_t>(*t) && ASR::is_a<ASR::Var_t>(*v) ) {
                 if( ASRUtils::is_array(ASRUtils::type_get_past_pointer(t)) ) {
-                    tmp = builder->CreateLoad(arr_descr->get_pointer_to_data(tmp));
+                    tmp = CreateLoad(arr_descr->get_pointer_to_data(tmp));
                 }
                 fmt.push_back("%lld");
                 llvm::Value* d = builder->CreatePtrToInt(tmp, getIntType(8, false));
@@ -4821,7 +4821,7 @@ public:
                                     llvm::AllocaInst *target = builder0.CreateAlloca(
                                         target_type, nullptr, "call_arg_value");
                                     if( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ) {
-                                        value = builder->CreateLoad(value);
+                                        value = CreateLoad(value);
                                     }
                                     builder->CreateStore(value, target);
                                     tmp = target;
