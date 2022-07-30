@@ -290,7 +290,7 @@ public:
             if (current_scope->get_symbol(arg_s) == nullptr) {
                 if (compiler_options.implicit_typing) {
                     declare_implicit_variable(x.base.base.loc, arg_s,
-                        ASRUtils::intent_inout);
+                        ASRUtils::intent_unspecified);
                 } else {
                     throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
                 }
@@ -417,7 +417,7 @@ public:
             if (current_scope->get_symbol(arg_s) == nullptr) {
                 if (compiler_options.implicit_typing) {
                     declare_implicit_variable(x.base.base.loc, arg_s,
-                        ASRUtils::intent_inout);
+                        ASRUtils::intent_unspecified);
                 } else {
                     throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
                 }
