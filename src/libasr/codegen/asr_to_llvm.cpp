@@ -1534,6 +1534,7 @@ public:
     }
 
     void visit_Program(const ASR::Program_t &x) {
+        llvm_goto_targets.clear();
         // Generate code for nested subroutines and functions first:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
@@ -2264,6 +2265,7 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        llvm_goto_targets.clear();
         instantiate_function(x);
         if (x.m_deftype == ASR::deftypeType::Interface) {
             // Interface does not have an implementation and it is already
@@ -2276,6 +2278,7 @@ public:
     }
 
     void visit_Subroutine(const ASR::Subroutine_t &x) {
+        llvm_goto_targets.clear();
         instantiate_subroutine(x);
         if (x.m_deftype == ASR::deftypeType::Interface) {
             // Interface does not have an implementation and it is already
