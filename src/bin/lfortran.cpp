@@ -1477,6 +1477,7 @@ int main(int argc, char *argv[])
         app.add_flag("--link-with-gcc", link_with_gcc, "Calls GCC for linking instead of clang");
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
         app.add_flag("--print-targets", print_targets, "Print the registered targets");
+        app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
 
         if( compiler_options.fast ) {
             lfortran_pass_manager.use_optimization_passes();

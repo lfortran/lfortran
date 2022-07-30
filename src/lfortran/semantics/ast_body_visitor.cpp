@@ -27,8 +27,10 @@ public:
     ASR::asr_t *asr;
     bool from_block;
 
-    BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics)
-         : CommonVisitor(al, nullptr, diagnostics), asr{unit}, from_block{false} {}
+    BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
+            CompilerOptions &compiler_options)
+         : CommonVisitor(al, nullptr, diagnostics, compiler_options),
+           asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
         if( from_block ) {
@@ -1517,9 +1519,10 @@ public:
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
-        ASR::asr_t *unit)
+        ASR::asr_t *unit,
+        CompilerOptions &compiler_options)
 {
-    BodyVisitor b(al, unit, diagnostics);
+    BodyVisitor b(al, unit, diagnostics, compiler_options);
     try {
         b.visit_TranslationUnit(ast);
     } catch (const SemanticError &e) {
