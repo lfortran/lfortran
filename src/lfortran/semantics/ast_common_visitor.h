@@ -653,6 +653,8 @@ public:
     std::map<std::string, ASR::accessType> assgnd_access;
     ASR::presenceType dflt_presence = ASR::presenceType::Required;
     std::map<std::string, ASR::presenceType> assgnd_presence;
+    // Current procedure arguments. Only non-empty for SymbolTableVisitor,
+    // empty for BodyVisitor.
     std::vector<std::string> current_procedure_args;
     std::vector<std::string> excluded_from_symtab;
     int64_t current_symbol;
@@ -702,8 +704,15 @@ public:
             // scope, we need to use it.
             // Otherwise: 
             if (compiler_options.implicit_typing) {
-                v = declare_implicit_variable(loc, var_name,
-                    ASRUtils::intent_local);
+                ASR::intentType intent;
+                if (std::find(current_procedure_args.begin(),
+                        current_procedure_args.end(), var_name) !=
+                        current_procedure_args.end()) {
+                    intent = LFortran::ASRUtils::intent_unspecified;
+                } else {
+                    intent = LFortran::ASRUtils::intent_local;
+                }
+                v = declare_implicit_variable(loc, var_name, intent);
             } else {
                 diag.semantic_error_label("Variable '" + var_name
                     + "' is not declared", {loc},
