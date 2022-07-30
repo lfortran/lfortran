@@ -668,6 +668,32 @@ public:
         current_module_dependencies.reserve(al, 4);
     }
 
+    ASR::symbol_t* declare_implicit_variable(const Location &loc,
+            const std::string &var_name) {
+        ASR::ttype_t *type;
+        char first_letter = var_name[0];
+        // The default implicit typing is:
+        // implicit real (a-h,o-z)
+        if (first_letter >= 'i' && first_letter <= 'n') {
+            // it is an integer
+            type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+                4, nullptr, 0));
+        } else {
+            // it is a real
+            type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+                4, nullptr, 0));
+        }
+        // TODO: figure out the intent (local vs not)
+        ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, loc,
+            current_scope,
+            s2c(al, var_name), ASRUtils::intent_local, nullptr, nullptr,
+            ASR::storage_typeType::Default, type,
+            current_procedure_abi_type, ASR::Public,
+            ASR::presenceType::Required, false));
+        current_scope->add_symbol(var_name, v);
+        return v;
+    }
+
     ASR::asr_t* resolve_variable(const Location &loc, const std::string &var_name) {
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
@@ -677,27 +703,7 @@ public:
             // scope, we need to use it.
             // Otherwise: 
             if (compiler_options.implicit_typing) {
-                ASR::ttype_t *type;
-                char first_letter = var_name[0];
-                // The default implicit typing is:
-                // implicit real (a-h,o-z)
-                if (first_letter >= 'i' && first_letter <= 'n') {
-                    // it is an integer
-                    type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
-                        4, nullptr, 0));
-                } else {
-                    // it is a real
-                    type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
-                        4, nullptr, 0));
-                }
-                // TODO: figure out the intent (local vs not)
-                v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, loc,
-                    current_scope,
-                    s2c(al, var_name), ASRUtils::intent_local, nullptr, nullptr,
-                    ASR::storage_typeType::Default, type,
-                    current_procedure_abi_type, ASR::Public,
-                    ASR::presenceType::Required, false));
-                current_scope->add_symbol(var_name, v);
+                v = declare_implicit_variable(loc, var_name);
             } else {
                 diag.semantic_error_label("Variable '" + var_name
                     + "' is not declared", {loc},
