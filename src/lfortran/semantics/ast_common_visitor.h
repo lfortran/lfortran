@@ -669,7 +669,7 @@ public:
     }
 
     ASR::symbol_t* declare_implicit_variable(const Location &loc,
-            const std::string &var_name) {
+            const std::string &var_name, ASR::intentType intent) {
         ASR::ttype_t *type;
         char first_letter = var_name[0];
         // The default implicit typing is:
@@ -683,10 +683,9 @@ public:
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                 4, nullptr, 0));
         }
-        // TODO: figure out the intent (local vs not)
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, loc,
             current_scope,
-            s2c(al, var_name), ASRUtils::intent_local, nullptr, nullptr,
+            s2c(al, var_name), intent, nullptr, nullptr,
             ASR::storage_typeType::Default, type,
             current_procedure_abi_type, ASR::Public,
             ASR::presenceType::Required, false));
@@ -703,7 +702,8 @@ public:
             // scope, we need to use it.
             // Otherwise: 
             if (compiler_options.implicit_typing) {
-                v = declare_implicit_variable(loc, var_name);
+                v = declare_implicit_variable(loc, var_name,
+                    ASRUtils::intent_local);
             } else {
                 diag.semantic_error_label("Variable '" + var_name
                     + "' is not declared", {loc},
