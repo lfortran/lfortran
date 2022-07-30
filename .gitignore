@@ -185,3 +185,6 @@ build.ninja
 .ninja_deps
 .ninja_log
 /compile_commands.json
+
+## Docs
+!doc/src/javascripts/*.js
