@@ -414,7 +414,11 @@ public:
             char *arg=x.m_args[i].m_arg;
             std::string arg_s = to_lower(arg);
             if (current_scope->get_symbol(arg_s) == nullptr) {
-                throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
+                if (compiler_options.implicit_typing) {
+                    declare_implicit_variable(x.base.base.loc, arg_s);
+                } else {
+                    throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
+                }
             }
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
             args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
