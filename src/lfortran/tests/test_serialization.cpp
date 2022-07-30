@@ -10,6 +10,7 @@
 #include <lfortran/semantics/ast_to_asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
+#include <libasr/utils.h>
 
 using LFortran::TRY;
 using LFortran::string_to_uint64;
@@ -75,9 +76,10 @@ void asr_ser(const std::string &src) {
 
     LFortran::AST::TranslationUnit_t* ast0;
     LFortran::diag::Diagnostics diagnostics;
+    LFortran::CompilerOptions compiler_options;
     ast0 = TRY(LFortran::parse(al, src, diagnostics));
     LFortran::ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast0,
-        diagnostics));
+        diagnostics, nullptr, false, compiler_options));
 
     std::string asr_orig = LFortran::pickle(*asr);
     std::string binary = LFortran::serialize(*asr);
@@ -101,9 +103,10 @@ void asr_mod(const std::string &src) {
 
     LFortran::AST::TranslationUnit_t* ast0;
     LFortran::diag::Diagnostics diagnostics;
+    LFortran::CompilerOptions compiler_options;
     ast0 = TRY(LFortran::parse(al, src, diagnostics));
     LFortran::ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast0,
-        diagnostics));
+        diagnostics, nullptr, false, compiler_options));
 
     std::string modfile = LFortran::save_modfile(*asr);
     LFortran::SymbolTable symtab(nullptr);

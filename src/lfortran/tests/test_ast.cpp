@@ -8,6 +8,7 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <libasr/asr_verify.h>
+#include <libasr/utils.h>
 
 namespace LFortran {
 
@@ -38,9 +39,10 @@ end program
 )""";
 
     LFortran::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
     AST::TranslationUnit_t* ast = TRY(LFortran::parse(al, src, diagnostics));
     ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast,
-        diagnostics));
+        diagnostics, nullptr, false, compiler_options));
 
     CHECK(asr_verify(*asr)); // Passes
 

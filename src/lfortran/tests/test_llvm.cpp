@@ -11,6 +11,7 @@
 #include <lfortran/semantics/ast_to_asr.h>
 #include <libasr/codegen/asr_to_llvm.h>
 #include <lfortran/pickle.h>
+#include <libasr/utils.h>
 
 using LFortran::TRY;
 using LFortran::FortranEvaluator;
@@ -357,6 +358,7 @@ end function)";
     // Src -> AST
     Allocator al(4*1024);
     LFortran::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
     LFortran::AST::TranslationUnit_t* tu = TRY(LFortran::parse(al, source,
         diagnostics));
     LFortran::AST::ast_t* ast = tu->m_items[0];
@@ -365,7 +367,7 @@ end function)";
     // AST -> ASR
     LFortran::SymbolTable::reset_global_counter();
     LFortran::ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *tu,
-        diagnostics));
+        diagnostics, nullptr, false, compiler_options));
     CHECK(LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [(= (Var 2 f) (IntegerConstant 5 (Integer 4 [])) ())] (Var 2 f) Source Public Implementation .false. ())}) [])");
 
     // ASR -> LLVM
@@ -395,6 +397,7 @@ end function)";
     // Src -> AST
     Allocator al(4*1024);
     LFortran::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
     LFortran::AST::TranslationUnit_t* tu = TRY(LFortran::parse(al, source,
         diagnostics));
     LFortran::AST::ast_t* ast = tu->m_items[0];
@@ -402,7 +405,7 @@ end function)";
 
     // AST -> ASR
     LFortran::ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *tu,
-        diagnostics));
+        diagnostics, nullptr, false, compiler_options));
     CHECK(LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [(= (Var 4 f) (IntegerConstant 4 (Integer 4 [])) ())] (Var 4 f) Source Public Implementation .false. ())}) [])");
     // ASR -> LLVM
     LFortran::LLVMEvaluator e;
