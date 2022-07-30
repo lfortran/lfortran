@@ -89,8 +89,8 @@ public:
     };
 
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
-        diag::Diagnostics &diagnostics)
-      : CommonVisitor(al, symbol_table, diagnostics) {}
+        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options)
+      : CommonVisitor(al, symbol_table, diagnostics, compiler_options) {}
 
 
     ASR::symbol_t* resolve_symbol(const Location &loc, const std::string &sub_name) {
@@ -288,7 +288,12 @@ public:
             char *arg=x.m_args[i].m_arg;
             std::string arg_s = to_lower(arg);
             if (current_scope->get_symbol(arg_s) == nullptr) {
-                throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
+                if (compiler_options.implicit_typing) {
+                    declare_implicit_variable(x.base.base.loc, arg_s,
+                        ASRUtils::intent_inout);
+                } else {
+                    throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
+                }
             }
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
             args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
@@ -410,7 +415,12 @@ public:
             char *arg=x.m_args[i].m_arg;
             std::string arg_s = to_lower(arg);
             if (current_scope->get_symbol(arg_s) == nullptr) {
-                throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
+                if (compiler_options.implicit_typing) {
+                    declare_implicit_variable(x.base.base.loc, arg_s,
+                        ASRUtils::intent_inout);
+                } else {
+                    throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
+                }
             }
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
             args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
@@ -550,6 +560,14 @@ public:
             }
         }
 
+        bool is_elemental = false;
+        for(size_t i = 0; i < x.n_attributes && !is_elemental; i++) {
+            AST::decl_attribute_t* func_attr = x.m_attributes[i];
+            if( AST::is_a<AST::SimpleAttribute_t>(*func_attr) ) {
+                AST::SimpleAttribute_t* simple_func_attr = AST::down_cast<AST::SimpleAttribute_t>(func_attr);
+                is_elemental = is_elemental || simple_func_attr->m_attr == AST::simple_attributeType::AttrElemental;
+            }
+        }
 
         tmp = ASR::make_Function_t(
             al, x.base.base.loc,
@@ -560,7 +578,8 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ LFortran::ASRUtils::EXPR(return_var_ref),
-            current_procedure_abi_type, s_access, deftype, bindc_name);
+            current_procedure_abi_type, s_access, deftype, is_elemental,
+            bindc_name);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         current_procedure_args.clear();
@@ -1271,9 +1290,9 @@ public:
 
 Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
-        SymbolTable *symbol_table)
+        SymbolTable *symbol_table, CompilerOptions &compiler_options)
 {
-    SymbolTableVisitor v(al, symbol_table, diagnostics);
+    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticError &e) {

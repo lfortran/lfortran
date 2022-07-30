@@ -2100,6 +2100,10 @@ filename = "../integration_tests/functions_10.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/arrays_elemental_15.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/bindc1.f90"
 asr = true
 llvm = true
@@ -2128,3 +2132,11 @@ asr = true
 [[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"
 asr = true
+
+[[test]]
+filename = "implicit_typing1.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit_typing2.f90"
+asr_implicit_typing = true
