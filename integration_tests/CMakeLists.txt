@@ -84,6 +84,15 @@ macro(RUN)
     endif()
 endmacro(RUN)
 
+# The supported test labels are:
+#
+# gfortran --- compile with GFortran
+# llvm     --- compile with LFortran, only generate binary code at the very end
+# llvm2    --- compile with LFortran, generate object files
+# cpp      --- compile to C++, compile C++ to binary
+# x86      --- compile to x86 binary directly
+# wasm     --- compile to WASM binary directly
+
 
 # GFortran + LFortran LLVM + LFortran C++
 
