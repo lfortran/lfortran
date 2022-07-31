@@ -700,7 +700,7 @@ template_decl
     ;
 
 instantiate
-    : KW_INSTANTIATE id "(" decl_star ")" "," KW_ONLY ":" id "=>" id sep {
+    : KW_INSTANTIATE id "(" var_type ")" "," KW_ONLY ":" id "=>" id sep {
         $$ = INSTANTIATE($2, $4, @$); }
     ;
 
@@ -873,13 +873,13 @@ end_team
     ;
 
 subroutine
-    : KW_SUBROUTINE id sub_args bind_opt sep use_statement_star
+    : KW_SUBROUTINE id sub_args bind_opt sep use_statement_star instantiate
     import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_subroutine sep {
             LLOC(@$, @12); $$ = SUBROUTINE($2, $3, $4, TRIVIA($5, $12, @$), $6,
                 $7, $8, SPLIT_DECL(p.m_a, $9), SPLIT_STMT(p.m_a, $9), $10, @$); }
-    | fn_mod_plus KW_SUBROUTINE id sub_args bind_opt sep use_statement_star
+    | fn_mod_plus KW_SUBROUTINE id sub_args bind_opt sep use_statement_star instantiate
     import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_subroutine sep {
@@ -898,7 +898,7 @@ procedure
 
 function
     : KW_FUNCTION id "(" id_list_opt ")"
-        sep use_statement_star import_statement_star implicit_statement_star decl_statements
+        sep use_statement_star instantiate import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_function sep {
             LLOC(@$, @13); $$ = FUNCTION0($2, $4, nullptr, nullptr,
@@ -907,7 +907,7 @@ function
     | KW_FUNCTION id "(" id_list_opt ")"
         bind
         result_opt
-        sep use_statement_star import_statement_star implicit_statement_star decl_statements
+        sep use_statement_star instantiate import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_function sep {
             LLOC(@$, @15); $$ = FUNCTION0($2, $4, $7, $6, TRIVIA($8, $15, @$),
@@ -915,13 +915,13 @@ function
     | KW_FUNCTION id "(" id_list_opt ")"
         result
         bind_opt
-        sep use_statement_star import_statement_star implicit_statement_star decl_statements
+        sep use_statement_star instantiate import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_function sep {
             LLOC(@$, @15); $$ = FUNCTION0($2, $4, $6, $7, TRIVIA($8, $15, @$),
                 $9, $10, $11, SPLIT_DECL(p.m_a, $12), SPLIT_STMT(p.m_a, $12), $13, @$); }
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
-        sep use_statement_star import_statement_star implicit_statement_star decl_statements
+        sep use_statement_star instantiate import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_function sep {
             LLOC(@$, @14); $$ = FUNCTION($1, $3, $5, nullptr, nullptr,
@@ -930,7 +930,7 @@ function
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
         bind
         result_opt
-        sep use_statement_star import_statement_star implicit_statement_star decl_statements
+        sep use_statement_star instantiate import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_function sep {
             LLOC(@$, @16); $$ = FUNCTION($1, $3, $5, $8, $7, TRIVIA($9, $16, @$),
@@ -938,7 +938,7 @@ function
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
         result
         bind_opt
-        sep use_statement_star import_statement_star implicit_statement_star decl_statements
+        sep use_statement_star instantiate import_statement_star implicit_statement_star decl_statements
         contains_block_opt
         end_function sep {
             LLOC(@$, @16); $$ = FUNCTION($1, $3, $5, $7, $8, TRIVIA($9, $16, @$),

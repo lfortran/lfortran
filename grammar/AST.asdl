@@ -58,7 +58,7 @@ program_unit
 unit_decl1
     = Use(decl_attribute* nature, identifier module, use_symbol* symbols,
         bool only_present, trivia? trivia)
-    | Instantiate(identifier name, decl_attribute* types)
+    | Instantiate(identifier name, decl_attribute? vartype)
 
 unit_decl2
     = Declaration(decl_attribute? vartype, decl_attribute* attributes,

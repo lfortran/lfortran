@@ -1954,9 +1954,10 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         /*unit_decl2_t** a_decl*/ DECLS(decl), /*size_t n_decl*/ decl.size(), \
         /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size() \
         )
-#define INSTANTIATE(name, types, l) \
+
+#define INSTANTIATE(name, vartype, l) \
         make_Instantiate_t(p.m_a, l, name2char(name), \
-        VEC_CAST(types, decl_attribute), types.n)
+        down_cast<decl_attribute_t>(vartype))
 
 #define DERIVED_TYPE_PROC(attr, syms, trivia, l) make_DerivedTypeProc_t(p.m_a, l, \
         nullptr, VEC_CAST(attr, decl_attribute), attr.size(), \
