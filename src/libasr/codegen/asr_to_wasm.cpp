@@ -676,7 +676,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         } else if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
             emit_array_item_address_onto_stack(*(ASR::down_cast<ASR::ArrayItem_t>(x.m_target)));
             this->visit_expr(*x.m_value);
-            wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0);
+            emit_memory_store(x.m_value);
         } else {
             LFORTRAN_ASSERT(false)
         }
@@ -1017,7 +1017,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
         emit_array_item_address_onto_stack(x);
-        wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0);
+        emit_memory_load(x.m_v);
     }
 
     void handle_return() {
