@@ -345,11 +345,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     if (v_logical->m_kind == 4) {
                         wasm::emit_b8(code, m_al, wasm::type::i32);
                     }
-                    else if(v_logical->m_kind == 8){
-                        wasm::emit_b8(code, m_al, wasm::type::i64);
-                    }
                     else {
-                        throw CodeGenError("Logicals of kind 4 and 8 only supported");
+                        throw CodeGenError("Logicals of kind 4 only supported");
                     }
                 }
             } else if (ASRUtils::is_character(*v->m_type)) {
@@ -598,7 +595,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 switch (kind)
                 {
                     case 4: wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
-                    case 8:  wasm::emit_i64_store(m_code_section, m_al, wasm::mem_align::b8, 0); break;
                     default: throw CodeGenError("MemoryStore: Unsupported Logical kind");
                 }
                 break;
@@ -646,7 +642,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 switch (kind)
                 {
                     case 4: wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0); break;
-                    case 8:  wasm::emit_i64_load(m_code_section, m_al, wasm::mem_align::b8, 0); break;
                     default: throw CodeGenError("MemoryLoad: Unsupported Logical kind");
                 }
                 break;
@@ -963,17 +958,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 case (ASR::logicalbinopType::Eqv): { wasm::emit_i32_eq(m_code_section, m_al); break; }
                 default : throw CodeGenError("LogicalBinOp: Kind 4: Unhandled switch case");
             }
-        } else if (a_kind == 8) {
-            switch (x.m_op) {
-                case (ASR::logicalbinopType::And): { wasm::emit_i64_and(m_code_section, m_al); break; }
-                case (ASR::logicalbinopType::Or): { wasm::emit_i64_or(m_code_section, m_al); break; }
-                case ASR::logicalbinopType::Xor: { wasm::emit_i64_xor(m_code_section, m_al); break; }
-                case (ASR::logicalbinopType::NEqv): { wasm::emit_i64_xor(m_code_section, m_al); break; }
-                case (ASR::logicalbinopType::Eqv): { wasm::emit_i64_eq(m_code_section, m_al); break; }
-                default : throw CodeGenError("LogicalBinOp: Kind 8: Unhandled switch case");
-            }
         } else {
-            throw CodeGenError("LogicalBinOp: kind 4 and 8 supported only");
+            throw CodeGenError("LogicalBinOp: kind 4 supported only");
         }
     }
 
@@ -1098,12 +1084,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 wasm::emit_i32_const(m_code_section, m_al, val);
                 break;
             }
-            case 8: {
-                wasm::emit_i64_const(m_code_section, m_al, val);
-                break;
-            }
             default: {
-                throw CodeGenError("Constant Logical: Only kind 4 and 8 supported");
+                throw CodeGenError("Constant Logical: Only kind 4 supported");
             }
         }
     }
