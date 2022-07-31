@@ -26,6 +26,7 @@ trace on
 import platform
 $IS_MAC = platform.system() == "Darwin"
 $IS_WIN = platform.system() == "Windows"
+$IS_LINUX = platform.system() == "Linux"
 
 echo "CONDA_PREFIX=$CONDA_PREFIX"
 llvm-config --components
@@ -56,7 +57,10 @@ cd test-bld
 # Note: we have to build in Release mode on Windows, because `llvmdev` is
 # compiled in Release mode and we get link failures if we mix and match build
 # modes:
-BUILD_TYPE = "Release"
+if $IS_LINUX:
+    BUILD_TYPE = "Debug"
+else:
+    BUILD_TYPE = "Release"
 cmake -G$LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=@(BUILD_TYPE) ..
 cmake --build . --target install
 ./src/lfortran/tests/test_lfortran
