@@ -4,10 +4,11 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 
 # We don't execute this if we have a tarball
 if (LFORTRAN_BUILD_ALL)
-  execute_process(COMMAND "build0.sh")
+    find_program(BASH_BIN bash)
+    execute_process(COMMAND "${BASH_BIN}" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
-file(STRINGS "version" LFORTRAN_VERSION)
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/version" LFORTRAN_VERSION)
 
 project(lfortran LANGUAGES C CXX)
 
