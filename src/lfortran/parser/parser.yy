@@ -265,6 +265,7 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %token <string> KW_INOUT
 %token <string> KW_IN_OUT
 %token <string> KW_INQUIRE
+%token <string> KW_INSTANTIATE
 %token <string> KW_INTEGER
 %token <string> KW_INTENT
 %token <string> KW_INTERFACE
@@ -360,6 +361,7 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %type <ast> block_data
 %type <ast> decl
 %type <vec_ast> decl_star
+%type <ast> instantiate
 %type <ast> interface_decl
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
@@ -695,6 +697,11 @@ template_decl
     : KW_TEMPLATE id "(" id_list ")" sep decl_star
         contains_block_opt KW_END KW_TEMPLATE sep {
             $$ = TEMPLATE($2, $4, $7, $8, @$); }
+    ;
+
+instantiate
+    : KW_INSTANTIATE id "(" decl_star ")" "," KW_ONLY ":" id "=>" id sep {
+        $$ = INSTANTIATE($2, $4, @$); }
     ;
 
 end_type
@@ -1457,6 +1464,7 @@ decl_statement
     | template_decl
     | enum_decl
     | statement
+    | instantiate
     ;
 
 statement
@@ -2372,6 +2380,7 @@ id
     | KW_INCLUDE { $$ = SYMBOL($1, @$); }
     | KW_INOUT { $$ = SYMBOL($1, @$); }
     | KW_INQUIRE { $$ = SYMBOL($1, @$); }
+    | KW_INSTANTIATE { $$ = SYMBOL($1, @$); }
     | KW_INTEGER { $$ = SYMBOL($1, @$); }
     | KW_INTENT { $$ = SYMBOL($1, @$); }
     | KW_INTERFACE { $$ = SYMBOL($1, @$); }

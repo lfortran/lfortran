@@ -7,31 +7,30 @@ module swap_m
         private
         public :: swap
 
-        type :: t_pair
-            integer :: i
-            real :: x
-        end type
-
         type :: T
         end type
 
-        type :: R
-        end type
-
     contains
-        subroutine swap_(x, y)
+        subroutine swap_generic(x, y)
             type(T), intent(inout) :: x, y
             type(T) :: tmp
-            type(R) :: r_var
 
             tmp = x
             x = y
             y = tmp
         end subroutine
-
-        type(T) function get(a)
-            type(T) :: a
-            get = a
-        end function
     end template
+
+contains
+
+    subroutine test_template()
+        instantiate swap_t(real), only: swap => swap_generic
+        real :: x, y
+        x = 5
+        y = 7
+        call swap(x, y)
+        if (x /= 7) error stop
+        if (y /= 5) error stop
+    end subroutine
+
 end module

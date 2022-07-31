@@ -418,6 +418,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'inout' { KW(INOUT) }
             'in' whitespace 'out' { KW(IN_OUT) }
             'inquire' { KW(INQUIRE) }
+            'instantiate' { KW(INSTANTIATE) }
             'integer' { KW(INTEGER) }
             'intent' { KW(INTENT) }
             'interface' { KW(INTERFACE) }
