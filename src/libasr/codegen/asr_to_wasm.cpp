@@ -13,7 +13,7 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 
-#include <lfortran/pickle.h>
+// #include <lfortran/pickle.h>
 
 namespace LFortran {
 
