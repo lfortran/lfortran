@@ -1014,22 +1014,25 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         this->visit_expr(*x.m_v);
         ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_v);
         uint32_t kind = ASRUtils::extract_kind_from_ttype_t(ttype);
-        // ASR::dimension_t* m_dims;
-        // uint32_t n_dims = ASRUtils::extract_dimensions_from_ttype(ttype, m_dims);
-        // ASR::expr_t* length_value = ASRUtils::expr_value(m_dims[0].m_length);
-        // uint64_t array_size = -1;
-        // ASRUtils::extract_value(length_value, array_size);
+        Vec<uint32_t> array_dims;
+        get_array_dims(*ASRUtils::EXPR2VAR(x.m_v), array_dims);
+        uint32_t multiplier = 1;
+        wasm::emit_i32_const(m_code_section, m_al, 0);
         for(uint32_t i = 0; i < x.n_args; i++) {
             if (x.m_args[i].m_right) {
                 this->visit_expr(*x.m_args[i].m_right);
                 wasm::emit_i32_const(m_code_section, m_al, 1);
                 wasm::emit_i32_sub(m_code_section, m_al);
-                wasm::emit_i32_const(m_code_section, m_al, kind);
+                wasm::emit_i32_const(m_code_section, m_al, multiplier);
                 wasm::emit_i32_mul(m_code_section, m_al);
+                wasm::emit_i32_add(m_code_section, m_al);
+                multiplier *= array_dims[i];
             } else {
                 diag.codegen_warning_label("/* FIXME right index */", {x.base.base.loc}, "");
             }
         }
+        wasm::emit_i32_const(m_code_section, m_al, kind);
+        wasm::emit_i32_mul(m_code_section, m_al);
         wasm::emit_i32_add(m_code_section, m_al);
     }
 
