@@ -725,12 +725,11 @@ int compile_to_object_file(const std::string &infile,
     // ASR -> LLVM
     LFortran::LLVMEvaluator e(compiler_options.target);
 
-    if (!LFortran::ASRUtils::main_program_present(*asr)) {
+    if (!compiler_options.generate_object_code
+            && !LFortran::ASRUtils::main_program_present(*asr)) {
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
-        {
-            e.create_empty_object_file(outfile);
-        }
+        e.create_empty_object_file(outfile);
         return 0;
     }
 
@@ -1473,6 +1472,7 @@ int main(int argc, char *argv[])
         app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str();
         app.add_option("--backend", arg_backend, "Select a backend (llvm, cpp, x86, wasm)")->capture_default_str();
         app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
+        app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
         app.add_flag("--fast", compiler_options.fast, "Best performance (disable strict standard compliance)");
         app.add_flag("--link-with-gcc", link_with_gcc, "Calls GCC for linking instead of clang");
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
