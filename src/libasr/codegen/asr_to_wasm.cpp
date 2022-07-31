@@ -1230,20 +1230,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     if( arg_kind == 4 && dest_kind == 4 ) {
                         wasm::emit_i32_eqz(m_code_section, m_al);
                         wasm::emit_i32_eqz(m_code_section, m_al);
-                    } else if( arg_kind == 8 && dest_kind == 8 ) {
-                        wasm::emit_i64_eqz(m_code_section, m_al);
-                        wasm::emit_i64_eqz(m_code_section, m_al);
-                    } else if( arg_kind == 4 && dest_kind == 8 ) {
-                        wasm::emit_i64_eqz(m_code_section, m_al);
-                        wasm::emit_i64_eqz(m_code_section, m_al);
-                        wasm::emit_i32_wrap_i64(m_code_section, m_al);
                     } else if( arg_kind == 8 && dest_kind == 4 ) {
                         wasm::emit_i32_eqz(m_code_section, m_al);
                         wasm::emit_i32_eqz(m_code_section, m_al);
                         wasm::emit_i64_extend_i32_s(m_code_section, m_al);
                     } else {
-                        std::string msg = "Conversion from " + std::to_string(arg_kind) +
-                                          " to " + std::to_string(dest_kind) + " not implemented yet.";
+                        std::string msg = "Conversion from kinds " + std::to_string(arg_kind) +
+                                          " to " + std::to_string(dest_kind) + " not supported";
                         throw CodeGenError(msg);
                     }
                 }
@@ -1257,23 +1250,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         wasm::emit_f32_const(m_code_section, m_al, 0.0);
                         wasm::emit_f32_eq(m_code_section, m_al);
                         wasm::emit_i32_eqz(m_code_section, m_al);
-                    } else if( arg_kind == 8 && dest_kind == 8 ) {
-                        wasm::emit_f64_const(m_code_section, m_al, 0.0);
-                        wasm::emit_f64_eq(m_code_section, m_al);
-                        wasm::emit_i64_eqz(m_code_section, m_al);
-                    } else if( arg_kind == 4 && dest_kind == 8 ) {
-                        wasm::emit_f32_const(m_code_section, m_al, 0.0);
-                        wasm::emit_f32_eq(m_code_section, m_al);
-                        wasm::emit_i32_eqz(m_code_section, m_al);
-                        wasm::emit_i64_extend_i32_s(m_code_section, m_al);
                     } else if( arg_kind == 8 && dest_kind == 4 ) {
                         wasm::emit_f64_const(m_code_section, m_al, 0.0);
                         wasm::emit_f64_eq(m_code_section, m_al);
                         wasm::emit_i64_eqz(m_code_section, m_al);
                         wasm::emit_i32_wrap_i64(m_code_section, m_al);
                     } else {
-                        std::string msg = "Conversion from " + std::to_string(arg_kind) +
-                                          " to " + std::to_string(dest_kind) + " not implemented yet.";
+                        std::string msg = "Conversion from kinds " + std::to_string(arg_kind) +
+                                          " to " + std::to_string(dest_kind) + " not supported";
                         throw CodeGenError(msg);
                     }
                 }
@@ -1289,7 +1273,18 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 break;
             }
             case (ASR::cast_kindType::LogicalToInteger) : {
-                // do nothing as logicals are already implemented as integers in wasm backend
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if( arg_kind > 0 && dest_kind > 0){
+                    if( arg_kind == 4 && dest_kind == 8 ) {
+                        wasm::emit_i64_extend_i32_s(m_code_section, m_al);
+                    } else {
+                        std::string msg = "Conversion from kinds " + std::to_string(arg_kind) +
+                                          " to " + std::to_string(dest_kind) + " not supported";
+                        throw CodeGenError(msg);
+                    }
+                }
+                break;
                 break;
             }
             case (ASR::cast_kindType::LogicalToReal) : {
@@ -1298,15 +1293,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 if( arg_kind > 0 && dest_kind > 0){
                     if( arg_kind == 4 && dest_kind == 4 ) {
                         wasm::emit_f32_convert_i32_s(m_code_section, m_al);
-                    } else if( arg_kind == 8 && dest_kind == 8 ) {
-                        wasm::emit_f64_convert_i64_s(m_code_section, m_al);
                     } else if( arg_kind == 4 && dest_kind == 8 ) {
                         wasm::emit_f64_convert_i32_s(m_code_section, m_al);
-                    } else if( arg_kind == 8 && dest_kind == 4 ) {
-                        wasm::emit_f32_convert_i64_s(m_code_section, m_al);
                     } else {
-                        std::string msg = "Conversion from " + std::to_string(arg_kind) +
-                                          " to " + std::to_string(dest_kind) + " not implemented yet.";
+                        std::string msg = "Conversion from kinds " + std::to_string(arg_kind) +
+                                          " to " + std::to_string(dest_kind) + " not supported";
                         throw CodeGenError(msg);
                     }
                 }
