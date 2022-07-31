@@ -1038,6 +1038,27 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         emit_memory_load(x.m_v);
     }
 
+    void visit_ArraySize(const ASR::ArraySize_t &x) {
+        if (x.m_value) {
+            this->visit_expr(*x.m_value);
+            return;
+        }
+
+        Vec<uint32_t> array_dims;
+        get_array_dims(*ASRUtils::EXPR2VAR(x.m_v), array_dims);
+        if (x.m_dim) {
+            uint32_t dim_idx = -1;
+            ASRUtils::extract_value(ASRUtils::expr_value(x.m_dim), dim_idx);
+            wasm::emit_i32_const(m_code_section, m_al, array_dims[dim_idx - 1]);
+            return;
+        }
+        uint32_t total_array_size = 1U;
+        for (auto &dim:array_dims) {
+            total_array_size *=  dim;
+        }
+        wasm::emit_i32_const(m_code_section, m_al, total_array_size);
+    }
+
     void handle_return() {
         if (cur_sym_info->return_var) {
             LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)cur_sym_info->return_var)) != m_var_name_idx_map.end());
