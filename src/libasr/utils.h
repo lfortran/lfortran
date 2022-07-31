@@ -29,6 +29,7 @@ struct CompilerOptions {
     bool tree = false;
     bool fast = false;
     bool openmp = false;
+    bool generate_object_code = false;
     bool no_warnings = false;
     bool no_error_banner = false;
     std::string error_format = "human";
