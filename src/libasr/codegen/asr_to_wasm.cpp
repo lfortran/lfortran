@@ -619,6 +619,53 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         return kind;
     }
 
+    void emit_memory_load(ASR::expr_t* v) {
+        auto ttype = ASRUtils::expr_type(v);
+        auto kind = ASRUtils::extract_kind_from_ttype_t(ttype);
+        switch (ttype->type)
+        {
+            case ASR::ttypeType::Integer: {
+                switch (kind)
+                {
+                    case 4: wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                    case 8:  wasm::emit_i64_load(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                    default: throw CodeGenError("MemoryLoad: Unsupported Integer kind");
+                }
+                break;
+            }
+            case ASR::ttypeType::Real: {
+                switch (kind)
+                {
+                    case 4: wasm::emit_f32_load(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                    case 8:  wasm::emit_f64_load(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                    default: throw CodeGenError("MemoryLoad: Unsupported Real kind");
+                }
+                break;
+            }
+            case ASR::ttypeType::Logical: {
+                switch (kind)
+                {
+                    case 4: wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                    case 8:  wasm::emit_i64_load(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                    default: throw CodeGenError("MemoryLoad: Unsupported Logical kind");
+                }
+                break;
+            }
+            case ASR::ttypeType::Character: {
+                switch (kind)
+                {
+                    case 4: wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                    case 8:  wasm::emit_i64_load(m_code_section, m_al, wasm::mem_align::b8, 0); break;
+                    default: throw CodeGenError("MemoryLoad: Unsupported Character kind");
+                }
+                break;
+            }
+            default: {
+                throw CodeGenError("MemoryLoad: Type " + ASRUtils::type_to_str(ttype) + " not yet supported");
+            }
+        }
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         // this->visit_expr(*x.m_target);
         if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
