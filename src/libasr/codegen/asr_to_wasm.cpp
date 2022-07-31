@@ -344,6 +344,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 if (is_array) {
                     wasm::emit_b8(code, m_al, wasm::type::i32);
                 } else {
+                    // All Logicals are represented as i32 in WASM
                     if (v_logical->m_kind == 4) {
                         wasm::emit_b8(code, m_al, wasm::type::i32);
                     }
