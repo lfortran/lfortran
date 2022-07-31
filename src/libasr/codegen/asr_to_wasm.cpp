@@ -842,6 +842,22 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     template<typename T>
+    int get_kind_from_operands(const T &x) {
+        ASR::ttype_t* left_ttype = ASRUtils::expr_type(x.m_left);
+        int left_kind = ASRUtils::extract_kind_from_ttype_t(left_ttype);
+
+        ASR::ttype_t* right_ttype = ASRUtils::expr_type(x.m_right);
+        int right_kind = ASRUtils::extract_kind_from_ttype_t(right_ttype);
+
+        if (left_kind != right_kind) {
+            diag.codegen_error_label("Operand kinds do not match", { x.base.base.loc }, "WASM Type Mismatch Error");
+            throw CodeGenAbort();
+        }
+
+        return left_kind;
+    }
+
+    template<typename T>
     void handle_integer_compare(const T &x){
         if (x.m_value) {
             visit_expr(*x.m_value);
@@ -849,7 +865,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         this->visit_expr(*x.m_left);
         this->visit_expr(*x.m_right);
-        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        // int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        int a_kind = get_kind_from_operands(x);
         if (a_kind == 4) {
             switch (x.m_op) {
                 case (ASR::cmpopType::Eq) : { wasm::emit_i32_eq(m_code_section, m_al); break; }
@@ -882,7 +899,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         this->visit_expr(*x.m_left);
         this->visit_expr(*x.m_right);
-        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        // int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        int a_kind = get_kind_from_operands(x);
         if (a_kind == 4) {
             switch (x.m_op) {
                 case (ASR::cmpopType::Eq) : { wasm::emit_f32_eq(m_code_section, m_al); break; }
