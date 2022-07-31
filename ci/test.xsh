@@ -50,4 +50,6 @@ if not $IS_WIN:
     cmake -DLFORTRAN_BACKEND=llvm ..
     make
     ctest -L llvm
-    cd ../..
+    cd ..
+
+    ./run_tests.py -b llvm2
