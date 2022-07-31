@@ -1046,20 +1046,28 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             this->visit_expr(*x.m_value);
             return;
         }
-
         Vec<uint32_t> array_dims;
         get_array_dims(*ASRUtils::EXPR2VAR(x.m_v), array_dims);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         if (x.m_dim) {
             uint32_t dim_idx = -1;
             ASRUtils::extract_value(ASRUtils::expr_value(x.m_dim), dim_idx);
-            wasm::emit_i32_const(m_code_section, m_al, array_dims[dim_idx - 1]);
+            if (kind == 4) {
+                wasm::emit_i32_const(m_code_section, m_al, array_dims[dim_idx - 1]);
+            } else if (kind == 8) {
+                wasm::emit_i64_const(m_code_section, m_al, array_dims[dim_idx - 1]);
+            }
             return;
         }
         uint32_t total_array_size = 1U;
         for (auto &dim:array_dims) {
             total_array_size *=  dim;
         }
-        wasm::emit_i32_const(m_code_section, m_al, total_array_size);
+        if (kind == 4) {
+            wasm::emit_i32_const(m_code_section, m_al, total_array_size);
+        } else if (kind == 8) {
+            wasm::emit_i64_const(m_code_section, m_al, total_array_size);
+        }
     }
 
     void handle_return() {
