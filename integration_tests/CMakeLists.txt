@@ -186,7 +186,7 @@ RUN(NAME arrays_reshape_14 LABELS gfortran llvm)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm)
 RUN(NAME arrays_03_func LABELS gfortran cpp llvm)
 RUN(NAME arrays_04_func LABELS gfortran cpp llvm)
-RUN(NAME arrays_05 LABELS gfortran cpp)
+RUN(NAME arrays_05 LABELS gfortran llvm cpp wasm)
 
 # GFortran
 RUN(NAME arrays_02 LABELS gfortran)
