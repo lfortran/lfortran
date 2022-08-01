@@ -1174,8 +1174,8 @@ int link_executable(const std::vector<std::string> &infiles,
                 CC = "gcc";
             } else {
                 CC = "clang";
-            }  
-	    
+            }
+
             char *env_CC = std::getenv("LFORTRAN_CC");
             if (env_CC) CC = env_CC;
 
@@ -1323,14 +1323,6 @@ EMSCRIPTEN_KEEPALIVE char* emit_cpp_from_source(char *input) {
 EMSCRIPTEN_KEEPALIVE char* emit_c_from_source(char *input) {
     INITIALIZE_VARS;
     LFortran::Result<std::string> r = fe.get_c(input, lm, diagnostics, 1);
-    out = diagnostics.render(input, lm, compiler_options);
-    if (r.ok) { out += r.result; }
-    return &out[0];
-}
-
-EMSCRIPTEN_KEEPALIVE char* emit_llvm_from_source(char *input) {
-    INITIALIZE_VARS;
-    LFortran::Result<std::string> r = fe.get_llvm(input, lm, diagnostics);
     out = diagnostics.render(input, lm, compiler_options);
     if (r.ok) { out += r.result; }
     return &out[0];
