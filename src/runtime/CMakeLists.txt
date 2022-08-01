@@ -11,7 +11,7 @@ project(lfortran_unif_runtime C Fortran)
 # Ideally this setting would be enough to auto install .mod files
 # but I was not able to make it work. I don't think it's very well
 # documented.
-# set(CMAKE_Fortran_MODULE_DIRECTORY "share/lfortran/lib")
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 macro(lfrotran_compile_runtime name dir)
   add_library(${name} OBJECT ${dir}/${name}.f90)
@@ -29,7 +29,6 @@ macro(lfrotran_compile_runtime name dir)
   if(ARGN)
     add_dependencies(${name} ${ARGN})
   endif()
-endif()
 endmacro(lfrotran_compile_runtime)
 
 macro(lfortran_install_runtime)
