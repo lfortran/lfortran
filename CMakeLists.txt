@@ -3,9 +3,47 @@ cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 
 # We don't execute this if we have a tarball
-if (LFORTRAN_BUILD_ALL)
-    find_program(BASH_BIN bash)
-    execute_process(COMMAND "${BASH_BIN}" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+if(LFORTRAN_BUILD_ALL)
+    find_program(GIT_BIN git)
+    find_program(RE2C_BIN re2c)
+    find_package(Python3)
+    find_package(BISON 3.4)
+
+    # Fetch the version from git
+    execute_process(COMMAND "${GIT_BIN}" "describe" "--tags" "--dirty" OUTPUT_VARIABLE LFORTRAN_VERSION)
+    string(REGEX REPLACE "^v" "" LFORTRAN_VERSION ${LFORTRAN_VERSION})
+    file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/version" "${LFORTRAN_VERSION}")
+
+    # Keep the Python calls seperate to avoid a BrokenPipeError exception being raised
+    # Generate a Fortran AST from AST.asdl (C++)
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" "grammar/asdl_cpp.py"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    # Generate a Fortran ASR from ASR.asdl (C++)
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" "grammar/asdl_cpp.py" "src/libasr/ASR.asdl" "src/libasr/asr.h"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    # Generate a wasm_visitor.h from src/libasr/wasm_instructions.txt (C++)
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" "src/libasr/wasm_instructions_visitor.py"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    
+    # Generate the tokenizer and parser
+    execute_process(
+        COMMAND "${RE2C_BIN}" "-W" "-b" "tokenizer.re" "-o" "tokenizer.cpp"
+        COMMAND "${RE2C_BIN}" "-W" "-b" "preprocessor.re" "-o" "preprocessor.cpp"
+        COMMAND "${BISON_EXECUTABLE}" "-Wall" "-d" "-r" "all" "parser.yy"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/lfortran/parser"
+    )
+
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/src/lfortran/parser/parser.yy" PARSER_YY)
+    string(FIND "${PARSER_YY}" "'" SINGLE_QUOTE_FOUND)
+    if(NOT SINGLE_QUOTE_FOUND EQUAL -1)
+        message(FATAL_ERROR "Found single quote in parser.yy. Value not allowed!")
+    endif()
 endif()
 
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/version" LFORTRAN_VERSION)
