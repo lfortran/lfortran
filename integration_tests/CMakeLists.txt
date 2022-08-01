@@ -74,6 +74,11 @@ macro(RUN)
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         endif()
 
+        if (LFORTRAN_BACKEND STREQUAL "llvm2")
+            target_compile_options(${name} PUBLIC --generate-object-code)
+            target_link_options(${name} PUBLIC  --generate-object-code)
+        endif()
+
         if (RUN_LABELS)
             set_tests_properties(${name} PROPERTIES LABELS "${RUN_LABELS}")
         endif()
@@ -84,18 +89,27 @@ macro(RUN)
     endif()
 endmacro(RUN)
 
+# The supported test labels are:
+#
+# gfortran --- compile with GFortran
+# llvm     --- compile with LFortran, only generate binary code at the very end
+# llvm2    --- compile with LFortran, generate object files
+# cpp      --- compile to C++, compile C++ to binary
+# x86      --- compile to x86 binary directly
+# wasm     --- compile to WASM binary directly
+
 
 # GFortran + LFortran LLVM + LFortran C++
 
 RUN(NAME program_cmake_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME program_cmake_02 LABELS gfortran llvm cpp x86)
 
-RUN(NAME error_stop_01 FAIL LABELS gfortran llvm cpp x86 wasm)
-RUN(NAME error_stop_02 FAIL LABELS llvm wasm)
-RUN(NAME stop_01 LABELS llvm wasm)
+RUN(NAME error_stop_01 FAIL LABELS gfortran llvm cpp x86 wasm llvm2)
+RUN(NAME error_stop_02 FAIL LABELS llvm wasm llvm2)
+RUN(NAME stop_01 LABELS llvm wasm llvm2)
 
-RUN(NAME print_01 LABELS gfortran llvm cpp)
-RUN(NAME print_02 LABELS gfortran llvm)
+RUN(NAME print_01 LABELS gfortran llvm cpp llvm2)
+RUN(NAME print_02 LABELS gfortran llvm llvm2)
 
 RUN(NAME cond_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME cond_02 LABELS gfortran llvm wasm)
@@ -161,7 +175,7 @@ RUN(NAME types_06 LABELS gfortran llvm cpp)
 # GFortran + LFortran C++
 RUN(NAME doconcurrentloop_01 LABELS gfortran cpp)
 
-RUN(NAME arrays_01 LABELS gfortran cpp llvm)
+RUN(NAME arrays_01 LABELS gfortran cpp llvm wasm)
 RUN(NAME arrays_01_size LABELS gfortran llvm)
 RUN(NAME arrays_02_size LABELS gfortran llvm)
 RUN(NAME matrix_01_transpose LABELS gfortran)
@@ -186,7 +200,7 @@ RUN(NAME arrays_reshape_14 LABELS gfortran llvm)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm)
 RUN(NAME arrays_03_func LABELS gfortran cpp llvm)
 RUN(NAME arrays_04_func LABELS gfortran cpp llvm)
-RUN(NAME arrays_05 LABELS gfortran cpp)
+RUN(NAME arrays_05 LABELS gfortran llvm cpp wasm)
 
 # GFortran
 RUN(NAME arrays_02 LABELS gfortran)

@@ -528,7 +528,7 @@ namespace LFortran {
 
             if( this->is_array(shape) ) {
                 llvm::Value* n_dims = this->get_array_size(shape, nullptr, 4);
-                llvm::Value* shape_data = builder->CreateLoad(this->get_pointer_to_data(shape));
+                llvm::Value* shape_data = LLVM::CreateLoad(*builder, this->get_pointer_to_data(shape));
                 llvm::Value* dim_des_val = llvm_utils->create_gep(reshaped, 2);
                 llvm::Value* dim_des_first = builder->CreateAlloca(dim_des, n_dims);
                 builder->CreateStore(n_dims, this->get_rank(reshaped, true));
@@ -552,7 +552,7 @@ namespace LFortran {
                 llvm::Value* s_val = llvm_utils->create_gep(dim_val, 0);
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 2);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), s_val);
-                llvm::Value* dim_size = builder->CreateLoad(llvm_utils->create_ptr_gep(shape_data, r_val));
+                llvm::Value* dim_size = LLVM::CreateLoad(*builder, llvm_utils->create_ptr_gep(shape_data, r_val));
                 builder->CreateStore(dim_size, dim_size_ptr);
                 r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
                 builder->CreateStore(r_val, r);
@@ -566,9 +566,9 @@ namespace LFortran {
 
         // Shallow copies source array descriptor to destination descriptor
         void SimpleCMODescriptor::copy_array(llvm::Value* src, llvm::Value* dest) {
-            llvm::Value* src_data_ptr = builder->CreateLoad(this->get_pointer_to_data(src));
+            llvm::Value* src_data_ptr = LLVM::CreateLoad(*builder, this->get_pointer_to_data(src));
             builder->CreateStore(src_data_ptr, this->get_pointer_to_data(dest));
-            llvm::Value* src_offset_ptr = builder->CreateLoad(llvm_utils->create_gep(src, 1));
+            llvm::Value* src_offset_ptr = LLVM::CreateLoad(*builder, llvm_utils->create_gep(src, 1));
             builder->CreateStore(src_offset_ptr, llvm_utils->create_gep(dest, 1));
             llvm::Value* src_dim_des_val = this->get_pointer_to_dimension_descriptor_array(src, true);
             llvm::Value* dest_dim_des_val = this->get_pointer_to_dimension_descriptor_array(dest, true);
@@ -604,7 +604,7 @@ namespace LFortran {
 
             llvm::Value* src_is_allocated_ptr = this->get_is_allocated_flag(src);
             builder->CreateStore(src_is_allocated_ptr, llvm_utils->create_gep(src, 3));
-            llvm::Value* src_rank_ptr = builder->CreateLoad(llvm_utils->create_gep(src, 4));
+            llvm::Value* src_rank_ptr = LLVM::CreateLoad(*builder, llvm_utils->create_gep(src, 4));
             builder->CreateStore(src_rank_ptr, llvm_utils->create_gep(dest, 4));
         }
 

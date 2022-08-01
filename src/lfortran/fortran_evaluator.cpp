@@ -244,7 +244,7 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
         symbol_table->mark_all_variables_external(al);
     }
     auto res = ast_to_asr(al, ast, diagnostics, symbol_table,
-        compiler_options.symtab_only);
+        compiler_options.symtab_only, compiler_options);
     if (res.ok) {
         asr = res.result;
     } else {

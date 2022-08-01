@@ -13,6 +13,13 @@ enum type {
     f64 = 0x7C
 };
 
+enum mem_align {
+    b8 = 0,
+    b16 = 1,
+    b32 = 2,
+    b64 = 3
+};
+
 void emit_leb128_u32(Vec<uint8_t> &code, Allocator &al, uint32_t n) { // for u32
     do {
         uint8_t byte = n & 0x7f;
@@ -162,7 +169,7 @@ void emit_export_fn(Vec<uint8_t> &code, Allocator &al, const std::string& name,
 }
 
 void emit_import_fn(Vec<uint8_t> &code, Allocator &al, const std::string &mod_name,
-                const std::string& fn_name, uint32_t type_idx) 
+                const std::string& fn_name, uint32_t type_idx)
 {
     emit_str(code, al, mod_name);
     emit_str(code, al, fn_name);
@@ -568,7 +575,7 @@ void emit_branch_if(Vec<uint8_t> &code, Allocator &al, uint32_t label_idx){
 }
 
 void save_js_glue(std::string filename){
-    std::string js_glue = 
+    std::string js_glue =
 R"(function define_imports(memory, outputBuffer, stdout_print) {
     const printNum = (num) => outputBuffer.push(num.toString());
     const printStr = (startIdx, strSize) => outputBuffer.push(
@@ -726,6 +733,170 @@ void emit_i64_extend16_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al,
 
 // function to emit i64.extend32_s instruction
 void emit_i64_extend32_s(Vec<uint8_t> &code, Allocator &al) { code.push_back(al, 0xC4); }
+
+
+/**************************** Memory Instructions ****************************/
+
+// function to emit i32.load instruction
+void emit_i32_load(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x28);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i64.load instruction
+void emit_i64_load(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x29);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit f32.load instruction
+void emit_f32_load(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x2A);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit f64.load instruction
+void emit_f64_load(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x2B);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i32.load8_s instruction
+void emit_i32_load8_s(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x2C);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i32.load8_u instruction
+void emit_i32_load8_u(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x2D);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i32.load16_s instruction
+void emit_i32_load16_s(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x2E);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i32.load16_u instruction
+void emit_i32_load16_u(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x2F);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i64.load8_s instruction
+void emit_i64_load8_s(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x30);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i64.load8_u instruction
+void emit_i64_load8_u(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x31);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i64.load16_s instruction
+void emit_i64_load16_s(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x32);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i64.load16_u instruction
+void emit_i64_load16_u(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x33);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i64.load32_s instruction
+void emit_i64_load32_s(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x34);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i64.load32_u instruction
+void emit_i64_load32_u(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x35);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i32.store instruction
+void emit_i32_store(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x36);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i64.store instruction
+void emit_i64_store(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x37);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit f32.store instruction
+void emit_f32_store(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x38);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit f64.store instruction
+void emit_f64_store(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x39);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i32.store8 instruction
+void emit_i32_store8(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x3A);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i32.store16 instruction
+void emit_i32_store16(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x3B);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i64.store8 instruction
+void emit_i64_store8(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x3C);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i64.store16 instruction
+void emit_i64_store16(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x3D);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
+
+// function to emit i64.store32 instruction
+void emit_i64_store32(Vec<uint8_t> &code, Allocator &al, uint32_t mem_align, uint32_t mem_offset) {
+    emit_b8(code, al, 0x3E);
+    emit_u32(code, al, mem_align);
+    emit_u32(code, al, mem_offset);
+}
 
 }  // namespace wasm
 
