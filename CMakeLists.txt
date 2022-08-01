@@ -1,13 +1,13 @@
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 
 # We don't execute this if we have a tarball
 if(LFORTRAN_BUILD_ALL)
-    find_program(GIT_BIN git)
-    find_program(RE2C_BIN re2c)
-    find_package(Python3)
-    find_package(BISON 3.4)
+    find_program(GIT_BIN git REQUIRED)
+    find_program(RE2C_BIN re2c REQUIRED)
+    find_package(Python3 REQUIRED)
+    find_package(BISON 3.4 REQUIRED)
 
     # Fetch the version from git
     execute_process(COMMAND "${GIT_BIN}" "describe" "--tags" "--dirty" OUTPUT_VARIABLE LFORTRAN_VERSION)
