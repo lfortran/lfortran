@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 
@@ -10,7 +10,11 @@ if(LFORTRAN_BUILD_ALL)
     find_package(BISON 3.4 REQUIRED)
 
     # Fetch the version from git
-    execute_process(COMMAND "${GIT_BIN}" "describe" "--tags" "--dirty" OUTPUT_VARIABLE LFORTRAN_VERSION)
+    execute_process(
+        COMMAND "${GIT_BIN}" "describe" "--tags" "--dirty"
+        OUTPUT_VARIABLE LFORTRAN_VERSION
+        COMMAND_ERROR_IS_FATAL ANY
+    )
     string(REGEX REPLACE "^v" "" LFORTRAN_VERSION ${LFORTRAN_VERSION})
     file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/version" "${LFORTRAN_VERSION}")
 
@@ -19,16 +23,19 @@ if(LFORTRAN_BUILD_ALL)
     execute_process(
         COMMAND "${Python3_EXECUTABLE}" "grammar/asdl_cpp.py"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND_ERROR_IS_FATAL ANY
     )
     # Generate a Fortran ASR from ASR.asdl (C++)
     execute_process(
         COMMAND "${Python3_EXECUTABLE}" "grammar/asdl_cpp.py" "src/libasr/ASR.asdl" "src/libasr/asr.h"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND_ERROR_IS_FATAL ANY
     )
     # Generate a wasm_visitor.h from src/libasr/wasm_instructions.txt (C++)
     execute_process(
         COMMAND "${Python3_EXECUTABLE}" "src/libasr/wasm_instructions_visitor.py"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND_ERROR_IS_FATAL ANY
     )
     
     # Generate the tokenizer and parser
@@ -37,6 +44,7 @@ if(LFORTRAN_BUILD_ALL)
         COMMAND "${RE2C_BIN}" "-W" "-b" "preprocessor.re" "-o" "preprocessor.cpp"
         COMMAND "${BISON_EXECUTABLE}" "-Wall" "-d" "-r" "all" "parser.yy"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/lfortran/parser"
+        COMMAND_ERROR_IS_FATAL ANY
     )
 
     file(READ "${CMAKE_CURRENT_SOURCE_DIR}/src/lfortran/parser/parser.yy" PARSER_YY)
