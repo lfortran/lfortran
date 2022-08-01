@@ -8,6 +8,8 @@
 #include <lfortran/parser/parser_exception.h>
 #include <lfortran/parser/fixedform_tokenizer.h>
 
+#include <lfortran/pickle.h>
+
 namespace LFortran
 {
 
@@ -640,13 +642,15 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
         message = "Internal Compiler Error: syntax is ambiguous in the parser";
     } else if (msg == "syntax error") {
         if (this->fixed_form) {
-            auto invalid_token = this->f_tokenizer.token_pos-1;
+            auto invalid_token = this->f_tokenizer.token_pos;            
+            // if (invalid_token - 5 > 0 && invalid_token + 6 < f_tokenizer.tokens.size()) {
+            //     for(size_t i=5;i>0;--i)
+            //         std::cout << "token -" << i << " before " << token2text(f_tokenizer.tokens[invalid_token-i]) << " " << LFortran::pickle(f_tokenizer.tokens[invalid_token-i], f_tokenizer.stypes[invalid_token-i]) << "\n";
+            //     for(size_t i=1;i<6;++i)
+            //         std::cout << "token " << i << " after " << token2text(f_tokenizer.tokens[invalid_token+i]) << " " << LFortran::pickle(f_tokenizer.tokens[invalid_token+i], f_tokenizer.stypes[invalid_token+i]) << "\n";
+            // }
+            // std::cout << "problematic token " << token2text(f_tokenizer.tokens[invalid_token]) << " " << LFortran::pickle(f_tokenizer.tokens[invalid_token], f_tokenizer.stypes[invalid_token]) << "\n";
             message = "Syntax error in the fixed-form parser";
-            for(unsigned int i=5;i>0;--i) {
-                if (invalid_token-i <= 0) break;
-                auto tok =this->f_tokenizer.tokens[invalid_token-i];
-                message += "\n " + std::to_string(i) + "-to-last token: " + token2text(tok) + "\n";
-            }
             throw parser_local::ParserError(message, loc);
         } else {
             LFortran::YYSTYPE yylval_;

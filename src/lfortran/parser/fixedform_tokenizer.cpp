@@ -7,6 +7,9 @@
 #include <lfortran/parser/tokenizer.h>
 #include <libasr/bigint.h>
 
+#include <lfortran/pickle.h>
+
+
 int position = 0;
 #define TOK(pos, arg) std::cout << std::string(pos, ' ') << "TOKEN: " << arg << std::endl;
 
@@ -256,13 +259,6 @@ std::map<std::string, int> identifiers_map = {
 };
 
 std::vector<std::string> declarators{
-            "integerfunction",
-            "realfunction",
-            "complexfunction",
-            "doubleprecisionfunction",
-            "externalfunction",
-            "bytefunction",
-            "logicalfunction",
             "integer",
             "real",
             "complex",
@@ -351,13 +347,10 @@ struct FixedFormRecursiveDescent {
             label.erase(end, label.end());
             unsigned char *t = (unsigned char*)&label[0];
             unsigned char *e = (unsigned char*)&label[label.size()];
-            // std::cout << "stype should be " << label << ", t is " << t << ", e is " << e << std::endl;
             lex_int_large(m_a, t,e,
                     y.int_suffix.int_n,
                     y.int_suffix.int_kind);
-            // std::cout << "str is " << y.n << std::endl;
             stypes.push_back(y);
-            
             cur+=reserved_cols;
             return true;
         }
@@ -380,6 +373,8 @@ struct FixedFormRecursiveDescent {
             lex_int_large(m_a, cur, cur2,
                     yy.int_suffix.int_n,
                     yy.int_suffix.int_kind);
+            
+            
             stypes.push_back(yy);
             tokens.push_back(yytokentype::TK_LABEL);
             cur+=count+1; // TODO revisit
@@ -429,11 +424,7 @@ struct FixedFormRecursiveDescent {
     void tokenize_line(const std::string &chop, unsigned char *&cur) {
         YYSTYPE y1;
         if (chop != "") {
-            std::string l(chop); // copy
-            // lines.push_back(l);
-            // yy.string.from_str_view(l);
-            // y1.string.n = l.size();
-            // y1.string.p = &l[0];
+            std::string l(chop); 
             y1.string.from_str(m_a, l);
             stypes.push_back(y1);
             tokens.push_back(identifiers_map[chop]);
@@ -465,25 +456,28 @@ struct FixedFormRecursiveDescent {
             auto token = t.lex(m_a, y2, l, diag);
             // we need to disentangle "goto999" as the tokenizer cannot do it
             // on its own
-            if (next_is(t.tok, "goto") && token != 404) {
-                int token_label = 262;
-                int token_goto = 404;
-                std::string l("goto"); // copy
-                // lines.push_back(l);
-                // y2.string.n = l.size();
-                // y2.string.p = &l[0];
+            if (next_is(t.tok, "goto") && token != yytokentype::KW_GOTO) {
+
+                std::string l("goto");
                 y2.string.from_str(m_a, l);
                 stypes.push_back(y2);
-                tokens.push_back(token_goto);
+                tokens.push_back(yytokentype::KW_GOTO);
 
                 YYSTYPE y3;
-                std::string ll{tostr(t.tok+4, t.cur)};
-                // lines.push_back(ll);
-                // y3.string.n = ll.size();
-                // y3.string.p = &ll[0];
-                y3.string.from_str(m_a, ll);
+                lex_int_large(m_a, t.tok + 4,t.tok,
+                    y3.int_suffix.int_n,
+                    y3.int_suffix.int_kind);
+
+
                 stypes.push_back(y3);
-                tokens.push_back(token_label);
+                tokens.push_back(yytokentype::TK_LABEL);
+
+                // YYSTYPE n;
+                // std::string nl{"\n"};
+                // n.string.from_str(m_a, nl);
+                // stypes.push_back(n);
+                // tokens.push_back(yytokentype::TK_NEWLINE);
+
                 continue;
             }
             // TODO: handle
@@ -496,9 +490,6 @@ struct FixedFormRecursiveDescent {
             len = t.cur - t.tok;
 
             tokens.push_back(token);
-            // lines.push_back(tk);
-            // y2.string.n = tk.size();
-            // y2.string.p = &tk[0];
             if (token == yytokentype::TK_INTEGER) {
                 lex_int_large(m_a, t.tok, t.cur,
                     y2.int_suffix.int_n,
@@ -507,25 +498,7 @@ struct FixedFormRecursiveDescent {
                 std::string tk{tostr(t.tok, t.tok + len)};
                 y2.string.from_str(m_a, tk);
             }
-
             stypes.push_back(y2);
-            // for now, this double check is needed as the usual tokenizer does not
-            // like newlines '\n'
-            // we have the check for ';' to be able to have multiple expressions per line
-            /*
-            if(*(t.cur+1) == '\n' || *(t.cur + 1) == ';') {
-                token = t.lex(m_a, y2, l, diag);
-                len = t.cur - t.tok;
-                tokens.push_back(token);
-                std::string tkk{tostr(t.tok, t.tok + len)};
-                // lines.push_back(tkk);
-                // y2.string.n = tkk.size();
-                // y2.string.p = &tkk[0];
-                y2.string.from_str(m_a, tkk);
-                stypes.push_back(y2);
-                break;
-            }
-            */
         }
     }
 
@@ -566,21 +539,19 @@ struct FixedFormRecursiveDescent {
     }
 
     bool has_terminal(unsigned char *&cur) {
-        auto cpy = cur; cpy += 6; // advance cpy the reserved cols
         std::vector<std::string> terminals {
             "end"
         };
         for (const auto &terminal : terminals) {
-            if (next_is(cpy, terminal))
+            if (next_is(cur, terminal))
                 return true;
         }
         return false;
     }
 
     bool lex_body_statement(unsigned char *&cur) {
-        if (has_terminal(cur)) return false;
-
         eat_label(cur);
+        // if (has_terminal(cur)) return false;     
         if (lex_declaration(cur)) return true;
         if (lex_io(cur)) return true;
         if (next_is(cur, "if(")) {
@@ -592,7 +563,7 @@ struct FixedFormRecursiveDescent {
             lex_do(cur);
             return true;
         }
-        // assignment or some such
+        // assignment
         if (contains(cur, nline, '=')) {
             tokenize_line("", cur);
             return true;
@@ -604,10 +575,10 @@ struct FixedFormRecursiveDescent {
         }
 
         /*
-         * explicitly DO NOT tokenize `CONTINUE`
+         * explicitly DO NOT tokenize `CONTINUE`, `GO TO`
          */
 
-        if (next_is(cur, "call")) {
+        if (next_is(cur, "call") && !contains(cur, nline, '=')) {
             tokenize_line("call", cur);
             return true;
         }
@@ -639,7 +610,7 @@ struct FixedFormRecursiveDescent {
         tokens.push_back(identifiers_map[l]);
         cur += l.size();
         if (eat_label_inline(cur)) {
-            cur--; // un-advance
+            cur--; // un-advance as eat_label_inline moves 1 char too far when making checks
         }
         tokenize_line("", cur); // tokenize rest of line where `do` starts
         while (lex_body_statement(cur));
@@ -680,7 +651,6 @@ struct FixedFormRecursiveDescent {
     }
 
     void lex_subroutine(unsigned char *&cur) {
-        tokenize_line("subroutine", cur);
         while(lex_body_statement(cur));
         eat_label(cur);
         if (next_is(cur, "return")) {
@@ -697,7 +667,6 @@ struct FixedFormRecursiveDescent {
     }
 
     void lex_program(unsigned char *&cur) {
-        tokenize_line("program", cur);
         while(lex_body_statement(cur));
         eat_label(cur);
         if (next_is(cur, "endprogram")) {
@@ -710,9 +679,8 @@ struct FixedFormRecursiveDescent {
     }
 
     void lex_function(unsigned char *&cur) {
-        tokenize_line("function", cur);
         while(lex_body_statement(cur));
-        eat_label(cur);
+        // eat_label(cur);
         if (next_is(cur, "endfunction")) {
             tokenize_line("endfunction", cur);
         } else if (next_is(cur, "end")) {
@@ -721,20 +689,13 @@ struct FixedFormRecursiveDescent {
             error(cur, "Expecting terminating symbol for function");
         }
     }
-    // ENTRY statement: result
 
-    // FUNCTION statements: recursive, result, character, complex, integer, doubleprecision (KW_DOUBLE_PRECISION), external
-
-    // SUBROUTINE statements: recursive (the only one?)
-
-    // EXTERNAL statement: in lex_body
-
-    bool is_declaration(unsigned char *&cur, std::string type /*function, subroutine, program*/, const std::vector<std::string>& keywords) {
+    bool is_declaration(unsigned char *&cur, std::string declaration_type /*function, subroutine, program*/, const std::vector<std::string>& keywords) {
         unsigned char *cpy = cur;
         unsigned char *nextline = cur; next_line(nextline);
         std::string line{tostr(cur, nextline-1)};
         // current line does not contain type -> we abort
-        if (!(line.find(std::string(type)) != std::string::npos)) return false;
+        if (!(line.find(std::string(declaration_type)) != std::string::npos)) return false;
 
         std::vector<std::string> kw_found;
         std::vector<std::string> decls{keywords.begin(), keywords.end()};
@@ -747,14 +708,20 @@ struct FixedFormRecursiveDescent {
                     break;
                 }
             }
-            if (next_is(cpy, type))
+            if (next_is(cpy, declaration_type))
                 break;
+            // catching syntax errors like `recursive double precision recursive function f(...`
+            for (auto kw = kw_found.begin(); kw != kw_found.end(); ++kw) {
+                if (next_is(cpy, *kw)) {
+                    error(cpy, "Syntax error: keyword " + *kw + "cannot occur multiple times in " + declaration_type + "declaration");
+                }
+            }
         }
 
-        if (kw_found.size() == 0 && !next_is(cpy, type))
+        if (kw_found.size() == 0 && !next_is(cpy, declaration_type))
             return false;
      
-        // tokenize all keywords -- will not iterate at all if kw_found is empty
+        // tokenize all keywords
         for(auto iter = kw_found.begin(); iter != kw_found.end(); ++iter) {
             tokens.push_back(identifiers_map[*iter]);
             YYSTYPE y;
@@ -762,65 +729,78 @@ struct FixedFormRecursiveDescent {
             y.string.from_str(m_a, decl);
             stypes.push_back(y);
         }
-        
+
         cur = cpy;
-        tokenize_line(type, cur);
+        tokenize_line(declaration_type, cur);
         return true;
+    }
+
+    bool add_implicit_program(unsigned char *&cur) {
+        auto cpy = cur;
+        auto prev = cpy;
+        for (;;) {
+            next_line(cpy);
+            if (*cpy == '\0') break;
+            prev = cpy;
+        }
+        if (next_is(prev, "endprogram\n") || next_is(prev, "end\n")) {
+            std::string prog{"program"};
+            // TODO -- mangling
+            std::string name{"implicit_program_lfortran"};
+            // add implicit global program at the line `cur` is currently at
+            YYSTYPE y;
+            y.string.from_str(m_a, prog);
+            stypes.push_back(y);
+            tokens.push_back(yytokentype::KW_PROGRAM);
+            y.string.from_str(m_a, name);
+            stypes.push_back(y);
+            tokens.push_back(yytokentype::TK_NAME);
+            y.string.from_str(m_a, "\n");
+            stypes.push_back(y);
+            tokens.push_back(yytokentype::TK_NEWLINE);
+            lex_program(cur);
+            return true;
+        }
+        return false;
     }
 
 
     void lex_global_scope_item(unsigned char *&cur) {
         // we can define a global assignment
         unsigned char *nline = cur; next_line(nline);
-        eat_label(cur);
-        if (lex_declaration(cur)) return; // TODO to be moved into lex_body
-        if (next_is(cur, "subroutine")) {
-            lex_subroutine(cur); // TODO -- check subroutine keywords, then if(is_subroutine_declaration(cur))
-        } else if (next_is(cur, "program")) {
-            lex_program(cur); // TODO -- check for program keywords, then if(is_program_declaration(cur))
-        } else if (
-                next_is(cur, "function") ||
-                next_is(cur, "integerfunction") ||
-                next_is(cur, "realfunction") ||
-                next_is(cur, "complexfunction") ||
-                next_is(cur, "doubleprecisionfunction") ||
-                next_is(cur, "externalfunction")) {
-            lex_function(cur); // TODO -- check for function keywords, then if(is_function_declaration(cur))
+        // eat_label(cur);
+        std::vector<std::string> program_keywords{};
+        std::vector<std::string> subroutine_keywords{"recursive"};
+        std::vector<std::string> function_keywords{"recursive", "result", "character", "complex", "integer", "doubleprecision", "external"};
+
+        if (next_is(cur, "include")) tokenize_line("include", cur);
+        if (is_declaration(cur, "program", program_keywords)) {
+            lex_program(cur);
+        } else if (is_declaration(cur, "subroutine", subroutine_keywords)) {
+            lex_subroutine(cur);
+        } else if (is_declaration(cur, "function", function_keywords)) {
+            lex_function(cur);
         }
-        // TODO move the below in lex_body -> then do the implicit main program thing
-
-        // check for condition "do VAR=start,end"
-        else if (next_is(cur, "do") && contains(cur, nline, '=') && contains(cur, nline, ',')) {
-            lex_do(cur);
-        } else if (!next_is(cur, "if") && contains(cur, nline, '=')) {
-            tokenize_line("", cur);
-        } else if (next_is(cur, "if(")) {
-            lex_if(cur);
-        } else if (lex_io(cur)) {
-
-        } else if (next_is(cur, "call")) {
-            tokenize_line("call", cur);
-        } else if (next_is(cur, "include")) {
-            tokenize_line("", cur);
-        } else if (next_is(cur, "end")) {
-            tokenize_line("end", cur);
-            return;
+        /* TODO
+          else if (is_declaration(cur, "blockdata", blockdata_keywords)) {
+            lex_block_data(cur);
+        } 
+        */ else if (add_implicit_program(cur)) {
+            // give compiler a chance for implicitly defined programs
+        } else {
+            error(cur, "ICE: Cannot recognize global scope entity");
         }
 
-          // these are making it difficult to maintain context within the specific lex_* functions
-          else if (next_is(cur, "goto")) {tokenize_line("", cur);}
-          else if (next_is(cur, "continue")) {tokenize_line("", cur);}
 
-
-        else {
-            error(cur, "Cannot recognize the global scope entity");
-        }
     }
 
     void lex_global_scope(unsigned char *&cur) {
+        auto next = cur;
         while (*cur != '\0') {
-            eat_label(cur);
+            // eat_label(cur);
+            next_line(next);
             lex_global_scope_item(cur);
+            next = cur;
         }
         YYSTYPE y2;
         y2.string.from_str(m_a, "EOF");
@@ -835,6 +815,7 @@ bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, Allocato
     try {
         FixedFormRecursiveDescent f(diagnostics, al);
         f.string_start = string_start;
+        // std::cout << "fixed form tokenizer sees \n" << f.string_start;
         f.lex_global_scope(cur);
         tokens = std::move(f.tokens);
         stypes = std::move(f.stypes);
@@ -850,528 +831,13 @@ int FixedFormTokenizer::lex(Allocator &/*al*/, YYSTYPE &yylval,
         Location &/*loc*/, diag::Diagnostics &/*diagnostics*/)
 {
     if (!tokens.empty()) {
-        token_pos++;
         auto tok = tokens[token_pos];
         // tokens.erase(tokens.begin());
-        yylval = stypes.at(token_pos);
+        yylval = stypes.at(token_pos++);
         // stypes.erase(stypes.begin());
         return tok;
     }
     return yytokentype::END_OF_FILE;
-    for (;;) {
-        tok = cur;
-
-        /*
-        Re2c has excellent documentation at:
-
-        https://re2c.org/manual/manual_c.html
-
-        The first paragraph there explains the basics:
-
-        * If multiple rules match, the longest match takes precedence
-        * If multiple rules match the same string, the earlier rule takes
-          precedence
-        * Default rule `*` should always be defined, it has the lowest priority
-          regardless of its place and matches any code unit
-        * We use the "Sentinel character" method for end of input:
-            * The end of the input text is denoted with a null character \x00
-            * Thus the null character cannot be part of the input otherwise
-            * There is one rule to match \x00 to end the parser
-            * No other rule is allowed to match \x00, otherwise the re2c block
-              would parse past the end of the string and segfaults
-            * A special case of the previous point are negated character
-              ranges, such as [^"\x00], where one must include \x00 in it to
-              ensure this rule does not match \x00 (all other rules simply do
-              not mention \x00)
-            * See the "Handling the end of input" section in the re2c
-              documentation for more info
-
-        The re2c block interacts with the rest of the code via just one pointer
-        variable `cur`. On entering the re2c block, the `cur` variable must
-        point to the first character of the token to be tokenized by the block.
-        The re2c block below then executes on its own until a rule is matched:
-        the action in {} is then executed. In that action `cur` points to the
-        first character of the next token.
-
-        Before the re2c block we save the current `cur` into `tok`, so that we
-        can use `tok` and `cur` in the action in {} to extract the token that
-        corresponds to the rule that got matched:
-
-        * `tok` points to the first character of the token
-        * `cur-1` points to the last character of the token
-        * `cur` points to the first character of the next token
-        * `cur-tok` is the length of the token
-
-        In the action, we do one of:
-
-        * call `continue` which executes another cycle in the for loop (which
-          will parse the next token); we use this to skip a token
-        * call `return` which returns from this function; we return a token
-        * throw an exception (terminates the tokenizer)
-
-        In the first two cases, `cur` points to first character of the next
-        token, which becomes `tok` at the next iteration of the loop (either
-        right away after `continue` or after the `lex` function is called again
-        after `return`).
-
-        See the manual for more details.
-        */
-
-
-        // These two variables are needed by the re2c block below internally,
-        // initialization is not needed. One can think of them as local
-        // variables of the re2c block.
-//        unsigned char *mar, *ctxmar;
-        /*!re2c
-            re2c:define:YYCURSOR = cur;
-            re2c:define:YYMARKER = mar;
-            re2c:define:YYCTXMARKER = ctxmar;
-            re2c:yyfill:enable = 0;
-            re2c:define:YYCTYPE = "unsigned char";
-
-            end = "\x00";
-            whitespace = [ \t\v\r]+;
-            newline = "\n";
-            digit = [0-9];
-            char =  [a-zA-Z_];
-            name = char (char | digit)*;
-            defop = "."[a-zA-Z]+".";
-            kind = digit+ | name;
-            significand = (digit+"."digit*) | ("."digit+);
-            exp = [edED][-+]? digit+;
-            integer = digit+ ("_" kind)?;
-            real = ((significand exp?) | (digit+ exp)) ("_" kind)?;
-            string1 = (kind "_")? '"' ('""'|[^"\x00])* '"';
-            string2 = (kind "_")? "'" ("''"|[^'\x00])* "'";
-            comment = "!" [^\n\x00]*;
-            ws_comment = whitespace? comment? newline;
-
-            * { token_loc(loc);
-                std::string t = token();
-                throw parser_local::TokenizerError(diag::Diagnostic(
-                    "Token '" + t + "' is not recognized",
-                    diag::Level::Error, diag::Stage::Tokenizer, {
-                        diag::Label("token not recognized", {loc})
-                    })
-                );
-            }
-            end { RET(END_OF_FILE); }
-            whitespace { continue; }
-
-            // Keywords
-            'abstract' { KW(ABSTRACT) }
-            'all' { KW(ALL) }
-            'allocatable' { KW(ALLOCATABLE) }
-            'allocate' { KW(ALLOCATE) }
-            'assign' { KW(ASSIGN) }
-            'assignment' { KW(ASSIGNMENT) }
-            'associate' { KW(ASSOCIATE) }
-            'asynchronous' { KW(ASYNCHRONOUS) }
-            'backspace' { KW(BACKSPACE) }
-            'bind' { KW(BIND) }
-            'block' { KW(BLOCK) }
-            'call' { KW(CALL) }
-            'case' { KW(CASE) }
-            'change' { KW(CHANGE) }
-            'changeteam' { KW(CHANGE_TEAM) }
-            'character' { KW(CHARACTER) }
-            'class' { KW(CLASS) }
-            'close' { KW(CLOSE) }
-            'codimension' { KW(CODIMENSION) }
-            'common' { KW(COMMON) }
-            'complex' { KW(COMPLEX) }
-            'concurrent' { KW(CONCURRENT) }
-            'contains' { KW(CONTAINS) }
-            'contiguous' { KW(CONTIGUOUS) }
-            'continue' { KW(CONTINUE) }
-            'critical' { KW(CRITICAL) }
-            'cycle' { KW(CYCLE) }
-            'data' { KW(DATA) }
-            'deallocate' { KW(DEALLOCATE) }
-            'default' { KW(DEFAULT) }
-            'deferred' { KW(DEFERRED) }
-            'dimension' { KW(DIMENSION) }
-            'do' / (whitespace digit+) {
-                // This is a label do statement, we have to match the
-                // corresponding continue base "end do".
-                uint64_t n = parse_int(cur);
-                enddo_label_stack.push_back(n);
-                KW(DO);
-            }
-            'do' { KW(DO) }
-            'dowhile' { KW(DOWHILE) }
-            'double' { KW(DOUBLE) }
-            'doubleprecision' { KW(DOUBLE_PRECISION) }
-            'elemental' { KW(ELEMENTAL) }
-            'else' { KW(ELSE) }
-            'elseif' { KW(ELSEIF) }
-            'elsewhere' { KW(ELSEWHERE) }
-
-            'end' { KW(END) }
-
-            'end' whitespace 'program' { KW(END_PROGRAM) }
-            'endprogram' { KW(ENDPROGRAM) }
-
-            'end' whitespace 'module' { KW(END_MODULE) }
-            'endmodule' { KW(ENDMODULE) }
-
-            'end' whitespace 'submodule' { KW(END_SUBMODULE) }
-            'endsubmodule' { KW(ENDSUBMODULE) }
-
-            'end' whitespace 'block' { KW(END_BLOCK) }
-            'endblock' { KW(ENDBLOCK) }
-
-            'end' whitespace 'block' whitespace 'data' { KW(END_BLOCK_DATA) }
-            'endblock' whitespace 'data' { KW(END_BLOCK_DATA) }
-            'end' whitespace 'blockdata' { KW(END_BLOCK_DATA) }
-            'endblockdata' { KW(ENDBLOCKDATA) }
-
-            'end' whitespace 'subroutine' { KW(END_SUBROUTINE) }
-            'endsubroutine' { KW(ENDSUBROUTINE) }
-
-            'end' whitespace 'function' { KW(END_FUNCTION) }
-            'endfunction' { KW(ENDFUNCTION) }
-
-            'end' whitespace 'procedure' { KW(END_PROCEDURE) }
-            'endprocedure' { KW(ENDPROCEDURE) }
-
-            'end' whitespace 'enum' { KW(END_ENUM) }
-            'endenum' { KW(ENDENUM) }
-
-            'end' whitespace 'select' { KW(END_SELECT) }
-            'endselect' { KW(ENDSELECT) }
-
-            'end' whitespace 'associate' { KW(END_ASSOCIATE) }
-            'endassociate' { KW(ENDASSOCIATE) }
-
-            'end' whitespace 'critical' { KW(END_CRITICAL) }
-            'endcritical' { KW(ENDCRITICAL) }
-
-            'end' whitespace 'team' { KW(END_TEAM) }
-            'endteam' { KW(ENDTEAM) }
-
-            'end' whitespace 'forall' { KW(END_FORALL) }
-            'endforall' { KW(ENDFORALL) }
-
-            'end' whitespace 'if' { KW(END_IF) }
-            'endif' { KW(ENDIF) }
-
-            'end' whitespace 'interface' { KW(END_INTERFACE) }
-            'endinterface' { KW(ENDINTERFACE) }
-
-            'end' whitespace 'type' { KW(END_TYPE) }
-            'endtype' { KW(ENDTYPE) }
-
-            'end' whitespace 'do' {
-                if (enddo_newline_process) {
-                    KW(CONTINUE)
-                } else {
-                    KW(END_DO)
-                }
-            }
-            'enddo' {
-                if (enddo_newline_process) {
-                    KW(CONTINUE)
-                } else {
-                    KW(ENDDO)
-                }
-            }
-
-            'end' whitespace 'where' { KW(END_WHERE) }
-            'endwhere' { KW(ENDWHERE) }
-
-            'end file' { KW(END_FILE) }
-            'endfile' { KW(ENDFILE) }
-
-            'entry' { KW(ENTRY) }
-            'enum' { KW(ENUM) }
-            'enumerator' { KW(ENUMERATOR) }
-            'equivalence' { KW(EQUIVALENCE) }
-            'errmsg' { KW(ERRMSG) }
-            'error' { KW(ERROR) }
-            'event' { KW(EVENT) }
-            'exit' { KW(EXIT) }
-            'extends' { KW(EXTENDS) }
-            'external' { KW(EXTERNAL) }
-            'file' { KW(FILE) }
-            'final' { KW(FINAL) }
-            'flush' { KW(FLUSH) }
-            'forall' { KW(FORALL) }
-            'format' {
-                if (last_token == yytokentype::TK_LABEL) {
-                    unsigned char *start;
-                    lex_format(cur, loc, start);
-                    yylval.string.p = (char*) start;
-                    yylval.string.n = cur-start-1;
-                    RET(TK_FORMAT)
-                } else {
-                    token(yylval.string);
-                    RET(TK_NAME)
-                }
-            }
-            'formatted' { KW(FORMATTED) }
-            'form' { KW(FORM) }
-            'formteam' { KW(FORM_TEAM) }
-            'function' { KW(FUNCTION) }
-            'generic' { KW(GENERIC) }
-            'go' { KW(GO) }
-            'goto' { KW(GOTO) }
-            'if' { KW(IF) }
-            'images' { KW(IMAGES) }
-            'implicit' { KW(IMPLICIT) }
-            'import' { KW(IMPORT) }
-            'impure' { KW(IMPURE) }
-            'in' { KW(IN) }
-            'include' { KW(INCLUDE) }
-            'inout' { KW(INOUT) }
-            'in' whitespace 'out' { KW(IN_OUT) }
-            'inquire' { KW(INQUIRE) }
-            'integer' { KW(INTEGER) }
-            'intent' { KW(INTENT) }
-            'interface' { KW(INTERFACE) }
-            'intrinsic' { KW(INTRINSIC) }
-            'is' { KW(IS) }
-            'kind' { KW(KIND) }
-            'len' { KW(LEN) }
-            'local' { KW(LOCAL) }
-            'local_init' { KW(LOCAL_INIT) }
-            'logical' { KW(LOGICAL) }
-            'memory' { KW(MEMORY) }
-            'module' { KW(MODULE) }
-            'mold' { KW(MOLD) }
-            'name' { KW(NAME) }
-            'namelist' { KW(NAMELIST) }
-            'new_index' { KW(NEW_INDEX) }
-            'nopass' { KW(NOPASS) }
-            'non_intrinsic' { KW(NON_INTRINSIC) }
-            'non_overridable' { KW(NON_OVERRIDABLE) }
-            'non_recursive' { KW(NON_RECURSIVE) }
-            'none' { KW(NONE) }
-            'nullify' { KW(NULLIFY) }
-            'only' { KW(ONLY) }
-            'open' { KW(OPEN) }
-            'operator' { KW(OPERATOR) }
-            'optional' { KW(OPTIONAL) }
-            'out' { KW(OUT) }
-            'parameter' { KW(PARAMETER) }
-            'pass' { KW(PASS) }
-            'pointer' { KW(POINTER) }
-            'post' { KW(POST) }
-            'precision' { KW(PRECISION) }
-            'print' { KW(PRINT) }
-            'private' { KW(PRIVATE) }
-            'procedure' { KW(PROCEDURE) }
-            'program' { KW(PROGRAM) }
-            'protected' { KW(PROTECTED) }
-            'public' { KW(PUBLIC) }
-            'pure' { KW(PURE) }
-            'quiet' { KW(QUIET) }
-            'rank' { KW(RANK) }
-            'read' { KW(READ) }
-            'real' {KW(REAL) }
-            'recursive' { KW(RECURSIVE) }
-            'reduce' { KW(REDUCE) }
-            'result' { KW(RESULT) }
-            'return' { KW(RETURN) }
-            'rewind' { KW(REWIND) }
-            'save' { KW(SAVE) }
-            'select' { KW(SELECT) }
-            'selectcase' { KW(SELECT_CASE) }
-            'selectrank' { KW(SELECT_RANK) }
-            'selecttype' { KW(SELECT_TYPE) }
-            'sequence' { KW(SEQUENCE) }
-            'shared' { KW(SHARED) }
-            'source' { KW(SOURCE) }
-            'stat' { KW(STAT) }
-            'stop' { KW(STOP) }
-            'submodule' { KW(SUBMODULE) }
-            'subroutine' { KW(SUBROUTINE) }
-            'sync' { KW(SYNC) }
-            'syncall' { KW(SYNC_ALL) }
-            'syncimages' { KW(SYNC_IMAGES) }
-            'syncmemory' { KW(SYNC_MEMORY) }
-            'syncteam' { KW(SYNC_TEAM) }
-            'target' { KW(TARGET) }
-            'team' { KW(TEAM) }
-            'team_number' { KW(TEAM_NUMBER) }
-            'then' { KW(THEN) }
-            'to' { KW(TO) }
-            'type' { KW(TYPE) }
-            'unformatted' { KW(UNFORMATTED) }
-            'use' { KW(USE) }
-            'value' { KW(VALUE) }
-            'volatile' { KW(VOLATILE) }
-            'wait' { KW(WAIT) }
-            'where' { KW(WHERE) }
-            'while' { KW(WHILE) }
-            'write' { KW(WRITE) }
-
-            // Tokens
-            newline {
-                if (enddo_newline_process) {
-                    enddo_newline_process = false;
-                    enddo_state = 1;
-                    return yytokentype::TK_NEWLINE;
-                } else {
-                    enddo_newline_process = false;
-                    enddo_insert_count = 0;
-                    token_loc(loc); line_num++; cur_line=cur;
-                    last_token = yytokentype::TK_NEWLINE;
-                    return yytokentype::TK_NEWLINE;
-                }
-            }
-
-            // Single character symbols
-            "(" { RET(TK_LPAREN) }
-            "(" / "/=" { RET(TK_LPAREN) } // To parse "operator(/=)" correctly
-            "(" / "/)" { RET(TK_LPAREN) } // To parse "operator(/)" correctly
-            // To parse "operator(/ )" correctly
-            "(" / "/" whitespace ")" { RET(TK_LPAREN) }
-            // To parse "operator(// )" correctly
-            "(" / "//" whitespace ")" { RET(TK_LPAREN) }
-            "(" / "//)" { RET(TK_LPAREN) } // To parse "operator(//)" correctly
-            ")" { RET(TK_RPAREN) }
-            "[" | "(/" { RET(TK_LBRACKET) }
-            "]" { RET(TK_RBRACKET) }
-            "/)" { RET(TK_RBRACKET_OLD) }
-            "+" { RET(TK_PLUS) }
-            "-" { RET(TK_MINUS) }
-            "=" { RET(TK_EQUAL) }
-            ":" { RET(TK_COLON) }
-            ";" { RET(TK_SEMICOLON) }
-            "/" { RET(TK_SLASH) }
-            "%" { RET(TK_PERCENT) }
-            "," { RET(TK_COMMA) }
-            "*" { RET(TK_STAR) }
-            "|" { RET(TK_VBAR) }
-
-            // Multiple character symbols
-            ".." { RET(TK_DBL_DOT) }
-            "::" { RET(TK_DBL_COLON) }
-            "**" { RET(TK_POW) }
-            "//" { RET(TK_CONCAT) }
-            "=>" { RET(TK_ARROW) }
-
-            // Relational operators
-            "=="   { RET(TK_EQ) }
-            '.eq.' { WARN_REL(EQ) RET(TK_EQ) }
-
-            "/="   { RET(TK_NE) }
-            '.ne.' { WARN_REL(NE) RET(TK_NE) }
-
-            "<"    { RET(TK_LT) }
-            '.lt.' { WARN_REL(LT) RET(TK_LT) }
-
-            "<="   { RET(TK_LE) }
-            '.le.' { WARN_REL(LE) RET(TK_LE) }
-
-            ">"    { RET(TK_GT) }
-            '.gt.' { WARN_REL(GT) RET(TK_GT) }
-
-            ">="   { RET(TK_GE) }
-            '.ge.' { WARN_REL(GE) RET(TK_GE) }
-
-
-            // Logical operators
-            '.not.'  { RET(TK_NOT) }
-            '.and.'  { RET(TK_AND) }
-            '.or.'   { RET(TK_OR) }
-            '.xor.'  { RET(TK_XOR) }
-            '.eqv.'  { RET(TK_EQV) }
-            '.neqv.' { RET(TK_NEQV) }
-
-            // True/False
-
-            '.true.' ("_" kind)? { RET(TK_TRUE) }
-            '.false.' ("_" kind)? { RET(TK_FALSE) }
-
-            // This is needed to ensure that 2.op.3 gets tokenized as
-            // TK_INTEGER(2), TK_DEFOP(.op.), TK_INTEGER(3), and not
-            // TK_REAL(2.), TK_NAME(op), TK_REAL(.3). The `.op.` can be a
-            // built-in or custom defined operator, such as: `.eq.`, `.not.`,
-            // or `.custom.`.
-            integer / defop {
-                lex_int_large(al, tok, cur,
-                    yylval.int_suffix.int_n,
-                    yylval.int_suffix.int_kind);
-                RET(TK_INTEGER)
-            }
-
-
-            real { token(yylval.string); RET(TK_REAL) }
-            integer / (whitespace name) {
-                if (last_token == yytokentype::TK_NEWLINE) {
-                    uint64_t u;
-                    if (lex_int(tok, cur, u, yylval.int_suffix.int_kind)) {
-                            yylval.n = u;
-                            if (enddo_label_stack[enddo_label_stack.size()-1] == u) {
-                                while (enddo_label_stack[enddo_label_stack.size()-1] == u) {
-                                    enddo_label_stack.pop_back();
-                                    enddo_insert_count++;
-                                }
-                                enddo_newline_process = true;
-                            } else {
-                                enddo_newline_process = false;
-                            }
-                            RET(TK_LABEL)
-                    } else {
-                        token_loc(loc);
-                        std::string t = token();
-                        throw LFortran::parser_local::TokenizerError("Integer '" + t + "' too large",
-                            loc);
-                    }
-                } else {
-                    lex_int_large(al, tok, cur,
-                        yylval.int_suffix.int_n,
-                        yylval.int_suffix.int_kind);
-                    RET(TK_INTEGER)
-                }
-            }
-            integer {
-                lex_int_large(al, tok, cur,
-                    yylval.int_suffix.int_n,
-                    yylval.int_suffix.int_kind);
-                RET(TK_INTEGER)
-            }
-
-            [bB] '"' [01]+ '"' { token(yylval.string); RET(TK_BOZ_CONSTANT) }
-            [bB] "'" [01]+ "'" { token(yylval.string); RET(TK_BOZ_CONSTANT) }
-            [oO] '"' [0-7]+ '"' { token(yylval.string); RET(TK_BOZ_CONSTANT) }
-            [oO] "'" [0-7]+ "'" { token(yylval.string); RET(TK_BOZ_CONSTANT) }
-            [zZ] '"' [0-9a-fA-F]+ '"' { token(yylval.string); RET(TK_BOZ_CONSTANT) }
-            [zZ] "'" [0-9a-fA-F]+ "'" { token(yylval.string); RET(TK_BOZ_CONSTANT) }
-
-            "&" ws_comment+ whitespace? "&"? {
-                line_num++; cur_line=cur; continue;
-            }
-
-            comment newline {
-                line_num++; cur_line=cur;
-                token(yylval.string);
-                yylval.string.n--;
-                token_loc(loc);
-                if (last_token == yytokentype::TK_NEWLINE) {
-                    return yytokentype::TK_COMMENT;
-                } else {
-                    last_token=yytokentype::TK_NEWLINE;
-                    return yytokentype::TK_EOLCOMMENT;
-                }
-            }
-
-            // Macros are ignored for now:
-            "#" [^\n\x00]* newline { line_num++; cur_line=cur; continue; }
-
-            // Include statements are ignored for now
-            'include' whitespace string1 { continue; }
-            'include' whitespace string2 { continue; }
-
-            string1 { token_str(yylval.string); RET(TK_STRING) }
-            string2 { token_str(yylval.string); RET(TK_STRING) }
-
-            defop { token(yylval.string); RET(TK_DEF_OP) }
-            name { token(yylval.string); RET(TK_NAME) }
-        */
-    }
 }
 
 

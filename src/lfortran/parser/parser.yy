@@ -10,15 +10,15 @@
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
 
-/* 
-// Uncomment this to enable parser tracing. Then in the main code, set
+
+/* // Uncomment this to enable parser tracing. Then in the main code, set
 // extern int yydebug;
 // yydebug=1;
 %define parse.trace
 %printer { fprintf(yyo, "%s", $$.str().c_str()); } <string>
 %printer { fprintf(yyo, "%d", $$); } <n>
-%printer { std::cerr << "AST TYPE: " << $$->type; } <ast>
- */
+%printer { std::cerr << "AST TYPE: " << $$->type; } <ast> */
+
 
 
 %code requires // *.h
@@ -41,7 +41,7 @@ int yylex(LFortran::YYSTYPE *yylval, YYLTYPE *yyloc, LFortran::Parser &p)
 {
     if (p.fixed_form) {
         auto tok = p.f_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
-        /* std::cout << "LEX: " << pickle(tok, *yylval) << std::endl; */
+        std::cout << "LEX: " << pickle(tok, *yylval) << " with identifier " << tok << std::endl;
         return tok;
     } else {
         return p.m_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
