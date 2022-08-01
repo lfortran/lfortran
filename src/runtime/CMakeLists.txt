@@ -8,6 +8,7 @@ if(NOT WITH_RUNTIME_LIBRARY_ONLY)
   set(CMAKE_Fortran_COMPILER ${CMAKE_CURRENT_BINARY_DIR}/../bin/lfortran)
 endif()
 
+# lfortran needs this to find the .mod files created during the build
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 macro(lfrotran_compile_runtime name dir)
