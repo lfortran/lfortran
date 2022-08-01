@@ -8,9 +8,6 @@ if(NOT WITH_RUNTIME_LIBRARY_ONLY)
   set(CMAKE_Fortran_COMPILER ${CMAKE_CURRENT_BINARY_DIR}/../bin/lfortran)
 endif()
 
-# Ideally this setting would be enough to auto install .mod files
-# but I was not able to make it work. I don't think it's very well
-# documented.
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 macro(lfrotran_compile_runtime name dir)
