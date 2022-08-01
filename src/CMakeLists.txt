@@ -18,6 +18,6 @@ else()
   # with cross compilation thus runtime/CMakeLists.txt uses targets.
   # This should probably be solved by splitting the compiler and
   # runtime in two different projects like flang does.
-  # add_subdirectory(runtime)
+  add_subdirectory(runtime)
   add_subdirectory(runtime/legacy)
 endif()

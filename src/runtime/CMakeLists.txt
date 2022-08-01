@@ -4,9 +4,9 @@ project(lfortran_unif_runtime C Fortran)
 
 # If we are only building the runtime library the user
 # should provide a lfortran binary.
-# if(NOT WITH_RUNTIME_LIBRARY_ONLY)
-#   set(CMAKE_Fortran_COMPILER ${CMAKE_CURRENT_BINARY_DIR}/../bin/lfortran)
-# endif()
+if(NOT WITH_RUNTIME_LIBRARY_ONLY)
+  set(CMAKE_Fortran_COMPILER ${CMAKE_CURRENT_BINARY_DIR}/../bin/lfortran)
+endif()
 
 # Ideally this setting would be enough to auto install .mod files
 # but I was not able to make it work. I don't think it's very well
