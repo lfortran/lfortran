@@ -700,7 +700,7 @@ template_decl
     ;
 
 instantiate
-    : KW_INSTANTIATE id "(" decl_star ")" "," KW_ONLY ":" id "=>" id sep {
+    : KW_INSTANTIATE id "(" var_type ")" "," KW_ONLY ":" id "=>" id sep {
         $$ = INSTANTIATE($2, $4, @$); }
     ;
 
