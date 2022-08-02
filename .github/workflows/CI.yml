@@ -230,7 +230,7 @@ jobs:
             ./build0.sh
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=no \
+              -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
