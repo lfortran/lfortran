@@ -1846,10 +1846,10 @@ do_statement
             $$ = DO2_LABEL(INTEGER3($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, @$); }
     | KW_DO TK_INTEGER comma_opt id "=" expr "," expr "," expr sep statements enddo {
             $$ = DO3_LABEL(INTEGER3($2), $4, $6, $8, $10, TRIVIA_AFTER($11, @$), $12, @$); } */
-    | KW_DO TK_LABEL comma_opt id "=" expr "," expr sep statements enddo {
-            $$ = DO2_LABEL(INTEGER4($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, @$); }
-    | KW_DO TK_LABEL comma_opt id "=" expr "," expr "," expr sep statements enddo {
-            $$ = DO3_LABEL(INTEGER4($2), $4, $6, $8, $10, TRIVIA_AFTER($11, @$), $12, @$); }
+    | KW_DO TK_INTEGER comma_opt id "=" expr "," expr sep statements enddo {
+            $$ = DO2_LABEL(INTEGER3($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, @$); }
+    | KW_DO TK_INTEGER comma_opt id "=" expr "," expr "," expr sep statements enddo {
+            $$ = DO3_LABEL(INTEGER3($2), $4, $6, $8, $10, TRIVIA_AFTER($11, @$), $12, @$); }
     // a `DO` loop can usually end with `CONTINUE`, too
     /* | KW_DO TK_LABEL comma_opt id "=" expr "," expr sep statements continue_statement {
             $$ = DO2_LABEL(INTEGER4($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, @$); }

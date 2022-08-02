@@ -343,16 +343,18 @@ struct FixedFormRecursiveDescent {
             YYSTYPE y;
             std::string::iterator end = std::remove(label.begin(), label.end(), ' ');
             label.erase(end, label.end());
-            // unsigned char *t = (unsigned char*)&label[0];
-            // unsigned char *e = (unsigned char*)&label[label.size()];
-            // lex_int_large(m_a, t,e,
-            //         y.int_suffix.int_n,
-            //         y.int_suffix.int_kind);
-            y.n = std::stoi(label);
+            unsigned char *t = (unsigned char*)&label[0];
+            unsigned char *e = (unsigned char*)&label[label.size()];
+            lex_int_large(m_a, t,e,
+                    y.int_suffix.int_n,
+                    y.int_suffix.int_kind);
+            // y.n = std::stoi(label);
+            tokens.push_back(yytokentype::TK_LABEL);
             stypes.push_back(y);
 
-            int token = yytokentype::TK_LABEL;
-            tokens.push_back(token);
+
+            // int token = yytokentype::TK_LABEL;
+            // tokens.push_back(token);
             cur+=reserved_cols;
             return true;
         }
@@ -372,13 +374,13 @@ struct FixedFormRecursiveDescent {
         label.assign((char*)start, count);
         if (is_integer(label) && count > 0) {
             YYSTYPE yy;
-            // lex_int_large(m_a, cur, cur2,
-            //         yy.int_suffix.int_n,
-            //         yy.int_suffix.int_kind);
-            // tokens.push_back(yytokentype::TK_INTEGER);
+            lex_int_large(m_a, cur, cur2,
+                    yy.int_suffix.int_n,
+                    yy.int_suffix.int_kind);
+            tokens.push_back(yytokentype::TK_INTEGER);
             
-            yy.n = std::stoi(tostr(cur, cur2));
-            tokens.push_back(yytokentype::TK_LABEL);
+            // yy.n = std::stoi(tostr(cur, cur2));
+            // tokens.push_back(yytokentype::TK_LABEL);
             stypes.push_back(yy);
             cur+=count+1; // TODO revisit
             return true;
@@ -468,12 +470,17 @@ struct FixedFormRecursiveDescent {
 
                 YYSTYPE y3;
                 // TODO check if we actually just didn't get the arguments right (t.tok+4, t.cur)
-                // lex_int_large(m_a, t.tok + 4,t.tok,
-                //     y3.int_suffix.int_n,
-                //     y3.int_suffix.int_kind);
-                y3.n = std::stoi(tostr(t.tok+4,t.cur));
+                lex_int_large(m_a, t.tok + 4,t.cur,
+                    y3.int_suffix.int_n,
+                    y3.int_suffix.int_kind);
+                tokens.push_back(yytokentype::TK_INTEGER);
+                
+                // y3.n = std::stoi(tostr(t.tok+4,t.cur));
+                // tokens.push_back(yytokentype::TK_LABEL);
+                
                 stypes.push_back(y3);
-                tokens.push_back(yytokentype::TK_LABEL);
+
+                
                 continue;
             }
             // TODO: handle
@@ -650,7 +657,6 @@ struct FixedFormRecursiveDescent {
         eat_label(cur);
         if (next_is(cur, "return")) {
             tokenize_line("", cur);
-            return;
         }
         if (next_is(cur, "endsubroutine")) {
             tokenize_line("endsubroutine", cur);

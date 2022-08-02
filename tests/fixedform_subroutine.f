@@ -1,7 +1,7 @@
       subroutine f(a,b,c)
           print *,4
       end subroutine
-        integer k
+        integer k,l
         k=100
       do 80 k=1,10
         print*,k
