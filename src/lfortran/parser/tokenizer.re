@@ -486,6 +486,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'target' { KW(TARGET) }
             'team' { KW(TEAM) }
             'team_number' { KW(TEAM_NUMBER) }
+            'template' { KW(TEMPLATE) }
             'then' { KW(THEN) }
             'to' { KW(TO) }
             'type' { KW(TYPE) }

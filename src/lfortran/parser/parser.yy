@@ -333,6 +333,7 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %token <string> KW_TARGET
 %token <string> KW_TEAM
 %token <string> KW_TEAM_NUMBER
+%token <string> KW_TEMPLATE
 %token <string> KW_THEN
 %token <string> KW_TO
 %token <string> KW_TYPE
@@ -362,6 +363,7 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %type <ast> interface_decl
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
+%type <ast> template_decl
 %type <ast> enum_decl
 %type <ast> program
 %type <ast> subroutine
@@ -689,6 +691,12 @@ derived_type_decl
             $$ = DERIVED_TYPE1($2, $3, $5, TRIVIA($7, $11, @$), $8, $9, @$); }
     ;
 
+template_decl
+    : KW_TEMPLATE id "(" id_list ")" sep decl_star
+        contains_block_opt KW_END KW_TEMPLATE sep {
+            $$ = TEMPLATE($2, $4, $7, $8, @$); }
+    ;
+
 end_type
     : KW_END_TYPE id_opt
     | KW_ENDTYPE id_opt
@@ -952,6 +960,7 @@ decl
     : var_decl
     | interface_decl
     | derived_type_decl
+    | template_decl
     | enum_decl
     ;
 
@@ -1445,6 +1454,7 @@ decl_statement
     : var_decl
     | interface_decl
     | derived_type_decl
+    | template_decl
     | enum_decl
     | statement
     ;
@@ -2426,6 +2436,7 @@ id
     | KW_TARGET { $$ = SYMBOL($1, @$); }
     | KW_TEAM { $$ = SYMBOL($1, @$); }
     | KW_TEAM_NUMBER { $$ = SYMBOL($1, @$); }
+    | KW_TEMPLATE { $$ = SYMBOL($1, @$); }
     | KW_THEN { $$ = SYMBOL($1, @$); }
     | KW_TO { $$ = SYMBOL($1, @$); }
     | KW_TYPE { $$ = SYMBOL($1, @$); }

@@ -1,9 +1,9 @@
 diff --git a/src/lfortran/parser/parser.yy b/src/lfortran/parser/parser.yy
-index 01c6f941..4bf61838 100644
+index c773ce871..7c7529101 100644
 --- a/src/lfortran/parser/parser.yy
 +++ b/src/lfortran/parser/parser.yy
-@@ -2220,168 +2220,4 @@ id_opt
-
+@@ -2283,169 +2283,4 @@ id_opt
+ 
  id
      : TK_NAME { $$ = SYMBOL($1, @$); }
 -    | KW_ABSTRACT { $$ = SYMBOL($1, @$); }
@@ -159,6 +159,7 @@ index 01c6f941..4bf61838 100644
 -    | KW_TARGET { $$ = SYMBOL($1, @$); }
 -    | KW_TEAM { $$ = SYMBOL($1, @$); }
 -    | KW_TEAM_NUMBER { $$ = SYMBOL($1, @$); }
+-    | KW_TEMPLATE { $$ = SYMBOL($1, @$); }
 -    | KW_THEN { $$ = SYMBOL($1, @$); }
 -    | KW_TO { $$ = SYMBOL($1, @$); }
 -    | KW_TYPE { $$ = SYMBOL($1, @$); }
