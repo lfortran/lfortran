@@ -23,7 +23,7 @@ set(SRC
     codegen/asr_to_wasm.cpp
     codegen/wasm_to_wat.cpp
     codegen/wasm_utils.cpp
-    
+
     pass/param_to_const.cpp
     pass/do_loops.cpp
     pass/for_all.cpp
@@ -33,6 +33,7 @@ set(SRC
     pass/implied_do_loops.cpp
     pass/array_op.cpp
     pass/class_constructor.cpp
+    pass/arr_dims_propagate.cpp
     pass/arr_slice.cpp
     pass/print_arr.cpp
     pass/pass_utils.cpp
