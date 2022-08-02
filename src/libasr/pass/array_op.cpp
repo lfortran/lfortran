@@ -233,8 +233,11 @@ public:
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         if( (ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
-             ASR::is_a<ASR::GetPointer_t>(*x.m_value)) ||
-            ASR::is_a<ASR::ArrayReshape_t>(*x.m_value) ) {
+             ASR::is_a<ASR::GetPointer_t>(*x.m_value)) ) {
+            return ;
+        }
+        if( ASR::is_a<ASR::ArrayReshape_t>(*x.m_value) ) {
+            this->visit_expr(*x.m_value);
             return ;
         }
         if( PassUtils::is_array(x.m_target) ) {
@@ -275,6 +278,21 @@ public:
         result_var = nullptr;
     }
 
+    void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
+        tmp_val = const_cast<ASR::expr_t*>(&(x.base));
+        if( ASRUtils::is_array(ASRUtils::expr_type(x.m_array)) &&
+            !ASR::is_a<ASR::Var_t>(*x.m_array)) {
+            result_var = nullptr;
+            this->visit_expr(*x.m_array);
+            if( tmp_val ) {
+                ASR::ArrayReshape_t& xx = const_cast<ASR::ArrayReshape_t&>(x);
+                xx.m_array = tmp_val;
+                retain_original_stmt = true;
+                remove_original_stmt = false;
+            }
+        }
+    }
+
     ASR::ttype_t* get_matching_type(ASR::expr_t* sibling) {
         ASR::ttype_t* sibling_type = LFortran::ASRUtils::expr_type(sibling);
         if( sibling->type != ASR::exprType::Var ) {
@@ -296,7 +314,7 @@ public:
             new_m_dim.loc = m_dims[i].loc;
             new_m_dim.m_start = PassUtils::get_bound(sibling, i + 1, "lbound", al);
             new_m_dim.m_length = ASRUtils::compute_length_from_start_end(al, new_m_dim.m_start,
-                                    PassUtils::get_bound(sibling, i + 1, "ubound", al));
+                                     PassUtils::get_bound(sibling, i + 1, "ubound", al));
             new_m_dims.push_back(al, new_m_dim);
         }
         return PassUtils::set_dim_rank(sibling_type, new_m_dims.p, ndims, true, &al);
@@ -623,8 +641,7 @@ public:
                     doloop_body.push_back(al, assign);
                 } else {
                     ASR::expr_t* idx_lb = PassUtils::get_bound(left, i + 1, "lbound", al);
-                    ASR::stmt_t* set_to_one = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, idx_vars_value[i+1],
-                                                    idx_lb, nullptr));
+                    ASR::stmt_t* set_to_one = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, idx_vars_value[i+1], idx_lb, nullptr));
                     doloop_body.push_back(al, set_to_one);
                     doloop_body.push_back(al, doloop);
                 }
