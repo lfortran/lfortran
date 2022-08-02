@@ -58,7 +58,6 @@ program_unit
 unit_decl1
     = Use(decl_attribute* nature, identifier module, use_symbol* symbols,
         bool only_present, trivia? trivia)
-    | Instantiate(identifier name, decl_attribute* types)
 
 unit_decl2
     = Declaration(decl_attribute? vartype, decl_attribute* attributes,
@@ -69,6 +68,7 @@ unit_decl2
     | Template(identifier name, identifier* namelist, unit_decl2* decl,
         program_unit* contains)
     | Enum(decl_attribute* attr, trivia? trivia, unit_decl2* items)
+    | Instantiate(identifier name, decl_attribute* types)
 
 interface_header
     = InterfaceHeader()
