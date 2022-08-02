@@ -377,7 +377,7 @@ struct FixedFormRecursiveDescent {
             //         yy.int_suffix.int_kind);
             // tokens.push_back(yytokentype::TK_INTEGER);
             
-            yy.n = std::stoi(tostr(cur, cur2-1));
+            yy.n = std::stoi(tostr(cur, cur2));
             tokens.push_back(yytokentype::TK_LABEL);
             stypes.push_back(yy);
             cur+=count+1; // TODO revisit
@@ -467,20 +467,19 @@ struct FixedFormRecursiveDescent {
                 tokens.push_back(yytokentype::KW_GOTO);
 
                 YYSTYPE y3;
+                // TODO check if we actually just didn't get the arguments right (t.tok+4, t.cur)
                 // lex_int_large(m_a, t.tok + 4,t.tok,
                 //     y3.int_suffix.int_n,
                 //     y3.int_suffix.int_kind);
-                y3.n = std::stoi(tostr(t.tok+4,t.tok-1));
+                y3.n = std::stoi(tostr(t.tok+4,t.cur));
                 stypes.push_back(y3);
                 tokens.push_back(yytokentype::TK_LABEL);
                 continue;
             }
             // TODO: handle
-            //        - integer
-            //        - bigint
-            //        - chars ',' etc
-            //        - float / decimal
-            //        - other types (bytes?)
+            // We should have most types right by now; we have to check if
+            // the types in the parser match and then adapt to that.
+
 
             len = t.cur - t.tok;
 
@@ -676,7 +675,11 @@ struct FixedFormRecursiveDescent {
 
     void lex_function(unsigned char *&cur) {
         while(lex_body_statement(cur));
-        // eat_label(cur);
+        eat_label(cur);
+        if (next_is(cur, "return")) {
+            tokenize_line("return", cur);
+        }
+
         if (next_is(cur, "endfunction")) {
             tokenize_line("endfunction", cur);
         } else if (next_is(cur, "end")) {

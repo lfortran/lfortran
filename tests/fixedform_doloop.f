@@ -1,5 +1,5 @@
       program main
-
+      integer k
       do k=1,10
          print *, k
        enddo

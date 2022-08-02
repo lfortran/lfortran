@@ -41,7 +41,7 @@ int yylex(LFortran::YYSTYPE *yylval, YYLTYPE *yyloc, LFortran::Parser &p)
 {
     if (p.fixed_form) {
         auto tok = p.f_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
-        /* std::cout << "LEX: " << pickle(tok, *yylval) << " with identifier " << tok << std::endl; */
+        std::cout << "LEX: " << pickle(tok, *yylval) << " with identifier " << tok << std::endl;
         return tok;
     } else {
         return p.m_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
@@ -1841,6 +1841,7 @@ do_statement
             $$ = DO2($3, $5, $7, TRIVIA_AFTER($8, @$), $9, @$); }
     | KW_DO comma_opt id "=" expr "," expr "," expr sep statements enddo {
             $$ = DO3($3, $5, $7, $9, TRIVIA_AFTER($10, @$), $11, @$); }
+    // these are the original rules we may need to reactivate
     /* | KW_DO TK_INTEGER comma_opt id "=" expr "," expr sep statements enddo {
             $$ = DO2_LABEL(INTEGER3($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, @$); }
     | KW_DO TK_INTEGER comma_opt id "=" expr "," expr "," expr sep statements enddo {
@@ -1849,6 +1850,11 @@ do_statement
             $$ = DO2_LABEL(INTEGER4($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, @$); }
     | KW_DO TK_LABEL comma_opt id "=" expr "," expr "," expr sep statements enddo {
             $$ = DO3_LABEL(INTEGER4($2), $4, $6, $8, $10, TRIVIA_AFTER($11, @$), $12, @$); }
+    // a `DO` loop can usually end with `CONTINUE`, too
+    /* | KW_DO TK_LABEL comma_opt id "=" expr "," expr sep statements continue_statement {
+            $$ = DO2_LABEL(INTEGER4($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, @$); }
+    | KW_DO TK_LABEL comma_opt id "=" expr "," expr "," expr sep statements continue_statement {
+            $$ = DO3_LABEL(INTEGER4($2), $4, $6, $8, $10, TRIVIA_AFTER($11, @$), $12, @$); } */
     | KW_DO comma_opt KW_CONCURRENT "(" concurrent_control_list ")"
         concurrent_locality_star sep statements enddo {
             $$ = DO_CONCURRENT1($5, $7, TRIVIA_AFTER($8, @$), $9, @$); }
@@ -1937,9 +1943,6 @@ enddo
     | TK_LABEL KW_END_DO
     | KW_ENDDO { WARN_ENDDO(@$); }
     | TK_LABEL KW_ENDDO {}
-    /* | KW_CONTINUE
-    | TK_LABEL KW_CONTINUE
-    | TK_LABEL KW_CONTINUE {} */
     ;
 
 endforall
