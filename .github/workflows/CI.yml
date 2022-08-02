@@ -197,6 +197,48 @@ jobs:
         run: |
             xonsh ci/test_cpp_version.xsh
 
+  test_wasm:
+    name: Test WASM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/provision-with-micromamba@v12
+        with:
+          environment-file: ci/environment_linux.yml
+          extra-specs: |
+            python=3.10
+            emscripten
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=no \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test Linux
+        shell: bash -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b wasm
+
   upload_tarball:
     name: Upload Tarball
     runs-on: ubuntu-latest
