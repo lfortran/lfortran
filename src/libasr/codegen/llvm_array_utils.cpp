@@ -135,7 +135,10 @@ namespace LFortran {
         }
 
         llvm::Value* SimpleCMODescriptor::
-        convert_to_argument(llvm::Value* tmp, llvm::Type* arg_type) {
+        convert_to_argument(llvm::Value* tmp, llvm::Type* arg_type, bool data_only) {
+            if( data_only ) {
+                return LLVM::CreateLoad(*builder, get_pointer_to_data(tmp));
+            }
             llvm::Value* arg_struct = builder->CreateAlloca(arg_type, nullptr);
             llvm::Value* first_ele_ptr = nullptr;
             llvm::Type* tmp_type = static_cast<llvm::PointerType*>(tmp->getType())->getElementType();
@@ -435,15 +438,43 @@ namespace LFortran {
             return idx;
         }
 
+        llvm::Value* SimpleCMODescriptor::cmo_convertor_single_element_data_only(
+            llvm::Value** llvm_diminfo, std::vector<llvm::Value*>& m_args,
+            int n_args, bool check_for_bounds) {
+            llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+            llvm::Value* idx = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+            for( int r = 0, r1 = 0; r < n_args; r++ ) {
+                llvm::Value* curr_llvm_idx = m_args[r];
+                llvm::Value* lval = llvm_diminfo[r1];
+                curr_llvm_idx = builder->CreateSub(curr_llvm_idx, lval);
+                if( check_for_bounds ) {
+                    // check_single_element(curr_llvm_idx, arr); TODO: To be implemented
+                }
+                idx = builder->CreateAdd(idx, builder->CreateMul(prod, curr_llvm_idx));
+                llvm::Value* dim_size = llvm_diminfo[r1 + 1];
+                r1 += 2;
+                prod = builder->CreateMul(prod, dim_size);
+            }
+            return idx;
+        }
+
         llvm::Value* SimpleCMODescriptor::get_single_element(llvm::Value* array,
-            std::vector<llvm::Value*>& m_args, int n_args) {
+            std::vector<llvm::Value*>& m_args, int n_args, bool data_only,
+            llvm::Value** llvm_diminfo) {
             llvm::Value* tmp = nullptr;
             // TODO: Uncomment later
             // bool check_for_bounds = is_explicit_shape(v);
             bool check_for_bounds = false;
-            llvm::Value* idx = cmo_convertor_single_element(array, m_args, n_args, check_for_bounds);
-            llvm::Value* full_array = get_pointer_to_data(array);
-            tmp = llvm_utils->create_ptr_gep(LLVM::CreateLoad(*builder, full_array), idx);
+            llvm::Value* idx = nullptr;
+            if( data_only ) {
+                LFORTRAN_ASSERT(llvm_diminfo);
+                idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds);
+                tmp = llvm_utils->create_ptr_gep(array, idx);
+            } else {
+                idx = cmo_convertor_single_element(array, m_args, n_args, check_for_bounds);
+                llvm::Value* full_array = get_pointer_to_data(array);
+                tmp = llvm_utils->create_ptr_gep(LLVM::CreateLoad(*builder, full_array), idx);
+            }
             return tmp;
         }
 
