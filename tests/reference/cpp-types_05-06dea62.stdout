@@ -30,7 +30,7 @@ namespace {
 namespace {
 
 void main2() {
-    int32_t i;
+    int i;
     float r;
     r =   1.00000000000000000e+00*(float)(2);
     r = (float)(2)*  1.00000000000000000e+00;

@@ -82,9 +82,11 @@ loop.body2:                                       ; preds = %loop.head1
   %23 = alloca i8*, align 8
   store i8* %22, i8** %23, align 8
   %24 = load i8*, i8** %23, align 8
-  %25 = load i8, i8* %18, align 1
-  %26 = load i8, i8* %24, align 1
-  %27 = icmp ne i8 %25, %26
+  %25 = alloca i8*, align 8
+  store i8* %18, i8** %25, align 8
+  %26 = alloca i8*, align 8
+  store i8* %24, i8** %26, align 8
+  %27 = call i1 @_lpython_str_compare_noteq(i8** %25, i8** %26)
   br i1 %27, label %then, label %else
 
 then:                                             ; preds = %loop.body2
@@ -132,6 +134,8 @@ return:                                           ; preds = %loop.end6
 }
 
 declare i32 @_lfortran_str_len(i8**)
+
+declare i1 @_lpython_str_compare_noteq(i8**, i8**)
 
 define i32 @main() {
 .entry:

@@ -30,11 +30,11 @@ namespace {
 namespace {
 
 void main2() {
-    int32_t a;
-    int32_t b;
-    int32_t c;
+    int a;
+    int b;
+    int c;
     bool l;
-    int32_t x;
+    int x;
     a = 3;
     b = 4;
     c = 5;

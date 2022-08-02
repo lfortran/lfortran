@@ -35,11 +35,11 @@ struct f32_5_1
 
 struct i32_3_1
 {
-    Kokkos::View<int32_t*>* data;
+    Kokkos::View<int*>* data;
     dimension_descriptor dims[1];
     bool is_allocated;
 
-    i32_3_1(Kokkos::View<int32_t*>* data_): data{data_} {};
+    i32_3_1(Kokkos::View<int*>* data_): data{data_} {};
 };
 
 
@@ -55,11 +55,11 @@ struct f32_23_2
 
 struct i32_34_2
 {
-    Kokkos::View<int32_t*>* data;
+    Kokkos::View<int*>* data;
     dimension_descriptor dims[2];
     bool is_allocated;
 
-    i32_34_2(Kokkos::View<int32_t*>* data_): data{data_} {};
+    i32_34_2(Kokkos::View<int*>* data_): data{data_} {};
 };
 
 
@@ -75,11 +75,11 @@ struct f32_234_3
 
 struct i32_343_3
 {
-    Kokkos::View<int32_t*>* data;
+    Kokkos::View<int*>* data;
     dimension_descriptor dims[3];
     bool is_allocated;
 
-    i32_343_3(Kokkos::View<int32_t*>* data_): data{data_} {};
+    i32_343_3(Kokkos::View<int*>* data_): data{data_} {};
 };
 
 // Forward declarations
@@ -100,7 +100,7 @@ void main2() {
     f32_5_1* b = &b_value;
     b->dims[0].lower_bound = 1;
     b->dims[0].length = 5 - 1 + 1;
-    Kokkos::View<int32_t*> c_data("c_data", 3);
+    Kokkos::View<int*> c_data("c_data", 3);
     i32_3_1 c_value(&c_data);
     i32_3_1* c = &c_value;
     c->dims[0].lower_bound = 1;
@@ -113,7 +113,7 @@ void main2() {
     e->dims[0].length = 2 - 1 + 1;
     e->dims[1].lower_bound = 1;
     e->dims[1].length = 3 - 1 + 1;
-    Kokkos::View<int32_t*> f_data("f_data", 12);
+    Kokkos::View<int*> f_data("f_data", 12);
     i32_34_2 f_value(&f_data);
     i32_34_2* f = &f_value;
     f->dims[0].lower_bound = 1;
@@ -130,7 +130,7 @@ void main2() {
     h->dims[1].length = 3 - 1 + 1;
     h->dims[2].lower_bound = 1;
     h->dims[2].length = 4 - 1 + 1;
-    Kokkos::View<int32_t*> i_data("i_data", 36);
+    Kokkos::View<int*> i_data("i_data", 36);
     i32_343_3 i_value(&i_data);
     i32_343_3* i = &i_value;
     i->dims[0].lower_bound = 1;

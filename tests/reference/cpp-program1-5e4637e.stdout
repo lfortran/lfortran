@@ -30,7 +30,7 @@ namespace {
 namespace {
 
 void main2() {
-    int32_t i;
+    int i;
     i = 5;
     std::cout << i << std::endl;
     std::cout << i + 1 << std::endl;
