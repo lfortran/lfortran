@@ -210,19 +210,18 @@ jobs:
           environment-file: ci/environment_linux.yml
           extra-specs: |
             python=3.10
-            emscripten
+            nodejs
 
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
-      - name: Display Versions
+      - name: Show Node Info
         shell: bash -l {0}
         run: |
           set -ex
-          emcc --version
-          em++ --version
+          which node
           node --version
 
       - name: Build Linux
