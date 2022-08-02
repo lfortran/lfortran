@@ -217,6 +217,14 @@ jobs:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
+      - name: Display Versions
+        shell: bash -l {0}
+        run: |
+          set -ex
+          emcc --version
+          em++ --version
+          node --version
+
       - name: Build Linux
         shell: bash -l {0}
         run: |
