@@ -10,6 +10,7 @@
 #include <libasr/codegen/wasm_assembler.h>
 #include <libasr/pass/do_loops.h>
 #include <libasr/pass/unused_functions.h>
+#include <libasr/pass/arr_dims_propagate.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 
@@ -404,17 +405,16 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)v)) != m_var_name_idx_map.end())
                         wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
                     } else if (ASRUtils::is_array(v->m_type)) {
-                        ASR::dimension_t* m_dims;
                         uint32_t kind = ASRUtils::extract_kind_from_ttype_t(v->m_type);
-                        uint32_t n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, m_dims);
 
-                        uint64_t total_array_size = 1;
-                        for (uint32_t i = 0; i < n_dims; i++) {
-                            ASR::expr_t* length_value = ASRUtils::expr_value(m_dims[i].m_length);
-                            uint64_t len_in_this_dim = -1;
-                            ASRUtils::extract_value(length_value, len_in_this_dim);
-                            total_array_size *=  len_in_this_dim;
+                        Vec<uint32_t> array_dims;
+                        get_array_dims(*v, array_dims);
+
+                        uint32_t total_array_size = 1;
+                        for (auto &dim:array_dims) {
+                            total_array_size *=  dim;
                         }
+
                         LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)v)) != m_var_name_idx_map.end());
                         wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
                         wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
@@ -999,32 +999,76 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void get_array_dims(const ASR::Variable_t &x, Vec<uint32_t> &dims) {
+        ASR::dimension_t* m_dims;
+        uint32_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
+        dims.reserve(m_al, n_dims);
+        for (uint32_t i = 0; i < n_dims; i++) {
+            ASR::expr_t* length_value = ASRUtils::expr_value(m_dims[i].m_length);
+            uint64_t len_in_this_dim = -1;
+            ASRUtils::extract_value(length_value, len_in_this_dim);
+            dims.push_back(m_al, (uint32_t)len_in_this_dim);
+        }
+    }
+
     void emit_array_item_address_onto_stack(const ASR::ArrayItem_t &x) {
         this->visit_expr(*x.m_v);
         ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_v);
         uint32_t kind = ASRUtils::extract_kind_from_ttype_t(ttype);
-        // ASR::dimension_t* m_dims;
-        // uint32_t n_dims = ASRUtils::extract_dimensions_from_ttype(ttype, m_dims);
-        // ASR::expr_t* length_value = ASRUtils::expr_value(m_dims[0].m_length);
-        // uint64_t array_size = -1;
-        // ASRUtils::extract_value(length_value, array_size);
+        Vec<uint32_t> array_dims;
+        get_array_dims(*ASRUtils::EXPR2VAR(x.m_v), array_dims);
+        uint32_t multiplier = 1;
+        wasm::emit_i32_const(m_code_section, m_al, 0);
         for(uint32_t i = 0; i < x.n_args; i++) {
             if (x.m_args[i].m_right) {
                 this->visit_expr(*x.m_args[i].m_right);
                 wasm::emit_i32_const(m_code_section, m_al, 1);
                 wasm::emit_i32_sub(m_code_section, m_al);
-                wasm::emit_i32_const(m_code_section, m_al, kind);
+                wasm::emit_i32_const(m_code_section, m_al, multiplier);
                 wasm::emit_i32_mul(m_code_section, m_al);
+                wasm::emit_i32_add(m_code_section, m_al);
+                multiplier *= array_dims[i];
             } else {
                 diag.codegen_warning_label("/* FIXME right index */", {x.base.base.loc}, "");
             }
         }
+        wasm::emit_i32_const(m_code_section, m_al, kind);
+        wasm::emit_i32_mul(m_code_section, m_al);
         wasm::emit_i32_add(m_code_section, m_al);
     }
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
         emit_array_item_address_onto_stack(x);
         emit_memory_load(x.m_v);
+    }
+
+    void visit_ArraySize(const ASR::ArraySize_t &x) {
+        if (x.m_value) {
+            this->visit_expr(*x.m_value);
+            return;
+        }
+        Vec<uint32_t> array_dims;
+        get_array_dims(*ASRUtils::EXPR2VAR(x.m_v), array_dims);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        if (x.m_dim) {
+            uint32_t dim_idx = -1;
+            ASRUtils::extract_value(ASRUtils::expr_value(x.m_dim), dim_idx);
+            if (kind == 4) {
+                wasm::emit_i32_const(m_code_section, m_al, array_dims[dim_idx - 1]);
+            } else if (kind == 8) {
+                wasm::emit_i64_const(m_code_section, m_al, array_dims[dim_idx - 1]);
+            }
+            return;
+        }
+        uint32_t total_array_size = 1U;
+        for (auto &dim:array_dims) {
+            total_array_size *=  dim;
+        }
+        if (kind == 4) {
+            wasm::emit_i32_const(m_code_section, m_al, total_array_size);
+        } else if (kind == 8) {
+            wasm::emit_i64_const(m_code_section, m_al, total_array_size);
+        }
     }
 
     void handle_return() {
@@ -1545,6 +1589,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
 
     pass_unused_functions(al, asr, true);
     pass_replace_do_loops(al, asr);
+    pass_propagate_arr_dims(al, asr);
 
     // std::cout << pickle(asr, true /* use colors */, true /* indent */,
     //         true /* with_intrinsic_modules */) << std::endl;
