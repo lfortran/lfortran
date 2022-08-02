@@ -150,7 +150,7 @@ RUN(NAME while_02 LABELS gfortran llvm cpp)
 RUN(NAME doloop_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME doloop_02 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME doloop_03 LABELS gfortran llvm cpp wasm)
-RUN(NAME doloop_04 LABELS gfortran llvm)
+RUN(NAME doloop_04 LABELS gfortran )
 RUN(NAME doloop_05 LABELS gfortran llvm cpp)
 RUN(NAME doloop_06 LABELS gfortran llvm cpp wasm)
 RUN(NAME doloop_07 LABELS gfortran llvm cpp wasm)
@@ -290,7 +290,7 @@ RUN(NAME intrinsics_32 LABELS gfortran)
 RUN(NAME intrinsics_33 LABELS gfortran llvm)
 RUN(NAME intrinsics_34 LABELS gfortran llvm)
 RUN(NAME intrinsics_35 LABELS gfortran)
-RUN(NAME intrinsics_36 LABELS gfortran llvm) # adjustl
+RUN(NAME intrinsics_36 LABELS gfortran) # adjustl
 RUN(NAME intrinsics_37 LABELS gfortran)
 RUN(NAME intrinsics_38 LABELS gfortran) # adjustr
 RUN(NAME intrinsics_39 LABELS gfortran)
@@ -330,7 +330,7 @@ RUN(NAME modules_15 LABELS gfortran llvm EXTRAFILES
 RUN(NAME modules_16 LABELS gfortran llvm EXTRAFILES modules_16b.f90)
 RUN(NAME modules_18 LABELS gfortran llvm EXTRAFILES
         modules_18b.f90 modules_15c.c)
-RUN(NAME modules_19 LABELS gfortran llvm EXTRAFILES
+RUN(NAME modules_19 LABELS gfortran EXTRAFILES
         modules_19b.f90)
 RUN(NAME modules_20 LABELS gfortran llvm EXTRAFILES
         modules_20b.f90)
@@ -383,7 +383,7 @@ RUN(NAME interface_10 LABELS gfortran llvm)
 
 RUN(NAME generic_name_01 LABELS gfortran llvm)
 
-RUN(NAME operator_overloading_01 LABELS gfortran llvm)
+RUN(NAME operator_overloading_01 LABELS gfortran )
 RUN(NAME operator_overloading_02 LABELS gfortran llvm)
 RUN(NAME operator_overloading_03 LABELS gfortran llvm)
 RUN(NAME operator_overloading_04 LABELS gfortran)
@@ -470,10 +470,10 @@ RUN(NAME string_02 LABELS gfortran llvm)
 RUN(NAME string_03 LABELS gfortran llvm)
 RUN(NAME string_04 LABELS gfortran llvm)
 RUN(NAME string_05 LABELS gfortran llvm)
-RUN(NAME string_06 LABELS gfortran llvm)
+RUN(NAME string_06 LABELS gfortran)
 RUN(NAME string_07 LABELS gfortran llvm)
-RUN(NAME string_08 LABELS gfortran llvm)
-RUN(NAME string_09 LABELS gfortran llvm)
+RUN(NAME string_08 LABELS gfortran)
+RUN(NAME string_09 LABELS gfortran)
 RUN(NAME string_10 LABELS gfortran llvm)
 RUN(NAME string_11 LABELS gfortran llvm)
 RUN(NAME string_12 LABELS gfortran)
