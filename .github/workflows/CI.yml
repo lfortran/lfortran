@@ -118,7 +118,7 @@ jobs:
             cd integration_tests
             ./run_tests.py -b llvm
 
-  llvm_14:
+  test_llvm_14:
     name: Test LLVM 14
     runs-on: ubuntu-latest
     steps:
