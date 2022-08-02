@@ -69,7 +69,19 @@ macro(RUN)
         endif()
 
         if ((LFORTRAN_BACKEND STREQUAL "wasm"))
-            add_test(${name} node --experimental-wasm-bigint ${CURRENT_BINARY_DIR}/${name}.js)
+            find_program(WASM_EXEC_RUNTIME node)
+            execute_process(COMMAND "${WASM_EXEC_RUNTIME}" --version
+                            OUTPUT_VARIABLE WASM_EXEC_VERSION
+                            OUTPUT_STRIP_TRAILING_WHITESPACE)
+            string(COMPARE GREATER_EQUAL "${WASM_EXEC_VERSION}"
+                                    "v16.0.0" IS_NODE_ABOVE_16)
+
+            if (NOT IS_NODE_ABOVE_16)
+                message(STATUS "${WASM_EXEC_RUNTIME} version: ${WASM_EXEC_VERSION}")
+                set(WASM_EXEC_FLAGS "--experimental-wasm-bigint")
+            endif()
+
+            add_test(${name} ${WASM_EXEC_RUNTIME} ${WASM_EXEC_FLAGS} ${CURRENT_BINARY_DIR}/${name}.js)
         else()
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         endif()
