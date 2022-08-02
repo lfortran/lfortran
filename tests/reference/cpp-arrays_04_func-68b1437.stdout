@@ -58,7 +58,7 @@ float abs(float a)
 template <typename T0>
 float sum(T0* a)
 {
-    int i;
+    int32_t i;
     float r;
     std::cout << "sum" << std::endl;
     r = (float)(0);
