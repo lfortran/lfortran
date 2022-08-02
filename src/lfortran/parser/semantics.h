@@ -775,6 +775,7 @@ char *str2str_null(Allocator &al, const LFortran::Str &s) {
 #define INTEGER(x, l) make_Num_t(p.m_a, l, x.int_n.n, str2str_null(p.m_a, x.int_kind))
 #define INT1(l) make_Num_t(p.m_a, l, 1, nullptr)
 #define INTEGER3(x) (x.int_n.as_smallint())
+#define INTEGER4(x) (x)
 #define REAL(x, l) make_Real_t(p.m_a, l, x.c_str(p.m_a))
 #define COMPLEX(x, y, l) make_Complex_t(p.m_a, l, EXPR(x), EXPR(y))
 #define STRING(x, l) make_String_t(p.m_a, l, x.c_str(p.m_a))

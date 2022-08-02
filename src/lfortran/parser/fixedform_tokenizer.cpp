@@ -341,16 +341,18 @@ struct FixedFormRecursiveDescent {
         if (is_integer(label)) {
             lines.push_back(label);
             YYSTYPE y;
-            int token = yytokentype::TK_LABEL;
-            tokens.push_back(token);
             std::string::iterator end = std::remove(label.begin(), label.end(), ' ');
             label.erase(end, label.end());
-            unsigned char *t = (unsigned char*)&label[0];
-            unsigned char *e = (unsigned char*)&label[label.size()];
-            lex_int_large(m_a, t,e,
-                    y.int_suffix.int_n,
-                    y.int_suffix.int_kind);
+            // unsigned char *t = (unsigned char*)&label[0];
+            // unsigned char *e = (unsigned char*)&label[label.size()];
+            // lex_int_large(m_a, t,e,
+            //         y.int_suffix.int_n,
+            //         y.int_suffix.int_kind);
+            y.n = std::stoi(label);
             stypes.push_back(y);
+
+            int token = yytokentype::TK_LABEL;
+            tokens.push_back(token);
             cur+=reserved_cols;
             return true;
         }
@@ -370,13 +372,14 @@ struct FixedFormRecursiveDescent {
         label.assign((char*)start, count);
         if (is_integer(label) && count > 0) {
             YYSTYPE yy;
-            lex_int_large(m_a, cur, cur2,
-                    yy.int_suffix.int_n,
-                    yy.int_suffix.int_kind);
+            // lex_int_large(m_a, cur, cur2,
+            //         yy.int_suffix.int_n,
+            //         yy.int_suffix.int_kind);
+            // tokens.push_back(yytokentype::TK_INTEGER);
             
-            
-            stypes.push_back(yy);
+            yy.n = std::stoi(tostr(cur, cur2-1));
             tokens.push_back(yytokentype::TK_LABEL);
+            stypes.push_back(yy);
             cur+=count+1; // TODO revisit
             return true;
         }
@@ -464,20 +467,12 @@ struct FixedFormRecursiveDescent {
                 tokens.push_back(yytokentype::KW_GOTO);
 
                 YYSTYPE y3;
-                lex_int_large(m_a, t.tok + 4,t.tok,
-                    y3.int_suffix.int_n,
-                    y3.int_suffix.int_kind);
-
-
+                // lex_int_large(m_a, t.tok + 4,t.tok,
+                //     y3.int_suffix.int_n,
+                //     y3.int_suffix.int_kind);
+                y3.n = std::stoi(tostr(t.tok+4,t.tok-1));
                 stypes.push_back(y3);
                 tokens.push_back(yytokentype::TK_LABEL);
-
-                // YYSTYPE n;
-                // std::string nl{"\n"};
-                // n.string.from_str(m_a, nl);
-                // stypes.push_back(n);
-                // tokens.push_back(yytokentype::TK_NEWLINE);
-
                 continue;
             }
             // TODO: handle
@@ -592,6 +587,7 @@ struct FixedFormRecursiveDescent {
             tokenize_line("enddo", cur);
             return true;
         } else if (next_is(cur, "continue")) {
+            // the usual terminal statement for do loops
             tokenize_line("continue", cur);
             return true;
         } else {

@@ -1,4 +1,4 @@
-40    integer a, b,c,d
+      integer a, b,c,d,            k
       a = 1
       b = 2
       c = a *b/2
