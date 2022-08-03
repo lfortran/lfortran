@@ -447,7 +447,8 @@ struct FixedFormRecursiveDescent {
 
         std::string line{tostr(start, cur)};
         lines.push_back(line);
-        t.set_string(lines[lines.size()-1]);
+        t.cur = start;
+
 
         Location l;
         ptrdiff_t len = 1;
@@ -838,7 +839,12 @@ bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, Allocato
     try {
         FixedFormRecursiveDescent f(diagnostics, al);
         f.string_start = string_start;
-        // std::cout << "fixed form tokenizer sees \n" << f.string_start;
+        //f.t.set_string(lines[lines.size()-1]);
+        f.t.cur = string_start;
+        f.t.string_start = string_start;
+        f.t.cur_line = string_start;
+        f.t.line_num = 1;
+
         f.lex_global_scope(cur);
         tokens = std::move(f.tokens);
         stypes = std::move(f.stypes);
