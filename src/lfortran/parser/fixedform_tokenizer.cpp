@@ -308,7 +308,8 @@ struct FixedFormRecursiveDescent {
         Location loc;
         loc.first = loc_first;
         loc.last = loc_first;
-        auto next=cur; next_line(next); std::cout << "error line " << tostr(cur,next-1) << std::endl;
+        auto next=cur; next_line(next);
+        //std::cout << "error line " << tostr(cur,next-1) << std::endl;
         throw LFortran::parser_local::TokenizerError(text, loc);
     }
 
