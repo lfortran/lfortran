@@ -591,6 +591,7 @@ struct FixedFormRecursiveDescent {
     }
 
     bool find_terminal(unsigned char *&cur) {
+        // TODO: check that this label is the same label as the do loop label
         eat_label(cur);
         if (next_is(cur, "enddo")) {
             tokenize_line("enddo", cur);
@@ -598,6 +599,19 @@ struct FixedFormRecursiveDescent {
         } else if (next_is(cur, "continue")) {
             // the usual terminal statement for do loops
             tokenize_line("continue", cur);
+            //only append iff (tokens[tokens.size()-2] == yytokentype::TK_LABEL && tokens[tokens.size()-1 == yytokentype::KW_CONTINUE])
+
+            // return an explicit "end do" token here
+            std::string l("enddo");
+            YYSTYPE y2;
+            y2.string.from_str(m_a, l);
+            stypes.push_back(y2);
+            tokens.push_back(yytokentype::KW_ENDDO);
+            // And a new line
+            l = "\n";
+            y2.string.from_str(m_a, l);
+            stypes.push_back(y2);
+            tokens.push_back(yytokentype::TK_NEWLINE);
             return true;
         } else {
             return false;
