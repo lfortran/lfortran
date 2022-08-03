@@ -1260,6 +1260,7 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        bool is_argument = false;
         llvm::Value* array = nullptr;
         if( ASR::is_a<ASR::Var_t>(*x.m_v) ) {
             ASR::Variable_t *v = ASRUtils::EXPR2VAR(x.m_v);
@@ -1270,6 +1271,7 @@ public:
             uint32_t v_h = get_hash((ASR::asr_t*)v);
             LFORTRAN_ASSERT(llvm_symtab.find(v_h) != llvm_symtab.end());
             array = llvm_symtab[v_h];
+            is_argument = v->m_intent == ASRUtils::intent_in;
         } else {
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
@@ -1284,7 +1286,7 @@ public:
         ASR::dimension_t* m_dims;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(
                         ASRUtils::expr_type(x.m_v), m_dims);
-        if (is_a<ASR::Character_t>(*x.m_type) && n_dims == 0) {
+        if (ASR::is_a<ASR::Character_t>(*x.m_type) && n_dims == 0) {
             // String indexing:
             if (x.n_args != 1) {
                 throw CodeGenError("Only string(a) supported for now.", x.base.base.loc);
@@ -1318,7 +1320,21 @@ public:
             if (ASRUtils::expr_type(x.m_v)->type == ASR::ttypeType::Pointer) {
                 array = CreateLoad(array);
             }
-            tmp = arr_descr->get_single_element(array, indices, x.n_args);
+            bool is_data_only = is_argument && !ASRUtils::is_dimension_empty(m_dims, n_dims);
+            Vec<llvm::Value*> llvm_diminfo;
+            llvm_diminfo.reserve(al, 2 * x.n_args + 1);
+            if( is_data_only ) {
+                for( size_t idim = 0; idim < x.n_args; idim++ ) {
+                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                    llvm::Value* dim_start = tmp;
+                    this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                    llvm::Value* dim_size = tmp;
+                    llvm_diminfo.push_back(al, dim_start);
+                    llvm_diminfo.push_back(al, dim_size);
+                }
+            }
+            tmp = arr_descr->get_single_element(array, indices, x.n_args,
+                                                is_data_only, llvm_diminfo.p);
         }
     }
 
