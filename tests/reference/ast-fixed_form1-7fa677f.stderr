@@ -69,3 +69,111 @@ style suggestion: Use '==' instead of '.eq.'
   |
 1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
   |                               ^^^^ help: write this as '=='
+
+style suggestion: Use '==' instead of '.eq.'
+ --> tests/fixed_form1.f:1:9
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |         ^^^^ help: write this as '=='
+
+style suggestion: Use '==' instead of '.eq.'
+ --> tests/fixed_form1.f:1:20
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |                    ^^^^ help: write this as '=='
+
+style suggestion: Use '==' instead of '.eq.'
+ --> tests/fixed_form1.f:1:14
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |              ^^^^ help: write this as '=='
+
+style suggestion: Use '==' instead of '.eq.'
+ --> tests/fixed_form1.f:1:34
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |                                  ^^^^ help: write this as '=='
+
+style suggestion: Use '<' instead of '.lt.'
+ --> tests/fixed_form1.f:1:34
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |                                  ^^^^ help: write this as '<'
+
+style suggestion: Use '>=' instead of '.ge.'
+ --> tests/fixed_form1.f:2:9
+  |
+2 |      *   result,abserr,neval,ier,alist,blist,rlist,elist,iord,last)
+  |         ^^^^ help: write this as '>='
+
+style suggestion: Use '>' instead of '.gt.'
+ --> tests/fixed_form1.f:1:12
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |            ^^^^ help: write this as '>'
+
+style suggestion: Use '>' instead of '.gt.'
+ --> tests/fixed_form1.f:1:29
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |                             ^^^^ help: write this as '>'
+
+style suggestion: Use '<=' instead of '.le.'
+ --> tests/fixed_form1.f:1:14
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |              ^^^^ help: write this as '<='
+
+style suggestion: Use '==' instead of '.eq.'
+ --> tests/fixed_form1.f:1:12
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |            ^^^^ help: write this as '=='
+
+style suggestion: Use '>=' instead of '.ge.'
+ --> tests/fixed_form1.f:1:14
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |              ^^^^ help: write this as '>='
+
+style suggestion: Use '>=' instead of '.ge.'
+ --> tests/fixed_form1.f:1:29
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |                             ^^^^ help: write this as '>='
+
+style suggestion: Use '<=' instead of '.le.'
+ --> tests/fixed_form1.f:1:32
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |                                ^^^^ help: write this as '<='
+
+style suggestion: Use '>' instead of '.gt.'
+ --> tests/fixed_form1.f:1:14
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |              ^^^^ help: write this as '>'
+
+style suggestion: Use '/=' instead of '.ne.'
+ --> tests/fixed_form1.f:1:11
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |           ^^^^ help: write this as '/='
+
+style suggestion: Use '<=' instead of '.le.'
+ --> tests/fixed_form1.f:1:26
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |                          ^^^^ help: write this as '<='
+
+style suggestion: Use 'end do' instead of 'enddo'
+ --> tests/fixed_form1.f:1:7
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |       ^ help: write this as 'end do'
+
+style suggestion: Use 'end do' instead of 'enddo'
+ --> tests/fixed_form1.f:1:7
+  |
+1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
+  |       ^ help: write this as 'end do'
