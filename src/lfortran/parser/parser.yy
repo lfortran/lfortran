@@ -10,15 +10,15 @@
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
 
-
+/*
 // Uncomment this to enable parser tracing. Then in the main code, set
 // extern int yydebug;
 // yydebug=1;
-/* %define parse.trace
+%define parse.trace
 %printer { fprintf(yyo, "%s", $$.str().c_str()); } <string>
 %printer { fprintf(yyo, "%d", $$); } <n>
-%printer { std::cerr << "AST TYPE: " << $$->type; } <ast> */
-
+%printer { std::cerr << "AST TYPE: " << $$->type; } <ast>
+*/
 
 
 %code requires // *.h
@@ -32,10 +32,6 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/tokenizer.h>
 #include <lfortran/parser/semantics.h>
-
-#include <lfortran/pickle.h>
-
-#include <iostream>
 
 int yylex(LFortran::YYSTYPE *yylval, YYLTYPE *yyloc, LFortran::Parser &p)
 {
@@ -1841,20 +1837,10 @@ do_statement
             $$ = DO2($3, $5, $7, TRIVIA_AFTER($8, @$), $9, @$); }
     | KW_DO comma_opt id "=" expr "," expr "," expr sep statements enddo {
             $$ = DO3($3, $5, $7, $9, TRIVIA_AFTER($10, @$), $11, @$); }
-    // these are the original rules we may need to reactivate
-    /* | KW_DO TK_INTEGER comma_opt id "=" expr "," expr sep statements enddo {
-            $$ = DO2_LABEL(INTEGER3($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, @$); }
-    | KW_DO TK_INTEGER comma_opt id "=" expr "," expr "," expr sep statements enddo {
-            $$ = DO3_LABEL(INTEGER3($2), $4, $6, $8, $10, TRIVIA_AFTER($11, @$), $12, @$); } */
     | KW_DO TK_INTEGER comma_opt id "=" expr "," expr sep statements enddo {
             $$ = DO2_LABEL(INTEGER3($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, @$); }
     | KW_DO TK_INTEGER comma_opt id "=" expr "," expr "," expr sep statements enddo {
             $$ = DO3_LABEL(INTEGER3($2), $4, $6, $8, $10, TRIVIA_AFTER($11, @$), $12, @$); }
-    // a `DO` loop can usually end with `CONTINUE`, too
-    /* | KW_DO TK_LABEL comma_opt id "=" expr "," expr sep statements continue_statement {
-            $$ = DO2_LABEL(INTEGER4($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, @$); }
-    | KW_DO TK_LABEL comma_opt id "=" expr "," expr "," expr sep statements continue_statement {
-            $$ = DO3_LABEL(INTEGER4($2), $4, $6, $8, $10, TRIVIA_AFTER($11, @$), $12, @$); } */
     | KW_DO comma_opt KW_CONCURRENT "(" concurrent_control_list ")"
         concurrent_locality_star sep statements enddo {
             $$ = DO_CONCURRENT1($5, $7, TRIVIA_AFTER($8, @$), $9, @$); }
