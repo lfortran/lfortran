@@ -495,6 +495,9 @@ struct FixedFormRecursiveDescent {
                 lex_int_large(m_a, t.tok, t.cur,
                     y2.int_suffix.int_n,
                     y2.int_suffix.int_kind);
+            } else if (token == yytokentype::TK_STRING) {
+                std::string tk{tostr(t.tok+1, t.tok + len-1)};
+                y2.string.from_str(m_a, tk);
             } else {
                 std::string tk{tostr(t.tok, t.tok + len)};
                 y2.string.from_str(m_a, tk);
