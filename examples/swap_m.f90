@@ -24,7 +24,7 @@ module swap_m
 contains
 
     subroutine test_template()
-        instantiate swap_t(real), only: swap => swap_generic
+        instantiate swap_t(real, complex), only: swap => swap_generic
         real :: x, y
         x = 5
         y = 7

@@ -395,6 +395,7 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %type <dim> array_comp_decl
 %type <codim> coarray_comp_decl
 %type <ast> var_type
+%type <vec_ast> var_type_star
 %type <ast> fn_mod
 %type <vec_ast> fn_mod_plus
 %type <vec_ast> var_modifiers
@@ -700,7 +701,7 @@ template_decl
     ;
 
 instantiate
-    : KW_INSTANTIATE id "(" var_type ")" "," KW_ONLY ":" id "=>" id sep {
+    : KW_INSTANTIATE id "(" var_type_star ")" "," KW_ONLY ":" id "=>" id sep {
         $$ = INSTANTIATE($2, $4, @$); }
     ;
 
@@ -1339,6 +1340,12 @@ var_modifier
     | KW_LEN { $$ = SIMPLE_ATTR(Len, @$); }
     ;
 
+// var_type*
+var_type_star
+    : var_type_star "," var_type { $$ = $1; LIST_ADD($$, $3); }
+    | var_type { LIST_NEW($$); LIST_ADD($$, $1); }
+    | %empty { LIST_NEW($$); }
+    ;
 
 var_type
     : KW_INTEGER { $$ = ATTR_TYPE(Integer, @$); }
