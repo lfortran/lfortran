@@ -651,11 +651,19 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
         std::string token_str;
         // Determine the unexpected token's type:
         if (this->fixed_form) {
-            unsigned int invalid_token = this->f_tokenizer.token_pos - 1;            
+            unsigned int invalid_token = this->f_tokenizer.token_pos;
+            if (invalid_token > 0) invalid_token--;
             if (invalid_token >= f_tokenizer.tokens.size()) {
-                invalid_token = f_tokenizer.tokens.size()-1;
+                invalid_token = f_tokenizer.tokens.size();
+                if (invalid_token > 0) invalid_token--;
             }
-            token = f_tokenizer.tokens[invalid_token];
+            if (f_tokenizer.tokens.size() > 0) {
+                std::cout << f_tokenizer.tokens.size() << std::endl;
+                std::cout << invalid_token << std::endl;
+                token = f_tokenizer.tokens[invalid_token];
+            } else {
+                token = END_OF_FILE;
+            }
         } else {
             LFortran::YYSTYPE yylval_;
             YYLTYPE yyloc_;
