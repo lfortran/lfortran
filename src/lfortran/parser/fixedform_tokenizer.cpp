@@ -467,7 +467,7 @@ struct FixedFormRecursiveDescent {
         t.cur = start;
 
 
-        Location l;
+        Location loc;
         ptrdiff_t len = 1;
         for(;;) {
             YYSTYPE y2;
@@ -481,7 +481,7 @@ struct FixedFormRecursiveDescent {
                 locations.push_back(loc);
                 break;
             }
-            auto token = t.lex(m_a, y2, l, diag);
+            auto token = t.lex(m_a, y2, loc, diag);
             // we need to disentangle "goto999" as the tokenizer cannot do it
             // on its own
             if (next_is(t.tok, "goto") && token != yytokentype::KW_GOTO) {
@@ -533,9 +533,6 @@ struct FixedFormRecursiveDescent {
                 y2.string.from_str(m_a, tk);
             }
             stypes.push_back(y2);
-            Location loc;
-            loc.first = t.tok - string_start;
-            loc.last = t.cur - string_start -1;
             locations.push_back(loc);
         }
     }
