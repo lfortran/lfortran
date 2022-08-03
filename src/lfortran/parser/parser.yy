@@ -36,9 +36,7 @@
 int yylex(LFortran::YYSTYPE *yylval, YYLTYPE *yyloc, LFortran::Parser &p)
 {
     if (p.fixed_form) {
-        auto tok = p.f_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
-        std::cout << "LEX: " << pickle(tok, *yylval) << " with identifier " << tok << std::endl;
-        return tok;
+        return p.f_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
     } else {
         return p.m_tokenizer.lex(p.m_a, *yylval, *yyloc, p.diag);
     }
