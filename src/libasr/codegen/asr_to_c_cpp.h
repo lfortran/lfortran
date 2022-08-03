@@ -259,14 +259,13 @@ R"(#include <stdio.h>
             if (i < x.n_args-1) func += ", ";
         }
         func += ")";
-
         if( is_c || template_for_Kokkos.empty() ) {
             return func;
         }
 
         template_for_Kokkos.pop_back();
         template_for_Kokkos.pop_back();
-        return "\ntemplate <" + template_for_Kokkos + ">\n" + func;;
+        return "\ntemplate <" + template_for_Kokkos + ">\n" + func;
     }
 
     // Returns the declaration, no semi colon at the end
@@ -548,12 +547,13 @@ R"(#include <stdio.h>
     void visit_Assignment(const ASR::Assignment_t &x) {
         std::string target;
         if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
-            target = LFortran::ASRUtils::EXPR2VAR(x.m_target)->m_name;
-            if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) && !is_c ) {
+            visit_Var(*ASR::down_cast<ASR::Var_t>(x.m_target));
+            target = src;
+            if (!is_c && ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
                 target += "->data";
             }
         } else if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
-            visit_ArrayItem(*ASR::down_cast<ASR::ArrayItem_t>(x.m_target));
+            self().visit_ArrayItem(*ASR::down_cast<ASR::ArrayItem_t>(x.m_target));
             target = src;
         } else if (ASR::is_a<ASR::DerivedRef_t>(*x.m_target)) {
             visit_DerivedRef(*ASR::down_cast<ASR::DerivedRef_t>(x.m_target));
@@ -614,7 +614,15 @@ R"(#include <stdio.h>
 
     void visit_Var(const ASR::Var_t &x) {
         const ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
-        src = ASR::down_cast<ASR::Variable_t>(s)->m_name;
+        ASR::Variable_t* sv = ASR::down_cast<ASR::Variable_t>(s);
+        if( (sv->m_intent == ASRUtils::intent_in ||
+            sv->m_intent == ASRUtils::intent_inout) &&
+            is_c && ASRUtils::is_array(sv->m_type) &&
+            ASRUtils::is_pointer(sv->m_type)) {
+            src = "(*" + std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name) + ")";
+        } else {
+            src = std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name);
+        }
         last_expr_precedence = 2;
     }
 
@@ -623,43 +631,11 @@ R"(#include <stdio.h>
         this->visit_expr(*x.m_v);
         der_expr = std::move(src);
         member = ASRUtils::symbol_name(x.m_m);
-        src = der_expr + "->" + member;
-    }
-
-    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
-        this->visit_expr(*x.m_v);
-        std::string array = src;
-        std::string out = array;
-        ASR::dimension_t* m_dims;
-        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_v), m_dims);
-        if( is_c ) {
-            out += "->data[";
+        if( ASR::is_a<ASR::ArrayItem_t>(*x.m_v) ) {
+            src = der_expr + "." + member;
         } else {
-            out += "->data->operator[](";
+            src = der_expr + "->" + member;
         }
-        for (size_t i=0; i<x.n_args; i++) {
-            if (x.m_args[i].m_right) {
-                self().visit_expr(*x.m_args[i].m_right);
-            } else {
-                src = "/* FIXME right index */";
-            }
-            out += src;
-            out += " - " + array + "->dims[" + std::to_string(i) + "].lower_bound";
-            if (i < x.n_args-1) {
-                if( is_c ) {
-                    out += "][";
-                } else {
-                    out += ", ";
-                }
-            }
-        }
-        if( is_c ) {
-            out += "]";
-        } else {
-            out += ")";
-        }
-        last_expr_precedence = 2;
-        src = out;
     }
 
     void visit_Cast(const ASR::Cast_t &x) {
@@ -1216,10 +1192,20 @@ R"(#include <stdio.h>
             if (ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
                 ASR::Variable_t *arg = LFortran::ASRUtils::EXPR2VAR(x.m_args[i].m_value);
                 std::string arg_name = arg->m_name;
-                out += arg_name;
+                if( ASRUtils::is_array(arg->m_type) &&
+                    ASRUtils::is_pointer(arg->m_type) ) {
+                    out += "&" + arg_name;
+                } else {
+                    out += arg_name;
+                }
             } else {
                 self().visit_expr(*x.m_args[i].m_value);
-                out += src;
+                if( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) &&
+                    ASR::is_a<ASR::Derived_t>(*ASRUtils::expr_type(x.m_args[i].m_value)) ) {
+                    out += "&" + src;
+                } else {
+                    out += src;
+                }
             }
             if (i < x.n_args-1) out += ", ";
         }
