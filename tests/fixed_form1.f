@@ -119,11 +119,94 @@ c
 c            main do-loop
 c            ------------
 c
+      do 60 last = 3,limit
+c
+c           bisect the subinterval with largest error estimate.
+c
+        a1 = alist(maxerr)
+        b1 = 0.5d+00*(alist(maxerr)+blist(maxerr))
+        a2 = b1
+        b2 = blist(maxerr)
+c
+        call dqc25s(f,a,b,a1,b1,alfa,beta,ri,rj,rg,rh,area1,
+     *  error1,resas1,integr,nev)
+        neval = neval+nev
+        call dqc25s(f,a,b,a2,b2,alfa,beta,ri,rj,rg,rh,area2,
+     *  error2,resas2,integr,nev)
+        neval = neval+nev
+c
+c           improve previous approximations integral and error
+c           and test for accuracy.
+c
+        area12 = area1+area2
+        erro12 = error1+error2
+        errsum = errsum+erro12-errmax
+        area = area+area12-rlist(maxerr)
+        if(a.eq.a1.or.b.eq.b2) go to 30
+        if(resas1.eq.error1.or.resas2.eq.error2) go to 30
+c
+c           test for roundoff error.
+c
+        if(dabs(rlist(maxerr)-area12).lt.0.1d-04*dabs(area12)
+     *  .and.erro12.ge.0.99d+00*errmax) iroff1 = iroff1+1
+        if(last.gt.10.and.erro12.gt.errmax) iroff2 = iroff2+1
+   30   rlist(maxerr) = area1
+        rlist(last) = area2
+c
+c           test on accuracy.
+c
+        errbnd = dmax1(epsabs,epsrel*dabs(area))
+        if(errsum.le.errbnd) go to 35
+c
+c           set error flag in the case that the number of interval
+c           bisections exceeds limit.
+c
+        if(last.eq.limit) ier = 1
+c
+c
+c           set error flag in the case of roundoff error.
+c
+        if(iroff1.ge.6.or.iroff2.ge.20) ier = 2
+c
+c           set error flag in the case of bad integrand behaviour
+c           at interior points of integration range.
+c
+        if(dmax1(dabs(a1),dabs(b2)).le.(0.1d+01+0.1d+03*epmach)*
+     *  (dabs(a2)+0.1d+04*uflow)) ier = 3
+c
+c           append the newly-created intervals to the list.
+c
+   35   if(error2.gt.error1) go to 40
+        alist(last) = a2
+        blist(maxerr) = b1
+        blist(last) = b2
+        elist(maxerr) = error1
+        elist(last) = error2
+        go to 50
+   40   alist(maxerr) = a2
+        alist(last) = a1
+        blist(last) = b1
+        rlist(maxerr) = area2
+        rlist(last) = area1
+        elist(maxerr) = error2
+        elist(last) = error1
+c
+c           call subroutine dqpsrt to maintain the descending ordering
+c           in the list of error estimates and select the subinterval
+c           with largest error estimate (to be bisected next).
+c
+   50   call dqpsrt(limit,last,maxerr,errmax,elist,iord,nrmax)
+c ***jump out of do-loop
+        if (ier.ne.0.or.errsum.le.errbnd) go to 70
+   60 continue
 c
 c           compute final result.
 c           ---------------------
 c
    70 result = 0.0d+00
+      do 80 k=1,last
+        result = result+rlist(k)
+   80 continue
       abserr = errsum
   999 return
       end
