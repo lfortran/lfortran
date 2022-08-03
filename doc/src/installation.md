@@ -79,10 +79,7 @@ Clone the LFortran git repository:
 git clone https://github.com/lfortran/lfortran.git
 cd lfortran
 ```
-Generate files that are needed for the build (this step depends on `re2c`, `bison` and `python`):
-```bash
-./build0.sh
-```
+
 Now the process is the same as installing from the source tarball. For example to build in Debug mode:
 ```
 cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .
@@ -189,7 +186,6 @@ The `--pure` flag ensures no system dependencies are used in the environment.
 
 The build steps are the same as with the `ci`:
 ```bash
-./build0.sh
 ./build1.sh
 ```
 
