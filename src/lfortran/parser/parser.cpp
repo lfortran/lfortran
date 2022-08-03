@@ -214,7 +214,8 @@ void copy_label(std::string &out, const std::string &s, size_t &pos)
     }
 }
 
-void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos)
+void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
+    LocationManager &lm)
 {
     while (pos < s.size() && s[pos] != '\n') {
         if (s[pos] == '"' || s[pos] == '\'') {
@@ -226,6 +227,8 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos)
         } else if (s[pos] == ' ') {
             // Skip white space in a fixed-form parser
             pos++;
+            lm.out_start.push_back(out.size());
+            lm.in_start.push_back(pos);
         } else {
             out += s[pos];
             pos++;
@@ -296,7 +299,7 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     pos += 6;
                     lm.out_start.push_back(out.size());
                     lm.in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos);
+                    copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
                 case LineType::LabeledStatement : {
@@ -305,7 +308,7 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     // Copy from column 7
                     lm.out_start.push_back(out.size());
                     lm.in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos);
+                    copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
                 case LineType::Continuation : {
@@ -314,7 +317,7 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     pos += 6;
                     lm.out_start.push_back(out.size());
                     lm.in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos);
+                    copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
                 case LineType::EndOfFile : {
