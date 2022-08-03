@@ -442,7 +442,11 @@ struct FixedFormRecursiveDescent {
             std::string l(chop); 
             y1.string.from_str(m_a, l);
             stypes.push_back(y1);
-            tokens.push_back(identifiers_map[chop]);
+            if (chop == "enddo") {
+                tokens.push_back(KW_END_DO);
+            } else {
+                tokens.push_back(identifiers_map[chop]);
+            }
             Location loc;
             loc.first = cur - string_start;
             loc.last = cur - string_start + chop.size();
