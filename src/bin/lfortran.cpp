@@ -114,10 +114,8 @@ int emit_tokens2(const std::string &input, std::vector<std::string>
     // elsewhere
     // Src -> Tokens
     Allocator al(64*1024*1024);
-    //std::vector<int> toks;
-    //std::vector<LFortran::YYSTYPE> stypes;
     LFortran::diag::Diagnostics diagnostics;
-    auto res = LFortran::tokens(al, input, diagnostics, &stypes);
+    auto res = LFortran::tokens(al, input, diagnostics, &stypes, nullptr, false);
     LFortran::LocationManager lm;
     lm.in_filename = "input";
     lm.init_simple(input);
@@ -129,7 +127,6 @@ int emit_tokens2(const std::string &input, std::vector<std::string>
         LFORTRAN_ASSERT(diagnostics.has_error())
         return 1;
     }
-
     for (size_t i=0; i < toks.size(); i++) {
         tok_strings.push_back(LFortran::pickle(toks[i], stypes[i]));
         //std::cout << LFortran::pickle(toks[i], stypes[i]) << std::endl;
@@ -390,17 +387,18 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
     if (compiler_options.prescan || compiler_options.fixed_form) {
         input = fix_continuation(input, lm, compiler_options.fixed_form);
     }
-    auto res = LFortran::tokens(al, input, diagnostics, &stypes, &locations);
+    auto res = LFortran::tokens(al, input, diagnostics, &stypes, &locations,
+        compiler_options.fixed_form);
     lm.in_filename = infile;
     lm.init_simple(input);
     std::cerr << diagnostics.render(input, lm, compiler_options);
     if (res.ok) {
         toks = res.result;
+        LFORTRAN_ASSERT(toks.size() == stypes.size())
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
         return 1;
     }
-
     for (size_t i=0; i < toks.size(); i++) {
         std::cout << LFortran::pickle(toks[i], stypes[i]);
         if (line_numbers) {
@@ -1360,6 +1358,7 @@ EMSCRIPTEN_KEEPALIVE char* emit_wasm_from_source(char *input) {
 } // namespace wasm
 
 #endif
+
 
 int main(int argc, char *argv[])
 {

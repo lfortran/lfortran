@@ -1,13 +1,12 @@
-#ifndef LFORTRAN_SRC_PARSER_TOKENIZER_H
-#define LFORTRAN_SRC_PARSER_TOKENIZER_H
+#ifndef LFORTRAN_SRC_PARSER_FIXEDFORM_TOKENIZER_H
+#define LFORTRAN_SRC_PARSER_FIXEDFORM_TOKENIZER_H
 
 #include <libasr/exception.h>
 #include <lfortran/parser/parser_stype.h>
 
 namespace LFortran
 {
-
-class Tokenizer
+class FixedFormTokenizer
 {
 public:
     unsigned char *cur;
@@ -23,10 +22,24 @@ public:
     int enddo_state = 0;
     int enddo_insert_count = 0;
 
+    std::vector<int> tokens;
+    std::vector<YYSTYPE> stypes;
+    std::vector<Location> locations;
+
+    bool tokenized = false;
+    unsigned int token_pos = 0;
+
 public:
     // Set the string to tokenize. The caller must ensure `str` will stay valid
     // as long as `lex` is being called.
     void set_string(const std::string &str);
+
+    // Tokenizes the whole input and saves all tokens into an internal array
+    // The lex function then just iterates on this array and returns the next
+    // token
+    // Returns True if successful, otherwise there will be errors in
+    // `diagnostics`
+    bool tokenize_input(diag::Diagnostics &diagnostics, Allocator &al);
 
     // Get next token. Token ID is returned as function result, the semantic
     // value is put into `yylval`.
@@ -63,8 +76,6 @@ public:
 
 bool lex_int(const unsigned char *s, const unsigned char *e, uint64_t &u,
     Str &suffix);
-void lex_int_large(Allocator &al, const unsigned char *s,
-    const unsigned char *e, BigInt::BigInt &u, Str &suffix);
 
 } // namespace LFortran
 
