@@ -10,7 +10,7 @@ source_filename = "LFortran"
 @6 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @7 = private unnamed_addr constant [6 x i8] c"False\00", align 1
 @8 = private unnamed_addr constant [5 x i8] c"True\00", align 1
-@9 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
+@9 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @10 = private unnamed_addr constant [3 x i8] c"@a\00", align 1
 @11 = private unnamed_addr constant [2 x i8] c"A\00", align 1
 @12 = private unnamed_addr constant [2 x i8] c"Z\00", align 1
@@ -20,7 +20,7 @@ source_filename = "LFortran"
 @16 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @17 = private unnamed_addr constant [6 x i8] c"False\00", align 1
 @18 = private unnamed_addr constant [5 x i8] c"True\00", align 1
-@19 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
+@19 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @20 = private unnamed_addr constant [3 x i8] c"a@\00", align 1
 @21 = private unnamed_addr constant [2 x i8] c"A\00", align 1
 @22 = private unnamed_addr constant [2 x i8] c"Z\00", align 1
@@ -30,7 +30,7 @@ source_filename = "LFortran"
 @26 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @27 = private unnamed_addr constant [6 x i8] c"False\00", align 1
 @28 = private unnamed_addr constant [5 x i8] c"True\00", align 1
-@29 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
+@29 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main() {
 .entry:
@@ -68,8 +68,7 @@ define i32 @main() {
   %19 = load i1, i1* %is_alpha, align 1
   %20 = icmp eq i1 %19, false
   %21 = select i1 %20, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0)
-  call void (i8*, ...) @_lfortran_printf(i8* %21)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %21, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
   store i8* getelementptr inbounds ([3 x i8], [3 x i8]* @10, i32 0, i32 0), i8** %c, align 8
   %22 = load i8*, i8** %c, align 8
   %23 = alloca i8*, align 8
@@ -102,8 +101,7 @@ define i32 @main() {
   %41 = load i1, i1* %is_alpha, align 1
   %42 = icmp eq i1 %41, false
   %43 = select i1 %42, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @18, i32 0, i32 0)
-  call void (i8*, ...) @_lfortran_printf(i8* %43)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @19, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* %43, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0))
   store i8* getelementptr inbounds ([3 x i8], [3 x i8]* @20, i32 0, i32 0), i8** %c, align 8
   %44 = load i8*, i8** %c, align 8
   %45 = alloca i8*, align 8
@@ -136,8 +134,7 @@ define i32 @main() {
   %63 = load i1, i1* %is_alpha, align 1
   %64 = icmp eq i1 %63, false
   %65 = select i1 %64, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @28, i32 0, i32 0)
-  call void (i8*, ...) @_lfortran_printf(i8* %65)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @29, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @26, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @29, i32 0, i32 0), i8* %65, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @26, i32 0, i32 0))
   ret i32 0
 }
 

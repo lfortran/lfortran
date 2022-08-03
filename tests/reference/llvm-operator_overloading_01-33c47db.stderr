@@ -3,14 +3,3 @@ style suggestion: Use 'end if' instead of 'endif'
    |
 28 |         endif
    |         ^^^^^ help: write this as 'end if'
-
-code generation error: asr_to_llvm: module failed verification. Error:
-Both operands to ICmp instruction are not of the same type!
-  %13 = icmp eq i32 %12, i1 false
-Both operands to ICmp instruction are not of the same type!
-  %16 = icmp eq i32 %15, i1 false
-Both operands to ICmp instruction are not of the same type!
-  %19 = icmp eq i32 %18, i1 false
-Both operands to ICmp instruction are not of the same type!
-  %22 = icmp eq i32 %21, i1 false
-
