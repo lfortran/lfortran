@@ -607,7 +607,7 @@ struct FixedFormRecursiveDescent {
             YYSTYPE y2;
             y2.string.from_str(m_a, l);
             stypes.push_back(y2);
-            tokens.push_back(yytokentype::KW_ENDDO);
+            tokens.push_back(yytokentype::KW_END_DO);
             // And a new line
             l = "\n";
             y2.string.from_str(m_a, l);
