@@ -701,8 +701,8 @@ template_decl
     ;
 
 instantiate
-    : KW_INSTANTIATE id "(" var_type_star ")" "," KW_ONLY ":" id "=>" id sep {
-        $$ = INSTANTIATE($2, $4, @$); }
+    : KW_INSTANTIATE id "(" var_type_star ")" "," KW_ONLY ":" use_symbol_list sep {
+        $$ = INSTANTIATE($2, $4, $9, @$); }
     ;
 
 end_type
