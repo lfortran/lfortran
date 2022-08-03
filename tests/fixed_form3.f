@@ -15,3 +15,10 @@
       x=5
       integerx=5
       endfunctiong
+
+      integerfunctiong2(integerx)
+      integerintegerx
+      integer::x=5
+      x=5
+      integerx=5
+      endfunctiong2
