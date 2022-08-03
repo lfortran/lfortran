@@ -1,5 +1,0 @@
-style suggestion: Use 'end do' instead of 'enddo'
- --> tests/fixedform_doloop.f:5:7
-  |
-5 |        enddo
-  |       ^^^^^^ help: write this as 'end do'
