@@ -13,4 +13,5 @@
       integerx
       integerx=5
       x=5
+      integerx=5
       endfunctiong
