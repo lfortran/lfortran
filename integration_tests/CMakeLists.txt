@@ -383,7 +383,7 @@ RUN(NAME interface_10 LABELS gfortran llvm)
 
 RUN(NAME generic_name_01 LABELS gfortran llvm)
 
-RUN(NAME operator_overloading_01 LABELS gfortran )
+RUN(NAME operator_overloading_01 LABELS gfortran llvm)
 RUN(NAME operator_overloading_02 LABELS gfortran llvm)
 RUN(NAME operator_overloading_03 LABELS gfortran llvm)
 RUN(NAME operator_overloading_04 LABELS gfortran)
