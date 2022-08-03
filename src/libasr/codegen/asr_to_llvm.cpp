@@ -1214,12 +1214,14 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        bool is_argument = false;
         llvm::Value* array = nullptr;
         if( ASR::is_a<ASR::Var_t>(*x.m_v) ) {
             ASR::Variable_t *v = ASRUtils::EXPR2VAR(x.m_v);
             uint32_t v_h = get_hash((ASR::asr_t*)v);
             LFORTRAN_ASSERT(llvm_symtab.find(v_h) != llvm_symtab.end());
             array = llvm_symtab[v_h];
+            is_argument = v->m_intent == ASRUtils::intent_in;
         } else {
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
@@ -1263,7 +1265,21 @@ public:
             if (ASRUtils::expr_type(x.m_v)->type == ASR::ttypeType::Pointer) {
                 array = CreateLoad(array);
             }
-            tmp = arr_descr->get_single_element(array, indices, x.n_args);
+            bool is_data_only = is_argument && !ASRUtils::is_dimension_empty(m_dims, n_dims);
+            Vec<llvm::Value*> llvm_diminfo;
+            llvm_diminfo.reserve(al, 2 * x.n_args + 1);
+            if( is_data_only ) {
+                for( size_t idim = 0; idim < x.n_args; idim++ ) {
+                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                    llvm::Value* dim_start = tmp;
+                    this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                    llvm::Value* dim_size = tmp;
+                    llvm_diminfo.push_back(al, dim_start);
+                    llvm_diminfo.push_back(al, dim_size);
+                }
+            }
+            tmp = arr_descr->get_single_element(array, indices, x.n_args,
+                                                is_data_only, llvm_diminfo.p);
         }
     }
 
@@ -1866,7 +1882,8 @@ public:
         ASR::abiType m_abi, ASR::abiType arg_m_abi,
         ASR::storage_typeType m_storage,
         bool arg_m_value_attr,
-        int& n_dims, int& a_kind, bool& is_array_type) {
+        int& n_dims, int& a_kind, bool& is_array_type,
+        ASR::intentType arg_intent) {
         llvm::Type* type = nullptr;
         switch (asr_type->type) {
             case (ASR::ttypeType::Integer) : {
@@ -1874,7 +1891,9 @@ public:
                 n_dims = v_type->n_dims;
                 a_kind = v_type->m_kind;
                 if( n_dims > 0 ) {
-                    if (m_abi == ASR::abiType::BindC) {
+                    if (m_abi == ASR::abiType::BindC ||
+                        (!ASRUtils::is_dimension_empty(v_type->m_dims, v_type->n_dims) &&
+                         arg_intent == ASRUtils::intent_in)) {
                         // Bind(C) arrays are represened as a pointer
                         type = getIntType(a_kind, true);
                     } else {
@@ -1900,7 +1919,7 @@ public:
                 ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(asr_type);
                 type = get_arg_type_from_ttype_t(t2, m_abi, arg_m_abi,
                             m_storage, arg_m_value_attr, n_dims, a_kind,
-                            is_array_type);
+                            is_array_type, arg_intent);
                 type = type->getPointerTo();
                 break;
             }
@@ -1909,7 +1928,9 @@ public:
                 n_dims = v_type->n_dims;
                 a_kind = v_type->m_kind;
                 if( n_dims > 0 ) {
-                    if (m_abi == ASR::abiType::BindC) {
+                    if (m_abi == ASR::abiType::BindC ||
+                        (!ASRUtils::is_dimension_empty(v_type->m_dims, v_type->n_dims) &&
+                         arg_intent == ASRUtils::intent_in)) {
                         // Bind(C) arrays are represened as a pointer
                         type = getFPType(a_kind, true);
                     } else {
@@ -2057,7 +2078,7 @@ public:
                 bool is_array_type = false;
                 type = get_arg_type_from_ttype_t(arg->m_type, x.m_abi,
                             arg->m_abi, arg->m_storage, arg->m_value_attr,
-                            n_dims, a_kind, is_array_type);
+                            n_dims, a_kind, is_array_type, arg->m_intent);
                 if( arg->m_intent == ASRUtils::intent_out &&
                     ASR::is_a<ASR::CPtr_t>(*arg->m_type) ) {
                     type = type->getPointerTo();
@@ -4623,7 +4644,12 @@ public:
                             }
                             if( x_abi == ASR::abiType::Source && arr_descr->is_array(tmp) ) {
                                 llvm::Type* new_arr_type = arr_arg_type_cache[m_h][orig_arg_name];
-                                tmp = arr_descr->convert_to_argument(tmp, new_arr_type);
+                                ASR::dimension_t* dims;
+                                size_t n;
+                                n = ASRUtils::extract_dimensions_from_ttype(orig_arg->m_type, dims);
+                                tmp = arr_descr->convert_to_argument(tmp, new_arr_type,
+                                                                     (!ASRUtils::is_dimension_empty(dims, n) &&
+                                                                      orig_arg->m_intent == ASRUtils::intent_in));
                             } else if ( x_abi == ASR::abiType::BindC ) {
                                 if( arr_descr->is_array(tmp) ) {
                                     tmp = CreateLoad(arr_descr->get_pointer_to_data(tmp));

@@ -1229,6 +1229,20 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
             SymbolTable* current_scope, Allocator& al,
             const std::function<void (const std::string &, const Location &)> err);
 
+static inline bool is_dimension_empty(ASR::dimension_t& dim) {
+    return ((dim.m_length == nullptr) ||
+            (dim.m_start == nullptr));
+}
+
+static inline bool is_dimension_empty(ASR::dimension_t* dims, size_t n) {
+    for( size_t i = 0; i < n; i++ ) {
+        if( is_dimension_empty(dims[i]) ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
 
     private:
