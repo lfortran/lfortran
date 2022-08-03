@@ -79,11 +79,14 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
                     stypes->push_back(el);
                 }
             }
+            if (locations) {
+                for(const auto & el : t.locations) {
+                    locations->push_back(el);
+                }
+            }
         } else {
             return Error();
         };
-
-
         return t.tokens;
     } else {
         Tokenizer t;
