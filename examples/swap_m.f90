@@ -28,7 +28,7 @@ contains
         real :: x, y
         x = 5
         y = 7
-        call swap(x, y)
+        ! call swap(x, y)           We can keep this call after the concrete functions are generated. For now there is no function called "swap".
         if (x /= 7) error stop
         if (y /= 5) error stop
     end subroutine

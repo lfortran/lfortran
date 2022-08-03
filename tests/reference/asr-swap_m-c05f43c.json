@@ -2,11 +2,11 @@
     "basename": "asr-swap_m-c05f43c",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../examples/swap_m.f90",
-    "infile_hash": "8a2d534cc49e105ca27668ef3a14ec4e1952dcbd7657d0bf28550d68",
+    "infile_hash": "0583e2e190817a812794b9e08243766af9a24e9a67eb61a30a829225",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-swap_m-c05f43c.stdout",
-    "stdout_hash": "0303db2ad6fd3f9b3ff5d9ef345cbc4801e46791043a5651c130067d",
+    "stdout_hash": "9388a2a8193386616c7f2363886b3f9e7c75ccd8203f1edbb001d1fe",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
