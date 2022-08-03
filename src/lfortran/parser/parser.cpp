@@ -644,34 +644,33 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
     if (msg == "syntax is ambiguous") {
         message = "Internal Compiler Error: syntax is ambiguous in the parser";
     } else if (msg == "syntax error") {
+        int token;
+        std::string token_str;
+        // Determine the unexpected token's type:
         if (this->fixed_form) {
-//            auto invalid_token = this->f_tokenizer.token_pos;            
-            // if (invalid_token - 5 > 0 && invalid_token + 6 < f_tokenizer.tokens.size()) {
-            //     for(size_t i=5;i>0;--i)
-            //         std::cout << "token -" << i << " before " << token2text(f_tokenizer.tokens[invalid_token-i]) << " " << LFortran::pickle(f_tokenizer.tokens[invalid_token-i], f_tokenizer.stypes[invalid_token-i]) << "\n";
-            //     for(size_t i=1;i<6;++i)
-            //         std::cout << "token " << i << " after " << token2text(f_tokenizer.tokens[invalid_token+i]) << " " << LFortran::pickle(f_tokenizer.tokens[invalid_token+i], f_tokenizer.stypes[invalid_token+i]) << "\n";
-            // }
-            // std::cout << "problematic token " << token2text(f_tokenizer.tokens[invalid_token]) << " " << LFortran::pickle(f_tokenizer.tokens[invalid_token], f_tokenizer.stypes[invalid_token]) << "\n";
-            message = "Syntax error in the fixed-form parser";
-            throw parser_local::ParserError(message, loc);
+            unsigned int invalid_token = this->f_tokenizer.token_pos - 1;            
+            if (invalid_token >= f_tokenizer.tokens.size()) {
+                invalid_token = f_tokenizer.tokens.size()-1;
+            }
+            token = f_tokenizer.tokens[invalid_token];
         } else {
             LFortran::YYSTYPE yylval_;
             YYLTYPE yyloc_;
             this->m_tokenizer.cur = this->m_tokenizer.tok;
-            int token = this->m_tokenizer.lex(this->m_a, yylval_, yyloc_, diag);
-            if (token == yytokentype::END_OF_FILE) {
-                message =  "End of file is unexpected here";
-            } else if (token == yytokentype::TK_NEWLINE) {
-                message =  "Newline is unexpected here";
+            token = this->m_tokenizer.lex(this->m_a, yylval_, yyloc_, diag);
+            token_str = this->m_tokenizer.token();
+        }
+        // Create a nice error message
+        if (token == yytokentype::END_OF_FILE) {
+            message =  "End of file is unexpected here";
+        } else if (token == yytokentype::TK_NEWLINE) {
+            message =  "Newline is unexpected here";
+        } else {
+            std::string token_type = token2text(token);
+            if (token_str == token_type || token_str.size() == 0) {
+                message =  "Token '" + token_type + "' is unexpected here";
             } else {
-                std::string token_str = this->m_tokenizer.token();
-                std::string token_type = token2text(token);
-                if (token_str == token_type) {
-                    message =  "Token '" + token_str + "' is unexpected here";
-                } else {
-                    message =  "Token '" + token_str + "' (of type '" + token2text(token) + "') is unexpected here";
-                }
+                message =  "Token '" + token_str + "' (of type '" + token2text(token) + "') is unexpected here";
             }
         }
     } else {
