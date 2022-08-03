@@ -1,0 +1,5 @@
+style suggestion: Use 'end do' instead of 'enddo'
+ --> tests/fixedform_doloop.f:1:7
+  |
+1 |       program main
+  |       ^ help: write this as 'end do'
