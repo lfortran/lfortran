@@ -1,5 +1,5 @@
       program X
       integer :: y
       y = 5
-      print *, y
+500   print *, y
       end program
