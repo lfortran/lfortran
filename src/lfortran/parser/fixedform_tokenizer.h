@@ -24,6 +24,7 @@ public:
 
     std::vector<int> tokens;
     std::vector<YYSTYPE> stypes;
+    std::vector<Location> locations;
 
     bool tokenized = false;
     unsigned int token_pos = 0;

@@ -297,6 +297,7 @@ struct FixedFormRecursiveDescent {
     unsigned char *string_start;
     std::vector<YYSTYPE> stypes;
     std::vector<int> tokens;
+    std::vector<Location> locations;
 
     FixedFormRecursiveDescent(diag::Diagnostics &diag,
         Allocator &m_a) : diag{diag}, m_a{m_a} {};
@@ -352,6 +353,10 @@ struct FixedFormRecursiveDescent {
             // y.n = std::stoi(label);
             tokens.push_back(yytokentype::TK_LABEL);
             stypes.push_back(y);
+            Location loc;
+            loc.first = cur - string_start;
+            loc.last = cur - string_start + label.size();
+            locations.push_back(loc);
 
 
             // int token = yytokentype::TK_LABEL;
@@ -383,6 +388,10 @@ struct FixedFormRecursiveDescent {
             // yy.n = std::stoi(tostr(cur, cur2));
             // tokens.push_back(yytokentype::TK_LABEL);
             stypes.push_back(yy);
+            Location loc;
+            loc.first = cur - string_start;
+            loc.last = cur - string_start + label.size();
+            locations.push_back(loc);
             cur+=count+1; // TODO revisit
             return true;
         }
@@ -434,6 +443,10 @@ struct FixedFormRecursiveDescent {
             y1.string.from_str(m_a, l);
             stypes.push_back(y1);
             tokens.push_back(identifiers_map[chop]);
+            Location loc;
+            loc.first = cur - string_start;
+            loc.last = cur - string_start + chop.size();
+            locations.push_back(loc);
         }
         unsigned char *start = cur + chop.size();
         // move the cur pointer to the next line after
@@ -458,6 +471,10 @@ struct FixedFormRecursiveDescent {
                 y2.string.from_str(m_a, "\n");
                 stypes.push_back(y2);
                 tokens.push_back(yytokentype::TK_NEWLINE);
+                Location loc;
+                loc.first = t.cur - t.string_start;
+                loc.last = t.cur - t.string_start + 1;
+                locations.push_back(loc);
                 break;
             }
             auto token = t.lex(m_a, y2, l, diag);
@@ -469,6 +486,10 @@ struct FixedFormRecursiveDescent {
                 y2.string.from_str(m_a, l);
                 stypes.push_back(y2);
                 tokens.push_back(yytokentype::KW_GOTO);
+                Location loc;
+                loc.first = t.tok - string_start;
+                loc.last = t.tok - string_start + l.size();
+                locations.push_back(loc);
 
                 YYSTYPE y3;
                 // TODO check if we actually just didn't get the arguments right (t.tok+4, t.cur)
@@ -481,6 +502,9 @@ struct FixedFormRecursiveDescent {
                 // tokens.push_back(yytokentype::TK_LABEL);
                 
                 stypes.push_back(y3);
+                loc.first = t.tok+4 - t.string_start;
+                loc.last = t.cur - t.string_start-1;
+                locations.push_back(loc);
 
                 
                 continue;
@@ -505,6 +529,10 @@ struct FixedFormRecursiveDescent {
                 y2.string.from_str(m_a, tk);
             }
             stypes.push_back(y2);
+            Location loc;
+            loc.first = t.tok - string_start;
+            loc.last = t.cur - string_start -1;
+            locations.push_back(loc);
         }
     }
 
@@ -527,6 +555,10 @@ struct FixedFormRecursiveDescent {
                 std::string decl(declarator);
                 y.string.from_str(m_a, decl);
                 stypes.push_back(y);
+                Location loc;
+                loc.first = t.cur - string_start;
+                loc.last = t.cur - string_start + declarator.size();
+                locations.push_back(loc);
                 cur += declarator.size();
                 return true;
             }
@@ -609,11 +641,18 @@ struct FixedFormRecursiveDescent {
             y2.string.from_str(m_a, l);
             stypes.push_back(y2);
             tokens.push_back(yytokentype::KW_END_DO);
+            Location loc;
+            loc.first = t.cur - string_start;
+            loc.last = t.cur - string_start + l.size();
+            locations.push_back(loc);
             // And a new line
             l = "\n";
             y2.string.from_str(m_a, l);
             stypes.push_back(y2);
             tokens.push_back(yytokentype::TK_NEWLINE);
+            loc.first = t.cur - string_start;
+            loc.last = t.cur - string_start + 1;
+            locations.push_back(loc);
             return true;
         } else {
             return false;
@@ -629,6 +668,10 @@ struct FixedFormRecursiveDescent {
         yy.string.from_str(m_a, l);
         stypes.push_back(yy);
         tokens.push_back(identifiers_map[l]);
+        Location loc;
+        loc.first = cur - string_start;
+        loc.last = cur - string_start + l.size();
+        locations.push_back(loc);
         cur += l.size();
         if (eat_label_inline(cur)) {
             cur--; // un-advance as eat_label_inline moves 1 char too far when making checks
@@ -752,6 +795,11 @@ struct FixedFormRecursiveDescent {
             std::string decl(*iter);
             y.string.from_str(m_a, decl);
             stypes.push_back(y);
+            Location loc;
+            // TODO: refine the location here
+            loc.first = cur - string_start;
+            loc.last = cur - string_start + decl.size();
+            locations.push_back(loc);
         }
 
         cur = cpy;
@@ -776,12 +824,22 @@ struct FixedFormRecursiveDescent {
             y.string.from_str(m_a, prog);
             stypes.push_back(y);
             tokens.push_back(yytokentype::KW_PROGRAM);
+            Location loc;
+            loc.first = prev - string_start;
+            loc.last = prev - string_start + prog.size();
+            locations.push_back(loc);
             y.string.from_str(m_a, name);
             stypes.push_back(y);
             tokens.push_back(yytokentype::TK_NAME);
+            loc.first = prev - string_start + prog.size();
+            loc.last = prev - string_start + prog.size() + name.size();
+            locations.push_back(loc);
             y.string.from_str(m_a, "\n");
             stypes.push_back(y);
             tokens.push_back(yytokentype::TK_NEWLINE);
+            loc.first = prev - string_start + prog.size() + name.size();
+            loc.last = prev - string_start + prog.size() + name.size() + 1;
+            locations.push_back(loc);
             lex_program(cur);
             return true;
         }
@@ -830,6 +888,10 @@ struct FixedFormRecursiveDescent {
         y2.string.from_str(m_a, "EOF");
         stypes.push_back(y2);
         tokens.push_back(yytokentype::END_OF_FILE);
+        Location loc;
+        loc.first = cur - string_start;
+        loc.last = cur - string_start + 1;
+        locations.push_back(loc);
     }
 
 };
@@ -848,6 +910,9 @@ bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, Allocato
         f.lex_global_scope(cur);
         tokens = std::move(f.tokens);
         stypes = std::move(f.stypes);
+        locations = std::move(f.locations);
+        LFORTRAN_ASSERT(tokens.size() == stypes.size())
+        LFORTRAN_ASSERT(tokens.size() == locations.size())
         tokenized = true;
     } catch (const parser_local::TokenizerError &e) {
         diagnostics.diagnostics.push_back(e.d);
@@ -857,16 +922,17 @@ bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, Allocato
 }
 
 int FixedFormTokenizer::lex(Allocator &/*al*/, YYSTYPE &yylval,
-        Location &/*loc*/, diag::Diagnostics &/*diagnostics*/)
+        Location &loc, diag::Diagnostics &/*diagnostics*/)
 {
     if (!tokens.empty()) {
         auto tok = tokens[token_pos];
-        // tokens.erase(tokens.begin());
-        yylval = stypes.at(token_pos++);
-        // stypes.erase(stypes.begin());
+        yylval = stypes.at(token_pos);
+        loc = locations.at(token_pos);
+        token_pos++;
         return tok;
+    } else {
+        return yytokentype::END_OF_FILE;
     }
-    return yytokentype::END_OF_FILE;
 }
 
 
