@@ -165,15 +165,3 @@ style suggestion: Use '<=' instead of '.le.'
   |
 1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
   |                          ^^^^ help: write this as '<='
-
-style suggestion: Use 'end do' instead of 'enddo'
- --> tests/fixed_form1.f:1:7
-  |
-1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
-  |       ^ help: write this as 'end do'
-
-style suggestion: Use 'end do' instead of 'enddo'
- --> tests/fixed_form1.f:1:7
-  |
-1 |       subroutine dqawse(f,a,b,alfa,beta,integr,epsabs,epsrel,limit,
-  |       ^ help: write this as 'end do'
