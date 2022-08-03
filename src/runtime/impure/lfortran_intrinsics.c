@@ -8,6 +8,7 @@
 #include <time.h>
 #include <float.h>
 #include <limits.h>
+#include <stdbool.h>
 
 #include "lfortran_intrinsics.h"
 
@@ -614,6 +615,54 @@ LFORTRAN_API void _lfortran_strcat(char** s1, char** s2, char** dest)
     *dest = &(dest_char[0]);
 }
 
+#define MIN(x, y) ((x < y) ? x : y)
+
+int str_compare(char **s1, char **s2)
+{
+    int s1_len = strlen(*s1);
+    int s2_len = strlen(*s2);
+    int lim = MIN(s1_len, s2_len);
+    int res = 0;
+    int i ;
+    for (i = 0; i < lim; i++) {
+        if ((*s1)[i] != (*s2)[i]) {
+            res = (*s1)[i] - (*s2)[i];
+            break;
+        }
+    }
+    res = (i == lim)? s1_len - s2_len : res;
+    return res;
+}
+LFORTRAN_API bool _lpython_str_compare_eq(char **s1, char **s2)
+{
+    return str_compare(s1, s2) == 0;
+}
+
+LFORTRAN_API bool _lpython_str_compare_noteq(char **s1, char **s2)
+{
+    return str_compare(s1, s2) != 0;
+}
+
+LFORTRAN_API bool _lpython_str_compare_gt(char **s1, char **s2)
+{
+    return str_compare(s1, s2) > 0;
+}
+
+LFORTRAN_API bool _lpython_str_compare_lte(char **s1, char **s2)
+{
+    return str_compare(s1, s2) <= 0;
+}
+
+LFORTRAN_API bool _lpython_str_compare_lt(char **s1, char **s2)
+{
+    return str_compare(s1, s2) < 0;
+}
+
+LFORTRAN_API bool _lpython_str_compare_gte(char **s1, char **s2)
+{
+    return str_compare(s1, s2) >= 0;
+}
+
 LFORTRAN_API char* _lfortran_float_to_str4(float num)
 {
     char* res = (char*)malloc(40);
@@ -701,6 +750,53 @@ LFORTRAN_API char* _lfortran_str_copy(char* s, int32_t idx1, int32_t idx2) {
     return dest_char;
 }
 
+LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int32_t step,
+                        bool idx1_present, bool idx2_present) {
+    int s_len = strlen(s);
+    if (step == 0) {
+        printf("slice step cannot be zero\n");
+        exit(1);
+    }
+    idx1 = idx1 < 0 ? idx1 + s_len : idx1;
+    idx2 = idx2 < 0 ? idx2 + s_len : idx2;
+    if (!idx1_present) {
+        if (step > 0) {
+            idx1 = 0;
+        } else {
+            idx1 = s_len - 1;
+        }
+    }
+    if (!idx2_present) {
+        if (step > 0) {
+            idx2 = s_len;
+        } else {
+            idx2 = -1;
+        }
+    }
+    if (idx1 == idx2 ||
+        (step > 0 && (idx1 > idx2 || idx1 >= s_len)) ||
+        (step < 0 && (idx1 < idx2 || idx2 >= s_len-1)))
+        return "";
+    int dest_len = 0;
+    if (step > 0) {
+        idx2 = idx2 > s_len ? s_len : idx2;
+        dest_len = (idx2-idx1+step-1)/step + 1;
+    } else {
+        idx1 = idx1 >= s_len ? s_len-1 : idx1;
+        dest_len = (idx2-idx1+step+1)/step + 1;
+    }
+
+    char* dest_char = (char*)malloc(dest_len);
+    int s_i = idx1, d_i = 0;
+    while((step > 0 && s_i >= idx1 && s_i < idx2) ||
+        (step < 0 && s_i <= idx1 && s_i > idx2)) {
+        dest_char[d_i++] = s[s_i];
+        s_i+=step;
+    }
+    dest_char[d_i] = '\0';
+    return dest_char;
+}
+
 LFORTRAN_API int _lfortran_str_len(char** s)
 {
     return strlen(*s);
@@ -729,6 +825,10 @@ LFORTRAN_API char* _lfortran_malloc(int size) {
     return (char*)malloc(size);
 }
 
+LFORTRAN_API int8_t* _lfortran_realloc(int8_t* ptr, int32_t size) {
+    return (int8_t*) realloc(ptr, size);
+}
+
 LFORTRAN_API void _lfortran_free(char* ptr) {
     free((void*)ptr);
 }
@@ -740,45 +840,6 @@ LFORTRAN_API void _lfortran_string_init(int size_plus_one, char *s) {
         s[i] = ' ';
     }
     s[size] = '\0';
-}
-
-// List  -----------------------------------------------------------------------
-
-struct _lcompilers_list_i32 {
-    uint64_t n;
-    uint64_t capacity;
-    int32_t *p;
-};
-
-LFORTRAN_API int8_t* _lcompilers_list_init_i32() {
-    struct _lcompilers_list_i32 *l;
-    l = (struct _lcompilers_list_i32*)malloc(
-            sizeof(struct _lcompilers_list_i32));
-    l->n = 0;
-    l->capacity = 4;
-    l->p = (int32_t*)malloc(l->capacity*sizeof(int32_t));
-    return (int8_t*)l;
-}
-
-LFORTRAN_API void _lcompilers_list_append_i32(int8_t* s, int32_t item) {
-    struct _lcompilers_list_i32 *l = (struct _lcompilers_list_i32 *)s;
-    if (l->n == l->capacity) {
-        l->capacity = 2*l->capacity;
-        l->p = realloc(l->p, sizeof(int32_t)*l->capacity);
-    }
-    l->p[l->n] = item;
-    l->n++;
-}
-
-// pos is the index = 1..n
-LFORTRAN_API int32_t _lcompilers_list_item_i32(int8_t* s, int32_t pos) {
-    struct _lcompilers_list_i32 *l = (struct _lcompilers_list_i32 *)s;
-    if (pos >= 1 && pos <= l->n) {
-        return l->p[pos-1];
-    } else {
-        printf("Out of bounds\n");
-        return 0;
-    }
 }
 
 // bit  ------------------------------------------------------------------------

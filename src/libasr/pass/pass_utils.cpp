@@ -194,8 +194,8 @@ namespace LFortran {
             _type = ASRUtils::duplicate_type(al, _type, &empty_dims);
             ASR::expr_t* arr_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, arr));
             ASR::expr_t* array_ref = LFortran::ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, arr_var,
-                                                              args.p, args.size(),
-                                                              _type, nullptr));
+                                                                args.p, args.size(),
+                                                                _type, nullptr));
             return array_ref;
         }
 
@@ -596,13 +596,18 @@ namespace LFortran {
             ASR::stmt_t *inc_stmt = nullptr;
             ASR::stmt_t *stmt1 = nullptr;
             if( !a && !b && !c ) {
-                ASR::ttype_t *cond_type = LFortran::ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4, nullptr, 0));
+                int a_kind = 4;
+                if( loop.m_head.m_v ) {
+                    a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(loop.m_head.m_v));
+                }
+                ASR::ttype_t *cond_type = LFortran::ASRUtils::TYPE(ASR::make_Logical_t(al, loc, a_kind, nullptr, 0));
                 cond = LFortran::ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, true, cond_type));
             } else {
                 LFORTRAN_ASSERT(a);
                 LFORTRAN_ASSERT(b);
                 if (!c) {
-                    ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0));
+                    int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(loop.m_head.m_v));
+                    ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind, nullptr, 0));
                     c = LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, type));
                 }
                 LFORTRAN_ASSERT(c);
@@ -626,7 +631,8 @@ namespace LFortran {
                     cmp_op = (ASR::cmpopType) comp;
                 }
                 ASR::expr_t *target = loop.m_head.m_v;
-                ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0));
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target));
+                ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind, nullptr, 0));
                 stmt1 = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
                     LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a, ASR::binopType::Sub, c, type, nullptr)), nullptr));
 

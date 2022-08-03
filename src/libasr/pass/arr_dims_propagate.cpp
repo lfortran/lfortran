@@ -21,9 +21,9 @@ namespace LFortran {
 class ArrDimsPropagate : public ASR::StatementsFirstBaseWalkVisitor<ArrDimsPropagate>
 {
 private:
-    Allocator &m_al;
+//    Allocator &m_al;
 public:
-    ArrDimsPropagate(Allocator &al) : m_al(al) { }
+    ArrDimsPropagate(Allocator &/*al*/) /*: m_al(al)*/ { }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name));
