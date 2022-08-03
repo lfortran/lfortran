@@ -1362,8 +1362,6 @@ EMSCRIPTEN_KEEPALIVE char* emit_wasm_from_source(char *input) {
 
 int main(int argc, char *argv[])
 {
-    // extern int yydebug;
-    // yydebug=1;
     LFortran::initialize();
 #if defined(HAVE_LFORTRAN_STACKTRACE)
     LFortran::print_stack_on_segfault();
