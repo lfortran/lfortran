@@ -1,6 +1,6 @@
 program do4
-!!implicit none
-!!integer :: i, j, k
+implicit none
+integer :: i, j, k
 j = 0
 do 15 i = 1, 5
     j = j + i
