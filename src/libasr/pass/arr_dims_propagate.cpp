@@ -18,12 +18,14 @@ namespace LFortran {
  *      integer :: a(2, 3)
  */
 
-class ArrDimsPropagate : public ASR::StatementWalkVisitor<ArrDimsPropagate>
+class ArrDimsPropagate : public ASR::BaseWalkUpdater<ArrDimsPropagate>
 {
 public:
-    ArrDimsPropagate(Allocator &al) : StatementWalkVisitor(al) { }
+    Allocator &al;
 
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+    ArrDimsPropagate(Allocator &al) : al(al) { }
+
+    void visit_FunctionCall(ASR::FunctionCall_t &x) {
 
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, x.n_args);
@@ -47,12 +49,11 @@ public:
             new_args.push_back(al, x.m_args[i]);
         }
 
-        ASR::FunctionCall_t xx = const_cast<ASR::FunctionCall_t &>(x);
-        xx.n_args = new_args.size();
-        xx.m_args = new_args.p;
+        x.n_args = new_args.size();
+        x.m_args = new_args.p;
     }
 
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+    void visit_SubroutineCall(ASR::SubroutineCall_t &x) {
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, x.n_args);
 
@@ -75,12 +76,11 @@ public:
             new_args.push_back(al, x.m_args[i]);
         }
 
-        ASR::SubroutineCall_t xx = const_cast<ASR::SubroutineCall_t &>(x);
-        xx.n_args = new_args.size();
-        xx.m_args = new_args.p;
+        x.n_args = new_args.size();
+        x.m_args = new_args.p;
     }
 
-    void visit_Function(const ASR::Function_t &x) {
+    void visit_Function(ASR::Function_t &x) {
         Vec<ASR::expr_t*> params;
         params.reserve(al, x.n_args);
 
@@ -105,12 +105,11 @@ public:
             params.push_back(al, x.m_args[i]);
         }
 
-        ASR::Function_t xx = const_cast<ASR::Function_t &>(x);
-        xx.n_args = params.size();
-        xx.m_args = params.p;
+        x.n_args = params.size();
+        x.m_args = params.p;
     }
 
-    void visit_Subroutine(const ASR::Subroutine_t &x) {
+    void visit_Subroutine(ASR::Subroutine_t &x) {
         Vec<ASR::expr_t*> params;
         params.reserve(al, x.n_args);
 
@@ -135,9 +134,8 @@ public:
             params.push_back(al, x.m_args[i]);
         }
 
-        ASR::Subroutine_t xx = const_cast<ASR::Subroutine_t &>(x);
-        xx.n_args = params.size();
-        xx.m_args = params.p;
+        x.n_args = params.size();
+        x.m_args = params.p;
     }
 };
 

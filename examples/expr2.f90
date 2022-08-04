@@ -1,9 +1,17 @@
 program expr2
 implicit none
 
-integer :: x
+integer :: x(2)
+print *, mysum(x)
 
-x = (2+3)*5
-print *, x
-
+contains
+function mysum(x) result(r)
+    integer, intent(in) :: x(:)
+    integer :: i
+    integer :: r
+    r = 0
+    do i = 1, size(x)
+        r = r + x(i)
+    end do
+end function
 end program

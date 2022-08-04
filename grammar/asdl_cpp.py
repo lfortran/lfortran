@@ -405,6 +405,33 @@ class ASTWalkVisitorVisitor(ASDLVisitor):
             self.emit(  "this->visit_symbol(*a.second);", 3)
             self.emit("}", 2)
 
+class WalkUpdaterVisitor(ASTWalkVisitorVisitor):
+
+    def visitModule(self, mod):
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Walk Updater Visitor base class")
+        self.emit("")
+        self.emit("template <class Derived>")
+        self.emit("class BaseWalkUpdater : public BaseVisitor<Derived>")
+        self.emit("{")
+        self.emit("private:")
+        self.emit("    Derived& self() { return static_cast<Derived&>(*this); }")
+        self.emit("public:")
+        super(ASTWalkVisitorVisitor, self).visitModule(mod)
+        self.emit("};")
+
+    def make_visitor(self, name, fields):
+        self.emit("void visit_%s(%s_t &x) {" % (name, name), 1)
+        self.used = False
+        have_body = False
+        for field in fields:
+            self.visitField(field)
+        if not self.used:
+            # Note: a better solution would be to change `&x` to `& /* x */`
+            # above, but we would need to change emit to return a string.
+            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+        self.emit("}", 1)
+
 class CallReplacerOnExpressionsVisitor(ASDLVisitor):
 
     def visitModule(self, mod):
@@ -2142,6 +2169,8 @@ def main(argv):
 
     try:
         if is_asr:
+            WalkUpdaterVisitor(fp, data).visit(mod)
+            fp.write("\n\n")
             ExprStmtDuplicatorVisitor(fp, data).visit(mod)
             fp.write("\n\n")
             ExprBaseReplacerVisitor(fp, data).visit(mod)
