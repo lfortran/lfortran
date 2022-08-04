@@ -2148,11 +2148,6 @@ visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
 def main(argv):
     if len(argv) == 3:
         def_file, out_file = argv[1:]
-    elif len(argv) == 1:
-        print("Assuming default values of AST.asdl and ast.h")
-        here = os.path.dirname(__file__)
-        def_file = os.path.join(here, "AST.asdl")
-        out_file = os.path.join(here, "..", "src", "lfortran", "ast.h")
     else:
         print("invalid arguments")
         return 2
