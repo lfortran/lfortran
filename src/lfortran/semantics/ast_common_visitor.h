@@ -3090,7 +3090,7 @@ public:
         }
     }
 
-    void visit_Instantiate(const AST::Instantiate_t &x){
+    void visit_Instantiate(const AST::Instantiate_t &/*x*/){
         
     }
 
