@@ -1593,6 +1593,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
 
     std::cout << pickle(asr, true /* use colors */, true /* indent */,
             true /* with_intrinsic_modules */) << std::endl;
+    exit(0);
     try {
         v.visit_asr((ASR::asr_t &)asr);
     } catch (const CodeGenError &e) {
