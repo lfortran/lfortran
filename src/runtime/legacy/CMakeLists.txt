@@ -1,5 +1,5 @@
 set(SRC
-    ../impure/lfortran_intrinsics.c
+    ../../../src/libasr/runtime/lfortran_intrinsics.c
 )
 
 if (WITH_RUNTIME_LIBRARY)
@@ -28,6 +28,6 @@ endif()
 
 # Install the header
 install(
-    FILES ../impure/lfortran_intrinsics.h
+    FILES ../../../src/libasr/runtime/lfortran_intrinsics.h
     DESTINATION share/lfortran/lib/impure
 )
