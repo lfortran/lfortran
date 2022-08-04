@@ -1038,94 +1038,94 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
 
 class StmtBaseReplacerVisitor(ASDLVisitor):
 
-     def __init__(self, stream, data):
-         self.replace_stmt = []
-         self.is_stmt = False
-         self.is_product = False
-         super(StmtBaseReplacerVisitor, self).__init__(stream, data)
+    def __init__(self, stream, data):
+        self.replace_stmt = []
+        self.is_stmt = False
+        self.is_product = False
+        super(StmtBaseReplacerVisitor, self).__init__(stream, data)
 
-     def visitModule(self, mod):
-         self.emit("/" + "*"*78 + "/")
-         self.emit("// Statement Replacer Base class")
-         self.emit("")
-         self.emit("template <class Derived>")
-         self.emit("class BaseStmtReplacer {")
-         self.emit("public:")
-         self.emit("    Derived& self() { return static_cast<Derived&>(*this); }")
-         self.emit("")
-         self.emit("    ASR::stmt_t** current_stmt;")
-         self.emit("    ASR::stmt_t** current_stmt_copy;")
-         self.emit("    bool has_replacement_happened;")
-         self.emit("")
-         self.emit("    BaseStmtReplacer() : current_stmt(nullptr), has_replacement_happened(false) {}")
-         self.emit("")
+    def visitModule(self, mod):
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Statement Replacer Base class")
+        self.emit("")
+        self.emit("template <class Derived>")
+        self.emit("class BaseStmtReplacer {")
+        self.emit("public:")
+        self.emit("    Derived& self() { return static_cast<Derived&>(*this); }")
+        self.emit("")
+        self.emit("    ASR::stmt_t** current_stmt;")
+        self.emit("    ASR::stmt_t** current_stmt_copy;")
+        self.emit("    bool has_replacement_happened;")
+        self.emit("")
+        self.emit("    BaseStmtReplacer() : current_stmt(nullptr), has_replacement_happened(false) {}")
+        self.emit("")
 
-         self.replace_stmt.append(("    void replace_stmt(ASR::stmt_t* x) {", 0))
-         self.replace_stmt.append(("    if( !x ) {", 1))
-         self.replace_stmt.append(("    return ;", 2))
-         self.replace_stmt.append(("    }", 1))
-         self.replace_stmt.append(("", 0))
-         self.replace_stmt.append(("    switch(x->type) {", 1))
+        self.replace_stmt.append(("    void replace_stmt(ASR::stmt_t* x) {", 0))
+        self.replace_stmt.append(("    if( !x ) {", 1))
+        self.replace_stmt.append(("    return ;", 2))
+        self.replace_stmt.append(("    }", 1))
+        self.replace_stmt.append(("", 0))
+        self.replace_stmt.append(("    switch(x->type) {", 1))
 
-         super(StmtBaseReplacerVisitor, self).visitModule(mod)
+        super(StmtBaseReplacerVisitor, self).visitModule(mod)
 
-         self.replace_stmt.append(("    default: {", 2))
-         self.replace_stmt.append(('    LFORTRAN_ASSERT_MSG(false, "Replacement of " + std::to_string(x->type) + " statement is not supported yet.");', 3))
-         self.replace_stmt.append(("    }", 2))
-         self.replace_stmt.append(("    }", 1))
-         self.replace_stmt.append(("", 0))
-         self.replace_stmt.append(("    }", 0))
-         for line, level in self.replace_stmt:
-             self.emit(line, level=level)
-         self.emit("")
-         self.emit("};")
+        self.replace_stmt.append(("    default: {", 2))
+        self.replace_stmt.append(('    LFORTRAN_ASSERT_MSG(false, "Replacement of " + std::to_string(x->type) + " statement is not supported yet.");', 3))
+        self.replace_stmt.append(("    }", 2))
+        self.replace_stmt.append(("    }", 1))
+        self.replace_stmt.append(("", 0))
+        self.replace_stmt.append(("    }", 0))
+        for line, level in self.replace_stmt:
+            self.emit(line, level=level)
+        self.emit("")
+        self.emit("};")
 
-     def visitType(self, tp):
-         if not (isinstance(tp.value, asdl.Sum) and
-                 is_simple_sum(tp.value)):
-             super(StmtBaseReplacerVisitor, self).visitType(tp, tp.name)
+    def visitType(self, tp):
+        if not (isinstance(tp.value, asdl.Sum) and
+                is_simple_sum(tp.value)):
+            super(StmtBaseReplacerVisitor, self).visitType(tp, tp.name)
 
-     def visitSum(self, sum, *args):
-         self.is_stmt = args[0] == 'stmt'
-         if self.is_stmt:
-             for tp in sum.types:
-                 self.visit(tp, *args)
+    def visitSum(self, sum, *args):
+        self.is_stmt = args[0] == 'stmt'
+        if self.is_stmt:
+            for tp in sum.types:
+                self.visit(tp, *args)
 
-     def visitProduct(self, prod, name):
-         pass
+    def visitProduct(self, prod, name):
+        pass
 
-     def visitConstructor(self, cons, _):
-         self.make_visitor(cons.name, cons.fields)
+    def visitConstructor(self, cons, _):
+        self.make_visitor(cons.name, cons.fields)
 
-     def make_visitor(self, name, fields):
-         self.emit("")
-         self.emit("void replace_%s(%s_t* x) {" % (name, name), 1)
-         self.used = False
-         for field in fields:
-             self.visitField(field)
-         if not self.used:
-             self.emit("if (x) { }", 2)
+    def make_visitor(self, name, fields):
+        self.emit("")
+        self.emit("void replace_%s(%s_t* x) {" % (name, name), 1)
+        self.used = False
+        for field in fields:
+            self.visitField(field)
+        if not self.used:
+            self.emit("if (x) { }", 2)
 
-         if self.is_stmt:
-             self.replace_stmt.append(("    case ASR::stmtType::%s: {" % name, 2))
-             self.replace_stmt.append(("    self().replace_%s(down_cast<ASR::%s_t>(x));" % (name, name), 3))
-             self.replace_stmt.append(("    break;", 3))
-             self.replace_stmt.append(("    }", 2))
-         self.emit("}", 1)
-         self.emit("")
+        if self.is_stmt:
+            self.replace_stmt.append(("    case ASR::stmtType::%s: {" % name, 2))
+            self.replace_stmt.append(("    self().replace_%s(down_cast<ASR::%s_t>(x));" % (name, name), 3))
+            self.replace_stmt.append(("    break;", 3))
+            self.replace_stmt.append(("    }", 2))
+        self.emit("}", 1)
+        self.emit("")
 
-     def visitField(self, field):
-         arguments = None
-         if field.type == "stmt":
-             level = 2
-             if field.seq:
-                 self.used = True
-                 self.emit("for (size_t i = 0; i < x->n_%s; i++) {" % field.name, level)
-                 self.emit("    current_stmt_copy = current_stmt;", level)
-                 self.emit("    current_stmt = &(x->m_%s[i]);" % (field.name), level)
-                 self.emit("    self().replace_stmt(x->m_%s[i]);"%(field.name), level)
-                 self.emit("    current_stmt = current_stmt_copy;", level)
-                 self.emit("}", level)
+    def visitField(self, field):
+        arguments = None
+        if field.type == "stmt":
+            level = 2
+            if field.seq:
+                self.used = True
+                self.emit("for (size_t i = 0; i < x->n_%s; i++) {" % field.name, level)
+                self.emit("    current_stmt_copy = current_stmt;", level)
+                self.emit("    current_stmt = &(x->m_%s[i]);" % (field.name), level)
+                self.emit("    self().replace_stmt(x->m_%s[i]);"%(field.name), level)
+                self.emit("    current_stmt = current_stmt_copy;", level)
+                self.emit("}", level)
 
 class PickleVisitorVisitor(ASDLVisitor):
 
@@ -1627,12 +1627,12 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                 self.visit(tp, *args)
             self.emit("%s_t* deserialize_%s() {" % (subs["mod"], args[0]), 1)
             self.emit(  'uint8_t t = self().read_int8();', 2)
-            self.emit(  '%s::%sType ty = static_cast<%s::%sType>(t);' % (subs["mod"].upper(), args[0],
-                subs["mod"].upper(), args[0]), 2)
+            self.emit(  '%s::%sType ty = static_cast<%s::%sType>(t);' % (subs["MOD"], args[0],
+                subs["MOD"], args[0]), 2)
             self.emit(  'switch (ty) {', 2)
             for tp in sum.types:
                 self.emit(    'case (%s::%sType::%s) : return self().deserialize_%s();' \
-                    % (subs["mod"].upper(), args[0], tp.name, tp.name), 3)
+                    % (subs["MOD"], args[0], tp.name, tp.name), 3)
             self.emit(    'default : throw LCompilersException("Unknown type in deserialize_%s()");' % args[0], 3)
             self.emit(  '}', 2)
             self.emit(  'throw LCompilersException("Switch statement above was not exhaustive.");', 2)
@@ -1643,12 +1643,12 @@ class DeserializationVisitorVisitor(ASDLVisitor):
         name = "node"
         self.emit("%s_t* deserialize_%s() {" % (subs["mod"], name), 1)
         self.emit(  'uint8_t t = self().read_int8();', 2)
-        self.emit(  '%s::%sType ty = static_cast<%s::%sType>(t);' % (subs["mod"].upper(), subs["mod"],
-            subs["mod"].upper(), subs["mod"]), 2)
+        self.emit(  '%s::%sType ty = static_cast<%s::%sType>(t);' % (subs["MOD"], subs["mod"],
+            subs["MOD"], subs["mod"]), 2)
         self.emit(  'switch (ty) {', 2)
         for tp in sums:
             self.emit(    'case (%s::%sType::%s) : return self().deserialize_%s();' \
-                % (subs["mod"].upper(), subs["mod"], tp, tp), 3)
+                % (subs["MOD"], subs["mod"], tp, tp), 3)
         self.emit(    'default : throw LCompilersException("Unknown type in deserialize_%s()");' % name, 3)
         self.emit(  '}', 2)
         self.emit(  'throw LCompilersException("Switch statement above was not exhaustive.");', 2)
@@ -1702,6 +1702,8 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                         rhs = "self().read_cstring()"
                     elif field.type == "string":
                         rhs = "self().read_cstring()"
+                    elif field.type == "int":
+                        rhs = "self().read_int64()"
                     else:
                         print(field.type)
                         assert False
@@ -1754,7 +1756,7 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             lines.append("    v_%s.push_back(al, self().read_symbol());" % (f.name))
                         else:
                             lines.append("    v_%s.push_back(al, %s::down_cast<%s::%s_t>(self().deserialize_%s()));" % (f.name,
-                                subs["mod"].upper(), subs["mod"].upper(), f.type, f.type))
+                                subs["MOD"], subs["MOD"], f.type, f.type))
                     lines.append("}")
                 else:
                     if f.type == "node":
@@ -1848,14 +1850,14 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                 else:
                     if f.type in products:
                         assert not f.opt
-                        lines.append("%s::%s_t m_%s = self().deserialize_%s();" % (subs["mod"].upper(), f.type, f.name, f.type))
+                        lines.append("%s::%s_t m_%s = self().deserialize_%s();" % (subs["MOD"], f.type, f.name, f.type))
                     else:
                         if f.type in simple_sums:
                             assert not f.opt
-                            lines.append("%s::%sType m_%s = self().deserialize_%s();" % (subs["mod"].upper(),
+                            lines.append("%s::%sType m_%s = self().deserialize_%s();" % (subs["MOD"],
                                 f.type, f.name, f.type))
                         else:
-                            lines.append("%s::%s_t *m_%s;" % (subs["mod"].upper(),
+                            lines.append("%s::%s_t *m_%s;" % (subs["MOD"],
                                 f.type, f.name))
                             if f.opt:
                                 lines.append("if (self().read_bool()) {")
@@ -1867,7 +1869,7 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                                     lines.append("m_%s = self().read_symbol();" % (f.name))
                             else:
                                 lines.append("m_%s = %s::down_cast<%s::%s_t>(self().deserialize_%s());" % (
-                                    f.name, subs["mod"].upper(), subs["mod"].upper(), f.type, f.type))
+                                    f.name, subs["MOD"], subs["MOD"], f.type, f.type))
                             if f.opt:
                                 lines.append("} else {")
                                 lines.append("m_%s = nullptr;" % f.name)
@@ -2069,8 +2071,8 @@ class ASDLData(object):
         self.optional_masks = optional_masks
 
 
-HEAD = r"""#ifndef LFORTRAN_%(MOD)s_H
-#define LFORTRAN_%(MOD)s_H
+HEAD = r"""#ifndef LFORTRAN_%(MOD2)s_H
+#define LFORTRAN_%(MOD2)s_H
 
 // Generated by grammar/asdl_cpp.py
 
@@ -2122,12 +2124,11 @@ static inline T* down_cast2(const %(mod)s_t *f)
     return down_cast<T>(t);
 }
 
-
 """
 
 FOOT = r"""} // namespace LFortran::%(MOD)s
 
-#endif // LFORTRAN_%(MOD)s_H
+#endif // LFORTRAN_%(MOD2)s_H
 """
 
 visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
@@ -2155,9 +2156,13 @@ def main(argv):
     global subs
     subs = {
         "MOD": mod.name.upper(),
+        "MOD2": mod.name.upper(),
         "mod": mod.name.lower(),
         "types": types_,
     }
+    if subs["MOD"] == "LPYTHON":
+        subs["MOD"] = "LPython::AST"
+        subs["mod"] = "ast"
     is_asr = (mod.name.upper() == "ASR")
     fp = open(out_file, "w", encoding="utf-8")
     try:
