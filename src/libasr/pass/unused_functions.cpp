@@ -31,12 +31,12 @@ public:
             if (x.m_abi != ASR::abiType::BindC) {
                 fn_declarations[h] = x.m_name;
             }
-            for (auto &a : x.m_symtab->get_scope()) {
-                this->visit_symbol(*a.second);
-            }
-            for (size_t i=0; i<x.n_body; i++) {
-                visit_stmt(*x.m_body[i]);
-            }
+        }
+        for (auto &a : x.m_symtab->get_scope()) {
+            this->visit_symbol(*a.second);
+        }
+        for (size_t i=0; i<x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
         }
     }
 
