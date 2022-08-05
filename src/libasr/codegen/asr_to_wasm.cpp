@@ -1002,7 +1002,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
-    void get_array_dims(const ASR::Variable_t &x, Vec<uint32_t> &dims) {
+    template<typename T>
+    void get_array_dims(const T& x, Vec<uint32_t> &dims) {
         ASR::dimension_t* m_dims;
         uint32_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
         dims.reserve(m_al, n_dims);
