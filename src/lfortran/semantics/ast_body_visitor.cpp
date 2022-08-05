@@ -883,7 +883,8 @@ public:
     ASR::stmt_t* create_implicit_deallocate_subrout_call(ASR::stmt_t* x) {
         ASR::SubroutineCall_t* subrout_call = ASR::down_cast<ASR::SubroutineCall_t>(x);
         const ASR::symbol_t* subrout_sym = LFortran::ASRUtils::symbol_get_past_external(subrout_call->m_name);
-        if( ! ASR::is_a<ASR::Function_t>(*subrout_sym) ) {
+        if( ! ASR::is_a<ASR::Function_t>(*subrout_sym)
+            || ASR::down_cast<ASR::Function_t>(subrout_sym)->m_return_var != nullptr ) {
             return nullptr;
         }
         ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
