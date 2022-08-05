@@ -811,10 +811,12 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
     ASR::ttype_t *return_type = nullptr;
     if( ASR::is_a<ASR::Function_t>(*final_sym) ) {
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
-        if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
-            return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
-        } else {
-            return_type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+        if (func->m_return_var) {
+            if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+                return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+            } else {
+                return_type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+            }
         }
     }
     // Create ExternalSymbol for the final subroutine:
