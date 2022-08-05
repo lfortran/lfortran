@@ -1008,6 +1008,36 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void emit_array_address_onto_stack(const ASR::Variable_t* v) {
+        wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
+        wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0);
+        // currently it is the no_of_dimensions on top of stack
+
+        // apart from the no_of_dimensions
+        // 1 unit is occupied by the size/len value of dims
+        // and 1 unit is occupied by the total size/len of the array
+        // so add an offset of 2
+        wasm::emit_i32_const(m_code_section, m_al, 2);
+        wasm::emit_i32_add(m_code_section, m_al);
+
+        wasm::emit_i32_const(m_code_section, m_al, 4);
+        wasm::emit_i32_mul(m_code_section, m_al);
+
+        // (no_of_dims + 2) * 4 is the total amount of offset from array start
+        // so, now emit the array start location and add this offset
+        wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
+        wasm::emit_i32_add(m_code_section, m_al);
+    }
+
+    // dim_idx is zero-based
+    void emit_array_dim_onto_stack(const ASR::Variable_t* v, uint32_t dim_idx) {
+        wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
+        wasm::emit_i32_const(m_code_section, m_al, 4 /* size of i32 */ * (dim_idx + 1));
+        wasm::emit_i32_add(m_code_section, m_al);
+
+        wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0);
+    }
+
     void emit_array_item_address_onto_stack(const ASR::ArrayItem_t &x) {
         this->visit_expr(*x.m_v);
         ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_v);
