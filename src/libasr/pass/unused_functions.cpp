@@ -219,9 +219,7 @@ public:
         remove_unused_fn(x.m_symtab);
     }
     void visit_Function(const ASR::Function_t &x) {
-        if (x.m_return_var) {
-            remove_unused_fn(x.m_symtab);
-        }
+        remove_unused_fn(x.m_symtab);
     }
     void visit_GenericProcedure(const ASR::GenericProcedure_t &x) {
         Vec<ASR::symbol_t*> v;
