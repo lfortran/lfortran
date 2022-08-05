@@ -14,7 +14,11 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 
-// #include <lfortran/pickle.h>
+// #define SHOW_ASR
+
+#ifdef SHOW_ASR
+    #include <lfortran/pickle.h>
+#endif
 
 namespace LFortran {
 
@@ -1591,8 +1595,10 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
     pass_replace_do_loops(al, asr);
     pass_propagate_arr_dims(al, asr);
 
-    // std::cout << pickle(asr, true /* use colors */, true /* indent */,
-    //         true /* with_intrinsic_modules */) << std::endl;
+#ifdef SHOW_ASR
+    std::cout << pickle(asr, true /* use colors */, true /* indent */,
+            true /* with_intrinsic_modules */) << std::endl;
+#endif
     try {
         v.visit_asr((ASR::asr_t &)asr);
     } catch (const CodeGenError &e) {
