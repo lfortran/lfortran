@@ -125,6 +125,7 @@ public:
         for( size_t i = 0; i < s->n_args; i++ ) {
             a_args.push_back(al, s->m_args[i]);
         }
+        LFORTRAN_ASSERT(s->m_return_var)
         a_args.push_back(al, s->m_return_var);
         ASR::asr_t* s_sub_asr = ASR::make_Function_t(al, s->base.base.loc,
             s->m_symtab,
@@ -356,6 +357,10 @@ public:
         tmp_val = const_cast<ASR::expr_t*>(&(x.base));
     }
 
+    void visit_LogicalConstant(const ASR::LogicalConstant_t& x) {
+        tmp_val = const_cast<ASR::expr_t*>(&(x.base));
+    }
+
     void fix_dimension(const ASR::Cast_t& x, ASR::expr_t* arg_expr) {
         ASR::ttype_t* x_type = const_cast<ASR::ttype_t*>(x.m_type);
         ASR::ttype_t* arg_type = LFortran::ASRUtils::expr_type(arg_expr);
@@ -370,7 +375,7 @@ public:
         result_var = nullptr;
         this->visit_expr(*(x.m_arg));
         result_var = result_var_copy;
-        if( PassUtils::is_array(tmp_val) ) {
+        if( tmp_val != nullptr && PassUtils::is_array(tmp_val) ) {
             if( result_var == nullptr ) {
                 fix_dimension(x, tmp_val);
                 result_var = create_var(result_var_num, std::string("_implicit_cast_res"), x.base.base.loc, const_cast<ASR::expr_t*>(&(x.base)));
