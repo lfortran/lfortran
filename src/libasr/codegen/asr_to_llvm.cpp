@@ -5028,7 +5028,7 @@ public:
                 + std::string(s->m_name) + "'");
         } else {
             llvm::Function *fn = llvm_symtab_fn[h];
-            std::string m_name = ASR::down_cast<ASR::Function_t>(x.m_name)->m_name;
+            std::string m_name = ASRUtils::symbol_name(x.m_name);
             std::vector<llvm::Value *> args2 = convert_call_args(x, m_name);
             args.insert(args.end(), args2.begin(), args2.end());
             builder->CreateCall(fn, args);
