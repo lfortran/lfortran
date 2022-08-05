@@ -351,11 +351,13 @@ public:
             /* a_name */ s2c(al, to_lower(sym_name)),
             /* a_args */ args.p,
             /* n_args */ args.size(),
+            nullptr, 0,
             /* a_body */ nullptr,
             /* n_body */ 0,
+            nullptr,
             current_procedure_abi_type,
             s_access, deftype, bindc_name,
-            is_pure, is_module);
+            is_pure, is_module, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         /* FIXME: This can become incorrect/get cleared prematurely, perhaps
@@ -579,8 +581,8 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ LFortran::ASRUtils::EXPR(return_var_ref),
-            current_procedure_abi_type, s_access, deftype, is_elemental,
-            bindc_name);
+            current_procedure_abi_type, s_access, deftype,
+            bindc_name, is_elemental, false, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         current_procedure_args.clear();
