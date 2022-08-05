@@ -10,7 +10,6 @@
 #include <libasr/codegen/wasm_assembler.h>
 #include <libasr/pass/do_loops.h>
 #include <libasr/pass/unused_functions.h>
-#include <libasr/pass/arr_dims_propagate.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 
@@ -1593,7 +1592,6 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
 
     pass_unused_functions(al, asr, true);
     pass_replace_do_loops(al, asr);
-    pass_propagate_arr_dims(al, asr);
 
 #ifdef SHOW_ASR
     std::cout << pickle(asr, true /* use colors */, true /* indent */,
