@@ -2408,72 +2408,76 @@ public:
 
 
     llvm::FunctionType* get_function_type(const ASR::Function_t &x){
-        ASR::ttype_t *return_var_type0 = EXPR2VAR(x.m_return_var)->m_type;
-        ASR::ttypeType return_var_type = return_var_type0->type;
         llvm::Type *return_type;
-        switch (return_var_type) {
-            case (ASR::ttypeType::Integer) : {
-                int a_kind = down_cast<ASR::Integer_t>(return_var_type0)->m_kind;
-                return_type = getIntType(a_kind);
-                break;
-            }
-            case (ASR::ttypeType::Real) : {
-                int a_kind = down_cast<ASR::Real_t>(return_var_type0)->m_kind;
-                return_type = getFPType(a_kind);
-                break;
-            }
-            case (ASR::ttypeType::Complex) : {
-                int a_kind = down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
-                if (a_kind == 4) {
-                    if (x.m_abi == ASR::abiType::BindC) {
-                        if (platform == Platform::Windows) {
-                            // i64
-                            return_type = llvm::Type::getInt64Ty(context);
-                        } else if (platform == Platform::macOS_ARM) {
-                            // {float, float}
-                            return_type = getComplexType(a_kind);
-                        } else {
-                            // <2 x float>
-                            return_type = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
-                        }
-                    } else {
-                        return_type = getComplexType(a_kind);
-                    }
-                } else {
-                    LFORTRAN_ASSERT(a_kind == 8)
-                    if (x.m_abi == ASR::abiType::BindC) {
-                        if (platform == Platform::Windows) {
-                            // pass as subroutine
-                            return_type = getComplexType(a_kind, true);
-                            std::vector<llvm::Type*> args = convert_args(x);
-                            args.insert(args.begin(), return_type);
-                            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                                    llvm::Type::getVoidTy(context), args, false);
-                            return function_type;
-                        } else {
-                            return_type = getComplexType(a_kind);
-                        }
-                    } else {
-                        return_type = getComplexType(a_kind);
-                    }
+        if (x.m_return_var) {
+            ASR::ttype_t *return_var_type0 = EXPR2VAR(x.m_return_var)->m_type;
+            ASR::ttypeType return_var_type = return_var_type0->type;
+            switch (return_var_type) {
+                case (ASR::ttypeType::Integer) : {
+                    int a_kind = down_cast<ASR::Integer_t>(return_var_type0)->m_kind;
+                    return_type = getIntType(a_kind);
+                    break;
                 }
-                break;
+                case (ASR::ttypeType::Real) : {
+                    int a_kind = down_cast<ASR::Real_t>(return_var_type0)->m_kind;
+                    return_type = getFPType(a_kind);
+                    break;
+                }
+                case (ASR::ttypeType::Complex) : {
+                    int a_kind = down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
+                    if (a_kind == 4) {
+                        if (x.m_abi == ASR::abiType::BindC) {
+                            if (platform == Platform::Windows) {
+                                // i64
+                                return_type = llvm::Type::getInt64Ty(context);
+                            } else if (platform == Platform::macOS_ARM) {
+                                // {float, float}
+                                return_type = getComplexType(a_kind);
+                            } else {
+                                // <2 x float>
+                                return_type = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
+                            }
+                        } else {
+                            return_type = getComplexType(a_kind);
+                        }
+                    } else {
+                        LFORTRAN_ASSERT(a_kind == 8)
+                        if (x.m_abi == ASR::abiType::BindC) {
+                            if (platform == Platform::Windows) {
+                                // pass as subroutine
+                                return_type = getComplexType(a_kind, true);
+                                std::vector<llvm::Type*> args = convert_args(x);
+                                args.insert(args.begin(), return_type);
+                                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                                        llvm::Type::getVoidTy(context), args, false);
+                                return function_type;
+                            } else {
+                                return_type = getComplexType(a_kind);
+                            }
+                        } else {
+                            return_type = getComplexType(a_kind);
+                        }
+                    }
+                    break;
+                }
+                case (ASR::ttypeType::Character) :
+                    return_type = character_type;
+                    break;
+                case (ASR::ttypeType::Logical) :
+                    return_type = llvm::Type::getInt1Ty(context);
+                    break;
+                case (ASR::ttypeType::CPtr) :
+                    return_type = llvm::Type::getVoidTy(context)->getPointerTo();
+                    break;
+                case (ASR::ttypeType::Derived) :
+                    throw CodeGenError("Derived return type not implemented yet");
+                    break;
+                default :
+                    LFORTRAN_ASSERT(false);
+                    throw CodeGenError("Type not implemented");
             }
-            case (ASR::ttypeType::Character) :
-                return_type = character_type;
-                break;
-            case (ASR::ttypeType::Logical) :
-                return_type = llvm::Type::getInt1Ty(context);
-                break;
-            case (ASR::ttypeType::CPtr) :
-                return_type = llvm::Type::getVoidTy(context)->getPointerTo();
-                break;
-            case (ASR::ttypeType::Derived) :
-                throw CodeGenError("Derived return type not implemented yet");
-                break;
-            default :
-                LFORTRAN_ASSERT(false);
-                throw CodeGenError("Type not implemented");
+        } else {
+            return_type = llvm::Type::getVoidTy(context);
         }
         std::vector<llvm::Type*> args = convert_args(x);
         llvm::FunctionType *function_type = llvm::FunctionType::get(
@@ -2545,51 +2549,56 @@ public:
 
 
     inline void define_function_exit(const ASR::Function_t& x) {
-        start_new_block(proc_return);
-        ASR::Variable_t *asr_retval = EXPR2VAR(x.m_return_var);
-        uint32_t h = get_hash((ASR::asr_t*)asr_retval);
-        llvm::Value *ret_val = llvm_symtab[h];
-        llvm::Value *ret_val2 = CreateLoad(ret_val);
-        // Handle Complex type return value for BindC:
-        if (x.m_abi == ASR::abiType::BindC) {
-            ASR::ttype_t* arg_type = asr_retval->m_type;
-            llvm::Value *tmp = ret_val;
-            if (is_a<ASR::Complex_t>(*arg_type)) {
-                int c_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-                if (c_kind == 4) {
-                    if (platform == Platform::Windows) {
-                        // tmp is {float, float}*
-                        // type_fx2p is i64*
-                        llvm::Type* type_fx2p = llvm::Type::getInt64PtrTy(context);
-                        // Convert {float,float}* to i64* using bitcast
-                        tmp = builder->CreateBitCast(tmp, type_fx2p);
-                        // Then convert i64* -> i64
-                        tmp = CreateLoad(tmp);
-                    } else if (platform == Platform::macOS_ARM) {
-                        // Pass by value
-                        tmp = CreateLoad(tmp);
+        if (x.m_return_var) {
+            start_new_block(proc_return);
+            ASR::Variable_t *asr_retval = EXPR2VAR(x.m_return_var);
+            uint32_t h = get_hash((ASR::asr_t*)asr_retval);
+            llvm::Value *ret_val = llvm_symtab[h];
+            llvm::Value *ret_val2 = CreateLoad(ret_val);
+            // Handle Complex type return value for BindC:
+            if (x.m_abi == ASR::abiType::BindC) {
+                ASR::ttype_t* arg_type = asr_retval->m_type;
+                llvm::Value *tmp = ret_val;
+                if (is_a<ASR::Complex_t>(*arg_type)) {
+                    int c_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                    if (c_kind == 4) {
+                        if (platform == Platform::Windows) {
+                            // tmp is {float, float}*
+                            // type_fx2p is i64*
+                            llvm::Type* type_fx2p = llvm::Type::getInt64PtrTy(context);
+                            // Convert {float,float}* to i64* using bitcast
+                            tmp = builder->CreateBitCast(tmp, type_fx2p);
+                            // Then convert i64* -> i64
+                            tmp = CreateLoad(tmp);
+                        } else if (platform == Platform::macOS_ARM) {
+                            // Pass by value
+                            tmp = CreateLoad(tmp);
+                        } else {
+                            // tmp is {float, float}*
+                            // type_fx2p is <2 x float>*
+                            llvm::Type* type_fx2p = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2)->getPointerTo();
+                            // Convert {float,float}* to <2 x float>* using bitcast
+                            tmp = builder->CreateBitCast(tmp, type_fx2p);
+                            // Then convert <2 x float>* -> <2 x float>
+                            tmp = CreateLoad(tmp);
+                        }
                     } else {
-                        // tmp is {float, float}*
-                        // type_fx2p is <2 x float>*
-                        llvm::Type* type_fx2p = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2)->getPointerTo();
-                        // Convert {float,float}* to <2 x float>* using bitcast
-                        tmp = builder->CreateBitCast(tmp, type_fx2p);
-                        // Then convert <2 x float>* -> <2 x float>
-                        tmp = CreateLoad(tmp);
+                        LFORTRAN_ASSERT(c_kind == 8)
+                        if (platform == Platform::Windows) {
+                            // 128 bit aggregate type is passed by reference
+                        } else {
+                            // Pass by value
+                            tmp = CreateLoad(tmp);
+                        }
                     }
-                } else {
-                    LFORTRAN_ASSERT(c_kind == 8)
-                    if (platform == Platform::Windows) {
-                        // 128 bit aggregate type is passed by reference
-                    } else {
-                        // Pass by value
-                        tmp = CreateLoad(tmp);
-                    }
+                ret_val2 = tmp;
                 }
-            ret_val2 = tmp;
             }
+            builder->CreateRet(ret_val2);
+        } else {
+            start_new_block(proc_return);
+            builder->CreateRetVoid();
         }
-        builder->CreateRet(ret_val2);
     }
 
     void generate_function(const ASR::Function_t &x){
