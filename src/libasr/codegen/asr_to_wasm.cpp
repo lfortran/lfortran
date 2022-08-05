@@ -1039,26 +1039,50 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void emit_array_item_address_onto_stack(const ASR::ArrayItem_t &x) {
-        this->visit_expr(*x.m_v);
-        ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_v);
-        uint32_t kind = ASRUtils::extract_kind_from_ttype_t(ttype);
-        Vec<uint32_t> array_dims;
-        get_array_dims(*ASRUtils::EXPR2VAR(x.m_v), array_dims);
-        uint32_t multiplier = 1;
+        auto v = ASRUtils::EXPR2VAR(x.m_v);
+        emit_array_address_onto_stack(v);
+
+        // store multiplier as 1 at the current available memory
+        int cur_avail_mem_loc = avail_mem_loc;
+        wasm::emit_i32_const(m_code_section, m_al, cur_avail_mem_loc);
+        wasm::emit_i32_const(m_code_section, m_al, 1);
+        wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0);
+        avail_mem_loc += 4 /* multiplier is of i32 so it takes 4 bytes */;
+
+        // print_mem_loc_value(cur_avail_mem_loc);
+
         wasm::emit_i32_const(m_code_section, m_al, 0);
         for(uint32_t i = 0; i < x.n_args; i++) {
             if (x.m_args[i].m_right) {
                 this->visit_expr(*x.m_args[i].m_right);
                 wasm::emit_i32_const(m_code_section, m_al, 1);
                 wasm::emit_i32_sub(m_code_section, m_al);
-                wasm::emit_i32_const(m_code_section, m_al, multiplier);
+
+                wasm::emit_i32_const(m_code_section, m_al, cur_avail_mem_loc);
+                wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0);
+
                 wasm::emit_i32_mul(m_code_section, m_al);
                 wasm::emit_i32_add(m_code_section, m_al);
-                multiplier *= array_dims[i];
+
+               {
+                    wasm::emit_i32_const(m_code_section, m_al, cur_avail_mem_loc);
+                    {
+                        wasm::emit_i32_const(m_code_section, m_al, cur_avail_mem_loc);
+                        wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0);
+
+                        emit_array_dim_onto_stack(v, i);
+
+                        wasm::emit_i32_mul(m_code_section, m_al);
+                    }
+                    wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0);
+               }
             } else {
                 diag.codegen_warning_label("/* FIXME right index */", {x.base.base.loc}, "");
             }
         }
+
+        ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_v);
+        uint32_t kind = ASRUtils::extract_kind_from_ttype_t(ttype);
         wasm::emit_i32_const(m_code_section, m_al, kind);
         wasm::emit_i32_mul(m_code_section, m_al);
         wasm::emit_i32_add(m_code_section, m_al);
@@ -1074,27 +1098,28 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             this->visit_expr(*x.m_value);
             return;
         }
-        Vec<uint32_t> array_dims;
-        get_array_dims(*ASRUtils::EXPR2VAR(x.m_v), array_dims);
-        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        auto v = ASRUtils::EXPR2VAR(x.m_v);
+
         if (x.m_dim) {
-            uint32_t dim_idx = -1;
+            wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
+
+            int dim_idx = -1;
             ASRUtils::extract_value(ASRUtils::expr_value(x.m_dim), dim_idx);
-            if (kind == 4) {
-                wasm::emit_i32_const(m_code_section, m_al, array_dims[dim_idx - 1]);
-            } else if (kind == 8) {
-                wasm::emit_i64_const(m_code_section, m_al, array_dims[dim_idx - 1]);
+            if (dim_idx == -1) {
+                throw CodeGenError("Dimension index not available");
             }
-            return;
+            emit_array_dim_onto_stack(v, dim_idx);
+        } else {
+            emit_array_address_onto_stack(v);
+            // emit_array_address_onto_stack() places location of first array element on stack
+            // The length of the array is one step back, so subtract 4 bytes
+            wasm::emit_i32_const(m_code_section, m_al, 4);
+            wasm::emit_i32_sub(m_code_section, m_al);
+            wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0);
         }
-        uint32_t total_array_size = 1U;
-        for (auto &dim:array_dims) {
-            total_array_size *=  dim;
-        }
-        if (kind == 4) {
-            wasm::emit_i32_const(m_code_section, m_al, total_array_size);
-        } else if (kind == 8) {
-            wasm::emit_i64_const(m_code_section, m_al, total_array_size);
+
+        if (ASRUtils::extract_kind_from_ttype_t(x.m_type) == 8) {
+            wasm::emit_i64_extend_i32_s(m_code_section, m_al);
         }
     }
 
