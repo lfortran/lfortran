@@ -315,7 +315,10 @@ public:
                 + "` must match external's module name `" + std::string(m->m_name) + "`");
             ASR::symbol_t *s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
             require(s != nullptr,
-                "ExternalSymbol::m_name + scope_names not found in a module");
+                "ExternalSymbol::m_original_name ('"
+                + std::string(x.m_original_name)
+                + "') + scope_names not found in a module '"
+                + std::string(m->m_name) + "'");
             require(s == x.m_external,
                 "ExternalSymbol::m_name + scope_names found but not equal to m_external");
         }
