@@ -258,9 +258,7 @@ jobs:
       - name: Upload Tarball
         shell: bash -l {0}
         run: |
-          cmake .
-          lfortran_version=$(<version)
-          ci/create_source_tarball.sh $lfortran_version
+          ci/create_source_tarball.sh
           ci/upload_tarball.sh
         env:
           SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}

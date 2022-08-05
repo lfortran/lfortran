@@ -19,13 +19,8 @@ prepare tarball:
     GIT_FETCH_EXTRA_FLAGS: --tags --prune --prune-tags
     GIT_DEPTH: 0 # fetch all commits and tags
   script:
-    - mkdir build
-    - pushd build
-    - cmake ..  # assuming you have cmake installed
-    - popd
-    - lfortran_version=$(<version)
     - sudo apk add --no-cache cmake
-    - ci/create_source_tarball.sh $lfortran_version
+    - ci/create_source_tarball.sh
     - ci/upload_tarball.sh
   artifacts:
     paths:
