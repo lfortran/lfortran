@@ -327,9 +327,9 @@ public:
         }
         if (parent_scope->get_symbol(sym_name) != nullptr) {
             ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
-            ASR::Subroutine_t *f2 = nullptr;
-            if( f1->type == ASR::symbolType::Subroutine ) {
-                f2 = ASR::down_cast<ASR::Subroutine_t>(f1);
+            ASR::Function_t *f2 = nullptr;
+            if( ASR::is_a<ASR::Function_t>(*f1) ) {
+                f2 = ASR::down_cast<ASR::Function_t>(f1);
             }
             if ((f1->type == ASR::symbolType::ExternalSymbol && in_submodule) ||
                 f2->m_abi == ASR::abiType::Interactive) {
@@ -345,7 +345,7 @@ public:
         }
 
 
-        tmp = ASR::make_Subroutine_t(
+        tmp = ASR::make_Function_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, to_lower(sym_name)),
@@ -686,12 +686,6 @@ public:
                 AST::InterfaceProc_t *proc
                     = AST::down_cast<AST::InterfaceProc_t>(item);
                 switch(proc->m_proc->type) {
-                    case AST::program_unitType::Subroutine: {
-                        AST::Subroutine_t* subrout = AST::down_cast<AST::Subroutine_t>(proc->m_proc);
-                        char* proc_name = subrout->m_name;
-                        proc_names.push_back(std::string(proc_name));
-                        break;
-                    }
                     case AST::program_unitType::Function: {
                         AST::Function_t* subrout = AST::down_cast<AST::Function_t>(proc->m_proc);
                         char* proc_name = subrout->m_name;
@@ -927,19 +921,7 @@ public:
                 continue;
             }
             // TODO: only import "public" symbols from the module
-            if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
-                ASR::Subroutine_t *msub = ASR::down_cast<ASR::Subroutine_t>(item.second);
-                ASR::asr_t *sub = ASR::make_ExternalSymbol_t(
-                    al, msub->base.base.loc,
-                    /* a_symtab */ current_scope,
-                    /* a_name */ msub->m_name,
-                    (ASR::symbol_t*)msub,
-                    m->m_name, nullptr, 0, msub->m_name,
-                    dflt_access
-                    );
-                std::string sym = to_lower(msub->m_name);
-                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(sub));
-            } else if (ASR::is_a<ASR::Function_t>(*item.second)) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(item.second);
                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
                     al, mfn->base.base.loc,
@@ -1041,27 +1023,7 @@ public:
             throw SemanticError("The symbol '" + remote_sym + "' not found in the module '" + msym + "'",
                 loc);
         }
-        if (ASR::is_a<ASR::Subroutine_t>(*t)) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
-                throw SemanticError("Subroutine already defined",
-                    loc);
-            }
-            ASR::Subroutine_t *msub = ASR::down_cast<ASR::Subroutine_t>(t);
-            // `msub` is the Subroutine in a module. Now we construct
-            // an ExternalSymbol that points to
-            // `msub` via the `external` field.
-            Str name;
-            name.from_str(al, local_sym);
-            ASR::asr_t *sub = ASR::make_ExternalSymbol_t(
-                al, msub->base.base.loc,
-                /* a_symtab */ current_scope,
-                /* a_name */ name.c_str(al),
-                (ASR::symbol_t*)msub,
-                m->m_name, nullptr, 0, msub->m_name,
-                dflt_access
-                );
-            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(sub));
-        } else if (ASR::is_a<ASR::GenericProcedure_t>(*t)) {
+        if (ASR::is_a<ASR::GenericProcedure_t>(*t)) {
             if (current_scope->get_symbol(local_sym) != nullptr) {
                 throw SemanticError("Symbol already defined",
                     loc);
