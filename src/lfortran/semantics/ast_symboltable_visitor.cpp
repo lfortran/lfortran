@@ -686,6 +686,12 @@ public:
                 AST::InterfaceProc_t *proc
                     = AST::down_cast<AST::InterfaceProc_t>(item);
                 switch(proc->m_proc->type) {
+                    case AST::program_unitType::Subroutine: {
+                        AST::Subroutine_t* subrout = AST::down_cast<AST::Subroutine_t>(proc->m_proc);
+                        char* proc_name = subrout->m_name;
+                        proc_names.push_back(std::string(proc_name));
+                        break;
+                    }
                     case AST::program_unitType::Function: {
                         AST::Function_t* subrout = AST::down_cast<AST::Function_t>(proc->m_proc);
                         char* proc_name = subrout->m_name;
