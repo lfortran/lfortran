@@ -107,10 +107,6 @@ Launch a Conda command interpreter and run the following commands:
 conda update -q conda
 conda install -c conda-forge python=3.7 re2c m2-bison xonsh llvmdev=11.1.0 jupyter xeus=1.0.1 xtl nlohmann_json cppzmq jupyter_kernel_test pytest
 ```
-Next, `cd` to the root of the repository and run
-```bash
-.\build0.bat
-```
 
 Now, you can launch Visual Studio and open the LFortran folder.
 Before the first build you have to set up the `ZLib`-pathes: Go to the CMake-Settings (Project -> CMake Setttings for lfortran) and check `Show advanced variables`. Scroll to the `ZLIB_...` variables and set:
