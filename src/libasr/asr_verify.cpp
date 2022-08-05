@@ -370,7 +370,7 @@ public:
                 x.base.base.loc);
         } else {
             require(symtab_in_scope(current_symtab, x.m_name),
-                "SubroutineCall::m_name cannot point outside of its symbol table",
+                "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table",
                 x.base.base.loc);
         }
         for (size_t i=0; i<x.n_args; i++) {
