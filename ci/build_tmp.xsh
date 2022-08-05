@@ -32,8 +32,8 @@ echo "CONDA_PREFIX=$CONDA_PREFIX"
 llvm-config --components
 
 # Create tarball and unpack
-$lfortran_version=$(cat version).strip()
 bash ci/create_source_tarball.sh
+$lfortran_version=$(cat version).strip()
 tar xzf dist/lfortran-$lfortran_version.tar.gz
 cd lfortran-$lfortran_version
 
