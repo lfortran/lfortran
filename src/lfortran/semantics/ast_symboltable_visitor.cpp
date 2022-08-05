@@ -1023,7 +1023,28 @@ public:
             throw SemanticError("The symbol '" + remote_sym + "' not found in the module '" + msym + "'",
                 loc);
         }
-        if (ASR::is_a<ASR::GenericProcedure_t>(*t)) {
+        if (ASR::is_a<ASR::Function_t>(*t) &&
+            ASR::down_cast<ASR::Function_t>(t)->m_return_var == nullptr) {
+            if (current_scope->get_symbol(local_sym) != nullptr) {
+                throw SemanticError("Subroutine already defined",
+                    loc);
+            }
+            ASR::Function_t *msub = ASR::down_cast<ASR::Function_t>(t);
+            // `msub` is the Subroutine in a module. Now we construct
+            // an ExternalSymbol that points to
+            // `msub` via the `external` field.
+            Str name;
+            name.from_str(al, local_sym);
+            ASR::asr_t *sub = ASR::make_ExternalSymbol_t(
+                al, msub->base.base.loc,
+                /* a_symtab */ current_scope,
+                /* a_name */ name.c_str(al),
+                (ASR::symbol_t*)msub,
+                m->m_name, nullptr, 0, msub->m_name,
+                dflt_access
+                );
+            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(sub));
+        } else if (ASR::is_a<ASR::GenericProcedure_t>(*t)) {
             if (current_scope->get_symbol(local_sym) != nullptr) {
                 throw SemanticError("Symbol already defined",
                     loc);
