@@ -2,6 +2,13 @@
 
 set -ex
 
+# Generate the version, parser, tokenizer and AST from the ASDL files.
+mkdir tarball
+pushd tarball
+cmake ..
+popd
+rm -rf tarball
+
 cmake -E make_directory $dest
 
 # Copy Directories:

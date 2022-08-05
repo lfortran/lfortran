@@ -188,3 +188,6 @@ build.ninja
 
 ## Docs
 !doc/src/javascripts/*.js
+
+## Tarball build
+tarball/
