@@ -1014,6 +1014,40 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    // following function is useful for printing debug statements from webassembly
+    void print_wasm_debug_statement(std::string message, bool endline = true) {
+        static int debug_mem_space = 10000 + avail_mem_loc;
+        wasm::emit_str_const(m_data_section, m_al, debug_mem_space, message);
+        last_str_len = message.length();
+        debug_mem_space += last_str_len;
+        no_of_data_segments++;
+
+        // push string location and its size on function stack
+        wasm::emit_i32_const(m_code_section, m_al, debug_mem_space - last_str_len);
+        wasm::emit_i32_const(m_code_section, m_al, last_str_len);
+
+        // call JavaScript print_str
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_str"])]->index);
+
+        if (endline) {
+            // call JavaScript flush_buf
+            wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["flush_buf"])]->index);
+        }
+    }
+
+    // following function is useful for debugging webassembly memory
+    // it prints the value present at a given location in memory
+    void print_mem_loc_value(uint32_t mem_loc) {
+        print_wasm_debug_statement("Memory Location =", false);
+        wasm::emit_i32_const(m_code_section, m_al, mem_loc);
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_i32"])]->index);
+        print_wasm_debug_statement(", value=", false);
+        wasm::emit_i32_const(m_code_section, m_al, mem_loc);
+        wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0);
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_i32"])]->index);
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["flush_buf"])]->index);
+    }
+
     void emit_array_item_address_onto_stack(const ASR::ArrayItem_t &x) {
         this->visit_expr(*x.m_v);
         ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_v);
