@@ -19,13 +19,13 @@ file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/version" "${LFORTRAN_VERSION}")
 # Keep the Python calls seperate to avoid a BrokenPipeError exception being raised
 # Generate a Fortran AST from AST.asdl (C++)
 execute_process(
-    COMMAND "${Python3_EXECUTABLE}" "grammar/asdl_cpp.py"
+    COMMAND "${Python3_EXECUTABLE}" "src/libasr/asdl_cpp.py" "grammar/AST.asdl" "src/lfortran/ast.h"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMAND_ERROR_IS_FATAL ANY
 )
 # Generate a Fortran ASR from ASR.asdl (C++)
 execute_process(
-    COMMAND "${Python3_EXECUTABLE}" "grammar/asdl_cpp.py" "src/libasr/ASR.asdl" "src/libasr/asr.h"
+    COMMAND "${Python3_EXECUTABLE}" "src/libasr/asdl_cpp.py" "src/libasr/ASR.asdl" "src/libasr/asr.h"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMAND_ERROR_IS_FATAL ANY
 )
