@@ -10,11 +10,14 @@
 #include <libasr/codegen/wasm_assembler.h>
 #include <libasr/pass/do_loops.h>
 #include <libasr/pass/unused_functions.h>
-#include <libasr/pass/arr_dims_propagate.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 
-// #include <lfortran/pickle.h>
+// #define SHOW_ASR
+
+#ifdef SHOW_ASR
+    #include <lfortran/pickle.h>
+#endif
 
 namespace LFortran {
 
@@ -405,20 +408,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)v)) != m_var_name_idx_map.end())
                         wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
                     } else if (ASRUtils::is_array(v->m_type)) {
-                        uint32_t kind = ASRUtils::extract_kind_from_ttype_t(v->m_type);
-
-                        Vec<uint32_t> array_dims;
-                        get_array_dims(*v, array_dims);
-
-                        uint32_t total_array_size = 1;
-                        for (auto &dim:array_dims) {
-                            total_array_size *=  dim;
-                        }
-
                         LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)v)) != m_var_name_idx_map.end());
                         wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
                         wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
-                        avail_mem_loc += kind * total_array_size;
+
+                        uint32_t total_no_of_elements = emit_array_descriptor(*v);
+                        uint32_t kind = ASRUtils::extract_kind_from_ttype_t(v->m_type);
+                        avail_mem_loc += kind * total_no_of_elements;
                     }
                 }
             }
@@ -999,7 +995,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
-    void get_array_dims(const ASR::Variable_t &x, Vec<uint32_t> &dims) {
+    template<typename T>
+    void get_array_dims(const T& x, Vec<uint32_t> &dims) {
         ASR::dimension_t* m_dims;
         uint32_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
         dims.reserve(m_al, n_dims);
@@ -1011,27 +1008,115 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    // following function is useful for printing debug statements from webassembly
+    void print_wasm_debug_statement(std::string message, bool endline = true) {
+        static int debug_mem_space = 10000 + avail_mem_loc;
+        wasm::emit_str_const(m_data_section, m_al, debug_mem_space, message);
+        last_str_len = message.length();
+        debug_mem_space += last_str_len;
+        no_of_data_segments++;
+
+        // push string location and its size on function stack
+        wasm::emit_i32_const(m_code_section, m_al, debug_mem_space - last_str_len);
+        wasm::emit_i32_const(m_code_section, m_al, last_str_len);
+
+        // call JavaScript print_str
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_str"])]->index);
+
+        if (endline) {
+            // call JavaScript flush_buf
+            wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["flush_buf"])]->index);
+        }
+    }
+
+    // following function is useful for debugging webassembly memory
+    // it prints the value present at a given location in memory
+    void print_mem_loc_value(uint32_t mem_loc) {
+        print_wasm_debug_statement("Memory Location =", false);
+        wasm::emit_i32_const(m_code_section, m_al, mem_loc);
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_i32"])]->index);
+        print_wasm_debug_statement(", value=", false);
+        wasm::emit_i32_const(m_code_section, m_al, mem_loc);
+        wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0);
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_i32"])]->index);
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["flush_buf"])]->index);
+    }
+
+    void emit_array_address_onto_stack(const ASR::Variable_t* v) {
+        wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
+        wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0);
+        // currently it is the no_of_dimensions on top of stack
+
+        // apart from the no_of_dimensions
+        // 1 unit is occupied by the size/len value of dims
+        // and 1 unit is occupied by the total size/len of the array
+        // so add an offset of 2
+        wasm::emit_i32_const(m_code_section, m_al, 2);
+        wasm::emit_i32_add(m_code_section, m_al);
+
+        wasm::emit_i32_const(m_code_section, m_al, 4);
+        wasm::emit_i32_mul(m_code_section, m_al);
+
+        // (no_of_dims + 2) * 4 is the total amount of offset from array start
+        // so, now emit the array start location and add this offset
+        wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
+        wasm::emit_i32_add(m_code_section, m_al);
+    }
+
+    // dim_idx is zero-based
+    void emit_array_dim_onto_stack(const ASR::Variable_t* v, uint32_t dim_idx) {
+        wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
+        wasm::emit_i32_const(m_code_section, m_al, 4 /* size of i32 */ * (dim_idx + 1));
+        wasm::emit_i32_add(m_code_section, m_al);
+
+        wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0);
+    }
+
     void emit_array_item_address_onto_stack(const ASR::ArrayItem_t &x) {
-        this->visit_expr(*x.m_v);
-        ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_v);
-        uint32_t kind = ASRUtils::extract_kind_from_ttype_t(ttype);
-        Vec<uint32_t> array_dims;
-        get_array_dims(*ASRUtils::EXPR2VAR(x.m_v), array_dims);
-        uint32_t multiplier = 1;
+        auto v = ASRUtils::EXPR2VAR(x.m_v);
+        emit_array_address_onto_stack(v);
+
+        // store multiplier as 1 at the current available memory
+        int cur_avail_mem_loc = avail_mem_loc;
+        wasm::emit_i32_const(m_code_section, m_al, cur_avail_mem_loc);
+        wasm::emit_i32_const(m_code_section, m_al, 1);
+        wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0);
+        avail_mem_loc += 4 /* multiplier is of i32 so it takes 4 bytes */;
+
+        // print_mem_loc_value(cur_avail_mem_loc);
+
         wasm::emit_i32_const(m_code_section, m_al, 0);
         for(uint32_t i = 0; i < x.n_args; i++) {
             if (x.m_args[i].m_right) {
                 this->visit_expr(*x.m_args[i].m_right);
                 wasm::emit_i32_const(m_code_section, m_al, 1);
                 wasm::emit_i32_sub(m_code_section, m_al);
-                wasm::emit_i32_const(m_code_section, m_al, multiplier);
+
+                wasm::emit_i32_const(m_code_section, m_al, cur_avail_mem_loc);
+                wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0);
+
                 wasm::emit_i32_mul(m_code_section, m_al);
                 wasm::emit_i32_add(m_code_section, m_al);
-                multiplier *= array_dims[i];
+
+               {
+                    wasm::emit_i32_const(m_code_section, m_al, cur_avail_mem_loc);
+                    {
+                        wasm::emit_i32_const(m_code_section, m_al, cur_avail_mem_loc);
+                        wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0);
+
+                        emit_array_dim_onto_stack(v, i);
+
+                        wasm::emit_i32_mul(m_code_section, m_al);
+                    }
+                    wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0);
+               }
             } else {
                 diag.codegen_warning_label("/* FIXME right index */", {x.base.base.loc}, "");
             }
         }
+
+        ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_v);
+        uint32_t kind = ASRUtils::extract_kind_from_ttype_t(ttype);
         wasm::emit_i32_const(m_code_section, m_al, kind);
         wasm::emit_i32_mul(m_code_section, m_al);
         wasm::emit_i32_add(m_code_section, m_al);
@@ -1047,27 +1132,28 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             this->visit_expr(*x.m_value);
             return;
         }
-        Vec<uint32_t> array_dims;
-        get_array_dims(*ASRUtils::EXPR2VAR(x.m_v), array_dims);
-        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        auto v = ASRUtils::EXPR2VAR(x.m_v);
+
         if (x.m_dim) {
-            uint32_t dim_idx = -1;
+            wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
+
+            int dim_idx = -1;
             ASRUtils::extract_value(ASRUtils::expr_value(x.m_dim), dim_idx);
-            if (kind == 4) {
-                wasm::emit_i32_const(m_code_section, m_al, array_dims[dim_idx - 1]);
-            } else if (kind == 8) {
-                wasm::emit_i64_const(m_code_section, m_al, array_dims[dim_idx - 1]);
+            if (dim_idx == -1) {
+                throw CodeGenError("Dimension index not available");
             }
-            return;
+            emit_array_dim_onto_stack(v, dim_idx);
+        } else {
+            emit_array_address_onto_stack(v);
+            // emit_array_address_onto_stack() places location of first array element on stack
+            // The length of the array is one step back, so subtract 4 bytes
+            wasm::emit_i32_const(m_code_section, m_al, 4);
+            wasm::emit_i32_sub(m_code_section, m_al);
+            wasm::emit_i32_load(m_code_section, m_al, wasm::mem_align::b8, 0);
         }
-        uint32_t total_array_size = 1U;
-        for (auto &dim:array_dims) {
-            total_array_size *=  dim;
-        }
-        if (kind == 4) {
-            wasm::emit_i32_const(m_code_section, m_al, total_array_size);
-        } else if (kind == 8) {
-            wasm::emit_i64_const(m_code_section, m_al, total_array_size);
+
+        if (ASRUtils::extract_kind_from_ttype_t(x.m_type) == 8) {
+            wasm::emit_i64_extend_i32_s(m_code_section, m_al);
         }
     }
 
@@ -1145,9 +1231,43 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         no_of_data_segments++;
     }
 
+    template<typename T>
+    uint32_t emit_array_descriptor(const T& x) {
+
+
+        Vec<uint32_t> dims;
+        get_array_dims(x, dims);
+
+        wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
+        wasm::emit_i32_const(m_code_section, m_al, dims.size());
+        wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0);
+
+        avail_mem_loc += 4 /* size of i32 is 4 bytes */;
+
+        uint32_t total_no_of_elements = 1;
+        for  (size_t i = 0; i < dims.size(); i++) {
+            total_no_of_elements *= dims[i];
+
+            wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
+            wasm::emit_i32_const(m_code_section, m_al, dims[i]);
+            wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0);
+            avail_mem_loc += 4 /* size of i32 is 4 bytes */;
+        }
+
+        wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
+        wasm::emit_i32_const(m_code_section, m_al, total_no_of_elements);
+        wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0);
+        avail_mem_loc += 4 /* size of i32 is 4 bytes */;
+
+        return total_no_of_elements;
+    }
+
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
         // Todo: Add a check here if there is memory available to store the given string
         uint32_t cur_mem_loc = avail_mem_loc;
+
+        emit_array_descriptor(x);
+
         for (size_t i=0; i<x.n_args; i++) {
             // emit memory location to store array element
             wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
@@ -1589,10 +1709,11 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
 
     pass_unused_functions(al, asr, true);
     pass_replace_do_loops(al, asr);
-    pass_propagate_arr_dims(al, asr);
 
-    // std::cout << pickle(asr, true /* use colors */, true /* indent */,
-    //         true /* with_intrinsic_modules */) << std::endl;
+#ifdef SHOW_ASR
+    std::cout << pickle(asr, true /* use colors */, true /* indent */,
+            true /* with_intrinsic_modules */) << std::endl;
+#endif
     try {
         v.visit_asr((ASR::asr_t &)asr);
     } catch (const CodeGenError &e) {
