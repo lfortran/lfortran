@@ -137,8 +137,7 @@ R"(#include <stdio.h>
 
         // Process procedures first:
         for (auto &item : x.m_global_scope->get_scope()) {
-            if (ASR::is_a<ASR::Function_t>(*item.second)
-                || ASR::is_a<ASR::Subroutine_t>(*item.second)) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 self().visit_symbol(*item.second);
                 unit_src += src;
             }
@@ -179,11 +178,6 @@ R"(#include <stdio.h>
 
         // Generate the bodies of subroutines
         for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
-                ASR::Subroutine_t *s = ASR::down_cast<ASR::Subroutine_t>(item.second);
-                self().visit_Subroutine(*s);
-                contains += src;
-            }
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
                 self().visit_Function(*s);
@@ -198,11 +192,6 @@ R"(#include <stdio.h>
         // Generate code for nested subroutines and functions first:
         std::string contains;
         for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
-                ASR::Subroutine_t *s = ASR::down_cast<ASR::Subroutine_t>(item.second);
-                visit_Subroutine(*s);
-                contains += src;
-            }
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
                 visit_Function(*s);
@@ -234,38 +223,6 @@ R"(#include <stdio.h>
                 + decl + body
                 + indent1 + "return 0;\n}\n";
         indentation_level -= 2;
-    }
-
-    // Returns the declaration, no semi colon at the end
-    std::string get_subroutine_declaration(const ASR::Subroutine_t &x) {
-        template_for_Kokkos.clear();
-        template_number = 0;
-        std::string sym_name = x.m_name;
-        if (sym_name == "main") {
-            sym_name = "_xx_lcompilers_changed_main_xx";
-        }
-        if (sym_name == "exit") {
-            sym_name = "_xx_lcompilers_changed_exit_xx";
-        }
-        std::string func = "void " + sym_name + "(";
-        for (size_t i=0; i<x.n_args; i++) {
-            ASR::Variable_t *arg = LFortran::ASRUtils::EXPR2VAR(x.m_args[i]);
-            LFORTRAN_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent));
-            if( is_c ) {
-                func += self().convert_variable_decl(*arg, false);
-            } else {
-                func += self().convert_variable_decl(*arg, false, true);
-            }
-            if (i < x.n_args-1) func += ", ";
-        }
-        func += ")";
-        if( is_c || template_for_Kokkos.empty() ) {
-            return func;
-        }
-
-        template_for_Kokkos.pop_back();
-        template_for_Kokkos.pop_back();
-        return "\ntemplate <" + template_for_Kokkos + ">\n" + func;
     }
 
     // Returns the declaration, no semi colon at the end
@@ -347,62 +304,12 @@ R"(#include <stdio.h>
     std::string declare_all_functions(const SymbolTable &scope) {
         std::string code;
         for (auto &item : scope.get_scope()) {
-            if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
-                ASR::Subroutine_t *s = ASR::down_cast<ASR::Subroutine_t>(item.second);
-                code += get_subroutine_declaration(*s) + ";\n";
-            }
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
                 code += get_function_declaration(*s) + ";\n";
             }
         }
         return code;
-    }
-
-    void visit_Subroutine(const ASR::Subroutine_t &x) {
-        indentation_level += 1;
-        std::string sub = get_subroutine_declaration(x);
-        if (x.m_abi == ASR::abiType::BindC
-                && x.m_deftype == ASR::deftypeType::Interface) {
-            sub += ";\n";
-        } else {
-            sub += "\n";
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
-                    if (v->m_intent == LFortran::ASRUtils::intent_local) {
-                        SymbolInfo s;
-                        s.needs_declaration = true;
-                        sym_info[get_hash((ASR::asr_t*)v)] = s;
-                    }
-                }
-            }
-
-            std::string body;
-            for (size_t i=0; i<x.n_body; i++) {
-                self().visit_stmt(*x.m_body[i]);
-                body += src;
-            }
-
-            std::string decl;
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
-                    if (v->m_intent == LFortran::ASRUtils::intent_local) {
-                        if (sym_info[get_hash((ASR::asr_t*) v)].needs_declaration) {
-                            std::string indent(indentation_level*indentation_spaces, ' ');
-                            decl += indent;
-                            decl += self().convert_variable_decl(*v) + ";\n";
-                        }
-                    }
-                }
-            }
-
-            sub += "{\n" + decl + body + "}\n";
-        }
-        sub += "\n";
-        src = sub;
-        indentation_level -= 1;
     }
 
     void visit_Function(const ASR::Function_t &x) {
@@ -1180,7 +1087,7 @@ R"(#include <stdio.h>
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
-        ASR::Subroutine_t *s = ASR::down_cast<ASR::Subroutine_t>(
+        ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
             LFortran::ASRUtils::symbol_get_past_external(x.m_name));
         // TODO: use a mapping with a hash(s) instead:
         std::string sym_name = s->m_name;
