@@ -118,8 +118,9 @@ void pass_wrap_global_stmts_into_function(Allocator &al,
                 /* n_body */ body.size(),
                 /* a_return_var */ return_var_ref,
                 ASR::abiType::BindC,
-                ASR::Public, ASR::Implementation, false,
-                nullptr);
+                ASR::Public, ASR::Implementation,
+                nullptr,
+                false, false, false);
             std::string sym_name = fn_name;
             if (unit.m_global_scope->get_symbol(sym_name) != nullptr) {
                 throw LCompilersException("Function already defined");
