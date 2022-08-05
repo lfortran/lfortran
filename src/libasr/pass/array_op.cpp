@@ -147,15 +147,17 @@ public:
         for (auto &item : x.m_global_scope->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
-                /*
-                * A function which returns an array will be converted
-                * to a subroutine with the destination array as the last
-                * argument. This helps in avoiding deep copies and the
-                * destination memory directly gets filled inside the subroutine.
-                */
-                if( PassUtils::is_array(s->m_return_var) ) {
-                    ASR::symbol_t* s_sub = create_subroutine_from_function(s);
-                    replace_vec.push_back(std::make_pair(item.first, s_sub));
+                if (s->m_return_var) {
+                    /*
+                    * A function which returns an array will be converted
+                    * to a subroutine with the destination array as the last
+                    * argument. This helps in avoiding deep copies and the
+                    * destination memory directly gets filled inside the subroutine.
+                    */
+                    if( PassUtils::is_array(s->m_return_var) ) {
+                        ASR::symbol_t* s_sub = create_subroutine_from_function(s);
+                        replace_vec.push_back(std::make_pair(item.first, s_sub));
+                    }
                 }
             }
         }
