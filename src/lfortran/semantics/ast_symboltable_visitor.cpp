@@ -575,6 +575,7 @@ public:
             /* a_name */ s2c(al, to_lower(sym_name)),
             /* a_args */ args.p,
             /* n_args */ args.size(),
+            nullptr, 0,
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ LFortran::ASRUtils::EXPR(return_var_ref),
