@@ -253,7 +253,9 @@ public:
         for (size_t i=0; i<x.n_body; i++) {
             visit_stmt(*x.m_body[i]);
         }
-        visit_expr(*x.m_return_var);
+        if (x.m_return_var) {
+            visit_expr(*x.m_return_var);
+        }
         current_symtab = parent_symtab;
     }
 
