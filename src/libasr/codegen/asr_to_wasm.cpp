@@ -1052,19 +1052,28 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         this->visit_expr(*x.m_v);
         ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_v);
         uint32_t kind = ASRUtils::extract_kind_from_ttype_t(ttype);
-        Vec<uint32_t> array_dims;
-        get_array_dims(*ASRUtils::EXPR2VAR(x.m_v), array_dims);
-        uint32_t multiplier = 1;
-        wasm::emit_i32_const(m_code_section, m_al, 0);
-        for(uint32_t i = 0; i < x.n_args; i++) {
+        ASR::dimension_t* m_dims;
+        ASRUtils::extract_dimensions_from_ttype(ttype, m_dims);
+        if (x.m_args[0].m_right) {
+            this->visit_expr(*x.m_args[0].m_right);
+            wasm::emit_i32_const(m_code_section, m_al, 1);
+            wasm::emit_i32_sub(m_code_section, m_al);
+        } else {
+            diag.codegen_warning_label("/* FIXME right index */", {x.base.base.loc}, "");
+        }
+
+        for(uint32_t i = 1; i < x.n_args; i++) {
             if (x.m_args[i].m_right) {
                 this->visit_expr(*x.m_args[i].m_right);
                 wasm::emit_i32_const(m_code_section, m_al, 1);
                 wasm::emit_i32_sub(m_code_section, m_al);
-                wasm::emit_i32_const(m_code_section, m_al, multiplier);
-                wasm::emit_i32_mul(m_code_section, m_al);
+
+                for (int j = i - 1; j >= 0; j--) {
+                    this->visit_expr(*m_dims[j].m_length);
+                    wasm::emit_i32_mul(m_code_section, m_al);
+                }
+
                 wasm::emit_i32_add(m_code_section, m_al);
-                multiplier *= array_dims[i];
             } else {
                 diag.codegen_warning_label("/* FIXME right index */", {x.base.base.loc}, "");
             }
@@ -1084,27 +1093,32 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             this->visit_expr(*x.m_value);
             return;
         }
-        Vec<uint32_t> array_dims;
-        get_array_dims(*ASRUtils::EXPR2VAR(x.m_v), array_dims);
-        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        ASR::dimension_t* m_dims;
+        int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_v), m_dims);
         if (x.m_dim) {
-            uint32_t dim_idx = -1;
+            int dim_idx = -1;
             ASRUtils::extract_value(ASRUtils::expr_value(x.m_dim), dim_idx);
-            if (kind == 4) {
-                wasm::emit_i32_const(m_code_section, m_al, array_dims[dim_idx - 1]);
-            } else if (kind == 8) {
-                wasm::emit_i64_const(m_code_section, m_al, array_dims[dim_idx - 1]);
+            if (dim_idx == -1) {
+                throw CodeGenError("Dimension index not available");
             }
-            return;
+            if (!m_dims[dim_idx - 1].m_length) {
+                throw CodeGenError("Dimension length for index " + std::to_string(dim_idx) + " does not exist");
+            }
+            this->visit_expr(*(m_dims[dim_idx - 1].m_length));
+        } else {
+            if (!m_dims[0].m_length) {
+                throw CodeGenError("Dimension length for index 0 does not exist");
+            }
+            this->visit_expr(*(m_dims[0].m_length));
+            for (int i = 1; i < n_dims; i++) {
+                this->visit_expr(*m_dims[i].m_length);
+                wasm::emit_i32_mul(m_code_section, m_al);
+            }
         }
-        uint32_t total_array_size = 1U;
-        for (auto &dim:array_dims) {
-            total_array_size *=  dim;
-        }
-        if (kind == 4) {
-            wasm::emit_i32_const(m_code_section, m_al, total_array_size);
-        } else if (kind == 8) {
-            wasm::emit_i64_const(m_code_section, m_al, total_array_size);
+
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        if (kind == 8) {
+            wasm::emit_i64_extend_i32_s(m_code_section, m_al);
         }
     }
 
