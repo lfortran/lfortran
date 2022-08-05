@@ -230,51 +230,55 @@ R"(#include <stdio.h>
         template_for_Kokkos.clear();
         template_number = 0;
         std::string sub;
-        ASR::Variable_t *return_var = LFortran::ASRUtils::EXPR2VAR(x.m_return_var);
-        if (ASRUtils::is_integer(*return_var->m_type)) {
-            int kind = ASR::down_cast<ASR::Integer_t>(return_var->m_type)->m_kind;
-            switch (kind) {
-                case (1) : sub = "int8_t "; break;
-                case (2) : sub = "int16_t "; break;
-                case (4) : sub = "int32_t "; break;
-                case (8) : sub = "int64_t "; break;
-            }
-        } else if (ASRUtils::is_real(*return_var->m_type)) {
-            bool is_float = ASR::down_cast<ASR::Real_t>(return_var->m_type)->m_kind == 4;
-            if (is_float) {
-                sub = "float ";
-            } else {
-                sub = "double ";
-            }
-        } else if (ASRUtils::is_logical(*return_var->m_type)) {
-            sub = "bool ";
-        } else if (ASRUtils::is_character(*return_var->m_type)) {
-            if (gen_stdstring) {
-                sub = "std::string ";
-            } else {
-                sub = "char* ";
-            }
-        } else if (ASRUtils::is_complex(*return_var->m_type)) {
-            bool is_float = ASR::down_cast<ASR::Complex_t>(return_var->m_type)->m_kind == 4;
-            if (is_float) {
-                if (gen_stdcomplex) {
-                    sub = "std::complex<float> ";
-                } else {
-                    sub = "float complex ";
+        if (x.m_return_var) {
+            ASR::Variable_t *return_var = LFortran::ASRUtils::EXPR2VAR(x.m_return_var);
+            if (ASRUtils::is_integer(*return_var->m_type)) {
+                int kind = ASR::down_cast<ASR::Integer_t>(return_var->m_type)->m_kind;
+                switch (kind) {
+                    case (1) : sub = "int8_t "; break;
+                    case (2) : sub = "int16_t "; break;
+                    case (4) : sub = "int32_t "; break;
+                    case (8) : sub = "int64_t "; break;
                 }
-            } else {
-                if (gen_stdcomplex) {
-                    sub = "std::complex<double> ";
+            } else if (ASRUtils::is_real(*return_var->m_type)) {
+                bool is_float = ASR::down_cast<ASR::Real_t>(return_var->m_type)->m_kind == 4;
+                if (is_float) {
+                    sub = "float ";
                 } else {
-                    sub = "double complex ";
+                    sub = "double ";
                 }
+            } else if (ASRUtils::is_logical(*return_var->m_type)) {
+                sub = "bool ";
+            } else if (ASRUtils::is_character(*return_var->m_type)) {
+                if (gen_stdstring) {
+                    sub = "std::string ";
+                } else {
+                    sub = "char* ";
+                }
+            } else if (ASRUtils::is_complex(*return_var->m_type)) {
+                bool is_float = ASR::down_cast<ASR::Complex_t>(return_var->m_type)->m_kind == 4;
+                if (is_float) {
+                    if (gen_stdcomplex) {
+                        sub = "std::complex<float> ";
+                    } else {
+                        sub = "float complex ";
+                    }
+                } else {
+                    if (gen_stdcomplex) {
+                        sub = "std::complex<double> ";
+                    } else {
+                        sub = "double complex ";
+                    }
+                }
+            } else if (ASR::is_a<ASR::CPtr_t>(*return_var->m_type)) {
+                sub = "void* ";
+            } else {
+                throw CodeGenError("Return type not supported in function '" +
+                    std::string(x.m_name) +
+                    + "'", return_var->base.base.loc);
             }
-        } else if (ASR::is_a<ASR::CPtr_t>(*return_var->m_type)) {
-            sub = "void* ";
         } else {
-            throw CodeGenError("Return type not supported in function '" +
-                std::string(x.m_name) +
-                + "'", return_var->base.base.loc);
+            sub = "void ";
         }
         std::string sym_name = x.m_name;
         if (sym_name == "main") {
@@ -371,7 +375,7 @@ R"(#include <stdio.h>
                 visited_return = true;
             }
 
-            if(!visited_return) {
+            if (!visited_return && x.m_return_var) {
                 body += indent + "return "
                     + LFortran::ASRUtils::EXPR2VAR(x.m_return_var)->m_name
                     + ";\n";
