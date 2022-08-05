@@ -408,20 +408,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)v)) != m_var_name_idx_map.end())
                         wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
                     } else if (ASRUtils::is_array(v->m_type)) {
-                        uint32_t kind = ASRUtils::extract_kind_from_ttype_t(v->m_type);
-
-                        Vec<uint32_t> array_dims;
-                        get_array_dims(*v, array_dims);
-
-                        uint32_t total_array_size = 1;
-                        for (auto &dim:array_dims) {
-                            total_array_size *=  dim;
-                        }
-
                         LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)v)) != m_var_name_idx_map.end());
                         wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
                         wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)v)]);
-                        avail_mem_loc += kind * total_array_size;
+
+                        uint32_t total_no_of_elements = emit_array_descriptor(*v);
+                        uint32_t kind = ASRUtils::extract_kind_from_ttype_t(v->m_type);
+                        avail_mem_loc += kind * total_no_of_elements;
                     }
                 }
             }
@@ -1149,9 +1142,43 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         no_of_data_segments++;
     }
 
+    template<typename T>
+    uint32_t emit_array_descriptor(const T& x) {
+
+
+        Vec<uint32_t> dims;
+        get_array_dims(x, dims);
+
+        wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
+        wasm::emit_i32_const(m_code_section, m_al, dims.size());
+        wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0);
+
+        avail_mem_loc += 4 /* size of i32 is 4 bytes */;
+
+        uint32_t total_no_of_elements = 1;
+        for  (size_t i = 0; i < dims.size(); i++) {
+            total_no_of_elements *= dims[i];
+
+            wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
+            wasm::emit_i32_const(m_code_section, m_al, dims[i]);
+            wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0);
+            avail_mem_loc += 4 /* size of i32 is 4 bytes */;
+        }
+
+        wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
+        wasm::emit_i32_const(m_code_section, m_al, total_no_of_elements);
+        wasm::emit_i32_store(m_code_section, m_al, wasm::mem_align::b8, 0);
+        avail_mem_loc += 4 /* size of i32 is 4 bytes */;
+
+        return total_no_of_elements;
+    }
+
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
         // Todo: Add a check here if there is memory available to store the given string
         uint32_t cur_mem_loc = avail_mem_loc;
+
+        emit_array_descriptor(x);
+
         for (size_t i=0; i<x.n_args; i++) {
             // emit memory location to store array element
             wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
