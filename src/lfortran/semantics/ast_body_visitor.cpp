@@ -883,10 +883,11 @@ public:
     ASR::stmt_t* create_implicit_deallocate_subrout_call(ASR::stmt_t* x) {
         ASR::SubroutineCall_t* subrout_call = ASR::down_cast<ASR::SubroutineCall_t>(x);
         const ASR::symbol_t* subrout_sym = LFortran::ASRUtils::symbol_get_past_external(subrout_call->m_name);
-        if( subrout_sym->type != ASR::symbolType::Subroutine ) {
+        if( ! ASR::is_a<ASR::Function_t>(*subrout_sym)
+            || ASR::down_cast<ASR::Function_t>(subrout_sym)->m_return_var != nullptr ) {
             return nullptr;
         }
-        ASR::Subroutine_t* subrout = ASR::down_cast<ASR::Subroutine_t>(subrout_sym);
+        ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
         Vec<ASR::symbol_t*> del_syms;
         del_syms.reserve(al, 1);
         for( size_t i = 0; i < subrout_call->n_args; i++ ) {
@@ -924,7 +925,7 @@ public:
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->get_symbol(subrout_name);
         }
-        ASR::Subroutine_t *v = ASR::down_cast<ASR::Subroutine_t>(t);
+        ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
@@ -1079,8 +1080,8 @@ public:
             original_sym = resolve_intrinsic_function(x.base.base.loc, sub_name);
         }
         ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(original_sym);
-        if (ASR::is_a<ASR::Subroutine_t>(*sym)) {
-            ASR::Subroutine_t *f = ASR::down_cast<ASR::Subroutine_t>(sym);
+        if (ASR::is_a<ASR::Function_t>(*sym)) {
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
             if (ASRUtils::is_intrinsic_procedure(f)) {
                 if (intrinsic_module_procedures_as_asr_nodes.find(sub_name) !=
                     intrinsic_module_procedures_as_asr_nodes.end()) {
@@ -1097,8 +1098,8 @@ public:
         visit_expr_list(x.m_args, x.n_args, args);
         if (x.n_keywords > 0) {
             ASR::symbol_t* f2 = LFortran::ASRUtils::symbol_get_past_external(original_sym);
-            if (ASR::is_a<ASR::Subroutine_t>(*f2)) {
-                ASR::Subroutine_t *f = ASR::down_cast<ASR::Subroutine_t>(f2);
+            if (ASR::is_a<ASR::Function_t>(*f2)) {
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
                 diag::Diagnostics diags;
                 visit_kwargs(args, x.m_keywords, x.n_keywords,
                     f->m_args, f->n_args, x.base.base.loc, f,
@@ -1109,10 +1110,10 @@ public:
             } else if (ASR::is_a<ASR::ClassProcedure_t>(*f2)) {
                 ASR::ClassProcedure_t* f3 = ASR::down_cast<ASR::ClassProcedure_t>(f2);
                 ASR::symbol_t* f4 = f3->m_proc;
-                if( !ASR::is_a<ASR::Subroutine_t>(*f4) ) {
+                if( !ASR::is_a<ASR::Function_t>(*f4) ) {
                     throw SemanticError(std::string(f3->m_proc_name) + " is not a subroutine.", x.base.base.loc);
                 }
-                ASR::Subroutine_t *f = ASR::down_cast<ASR::Subroutine_t>(f4);
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f4);
                 diag::Diagnostics diags;
                 visit_kwargs(args, x.m_keywords, x.n_keywords,
                     f->m_args, f->n_args, x.base.base.loc, f,
@@ -1138,7 +1139,7 @@ public:
         }
         ASR::symbol_t *final_sym=nullptr;
         switch (original_sym->type) {
-            case (ASR::symbolType::Subroutine) : {
+            case (ASR::symbolType::Function) : {
                 final_sym=original_sym;
                 original_sym = nullptr;
                 break;
@@ -1175,7 +1176,7 @@ public:
                     // FIXME
                     // Create ExternalSymbol for the final subroutine here
                     final_sym = g->m_procs[idx];
-                    if (!ASR::is_a<ASR::Subroutine_t>(*final_sym)) {
+                    if (!ASR::is_a<ASR::Function_t>(*final_sym)) {
                         throw SemanticError("ExternalSymbol must point to a Subroutine", x.base.base.loc);
                     }
                     // We mangle the new ExternalSymbol's local name as:
@@ -1202,7 +1203,7 @@ public:
                         final_sym = current_scope->get_symbol(local_sym);
                     }
                 } else {
-                    if (!ASR::is_a<ASR::Subroutine_t>(*final_sym)) {
+                    if (!ASR::is_a<ASR::Function_t>(*final_sym)) {
                         throw SemanticError("ExternalSymbol must point to a Subroutine", x.base.base.loc);
                     }
                     final_sym=original_sym;
