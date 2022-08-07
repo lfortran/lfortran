@@ -186,7 +186,7 @@ endif()
 # XEUS (Fortran kernel)
 set(WITH_XEUS no CACHE BOOL "Build with XEUS support")
 if (WITH_XEUS)
-    find_package(xeus 0.24.1 REQUIRED)
+    find_package(xeus 2.4.1 REQUIRED)
     set(HAVE_LFORTRAN_XEUS yes)
 
     # Generate kernel.json with correct paths

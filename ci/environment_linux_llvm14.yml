@@ -6,7 +6,7 @@ dependencies:
   - toml
   - pytest
   - jupyter
-  - xeus=1.0.1
+  - xeus >=2,<3
   - xtl
   - nlohmann_json
   - cppzmq
