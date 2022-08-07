@@ -255,7 +255,8 @@ std::string WASMDecoder::get_wat() {
             result += "(func (;" + std::to_string(i) + ";) (type " + std::to_string(imports[i].type_idx) + ")))";
         }
         else if(imports[i].kind == 0x02){
-            result += "(memory (;0;) " + std::to_string(imports[i].mem_page_size_limits.first) + "))";
+            result += "(memory (;0;) " + std::to_string(imports[i].mem_page_size_limits.first) + " "
+                                       + std::to_string(imports[i].mem_page_size_limits.second) + "))";
         }
     }
 
