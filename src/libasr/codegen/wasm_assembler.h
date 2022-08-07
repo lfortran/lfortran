@@ -178,17 +178,17 @@ void emit_import_fn(Vec<uint8_t> &code, Allocator &al, const std::string &mod_na
 }
 
 void emit_import_mem(Vec<uint8_t> &code, Allocator &al, const std::string &mod_name,
-                 const std::string& mem_name, uint32_t min_limit, uint32_t max_limit = 0) {
+                 const std::string& mem_name, uint32_t min_no_pages, uint32_t max_no_pages = 0) {
     emit_str(code, al, mod_name);
     emit_str(code, al, mem_name);
     emit_b8(code, al, 0x02); // for importing memory
-    if (max_limit) {
+    if (max_no_pages) {
         emit_b8(code, al, 0x01); // for specifying min and max page limits of memory
-        emit_u32(code, al, min_limit);
-        emit_u32(code, al, max_limit);
+        emit_u32(code, al, min_no_pages);
+        emit_u32(code, al, max_no_pages);
     } else {
         emit_b8(code, al, 0x00); // for specifying only min page limit of memory
-        emit_u32(code, al, min_limit);
+        emit_u32(code, al, min_no_pages);
     }
 }
 
