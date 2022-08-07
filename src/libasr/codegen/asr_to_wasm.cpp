@@ -103,6 +103,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     uint32_t last_str_len;
     uint32_t avail_mem_loc;
 
+    uint32_t min_no_pages;
+    uint32_t max_no_pages;
+
     std::map<uint64_t, uint32_t> m_var_name_idx_map;
     std::map<uint64_t, SymbolInfo *> m_func_name_idx_map;
     std::map<std::string, ASR::asr_t *> m_import_func_asr_map;
@@ -117,6 +120,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         no_of_functions = 0;
         no_of_imports = 0;
         no_of_data_segments = 0;
+
+        min_no_pages = 10;
+        max_no_pages = 100;
+
         m_type_section.reserve(m_al, 1024 * 128);
         m_import_section.reserve(m_al, 1024 * 128);
         m_func_section.reserve(m_al, 1024 * 128);
@@ -185,7 +192,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             no_of_imports++;
         }
 
-        wasm::emit_import_mem(m_import_section, m_al, "js", "memory", 10U /* min page limit */, 100U /* max page limit */);
+        wasm::emit_import_mem(m_import_section, m_al, "js", "memory", min_no_pages, max_no_pages);
         no_of_imports++;
     }
 
