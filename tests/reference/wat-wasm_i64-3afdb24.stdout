@@ -15,7 +15,7 @@
     (import "js" "print_f64" (func (;3;) (type 3)))
     (import "js" "print_str" (func (;4;) (type 4)))
     (import "js" "flush_buf" (func (;5;) (type 5)))
-    (import "js" "memory" (memory (;0;) 10))
+    (import "js" "memory" (memory (;0;) 10 100))
     (func $6 (type 6) (param i64) (result i64)
         (local i64)
         local.get 0
