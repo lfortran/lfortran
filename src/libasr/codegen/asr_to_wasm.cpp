@@ -185,7 +185,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             no_of_imports++;
         }
 
-        wasm::emit_import_mem(m_import_section, m_al, "js", "memory", 10U /* min page limit */, 10U /* max page limit */);
+        wasm::emit_import_mem(m_import_section, m_al, "js", "memory", 10U /* min page limit */, 100U /* max page limit */);
         no_of_imports++;
     }
 
