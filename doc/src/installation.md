@@ -112,7 +112,7 @@ In the shell, initialize the MSVC compiler using:
 
 ```
 call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd" -arch=x64
-````
+```
 
 You can optionally test that MSVC works by:
 ```
