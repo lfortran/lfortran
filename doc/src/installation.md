@@ -133,10 +133,14 @@ build1.bat
 
 If everything compiled, then you can use LFortran as follows:
 ```
-src\bin\lfortran -h
-src\bin\lfortran
+inst\bin\lfortran -h
+inst\bin\lfortran
 ```
 And so on.
+
+Note: LFortran currently uses the MSVC's linker program (`link`), which is only
+available when the MSVC bat script above is ran. If you forget to activate it,
+LFortran's linking will fail.
 
 Note: the miniforge shell seems to be running some version of `git-bash`
 (although it is `cmd.exe`), which has some unix-like filesystem mounted in
