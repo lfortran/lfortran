@@ -108,7 +108,7 @@ First, clone the repo to a local folder.
 Launch a Conda command interpreter and run the following commands:
 ```bash
 conda update -q conda
-conda install -c conda-forge python=3.7 re2c m2-bison xonsh llvmdev=11.1.0 jupyter xeus xtl nlohmann_json cppzmq jupyter_kernel_test pytest
+conda install -c conda-forge python=3.7 re2c m2-bison xonsh llvmdev=11.1.0 jupyter xeus=2.4.1 xtl nlohmann_json cppzmq jupyter_kernel_test pytest
 ```
 Next, `cd` to the root of the repository and run
 ```bash
