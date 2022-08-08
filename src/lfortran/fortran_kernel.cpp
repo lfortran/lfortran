@@ -14,11 +14,17 @@
 #    include <unistd.h>
 #endif
 
+#include <emscripten/val.h>
+#include <emscripten/bind.h>
+namespace em = emscripten;
+
 #include <xeus/xinterpreter.hpp>
 #include <xeus/xkernel.hpp>
 #include <xeus/xkernel_configuration.hpp>
-#include <xeus/xserver_zmq.hpp>
-#include "xeus/xserver_shell_main.hpp"
+#if !HAVE_BUILD_TO_WASM
+    #include <xeus/xserver_zmq.hpp>
+#include <xeus/xserver_shell_main.hpp>
+#endif
 
 #include <nlohmann/json.hpp>
 
@@ -34,6 +40,14 @@ namespace nl = nlohmann;
 
 namespace LFortran
 {
+    // "transport" binary buffers from C++ to JS
+    ems::val to_js(const Vec<uint8_t>& mem, bool copy)
+    {
+        ems::val js_buffer_array = ems::val::array();
+        ems::val mem_view = ems::val(ems::typed_memory_view(mem.n, mem.p));
+        return mem_view;
+    }
+
     class RedirectStdout
     {
     public:
@@ -42,6 +56,9 @@ namespace LFortran
             std::cout << std::flush;
             fflush(stdout);
             saved_stdout = dup(stdout_fileno);
+            auto& ip = xeus::get_interpreter();
+            ip.publish_stream("stdout", out);
+
 #ifdef _WIN32
             if (_pipe(out_pipe, 65536, O_BINARY) != 0) {
 #else
@@ -133,8 +150,7 @@ namespace LFortran
                 lpm.use_default_passes();
                 lpm.do_not_use_optimization_passes();
                 diag::Diagnostics diagnostics;
-                Result<std::string>
-                res = e.get_llvm(code0, lm, lpm, diagnostics);
+                Result<std::string> res = e.get_llvm(code0, lm, lpm, diagnostics);
                 nl::json result;
                 if (res.ok) {
                     publish_stream("stdout", res.result);
@@ -228,10 +244,26 @@ namespace LFortran
             lpm.use_default_passes();
             lpm.do_not_use_optimization_passes();
             diag::Diagnostics diagnostics;
-            Result<FortranEvaluator::EvalResult>
-            res = e.evaluate(code0, false, lm, lpm, diagnostics);
-            if (res.ok) {
-                r = res.result;
+            // Result<FortranEvaluator::EvalResult> res;
+
+            Result<Vec<uint8_t>> wasm_res = e.get_wasm(code0, lm, diagnostics);
+
+            int emres_int = -1;
+            if (wasm_res.ok)
+            {
+                em::val wasm_buffer = to_js(wasm_res.result, false);
+                auto func = em::val::module_property("executeWasm");
+                em::val emres = func(wasm_buffer);
+                emres_int = emres.as<int>();
+            }
+
+            if (emres_int == 0) {
+                // short circuit for now
+                nl::json result;
+                result["status"] = "ok";
+                result["payload"] = nl::json::array();
+                result["user_expressions"] = nl::json::object();
+                return result;
             } else {
                 std::string msg = diagnostics.render(code0, lm, cu);
                 publish_stream("stderr", msg);
@@ -403,6 +435,7 @@ namespace LFortran
         std::cout << "Bye!!" << std::endl;
     }
 
+#if !HAVE_BUILD_TO_WASM
     int run_kernel(const std::string &connection_filename)
     {
         using context_type = xeus::xcontext_impl<zmq::context_t>;
@@ -443,4 +476,5 @@ namespace LFortran
 
         return 0;
     }
+#endif
 }

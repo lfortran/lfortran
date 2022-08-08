@@ -1545,7 +1545,7 @@ int main(int argc, char *argv[])
         }
 
         if (kernel) {
-#ifdef HAVE_LFORTRAN_XEUS
+#if defined(HAVE_LFORTRAN_XEUS) && !HAVE_BUILD_TO_WASM
             return LFortran::run_kernel(arg_kernel_f);
 #else
             std::cerr << "The kernel subcommand requires LFortran to be compiled with XEUS support. Recompile with `WITH_XEUS=yes`." << std::endl;

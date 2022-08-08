@@ -13,12 +13,29 @@
 
 #include <emscripten/bind.h>
 
-#include "fortran_kernel.h"
-#include "xeus/xembind.hpp"
+#include <lfortran/fortran_kernel.h>
+#include <xeus/xembind.hpp>
 
+#include "fortran_kernel.cpp"
 
-EMSCRIPTEN_BINDINGS(lfortran) {
+namespace LFortran
+{
+    class FortranWASMEvaluator {
+
+    };
+}
+
+void stdout_redirector(const std::string& msg)
+{
+    auto& intp = xeus::get_interpreter();
+    intp.publish_stream("stdout", msg);
+}
+
+EMSCRIPTEN_BINDINGS(my_module) {
     xeus::export_core();
-    using interpreter_type = LFortran::custom_interpreter;
+
+    em::function("stdout_redirector", &stdout_redirector);
+
+    using interpreter_type = LFortran::custom_interpreter<LFortran::FortranEvaluator>;
     xeus::export_kernel<interpreter_type>("xkernel");
 }

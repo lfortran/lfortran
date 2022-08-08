@@ -16,7 +16,9 @@ namespace LFortran {
         fortran_evaluator e;
 
     public:
-        custom_interpreter() : e{CompilerOptions()} {}
+        custom_interpreter() : e{CompilerOptions()} {
+            xeus::register_interpreter(this);
+        }
         virtual ~custom_interpreter() = default;
 
     private:
@@ -44,7 +46,7 @@ namespace LFortran {
         void shutdown_request_impl() override;
     };
 
-#ifdef HAVE_LFORTRAN_XEUS
+#if defined(HAVE_LFORTRAN_XEUS) && !HAVE_BUILD_TO_WASM
     int run_kernel(const std::string &connection_filename);
 #endif
 

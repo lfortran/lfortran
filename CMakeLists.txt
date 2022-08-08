@@ -187,8 +187,13 @@ endif()
 
 # XEUS (Fortran kernel)
 set(WITH_XEUS no CACHE BOOL "Build with XEUS support")
+include_directories("$ENV{CONDA_PREFIX}/include")
 if (WITH_XEUS)
-    find_package(xeus 2.4.1 REQUIRED)
+    # set(CMAKE_FIND_ROOT_PATH BOTH)
+    # set(CMAKE_FIND_USE_CMAKE_PATH ON)
+    # set (CMAKE_FIND_DEBUG_MODE ON)
+    # find_package(xeus REQUIRED)
+    set (CMAKE_FIND_DEBUG_MODE OFF)
     set(HAVE_LFORTRAN_XEUS yes)
 
     # Generate kernel.json with correct paths
