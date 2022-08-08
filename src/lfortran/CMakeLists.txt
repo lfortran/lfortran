@@ -28,9 +28,15 @@ if (WITH_WHEREAMI)
 endif()
 
 if (WITH_XEUS)
-    set(SRC ${SRC}
-        fortran_kernel.cpp
-    )
+    if (HAVE_BUILD_TO_WASM)
+        set(SRC ${SRC}
+            fortran_wasm_kernel.cpp
+        )
+    else()
+        set(SRC ${SRC}
+            fortran_kernel.cpp
+        )
+    endif()
 endif()
 if (WITH_JSON)
     set(SRC ${SRC}

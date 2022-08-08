@@ -34,8 +34,6 @@ namespace nl = nlohmann;
 
 namespace LFortran
 {
-
-
     class RedirectStdout
     {
     public:
@@ -71,7 +69,8 @@ namespace LFortran
         int stdout_fileno;
     };
 
-    nl::json custom_interpreter::execute_request_impl(int execution_counter, // Typically the cell number
+    template <class E>
+    nl::json custom_interpreter<E>::execute_request_impl(int execution_counter, // Typically the cell number
                                                       const std::string& code, // Code to execute
                                                       bool /*silent*/,
                                                       bool /*store_history*/,
@@ -258,46 +257,46 @@ namespace LFortran
         }
 
         switch (r.type) {
-            case (LFortran::FortranEvaluator::EvalResult::integer4) : {
+            case (FortranEvaluator::EvalResult::integer4) : {
                 nl::json pub_data;
                 pub_data["text/plain"] = std::to_string(r.i32);
                 publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
                 break;
             }
-            case (LFortran::FortranEvaluator::EvalResult::integer8) : {
+            case (FortranEvaluator::EvalResult::integer8) : {
                 nl::json pub_data;
                 pub_data["text/plain"] = std::to_string(r.i64);
                 publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
                 break;
             }
-            case (LFortran::FortranEvaluator::EvalResult::real4) : {
+            case (FortranEvaluator::EvalResult::real4) : {
                 nl::json pub_data;
                 pub_data["text/plain"] = std::to_string(r.f32);
                 publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
                 break;
             }
-            case (LFortran::FortranEvaluator::EvalResult::real8) : {
+            case (FortranEvaluator::EvalResult::real8) : {
                 nl::json pub_data;
                 pub_data["text/plain"] = std::to_string(r.f64);
                 publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
                 break;
             }
-            case (LFortran::FortranEvaluator::EvalResult::complex4) : {
+            case (FortranEvaluator::EvalResult::complex4) : {
                 nl::json pub_data;
                 pub_data["text/plain"] = "(" + std::to_string(r.c32.re) + ", " + std::to_string(r.c32.im) + ")";
                 publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
                 break;
             }
-            case (LFortran::FortranEvaluator::EvalResult::complex8) : {
+            case (FortranEvaluator::EvalResult::complex8) : {
                 nl::json pub_data;
                 pub_data["text/plain"] = "(" + std::to_string(r.c64.re) + ", " + std::to_string(r.c64.im) + ")";
                 publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
                 break;
             }
-            case (LFortran::FortranEvaluator::EvalResult::statement) : {
+            case (FortranEvaluator::EvalResult::statement) : {
                 break;
             }
-            case (LFortran::FortranEvaluator::EvalResult::none) : {
+            case (FortranEvaluator::EvalResult::none) : {
                 break;
             }
             default : throw LCompilersException("Return type not supported");
@@ -310,12 +309,14 @@ namespace LFortran
         return result;
     }
 
-    void custom_interpreter::configure_impl()
+    template <class E>
+    void custom_interpreter<E>::configure_impl()
     {
         // Perform some operations
     }
 
-    nl::json custom_interpreter::complete_request_impl(const std::string& code,
+    template <class E>
+    nl::json custom_interpreter<E>::complete_request_impl(const std::string& code,
                                                        int cursor_pos)
     {
         nl::json result;
@@ -340,7 +341,8 @@ namespace LFortran
         return result;
     }
 
-    nl::json custom_interpreter::inspect_request_impl(const std::string& code,
+    template <class E>
+    nl::json custom_interpreter<E>::inspect_request_impl(const std::string& code,
                                                       int /*cursor_pos*/,
                                                       int /*detail_level*/)
     {
@@ -360,7 +362,8 @@ namespace LFortran
         return result;
     }
 
-    nl::json custom_interpreter::is_complete_request_impl(const std::string& /*code*/)
+    template <class E>
+    nl::json custom_interpreter<E>::is_complete_request_impl(const std::string& /*code*/)
     {
         nl::json result;
 
@@ -377,7 +380,8 @@ namespace LFortran
         return result;
     }
 
-    nl::json custom_interpreter::kernel_info_request_impl()
+    template <class E>
+    nl::json custom_interpreter<E>::kernel_info_request_impl()
     {
         nl::json result;
         std::string version = LFORTRAN_VERSION;
@@ -394,7 +398,8 @@ namespace LFortran
         return result;
     }
 
-    void custom_interpreter::shutdown_request_impl() {
+    template <class E>
+    void custom_interpreter<E>::shutdown_request_impl() {
         std::cout << "Bye!!" << std::endl;
     }
 
@@ -405,8 +410,8 @@ namespace LFortran
         context_ptr context = context_ptr(new context_type());
 
         // Create interpreter instance
-        using interpreter_ptr = std::unique_ptr<custom_interpreter>;
-        interpreter_ptr interpreter = interpreter_ptr(new custom_interpreter());
+        using interpreter_ptr = std::unique_ptr<custom_interpreter<FortranEvaluator>>;
+        interpreter_ptr interpreter = interpreter_ptr(new custom_interpreter<FortranEvaluator>());
 
         using history_manager_ptr = std::unique_ptr<xeus::xhistory_manager>;
         history_manager_ptr hist = xeus::make_in_memory_history_manager();

@@ -2,17 +2,18 @@
 #define LFORTRAN_FORTRAN_KERNEL_H
 
 #include <libasr/config.h>
-#include <lfortran/fortran_evaluator.h>
-
+#include <lfortran/utils.h>
 #include <xeus/xinterpreter.hpp>
 
 
 namespace LFortran {
 
+    template <class E>
     class custom_interpreter : public xeus::xinterpreter
     {
     private:
-        FortranEvaluator e;
+        using fortran_evaluator = E;
+        fortran_evaluator e;
 
     public:
         custom_interpreter() : e{CompilerOptions()} {}
