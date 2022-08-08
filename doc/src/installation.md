@@ -133,7 +133,8 @@ build1.bat
 
 If everything compiled, then you can use LFortran as follows:
 ```
-inst\bin\lfortran -h
+inst\bin\lfortran examples/expr2.f90
+a.out
 inst\bin\lfortran
 ```
 And so on.
