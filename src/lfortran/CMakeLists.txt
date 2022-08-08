@@ -48,7 +48,7 @@ endif()
 
 target_include_directories(lfortran_lib BEFORE PUBLIC ${lfortran_SOURCE_DIR}/src)
 target_include_directories(lfortran_lib BEFORE PUBLIC ${lfortran_BINARY_DIR}/src)
-if (WITH_XEUS)
+if (NOT LFORTRAN_BUILD_TO_WASM AND WITH_XEUS)
     target_link_libraries(lfortran_lib xeus)
 endif()
 if (WITH_JSON)
@@ -86,7 +86,6 @@ if (LFORTRAN_BUILD_TO_WASM AND WITH_XEUS)
          PUBLIC "SHELL: -s EXIT_RUNTIME=1"
          PUBLIC "SHELL: -s WASM=1"
          PUBLIC "SHELL: -s USE_PTHREADS=0"
-         PUBLIC "SHELL: -s ENVIRONMENT='worker'"
          PUBLIC "SHELL: --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/pre.js"
     )
 

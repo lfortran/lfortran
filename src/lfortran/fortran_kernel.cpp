@@ -244,10 +244,17 @@ namespace LFortran
             lpm.use_default_passes();
             lpm.do_not_use_optimization_passes();
             diag::Diagnostics diagnostics;
-            // Result<FortranEvaluator::EvalResult> res;
 
+            #ifndef HAVE_BUILD_TO_WASM
+            LCompilers::PassManager lpm;
+            lpm.use_default_passes();
+            lpm.do_not_use_optimization_passes();
+            diag::Diagnostics diagnostics;
+            Result<FortranEvaluator::EvalResult>
+                res = e.evaluate(code0, false, lm, lpm, diagnostics);
+
+            #else
             Result<Vec<uint8_t>> wasm_res = e.get_wasm(code0, lm, diagnostics);
-
             int emres_int = -1;
             if (wasm_res.ok)
             {
@@ -257,13 +264,17 @@ namespace LFortran
                 emres_int = emres.as<int>();
             }
 
+            FortranEvaluator::EvalResult parsed_eval_result;
             if (emres_int == 0) {
                 // short circuit for now
-                nl::json result;
-                result["status"] = "ok";
-                result["payload"] = nl::json::array();
-                result["user_expressions"] = nl::json::object();
-                return result;
+                parsed_eval_result.type = FortranEvaluator::EvalResult::integer8;
+                parsed_eval_result.i64 = 0;
+            }
+            Result<FortranEvaluator::EvalResult> res{parsed_eval_result};
+            #endif
+
+            if (res.ok) {
+                r = res.result;
             } else {
                 std::string msg = diagnostics.render(code0, lm, cu);
                 publish_stream("stderr", msg);

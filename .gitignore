@@ -172,6 +172,8 @@ output
 *.smod
 
 *.wasm
+*.js
+!src/lfortran/pre.js
 /.ccls-cache/
 .cache/
 ext/
