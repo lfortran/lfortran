@@ -17,6 +17,9 @@
 #include <xeus/xinterpreter.hpp>
 #include <xeus/xkernel.hpp>
 #include <xeus/xkernel_configuration.hpp>
+#include <xeus/xserver_zmq.hpp>
+#include "xeus/xserver_shell_main.hpp"
+
 #include <nlohmann/json.hpp>
 
 #include <lfortran/fortran_kernel.h>
@@ -432,15 +435,40 @@ namespace LFortran
 
     int run_kernel(const std::string &connection_filename)
     {
-        // Load configuration file
-        xeus::xconfiguration config = xeus::load_configuration(connection_filename);
+        using context_type = xeus::xcontext_impl<zmq::context_t>;
+        using context_ptr = std::unique_ptr<context_type>;
+        context_ptr context = context_ptr(new context_type());
 
         // Create interpreter instance
         using interpreter_ptr = std::unique_ptr<custom_interpreter>;
         interpreter_ptr interpreter = interpreter_ptr(new custom_interpreter());
 
+        using history_manager_ptr = std::unique_ptr<xeus::xhistory_manager>;
+        history_manager_ptr hist = xeus::make_in_memory_history_manager();
+
+        nl::json debugger_config;
+
+        // Load configuration file
+        xeus::xconfiguration config = xeus::load_configuration(connection_filename);
+
         // Create kernel instance and start it
-        xeus::xkernel kernel(config, xeus::get_user_name(), std::move(interpreter));
+        xeus::xkernel kernel(config,
+                             xeus::get_user_name(),
+                             std::move(context),
+                             std::move(interpreter),
+                             xeus::make_xserver_shell_main,
+                             std::move(hist),
+                             xeus::make_console_logger(xeus::xlogger::msg_type,
+                                                       xeus::make_file_logger(xeus::xlogger::content, "xeus.log")),
+                             xeus::make_null_debugger,
+                             debugger_config);
+
+        std::cout <<
+            "Starting xeus-fortran kernel...\n\n"
+            "If you want to connect to this kernel from an other client, you can use"
+            " the " + connection_filename + " file."
+            << std::endl;
+
         kernel.start();
 
         return 0;
