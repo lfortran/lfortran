@@ -71,7 +71,8 @@ if (LFORTRAN_BUILD_TO_WASM AND WITH_XEUS)
     add_executable(lfortran_wasm_kernel fortran_wasm_kernel.cpp)
     target_compile_options(lfortran_wasm_kernel PRIVATE
         "-fwasm-exceptions"
-        "SHELL: -s ENVIRONMENT='worker'" )
+        "SHELL: -s ENVIRONMENT='worker'"
+    )
     target_link_libraries(lfortran_wasm_kernel lfortran_lib "$ENV{CONDA_PREFIX}/lib/libxeus.a")
     target_link_options(lfortran_wasm_kernel PRIVATE "--bind" "-fwasm-exceptions")
 
@@ -86,6 +87,7 @@ if (LFORTRAN_BUILD_TO_WASM AND WITH_XEUS)
          PUBLIC "SHELL: -s EXIT_RUNTIME=1"
          PUBLIC "SHELL: -s WASM=1"
          PUBLIC "SHELL: -s USE_PTHREADS=0"
+         PUBLIC "SHELL: -s ENVIRONMENT='worker'"
          PUBLIC "SHELL: --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/pre.js"
     )
 
