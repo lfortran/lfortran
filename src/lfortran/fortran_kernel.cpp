@@ -14,16 +14,31 @@
 #    include <unistd.h>
 #endif
 
-#include <emscripten/val.h>
-#include <emscripten/bind.h>
-namespace em = emscripten;
+#if defined(HAVE_BUILD_TO_WASM)
+#   include <emscripten/val.h>
+#   include <emscripten/bind.h>
+    namespace em = emscripten;
+
+namespace LFortran
+{
+    // "transport" binary buffers from C++ to JS
+    em::val to_js(const Vec<uint8_t>& mem)
+    {
+        em::val js_buffer_array = em::val::array();
+        em::val mem_view = em::val(em::typed_memory_view(mem.n, mem.p));
+        em::val mem_copy = em::val::global("Uint8Array").new_(mem_view);
+        return mem_copy;
+    }
+}
+#endif
 
 #include <xeus/xinterpreter.hpp>
 #include <xeus/xkernel.hpp>
 #include <xeus/xkernel_configuration.hpp>
-#if !HAVE_BUILD_TO_WASM
-    #include <xeus/xserver_zmq.hpp>
-#include <xeus/xserver_shell_main.hpp>
+
+#if !defined(HAVE_BUILD_TO_WASM)
+#   include <xeus/xserver_zmq.hpp>
+#   include <xeus/xserver_shell_main.hpp>
 #endif
 
 #include <nlohmann/json.hpp>
@@ -40,14 +55,6 @@ namespace nl = nlohmann;
 
 namespace LFortran
 {
-    // "transport" binary buffers from C++ to JS
-    ems::val to_js(const Vec<uint8_t>& mem, bool copy)
-    {
-        ems::val js_buffer_array = ems::val::array();
-        ems::val mem_view = ems::val(ems::typed_memory_view(mem.n, mem.p));
-        return mem_view;
-    }
-
     class RedirectStdout
     {
     public:
@@ -258,7 +265,7 @@ namespace LFortran
             int emres_int = -1;
             if (wasm_res.ok)
             {
-                em::val wasm_buffer = to_js(wasm_res.result, false);
+                em::val wasm_buffer = to_js(wasm_res.result);
                 auto func = em::val::module_property("executeWasm");
                 em::val emres = func(wasm_buffer);
                 emres_int = emres.as<int>();
