@@ -59,7 +59,7 @@ struct import_func{
     std::vector<std::pair<ASR::ttypeType, uint32_t>> param_types, result_types;
 };
 
-struct SymbolInfo
+struct SymbolFuncInfo
 {
     bool needs_declaration = true;
     bool intrinsic_function = false;
@@ -75,7 +75,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     diag::Diagnostics &diag;
 
     bool intrinsic_module;
-    SymbolInfo* cur_sym_info;
+    SymbolFuncInfo* cur_sym_info;
     uint32_t nesting_level;
     uint32_t cur_loop_nesting_level;
 
@@ -97,7 +97,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     uint32_t max_no_pages;
 
     std::map<uint64_t, uint32_t> m_var_name_idx_map;
-    std::map<uint64_t, SymbolInfo *> m_func_name_idx_map;
+    std::map<uint64_t, SymbolFuncInfo *> m_func_name_idx_map;
     std::map<std::string, ASR::asr_t *> m_import_func_asr_map;
 
    public:
@@ -419,7 +419,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     template<typename T>
     void emit_function_prototype(const T& x) {
-        SymbolInfo* s = new SymbolInfo;
+        SymbolFuncInfo* s = new SymbolFuncInfo;
 
         /********************* New Type Declaration *********************/
         wasm::emit_b8(m_type_section, m_al, 0x60);
