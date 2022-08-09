@@ -266,13 +266,14 @@ namespace LFortran
                 emres_int = emres.as<int>();
             }
 
+            Result<FortranEvaluator::EvalResult> res{Error()};
             FortranEvaluator::EvalResult parsed_eval_result;
             if (emres_int == 0) {
                 // short circuit for now
                 parsed_eval_result.type = FortranEvaluator::EvalResult::integer8;
                 parsed_eval_result.i64 = 0;
+                res = Result<FortranEvaluator::EvalResult>{parsed_eval_result};
             }
-            Result<FortranEvaluator::EvalResult> res{parsed_eval_result};
             #endif
 
             if (res.ok) {
