@@ -400,11 +400,17 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
         void visit_Program(const ASR::Program_t& x) {
             ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
             current_scope = xx.m_symtab;
+            std::vector<std::string> to_be_erased;
 
             for( auto& item: current_scope->get_scope() ) {
                 if( v.proc2newproc.find(item.second) != v.proc2newproc.end() ) {
-                    current_scope->erase_symbol(ASRUtils::symbol_name(item.second));
+                    LFORTRAN_ASSERT(item.first == ASRUtils::symbol_name(item.second))
+                    to_be_erased.push_back(item.first);
                 }
+            }
+
+            for (auto &item: to_be_erased) {
+                current_scope->erase_symbol(item);
             }
         }
 
