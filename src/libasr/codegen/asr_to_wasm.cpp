@@ -61,22 +61,12 @@ struct import_func{
 
 struct SymbolInfo
 {
-    bool needs_declaration;
-    bool intrinsic_function;
-    bool is_subroutine;
-    uint32_t index;
-    uint32_t no_of_variables;
-    ASR::Variable_t *return_var;
+    bool needs_declaration = true;
+    bool intrinsic_function = false;
+    uint32_t index = 0;
+    uint32_t no_of_variables = 0;
+    ASR::Variable_t *return_var = nullptr;
     Vec<ASR::Variable_t *> subroutine_return_vars;
-
-    SymbolInfo(bool is_subroutine) {
-        this->needs_declaration = true;
-        this->intrinsic_function = false;
-        this->is_subroutine = is_subroutine;
-        this->index = 0;
-        this->no_of_variables = 0;
-        this->return_var = nullptr;
-    }
 };
 
 class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
@@ -429,29 +419,38 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     template<typename T>
     void emit_function_prototype(const T& x) {
-        SymbolInfo* s = new SymbolInfo(false);
+        SymbolInfo* s = new SymbolInfo;
 
         /********************* New Type Declaration *********************/
         wasm::emit_b8(m_type_section, m_al, 0x60);
 
         /********************* Parameter Types List *********************/
+        s->subroutine_return_vars.reserve(m_al, x.n_args);
         wasm::emit_u32(m_type_section, m_al, x.n_args);
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
             LFORTRAN_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent));
             emit_var_type(m_type_section, arg);
-            m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = i;
-            s->no_of_variables++;
+            m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = s->no_of_variables++;
+            if (arg->m_intent == ASR::intentType::Out || arg->m_intent == ASR::intentType::InOut) {
+                s->subroutine_return_vars.push_back(m_al, arg);
+            }
         }
 
         /********************* Result Types List *********************/
-        if (x.m_return_var) {
+        if (x.m_return_var) { // It is a function
             wasm::emit_u32(m_type_section, m_al, 1U); // there is just one return variable
             s->return_var = ASRUtils::EXPR2VAR(x.m_return_var);
             emit_var_type(m_type_section, s->return_var);
-        } else {
-            wasm::emit_u32(m_type_section, m_al, 0U); // the function does not return
-            s->return_var = nullptr;
+        } else { // It is a subroutine
+            uint32_t len_idx_type_section_return_types_list = wasm::emit_len_placeholder(m_type_section, m_al);
+            for (size_t i = 0; i < x.n_args; i++) {
+                ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
+                if (arg->m_intent == ASR::intentType::Out || arg->m_intent == ASR::intentType::InOut) {
+                    emit_var_type(m_type_section, arg);
+                }
+            }
+            wasm::fixup_len(m_type_section, m_al, len_idx_type_section_return_types_list);
         }
 
         /********************* Add Type to Map *********************/
@@ -1078,7 +1077,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         if (cur_sym_info->return_var) {
             LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)cur_sym_info->return_var)) != m_var_name_idx_map.end());
             wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)cur_sym_info->return_var)]);
-        } else if(cur_sym_info->is_subroutine) {
+        } else {
             for(auto return_var:cur_sym_info->subroutine_return_vars) {
                 wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)(return_var))]);
             }
