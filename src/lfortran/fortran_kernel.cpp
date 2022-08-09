@@ -253,13 +253,8 @@ namespace LFortran
             diag::Diagnostics diagnostics;
 
             #ifndef HAVE_BUILD_TO_WASM
-            LCompilers::PassManager lpm;
-            lpm.use_default_passes();
-            lpm.do_not_use_optimization_passes();
-            diag::Diagnostics diagnostics;
             Result<FortranEvaluator::EvalResult>
                 res = e.evaluate(code0, false, lm, lpm, diagnostics);
-
             #else
             Result<Vec<uint8_t>> wasm_res = e.get_wasm(code0, lm, diagnostics);
             int emres_int = -1;
