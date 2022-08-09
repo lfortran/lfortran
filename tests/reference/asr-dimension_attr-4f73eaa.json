@@ -1,0 +1,13 @@
+{
+    "basename": "asr-dimension_attr-4f73eaa",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/dimension_attr.f",
+    "infile_hash": "3a57f11eebbae2555d2412d8df9f2d945537f7cf9bb8aeae8d11a81a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-dimension_attr-4f73eaa.stderr",
+    "stderr_hash": "af08982517f198a5fbb35f287b31cbec6fed6aba61440e1f0c6dd6a0",
+    "returncode": 2
+}

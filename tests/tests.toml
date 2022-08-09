@@ -2148,3 +2148,9 @@ asr_implicit_typing = true
 [[test]]
 filename = "implicit_typing2.f90"
 asr_implicit_typing = true
+
+[[test]]
+filename = "dimension_attr.f"
+fixed_form = true
+ast = true
+asr = true

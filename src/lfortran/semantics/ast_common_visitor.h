@@ -841,7 +841,6 @@ public:
                     // private :: x, y, z
                     for (size_t i=0; i<x.n_syms; i++) {
                         AST::var_sym_t &s = x.m_syms[i];
-                        AST::decl_attribute_t *a = x.m_attributes[i];
                         if (s.m_name == nullptr) {
                             if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
                                 // Operator Overloading Encountered
@@ -898,83 +897,39 @@ public:
             // enable sole `dimension` attribute
             } else if (AST::is_a<AST::AttrDimension_t>(*x.m_attributes[0]) && x.n_attributes == 1 ){   
             
-                AST::decl_attribute_t *a = x.m_attributes[0];
                 for (size_t i=0;i<x.n_syms;++i) { // symbols for line only
                     AST::var_sym_t &s = x.m_syms[i];
-                    
                     std::string sym = to_lower(s.m_name);
                     ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
                     // get actual variable
-                    if (get_sym == nullptr) throw SemanticError("Need to declare variable first", x.base.base.loc);
+                    if (get_sym == nullptr) throw SemanticError("Variable undeclared", x.base.base.loc);
+
                     if (ASR::is_a<ASR::Variable_t>(*get_sym)) {
                         auto v = (ASR::Variable_t*)get_sym;
-                        std::cout << "current variable: " << sym << "\n";
                         if (ASR::is_a<ASR::Integer_t>(*(v->m_type))) {
                             auto actual = (ASR::Integer_t*)(v->m_type);
-                            std::cout << "Getting there...\n";
-                            std::cout << "dimensions: " <<x.m_syms[i].n_dim << std::endl;
                             Vec<ASR::dimension_t> dims;
                             dims.reserve(al, 0);
-                            // process_dims(Allocator &al, Vec<ASR::dimension_t> &dims, AST::dimension_t *m_dim, size_t n_dim)
                             process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim);
-                            // asr_t* make_Integer_t(Allocator &al, const Location &a_loc, int64_t a_kind, dimension_t* a_dims, size_t n_dims)
-                            // v->m_type = LFortran::ASR::make_Integer_t(al, actual->base.base.loc, actual->m_kind, x.m_syms[i].m_dim, x.m_syms[i].n_dim);
+                            v->m_type = (ASR::ttype_t*)LFortran::ASR::make_Integer_t(al, actual->base.base.loc, actual->m_kind, dims.data(), x.m_syms[i].n_dim);
+                        } else if (ASR::is_a<ASR::Real_t>(*(v->m_type))) {
+                            auto actual = (ASR::Real_t*)(v->m_type);
+                            Vec<ASR::dimension_t> dims;
+                            dims.reserve(al, 0);
+                            process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim);
+                            v->m_type = (ASR::ttype_t*)LFortran::ASR::make_Real_t(al, actual->base.base.loc, actual->m_kind, dims.data(), x.m_syms[i].n_dim);
+                        } else if (ASR::is_a<ASR::Complex_t>(*(v->m_type))) {
+                            auto actual = (ASR::Complex_t*)(v->m_type);
+                            Vec<ASR::dimension_t> dims;
+                            dims.reserve(al, 0);
+                            process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim);
+                            v->m_type = (ASR::ttype_t*)LFortran::ASR::make_Complex_t(al, actual->base.base.loc, actual->m_kind, dims.data(), x.m_syms[i].n_dim);
+                        } else {
+                            throw SemanticError("Cannot set dimension for variable of non-numerical type", x.base.base.loc);
                         }
-                        // } else if (auto actual = ASR::down_cast<ASR::Real_t>(*v->m_type)) {
-                        //     v->m_type = ASR::make_Real_t();
-                        // } else if (auto actual = ASR::down_cast<ASR::Character_t>(*v->m_type)) {
-                        //     v->m_type = ASR::make_Character_t();
-                        // } else if (auto actual = ASR::down_cast<ASR::Complex_t>(*v->m_type)) {
-                        //     v->m_type = ASR::make_Complex_t();
-                        // } else if (auto actual = ASR::down_cast<ASR::Logical_t>(*v->m_type)) {
-                        //     v->m_type = ASR::make_Logical_t();
-                        // }
-
-      
                     } else {
-                        throw SemanticError("Check your variables", x.base.base.loc);
+                        throw SemanticError("Cannot attribute non-variable type with dimension", x.base.base.loc);
                     }
-                    // AST::var_sym_t* get_sym = current_scope->get_symbol(sym);
-
-                    
-                    // Vec<ASR::dimension_t> dims;
-                    // dims.reserve(al, 0);
-                    // Location dims_attr_loc;
-                    // AST::AttrDimension_t *ad = AST::down_cast<AST::AttrDimension_t>(a);
-                    // if (dims.size() > 0) {
-                    //     throw SemanticError("Dimensions specified twice",
-                    //             x.base.base.loc);
-                    // }
-                    // dims_attr_loc = ad->base.base.loc;
-                    // process_dims(al, dims, ad->m_dim, ad->n_dim);
-                    
-                    
-                    // ASR::symbol_t* get_sym = current_scope->get_symbol(sym); // cast this to variable
-                    // AST::Declaration_t* check = AST::down_cast<AST::Declaration_t>(get_sym);
-                    // AST::down_cast<AST::Declaration_t>
-                    // auto *get_sym = (AST::Declaration_t *)current_scope->get_symbol(sym);
-                    // std::cout << "symbol name: " << sym << std::endl;
-                    // std::cout << "num attributes avail: " << get_sym->n_attributes << std::endl;
-                    // std::cout << "trivia: " << get_sym->m_trivia << std::endl;
-
-                    // auto scope = current_scope->get_scope();
-                    // std::cout << "current scope\n";
-                    // for (const auto &el: scope) {
-                    //     std::cout << el.first << " " << el.second << " ";
-
-                    // AST::make_Declaration_t(); <-----------------------------------
-                    // if (!get_sym) std::cout << "ERROR\n";
-                    // else {
-                    //     std::cout << "ptr to var: " << ptrdiff_t(get_sym) << std::endl;
-                    //     std::cout << "sym (loc: " << get_sym->base.loc.first << ") " << sym << " has base type: " << get_sym->base.type << "\n";
-                    //     ASR::asr_t* var = resolve_variable(get_sym->base.loc , sym);
-                    //     std::cout << "location base is: " << var->loc.first << "\n";
-                    // }
-
-                    
-                    // std::cout << "unique name: " << current_scope->get_unique_name(sym) << "\n";
-                    // std::cout << "resolved: " << ASR::is_a<ASR::symbolType::Variable>(*current_scope->resolve_symbol(sym)) << "\n";
-                    // std::cout << "resolved: " << current_scope->resolve_symbol(sym) << "\n";
                 }
             } else {
                 throw SemanticError("Attribute declaration not supported",
@@ -989,8 +944,6 @@ public:
                 ASR::accessType s_access = dflt_access;
                 ASR::presenceType s_presence = dflt_presence;
                 bool value_attr = false;
-                // std::cout << "iterating" << i << "/" << x.n_syms << ": " << x.m_syms[i].m_name <<
-                // " unique: " << current_scope->get_unique_name(to_lower(s.m_name)) << "\n";
                 AST::AttrType_t *sym_type =
                     AST::down_cast<AST::AttrType_t>(x.m_vartype);
                 if (assgnd_access.count(sym)) {
@@ -1314,7 +1267,6 @@ public:
                         data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
                     }
                 }
-                std::cout << "(variable loop) ptr to var: " << ptrdiff_t(current_scope->get_symbol(sym)) << std::endl;
             } // for m_syms
         }
     }
