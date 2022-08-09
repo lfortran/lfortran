@@ -902,30 +902,32 @@ public:
                     AST::var_sym_t &s = x.m_syms[i];
                     std::string sym = to_lower(s.m_name);
                     ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
-                    // get actual variable
-                    if (get_sym == nullptr) throw SemanticError("Variable undeclared", x.base.base.loc);
-                    // TODO: check if we can abuse dimension to just update a variables dimensions
+                    // get actual variable from SymTab, not the current line
+                    if (get_sym == nullptr) throw SemanticError("Cannot set dimension for undeclared variable", x.base.base.loc);
 
                     if (ASR::is_a<ASR::Variable_t>(*get_sym)) {
-                        auto v = (ASR::Variable_t*)get_sym;
+                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(get_sym);
                         if (ASR::is_a<ASR::Integer_t>(*(v->m_type))) {
-                            auto actual = (ASR::Integer_t*)(v->m_type);
+                            ASR::Integer_t *actual = ASR::down_cast<ASR::Integer_t>(v->m_type);
                             Vec<ASR::dimension_t> dims;
                             dims.reserve(al, 0);
                             process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim);
-                            v->m_type = (ASR::ttype_t*)LFortran::ASR::make_Integer_t(al, actual->base.base.loc, actual->m_kind, dims.data(), x.m_syms[i].n_dim);
+                            actual->m_dims = dims.data();
+                            actual->n_dims = dims.size();
                         } else if (ASR::is_a<ASR::Real_t>(*(v->m_type))) {
-                            auto actual = (ASR::Real_t*)(v->m_type);
+                            ASR::Real_t *actual = ASR::down_cast<ASR::Real_t>(v->m_type);
                             Vec<ASR::dimension_t> dims;
                             dims.reserve(al, 0);
                             process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim);
-                            v->m_type = (ASR::ttype_t*)LFortran::ASR::make_Real_t(al, actual->base.base.loc, actual->m_kind, dims.data(), x.m_syms[i].n_dim);
+                            actual->m_dims = dims.data();
+                            actual->n_dims = dims.size();
                         } else if (ASR::is_a<ASR::Complex_t>(*(v->m_type))) {
-                            auto actual = (ASR::Complex_t*)(v->m_type);
+                            ASR::Complex_t *actual = ASR::down_cast<ASR::Complex_t>(v->m_type);
                             Vec<ASR::dimension_t> dims;
                             dims.reserve(al, 0);
                             process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim);
-                            v->m_type = (ASR::ttype_t*)LFortran::ASR::make_Complex_t(al, actual->base.base.loc, actual->m_kind, dims.data(), x.m_syms[i].n_dim);
+                            actual->m_dims = dims.data();
+                            actual->n_dims = dims.size();
                         } else {
                             throw SemanticError("Cannot set dimension for variable of non-numerical type", x.base.base.loc);
                         }
