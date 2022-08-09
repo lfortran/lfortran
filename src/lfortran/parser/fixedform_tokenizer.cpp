@@ -591,7 +591,9 @@ struct FixedFormRecursiveDescent {
     bool lex_body_statement(unsigned char *&cur) {
         eat_label(cur);
         // if (has_terminal(cur)) return false;     
-        if (lex_declaration(cur)) return true;
+        if (lex_declaration(cur)) {
+            return true;
+        }
         if (lex_io(cur)) return true;
         if (next_is(cur, "if(")) {
             lex_if(cur);
