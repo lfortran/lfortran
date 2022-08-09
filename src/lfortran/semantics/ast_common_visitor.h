@@ -10,7 +10,6 @@
 #include <lfortran/semantics/comptime_eval.h>
 
 #include <string>
-#include <typeinfo>
 
 using LFortran::diag::Level;
 using LFortran::diag::Stage;
@@ -886,7 +885,9 @@ public:
                                 // Ignore Intrinsic attribute
                             } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrExternal) {
-                                   
+                                // TODO
+                                throw SemanticError("Attribute declaration not "
+                                    "supported yet", x.base.base.loc);
                             } else {
                                 throw SemanticError("Attribute declaration not "
                                         "supported", x.base.base.loc);

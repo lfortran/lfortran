@@ -1,5 +1,0 @@
-syntax error: Token 'this' (of type 'identifier') is unexpected here
- --> tests/dimension_attr.f:5:3
-  |
-5 | c this is a test comment
-  |   ^^^^ 
