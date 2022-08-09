@@ -1247,6 +1247,11 @@ public:
         }
     }
 
+    void visit_TupleLen(const ASR::TupleLen_t& x) {
+        LFORTRAN_ASSERT(x.m_value);
+        this->visit_expr(*x.m_value);
+    }
+
     void visit_TupleItem(const ASR::TupleItem_t& x) {
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
