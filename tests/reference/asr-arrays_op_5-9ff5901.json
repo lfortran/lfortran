@@ -2,7 +2,7 @@
     "basename": "asr-arrays_op_5-9ff5901",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/arrays_op_5.f90",
-    "infile_hash": "f3c014105f55ed7ec4a86da773076b204ada3cd5c8903ecbf25af3c4",
+    "infile_hash": "af4bfadca53f3d8ce665b6998b4791788f01bca30aed36102a286fd0",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-arrays_op_5-9ff5901.stdout",
