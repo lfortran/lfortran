@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <complex.h>
 #include <inttypes.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,7 +62,8 @@ LFORTRAN_API void _lfortran_complex_div_64(struct _lfortran_complex_64* a,
         struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result);
 LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result);
-
+LFORTRAN_API void _lfortran_complex_aimag_32(struct _lfortran_complex_32 *x, float *res);
+LFORTRAN_API void _lfortran_complex_aimag_64(struct _lfortran_complex_64 *x, double *res);
 LFORTRAN_API float_complex_t _lfortran_csqrt(float_complex_t x);
 LFORTRAN_API double_complex_t _lfortran_zsqrt(double_complex_t x);
 LFORTRAN_API float _lfortran_caimag(float_complex_t x);
@@ -129,11 +131,18 @@ LFORTRAN_API double_complex_t _lfortran_zasinh(double_complex_t x);
 LFORTRAN_API float _lfortran_sacosh(float x);
 LFORTRAN_API double _lfortran_dacosh(double x);
 LFORTRAN_API float_complex_t _lfortran_cacosh(float_complex_t x);
+LFORTRAN_API double _lfortran_dfmod(double x, double y);
 LFORTRAN_API double_complex_t _lfortran_zacosh(double_complex_t x);
 LFORTRAN_API float _lfortran_satanh(float x);
 LFORTRAN_API double _lfortran_datanh(double x);
 LFORTRAN_API float_complex_t _lfortran_catanh(float_complex_t x);
 LFORTRAN_API double_complex_t _lfortran_zatanh(double_complex_t x);
+LFORTRAN_API bool _lpython_str_compare_eq(char** s1, char** s2);
+LFORTRAN_API bool _lpython_str_compare_noteq(char** s1, char** s2);
+LFORTRAN_API bool _lpython_str_compare_gt(char** s1, char** s2);
+LFORTRAN_API bool _lpython_str_compare_lte(char** s1, char** s2);
+LFORTRAN_API bool _lpython_str_compare_lt(char** s1, char** s2);
+LFORTRAN_API bool _lpython_str_compare_gte(char** s1, char** s2);
 LFORTRAN_API char* _lfortran_float_to_str8(double num);
 LFORTRAN_API char* _lfortran_float_to_str4(float num);
 LFORTRAN_API char* _lfortran_int_to_str1(int8_t num);

@@ -327,9 +327,9 @@ public:
         }
         if (parent_scope->get_symbol(sym_name) != nullptr) {
             ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
-            ASR::Subroutine_t *f2 = nullptr;
-            if( f1->type == ASR::symbolType::Subroutine ) {
-                f2 = ASR::down_cast<ASR::Subroutine_t>(f1);
+            ASR::Function_t *f2 = nullptr;
+            if( ASR::is_a<ASR::Function_t>(*f1) ) {
+                f2 = ASR::down_cast<ASR::Function_t>(f1);
             }
             if ((f1->type == ASR::symbolType::ExternalSymbol && in_submodule) ||
                 f2->m_abi == ASR::abiType::Interactive) {
@@ -345,17 +345,19 @@ public:
         }
 
 
-        tmp = ASR::make_Subroutine_t(
+        tmp = ASR::make_Function_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, to_lower(sym_name)),
             /* a_args */ args.p,
             /* n_args */ args.size(),
+            nullptr, 0,
             /* a_body */ nullptr,
             /* n_body */ 0,
+            nullptr,
             current_procedure_abi_type,
             s_access, deftype, bindc_name,
-            is_pure, is_module);
+            is_pure, is_module, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         /* FIXME: This can become incorrect/get cleared prematurely, perhaps
@@ -575,11 +577,12 @@ public:
             /* a_name */ s2c(al, to_lower(sym_name)),
             /* a_args */ args.p,
             /* n_args */ args.size(),
+            nullptr, 0,
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ LFortran::ASRUtils::EXPR(return_var_ref),
-            current_procedure_abi_type, s_access, deftype, is_elemental,
-            bindc_name);
+            current_procedure_abi_type, s_access, deftype,
+            bindc_name, is_elemental, false, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         current_procedure_args.clear();
@@ -924,19 +927,7 @@ public:
                 continue;
             }
             // TODO: only import "public" symbols from the module
-            if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
-                ASR::Subroutine_t *msub = ASR::down_cast<ASR::Subroutine_t>(item.second);
-                ASR::asr_t *sub = ASR::make_ExternalSymbol_t(
-                    al, msub->base.base.loc,
-                    /* a_symtab */ current_scope,
-                    /* a_name */ msub->m_name,
-                    (ASR::symbol_t*)msub,
-                    m->m_name, nullptr, 0, msub->m_name,
-                    dflt_access
-                    );
-                std::string sym = to_lower(msub->m_name);
-                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(sub));
-            } else if (ASR::is_a<ASR::Function_t>(*item.second)) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(item.second);
                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
                     al, mfn->base.base.loc,
@@ -1038,12 +1029,13 @@ public:
             throw SemanticError("The symbol '" + remote_sym + "' not found in the module '" + msym + "'",
                 loc);
         }
-        if (ASR::is_a<ASR::Subroutine_t>(*t)) {
+        if (ASR::is_a<ASR::Function_t>(*t) &&
+            ASR::down_cast<ASR::Function_t>(t)->m_return_var == nullptr) {
             if (current_scope->get_symbol(local_sym) != nullptr) {
                 throw SemanticError("Subroutine already defined",
                     loc);
             }
-            ASR::Subroutine_t *msub = ASR::down_cast<ASR::Subroutine_t>(t);
+            ASR::Function_t *msub = ASR::down_cast<ASR::Function_t>(t);
             // `msub` is the Subroutine in a module. Now we construct
             // an ExternalSymbol that points to
             // `msub` via the `external` field.

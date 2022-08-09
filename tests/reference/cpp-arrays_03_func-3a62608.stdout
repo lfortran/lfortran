@@ -62,7 +62,7 @@ void main2() {
     i32_10_1 x_value(&x_data);
     i32_10_1* x = &x_value;
     x->dims[0].lower_bound = 1;
-    x->dims[0].length = 10 - 1 + 1;
+    x->dims[0].length = 10;
     for (i=1; i<=x->data->extent(0); i++) {
         x->data->operator[](i - x->dims[0].lower_bound) = i;
     }

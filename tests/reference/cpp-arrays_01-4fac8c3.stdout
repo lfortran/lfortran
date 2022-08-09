@@ -54,12 +54,12 @@ void main2() {
     i32_3_1 a_value(&a_data);
     i32_3_1* a = &a_value;
     a->dims[0].lower_bound = 1;
-    a->dims[0].length = 3 - 1 + 1;
+    a->dims[0].length = 3;
     Kokkos::View<int32_t*> b_data("b_data", 4);
     i32_4_1 b_value(&b_data);
     i32_4_1* b = &b_value;
     b->dims[0].lower_bound = 1;
-    b->dims[0].length = 4 - 1 + 1;
+    b->dims[0].length = 4;
     int32_t i;
     for (i=1; i<=3; i++) {
         a->data->operator[](i - a->dims[0].lower_bound) = i + 10;

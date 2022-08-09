@@ -13,6 +13,7 @@ nav:
     - LFortran Intrinsics:
         - Array Intrinsic Functions:
             - intrinsics/array/size.md
+            - intrinsics/array/allocated.md
         - Bit Intrinsic Functions:
             - intrinsics/bit/shiftl.md
             - intrinsics/bit/shiftr.md
@@ -25,14 +26,19 @@ nav:
         - Kind Type Intrinsic Functions:
             - intrinsics/kind-type/kind.md
         - Mathematical Intrinsic Functions:
-            - intrinsics/mathematical/trigonometric/acos.md
-            - intrinsics/mathematical/trigonometric/acosh.md
-            - intrinsics/mathematical/trigonometric/asin.md
-            - intrinsics/mathematical/trigonometric/atan.md
+            - intrinsics/mathematical/acos.md
+            - intrinsics/mathematical/acosh.md
+            - intrinsics/mathematical/asin.md
+            - intrinsics/mathematical/asinh.md
+            - intrinsics/mathematical/atan.md
+            - intrinsics/mathematical/atan2.md
+            - intrinsics/mathematical/atanh.md
+            - intrinsics/mathematical/fraction.md
         - Numeric Intrinsic Functions:
             - intrinsics/numeric/abs.md
             - intrinsics/numeric/aimag.md
             - intrinsics/numeric/aint.md
+            - intrinsics/numeric/anint.md
             - intrinsics/numeric/ceiling.md
             - intrinsics/numeric/floor.md
             - intrinsics/numeric/mod.md

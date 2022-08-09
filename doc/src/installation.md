@@ -99,28 +99,55 @@ Run an interactive prompt:
 ./src/bin/lfortran
 ```
 
-## Build on Windows with Visual Studio
+## Build from Git on Windows with Visual Studio
 
-Install Conda for example by installing the Miniconda installation by following instructions there for your platform. If not already done, activate the Conda-Installation (cf. Conda installation instructions).
+Install Visual Studio (MSVC), for example the version 2022, you can download the
+Community version for free from: https://visualstudio.microsoft.com/downloads/.
 
-First, clone the repo to a local folder.
+Install miniforge using the Windows installer from https://github.com/conda-forge/miniforge.
 
-Launch a Conda command interpreter and run the following commands:
-```bash
-conda update -q conda
-conda install -c conda-forge python=3.7 re2c m2-bison xonsh llvmdev=11.1.0 jupyter xeus=1.0.1 xtl nlohmann_json cppzmq jupyter_kernel_test pytest
+Launch the Miniforge Prompt from the Desktop.
+
+In the shell, initialize the MSVC compiler using:
+
 ```
-Next, `cd` to the root of the repository and run
-```bash
-.\build0.bat
+call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd" -arch=x64
 ```
 
-Now, you can launch Visual Studio and open the LFortran folder.
-Before the first build you have to set up the `ZLib`-pathes: Go to the CMake-Settings (Project -> CMake Setttings for lfortran) and check `Show advanced variables`. Scroll to the `ZLIB_...` variables and set:
-- `ZLIB_INCLUDE_DIR` = \<Conda-Installation-Path\>\Library\include
-- `ZLIB_LIBRARY_[DEBUG|RELEASE]` = \<Conda-Installation-Path\>\Library\lib\zlibstatic.lib
+You can optionally test that MSVC works by:
+```
+cl /?
+link /?
+```
+Both commands must print help (several pages).
 
-Then you can generate the CMake-Cache and build the project.
+Now you can download and build LFortran:
+```
+git clone https://github.com/lfortran/lfortran.git
+cd lfortran
+conda env create -f environment_win.yml
+conda activate lf
+build0.bat
+build1.bat
+```
+
+If everything compiled, then you can use LFortran as follows:
+```
+inst\bin\lfortran examples/expr2.f90
+a.out
+inst\bin\lfortran
+```
+And so on.
+
+Note: LFortran currently uses the MSVC's linker program (`link`), which is only
+available when the MSVC bat script above is ran. If you forget to activate it,
+LFortran's linking will fail.
+
+Note: the miniforge shell seems to be running some version of `git-bash`
+(although it is `cmd.exe`), which has some unix-like filesystem mounted in
+`/usr` and several commands available such as `ls`, `which`, `git`, `vim`.  For
+this reason the Conda build `environment_win.yml` contains everything needed,
+including `git`.
 
 ## Enabling the Jupyter Kernel
 
