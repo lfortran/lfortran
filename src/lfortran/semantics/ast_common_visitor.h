@@ -903,6 +903,7 @@ public:
                     ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
                     // get actual variable
                     if (get_sym == nullptr) throw SemanticError("Variable undeclared", x.base.base.loc);
+                    // TODO: check if we can abuse dimension to just update a variables dimensions
 
                     if (ASR::is_a<ASR::Variable_t>(*get_sym)) {
                         auto v = (ASR::Variable_t*)get_sym;
