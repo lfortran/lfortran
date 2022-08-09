@@ -66,7 +66,7 @@ struct SymbolFuncInfo
     uint32_t index = 0;
     uint32_t no_of_variables = 0;
     ASR::Variable_t *return_var = nullptr;
-    Vec<ASR::Variable_t *> subroutine_return_vars;
+    Vec<ASR::Variable_t *> referenced_vars;
 };
 
 class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
@@ -425,7 +425,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::emit_b8(m_type_section, m_al, 0x60);
 
         /********************* Parameter Types List *********************/
-        s->subroutine_return_vars.reserve(m_al, x.n_args);
+        s->referenced_vars.reserve(m_al, x.n_args);
         wasm::emit_u32(m_type_section, m_al, x.n_args);
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
@@ -433,7 +433,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             emit_var_type(m_type_section, arg);
             m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] = s->no_of_variables++;
             if (arg->m_intent == ASR::intentType::Out || arg->m_intent == ASR::intentType::InOut) {
-                s->subroutine_return_vars.push_back(m_al, arg);
+                s->referenced_vars.push_back(m_al, arg);
             }
         }
 
@@ -1078,7 +1078,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)cur_sym_info->return_var)) != m_var_name_idx_map.end());
             wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)cur_sym_info->return_var)]);
         } else {
-            for(auto return_var:cur_sym_info->subroutine_return_vars) {
+            for(auto return_var:cur_sym_info->referenced_vars) {
                 wasm::emit_get_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)(return_var))]);
             }
         }
