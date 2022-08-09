@@ -3,7 +3,7 @@
       1 
       {
          g: 
-            (Subroutine 
+            (Function 
                (SymbolTable 
                   2 
                   {
@@ -28,7 +28,7 @@
                            Public 
                            Required .false.)
                   }) 
-               g [] [
+               g [] [] [
                (= 
                   (Var 2 x) (IntegerConstant 1 
                   (Integer 4 [])) ()) 
@@ -43,12 +43,12 @@
                         (Var 2 x) 
                         Mul 
                         (Var 2 i) 
-                        (Integer 4 []) ()) ())])] 
+                        (Integer 4 []) ()) ())])] () 
                Source 
                Public 
-               Implementation () .false. .false.), 
+               Implementation () .false. .false. .false.), 
          h: 
-            (Subroutine 
+            (Function 
                (SymbolTable 
                   3 
                   {
@@ -73,7 +73,7 @@
                            Public 
                            Required .false.)
                   }) 
-               h [] [
+               h [] [] [
                (= 
                   (Var 3 x) (IntegerConstant 1 
                   (Integer 4 [])) ()) 
@@ -88,9 +88,9 @@
                         (Var 3 i) 
                         Mul 
                         (Var 3 x) 
-                        (Integer 4 []) ()) ())])] 
+                        (Integer 4 []) ()) ())])] () 
                Source 
                Public 
-               Implementation () .false. .false.)
+               Implementation () .false. .false. .false.)
       }) 
    [])

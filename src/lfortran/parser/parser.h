@@ -8,6 +8,8 @@
 #include <libasr/containers.h>
 #include <libasr/diagnostics.h>
 #include <lfortran/parser/tokenizer.h>
+#include <lfortran/parser/fixedform_tokenizer.h>
+
 
 namespace LFortran
 {
@@ -21,10 +23,12 @@ public:
     diag::Diagnostics &diag;
     Allocator &m_a;
     Tokenizer m_tokenizer;
+    FixedFormTokenizer f_tokenizer;
     Vec<AST::ast_t*> result;
+    bool fixed_form;
 
-    Parser(Allocator &al, diag::Diagnostics &diagnostics)
-            : diag{diagnostics}, m_a{al} {
+    Parser(Allocator &al, diag::Diagnostics &diagnostics, const bool &fixed_form=false)
+            : diag{diagnostics}, m_a{al}, fixed_form{fixed_form}{
         result.reserve(al, 32);
     }
 
@@ -36,13 +40,15 @@ public:
 // Parses Fortran code to AST
 Result<AST::TranslationUnit_t*> parse(Allocator &al,
     const std::string &s,
-    diag::Diagnostics &diagnostics);
+    diag::Diagnostics &diagnostics,
+    const bool &fixed_form=false);
 
 // Tokenizes the `input` and return a list of tokens
 Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         diag::Diagnostics &diagnostics,
-        std::vector<YYSTYPE> *stypes=nullptr,
-        std::vector<Location> *locations=nullptr);
+        std::vector<YYSTYPE> *stypes,
+        std::vector<Location> *locations,
+        bool fixed_form);
 
 // Converts token number to text
 std::string token2text(const int token);

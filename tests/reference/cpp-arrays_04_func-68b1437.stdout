@@ -74,7 +74,7 @@ void main2() {
     f32_3_1 a_value(&a_data);
     f32_3_1* a = &a_value;
     a->dims[0].lower_bound = 1;
-    a->dims[0].length = 3 - 1 + 1;
+    a->dims[0].length = 3;
     float b;
     a->data->operator[](1 - a->dims[0].lower_bound) = (float)(3);
     a->data->operator[](2 - a->dims[0].lower_bound) = (float)(2);

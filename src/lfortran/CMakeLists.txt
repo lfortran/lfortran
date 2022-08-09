@@ -3,6 +3,7 @@ set(SRC
     parser/tokenizer.cpp
     parser/parser.tab.cc
     parser/parser.cpp
+    parser/fixedform_tokenizer.cpp
 
     semantics/ast_symboltable_visitor.cpp
     semantics/ast_body_visitor.cpp

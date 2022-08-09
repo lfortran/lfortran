@@ -883,11 +883,37 @@ public:
                             } else if(sa->m_attr == AST::simple_attributeType
                                     ::AttrIntrinsic) {
                                 // Ignore Intrinsic attribute
+                            } else if (sa->m_attr == AST::simple_attributeType
+                                    ::AttrExternal) {
+                                // TODO
+                                throw SemanticError("Attribute declaration not "
+                                    "supported yet", x.base.base.loc);
                             } else {
                                 throw SemanticError("Attribute declaration not "
                                         "supported", x.base.base.loc);
                             }
                         }
+                    }
+                }
+            // enable sole `dimension` attribute
+            } else if (AST::is_a<AST::AttrDimension_t>(*x.m_attributes[0])
+                    && x.n_attributes == 1) {
+                for (size_t i=0;i<x.n_syms;++i) { // symbols for line only
+                    AST::var_sym_t &s = x.m_syms[i];
+                    std::string sym = to_lower(s.m_name);
+                    ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
+                    // get actual variable from SymTab, not the current line
+                    if (get_sym == nullptr) throw SemanticError("Cannot set dimension for undeclared variable", x.base.base.loc);
+                    if (ASR::is_a<ASR::Variable_t>(*get_sym)) {
+                        Vec<ASR::dimension_t> dims;
+                        dims.reserve(al, 0);
+                        process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim);
+                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(get_sym);
+                        if (!ASRUtils::ttype_set_dimensions(v->m_type, dims.data(), dims.size())) {
+                            throw SemanticError("Cannot set dimension for variable of non-numerical type", x.base.base.loc);
+                        }
+                    } else {
+                        throw SemanticError("Cannot attribute non-variable type with dimension", x.base.base.loc);
                     }
                 }
             } else {
@@ -1402,7 +1428,7 @@ public:
     void fix_exprs_ttype_t(std::vector<ASR::expr_t*>& exprs,
                            Vec<ASR::call_arg_t>& orig_args,
                            ASR::Function_t* orig_func=nullptr) {
-        ASR::ExprStmtDuplicator expr_duplicator(al);
+        ASRUtils::ExprStmtDuplicator expr_duplicator(al);
         expr_duplicator.allow_procedure_calls = true;
         ASRUtils::ReplaceArgVisitor arg_replacer(al, current_scope, orig_func,
                                                  orig_args);
@@ -2444,7 +2470,7 @@ public:
                 loc);
         } else if (! (ASR::is_a<ASR::GenericProcedure_t>(*t)
                     || ASR::is_a<ASR::Function_t>(*t)
-                    || ASR::is_a<ASR::Subroutine_t>(*t))) {
+                    )) {
             throw SemanticError("The symbol '" + remote_sym
                 + "' found in the module '" + module_name + "', "
                 + "but it is not a function, subroutine or a generic procedure.",

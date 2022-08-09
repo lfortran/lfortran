@@ -83,7 +83,7 @@ public:
                 if( length_value ) {
                     int64_t length_int = -1;
                     ASRUtils::extract_value(length_value, length_int);
-                    size *= length_int;
+                    size *= (length_int);
                     dims += "[" + std::to_string(length_int) + "]";
                 } else {
                     size = 0;
@@ -201,6 +201,7 @@ public:
     {
         std::string sub;
         bool use_ref = (v.m_intent == LFortran::ASRUtils::intent_out ||
+
                         v.m_intent == LFortran::ASRUtils::intent_inout);
         bool is_array = ASRUtils::is_array(v.m_type);
         bool dummy = LFortran::ASRUtils::is_arg_dummy(v.m_intent);
@@ -415,8 +416,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 
         // Process procedures first:
         for (auto &item : x.m_global_scope->get_scope()) {
-            if (ASR::is_a<ASR::Function_t>(*item.second)
-                || ASR::is_a<ASR::Subroutine_t>(*item.second)) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 visit_symbol(*item.second);
                 unit_src += src;
             }
@@ -450,11 +450,6 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         // Generate code for nested subroutines and functions first:
         std::string contains;
         for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Subroutine_t>(*item.second)) {
-                ASR::Subroutine_t *s = ASR::down_cast<ASR::Subroutine_t>(item.second);
-                visit_Subroutine(*s);
-                contains += src;
-            }
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
                 visit_Function(*s);
@@ -554,6 +549,21 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         last_expr_precedence = 2;
     }
 
+    void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        from_std_vector_helper = indent + "Kokkos::View<float*> r;\n";
+        std::string out = "from_std_vector<float>({";
+        for (size_t i=0; i<x.n_args; i++) {
+            this->visit_expr(*x.m_args[i]);
+            out += src;
+            if (i < x.n_args-1) out += ", ";
+        }
+        out += "})";
+        from_std_vector_helper += indent + "r = " + out + ";\n";
+        src = "&r";
+        last_expr_precedence = 2;
+    }
+
     void visit_StringConcat(const ASR::StringConcat_t &x) {
         this->visit_expr(*x.m_left);
         std::string left = std::move(src);
@@ -575,19 +585,17 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         }
     }
 
-    void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
-        std::string indent(indentation_level * indentation_spaces, ' ');
-        from_std_vector_helper = indent + "Kokkos::View<float*> r;\n";
-        std::string out = "from_std_vector<float>({";
-        for (size_t i=0; i<x.n_args; i++) {
-            this->visit_expr(*x.m_args[i]);
-            out += src;
-            if (i < x.n_args-1) out += ", ";
-        }
-        out += "})";
-        from_std_vector_helper += indent + "r = " + out + ";\n";
-        src = "&r";
-        last_expr_precedence = 2;
+    void visit_StringItem(const ASR::StringItem_t& x) {
+        this->visit_expr(*x.m_idx);
+        std::string idx = std::move(src);
+        this->visit_expr(*x.m_arg);
+        std::string str = std::move(src);
+        src = str + "[" + idx + " - 1]";
+    }
+
+    void visit_StringLen(const ASR::StringLen_t &x) {
+        this->visit_expr(*x.m_arg);
+        src = src + ".length()";
     }
 
     void visit_Print(const ASR::Print_t &x) {
@@ -606,7 +614,12 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
                 out += "<< " + sep + " ";
             }
         }
-        out += "<< std::endl;\n";
+        if (x.m_end) {
+            this->visit_expr(*x.m_end);
+            out += "<< " + src + ";\n";
+        } else {
+            out += "<< std::endl;\n";
+        }
         src = out;
     }
 
@@ -651,6 +664,32 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         }
         out += indent + "});\n";
         indentation_level -= 1;
+        src = out;
+    }
+
+    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+        this->visit_expr(*x.m_v);
+        std::string array = src;
+        std::string out = array;
+        ASR::dimension_t* m_dims;
+        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_v), m_dims);
+        out += "->data->operator[](";
+        std::string index = "";
+        for (size_t i=0; i<x.n_args; i++) {
+            std::string current_index = "";
+            if (x.m_args[i].m_right) {
+                this->visit_expr(*x.m_args[i].m_right);
+            } else {
+                src = "/* FIXME right index */";
+            }
+            out += src;
+            out += " - " + array + "->dims[" + std::to_string(i) + "].lower_bound";
+            if (i < x.n_args - 1) {
+                out += ", ";
+            }
+        }
+        out += ")";
+        last_expr_precedence = 2;
         src = out;
     }
 

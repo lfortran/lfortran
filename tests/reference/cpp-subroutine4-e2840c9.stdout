@@ -32,6 +32,7 @@ void triad(T0* a, T1* b, float scalar, T2* c);
 template <typename T0, typename T1, typename T2>
 void triad(T0* a, T1* b, float scalar, T2* c)
 {
+    int32_t i;
     int32_t n;
     n = a->data->extent(0);
     Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(1, n+1), KOKKOS_LAMBDA(const long i) {

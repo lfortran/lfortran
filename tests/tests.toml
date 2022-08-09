@@ -1925,6 +1925,14 @@ filename = "fixed_form2.f"
 ast = true
 
 [[test]]
+filename = "fixedform_doloop.f"
+ast = true
+
+[[test]]
+filename = "fixedform_doloop2.f"
+ast = true
+
+[[test]]
 filename = "comments1.f90"
 ast = true
 
@@ -2140,3 +2148,8 @@ asr_implicit_typing = true
 [[test]]
 filename = "implicit_typing2.f90"
 asr_implicit_typing = true
+
+[[test]]
+filename = "dimension_attr.f"
+ast = true
+asr = true

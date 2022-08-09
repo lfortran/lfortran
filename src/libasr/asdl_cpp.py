@@ -405,6 +405,102 @@ class ASTWalkVisitorVisitor(ASDLVisitor):
             self.emit(  "this->visit_symbol(*a.second);", 3)
             self.emit("}", 2)
 
+class CallReplacerOnExpressionsVisitor(ASDLVisitor):
+
+    def visitModule(self, mod):
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Walk Visitor base class")
+        self.emit("")
+        self.emit("template <class Derived>")
+        self.emit("class CallReplacerOnExpressionsVisitor : public BaseVisitor<Derived>")
+        self.emit("{")
+        self.emit("private:")
+        self.emit("    Derived& self() { return static_cast<Derived&>(*this); }")
+        self.emit("public:")
+        self.emit("    ASR::expr_t** current_expr;")
+        self.emit("    ASR::expr_t** current_expr_copy;")
+        self.emit("")
+        self.emit("    void call_replacer() {}")
+        super(CallReplacerOnExpressionsVisitor, self).visitModule(mod)
+        self.emit("};")
+
+    def visitType(self, tp):
+        if not (isinstance(tp.value, asdl.Sum) and
+                is_simple_sum(tp.value)):
+            super(CallReplacerOnExpressionsVisitor, self).visitType(tp, tp.name)
+
+    def visitProduct(self, prod, name):
+        self.make_visitor(name, prod.fields)
+
+    def visitConstructor(self, cons, _):
+        self.make_visitor(cons.name, cons.fields)
+
+    def make_visitor(self, name, fields):
+        self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        self.used = False
+        have_body = False
+        for field in fields:
+            self.visitField(field)
+        if not self.used:
+            # Note: a better solution would be to change `&x` to `& /* x */`
+            # above, but we would need to change emit to return a string.
+            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+        self.emit("}", 1)
+
+    def insert_call_replacer_code(self, name, level, index=""):
+        self.emit("    current_expr_copy = current_expr;", level)
+        self.emit("    current_expr = const_cast<ASR::expr_t**>(&(x.m_%s%s));" % (name, index), level)
+        self.emit("    self().call_replacer();", level)
+        self.emit("    current_expr = current_expr_copy;", level)
+
+    def visitField(self, field):
+        if (field.type not in asdl.builtin_types and
+            field.type not in self.data.simple_types):
+            level = 2
+            if field.seq:
+                self.used = True
+                self.emit("for (size_t i=0; i<x.n_%s; i++) {" % field.name, level)
+                if field.type in products:
+                    if field.type == "expr":
+                        self.insert_call_replacer_code(field.name, level, "[i]")
+                    self.emit("    self().visit_%s(x.m_%s[i]);" % (field.type, field.name), level)
+                else:
+                    if field.type != "symbol":
+                        if field.type == "expr":
+                            self.insert_call_replacer_code(field.name, level, "[i]")
+                        self.emit("    self().visit_%s(*x.m_%s[i]);" % (field.type, field.name), level)
+                self.emit("}", level)
+            else:
+                if field.type in products:
+                    self.used = True
+                    if field.opt:
+                        self.emit("if (x.m_%s) {" % field.name, 2)
+                        level = 3
+                        if field.type == "expr":
+                            self.insert_call_replacer_code(field.name, level)
+                    if field.opt:
+                        self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
+                        self.emit("}", 2)
+                    else:
+                        self.emit("self().visit_%s(x.m_%s);" % (field.type, field.name), level)
+                else:
+                    if field.type != "symbol":
+                        self.used = True
+                        if field.opt:
+                            self.emit("if (x.m_%s) {" % field.name, 2)
+                            level = 3
+                        if field.type == "expr":
+                            self.insert_call_replacer_code(field.name, level)
+                        self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
+                        if field.opt:
+                            self.emit("}", 2)
+        elif field.type == "symbol_table" and field.name in["symtab",
+                "global_scope"]:
+            self.used = True
+            self.emit("for (auto &a : x.m_%s->get_scope()) {" % field.name, 2)
+            self.emit(  "this->visit_symbol(*a.second);", 3)
+            self.emit("}", 2)
+
 # This class generates a visitor that prints the tree structure of AST/ASR
 class TreeVisitorVisitor(ASDLVisitor):
 
@@ -668,8 +764,10 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
     def __init__(self, stream, data):
         self.duplicate_stmt = []
         self.duplicate_expr = []
+        self.duplicate_case_stmt = []
         self.is_stmt = False
         self.is_expr = False
+        self.is_case_stmt = False
         self.is_product = False
         super(ExprStmtDuplicatorVisitor, self).__init__(stream, data)
 
@@ -677,15 +775,17 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.emit("/" + "*"*78 + "/")
         self.emit("// Expression and statement Duplicator class")
         self.emit("")
-        self.emit("class ExprStmtDuplicator {")
-        self.emit("private:")
-        self.emit("    Allocator& al;")
-        self.emit("")
+        self.emit("template <class Derived>")
+        self.emit("class BaseExprStmtDuplicator {")
         self.emit("public:")
+        self.emit("    Derived& self() { return static_cast<Derived&>(*this); }")
+        self.emit("")
+        self.emit("    Allocator &al;")
         self.emit("    bool success;")
         self.emit("    bool allow_procedure_calls;")
+        self.emit("    bool allow_reshape;")
         self.emit("")
-        self.emit("    ExprStmtDuplicator(Allocator& al_) : al(al_), success(false), allow_procedure_calls(true) {}")
+        self.emit("    BaseExprStmtDuplicator(Allocator& al_) : al(al_), success(false), allow_procedure_calls(true), allow_reshape(true) {}")
         self.emit("")
         self.duplicate_stmt.append(("    ASR::stmt_t* duplicate_stmt(ASR::stmt_t* x) {", 0))
         self.duplicate_stmt.append(("    if( !x ) {", 1))
@@ -700,6 +800,13 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_expr.append(("    }", 1))
         self.duplicate_expr.append(("", 0))
         self.duplicate_expr.append(("    switch(x->type) {", 1))
+
+        self.duplicate_case_stmt.append(("    ASR::case_stmt_t* duplicate_case_stmt(ASR::case_stmt_t* x) {", 0))
+        self.duplicate_case_stmt.append(("    if( !x ) {", 1))
+        self.duplicate_case_stmt.append(("    return nullptr;", 2))
+        self.duplicate_case_stmt.append(("    }", 1))
+        self.duplicate_case_stmt.append(("", 0))
+        self.duplicate_case_stmt.append(("    switch(x->type) {", 1))
 
         super(ExprStmtDuplicatorVisitor, self).visitModule(mod)
         self.duplicate_stmt.append(("    default: {", 2))
@@ -717,10 +824,22 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_expr.append(("", 0))
         self.duplicate_expr.append(("    return nullptr;", 1))
         self.duplicate_expr.append(("    }", 0))
+
+        self.duplicate_case_stmt.append(("    default: {", 2))
+        self.duplicate_case_stmt.append(('    LFORTRAN_ASSERT_MSG(false, "Duplication of " + std::to_string(x->type) + " case statement is not supported yet.");', 3))
+        self.duplicate_case_stmt.append(("    }", 2))
+        self.duplicate_case_stmt.append(("    }", 1))
+        self.duplicate_case_stmt.append(("", 0))
+        self.duplicate_case_stmt.append(("    return nullptr;", 1))
+        self.duplicate_case_stmt.append(("    }", 0))
+
         for line, level in self.duplicate_stmt:
             self.emit(line, level=level)
         self.emit("")
         for line, level in self.duplicate_expr:
+            self.emit(line, level=level)
+        self.emit("")
+        for line, level in self.duplicate_case_stmt:
             self.emit(line, level=level)
         self.emit("")
         self.emit("};")
@@ -733,7 +852,8 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
     def visitSum(self, sum, *args):
         self.is_stmt = args[0] == 'stmt'
         self.is_expr = args[0] == 'expr'
-        if self.is_stmt or self.is_expr:
+        self.is_case_stmt = args[0] == 'case_stmt'
+        if self.is_stmt or self.is_expr or self.is_case_stmt:
             for tp in sum.types:
                 self.visit(tp, *args)
 
@@ -764,7 +884,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                 self.duplicate_stmt.append(("    success = false;", 4))
                 self.duplicate_stmt.append(("    return nullptr;", 4))
                 self.duplicate_stmt.append(("    }", 3))
-            self.duplicate_stmt.append(("    return down_cast<ASR::stmt_t>(duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
+            self.duplicate_stmt.append(("    return down_cast<ASR::stmt_t>(self().duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
             self.duplicate_stmt.append(("    }", 2))
         elif self.is_expr:
             self.duplicate_expr.append(("    case ASR::exprType::%s: {" % name, 2))
@@ -773,19 +893,37 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                 self.duplicate_expr.append(("    success = false;", 4))
                 self.duplicate_expr.append(("    return nullptr;", 4))
                 self.duplicate_expr.append(("    }", 3))
-            self.duplicate_expr.append(("    return down_cast<ASR::expr_t>(duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
+            elif name == "ArrayReshape":
+                self.duplicate_expr.append(("    if( !allow_reshape ) {", 3))
+                self.duplicate_expr.append(("    success = false;", 4))
+                self.duplicate_expr.append(("    return nullptr;", 4))
+                self.duplicate_expr.append(("    }", 3))
+            self.duplicate_expr.append(("    return down_cast<ASR::expr_t>(self().duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
             self.duplicate_expr.append(("    }", 2))
+        elif self.is_case_stmt:
+            self.duplicate_case_stmt.append(("    case ASR::case_stmtType::%s: {" % name, 2))
+            self.duplicate_case_stmt.append(("    return down_cast<ASR::case_stmt_t>(self().duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
+            self.duplicate_case_stmt.append(("    }", 2))
         self.emit("}", 1)
         self.emit("")
 
     def visitField(self, field):
         arguments = None
-        if field.type == "expr" or field.type == "stmt" or field.type == "symbol" or field.type == "call_arg":
+        if (field.type == "expr" or
+            field.type == "stmt" or
+            field.type == "symbol" or
+            field.type == "call_arg" or
+            field.type == "do_loop_head" or
+            field.type == "array_index" or
+            field.type == "alloc_arg" or
+            field.type == "case_stmt"):
             level = 2
             if field.seq:
                 self.used = True
                 pointer_char = ''
-                if field.type != "call_arg":
+                if (field.type != "call_arg" and
+                    field.type != "array_index" and
+                    field.type != "alloc_arg"):
                     pointer_char = '*'
                 self.emit("Vec<%s_t%s> m_%s;" % (field.type, pointer_char, field.name), level)
                 self.emit("m_%s.reserve(al, x->n_%s);" % (field.name, field.name), level)
@@ -795,18 +933,54 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                 elif field.type == "call_arg":
                     self.emit("    ASR::call_arg_t call_arg_copy;", level)
                     self.emit("    call_arg_copy.loc = x->m_%s[i].loc;"%(field.name), level)
-                    self.emit("    call_arg_copy.m_value = duplicate_expr(x->m_%s[i].m_value);"%(field.name), level)
+                    self.emit("    call_arg_copy.m_value = self().duplicate_expr(x->m_%s[i].m_value);"%(field.name), level)
                     self.emit("    m_%s.push_back(al, call_arg_copy);"%(field.name), level)
+                elif field.type == "alloc_arg":
+                    self.emit("    ASR::alloc_arg_t alloc_arg_copy;", level)
+                    self.emit("    alloc_arg_copy.loc = x->m_%s[i].loc;"%(field.name), level)
+                    self.emit("    alloc_arg_copy.m_a = x->m_%s[i].m_a;"%(field.name), level)
+                    self.emit("    alloc_arg_copy.n_dims = x->m_%s[i].n_dims;"%(field.name), level)
+                    self.emit("    Vec<ASR::dimension_t> dims_copy;", level)
+                    self.emit("    dims_copy.reserve(al, alloc_arg_copy.n_dims);", level)
+                    self.emit("    for (size_t j = 0; j < alloc_arg_copy.n_dims; j++) {", level)
+                    self.emit("    ASR::dimension_t dim_copy;", level + 1)
+                    self.emit("    dim_copy.loc = x->m_%s[i].m_dims[j].loc;"%(field.name), level + 1)
+                    self.emit("    dim_copy.m_start = self().duplicate_expr(x->m_%s[i].m_dims[j].m_start);"%(field.name), level + 1)
+                    self.emit("    dim_copy.m_length = self().duplicate_expr(x->m_%s[i].m_dims[j].m_length);"%(field.name), level + 1)
+                    self.emit("    dims_copy.push_back(al, dim_copy);", level + 1)
+                    self.emit("    }", level)
+                    self.emit("    alloc_arg_copy.m_dims = dims_copy.p;", level)
+                    self.emit("    m_%s.push_back(al, alloc_arg_copy);"%(field.name), level)
+                elif field.type == "array_index":
+                    self.emit("    ASR::array_index_t array_index_copy;", level)
+                    self.emit("    array_index_copy.loc = x->m_%s[i].loc;"%(field.name), level)
+                    self.emit("    array_index_copy.m_left = duplicate_expr(x->m_%s[i].m_left);"%(field.name), level)
+                    self.emit("    array_index_copy.m_right = duplicate_expr(x->m_%s[i].m_right);"%(field.name), level)
+                    self.emit("    array_index_copy.m_step = duplicate_expr(x->m_%s[i].m_step);"%(field.name), level)
+                    self.emit("    m_%s.push_back(al, array_index_copy);"%(field.name), level)
                 else:
-                    self.emit("    m_%s.push_back(al, duplicate_%s(x->m_%s[i]));" % (field.name, field.type, field.name), level)
+                    self.emit("    m_%s.push_back(al, self().duplicate_%s(x->m_%s[i]));" % (field.name, field.type, field.name), level)
                 self.emit("}", level)
                 arguments = ("m_" + field.name + ".p", "x->n_" + field.name)
             else:
                 self.used = True
                 if field.type == "symbol":
                     self.emit("%s_t* m_%s = x->m_%s;" % (field.type, field.name, field.name), level)
+                elif field.type == "do_loop_head":
+                    self.emit("ASR::do_loop_head_t m_head;", level)
+                    self.emit("m_head.loc = x->m_head.loc;", level)
+                    self.emit("m_head.m_v = duplicate_expr(x->m_head.m_v);", level)
+                    self.emit("m_head.m_start = duplicate_expr(x->m_head.m_start);", level)
+                    self.emit("m_head.m_end = duplicate_expr(x->m_head.m_end);", level)
+                    self.emit("m_head.m_increment = duplicate_expr(x->m_head.m_increment);", level)
+                elif field.type == "array_index":
+                    self.emit("ASR::array_index_t m_%s;"%(field.name), level)
+                    self.emit("m_%s.loc = x->m_%s.loc;"%(field.name, field.name), level)
+                    self.emit("m_%s.m_left = duplicate_expr(x->m_%s.m_left);"%(field.name, field.name), level)
+                    self.emit("m_%s.m_right = duplicate_expr(x->m_%s.m_right);"%(field.name, field.name), level)
+                    self.emit("m_%s.m_step = duplicate_expr(x->m_%s.m_step);"%(field.name, field.name), level)
                 else:
-                    self.emit("%s_t* m_%s = duplicate_%s(x->m_%s);" % (field.type, field.name, field.type, field.name), level)
+                    self.emit("%s_t* m_%s = self().duplicate_%s(x->m_%s);" % (field.type, field.name, field.type, field.name), level)
                 arguments = ("m_" + field.name, )
         else:
             if field.seq:
@@ -915,94 +1089,94 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
 
 class StmtBaseReplacerVisitor(ASDLVisitor):
 
-     def __init__(self, stream, data):
-         self.replace_stmt = []
-         self.is_stmt = False
-         self.is_product = False
-         super(StmtBaseReplacerVisitor, self).__init__(stream, data)
+    def __init__(self, stream, data):
+        self.replace_stmt = []
+        self.is_stmt = False
+        self.is_product = False
+        super(StmtBaseReplacerVisitor, self).__init__(stream, data)
 
-     def visitModule(self, mod):
-         self.emit("/" + "*"*78 + "/")
-         self.emit("// Statement Replacer Base class")
-         self.emit("")
-         self.emit("template <class Derived>")
-         self.emit("class BaseStmtReplacer {")
-         self.emit("public:")
-         self.emit("    Derived& self() { return static_cast<Derived&>(*this); }")
-         self.emit("")
-         self.emit("    ASR::stmt_t** current_stmt;")
-         self.emit("    ASR::stmt_t** current_stmt_copy;")
-         self.emit("    bool has_replacement_happened;")
-         self.emit("")
-         self.emit("    BaseStmtReplacer() : current_stmt(nullptr), has_replacement_happened(false) {}")
-         self.emit("")
+    def visitModule(self, mod):
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Statement Replacer Base class")
+        self.emit("")
+        self.emit("template <class Derived>")
+        self.emit("class BaseStmtReplacer {")
+        self.emit("public:")
+        self.emit("    Derived& self() { return static_cast<Derived&>(*this); }")
+        self.emit("")
+        self.emit("    ASR::stmt_t** current_stmt;")
+        self.emit("    ASR::stmt_t** current_stmt_copy;")
+        self.emit("    bool has_replacement_happened;")
+        self.emit("")
+        self.emit("    BaseStmtReplacer() : current_stmt(nullptr), has_replacement_happened(false) {}")
+        self.emit("")
 
-         self.replace_stmt.append(("    void replace_stmt(ASR::stmt_t* x) {", 0))
-         self.replace_stmt.append(("    if( !x ) {", 1))
-         self.replace_stmt.append(("    return ;", 2))
-         self.replace_stmt.append(("    }", 1))
-         self.replace_stmt.append(("", 0))
-         self.replace_stmt.append(("    switch(x->type) {", 1))
+        self.replace_stmt.append(("    void replace_stmt(ASR::stmt_t* x) {", 0))
+        self.replace_stmt.append(("    if( !x ) {", 1))
+        self.replace_stmt.append(("    return ;", 2))
+        self.replace_stmt.append(("    }", 1))
+        self.replace_stmt.append(("", 0))
+        self.replace_stmt.append(("    switch(x->type) {", 1))
 
-         super(StmtBaseReplacerVisitor, self).visitModule(mod)
+        super(StmtBaseReplacerVisitor, self).visitModule(mod)
 
-         self.replace_stmt.append(("    default: {", 2))
-         self.replace_stmt.append(('    LFORTRAN_ASSERT_MSG(false, "Replacement of " + std::to_string(x->type) + " statement is not supported yet.");', 3))
-         self.replace_stmt.append(("    }", 2))
-         self.replace_stmt.append(("    }", 1))
-         self.replace_stmt.append(("", 0))
-         self.replace_stmt.append(("    }", 0))
-         for line, level in self.replace_stmt:
-             self.emit(line, level=level)
-         self.emit("")
-         self.emit("};")
+        self.replace_stmt.append(("    default: {", 2))
+        self.replace_stmt.append(('    LFORTRAN_ASSERT_MSG(false, "Replacement of " + std::to_string(x->type) + " statement is not supported yet.");', 3))
+        self.replace_stmt.append(("    }", 2))
+        self.replace_stmt.append(("    }", 1))
+        self.replace_stmt.append(("", 0))
+        self.replace_stmt.append(("    }", 0))
+        for line, level in self.replace_stmt:
+            self.emit(line, level=level)
+        self.emit("")
+        self.emit("};")
 
-     def visitType(self, tp):
-         if not (isinstance(tp.value, asdl.Sum) and
-                 is_simple_sum(tp.value)):
-             super(StmtBaseReplacerVisitor, self).visitType(tp, tp.name)
+    def visitType(self, tp):
+        if not (isinstance(tp.value, asdl.Sum) and
+                is_simple_sum(tp.value)):
+            super(StmtBaseReplacerVisitor, self).visitType(tp, tp.name)
 
-     def visitSum(self, sum, *args):
-         self.is_stmt = args[0] == 'stmt'
-         if self.is_stmt:
-             for tp in sum.types:
-                 self.visit(tp, *args)
+    def visitSum(self, sum, *args):
+        self.is_stmt = args[0] == 'stmt'
+        if self.is_stmt:
+            for tp in sum.types:
+                self.visit(tp, *args)
 
-     def visitProduct(self, prod, name):
-         pass
+    def visitProduct(self, prod, name):
+        pass
 
-     def visitConstructor(self, cons, _):
-         self.make_visitor(cons.name, cons.fields)
+    def visitConstructor(self, cons, _):
+        self.make_visitor(cons.name, cons.fields)
 
-     def make_visitor(self, name, fields):
-         self.emit("")
-         self.emit("void replace_%s(%s_t* x) {" % (name, name), 1)
-         self.used = False
-         for field in fields:
-             self.visitField(field)
-         if not self.used:
-             self.emit("if (x) { }", 2)
+    def make_visitor(self, name, fields):
+        self.emit("")
+        self.emit("void replace_%s(%s_t* x) {" % (name, name), 1)
+        self.used = False
+        for field in fields:
+            self.visitField(field)
+        if not self.used:
+            self.emit("if (x) { }", 2)
 
-         if self.is_stmt:
-             self.replace_stmt.append(("    case ASR::stmtType::%s: {" % name, 2))
-             self.replace_stmt.append(("    self().replace_%s(down_cast<ASR::%s_t>(x));" % (name, name), 3))
-             self.replace_stmt.append(("    break;", 3))
-             self.replace_stmt.append(("    }", 2))
-         self.emit("}", 1)
-         self.emit("")
+        if self.is_stmt:
+            self.replace_stmt.append(("    case ASR::stmtType::%s: {" % name, 2))
+            self.replace_stmt.append(("    self().replace_%s(down_cast<ASR::%s_t>(x));" % (name, name), 3))
+            self.replace_stmt.append(("    break;", 3))
+            self.replace_stmt.append(("    }", 2))
+        self.emit("}", 1)
+        self.emit("")
 
-     def visitField(self, field):
-         arguments = None
-         if field.type == "stmt":
-             level = 2
-             if field.seq:
-                 self.used = True
-                 self.emit("for (size_t i = 0; i < x->n_%s; i++) {" % field.name, level)
-                 self.emit("    current_stmt_copy = current_stmt;", level)
-                 self.emit("    current_stmt = &(x->m_%s[i]);" % (field.name), level)
-                 self.emit("    self().replace_stmt(x->m_%s[i]);"%(field.name), level)
-                 self.emit("    current_stmt = current_stmt_copy;", level)
-                 self.emit("}", level)
+    def visitField(self, field):
+        arguments = None
+        if field.type == "stmt":
+            level = 2
+            if field.seq:
+                self.used = True
+                self.emit("for (size_t i = 0; i < x->n_%s; i++) {" % field.name, level)
+                self.emit("    current_stmt_copy = current_stmt;", level)
+                self.emit("    current_stmt = &(x->m_%s[i]);" % (field.name), level)
+                self.emit("    self().replace_stmt(x->m_%s[i]);"%(field.name), level)
+                self.emit("    current_stmt = current_stmt_copy;", level)
+                self.emit("}", level)
 
 class PickleVisitorVisitor(ASDLVisitor):
 
@@ -1324,6 +1498,8 @@ class SerializationVisitorVisitor(ASDLVisitor):
         self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
         if cons:
             self.emit(    'self().write_int8(x.base.type);', 2)
+            self.emit(    'self().write_int64(x.base.base.loc.first);', 2)
+            self.emit(    'self().write_int64(x.base.base.loc.last);', 2)
         self.used = False
         for n, field in enumerate(fields):
             self.visitField(field, cons, name)
@@ -1418,14 +1594,14 @@ class SerializationVisitorVisitor(ASDLVisitor):
                     self.emit('self().write_int64(x.m_%s->counter);' % field.name, level)
                     self.emit('self().write_int64(x.m_%s->get_scope().size());' % field.name, level)
                     self.emit('for (auto &a : x.m_%s->get_scope()) {' % field.name, level)
-                    self.emit('    if (ASR::is_a<ASR::Subroutine_t>(*a.second) || ASR::is_a<ASR::Function_t>(*a.second)) {', level)
+                    self.emit('    if (ASR::is_a<ASR::Function_t>(*a.second)) {', level)
                     self.emit('        continue;', level)
                     self.emit('    }', level)
                     self.emit('    self().write_string(a.first);', level)
                     self.emit('    this->visit_symbol(*a.second);', level)
                     self.emit('}', level)
                     self.emit('for (auto &a : x.m_%s->get_scope()) {' % field.name, level)
-                    self.emit('    if (ASR::is_a<ASR::Subroutine_t>(*a.second) || ASR::is_a<ASR::Function_t>(*a.second)) {', level)
+                    self.emit('    if (ASR::is_a<ASR::Function_t>(*a.second)) {', level)
                     self.emit('        self().write_string(a.first);', level)
                     self.emit('        this->visit_symbol(*a.second);', level)
                     self.emit('    }', level)
@@ -1504,12 +1680,12 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                 self.visit(tp, *args)
             self.emit("%s_t* deserialize_%s() {" % (subs["mod"], args[0]), 1)
             self.emit(  'uint8_t t = self().read_int8();', 2)
-            self.emit(  '%s::%sType ty = static_cast<%s::%sType>(t);' % (subs["mod"].upper(), args[0],
-                subs["mod"].upper(), args[0]), 2)
+            self.emit(  '%s::%sType ty = static_cast<%s::%sType>(t);' % (subs["MOD"], args[0],
+                subs["MOD"], args[0]), 2)
             self.emit(  'switch (ty) {', 2)
             for tp in sum.types:
                 self.emit(    'case (%s::%sType::%s) : return self().deserialize_%s();' \
-                    % (subs["mod"].upper(), args[0], tp.name, tp.name), 3)
+                    % (subs["MOD"], args[0], tp.name, tp.name), 3)
             self.emit(    'default : throw LCompilersException("Unknown type in deserialize_%s()");' % args[0], 3)
             self.emit(  '}', 2)
             self.emit(  'throw LCompilersException("Switch statement above was not exhaustive.");', 2)
@@ -1520,12 +1696,12 @@ class DeserializationVisitorVisitor(ASDLVisitor):
         name = "node"
         self.emit("%s_t* deserialize_%s() {" % (subs["mod"], name), 1)
         self.emit(  'uint8_t t = self().read_int8();', 2)
-        self.emit(  '%s::%sType ty = static_cast<%s::%sType>(t);' % (subs["mod"].upper(), subs["mod"],
-            subs["mod"].upper(), subs["mod"]), 2)
+        self.emit(  '%s::%sType ty = static_cast<%s::%sType>(t);' % (subs["MOD"], subs["mod"],
+            subs["MOD"], subs["mod"]), 2)
         self.emit(  'switch (ty) {', 2)
         for tp in sums:
             self.emit(    'case (%s::%sType::%s) : return self().deserialize_%s();' \
-                % (subs["mod"].upper(), subs["mod"], tp, tp), 3)
+                % (subs["MOD"], subs["mod"], tp, tp), 3)
         self.emit(    'default : throw LCompilersException("Unknown type in deserialize_%s()");' % name, 3)
         self.emit(  '}', 2)
         self.emit(  'throw LCompilersException("Switch statement above was not exhaustive.");', 2)
@@ -1579,6 +1755,8 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                         rhs = "self().read_cstring()"
                     elif field.type == "string":
                         rhs = "self().read_cstring()"
+                    elif field.type == "int":
+                        rhs = "self().read_int64()"
                     else:
                         print(field.type)
                         assert False
@@ -1631,7 +1809,7 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             lines.append("    v_%s.push_back(al, self().read_symbol());" % (f.name))
                         else:
                             lines.append("    v_%s.push_back(al, %s::down_cast<%s::%s_t>(self().deserialize_%s()));" % (f.name,
-                                subs["mod"].upper(), subs["mod"].upper(), f.type, f.type))
+                                subs["MOD"], subs["MOD"], f.type, f.type))
                     lines.append("}")
                 else:
                     if f.type == "node":
@@ -1725,14 +1903,14 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                 else:
                     if f.type in products:
                         assert not f.opt
-                        lines.append("%s::%s_t m_%s = self().deserialize_%s();" % (subs["mod"].upper(), f.type, f.name, f.type))
+                        lines.append("%s::%s_t m_%s = self().deserialize_%s();" % (subs["MOD"], f.type, f.name, f.type))
                     else:
                         if f.type in simple_sums:
                             assert not f.opt
-                            lines.append("%s::%sType m_%s = self().deserialize_%s();" % (subs["mod"].upper(),
+                            lines.append("%s::%sType m_%s = self().deserialize_%s();" % (subs["MOD"],
                                 f.type, f.name, f.type))
                         else:
-                            lines.append("%s::%s_t *m_%s;" % (subs["mod"].upper(),
+                            lines.append("%s::%s_t *m_%s;" % (subs["MOD"],
                                 f.type, f.name))
                             if f.opt:
                                 lines.append("if (self().read_bool()) {")
@@ -1744,19 +1922,24 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                                     lines.append("m_%s = self().read_symbol();" % (f.name))
                             else:
                                 lines.append("m_%s = %s::down_cast<%s::%s_t>(self().deserialize_%s());" % (
-                                    f.name, subs["mod"].upper(), subs["mod"].upper(), f.type, f.type))
+                                    f.name, subs["MOD"], subs["MOD"], f.type, f.type))
                             if f.opt:
                                 lines.append("} else {")
                                 lines.append("m_%s = nullptr;" % f.name)
                                 lines.append("}")
                     args.append("m_%s" % (f.name))
-        for line in lines:
-            self.emit(line, 2)
 
         self.emit(    'Location loc;', 2)
-        self.emit(    '// FIXME: read loc from the stream', 2)
-        self.emit(    'loc.first=0; loc.last=0;', 2)
-        self.emit(    'return %s::make_%s_t(%s);' % (subs["mod"].upper(), name, ", ".join(args)), 2)
+        self.emit(    'loc.first = self().read_int64();', 2)
+        self.emit(    'loc.last = self().read_int64();', 2)
+        if subs["lcompiler"] == "lfortran":
+            # Set the location to 0 for now, since we do not yet
+            # support multiple files
+            self.emit(    'loc.first = 0;', 2)
+            self.emit(    'loc.last = 0;', 2)
+        for line in lines:
+            self.emit(line, 2)
+        self.emit(    'return %s::make_%s_t(%s);' % (subs["MOD"], name, ", ".join(args)), 2)
         self.emit("}", 1)
 
 class ExprTypeVisitor(ASDLVisitor):
@@ -1817,6 +2000,9 @@ static inline ASR::ttype_t* expr_type0(const ASR::expr_t *f)
             }
             return ASR::down_cast<ASR::Variable_t>(s)->m_type;
         }""" \
+                    % (name, name), 2, new_line=False)
+        elif name == "OverloadedBinOp":
+            self.emit("case ASR::exprType::%s: { return expr_type0(((ASR::%s_t*)f)->m_overloaded); }"\
                     % (name, name), 2, new_line=False)
         else:
             self.emit("case ASR::exprType::%s: { return ((ASR::%s_t*)f)->m_type; }"\
@@ -1943,8 +2129,8 @@ class ASDLData(object):
         self.optional_masks = optional_masks
 
 
-HEAD = r"""#ifndef LFORTRAN_%(MOD)s_H
-#define LFORTRAN_%(MOD)s_H
+HEAD = r"""#ifndef LFORTRAN_%(MOD2)s_H
+#define LFORTRAN_%(MOD2)s_H
 
 // Generated by grammar/asdl_cpp.py
 
@@ -1996,12 +2182,11 @@ static inline T* down_cast2(const %(mod)s_t *f)
     return down_cast<T>(t);
 }
 
-
 """
 
 FOOT = r"""} // namespace LFortran::%(MOD)s
 
-#endif // LFORTRAN_%(MOD)s_H
+#endif // LFORTRAN_%(MOD2)s_H
 """
 
 visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
@@ -2013,11 +2198,6 @@ visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
 def main(argv):
     if len(argv) == 3:
         def_file, out_file = argv[1:]
-    elif len(argv) == 1:
-        print("Assuming default values of AST.asdl and ast.h")
-        here = os.path.dirname(__file__)
-        def_file = os.path.join(here, "AST.asdl")
-        out_file = os.path.join(here, "..", "src", "lfortran", "ast.h")
     else:
         print("invalid arguments")
         return 2
@@ -2028,9 +2208,16 @@ def main(argv):
     global subs
     subs = {
         "MOD": mod.name.upper(),
+        "MOD2": mod.name.upper(),
         "mod": mod.name.lower(),
         "types": types_,
     }
+    if subs["MOD"] == "LPYTHON":
+        subs["MOD"] = "LPython::AST"
+        subs["mod"] = "ast"
+        subs["lcompiler"] = "lpython"
+    else:
+        subs["lcompiler"] = "lfortran"
     is_asr = (mod.name.upper() == "ASR")
     fp = open(out_file, "w", encoding="utf-8")
     try:
@@ -2051,6 +2238,8 @@ def main(argv):
             ExprBaseReplacerVisitor(fp, data).visit(mod)
             fp.write("\n\n")
             StmtBaseReplacerVisitor(fp, data).visit(mod)
+            fp.write("\n\n")
+            CallReplacerOnExpressionsVisitor(fp, data).visit(mod)
             fp.write("\n\n")
             ExprTypeVisitor(fp, data).visit(mod)
             fp.write("\n\n")

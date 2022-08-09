@@ -6,14 +6,17 @@
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/diagnostics.h>
 #include <lfortran/parser/parser_exception.h>
+#include <lfortran/parser/fixedform_tokenizer.h>
+
+#include <lfortran/pickle.h>
 
 namespace LFortran
 {
 
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
-        diag::Diagnostics &diagnostics)
+        diag::Diagnostics &diagnostics, const bool &fixed_form)
 {
-    Parser p(al, diagnostics);
+    Parser p(al, diagnostics, fixed_form);
     try {
         p.parse(s);
     } catch (const parser_local::TokenizerError &e) {
@@ -45,9 +48,17 @@ void Parser::parse(const std::string &input)
     } else {
         inp.append("\n");
     }
-    m_tokenizer.set_string(inp);
-    if (yyparse(*this) == 0) {
-        return;
+    if (!fixed_form) {
+        m_tokenizer.set_string(inp);
+        if (yyparse(*this) == 0) {
+            return;
+        }
+    } else {
+        f_tokenizer.set_string(inp);
+        f_tokenizer.tokenize_input(diag, m_a);
+        if (yyparse(*this) == 0) {
+            return;
+        }
     }
     throw parser_local::ParserError("Parsing unsuccessful (internal compiler error)");
 }
@@ -55,26 +66,48 @@ void Parser::parse(const std::string &input)
 Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         diag::Diagnostics &diagnostics,
         std::vector<YYSTYPE> *stypes,
-        std::vector<Location> *locations)
+        std::vector<Location> *locations,
+        bool fixed_form)
 {
-    Tokenizer t;
-    t.set_string(input);
-    std::vector<int> tst;
-    int token = yytokentype::END_OF_FILE + 1; // Something different from EOF
-    while (token != yytokentype::END_OF_FILE) {
-        YYSTYPE y;
-        Location l;
-        try {
-            token = t.lex(al, y, l, diagnostics);
-        } catch (const parser_local::TokenizerError &e) {
-            diagnostics.diagnostics.push_back(e.d);
+    if (fixed_form) {
+        FixedFormTokenizer t;
+        t.set_string(input);
+        if (t.tokenize_input(diagnostics, al)) {
+            LFORTRAN_ASSERT(t.tokens.size() == t.stypes.size())
+            if (stypes) {
+                for(const auto & el : t.stypes) {
+                    stypes->push_back(el);
+                }
+            }
+            if (locations) {
+                for(const auto & el : t.locations) {
+                    locations->push_back(el);
+                }
+            }
+        } else {
             return Error();
+        };
+        return t.tokens;
+    } else {
+        Tokenizer t;
+        t.set_string(input);
+        std::vector<int> tst;
+        int token = yytokentype::END_OF_FILE + 1; // Something different from EOF
+        while (token != yytokentype::END_OF_FILE) {
+            YYSTYPE y;
+            Location l;
+            try {
+                token = t.lex(al, y, l, diagnostics);
+            } catch (const parser_local::TokenizerError &e) {
+                diagnostics.diagnostics.push_back(e.d);
+                return Error();
+            }
+            tst.push_back(token);
+            if (stypes) stypes->push_back(y);
+            if (locations) locations->push_back(l);
         }
-        tst.push_back(token);
-        if (stypes) stypes->push_back(y);
-        if (locations) locations->push_back(l);
+        return tst;
     }
-    return tst;
 }
 
 void cont1(const std::string &s, size_t &pos, bool &ws_or_comment)
@@ -181,7 +214,8 @@ void copy_label(std::string &out, const std::string &s, size_t &pos)
     }
 }
 
-void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos)
+void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
+    LocationManager &lm)
 {
     while (pos < s.size() && s[pos] != '\n') {
         if (s[pos] == '"' || s[pos] == '\'') {
@@ -190,6 +224,11 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos)
             skip_rest_of_line(s, pos);
             out += '\n';
             return;
+        } else if (s[pos] == ' ') {
+            // Skip white space in a fixed-form parser
+            pos++;
+            lm.out_start.push_back(out.size());
+            lm.in_start.push_back(pos);
         } else {
             out += s[pos];
             pos++;
@@ -260,7 +299,7 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     pos += 6;
                     lm.out_start.push_back(out.size());
                     lm.in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos);
+                    copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
                 case LineType::LabeledStatement : {
@@ -269,7 +308,7 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     // Copy from column 7
                     lm.out_start.push_back(out.size());
                     lm.in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos);
+                    copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
                 case LineType::Continuation : {
@@ -278,7 +317,7 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     pos += 6;
                     lm.out_start.push_back(out.size());
                     lm.in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos);
+                    copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
                 case LineType::EndOfFile : {
@@ -608,19 +647,31 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
     if (msg == "syntax is ambiguous") {
         message = "Internal Compiler Error: syntax is ambiguous in the parser";
     } else if (msg == "syntax error") {
-        LFortran::YYSTYPE yylval_;
-        YYLTYPE yyloc_;
-        this->m_tokenizer.cur = this->m_tokenizer.tok;
-        int token = this->m_tokenizer.lex(this->m_a, yylval_, yyloc_, diag);
+        int token;
+        std::string token_str;
+        // Determine the unexpected token's type:
+        if (this->fixed_form) {
+            unsigned int invalid_token = this->f_tokenizer.token_pos - 1;            
+            if (invalid_token >= f_tokenizer.tokens.size()) {
+                invalid_token = f_tokenizer.tokens.size()-1;
+            }
+            token = f_tokenizer.tokens[invalid_token];
+        } else {
+            LFortran::YYSTYPE yylval_;
+            YYLTYPE yyloc_;
+            this->m_tokenizer.cur = this->m_tokenizer.tok;
+            token = this->m_tokenizer.lex(this->m_a, yylval_, yyloc_, diag);
+            token_str = this->m_tokenizer.token();
+        }
+        // Create a nice error message
         if (token == yytokentype::END_OF_FILE) {
             message =  "End of file is unexpected here";
         } else if (token == yytokentype::TK_NEWLINE) {
             message =  "Newline is unexpected here";
         } else {
-            std::string token_str = this->m_tokenizer.token();
             std::string token_type = token2text(token);
-            if (token_str == token_type) {
-                message =  "Token '" + token_str + "' is unexpected here";
+            if (token_str == token_type || token_str.size() == 0) {
+                message =  "Token '" + token_type + "' is unexpected here";
             } else {
                 message =  "Token '" + token_str + "' (of type '" + token2text(token) + "') is unexpected here";
             }

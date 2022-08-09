@@ -106,7 +106,7 @@ void section(const std::string &s)
     std::cout << color(LFortran::style::bold) << color(LFortran::fg::blue) << s << color(LFortran::style::reset) << color(LFortran::fg::reset) << std::endl;
 }
 
-int emit_tokens(const std::string &input, std::vector<std::string>
+int emit_tokens2(const std::string &input, std::vector<std::string>
     &tok_strings, std::vector<int> &toks, std::vector<LFortran::YYSTYPE>
     &stypes)
 {
@@ -114,10 +114,8 @@ int emit_tokens(const std::string &input, std::vector<std::string>
     // elsewhere
     // Src -> Tokens
     Allocator al(64*1024*1024);
-    //std::vector<int> toks;
-    //std::vector<LFortran::YYSTYPE> stypes;
     LFortran::diag::Diagnostics diagnostics;
-    auto res = LFortran::tokens(al, input, diagnostics, &stypes);
+    auto res = LFortran::tokens(al, input, diagnostics, &stypes, nullptr, false);
     LFortran::LocationManager lm;
     lm.in_filename = "input";
     lm.init_simple(input);
@@ -129,7 +127,6 @@ int emit_tokens(const std::string &input, std::vector<std::string>
         LFORTRAN_ASSERT(diagnostics.has_error())
         return 1;
     }
-
     for (size_t i=0; i < toks.size(); i++) {
         tok_strings.push_back(LFortran::pickle(toks[i], stypes[i]));
         //std::cout << LFortran::pickle(toks[i], stypes[i]) << std::endl;
@@ -145,7 +142,7 @@ bool determine_completeness(std::string command)
     std::vector<int> toks;
     std::vector<LFortran::YYSTYPE> stypes;
     std::vector<std::string> token_strings;
-    int tok_ret = emit_tokens(command, token_strings, toks, stypes);
+    int tok_ret = emit_tokens2(command, token_strings, toks, stypes);
     // The token enumerators are in parser.tab.hh
     int do_blnc = 0;
     if (std::find(toks.begin(), toks.end(), KW_DO)!=toks.end()
@@ -386,18 +383,22 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
     std::vector<LFortran::YYSTYPE> stypes;
     std::vector<LFortran::Location> locations;
     LFortran::diag::Diagnostics diagnostics;
-    auto res = LFortran::tokens(al, input, diagnostics, &stypes, &locations);
     LFortran::LocationManager lm;
+    if (compiler_options.prescan || compiler_options.fixed_form) {
+        input = fix_continuation(input, lm, compiler_options.fixed_form);
+    }
+    auto res = LFortran::tokens(al, input, diagnostics, &stypes, &locations,
+        compiler_options.fixed_form);
     lm.in_filename = infile;
     lm.init_simple(input);
     std::cerr << diagnostics.render(input, lm, compiler_options);
     if (res.ok) {
         toks = res.result;
+        LFORTRAN_ASSERT(toks.size() == stypes.size())
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
         return 1;
     }
-
     for (size_t i=0; i < toks.size(); i++) {
         std::cout << LFortran::pickle(toks[i], stypes[i]);
         if (line_numbers) {
@@ -1174,8 +1175,8 @@ int link_executable(const std::vector<std::string> &infiles,
                 CC = "gcc";
             } else {
                 CC = "clang";
-            }  
-	    
+            }
+
             char *env_CC = std::getenv("LFORTRAN_CC");
             if (env_CC) CC = env_CC;
 
@@ -1324,14 +1325,6 @@ EMSCRIPTEN_KEEPALIVE char* emit_c_from_source(char *input) {
     return &out[0];
 }
 
-EMSCRIPTEN_KEEPALIVE char* emit_llvm_from_source(char *input) {
-    INITIALIZE_VARS;
-    LFortran::Result<std::string> r = fe.get_llvm(input, lm, diagnostics);
-    out = diagnostics.render(input, lm, compiler_options);
-    if (r.ok) { out += r.result; }
-    return &out[0];
-}
-
 // EMSCRIPTEN_KEEPALIVE char* emit_py_from_source(char *input) {
 //     INITIALIZE_VARS;
 //     LFortran::Result<std::string> r = fe.get_py(input, lm, diagnostics);
@@ -1361,6 +1354,7 @@ EMSCRIPTEN_KEEPALIVE char* emit_wasm_from_source(char *input) {
 } // namespace wasm
 
 #endif
+
 
 int main(int argc, char *argv[])
 {

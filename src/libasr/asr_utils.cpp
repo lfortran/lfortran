@@ -64,6 +64,27 @@ std::vector<std::string> determine_module_dependencies(
     return order_deps(deps);
 }
 
+void extract_module_python(const ASR::TranslationUnit_t &m,
+                std::vector<std::pair<std::string, ASR::Module_t*>>& children_modules,
+                std::string module_name) {
+    bool module_found = false;
+    for (auto &a : m.m_global_scope->get_scope()) {
+        if( ASR::is_a<ASR::Module_t>(*a.second) ) {
+            if( a.first == "__main__" ) {
+                module_found = true;
+                children_modules.push_back(std::make_pair(module_name,
+                    ASR::down_cast<ASR::Module_t>(a.second)));
+            } else {
+                children_modules.push_back(std::make_pair(a.first,
+                    ASR::down_cast<ASR::Module_t>(a.second)));
+            }
+        }
+    }
+    if( !module_found ) {
+        throw LCompilersException("ICE: Module not found");
+    }
+}
+
 ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
     LFORTRAN_ASSERT(m.m_global_scope->get_scope().size()== 1);
     for (auto &a : m.m_global_scope->get_scope()) {
@@ -188,11 +209,6 @@ void set_intrinsic(ASR::symbol_t* sym) {
         case ASR::symbolType::Function: {
             ASR::Function_t* function_sym = ASR::down_cast<ASR::Function_t>(sym);
             function_sym->m_abi = ASR::abiType::Intrinsic;
-            break;
-        }
-        case ASR::symbolType::Subroutine: {
-            ASR::Subroutine_t* subroutine_sym = ASR::down_cast<ASR::Subroutine_t>(sym);
-            subroutine_sym->m_abi = ASR::abiType::Intrinsic;
             break;
         }
         case ASR::symbolType::DerivedType: {
@@ -421,7 +437,7 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
             ASR::symbol_t* proc = gen_proc->m_procs[i];
-            ASR::Subroutine_t* subrout = ASR::down_cast<ASR::Subroutine_t>(proc);
+            ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(proc);
             std::string matched_subrout_name = "";
             if( subrout->n_args == 2 ) {
                 ASR::ttype_t* target_arg_type = ASRUtils::expr_type(subrout->m_args[0]);
@@ -743,13 +759,7 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& args,
                          Location& loc, const std::function<void (const std::string &, const Location &)> err) {
     bool result = false;
-    if (ASR::is_a<ASR::Subroutine_t>(*proc)) {
-        ASR::Subroutine_t *sub
-            = ASR::down_cast<ASR::Subroutine_t>(proc);
-        if (argument_types_match(args, *sub)) {
-            result = true;
-        }
-    } else if (ASR::is_a<ASR::Function_t>(*proc)) {
+    if (ASR::is_a<ASR::Function_t>(*proc)) {
         ASR::Function_t *fn
             = ASR::down_cast<ASR::Function_t>(proc);
         if (argument_types_match(args, *fn)) {
@@ -796,16 +806,17 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
     int idx = select_generic_procedure(args, *g, loc, err);
     ASR::symbol_t *final_sym;
     final_sym = g->m_procs[idx];
-    LFORTRAN_ASSERT(ASR::is_a<ASR::Function_t>(*final_sym) ||
-                    ASR::is_a<ASR::Subroutine_t>(*final_sym));
-    bool is_subroutine = ASR::is_a<ASR::Subroutine_t>(*final_sym);
+    LFORTRAN_ASSERT(ASR::is_a<ASR::Function_t>(*final_sym));
+    bool is_subroutine = ASR::down_cast<ASR::Function_t>(final_sym)->m_return_var == nullptr;
     ASR::ttype_t *return_type = nullptr;
     if( ASR::is_a<ASR::Function_t>(*final_sym) ) {
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
-        if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
-            return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
-        } else {
-            return_type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+        if (func->m_return_var) {
+            if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+                return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+            } else {
+                return_type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+            }
         }
     }
     // Create ExternalSymbol for the final subroutine:
