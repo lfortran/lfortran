@@ -126,6 +126,19 @@ def fixdir(s: bytes) -> bytes:
     local_dir = os.getcwd()
     return s.replace(local_dir.encode(), "$DIR".encode())
 
+def unl_loop_del(b):
+    nl_cr = b'\r'[0]
+    nl_lf = b'\n'[0]
+    b = bytearray(b)
+    i = 0
+    while i + 1 <= len(b):
+        if b[i] == nl_cr:
+            if b[i + 1] == nl_lf:
+                del b[i]
+            else:
+                b[i] = nl_lf
+        i += 1
+    return bytes(b)
 
 def run(basename: str, cmd: Union[pathlib.Path, str],
         out_dir: Union[pathlib.Path, str], infile=None, extra_args=None):
@@ -160,6 +173,9 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     if infile and not os.path.exists(infile):
         raise RunException("The input file does not exist")
     outfile = os.path.join(out_dir, basename + "." + "out")
+
+    infile=infile.replace("\\\\","\\").replace("\\","/")
+
     cmd2 = cmd.format(infile=infile, outfile=outfile)
     if extra_args:
         cmd2 += " " + extra_args
@@ -171,6 +187,7 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     if len(r.stdout):
         stdout_file = os.path.join(out_dir, basename + "." + "stdout")
         open(stdout_file, "wb").write(fixdir(r.stdout))
+
     else:
         stdout_file = None
     if len(r.stderr):
@@ -178,19 +195,20 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
         open(stderr_file, "wb").write(fixdir(r.stderr))
     else:
         stderr_file = None
-
     if infile:
-        infile_hash = hashlib.sha224(open(infile, "rb").read()).hexdigest()
+        temp=unl_loop_del(open(infile, "rb").read())
+        infile_hash = hashlib.sha224(temp).hexdigest()
     else:
         infile_hash = None
     if outfile:
-        outfile_hash = hashlib.sha224(open(outfile, "rb").read()).hexdigest()
+        temp=unl_loop_del(open(outfile, "rb").read())
+        outfile_hash = hashlib.sha224(temp).hexdigest()
         outfile = os.path.basename(outfile)
     else:
         outfile_hash = None
     if stdout_file:
-        stdout_hash = hashlib.sha224(
-            open(stdout_file, "rb").read()).hexdigest()
+        temp=unl_loop_del(open(stdout_file, "rb").read())
+        stdout_hash = hashlib.sha224(temp).hexdigest()
         stdout_file = os.path.basename(stdout_file)
     else:
         stdout_hash = None
@@ -203,7 +221,7 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     data = {
         "basename": basename,
         "cmd": cmd,
-        "infile": infile,
+        "infile": infile.replace("\\\\","\\").replace("\\","/"),
         "infile_hash": infile_hash,
         "outfile": outfile,
         "outfile_hash": outfile_hash,
@@ -215,10 +233,12 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     }
     json_file = os.path.join(out_dir, basename + "." + "json")
     json.dump(data, open(json_file, "w"), indent=4)
+    # print("json file is: " + json_file)
     return json_file
 
 
 def get_error_diff(reference_file, output_file, full_err_str) -> str:
+    return "not supported"
     diff_list = subprocess.Popen(
         f"diff {reference_file} {output_file}",
         stdout=subprocess.PIPE,
@@ -272,8 +292,11 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
     s = f"{testname} * {basename}"
     basename = bname(basename, cmd, infile)
     infile = os.path.join("tests", infile)
+
+
     jo = run(basename, cmd, os.path.join("tests", "output"), infile=infile,
              extra_args=extra_args)
+
     jr = os.path.join("tests", "reference", os.path.basename(jo))
     if not os.path.exists(jo):
         raise FileNotFoundError(
@@ -290,6 +313,7 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
 
     dr = json.load(open(jr))
     if do != dr:
+
         # This string builds up the error message. Print test name in red in the beginning.
         # More information is added afterwards.
         full_err_str = f"\n{(color(fg.red)+color(style.bold))}{s}{color(fg.reset)+color(style.reset)}\n"
@@ -316,6 +340,7 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
         raise RunException(
             "Testing with reference output failed." +
             full_err_str)
+
     log.debug(s + " " + check())
 
 def tester_main(compiler, single_test):
