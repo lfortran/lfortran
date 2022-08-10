@@ -332,3 +332,56 @@ jobs:
           ../ci/upload_docs.sh
         env:
           SSH_PRIVATE_KEY_DOCS: ${{ secrets.SSH_PRIVATE_KEY_DOCS }}
+
+  Build_Emscripten:
+    name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.10"]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/provision-with-micromamba@main
+        with:
+          environment-file: ci/environment.yml
+          extra-specs: |
+            python=${{ matrix.python-version }}
+            bison=3.4
+            rapidjson
+            emsdk
+
+      - name: create emscripten prefix
+        shell: bash -l {0}
+        run:
+          # install same emsdk as upstream
+          emsdk install 3.1.2
+          emsdk activate 3.1.2
+          # create environment with cross-compiled dependencies
+          micromamba create -n emx \
+            -c https://repo.mamba.pm/emscripten-forge \
+            --platform=emscripten-32 \
+            xeus nlohmann_json xtl
+
+      - name: compile to emscripten
+        shell: bash -l {0}
+        run:
+          ./build0.sh
+
+          emsdk activate 3.1.2
+          source $CONDA_EMSDK_DIR/emsdk_env.sh
+          micromamba activate emx --stack
+
+          mkdir embuild
+          cd embuild
+          emcmake cmake .. -GNinja \
+            -DWITH_XEUS=ON \
+            -DLFORTRAN_BUILD_TO_WASM=ON \
+            -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
+
+          ninja
+          node ./src/lfortran/mini_wasm_test.js

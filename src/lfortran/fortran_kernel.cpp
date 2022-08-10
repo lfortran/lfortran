@@ -244,20 +244,24 @@ namespace LFortran
                 return result;
             }
 
-            RedirectStdout s(std_out);
             code0 = code;
             LocationManager lm;
-            LCompilers::PassManager lpm;
-            lpm.use_default_passes();
-            lpm.do_not_use_optimization_passes();
             diag::Diagnostics diagnostics;
 
             #ifndef HAVE_BUILD_TO_WASM
+            RedirectStdout s(std_out);
+
+            LCompilers::PassManager lpm;
+            lpm.use_default_passes();
+            lpm.do_not_use_optimization_passes();
+
             Result<FortranEvaluator::EvalResult>
                 res = e.evaluate(code0, false, lm, lpm, diagnostics);
+
             #else
+
             Result<Vec<uint8_t>> wasm_res = e.get_wasm(code0, lm, diagnostics);
-            int emres_int = -1;
+            int emres_int = 0;
             if (wasm_res.ok)
             {
                 em::val wasm_buffer = to_js(wasm_res.result);
@@ -269,7 +273,6 @@ namespace LFortran
             Result<FortranEvaluator::EvalResult> res{Error()};
             FortranEvaluator::EvalResult parsed_eval_result;
             if (emres_int == 0) {
-                // short circuit for now
                 parsed_eval_result.type = FortranEvaluator::EvalResult::integer8;
                 parsed_eval_result.i64 = 0;
                 res = Result<FortranEvaluator::EvalResult>{parsed_eval_result};

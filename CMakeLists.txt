@@ -68,7 +68,6 @@ else()
     set(WITH_LFORTRAN_ASSERT_DEFAULT no)
 endif()
 
-
 # LFORTRAN_ASSERT
 set(WITH_LFORTRAN_ASSERT ${WITH_LFORTRAN_ASSERT_DEFAULT}
     CACHE BOOL "Enable LFORTRAN_ASSERT macro")
@@ -94,6 +93,7 @@ set(LFORTRAN_BUILD_TO_WASM no
     CACHE BOOL "Compile LFortran To WASM")
     
 if (LFORTRAN_BUILD_TO_WASM)
+    set(CMAKE_FIND_ROOT_PATH "${CMAKE_INSTALL_PREFIX};${CMAKE_FIND_ROOT_PATH}")
     set(HAVE_BUILD_TO_WASM yes)
     SET(WITH_WHEREAMI no)
     SET(WITH_ZLIB no)
@@ -187,13 +187,8 @@ endif()
 
 # XEUS (Fortran kernel)
 set(WITH_XEUS no CACHE BOOL "Build with XEUS support")
-include_directories("$ENV{CONDA_PREFIX}/include")
 if (WITH_XEUS)
-    # set(CMAKE_FIND_ROOT_PATH BOTH)
-    # set(CMAKE_FIND_USE_CMAKE_PATH ON)
-    # set (CMAKE_FIND_DEBUG_MODE ON)
-    # find_package(xeus REQUIRED)
-    set (CMAKE_FIND_DEBUG_MODE OFF)
+    find_package(xeus 2.4.1 REQUIRED)
     set(HAVE_LFORTRAN_XEUS yes)
 
     # Generate kernel.json with correct paths

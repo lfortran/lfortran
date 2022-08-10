@@ -40,7 +40,9 @@
 #include <libasr/asr_verify.h>
 #include <libasr/modfile.h>
 #include <libasr/config.h>
-#include <lfortran/fortran_kernel.h>
+#ifdef HAVE_LFORTRAN_XEUS
+    #include <lfortran/fortran_kernel.h>
+#endif
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
 #include <lfortran/parser/parser.tab.hh>

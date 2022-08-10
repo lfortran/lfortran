@@ -48,8 +48,15 @@ endif()
 
 target_include_directories(lfortran_lib BEFORE PUBLIC ${lfortran_SOURCE_DIR}/src)
 target_include_directories(lfortran_lib BEFORE PUBLIC ${lfortran_BINARY_DIR}/src)
-if (NOT LFORTRAN_BUILD_TO_WASM AND WITH_XEUS)
+
+if (WITH_XEUS AND NOT LFORTRAN_BUILD_TO_WASM)
     target_link_libraries(lfortran_lib xeus)
+elseif(WITH_XEUS)
+    find_library(XEUS_LIBRARY xeus)
+    find_path(XEUS_INCLUDE_DIR xeus/xkernel.hpp)
+    target_link_libraries(lfortran_lib ${XEUS_LIBRARY})
+    target_include_directories(lfortran_lib BEFORE PUBLIC ${XEUS_INCLUDE_DIR})
+    message("Found xeus ${XEUS_LIBRARY} and ${XEUS_INCLUDE_DIR}")
 endif()
 if (WITH_JSON)
     target_link_libraries(lfortran_lib p::rapidjson)
@@ -68,13 +75,22 @@ if (WITH_LLVM)
 endif()
 
 if (LFORTRAN_BUILD_TO_WASM AND WITH_XEUS)
+    # manually search for those for now because the CMake exports
+    # too many emscripten flags
+    find_library(XEUS_LIBRARY xeus)
+    find_path(XEUS_INCLUDE_DIR xeus/xkernel.hpp)
+    include_directories(${XEUS_INCLUDE_DIR})
+    target_link_libraries(lfortran_lib ${XEUS_LIBRARY})
+
+    message("Found xeus ${XEUS_LIBRARY} and ${XEUS_INCLUDE_DIR}")
+
     add_executable(lfortran_wasm_kernel fortran_wasm_kernel.cpp)
-    target_compile_options(lfortran_wasm_kernel PRIVATE
-        "-fwasm-exceptions"
-        "SHELL: -s ENVIRONMENT='worker'"
-    )
-    target_link_libraries(lfortran_wasm_kernel lfortran_lib "$ENV{CONDA_PREFIX}/lib/libxeus.a")
-    target_link_options(lfortran_wasm_kernel PRIVATE "--bind" "-fwasm-exceptions")
+    add_executable(mini_wasm_test mini_wasm_test.cpp)
+    target_link_libraries(lfortran_wasm_kernel lfortran_lib)
+
+    target_compile_options(lfortran_wasm_kernel PRIVATE -fwasm-exceptions)
+    target_link_options(lfortran_wasm_kernel
+        PRIVATE --bind -fwasm-exceptions)
 
     target_link_options(lfortran_wasm_kernel
          PUBLIC "SHELL: -s MODULARIZE=1"
@@ -84,10 +100,46 @@ if (LFORTRAN_BUILD_TO_WASM AND WITH_XEUS)
          PUBLIC "SHELL: -s DEMANGLE_SUPPORT=0"
          PUBLIC "SHELL: -s ASSERTIONS=0"
          PUBLIC "SHELL: -s ALLOW_MEMORY_GROWTH=1"
+         PUBLIC "SHELL: -s INITIAL_MEMORY=200MB"
          PUBLIC "SHELL: -s EXIT_RUNTIME=1"
          PUBLIC "SHELL: -s WASM=1"
          PUBLIC "SHELL: -s USE_PTHREADS=0"
+         PUBLIC "SHELL: -s TOTAL_STACK=128mb"
          PUBLIC "SHELL: -s ENVIRONMENT='worker'"
+         PUBLIC "SHELL: --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/pre.js"
+    )
+
+    target_compile_options(mini_wasm_test PRIVATE
+        "-fwasm-exceptions"
+        "SHELL: -s ENVIRONMENT='node'"
+        "SHELL: -s ASSERTIONS=2"
+        # "SHELL: -s SAFE_HEAP=1"
+        "-fsanitize=address"
+        "-g"
+    )
+    target_link_libraries(mini_wasm_test lfortran_lib)
+    target_link_options(mini_wasm_test PRIVATE -fwasm-exceptions)
+
+    target_link_options(mini_wasm_test PRIVATE
+        "SHELL: -s ENVIRONMENT='node'"
+        "SHELL: -s ASSERTIONS=2"
+        # "SHELL: -s SAFE_HEAP=1"
+        "-fsanitize=address"
+    )
+    target_link_options(mini_wasm_test
+         PUBLIC "SHELL: -s MODULARIZE=1"
+         PUBLIC "SHELL: -s EXPORT_NAME=\"createXeusModule\""
+         PUBLIC "SHELL: -s EXPORT_ES6=0"
+         PUBLIC "SHELL: -s USE_ES6_IMPORT_META=0"
+         PUBLIC "SHELL: -s DEMANGLE_SUPPORT=0"
+         PUBLIC "SHELL: -s ASSERTIONS=0"
+         PUBLIC "SHELL: -s ALLOW_MEMORY_GROWTH=1"
+         PUBLIC "SHELL: -s INITIAL_MEMORY=200MB"
+         PUBLIC "SHELL: -s EXIT_RUNTIME=1"
+         PUBLIC "SHELL: -s WASM=1"
+         PUBLIC "SHELL: -s USE_PTHREADS=0"
+         PUBLIC "SHELL: -s TOTAL_STACK=128mb"
+         PUBLIC "SHELL: -s ENVIRONMENT='node'"
          PUBLIC "SHELL: --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/pre.js"
     )
 
@@ -106,4 +158,4 @@ endif ()
 #    LIBRARY DESTINATION lib
 #)
 
-# add_subdirectory(tests)
+add_subdirectory(tests)
