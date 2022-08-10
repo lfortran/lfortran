@@ -149,6 +149,75 @@ Note: the miniforge shell seems to be running some version of `git-bash`
 this reason the Conda build `environment_win.yml` contains everything needed,
 including `git`.
 
+## Build from Git on Windows with WSL
+* In windows search "turn windows features on or off".
+* Tick Windows subsystem for Linux.
+* Press OK and restart computer.
+* Go to Microsoft store and download Ubuntu 20.04, and launch it.
+* Run the following commands.
+
+```bash
+wget  https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O miniconda.sh
+bash miniconda.sh -b -p $HOME/conda_root
+export PATH="$HOME/conda_root/bin:$PATH"
+```
+* Now do the following to configure the path
+```bash
+sudo nano .bashrc
+```
+* Then go to the bottom of the file and paste the following
+```bash
+export PATH="$HOME/conda_root/bin:$PATH"
+```
+* Then press ctrl + O (save), Enter (confirm), ctrl + X (exit)
+* After that restart Ubuntu
+* Run the following
+```bash
+conda create -n lf -c conda-forge llvmdev=11.0.1 bison=3.4 re2c python cmake make toml
+conda init bash
+```
+* Restart Ubuntu again
+```bash
+conda activate lf
+sudo apt update
+sudo apt-get install build-essential
+sudo apt-get install zlib1g-dev
+sudo apt install clang
+```
+* You can change the directory to a Windows location using `cd /mnt/[drive letter]/[windows location]`.
+* e.g. `cd mnt/c/Users/name/source/repos/`
+
+* Now clone the LFortran git repository
+```bash
+git clone https://github.com/lfortran/lfortran.git
+cd lfortran
+```
+
+* Run the following commands
+```bash
+conda activate lf
+./build0.sh
+cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .\
+make -j8
+```
+
+* If everything compiles, you can use LFortran as follows
+```bash
+./src/bin/lfortran ./examples/expr2.f90
+./a.out
+```
+
+* Run an interactive prompt
+```bash
+./src/bin/lfortran
+```
+
+* Run tests
+```bash
+ctest
+./run_tests.py
+```
+
 ## Enabling the Jupyter Kernel
 
 To install the Jupyter kernel, install the following Conda packages also:
