@@ -743,9 +743,24 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     wasm::emit_f64_div(m_code_section, m_al);
                     break;
                 };
+                case ASR::binopType::Pow: {
+                    if (ASR::is_a<ASR::IntegerConstant_t>(*x.m_right)) {
+                        ASR::IntegerConstant_t *c = ASR::down_cast<ASR::IntegerConstant_t>(x.m_right);
+                        if (c->m_n == 2) {
+                            // TODO: drop the last stack item in the wasm stack:
+                            //wasm::emit_stack_drop(m_code_section, m_al);
+                            this->visit_expr(*x.m_left);
+                            wasm::emit_f64_mul(m_code_section, m_al);
+                        } else {
+                            throw CodeGenError("RealBinop: only x**2 implemented so far for powers");
+                        }
+                    } else {
+                        throw CodeGenError("RealBinop: only x**2 implemented so far for powers");
+                    }
+                    break;
+                };
                 default: {
-                    // Todo: Implement Pow Operation
-                    throw CodeGenError("RealBinop: Pow Operation not yet implemented");
+                    throw CodeGenError("ICE RealBinop: unknown operation");
                 }
             }
         } else {
