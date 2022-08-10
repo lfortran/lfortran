@@ -15,6 +15,12 @@ nav:
             - intrinsics/array/size.md
             - intrinsics/array/allocated.md
         - Bit Intrinsic Functions:
+            - intrinsics/bit/bge.md
+            - intrinsics/bit/bgt.md
+            - intrinsics/bit/bit_size.md
+            - intrinsics/bit/ble.md
+            - intrinsics/bit/blt.md
+            - intrinsics/bit/btest.md
             - intrinsics/bit/shiftl.md
             - intrinsics/bit/shiftr.md
         - Character Intrinsic Functions:
