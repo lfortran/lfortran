@@ -157,7 +157,7 @@ including `git`.
 * Run the following commands.
 
 ```bash
-wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+wget  https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O miniconda.sh
 bash miniconda.sh -b -p $HOME/conda_root
 export PATH="$HOME/conda_root/bin:$PATH"
 ```
