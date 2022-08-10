@@ -333,7 +333,7 @@ jobs:
         env:
           SSH_PRIVATE_KEY_DOCS: ${{ secrets.SSH_PRIVATE_KEY_DOCS }}
 
-  Build_Emscripten:
+  build_emscripten:
     name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -341,6 +341,7 @@ jobs:
       matrix:
         os: ["ubuntu-latest"]
         python-version: ["3.10"]
+
     steps:
       - uses: actions/checkout@v2
         with:
@@ -348,11 +349,9 @@ jobs:
 
       - uses: mamba-org/provision-with-micromamba@main
         with:
-          environment-file: ci/environment.yml
+          environment-file: ci/environment_linux.yml
           extra-specs: |
             python=${{ matrix.python-version }}
-            bison=3.4
-            rapidjson
             emsdk
 
       - name: create emscripten prefix
