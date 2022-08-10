@@ -238,7 +238,6 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
 
 
 def get_error_diff(reference_file, output_file, full_err_str) -> str:
-    return "not supported"
     diff_list = subprocess.Popen(
         f"diff {reference_file} {output_file}",
         stdout=subprocess.PIPE,
