@@ -180,7 +180,6 @@ conda init bash
 ```bash
 conda activate lf
 sudo apt update
-sudo apt install dos2unix
 sudo apt-get install build-essential
 sudo apt-get install zlib1g-dev
 sudo apt install clang
@@ -197,9 +196,6 @@ cd lfortran
 * Run the following commands
 ```bash
 conda activate lf
-dos2unix ./build0.sh
-dos2unix ./ci/version.sh
-git update-index --skip-worktree build0.sh ci/version.sh
 ./build0.sh
 cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .\
 make -j8
@@ -221,8 +217,6 @@ make -j8
 ctest
 ./run_tests.py
 ```
-
-* Note: The files `build0.sh` and `ci/version.sh` are not added to the local working tree. If you are making changes to these files, you will have to add them to the working tree again and reset them to a state before calling `dos2unix`.
 
 ## Enabling the Jupyter Kernel
 
