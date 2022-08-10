@@ -149,6 +149,81 @@ Note: the miniforge shell seems to be running some version of `git-bash`
 this reason the Conda build `environment_win.yml` contains everything needed,
 including `git`.
 
+## Build from Git on Windows with WSL
+* In windows search "turn windows features on or off".
+* Tick Windows subsystem for Linux.
+* Press OK and restart computer.
+* Go to Microsoft store and download Ubuntu 20.04, and launch it.
+* Run the following commands.
+
+```bash
+wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+bash miniconda.sh -b -p $HOME/conda_root
+export PATH="$HOME/conda_root/bin:$PATH"
+```
+* Now do the following to configure the path
+```bash
+sudo nano .bashrc
+```
+* Then go to the bottom of the file and paste the following
+```bash
+export PATH="$HOME/conda_root/bin:$PATH"
+```
+* Then press ctrl + O (save), Enter (confirm), ctrl + X (exit)
+* After that restart Ubuntu
+* Run the following
+```bash
+conda create -n lf -c conda-forge llvmdev=11.0.1 bison=3.4 re2c python cmake make toml
+conda init bash
+```
+* Restart Ubuntu again
+```bash
+conda activate lf
+sudo apt update
+sudo apt install dos2unix
+sudo apt-get install build-essential
+sudo apt-get install zlib1g-dev
+sudo apt install clang
+```
+* You can change the directory to a Windows location using `cd /mnt/[drive letter]/[windows location]`.
+* e.g. `cd mnt/c/Users/name/source/repos/`
+
+* Now clone the LFortran git repository
+```bash
+git clone https://github.com/lfortran/lfortran.git
+cd lfortran
+```
+
+* Run the following commands
+```bash
+conda activate lf
+dos2unix ./build0.sh
+dos2unix ./ci/version.sh
+git update-index --skip-worktree build0.sh ci/version.sh
+./build0.sh
+cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .\
+make -j8
+```
+
+* If everything compiles, you can use LFortran as follows
+```bash
+./src/bin/lfortran ./examples/expr2.f90
+./a.out
+```
+
+* Run an interactive prompt
+```bash
+./src/bin/lfortran
+```
+
+* Run tests
+```bash
+ctest
+./run_tests.py
+```
+
+* Note: The files `build0.sh` and `ci/version.sh` are not added to the local working tree. If you are making changes to these files, you will have to add them to the working tree again and reset them to a state before calling `dos2unix`.
+
 ## Enabling the Jupyter Kernel
 
 To install the Jupyter kernel, install the following Conda packages also:
