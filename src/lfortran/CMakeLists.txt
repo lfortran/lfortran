@@ -121,14 +121,15 @@ if (LFORTRAN_BUILD_TO_WASM AND WITH_XEUS)
         -fexceptions
         # -sASSERTIONS=2
         # -sSAFE_HEAP=1
-        # -fsanitize=address
-        # -g
+        -fsanitize=address
+        -g
     )
 
     target_link_options(mini_wasm_test
       PRIVATE
         -fexceptions
         -sENVIRONMENT='node'
+        -fsanitize=address
     )
 
     install(TARGETS lfortran_wasm_kernel
