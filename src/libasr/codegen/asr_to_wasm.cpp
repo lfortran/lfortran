@@ -744,12 +744,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     break;
                 };
                 case ASR::binopType::Pow: {
-                    if (ASR::is_a<ASR::IntegerConstant_t>(*x.m_right)) {
-                        ASR::IntegerConstant_t *c = ASR::down_cast<ASR::IntegerConstant_t>(x.m_right);
-                        if (c->m_n == 2) {
+                    ASR::expr_t *val = ASRUtils::expr_value(x.m_right);
+                    if (ASR::is_a<ASR::RealConstant_t>(*val)) {
+                        ASR::RealConstant_t *c = ASR::down_cast<ASR::RealConstant_t>(val);
+                        if (c->m_r == 2.0) {
                             // TODO: drop the last stack item in the wasm stack:
                             //wasm::emit_stack_drop(m_code_section, m_al);
-                            this->visit_expr(*x.m_left);
+                            //this->visit_expr(*x.m_left);
                             wasm::emit_f64_mul(m_code_section, m_al);
                         } else {
                             throw CodeGenError("RealBinop: only x**2 implemented so far for powers");
