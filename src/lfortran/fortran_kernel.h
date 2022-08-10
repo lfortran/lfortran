@@ -13,10 +13,10 @@ namespace LFortran {
     {
     private:
         using fortran_evaluator = E;
-        fortran_evaluator e;
+        std::unique_ptr<fortran_evaluator> e;
 
     public:
-        custom_interpreter() : e{CompilerOptions()} {
+        custom_interpreter() : e{new fortran_evaluator(CompilerOptions())} {
             xeus::register_interpreter(this);
         }
         virtual ~custom_interpreter() = default;

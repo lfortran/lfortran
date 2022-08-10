@@ -101,6 +101,9 @@ namespace LFortran
                                                       nl::json /*user_expressions*/,
                                                       bool /*allow_stdin*/)
     {
+        #ifdef HAVE_BUILD_TO_WASM
+        e = std::make_unique<fortran_evaluator>(CompilerOptions{});
+        #endif
         FortranEvaluator::EvalResult r;
         std::string std_out;
         std::string code0;
@@ -111,7 +114,7 @@ namespace LFortran
                 LocationManager lm;
                 diag::Diagnostics diagnostics;
                 Result<std::string>
-                    res = e.get_ast(code0, lm, diagnostics);
+                    res = e->get_ast(code0, lm, diagnostics);
                 nl::json result;
                 if (res.ok) {
                     publish_stream("stdout", res.result);
@@ -133,7 +136,7 @@ namespace LFortran
                 LocationManager lm;
                 diag::Diagnostics diagnostics;
                 Result<std::string>
-                res = e.get_asr(code0, lm, diagnostics);
+                res = e->get_asr(code0, lm, diagnostics);
                 nl::json result;
                 if (res.ok) {
                     publish_stream("stdout", res.result);
@@ -157,7 +160,7 @@ namespace LFortran
                 lpm.use_default_passes();
                 lpm.do_not_use_optimization_passes();
                 diag::Diagnostics diagnostics;
-                Result<std::string> res = e.get_llvm(code0, lm, lpm, diagnostics);
+                Result<std::string> res = e->get_llvm(code0, lm, lpm, diagnostics);
                 nl::json result;
                 if (res.ok) {
                     publish_stream("stdout", res.result);
@@ -182,7 +185,7 @@ namespace LFortran
                 lpm.do_not_use_optimization_passes();
                 diag::Diagnostics diagnostics;
                 Result<std::string>
-                res = e.get_asm(code0, lm, lpm, diagnostics);
+                res = e->get_asm(code0, lm, lpm, diagnostics);
                 nl::json result;
                 if (res.ok) {
                     publish_stream("stdout", res.result);
@@ -204,7 +207,7 @@ namespace LFortran
                 LocationManager lm;
                 diag::Diagnostics diagnostics;
                 Result<std::string>
-                res = e.get_cpp(code0, lm, diagnostics, 1);
+                res = e->get_cpp(code0, lm, diagnostics, 1);
                 nl::json result;
                 if (res.ok) {
                     publish_stream("stdout", res.result);
@@ -226,7 +229,7 @@ namespace LFortran
                 LocationManager lm;
                 diag::Diagnostics diagnostics;
                 Result<std::string>
-                res = e.get_fmt(code0, lm, diagnostics);
+                res = e->get_fmt(code0, lm, diagnostics);
                 nl::json result;
                 if (res.ok) {
                     publish_stream("stdout", res.result);
@@ -256,11 +259,10 @@ namespace LFortran
             lpm.do_not_use_optimization_passes();
 
             Result<FortranEvaluator::EvalResult>
-                res = e.evaluate(code0, false, lm, lpm, diagnostics);
+                res = e->evaluate(code0, false, lm, lpm, diagnostics);
 
             #else
-
-            Result<Vec<uint8_t>> wasm_res = e.get_wasm(code0, lm, diagnostics);
+            Result<Vec<uint8_t>> wasm_res = e->get_wasm(code0, lm, diagnostics);
             int emres_int = 0;
             if (wasm_res.ok)
             {
@@ -291,12 +293,12 @@ namespace LFortran
                 result["traceback"] = nl::json::array();
                 return result;
             }
-        } catch (const LCompilersException &e) {
-            publish_stream("stderr", "LFortran Exception: " + e.msg());
+        } catch (const LCompilersException &exc) {
+            publish_stream("stderr", "LFortran Exception: " + exc.msg());
             nl::json result;
             result["status"] = "error";
             result["ename"] = "LCompilersException";
-            result["evalue"] = e.msg();
+            result["evalue"] = exc.msg();
             result["traceback"] = nl::json::array();
             return result;
         }
