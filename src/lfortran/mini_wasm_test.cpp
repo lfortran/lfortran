@@ -40,5 +40,4 @@ int main() {
             std::cout << e.what() << std::endl;
         }
     }
-
 }
