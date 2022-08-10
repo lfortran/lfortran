@@ -119,8 +119,8 @@ if (LFORTRAN_BUILD_TO_WASM AND WITH_XEUS)
 
     target_compile_options(mini_wasm_test PRIVATE
         -fexceptions
-        # -sASSERTIONS=2
-        # -sSAFE_HEAP=1
+        -sASSERTIONS=2
+        -sSAFE_HEAP=1
         -fsanitize=address
         -g
     )
