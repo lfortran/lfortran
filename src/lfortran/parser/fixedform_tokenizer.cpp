@@ -637,6 +637,26 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "common")) {
+            tokenize_line("common", cur);
+            return true;
+        }
+
+        if (next_is(cur, "save")) {
+            tokenize_line("save", cur);
+            return true;
+        }
+
+        if (next_is(cur, "entry")) {
+            tokenize_line("entry", cur);
+            return true;
+        }
+
+        if (next_is(cur, "implicit")) {
+            tokenize_line("implicit", cur);
+            return true;
+        }
+
         return false;
     }
 
@@ -729,9 +749,6 @@ struct FixedFormRecursiveDescent {
         tokenize_line("", cur); // tokenize rest of line where `do` starts
         while (!lex_do_terminal(cur, do_label)) {
             if (!lex_body_statement(cur)) {
-                Location loc;
-                loc.first = 1;
-                loc.last = 1;
                 throw parser_local::TokenizerError("End of file inside a do loop 2", loc);
             };
         }
@@ -771,9 +788,6 @@ struct FixedFormRecursiveDescent {
     void lex_subroutine(unsigned char *&cur) {
         while(lex_body_statement(cur));
         eat_label(cur);
-        if (next_is(cur, "return")) {
-            tokenize_line("", cur);
-        }
         if (next_is(cur, "endsubroutine")) {
             tokenize_line("endsubroutine", cur);
         } else if (next_is(cur, "end")) {
