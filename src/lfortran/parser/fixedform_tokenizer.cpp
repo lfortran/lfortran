@@ -632,6 +632,11 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "return")) {
+            tokenize_line("return", cur);
+            return true;
+        }
+
         return false;
     }
 
@@ -794,9 +799,6 @@ struct FixedFormRecursiveDescent {
     void lex_function(unsigned char *&cur) {
         while(lex_body_statement(cur));
         eat_label(cur);
-        if (next_is(cur, "return")) {
-            tokenize_line("return", cur);
-        }
 
         if (next_is(cur, "endfunction")) {
             tokenize_line("endfunction", cur);
