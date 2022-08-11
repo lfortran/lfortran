@@ -5,10 +5,9 @@
     (type (;3;) (func (param f64) (result)))
     (type (;4;) (func (param i32 i32) (result)))
     (type (;5;) (func (param) (result)))
-    (type (;6;) (func (param i32) (result i32)))
-    (type (;7;) (func (param f64) (result f64)))
-    (type (;8;) (func (param f32) (result f32)))
-    (type (;9;) (func (param) (result)))
+    (type (;6;) (func (param f64) (result f64)))
+    (type (;7;) (func (param f32) (result f32)))
+    (type (;8;) (func (param) (result)))
     (import "js" "print_i32" (func (;0;) (type 0)))
     (import "js" "print_i64" (func (;1;) (type 1)))
     (import "js" "print_f32" (func (;2;) (type 2)))
@@ -16,14 +15,7 @@
     (import "js" "print_str" (func (;4;) (type 4)))
     (import "js" "flush_buf" (func (;5;) (type 5)))
     (import "js" "memory" (memory (;0;) 10 100))
-    (func $6 (type 6) (param i32) (result i32)
-        (local i32)
-        i32.const 4
-        local.set 1
-        local.get 1
-        return
-    )
-    (func $7 (type 7) (param f64) (result f64)
+    (func $6 (type 6) (param f64) (result f64)
         (local f64)
         local.get 0
         f64.const 0.000000
@@ -39,7 +31,7 @@
         local.get 1
         return
     )
-    (func $8 (type 8) (param f32) (result f32)
+    (func $7 (type 7) (param f32) (result f32)
         (local f32)
         local.get 0
         f32.const 0.000000
@@ -55,10 +47,9 @@
         local.get 1
         return
     )
-    (func $9 (type 9) (param) (result)
+    (func $8 (type 8) (param) (result)
         (local i32 f64 f32 f64 f32)
-        f64.const 0.000000
-        call 6
+        i32.const 8
         local.set 0
         f32.const 3.000000
         local.set 4
@@ -76,7 +67,7 @@
         local.get 2
         f32.const 9.000000
         f32.sub
-        call 8
+        call 7
         f32.const 0.000001
         f32.gt
         if
@@ -104,7 +95,7 @@
         local.get 1
         f64.const 9.000000
         f64.sub
-        call 7
+        call 6
         f64.const 0.000000
         f64.gt
         if
@@ -118,10 +109,9 @@
         end
         return
     )
-    (export "kind" (func $6))
-    (export "dabs" (func $7))
-    (export "sabs" (func $8))
-    (export "_lcompilers_main" (func $9))
+    (export "dabs" (func $6))
+    (export "sabs" (func $7))
+    (export "_lcompilers_main" (func $8))
     (data (;0;) (i32.const 0) "ERROR STOP")
     (data (;1;) (i32.const 10) "ERROR STOP")
 )
