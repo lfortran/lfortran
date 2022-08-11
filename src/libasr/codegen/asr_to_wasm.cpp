@@ -661,9 +661,25 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     wasm::emit_i32_div_s(m_code_section, m_al);
                     break;
                 };
+                case ASR::binopType::Pow: {
+                    ASR::expr_t *val = ASRUtils::expr_value(x.m_right);
+                    if (ASR::is_a<ASR::IntegerConstant_t>(*val)) {
+                        ASR::IntegerConstant_t *c = ASR::down_cast<ASR::IntegerConstant_t>(val);
+                        if (c->m_n == 2) {
+                            // drop the last stack item in the wasm stack
+                            wasm::emit_drop(m_code_section, m_al);
+                            this->visit_expr(*x.m_left);
+                            wasm::emit_i32_mul(m_code_section, m_al);
+                        } else {
+                            throw CodeGenError("ICE IntegerBinop kind 4: only x**2 implemented so far for powers");
+                        }
+                    } else {
+                        throw CodeGenError("ICE IntegerBinop kind 4: only x**2 implemented so far for powers");
+                    }
+                    break;
+                };
                 default: {
-                    // Todo: Implement Pow Operation
-                    throw CodeGenError("IntegerBinop: Pow Operation not yet implemented");
+                    throw CodeGenError("ICE IntegerBinop kind 4: unknown operation");
                 }
             }
         } else if (i->m_kind == 8) {
@@ -684,9 +700,25 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     wasm::emit_i64_div_s(m_code_section, m_al);
                     break;
                 };
+                case ASR::binopType::Pow: {
+                    ASR::expr_t *val = ASRUtils::expr_value(x.m_right);
+                    if (ASR::is_a<ASR::IntegerConstant_t>(*val)) {
+                        ASR::IntegerConstant_t *c = ASR::down_cast<ASR::IntegerConstant_t>(val);
+                        if (c->m_n == 2) {
+                            // drop the last stack item in the wasm stack
+                            wasm::emit_drop(m_code_section, m_al);
+                            this->visit_expr(*x.m_left);
+                            wasm::emit_i64_mul(m_code_section, m_al);
+                        } else {
+                            throw CodeGenError("ICE IntegerBinop kind 8: only x**2 implemented so far for powers");
+                        }
+                    } else {
+                        throw CodeGenError("ICE IntegerBinop kind 8: only x**2 implemented so far for powers");
+                    }
+                    break;
+                };
                 default: {
-                    // Todo: Implement Pow Operation
-                    throw CodeGenError("IntegerBinop: Pow Operation not yet implemented");
+                    throw CodeGenError("ICE IntegerBinop kind 8: unknown operation");
                 }
             }
         } else {
