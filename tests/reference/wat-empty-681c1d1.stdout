@@ -13,5 +13,5 @@
     (import "js" "print_str" (func (;4;) (type 4)))
     (import "js" "flush_buf" (func (;5;) (type 5)))
     (import "js" "set_exit_code" (func (;6;) (type 6)))
-    (import "js" "memory" (memory (;0;) 10 100))
+    (import "js" "memory" (memory (;0;) 100 100))
 )
