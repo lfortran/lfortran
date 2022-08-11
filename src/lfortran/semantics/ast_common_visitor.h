@@ -916,6 +916,28 @@ public:
                         throw SemanticError("Cannot attribute non-variable type with dimension", x.base.base.loc);
                     }
                 }
+            } else if (AST::is_a<AST::AttrData_t>(*x.m_attributes[0])
+                    && x.n_attributes == 1 && x.n_syms == 0) {
+                // Example:
+                // data x, y / 1.0, 2.0 /
+                AST::AttrData_t *a = AST::down_cast<AST::AttrData_t>(x.m_attributes[0]);
+                if (a->n_object != a->n_value) {
+                    throw SemanticError("The number of values and variables must match in a data statement",
+                        x.base.base.loc);
+                }
+                for (size_t i=0;i<a->n_object;++i) {
+                    this->visit_expr(*a->m_object[i]);
+                    ASR::expr_t* object = LFortran::ASRUtils::EXPR(tmp);
+                    this->visit_expr(*a->m_value[i]);
+                    ASR::expr_t* value = LFortran::ASRUtils::EXPR(tmp);
+                    // The parser ensures object is a TK_NAME
+                    // The `visit_expr` ensures it resolves as an expression
+                    // which must be a `Var_t` pointing to a `Variable_t`,
+                    // so no checks are needed:
+                    ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
+                    ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+                    v2->m_value = value;
+                }
             } else {
                 throw SemanticError("Attribute declaration not supported",
                     x.base.base.loc);
