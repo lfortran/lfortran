@@ -436,6 +436,11 @@ struct FixedFormRecursiveDescent {
     // `cur` unchanged).
 
 
+    /*
+     * The line must start with `chop` which is returned as a keyword
+     * (not an identifier).
+     * Then the rest of the line is tokenized, including the new line.
+     */
     void tokenize_line(const std::string &chop, unsigned char *&cur) {
         YYSTYPE y1;
         if (chop != "") {
