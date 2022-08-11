@@ -1,0 +1,5 @@
+semantic error: Arguments do not match for any generic procedure, kind
+ --> tests/../integration_tests/intrinsics_13.f90:2:28
+  |
+2 |  integer, parameter :: p = kind(5) ! 4
+  |                            ^^^^^^^ 
