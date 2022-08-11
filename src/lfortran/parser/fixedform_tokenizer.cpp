@@ -749,9 +749,6 @@ struct FixedFormRecursiveDescent {
         tokenize_line("", cur); // tokenize rest of line where `do` starts
         while (!lex_do_terminal(cur, do_label)) {
             if (!lex_body_statement(cur)) {
-                Location loc;
-                loc.first = 1;
-                loc.last = 1;
                 throw parser_local::TokenizerError("End of file inside a do loop 2", loc);
             };
         }
