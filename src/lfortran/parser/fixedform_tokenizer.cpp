@@ -771,9 +771,6 @@ struct FixedFormRecursiveDescent {
     void lex_subroutine(unsigned char *&cur) {
         while(lex_body_statement(cur));
         eat_label(cur);
-        if (next_is(cur, "return")) {
-            tokenize_line("", cur);
-        }
         if (next_is(cur, "endsubroutine")) {
             tokenize_line("endsubroutine", cur);
         } else if (next_is(cur, "end")) {
