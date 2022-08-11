@@ -1,6 +1,6 @@
 program expr_08
 implicit none
-integer, parameter :: dp = 8 ! kind(0.d0)
+integer, parameter :: dp = kind(0.d0)
 real :: x4, y4
 real(dp) :: x, y
 y4 = 3
