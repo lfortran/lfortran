@@ -36,7 +36,6 @@
     (func $8 (type 8) (param) (result)
         (local i32)
         i32.const 2
-        call 7
         local.set 0
         local.get 0
         call 0
@@ -53,8 +52,7 @@
             call 6
             unreachable
         end
-        i32.const -2
-        call 7
+        i32.const 2
         local.set 0
         local.get 0
         call 0
