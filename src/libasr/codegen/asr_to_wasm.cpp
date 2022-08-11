@@ -419,8 +419,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
-    template<typename T>
-    void emit_function_prototype(const T& x) {
+    void emit_function_prototype(const ASR::Function_t &x) {
         SymbolFuncInfo* s = new SymbolFuncInfo;
 
         /********************* New Type Declaration *********************/
@@ -460,8 +459,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_func_name_idx_map[get_hash((ASR::asr_t *)&x)] = s; // add function to map
     }
 
-    template<typename T>
-    void emit_function_body(const T& x) {
+    void emit_function_body(const ASR::Function_t &x) {
         LFORTRAN_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)&x)) != m_func_name_idx_map.end());
 
         cur_sym_info = m_func_name_idx_map[get_hash((ASR::asr_t *)&x)];
