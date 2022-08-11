@@ -127,18 +127,7 @@ def fixdir(s: bytes) -> bytes:
     return s.replace(local_dir.encode(), "$DIR".encode())
 
 def unl_loop_del(b):
-    nl_cr = b'\r'[0]
-    nl_lf = b'\n'[0]
-    b = bytearray(b)
-    i = 0
-    while i + 1 <= len(b):
-        if b[i] == nl_cr:
-            if b[i + 1] == nl_lf:
-                del b[i]
-            else:
-                b[i] = nl_lf
-        i += 1
-    return bytes(b)
+    return b.replace(bytes('\r\n', encoding='utf-8'), bytes('\n', encoding='utf-8'))
 
 def run(basename: str, cmd: Union[pathlib.Path, str],
         out_dir: Union[pathlib.Path, str], infile=None, extra_args=None):
@@ -213,8 +202,8 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     else:
         stdout_hash = None
     if stderr_file:
-        stderr_hash = hashlib.sha224(
-            open(stderr_file, "rb").read()).hexdigest()
+        temp=unl_loop_del(open(stderr_file, "rb").read())
+        stderr_hash = hashlib.sha224(temp).hexdigest()
         stderr_file = os.path.basename(stderr_file)
     else:
         stderr_hash = None
