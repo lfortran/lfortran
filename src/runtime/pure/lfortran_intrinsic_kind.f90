@@ -1,11 +1,9 @@
 module lfortran_intrinsic_kind
 implicit none
 
-! Does not work yet:
-!
-!interface kind
-!    module procedure skind, dkind, lkind
-!end interface
+interface kind
+   module procedure skind, dkind, lkind
+end interface
 
 
 contains
