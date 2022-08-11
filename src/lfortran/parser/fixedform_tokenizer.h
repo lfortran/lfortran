@@ -51,6 +51,12 @@ public:
         return std::string((char *)tok, cur - tok);
     }
 
+    // Return the string of the token at the given location `loc`
+    std::string token_at_loc(const Location &loc) {
+        return std::string((char *)(string_start + loc.first),
+            loc.last - loc.first + 1);
+    }
+
     // Return the current token as YYSTYPE::Str
     void token(Str &s) const
     {
