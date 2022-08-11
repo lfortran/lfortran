@@ -203,6 +203,11 @@ void encode_section(Vec<uint8_t> &des, Vec<uint8_t> &section_content, Allocator 
     }
 }
 
+// function to emit drop instruction (it throws away a single operand on stack)
+void emit_drop(Vec<uint8_t> &code, Allocator &al) {
+    code.push_back(al, 0x1A);
+}
+
 // function to emit get local variable at given index
 void emit_get_local(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
     code.push_back(al, 0x20);
