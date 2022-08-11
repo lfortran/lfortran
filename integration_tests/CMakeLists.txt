@@ -133,6 +133,8 @@ RUN(NAME expr_04 LABELS gfortran llvm cpp)
 RUN(NAME expr_05 LABELS gfortran llvm cpp)
 RUN(NAME expr_06 LABELS gfortran llvm)
 RUN(NAME expr_07 LABELS gfortran llvm)
+RUN(NAME expr_08 LABELS gfortran llvm wasm)
+RUN(NAME expr_09 LABELS gfortran llvm wasm)
 
 RUN(NAME variables_01 LABELS gfortran llvm cpp x86)
 RUN(NAME variables_02 LABELS gfortran llvm cpp x86)
