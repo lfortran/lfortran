@@ -2213,3 +2213,7 @@ ast = true
 [[test]]
 filename = "errors/fixed_form_5.f"
 ast = true
+
+[[test]]
+filename = "errors/arithmetic_if1.f90"
+asr = true
