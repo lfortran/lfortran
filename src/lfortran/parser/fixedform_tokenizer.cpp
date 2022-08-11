@@ -883,8 +883,12 @@ struct FixedFormRecursiveDescent {
         unsigned char *nline = cur; next_line(nline);
         // eat_label(cur);
         std::vector<std::string> program_keywords{};
-        std::vector<std::string> subroutine_keywords{"recursive"};
-        std::vector<std::string> function_keywords{"recursive", "result", "character", "complex", "integer", "doubleprecision", "external"};
+        std::vector<std::string> subroutine_keywords{"recursive", "pure",
+            "elemental"};
+        std::vector<std::string> function_keywords{"recursive", "pure",
+            "elemental",
+            "real", "character", "complex", "integer", "logical",
+            "doubleprecision"};
 
         if (next_is(cur, "include")) tokenize_line("include", cur);
         if (is_program(cur)) {
