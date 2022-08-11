@@ -301,7 +301,9 @@ struct FixedFormRecursiveDescent {
     std::vector<Location> locations;
 
     FixedFormRecursiveDescent(diag::Diagnostics &diag,
-        Allocator &m_a) : diag{diag}, m_a{m_a} {};
+        Allocator &m_a) : diag{diag}, m_a{m_a} {
+            t.fixed_form = true;
+        };
 
     // Auxiliary functions:
 
