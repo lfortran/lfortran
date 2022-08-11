@@ -637,6 +637,21 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "common")) {
+            tokenize_line("common", cur);
+            return true;
+        }
+
+        if (next_is(cur, "save")) {
+            tokenize_line("save", cur);
+            return true;
+        }
+
+        if (next_is(cur, "entry")) {
+            tokenize_line("entry", cur);
+            return true;
+        }
+
         return false;
     }
 
