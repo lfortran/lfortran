@@ -652,6 +652,11 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "implicit")) {
+            tokenize_line("implicit", cur);
+            return true;
+        }
+
         return false;
     }
 
