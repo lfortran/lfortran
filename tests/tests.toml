@@ -1969,6 +1969,10 @@ filename = "fixedform_subroutine.f"
 ast = true
 
 [[test]]
+filename = "fixedform_data.f"
+ast = true
+
+[[test]]
 filename = "comments1.f90"
 ast = true
 

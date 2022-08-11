@@ -267,7 +267,8 @@ std::vector<std::string> declarators{
             "dimension",
             "character",
             "logical",
-            "bytes"
+            "bytes",
+            "data"
         };
 
 std::vector<std::string> lines{};
