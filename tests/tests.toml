@@ -1949,6 +1949,10 @@ filename = "fixedform_doloop2.f"
 ast = true
 
 [[test]]
+filename = "fixedform_doloop3.f"
+ast = true
+
+[[test]]
 filename = "fixedform_assign_minimal.f"
 ast = true
 
