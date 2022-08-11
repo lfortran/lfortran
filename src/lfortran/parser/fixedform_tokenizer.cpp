@@ -632,7 +632,13 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
-    bool lex_terminal(unsigned char *&cur, int64_t do_label) {
+    bool lex_do_terminal(unsigned char *&cur, int64_t do_label) {
+        if (*cur == '\0') {
+            Location loc;
+            loc.first = 1;
+            loc.last = 1;
+            throw parser_local::TokenizerError("End of file inside a do loop", loc);
+        }
         int64_t label = eat_label(cur);
         if (label != -1) {
             if (label == do_label) {
@@ -690,7 +696,14 @@ struct FixedFormRecursiveDescent {
             cur--; // un-advance as eat_label_inline moves 1 char too far when making checks
         }
         tokenize_line("", cur); // tokenize rest of line where `do` starts
-        while (!lex_terminal(cur, do_label)) lex_body_statement(cur);
+        while (!lex_do_terminal(cur, do_label)) {
+            if (!lex_body_statement(cur)) {
+                Location loc;
+                loc.first = 1;
+                loc.last = 1;
+                throw parser_local::TokenizerError("End of file inside a do loop 2", loc);
+            };
+        }
     }
 
     bool if_advance_or_terminate(unsigned char *&cur) {
