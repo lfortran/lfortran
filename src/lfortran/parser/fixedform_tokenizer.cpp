@@ -816,7 +816,7 @@ struct FixedFormRecursiveDescent {
         return true;
     }
 
-    bool add_implicit_program(unsigned char *&cur) {
+    bool is_implicit_program(unsigned char *cur) {
         auto cpy = cur;
         auto prev = cpy;
         for (;;) {
@@ -825,31 +825,6 @@ struct FixedFormRecursiveDescent {
             prev = cpy;
         }
         if (next_is(prev, "endprogram\n") || next_is(prev, "end\n")) {
-            std::string prog{"program"};
-            // TODO -- mangling
-            std::string name{"implicit_program_lfortran"};
-            // add implicit global program at the line `cur` is currently at
-            YYSTYPE y;
-            y.string.from_str(m_a, prog);
-            stypes.push_back(y);
-            tokens.push_back(yytokentype::KW_PROGRAM);
-            Location loc;
-            loc.first = prev - string_start;
-            loc.last = prev - string_start + prog.size();
-            locations.push_back(loc);
-            y.string.from_str(m_a, name);
-            stypes.push_back(y);
-            tokens.push_back(yytokentype::TK_NAME);
-            loc.first = prev - string_start + prog.size();
-            loc.last = prev - string_start + prog.size() + name.size();
-            locations.push_back(loc);
-            y.string.from_str(m_a, "\n");
-            stypes.push_back(y);
-            tokens.push_back(yytokentype::TK_NEWLINE);
-            loc.first = prev - string_start + prog.size() + name.size();
-            loc.last = prev - string_start + prog.size() + name.size() + 1;
-            locations.push_back(loc);
-            lex_program(cur, false);
             return true;
         }
         return false;
@@ -880,8 +855,32 @@ struct FixedFormRecursiveDescent {
             lex_block_data(cur);
         } 
         */
-        } else if (add_implicit_program(cur)) {
-            // give compiler a chance for implicitly defined programs
+        } else if (is_implicit_program(cur)) {
+            std::string prog{"program"};
+            // TODO -- mangling
+            std::string name{"implicit_program_lfortran"};
+            // add implicit global program at the line `cur` is currently at
+            YYSTYPE y;
+            y.string.from_str(m_a, prog);
+            stypes.push_back(y);
+            tokens.push_back(yytokentype::KW_PROGRAM);
+            Location loc;
+            loc.first = cur - string_start;
+            loc.last = cur - string_start + prog.size();
+            locations.push_back(loc);
+            y.string.from_str(m_a, name);
+            stypes.push_back(y);
+            tokens.push_back(yytokentype::TK_NAME);
+            loc.first = cur - string_start + prog.size();
+            loc.last = cur - string_start + prog.size() + name.size();
+            locations.push_back(loc);
+            y.string.from_str(m_a, "\n");
+            stypes.push_back(y);
+            tokens.push_back(yytokentype::TK_NEWLINE);
+            loc.first = cur - string_start + prog.size() + name.size();
+            loc.last = cur - string_start + prog.size() + name.size() + 1;
+            locations.push_back(loc);
+            lex_program(cur, false);
         } else {
             error(cur, "ICE: Cannot recognize global scope entity");
         }
