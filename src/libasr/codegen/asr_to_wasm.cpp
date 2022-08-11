@@ -671,10 +671,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                             this->visit_expr(*x.m_left);
                             wasm::emit_i32_mul(m_code_section, m_al);
                         } else {
-                            throw CodeGenError("ICE IntegerBinop kind 4: only x**2 implemented so far for powers");
+                            throw CodeGenError("IntegerBinop kind 4: only x**2 implemented so far for powers");
                         }
                     } else {
-                        throw CodeGenError("ICE IntegerBinop kind 4: only x**2 implemented so far for powers");
+                        throw CodeGenError("IntegerBinop kind 4: only x**2 implemented so far for powers");
                     }
                     break;
                 };
@@ -710,10 +710,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                             this->visit_expr(*x.m_left);
                             wasm::emit_i64_mul(m_code_section, m_al);
                         } else {
-                            throw CodeGenError("ICE IntegerBinop kind 8: only x**2 implemented so far for powers");
+                            throw CodeGenError("IntegerBinop kind 8: only x**2 implemented so far for powers");
                         }
                     } else {
-                        throw CodeGenError("ICE IntegerBinop kind 8: only x**2 implemented so far for powers");
+                        throw CodeGenError("IntegerBinop kind 8: only x**2 implemented so far for powers");
                     }
                     break;
                 };
