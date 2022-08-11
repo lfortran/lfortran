@@ -1933,11 +1933,35 @@ filename = "fixed_form2.f"
 ast = true
 
 [[test]]
+filename = "fixed_form3.f"
+ast = true
+
+[[test]]
+filename = "fixed_form4.f"
+ast = true
+
+[[test]]
 filename = "fixedform_doloop.f"
 ast = true
 
 [[test]]
 filename = "fixedform_doloop2.f"
+ast = true
+
+[[test]]
+filename = "fixedform_assign_minimal.f"
+ast = true
+
+[[test]]
+filename = "fixedform_assignment.f"
+ast = true
+
+[[test]]
+filename = "fixedform_nestedloop_implicit.f"
+ast = true
+
+[[test]]
+filename = "fixedform_subroutine.f"
 ast = true
 
 [[test]]
