@@ -84,6 +84,8 @@ struct IntrinsicProcedures {
             {"modulo", {m_math2, &eval_modulo, true}},
             {"min", {m_math2, &eval_min, true}},
             {"max", {m_math2, &eval_max, true}},
+            {"min0", {m_math2, &eval_min0, true}},
+            {"max0", {m_math2, &eval_max0, true}},
             {"merge", {m_math2, &not_implemented, false}},
             {"selected_int_kind", {m_kind, &eval_selected_int_kind, true}},
             {"selected_real_kind", {m_kind, &eval_selected_real_kind, true}},
@@ -585,6 +587,13 @@ TRIG(sqrt)
         true);
     }
 
+    static ASR::expr_t *eval_min0(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
+        return eval_2args_ri(al, loc, args,
+            &IntrinsicProcedures::lfortran_min,
+            &IntrinsicProcedures::lfortran_min_i,
+        true);
+    }
+
     static double lfortran_max(double x, double y) {
         return std::fmax(x, y);
     }
@@ -594,6 +603,13 @@ TRIG(sqrt)
     }
 
     static ASR::expr_t *eval_max(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
+        return eval_2args_ri(al, loc, args,
+            &IntrinsicProcedures::lfortran_max,
+            &IntrinsicProcedures::lfortran_max_i,
+            true);
+    }
+
+    static ASR::expr_t *eval_max0(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         return eval_2args_ri(al, loc, args,
             &IntrinsicProcedures::lfortran_max,
             &IntrinsicProcedures::lfortran_max_i,
