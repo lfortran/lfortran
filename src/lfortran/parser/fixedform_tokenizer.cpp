@@ -640,9 +640,10 @@ struct FixedFormRecursiveDescent {
             throw parser_local::TokenizerError("End of file inside a do loop", loc);
         }
         int64_t label = eat_label(cur);
+        bool label_match = false;
         if (label != -1) {
             if (label == do_label) {
-                // label_match = true;
+                label_match = true;
             }
         }
         if (next_is(cur, "enddo")) {
@@ -652,6 +653,28 @@ struct FixedFormRecursiveDescent {
             // the usual terminal statement for do loops
             tokenize_line("continue", cur);
             //only append iff (tokens[tokens.size()-2] == yytokentype::TK_LABEL && tokens[tokens.size()-1 == yytokentype::KW_CONTINUE])
+
+            // return an explicit "end do" token here
+            std::string l("enddo");
+            YYSTYPE y2;
+            y2.string.from_str(m_a, l);
+            stypes.push_back(y2);
+            tokens.push_back(yytokentype::KW_END_DO);
+            Location loc;
+            loc.first = t.cur - string_start;
+            loc.last = t.cur - string_start + l.size();
+            locations.push_back(loc);
+            // And a new line
+            l = "\n";
+            y2.string.from_str(m_a, l);
+            stypes.push_back(y2);
+            tokens.push_back(yytokentype::TK_NEWLINE);
+            loc.first = t.cur - string_start;
+            loc.last = t.cur - string_start + 1;
+            locations.push_back(loc);
+            return true;
+        } else if (label_match) {
+            lex_body_statement(cur);
 
             // return an explicit "end do" token here
             std::string l("enddo");
