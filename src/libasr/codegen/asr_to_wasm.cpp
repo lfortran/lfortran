@@ -112,8 +112,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         no_of_imports = 0;
         no_of_data_segments = 0;
 
-        min_no_pages = 10;
-        max_no_pages = 100;
+        min_no_pages = 100; // fixed 6.4 Mb memory currently
+        max_no_pages = 100; // fixed 6.4 Mb memory currently
 
         m_type_section.reserve(m_al, 1024 * 128);
         m_import_section.reserve(m_al, 1024 * 128);
