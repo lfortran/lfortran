@@ -737,7 +737,8 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    void lex_program(unsigned char *&cur) {
+    void lex_program(unsigned char *&cur, bool explicit_program) {
+        if (explicit_program) tokenize_line("program", cur);
         while(lex_body_statement(cur));
         eat_label(cur);
         if (next_is(cur, "endprogram")) {
@@ -848,10 +849,14 @@ struct FixedFormRecursiveDescent {
             loc.first = prev - string_start + prog.size() + name.size();
             loc.last = prev - string_start + prog.size() + name.size() + 1;
             locations.push_back(loc);
-            lex_program(cur);
+            lex_program(cur, false);
             return true;
         }
         return false;
+    }
+
+    bool is_program(unsigned char *cur) {
+        return next_is(cur, "program");
     }
 
 
@@ -864,18 +869,18 @@ struct FixedFormRecursiveDescent {
         std::vector<std::string> function_keywords{"recursive", "result", "character", "complex", "integer", "doubleprecision", "external"};
 
         if (next_is(cur, "include")) tokenize_line("include", cur);
-        if (is_declaration(cur, "program", program_keywords)) {
-            lex_program(cur);
+        if (is_program(cur)) {
+            lex_program(cur, true);
         } else if (is_declaration(cur, "subroutine", subroutine_keywords)) {
             lex_subroutine(cur);
         } else if (is_declaration(cur, "function", function_keywords)) {
             lex_function(cur);
-        }
         /* TODO
-          else if (is_declaration(cur, "blockdata", blockdata_keywords)) {
+        }  else if (is_declaration(cur, "blockdata", blockdata_keywords)) {
             lex_block_data(cur);
         } 
-        */ else if (add_implicit_program(cur)) {
+        */
+        } else if (add_implicit_program(cur)) {
             // give compiler a chance for implicitly defined programs
         } else {
             error(cur, "ICE: Cannot recognize global scope entity");
