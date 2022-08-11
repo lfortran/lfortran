@@ -930,8 +930,10 @@ public:
                     ASR::expr_t* object = LFortran::ASRUtils::EXPR(tmp);
                     this->visit_expr(*a->m_value[i]);
                     ASR::expr_t* value = LFortran::ASRUtils::EXPR(tmp);
-
-                    // TODO: add checks:
+                    // The parser ensures object is a TK_NAME
+                    // The `visit_expr` ensures it resolves as an expression
+                    // which must be a `Var_t` pointing to a `Variable_t`,
+                    // so no checks are needed:
                     ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
                     ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
                     v2->m_value = value;
