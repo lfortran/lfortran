@@ -1,0 +1,5 @@
+style suggestion: Use '==' instead of '.eq.'
+  --> tests/fixedform_doloop3.f:11:21
+   |
+11 |       IF (MOD(N, 2) .EQ. 0) F(LOUT) = ONE
+   |                     ^^^^ help: write this as '=='

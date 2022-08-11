@@ -334,7 +334,7 @@ struct FixedFormRecursiveDescent {
         });
     }
 
-    bool eat_label(unsigned char *&cur) {
+    int64_t eat_label(unsigned char *&cur) {
         // consume label if it is available
         // for line beginnings
         const int reserved_cols = 6;
@@ -362,12 +362,12 @@ struct FixedFormRecursiveDescent {
             // int token = yytokentype::TK_LABEL;
             // tokens.push_back(token);
             cur+=reserved_cols;
-            return true;
+            return y.int_suffix.int_n.n;
         }
-        return false;
+        return -1;
     }
 
-    bool eat_label_inline(unsigned char *&cur) {
+    int64_t eat_label_inline(unsigned char *&cur) {
         // consume label if it is available
         auto start = cur;
         auto cur2 = cur;
@@ -393,9 +393,9 @@ struct FixedFormRecursiveDescent {
             loc.last = cur - string_start + label.size();
             locations.push_back(loc);
             cur+=count+1; // TODO revisit
-            return true;
+            return yy.int_suffix.int_n.n;
         }
-        return false;
+        return -1;
     }
 
     void next_line(unsigned char *&cur) {
@@ -632,9 +632,20 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
-    bool find_terminal(unsigned char *&cur) {
-        // TODO: check that this label is the same label as the do loop label
-        eat_label(cur);
+    bool lex_do_terminal(unsigned char *&cur, int64_t do_label) {
+        if (*cur == '\0') {
+            Location loc;
+            loc.first = 1;
+            loc.last = 1;
+            throw parser_local::TokenizerError("End of file inside a do loop", loc);
+        }
+        int64_t label = eat_label(cur);
+        bool label_match = false;
+        if (label != -1) {
+            if (label == do_label) {
+                label_match = true;
+            }
+        }
         if (next_is(cur, "enddo")) {
             tokenize_line("enddo", cur);
             return true;
@@ -642,6 +653,28 @@ struct FixedFormRecursiveDescent {
             // the usual terminal statement for do loops
             tokenize_line("continue", cur);
             //only append iff (tokens[tokens.size()-2] == yytokentype::TK_LABEL && tokens[tokens.size()-1 == yytokentype::KW_CONTINUE])
+
+            // return an explicit "end do" token here
+            std::string l("enddo");
+            YYSTYPE y2;
+            y2.string.from_str(m_a, l);
+            stypes.push_back(y2);
+            tokens.push_back(yytokentype::KW_END_DO);
+            Location loc;
+            loc.first = t.cur - string_start;
+            loc.last = t.cur - string_start + l.size();
+            locations.push_back(loc);
+            // And a new line
+            l = "\n";
+            y2.string.from_str(m_a, l);
+            stypes.push_back(y2);
+            tokens.push_back(yytokentype::TK_NEWLINE);
+            loc.first = t.cur - string_start;
+            loc.last = t.cur - string_start + 1;
+            locations.push_back(loc);
+            return true;
+        } else if (label_match) {
+            lex_body_statement(cur);
 
             // return an explicit "end do" token here
             std::string l("enddo");
@@ -681,13 +714,18 @@ struct FixedFormRecursiveDescent {
         loc.last = cur - string_start + l.size();
         locations.push_back(loc);
         cur += l.size();
-        if (eat_label_inline(cur)) {
+        int64_t do_label = eat_label_inline(cur);
+        if (do_label != -1) {
             cur--; // un-advance as eat_label_inline moves 1 char too far when making checks
         }
         tokenize_line("", cur); // tokenize rest of line where `do` starts
-        while (lex_body_statement(cur));
-        if (!find_terminal(cur)) {
-            error(cur, "Expecting termination symbol for do loop");
+        while (!lex_do_terminal(cur, do_label)) {
+            if (!lex_body_statement(cur)) {
+                Location loc;
+                loc.first = 1;
+                loc.last = 1;
+                throw parser_local::TokenizerError("End of file inside a do loop 2", loc);
+            };
         }
     }
 
