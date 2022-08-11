@@ -11,3 +11,22 @@ C
       IF (MOD(N, 2) .EQ. 0) F(LOUT) = ONE
       RETURN
       END
+
+      SUBROUTINE f(N)
+      DO 1 I = 1, LOUT
+        a = 1
+        do 3 j = 3, n
+            b = 2
+            do 4 k = 3, n
+                c = 3
+                do 5 l = 3, n
+                    d = 4
+5               xx = 5
+                e = 5
+4           end do
+            f = 6
+        end do
+        g = 8
+1     F(I) = TWO
+      h = 9
+      END
