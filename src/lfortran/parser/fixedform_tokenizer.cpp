@@ -436,6 +436,11 @@ struct FixedFormRecursiveDescent {
     // `cur` unchanged).
 
 
+    /*
+     * The line must start with `chop` which is returned as a keyword
+     * (not an identifier).
+     * Then the rest of the line is tokenized, including the new line.
+     */
     void tokenize_line(const std::string &chop, unsigned char *&cur) {
         YYSTYPE y1;
         if (chop != "") {
@@ -732,7 +737,8 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    void lex_program(unsigned char *&cur) {
+    void lex_program(unsigned char *&cur, bool explicit_program) {
+        if (explicit_program) tokenize_line("program", cur);
         while(lex_body_statement(cur));
         eat_label(cur);
         if (next_is(cur, "endprogram")) {
@@ -810,7 +816,7 @@ struct FixedFormRecursiveDescent {
         return true;
     }
 
-    bool add_implicit_program(unsigned char *&cur) {
+    bool is_implicit_program(unsigned char *cur) {
         auto cpy = cur;
         auto prev = cpy;
         for (;;) {
@@ -819,34 +825,13 @@ struct FixedFormRecursiveDescent {
             prev = cpy;
         }
         if (next_is(prev, "endprogram\n") || next_is(prev, "end\n")) {
-            std::string prog{"program"};
-            // TODO -- mangling
-            std::string name{"implicit_program_lfortran"};
-            // add implicit global program at the line `cur` is currently at
-            YYSTYPE y;
-            y.string.from_str(m_a, prog);
-            stypes.push_back(y);
-            tokens.push_back(yytokentype::KW_PROGRAM);
-            Location loc;
-            loc.first = prev - string_start;
-            loc.last = prev - string_start + prog.size();
-            locations.push_back(loc);
-            y.string.from_str(m_a, name);
-            stypes.push_back(y);
-            tokens.push_back(yytokentype::TK_NAME);
-            loc.first = prev - string_start + prog.size();
-            loc.last = prev - string_start + prog.size() + name.size();
-            locations.push_back(loc);
-            y.string.from_str(m_a, "\n");
-            stypes.push_back(y);
-            tokens.push_back(yytokentype::TK_NEWLINE);
-            loc.first = prev - string_start + prog.size() + name.size();
-            loc.last = prev - string_start + prog.size() + name.size() + 1;
-            locations.push_back(loc);
-            lex_program(cur);
             return true;
         }
         return false;
+    }
+
+    bool is_program(unsigned char *cur) {
+        return next_is(cur, "program");
     }
 
 
@@ -859,19 +844,43 @@ struct FixedFormRecursiveDescent {
         std::vector<std::string> function_keywords{"recursive", "result", "character", "complex", "integer", "doubleprecision", "external"};
 
         if (next_is(cur, "include")) tokenize_line("include", cur);
-        if (is_declaration(cur, "program", program_keywords)) {
-            lex_program(cur);
+        if (is_program(cur)) {
+            lex_program(cur, true);
         } else if (is_declaration(cur, "subroutine", subroutine_keywords)) {
             lex_subroutine(cur);
         } else if (is_declaration(cur, "function", function_keywords)) {
             lex_function(cur);
-        }
         /* TODO
-          else if (is_declaration(cur, "blockdata", blockdata_keywords)) {
+        }  else if (is_declaration(cur, "blockdata", blockdata_keywords)) {
             lex_block_data(cur);
         } 
-        */ else if (add_implicit_program(cur)) {
-            // give compiler a chance for implicitly defined programs
+        */
+        } else if (is_implicit_program(cur)) {
+            std::string prog{"program"};
+            // TODO -- mangling
+            std::string name{"implicit_program_lfortran"};
+            // add implicit global program at the line `cur` is currently at
+            YYSTYPE y;
+            y.string.from_str(m_a, prog);
+            stypes.push_back(y);
+            tokens.push_back(yytokentype::KW_PROGRAM);
+            Location loc;
+            loc.first = cur - string_start;
+            loc.last = cur - string_start + prog.size();
+            locations.push_back(loc);
+            y.string.from_str(m_a, name);
+            stypes.push_back(y);
+            tokens.push_back(yytokentype::TK_NAME);
+            loc.first = cur - string_start + prog.size();
+            loc.last = cur - string_start + prog.size() + name.size();
+            locations.push_back(loc);
+            y.string.from_str(m_a, "\n");
+            stypes.push_back(y);
+            tokens.push_back(yytokentype::TK_NEWLINE);
+            loc.first = cur - string_start + prog.size() + name.size();
+            loc.last = cur - string_start + prog.size() + name.size() + 1;
+            locations.push_back(loc);
+            lex_program(cur, false);
         } else {
             error(cur, "ICE: Cannot recognize global scope entity");
         }
