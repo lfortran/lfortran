@@ -1,0 +1,11 @@
+tokenizer error: Expecting terminating symbol for program
+ --> tests/errors/fixed_form_1.f:2:7
+  |
+2 |       xinteger :: y
+  |       ^ 
+
+syntax error: End of file is unexpected here
+ --> tests/errors/fixed_form_1.f:1:7
+  |
+1 |       program X
+  |       ^ 
