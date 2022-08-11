@@ -1678,9 +1678,13 @@ asr = true
 filename = "../integration_tests/expr_07.f90"
 asr = true
 
-#[[test]]
-#filename = "../integration_tests/expr_08.f90"
-#wasm = true
+[[test]]
+filename = "../integration_tests/expr_08.f90"
+wat = true
+
+[[test]]
+filename = "../integration_tests/expr_09.f90"
+wat = true
 
 [[test]]
 filename = "../integration_tests/modules_11.f90"
