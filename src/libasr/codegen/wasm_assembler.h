@@ -581,7 +581,7 @@ void emit_branch_if(Vec<uint8_t> &code, Allocator &al, uint32_t label_idx){
 
 void save_js_glue(std::string filename){
     std::string js_glue =
-R"(function define_imports(memory, outputBuffer, stdout_print) {
+R"(function define_imports(memory, outputBuffer, exit_code, stdout_print) {
     const printNum = (num) => outputBuffer.push(num.toString());
     const printStr = (startIdx, strSize) => outputBuffer.push(
         new TextDecoder("utf8").decode(new Uint8Array(memory.buffer, startIdx, strSize)));
@@ -589,6 +589,7 @@ R"(function define_imports(memory, outputBuffer, stdout_print) {
         stdout_print(outputBuffer.join(" ") + "\n");
         outputBuffer.length = 0;
     }
+    const set_exit_code = (exit_code_val) => exit_code.val = exit_code_val;
     var imports = {
         js: {
             memory: memory,
@@ -599,29 +600,27 @@ R"(function define_imports(memory, outputBuffer, stdout_print) {
             print_f64: printNum,
             print_str: printStr,
             flush_buf: flushBuffer,
+            set_exit_code: set_exit_code,
         },
     };
     return imports;
 }
 
 async function run_wasm(bytes, imports) {
-    var res;
-    try { res = await WebAssembly.instantiate(bytes, imports); }
-    catch (e) { console.log(e); return 1 /* non-zero return value */; }
-    const { _lcompilers_main } = res.instance.exports;
-    try { _lcompilers_main() }
-    catch (e) { return 1; }
-    return 0;
+    try {
+        var res = await WebAssembly.instantiate(bytes, imports);
+        const { _lcompilers_main } = res.instance.exports;
+        _lcompilers_main();
+    } catch(e) { console.log(e); }
 }
 
 async function execute_code(bytes, stdout_print) {
+    var exit_code = {val: 1}; /* non-zero exit code */
     var outputBuffer = [];
     var memory = new WebAssembly.Memory({ initial: 10, maximum: 100 }); // initial 640Kb and max 6.4Mb
-    var imports = define_imports(memory, outputBuffer, stdout_print);
-    const exec_status = await run_wasm(bytes, imports);
-
-    // the first element in outputBuffer (if exists) denotes the actual execution status
-    return (exec_status ? (outputBuffer.length == 0 ? 1 : outputBuffer[0]) : 0);
+    var imports = define_imports(memory, outputBuffer, exit_code, stdout_print);
+    await run_wasm(bytes, imports);
+    return exit_code.val;
 }
 
 function main() {

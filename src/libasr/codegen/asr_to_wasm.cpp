@@ -154,7 +154,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             {"print_f32", { {ASR::ttypeType::Real, 4} }, {}},
             {"print_f64", { {ASR::ttypeType::Real, 8} }, {}},
             {"print_str", { {ASR::ttypeType::Integer, 4}, {ASR::ttypeType::Integer, 4} }, {}},
-            {"flush_buf", {}, {}}
+            {"flush_buf", {}, {}},
+            {"set_exit_code", { {ASR::ttypeType::Integer, 4} }, {}}
          };
 
         for (auto import_func:import_funcs) {
@@ -418,8 +419,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
-    template<typename T>
-    void emit_function_prototype(const T& x) {
+    void emit_function_prototype(const ASR::Function_t &x) {
         SymbolFuncInfo* s = new SymbolFuncInfo;
 
         /********************* New Type Declaration *********************/
@@ -459,8 +459,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_func_name_idx_map[get_hash((ASR::asr_t *)&x)] = s; // add function to map
     }
 
-    template<typename T>
-    void emit_function_body(const T& x) {
+    void emit_function_body(const ASR::Function_t &x) {
         LFORTRAN_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)&x)) != m_func_name_idx_map.end());
 
         cur_sym_info = m_func_name_idx_map[get_hash((ASR::asr_t *)&x)];
@@ -474,6 +473,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         emit_local_vars(x, cur_sym_info->no_of_variables);
         for (size_t i = 0; i < x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
+        }
+        if (strcmp(x.m_name, "_lcompilers_main") == 0) {
+            wasm::emit_i32_const(m_code_section,m_al, 0 /* zero exit code */);
+            wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["set_exit_code"])]->index);
         }
         if ((x.n_body > 0) && !ASR::is_a<ASR::Return_t>(*x.m_body[x.n_body - 1])) {
             handle_return();
@@ -1506,9 +1509,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void exit() {
-        // exit_code would be on stack, so add it to JavaScript Output buffer by printing it.
+        // exit_code would be on stack, so set this exit code using set_exit_code().
         // this exit code would be read by JavaScript glue code
-        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["print_i32"])]->index);
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["set_exit_code"])]->index);
         wasm::emit_unreachable(m_code_section, m_al); // raise trap/exception
     }
 
