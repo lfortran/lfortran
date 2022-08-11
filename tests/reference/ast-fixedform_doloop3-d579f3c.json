@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "ast-fixedform_doloop3-d579f3c.stdout",
     "stdout_hash": "927781a5f9ce5c75c4b8c2e9ef7b2138bfaba4645ce610d6eafe05cb",
-    "stderr": "ast-fixedform_doloop3-d579f3c.stderr",
-    "stderr_hash": "548ef49d41b7c9ead35244998499ef1eebb9beef166406e3bbd88a98",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

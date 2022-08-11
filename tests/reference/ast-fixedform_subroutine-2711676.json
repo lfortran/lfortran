@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "ast-fixedform_subroutine-2711676.stdout",
     "stdout_hash": "87ba576737312ee3581803843b78b37a03d901f2f89d5d3dc23ceb77",
-    "stderr": "ast-fixedform_subroutine-2711676.stderr",
-    "stderr_hash": "d2bff3107dabf94e295decc0484d404ced3167dd624bf5b315def2f6",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }
