@@ -18,7 +18,9 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
 {
     Parser p(al, diagnostics, fixed_form);
     try {
-        p.parse(s);
+        if (!p.parse(s)) {
+            return Error();
+        };
     } catch (const parser_local::TokenizerError &e) {
         Error error;
         diagnostics.diagnostics.push_back(e.d);
@@ -40,7 +42,7 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         p.result.p, p.result.size());
 }
 
-void Parser::parse(const std::string &input)
+bool Parser::parse(const std::string &input)
 {
     inp = input;
     if (inp.size() > 0) {
@@ -51,13 +53,13 @@ void Parser::parse(const std::string &input)
     if (!fixed_form) {
         m_tokenizer.set_string(inp);
         if (yyparse(*this) == 0) {
-            return;
+            return true;
         }
     } else {
         f_tokenizer.set_string(inp);
-        f_tokenizer.tokenize_input(diag, m_a);
+        if (!f_tokenizer.tokenize_input(diag, m_a)) return false;
         if (yyparse(*this) == 0) {
-            return;
+            return true;
         }
     }
     throw parser_local::ParserError("Parsing unsuccessful (internal compiler error)");
