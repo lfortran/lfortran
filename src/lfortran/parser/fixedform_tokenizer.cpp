@@ -334,7 +334,7 @@ struct FixedFormRecursiveDescent {
         });
     }
 
-    bool eat_label(unsigned char *&cur) {
+    int64_t eat_label(unsigned char *&cur) {
         // consume label if it is available
         // for line beginnings
         const int reserved_cols = 6;
@@ -362,12 +362,12 @@ struct FixedFormRecursiveDescent {
             // int token = yytokentype::TK_LABEL;
             // tokens.push_back(token);
             cur+=reserved_cols;
-            return true;
+            return y.int_suffix.int_n.n;
         }
-        return false;
+        return -1;
     }
 
-    bool eat_label_inline(unsigned char *&cur) {
+    int64_t eat_label_inline(unsigned char *&cur) {
         // consume label if it is available
         auto start = cur;
         auto cur2 = cur;
@@ -393,9 +393,9 @@ struct FixedFormRecursiveDescent {
             loc.last = cur - string_start + label.size();
             locations.push_back(loc);
             cur+=count+1; // TODO revisit
-            return true;
+            return yy.int_suffix.int_n.n;
         }
-        return false;
+        return -1;
     }
 
     void next_line(unsigned char *&cur) {
@@ -632,9 +632,13 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
-    bool find_terminal(unsigned char *&cur) {
-        // TODO: check that this label is the same label as the do loop label
-        eat_label(cur);
+    bool lex_terminal(unsigned char *&cur, int64_t do_label) {
+        int64_t label = eat_label(cur);
+        if (label != -1) {
+            if (label == do_label) {
+                // label_match = true;
+            }
+        }
         if (next_is(cur, "enddo")) {
             tokenize_line("enddo", cur);
             return true;
@@ -681,14 +685,12 @@ struct FixedFormRecursiveDescent {
         loc.last = cur - string_start + l.size();
         locations.push_back(loc);
         cur += l.size();
-        if (eat_label_inline(cur)) {
+        int64_t do_label = eat_label_inline(cur);
+        if (do_label != -1) {
             cur--; // un-advance as eat_label_inline moves 1 char too far when making checks
         }
         tokenize_line("", cur); // tokenize rest of line where `do` starts
-        while (lex_body_statement(cur));
-        if (!find_terminal(cur)) {
-            error(cur, "Expecting termination symbol for do loop");
-        }
+        while (!lex_terminal(cur, do_label)) lex_body_statement(cur);
     }
 
     bool if_advance_or_terminate(unsigned char *&cur) {
