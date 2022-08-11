@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <cctype>
 
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/parser.tab.hh>
@@ -216,6 +217,7 @@ void copy_label(std::string &out, const std::string &s, size_t &pos)
     }
 }
 
+// Only used in fixed-form
 void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
     LocationManager &lm)
 {
@@ -232,7 +234,8 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
             lm.out_start.push_back(out.size());
             lm.in_start.push_back(pos);
         } else {
-            out += s[pos];
+            // Copy the character, but covert to lowercase
+            out += tolower(s[pos]);
             pos++;
         }
     }
