@@ -607,12 +607,11 @@ R"(function define_imports(memory, outputBuffer, exit_code, stdout_print) {
 }
 
 async function run_wasm(bytes, imports) {
-    var res;
-    try { res = await WebAssembly.instantiate(bytes, imports); }
-    catch (e) { throw e; }
-    const { _lcompilers_main } = res.instance.exports;
-    try { _lcompilers_main() }
-    catch (e) { console.log(e); /* execution terminated due to stop or error stop */ }
+    try {
+        var res = await WebAssembly.instantiate(bytes, imports);
+        const { _lcompilers_main } = res.instance.exports;
+        _lcompilers_main();
+    } catch(e) { console.log(e); }
 }
 
 async function execute_code(bytes, stdout_print) {
