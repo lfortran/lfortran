@@ -18,7 +18,9 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
 {
     Parser p(al, diagnostics, fixed_form);
     try {
-        p.parse(s);
+        if (!p.parse(s)) {
+            return Error();
+        };
     } catch (const parser_local::TokenizerError &e) {
         Error error;
         diagnostics.diagnostics.push_back(e.d);
@@ -40,7 +42,7 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         p.result.p, p.result.size());
 }
 
-void Parser::parse(const std::string &input)
+bool Parser::parse(const std::string &input)
 {
     inp = input;
     if (inp.size() > 0) {
@@ -51,13 +53,13 @@ void Parser::parse(const std::string &input)
     if (!fixed_form) {
         m_tokenizer.set_string(inp);
         if (yyparse(*this) == 0) {
-            return;
+            return true;
         }
     } else {
         f_tokenizer.set_string(inp);
-        f_tokenizer.tokenize_input(diag, m_a);
+        if (!f_tokenizer.tokenize_input(diag, m_a)) return false;
         if (yyparse(*this) == 0) {
-            return;
+            return true;
         }
     }
     throw parser_local::ParserError("Parsing unsuccessful (internal compiler error)");
@@ -651,11 +653,17 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
         std::string token_str;
         // Determine the unexpected token's type:
         if (this->fixed_form) {
-            unsigned int invalid_token = this->f_tokenizer.token_pos - 1;            
-            if (invalid_token >= f_tokenizer.tokens.size()) {
-                invalid_token = f_tokenizer.tokens.size()-1;
+            unsigned int invalid_token = this->f_tokenizer.token_pos;
+            if (invalid_token == 0 || invalid_token > f_tokenizer.tokens.size()) {
+                message = "unknown error";
+                throw parser_local::ParserError(message, loc);
             }
+            invalid_token--;
+            LFORTRAN_ASSERT(invalid_token < f_tokenizer.tokens.size())
+            LFORTRAN_ASSERT(invalid_token < f_tokenizer.locations.size())
             token = f_tokenizer.tokens[invalid_token];
+            Location loc = f_tokenizer.locations[invalid_token];
+            token_str = f_tokenizer.token_at_loc(loc);
         } else {
             LFortran::YYSTYPE yylval_;
             YYLTYPE yyloc_;

@@ -2153,3 +2153,23 @@ asr_implicit_typing = true
 filename = "dimension_attr.f"
 ast = true
 asr = true
+
+[[test]]
+filename = "errors/fixed_form_1.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_2.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_3.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_4.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_5.f"
+ast = true
