@@ -1,5 +1,6 @@
 #include <libasr/assert.h>
 #include <libasr/codegen/llvm_utils.h>
+#include <libasr/asr_utils.h>
 
 namespace LFortran {
 
@@ -154,6 +155,56 @@ namespace LFortran {
         fn->getBasicBlockList().push_back(bb);
         builder->SetInsertPoint(bb);
     }
+
+    llvm::Value* LLVMUtils::lfortran_str_cmp(llvm::Value* left_arg, llvm::Value* right_arg,
+                                             std::string runtime_func_name, llvm::Module& module)
+    {
+        llvm::Type* character_type = llvm::Type::getInt8PtrTy(context);
+        llvm::Function *fn = module.getFunction(runtime_func_name);
+        if(!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getInt1Ty(context), {
+                        character_type->getPointerTo(),
+                        character_type->getPointerTo()
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, module);
+        }
+        llvm::AllocaInst *pleft_arg = builder->CreateAlloca(character_type,
+            nullptr);
+        builder->CreateStore(left_arg, pleft_arg);
+        llvm::AllocaInst *pright_arg = builder->CreateAlloca(character_type,
+            nullptr);
+        builder->CreateStore(right_arg, pright_arg);
+        std::vector<llvm::Value*> args = {pleft_arg, pright_arg};
+        return builder->CreateCall(fn, args);
+    }
+
+    llvm::Value* LLVMUtils::is_equal_by_value(llvm::Value* left, llvm::Value* right,
+                                              llvm::Module& module, ASR::ttype_t* asr_type) {
+        switch( asr_type->type ) {
+            case ASR::ttypeType::Integer: {
+                return builder->CreateICmpEQ(left, right);
+            };
+            case ASR::ttypeType::Real: {
+                return builder->CreateFCmpOEQ(left, right);
+            }
+            case ASR::ttypeType::Character: {
+                return lfortran_str_cmp(left, right, "_lpython_str_compare_eq",
+                                        module);
+            }
+            case ASR::ttypeType::Tuple: {
+                ASR::Tuple_t* tuple_type = ASR::down_cast<ASR::Tuple_t>(asr_type);
+                return LLVMTuple::check_tuple_equality(left, right, tuple_type, context,
+                                                       this, builder, module);
+            }
+            default: {
+                throw LCompilersException("LLVMUtils::is_equal_by_value isn't implemented for " +
+                                          ASRUtils::type_to_str_python(asr_type));
+            }
+        }
+    }
+
 
     LLVMList::LLVMList(llvm::LLVMContext& context_,
         LLVMUtils* llvm_utils_,
@@ -347,6 +398,24 @@ namespace LFortran {
             llvm::Value* dest_item_ptr = read_item(dest, i, true);
             builder->CreateStore(src_item, dest_item_ptr);
         }
+    }
+
+    llvm::Value* LLVMTuple::check_tuple_equality(llvm::Value* t1, llvm::Value* t2,
+                                                 ASR::Tuple_t* tuple_type,
+                                                 llvm::LLVMContext& context,
+                                                 LLVMUtils* llvm_utils,
+                                                 llvm::IRBuilder<>* builder,
+                                                 llvm::Module& module) {
+        LLVMTuple tuple_api(context, llvm_utils, builder);
+        llvm::Value* is_equal = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
+        for( size_t i = 0; i < tuple_type->n_type; i++ ) {
+            llvm::Value* t1i = tuple_api.read_item(t1, i);
+            llvm::Value* t2i = tuple_api.read_item(t2, i);
+            llvm::Value* is_t1_eq_t2 = llvm_utils->is_equal_by_value(t1i, t2i, module,
+                                        tuple_type->m_type[i]);
+            is_equal = builder->CreateAnd(is_equal, is_t1_eq_t2);
+        }
+        return is_equal;
     }
 
 } // namespace LFortran

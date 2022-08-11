@@ -5,6 +5,7 @@
 
 #include <llvm/IR/Value.h>
 #include <llvm/IR/IRBuilder.h>
+#include <libasr/asr.h>
 
 #include <map>
 #include <tuple>
@@ -21,6 +22,13 @@ namespace LFortran {
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size);
         llvm::Value* lfortran_realloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* ptr, llvm::Value* arg_size);
+        static inline bool is_llvm_struct(ASR::ttype_t* asr_type) {
+            return ASR::is_a<ASR::Tuple_t>(*asr_type) ||
+                   ASR::is_a<ASR::List_t>(*asr_type) ||
+                   ASR::is_a<ASR::Complex_t>(*asr_type) ||
+                   ASR::is_a<ASR::Derived_t>(*asr_type) ||
+                   ASR::is_a<ASR::Class_t>(*asr_type);
+        }
     }
 
     class LLVMUtils {
@@ -46,6 +54,12 @@ namespace LFortran {
             llvm::Type* getIntType(int a_kind, bool get_pointer=false);
 
             void start_new_block(llvm::BasicBlock *bb);
+
+            llvm::Value* lfortran_str_cmp(llvm::Value* left_arg, llvm::Value* right_arg,
+                                          std::string runtime_func_name, llvm::Module& module);
+
+            llvm::Value* is_equal_by_value(llvm::Value* left, llvm::Value* right,
+                                           llvm::Module& module, ASR::ttype_t* asr_type);
 
     }; // LLVMUtils
 
@@ -126,6 +140,10 @@ namespace LFortran {
 
             void tuple_deepcopy(llvm::Value* src, llvm::Value* dest,
                                 std::string& type_code);
+
+            static llvm::Value* check_tuple_equality(llvm::Value* t1, llvm::Value* t2,
+                 ASR::Tuple_t* tuple_type, llvm::LLVMContext& context, LLVMUtils* llvm_utils,
+                 llvm::IRBuilder<>* builder, llvm::Module& module);
     };
 
 } // LFortran
