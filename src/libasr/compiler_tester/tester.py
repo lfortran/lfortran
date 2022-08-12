@@ -126,6 +126,8 @@ def fixdir(s: bytes) -> bytes:
     local_dir = os.getcwd()
     return s.replace(local_dir.encode(), "$DIR".encode())
 
+def unl_loop_del(b):
+    return b.replace(bytes('\r\n', encoding='utf-8'), bytes('\n', encoding='utf-8'))
 
 def run(basename: str, cmd: Union[pathlib.Path, str],
         out_dir: Union[pathlib.Path, str], infile=None, extra_args=None):
@@ -160,6 +162,9 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     if infile and not os.path.exists(infile):
         raise RunException("The input file does not exist")
     outfile = os.path.join(out_dir, basename + "." + "out")
+
+    infile=infile.replace("\\\\","\\").replace("\\","/")
+
     cmd2 = cmd.format(infile=infile, outfile=outfile)
     if extra_args:
         cmd2 += " " + extra_args
@@ -178,25 +183,26 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
         open(stderr_file, "wb").write(fixdir(r.stderr))
     else:
         stderr_file = None
-
     if infile:
-        infile_hash = hashlib.sha224(open(infile, "rb").read()).hexdigest()
+        temp=unl_loop_del(open(infile, "rb").read())
+        infile_hash = hashlib.sha224(temp).hexdigest()
     else:
         infile_hash = None
     if outfile:
-        outfile_hash = hashlib.sha224(open(outfile, "rb").read()).hexdigest()
+        temp=unl_loop_del(open(outfile, "rb").read())
+        outfile_hash = hashlib.sha224(temp).hexdigest()
         outfile = os.path.basename(outfile)
     else:
         outfile_hash = None
     if stdout_file:
-        stdout_hash = hashlib.sha224(
-            open(stdout_file, "rb").read()).hexdigest()
+        temp=unl_loop_del(open(stdout_file, "rb").read())
+        stdout_hash = hashlib.sha224(temp).hexdigest()
         stdout_file = os.path.basename(stdout_file)
     else:
         stdout_hash = None
     if stderr_file:
-        stderr_hash = hashlib.sha224(
-            open(stderr_file, "rb").read()).hexdigest()
+        temp=unl_loop_del(open(stderr_file, "rb").read())
+        stderr_hash = hashlib.sha224(temp).hexdigest()
         stderr_file = os.path.basename(stderr_file)
     else:
         stderr_hash = None
@@ -272,8 +278,10 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
     s = f"{testname} * {basename}"
     basename = bname(basename, cmd, infile)
     infile = os.path.join("tests", infile)
+
     jo = run(basename, cmd, os.path.join("tests", "output"), infile=infile,
              extra_args=extra_args)
+
     jr = os.path.join("tests", "reference", os.path.basename(jo))
     if not os.path.exists(jo):
         raise FileNotFoundError(
@@ -316,6 +324,7 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
         raise RunException(
             "Testing with reference output failed." +
             full_err_str)
+
     log.debug(s + " " + check())
 
 def tester_main(compiler, single_test):
