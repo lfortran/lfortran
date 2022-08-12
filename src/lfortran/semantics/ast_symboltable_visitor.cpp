@@ -483,6 +483,10 @@ public:
                     type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind, nullptr, 0));
                     break;
                 }
+                case (AST::decl_typeType::TypeDoublePrecision) : {
+                    type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
+                    break;
+                }
                 case (AST::decl_typeType::TypeComplex) : {
                     type = LFortran::ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind, nullptr, 0));
                     break;
