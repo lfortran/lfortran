@@ -210,7 +210,7 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     data = {
         "basename": basename,
         "cmd": cmd,
-        "infile": infile.replace("\\\\","\\").replace("\\","/"),
+        "infile": infile,
         "infile_hash": infile_hash,
         "outfile": outfile,
         "outfile_hash": outfile_hash,
