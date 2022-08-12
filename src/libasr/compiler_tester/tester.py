@@ -176,7 +176,6 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     if len(r.stdout):
         stdout_file = os.path.join(out_dir, basename + "." + "stdout")
         open(stdout_file, "wb").write(fixdir(r.stdout))
-
     else:
         stdout_file = None
     if len(r.stderr):
@@ -222,7 +221,6 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     }
     json_file = os.path.join(out_dir, basename + "." + "json")
     json.dump(data, open(json_file, "w"), indent=4)
-    # print("json file is: " + json_file)
     return json_file
 
 
@@ -281,7 +279,6 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
     basename = bname(basename, cmd, infile)
     infile = os.path.join("tests", infile)
 
-
     jo = run(basename, cmd, os.path.join("tests", "output"), infile=infile,
              extra_args=extra_args)
 
@@ -301,7 +298,6 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
 
     dr = json.load(open(jr))
     if do != dr:
-
         # This string builds up the error message. Print test name in red in the beginning.
         # More information is added afterwards.
         full_err_str = f"\n{(color(fg.red)+color(style.bold))}{s}{color(fg.reset)+color(style.reset)}\n"
