@@ -903,7 +903,21 @@ public:
                     std::string sym = to_lower(s.m_name);
                     ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
                     // get actual variable from SymTab, not the current line
-                    if (get_sym == nullptr) throw SemanticError("Cannot set dimension for undeclared variable", x.base.base.loc);
+                    if (get_sym == nullptr) {
+                        if (compiler_options.implicit_typing) {
+                            ASR::intentType intent;
+                            if (std::find(current_procedure_args.begin(),
+                                    current_procedure_args.end(), sym) !=
+                                    current_procedure_args.end()) {
+                                intent = LFortran::ASRUtils::intent_unspecified;
+                            } else {
+                                intent = LFortran::ASRUtils::intent_local;
+                            }
+                            get_sym = declare_implicit_variable(s.loc, sym, intent);
+                        } else {
+                            throw SemanticError("Cannot set dimension for undeclared variable", x.base.base.loc);
+                        }
+                    }
                     if (ASR::is_a<ASR::Variable_t>(*get_sym)) {
                         Vec<ASR::dimension_t> dims;
                         dims.reserve(al, 0);
