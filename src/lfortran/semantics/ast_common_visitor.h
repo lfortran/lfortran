@@ -801,104 +801,99 @@ public:
                 throw SemanticError("No attribute specified",
                     x.base.base.loc);
             }
-            if (x.n_attributes > 1) {
-                throw SemanticError("Only one attribute can be specified if type is missing",
-                    x.base.base.loc);
-            }
-            LFORTRAN_ASSERT(x.n_attributes == 1);
-            if (AST::is_a<AST::SimpleAttribute_t>(*x.m_attributes[0])) {
-                AST::SimpleAttribute_t *sa =
-                    AST::down_cast<AST::SimpleAttribute_t>(x.m_attributes[0]);
-                if (x.n_syms == 0) {
-                    // Example:
-                    // private
-                    if (sa->m_attr == AST::simple_attributeType
-                            ::AttrPrivate) {
-                        dflt_access = ASR::accessType::Private;
-                    } else if (sa->m_attr == AST::simple_attributeType
-                            ::AttrPublic) {
-                        // Do nothing (public access is the default)
-                        LFORTRAN_ASSERT(dflt_access == ASR::accessType::Public);
-                    } else if (sa->m_attr == AST::simple_attributeType
-                            ::AttrSave) {
-                        if (in_module) {
-                            // Do nothing (all variables implicitly have the
-                            // save attribute in a module/main program)
+            for (size_t i=0; i<x.n_attributes; i++) {
+                if (AST::is_a<AST::SimpleAttribute_t>(*x.m_attributes[i])) {
+                    AST::SimpleAttribute_t *sa =
+                        AST::down_cast<AST::SimpleAttribute_t>(x.m_attributes[i]);
+                    if (x.n_syms == 0) {
+                        // Example:
+                        // private
+                        if (sa->m_attr == AST::simple_attributeType
+                                ::AttrPrivate) {
+                            dflt_access = ASR::accessType::Private;
+                        } else if (sa->m_attr == AST::simple_attributeType
+                                ::AttrPublic) {
+                            // Do nothing (public access is the default)
+                            LFORTRAN_ASSERT(dflt_access == ASR::accessType::Public);
+                        } else if (sa->m_attr == AST::simple_attributeType
+                                ::AttrSave) {
+                            if (in_module) {
+                                // Do nothing (all variables implicitly have the
+                                // save attribute in a module/main program)
+                            } else {
+                                throw SemanticError("Save Attribute not "
+                                        "supported yet", x.base.base.loc);
+                            }
+                        } else if (sa->m_attr == AST::simple_attributeType
+                                ::AttrSequence) {
+                            // TODO: Implement it for CPP backend
                         } else {
-                            throw SemanticError("Save Attribute not "
+                            throw SemanticError("Attribute declaration not "
                                     "supported yet", x.base.base.loc);
                         }
-                    } else if (sa->m_attr == AST::simple_attributeType
-                            ::AttrSequence) {
-                        // TODO: Implement it for CPP backend
                     } else {
-                        throw SemanticError("Attribute declaration not "
-                                "supported yet", x.base.base.loc);
-                    }
-                } else {
-                    // Example:
-                    // private :: x, y, z
-                    for (size_t i=0; i<x.n_syms; i++) {
-                        AST::var_sym_t &s = x.m_syms[i];
-                        if (s.m_name == nullptr) {
-                            if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
-                                // Operator Overloading Encountered
-                                if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-                                    sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-                                    overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
+                        // Example:
+                        // private :: x, y, z
+                        for (size_t i=0; i<x.n_syms; i++) {
+                            AST::var_sym_t &s = x.m_syms[i];
+                            if (s.m_name == nullptr) {
+                                if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
+                                    // Operator Overloading Encountered
+                                    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+                                        sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+                                        overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
+                                    } else {
+                                        overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
+                                    }
+                                } else if( s.m_spec->type == AST::decl_attributeType::AttrAssignment ) {
+                                    // Assignment Overloading Encountered
+                                    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+                                        sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+                                        assgn[current_scope] = ASR::Public;
+                                    } else {
+                                        assgn[current_scope] = get_asr_simple_attr(sa->m_attr);
+                                    }
+                                 } else if (s.m_spec->type == AST::decl_attributeType::AttrDefinedOperator) {
+                                    //std::string op_name = to_lower(AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec)->m_op_name);
+                                    // Custom Operator Overloading Encountered
+                                    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+                                        sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+                                        overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
+                                    } else {
+                                        overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
+                                    }
                                 } else {
-                                    overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
-                                }
-                            } else if( s.m_spec->type == AST::decl_attributeType::AttrAssignment ) {
-                                // Assignment Overloading Encountered
-                                if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-                                    sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-                                    assgn[current_scope] = ASR::Public;
-                                } else {
-                                    assgn[current_scope] = get_asr_simple_attr(sa->m_attr);
-                                }
-                             } else if (s.m_spec->type == AST::decl_attributeType::AttrDefinedOperator) {
-                                //std::string op_name = to_lower(AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec)->m_op_name);
-                                // Custom Operator Overloading Encountered
-                                if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-                                    sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-                                    overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
-                                } else {
-                                    overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
+                                    throw SemanticError("Attribute type not implemented yet.", x.base.base.loc);
                                 }
                             } else {
-                                throw SemanticError("Attribute type not implemented yet.", x.base.base.loc);
-                            }
-                        } else {
-                            std::string sym = to_lower(s.m_name);
-                            if (sa->m_attr == AST::simple_attributeType
-                                    ::AttrPrivate) {
-                                assgnd_access[sym] = ASR::accessType::Private;
-                            } else if (sa->m_attr == AST::simple_attributeType
-                                    ::AttrPublic) {
-                                assgnd_access[sym] = ASR::accessType::Public;
-                            } else if (sa->m_attr == AST::simple_attributeType
-                                    ::AttrOptional) {
-                                assgnd_presence[sym] = ASR::presenceType::Optional;
-                            } else if(sa->m_attr == AST::simple_attributeType
-                                    ::AttrIntrinsic) {
-                                // Ignore Intrinsic attribute
-                            } else if (sa->m_attr == AST::simple_attributeType
-                                    ::AttrExternal) {
-                                // TODO
-                                throw SemanticError("Attribute declaration not "
-                                    "supported yet", x.base.base.loc);
-                            } else {
-                                throw SemanticError("Attribute declaration not "
-                                        "supported", x.base.base.loc);
+                                std::string sym = to_lower(s.m_name);
+                                if (sa->m_attr == AST::simple_attributeType
+                                        ::AttrPrivate) {
+                                    assgnd_access[sym] = ASR::accessType::Private;
+                                } else if (sa->m_attr == AST::simple_attributeType
+                                        ::AttrPublic) {
+                                    assgnd_access[sym] = ASR::accessType::Public;
+                                } else if (sa->m_attr == AST::simple_attributeType
+                                        ::AttrOptional) {
+                                    assgnd_presence[sym] = ASR::presenceType::Optional;
+                                } else if(sa->m_attr == AST::simple_attributeType
+                                        ::AttrIntrinsic) {
+                                    // Ignore Intrinsic attribute
+                                } else if (sa->m_attr == AST::simple_attributeType
+                                        ::AttrExternal) {
+                                    // TODO
+                                    throw SemanticError("Attribute declaration not "
+                                        "supported yet", x.base.base.loc);
+                                } else {
+                                    throw SemanticError("Attribute declaration not "
+                                            "supported", x.base.base.loc);
+                                }
                             }
                         }
                     }
-                }
-            // enable sole `dimension` attribute
-            } else if (AST::is_a<AST::AttrDimension_t>(*x.m_attributes[0])
-                    && x.n_attributes == 1) {
-                for (size_t i=0;i<x.n_syms;++i) { // symbols for line only
+                // enable sole `dimension` attribute
+            } else if (AST::is_a<AST::AttrDimension_t>(*x.m_attributes[i])) {
+                    for (size_t i=0;i<x.n_syms;++i) { // symbols for line only
                     AST::var_sym_t &s = x.m_syms[i];
                     std::string sym = to_lower(s.m_name);
                     ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
@@ -930,67 +925,67 @@ public:
                         throw SemanticError("Cannot attribute non-variable type with dimension", x.base.base.loc);
                     }
                 }
-            } else if (AST::is_a<AST::AttrData_t>(*x.m_attributes[0])
-                    && x.n_attributes == 1 && x.n_syms == 0) {
-                // Example:
-                // data x, y / 1.0, 2.0 /
-                AST::AttrData_t *a = AST::down_cast<AST::AttrData_t>(x.m_attributes[0]);
-                if (a->n_object != a->n_value) {
-                    if (a->n_object == 1) {
-                        this->visit_expr(*a->m_object[0]);
-                        ASR::expr_t* object = ASRUtils::EXPR(tmp);
-                        ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
-                        if (ASRUtils::is_array(obj_type)) { // it is an array
-                            Vec<ASR::expr_t*> body;
-                            body.reserve(al, a->n_value);
-                            for (size_t i=0; i< a->n_value; i++) {
-                                this->visit_expr(*a->m_value[i]);
-                                ASR::expr_t* value = LFortran::ASRUtils::EXPR(tmp);
-                                if (ASRUtils::expr_type(value)->type != obj_type->type) {
-                                    throw SemanticError("Type mismatch during data initialization",
-                                        x.base.base.loc);
+            } else if (AST::is_a<AST::AttrData_t>(*x.m_attributes[i])) {
+                    // Example:
+                    // data x, y / 1.0, 2.0 /
+                    AST::AttrData_t *a = AST::down_cast<AST::AttrData_t>(x.m_attributes[i]);
+                    if (a->n_object != a->n_value) {
+                        if (a->n_object == 1) {
+                            this->visit_expr(*a->m_object[0]);
+                            ASR::expr_t* object = ASRUtils::EXPR(tmp);
+                            ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
+                            if (ASRUtils::is_array(obj_type)) { // it is an array
+                                Vec<ASR::expr_t*> body;
+                                body.reserve(al, a->n_value);
+                                for (size_t i=0; i< a->n_value; i++) {
+                                    this->visit_expr(*a->m_value[i]);
+                                    ASR::expr_t* value = LFortran::ASRUtils::EXPR(tmp);
+                                    if (ASRUtils::expr_type(value)->type != obj_type->type) {
+                                        throw SemanticError("Type mismatch during data initialization",
+                                            x.base.base.loc);
+                                    }
+                                    body.push_back(al, value);
                                 }
-                                body.push_back(al, value);
+                                Vec<ASR::dimension_t> dims;
+                                dims.reserve(al, 1);
+                                ASR::dimension_t dim;
+                                dim.loc = x.base.base.loc;
+                                ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                                                                              4, nullptr, 0));
+                                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+                                ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                                    a->n_value, int32_type));
+                                dim.m_start = one;
+                                dim.m_length = x_n_args;
+                                dims.push_back(al, dim);
+                                obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
+                                tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
+                                    body.size(), obj_type);
+                                tmp = ASR::make_Assignment_t(al, x.base.base.loc, object, ASRUtils::EXPR(tmp),
+                                                             nullptr);
+                                return;
                             }
-                            Vec<ASR::dimension_t> dims;
-                            dims.reserve(al, 1);
-                            ASR::dimension_t dim;
-                            dim.loc = x.base.base.loc;
-                            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
-                                                                                          4, nullptr, 0));
-                            ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
-                            ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
-                                                a->n_value, int32_type));
-                            dim.m_start = one;
-                            dim.m_length = x_n_args;
-                            dims.push_back(al, dim);
-                            obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
-                            tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
-                                body.size(), obj_type);
-                            tmp = ASR::make_Assignment_t(al, x.base.base.loc, object, ASRUtils::EXPR(tmp),
-                                                         nullptr);
-                            return;
                         }
+                        throw SemanticError("The number of values and variables must match in a data statement",
+                            x.base.base.loc);
                     }
-                    throw SemanticError("The number of values and variables must match in a data statement",
+                    for (size_t i=0;i<a->n_object;++i) {
+                        this->visit_expr(*a->m_object[i]);
+                        ASR::expr_t* object = LFortran::ASRUtils::EXPR(tmp);
+                        this->visit_expr(*a->m_value[i]);
+                        ASR::expr_t* value = LFortran::ASRUtils::EXPR(tmp);
+                        // The parser ensures object is a TK_NAME
+                        // The `visit_expr` ensures it resolves as an expression
+                        // which must be a `Var_t` pointing to a `Variable_t`,
+                        // so no checks are needed:
+                        ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
+                        ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+                        v2->m_value = value;
+                    }
+                } else {
+                    throw SemanticError("Attribute declaration not supported",
                         x.base.base.loc);
                 }
-                for (size_t i=0;i<a->n_object;++i) {
-                    this->visit_expr(*a->m_object[i]);
-                    ASR::expr_t* object = LFortran::ASRUtils::EXPR(tmp);
-                    this->visit_expr(*a->m_value[i]);
-                    ASR::expr_t* value = LFortran::ASRUtils::EXPR(tmp);
-                    // The parser ensures object is a TK_NAME
-                    // The `visit_expr` ensures it resolves as an expression
-                    // which must be a `Var_t` pointing to a `Variable_t`,
-                    // so no checks are needed:
-                    ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
-                    ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
-                    v2->m_value = value;
-                }
-            } else {
-                throw SemanticError("Attribute declaration not supported",
-                    x.base.base.loc);
             }
         } else {
             // Example
