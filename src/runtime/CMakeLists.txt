@@ -5,6 +5,7 @@ project(lfortran_unif_runtime C Fortran)
 # If we are only building the runtime library the user
 # should provide a lfortran binary.
 if(NOT WITH_RUNTIME_LIBRARY_ONLY)
+  set(CMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_OFF "")
   set(CMAKE_Fortran_COMPILER ${CMAKE_CURRENT_BINARY_DIR}/../bin/lfortran)
 endif()
 
@@ -15,7 +16,8 @@ macro(lfrotran_compile_runtime name dir)
   add_library(${name} OBJECT ${dir}/${name}.f90)
   target_compile_options(${name} PUBLIC "--backend=cpp")
   set_target_properties(${name} PROPERTIES
-    POSITION_INDEPENDENT_CODE False)
+    POSITION_INDEPENDENT_CODE False
+    Fortran_PREPROCESS False)
 
   # If we are only building the runtime libraries assume
   # the user already built lfortran and don't require
