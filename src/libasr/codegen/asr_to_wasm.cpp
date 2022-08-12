@@ -147,6 +147,32 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         return nullptr;
     }
 
+    void import_function(import_func &imp_fun) {
+        Vec<ASR::expr_t*> params;
+        params.reserve(m_al, imp_fun.param_types.size());
+        uint32_t var_idx;
+        for(var_idx = 0; var_idx < imp_fun.param_types.size(); var_idx++) {
+            auto param = imp_fun.param_types[var_idx];
+            auto type = get_import_func_var_type(x, param);
+            auto variable = ASR::make_Variable_t(m_al, x.base.base.loc, nullptr, s2c(m_al, std::to_string(var_idx)),
+                ASR::intentType::In, nullptr, nullptr, ASR::storage_typeType::Default,
+                ASRUtils::TYPE(type), ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            auto var = ASR::make_Var_t(m_al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(variable));
+            params.push_back(m_al, ASRUtils::EXPR(var));
+        }
+
+        auto func = ASR::make_Function_t(m_al, x.base.base.loc, x.m_global_scope, s2c(m_al, imp_fun.name),
+                params.data(), params.size(), nullptr, 0, nullptr, 0, nullptr, ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Implementation, nullptr, false, false, false);
+        m_import_func_asr_map[imp_fun.name] = func;
+
+
+        wasm::emit_import_fn(m_import_section, m_al, "js", imp_fun.name, no_of_types);
+        emit_function_prototype(*((ASR::Function_t *)func));
+        no_of_imports++;
+    }
+
     void emit_imports(const ASR::TranslationUnit_t &x){
         std::vector<import_func> import_funcs = {
             {"print_i32", { {ASR::ttypeType::Integer, 4} }, {}},
@@ -159,29 +185,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
          };
 
         for (auto import_func:import_funcs) {
-            Vec<ASR::expr_t*> params;
-            params.reserve(m_al, import_func.param_types.size());
-            uint32_t var_idx;
-            for(var_idx = 0; var_idx < import_func.param_types.size(); var_idx++) {
-                auto param = import_func.param_types[var_idx];
-                auto type = get_import_func_var_type(x, param);
-                auto variable = ASR::make_Variable_t(m_al, x.base.base.loc, nullptr, s2c(m_al, std::to_string(var_idx)),
-                    ASR::intentType::In, nullptr, nullptr, ASR::storage_typeType::Default,
-                    ASRUtils::TYPE(type), ASR::abiType::Source, ASR::accessType::Public,
-                    ASR::presenceType::Required, false);
-                auto var = ASR::make_Var_t(m_al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(variable));
-                params.push_back(m_al, ASRUtils::EXPR(var));
-            }
-
-            auto func = ASR::make_Function_t(m_al, x.base.base.loc, x.m_global_scope, s2c(m_al, import_func.name),
-                    params.data(), params.size(), nullptr, 0, nullptr, 0, nullptr, ASR::abiType::Source, ASR::accessType::Public,
-                    ASR::deftypeType::Implementation, nullptr, false, false, false);
-            m_import_func_asr_map[import_func.name] = func;
-
-
-            wasm::emit_import_fn(m_import_section, m_al, "js", import_func.name, no_of_types);
-            emit_function_prototype(*((ASR::Function_t *)func));
-            no_of_imports++;
+            import_function(import_func);
         }
 
         wasm::emit_import_mem(m_import_section, m_al, "js", "memory", min_no_pages, max_no_pages);
