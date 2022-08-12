@@ -240,6 +240,7 @@ RUN(NAME arrays_11 LABELS gfortran llvm cpp)
 RUN(NAME arrays_12 LABELS gfortran) # constant arrays
 RUN(NAME arrays_13 LABELS gfortran llvm) # constant arrays
 RUN(NAME arrays_inputs_15 LABELS gfortran llvm) # constant arrays
+RUN(NAME arrays_16_func LABELS gfortran llvm)
 
 RUN(NAME arrays_intrin_01 LABELS gfortran) # minval, maxval
 RUN(NAME arrays_intrin_02 LABELS gfortran) # all, any
