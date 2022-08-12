@@ -1,4 +1,4 @@
-# digits(x)
+# digits(x): Significant Binary Digits
 
 Significant binary digits.
 

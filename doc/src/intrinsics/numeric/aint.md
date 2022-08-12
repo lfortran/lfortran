@@ -1,4 +1,4 @@
-# aint(x, [kind])
+# aint(x, [kind]): Truncate to a Whole Number
 
 Truncate to a whole number.
 

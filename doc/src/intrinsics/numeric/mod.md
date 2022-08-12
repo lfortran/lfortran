@@ -1,4 +1,4 @@
-# mod(x, y)
+# mod(x, y): Modulus
 
 Modulus or remainder function.
 

@@ -1,4 +1,4 @@
-# acosh(x)
+# acosh(x): Inverse Hyperbolic Cosine
 
 Inverse hyperbolic cosine function.
 

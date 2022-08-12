@@ -1,4 +1,4 @@
-# char(x, [, kind])
+# char(x, [, kind]): Integer to Character
 
 Integer to character conversion.
 

@@ -1,4 +1,4 @@
-# conjg(x)
+# conjg(x): Complex Conjugate
 
 Complex conjugate function.
 

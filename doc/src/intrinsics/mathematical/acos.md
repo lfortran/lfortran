@@ -1,4 +1,4 @@
-# acos(x)
+# acos(x): Trigonometric Arc Cosine
 
 Trigonometric arc cosine (inverse cosine) function.
 

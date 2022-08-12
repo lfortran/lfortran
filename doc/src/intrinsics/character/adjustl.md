@@ -1,4 +1,4 @@
-# adjustl(string)
+# adjustl(string): Left Adjust String
 
 Left adjust a string.
 

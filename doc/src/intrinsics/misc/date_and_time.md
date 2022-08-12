@@ -1,4 +1,4 @@
-# date_and_time([date, time, zone, values])
+# date_and_time([date, time, zone, values]): Date and Time
 
 Date and time subroutine.
 

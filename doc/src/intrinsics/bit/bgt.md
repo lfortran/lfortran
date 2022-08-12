@@ -1,4 +1,4 @@
-# bgt(x, y)
+# bgt(x, y): Bitwise Greater Than
 
 Bitwise greater than.
 

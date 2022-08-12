@@ -1,4 +1,4 @@
-# len_trim(string)
+# len_trim(string): Length Ignoring Trailing Blanks
 
 Length of a character string ignoring trailing blank character(s).
 

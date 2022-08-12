@@ -1,4 +1,4 @@
-# cshift(A, shift [, dim])
+# cshift(A, shift [, dim]): Circular Shift
 
 Circular shift elements of an array.
 

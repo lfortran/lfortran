@@ -1,4 +1,4 @@
-# bit_size(x)
+# bit_size(x): Bit Size
 
 Bit size.
 

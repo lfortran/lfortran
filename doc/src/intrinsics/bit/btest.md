@@ -1,4 +1,4 @@
-# btest(x, pos)
+# btest(x, pos): Bit Test at Position
 
 Bit test.
 
