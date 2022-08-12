@@ -1805,6 +1805,29 @@ static inline void get_dimensions(ASR::expr_t* array, Vec<ASR::expr_t*>& dims,
     }
 }
 
+static inline bool is_procedure_argument(ASR::Variable_t* v, ASR::expr_t** proc_args,
+                                         size_t n_args) {
+    if( v->m_intent == ASRUtils::intent_in ||
+        v->m_intent == ASRUtils::intent_out ||
+        v->m_intent == ASRUtils::intent_inout ) {
+        return true;
+    } else if( v->m_intent == ASRUtils::intent_local ) {
+        return false;
+    }
+
+    for( size_t i = 0; i < n_args; i++ ) {
+        ASR::expr_t* arg = proc_args[i];
+        if( !ASR::is_a<ASR::Var_t>(*arg) ) {
+            continue ;
+        }
+        ASR::Var_t* arg_Var = ASR::down_cast<ASR::Var_t>(arg);
+        if( arg_Var->m_v == (ASR::symbol_t*) v ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 } // namespace ASRUtils
 
 } // namespace LFortran
