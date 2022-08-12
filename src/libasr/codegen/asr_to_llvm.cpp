@@ -252,6 +252,8 @@ public:
 
     uint64_t ptr_loads;
     bool is_assignment_target;
+    ASR::expr_t** current_proc_args;
+    size_t current_proc_n_args;
 
     ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, Platform platform,
         diag::Diagnostics &diagnostics) :
@@ -269,7 +271,9 @@ public:
               llvm_utils.get(),
               LLVMArrUtils::DESCR_TYPE::_SimpleCMODescriptor)),
     ptr_loads(2),
-    is_assignment_target(false)
+    is_assignment_target(false),
+    current_proc_args(nullptr),
+    current_proc_n_args(0)
     {
     }
 
@@ -1301,7 +1305,8 @@ public:
             uint32_t v_h = get_hash((ASR::asr_t*)v);
             LFORTRAN_ASSERT(llvm_symtab.find(v_h) != llvm_symtab.end());
             array = llvm_symtab[v_h];
-            is_argument = v->m_intent == ASRUtils::intent_in || v->m_intent == ASRUtils::intent_out;
+            is_argument = ASRUtils::is_procedure_argument(v, current_proc_args,
+                                current_proc_n_args);
         } else {
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
@@ -2393,6 +2398,8 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        current_proc_args = x.m_args;
+        current_proc_n_args = x.n_args;
         llvm_goto_targets.clear();
         instantiate_function(x);
         if (x.m_deftype == ASR::deftypeType::Interface) {
@@ -2403,6 +2410,8 @@ public:
         visit_procedures(x);
         generate_function(x);
         parent_function = nullptr;
+        current_proc_args = nullptr;
+        current_proc_n_args = 0;
     }
 
     void instantiate_function(const ASR::Function_t &x){
