@@ -50,11 +50,14 @@ nav:
             - intrinsics/numeric/ceiling.md
             - intrinsics/numeric/cmplx.md
             - intrinsics/numeric/conjg.md
+            - intrinsics/numeric/digits.md
+            - intrinsics/numeric/dim.md
             - intrinsics/numeric/floor.md
             - intrinsics/numeric/mod.md
         - Miscellaneous Intrinsic Functions:
             - intrinsics/misc/command_argument_count.md
             - intrinsics/misc/cpu_time.md
+            - intrinsics/misc/date_and_time.md
             - intrinsics/misc/new_line.md
 
 # Until https://gitlab.com/lfortran/lfortran/issues/89 is fixed, we disable the

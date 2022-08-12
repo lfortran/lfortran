@@ -33,7 +33,7 @@ Any.
 ```fortran
 program intrinsics_command_argument_count
     implicit none
-	print *, command_argument_count
+	print *, command_argument_count()
 end program
 ```
 
