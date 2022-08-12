@@ -147,6 +147,18 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         return nullptr;
     }
 
+    void add_func_to_imports(const ASR::Function_t &x) {
+        import_func imp_fun;
+        imp_fun.name = x.m_name;
+        for(size_t i = 0; i < x.n_args; i++) {
+            ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_args[i]);
+            imp_fun.param_types.push_back({ttype->type, ASRUtils::extract_kind_from_ttype_t(ttype)});
+        }
+
+        // Todo: Result types are currenty not supported
+        import_function(imp_fun);
+    }
+
     void import_function(import_func &imp_fun) {
         Vec<ASR::expr_t*> params;
         params.reserve(m_al, imp_fun.param_types.size());
