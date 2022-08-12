@@ -1,4 +1,4 @@
-# cmplx(x [, [, kind]])
+# cmplx(x [, [, kind]]): Convert to Complex
 
 Conversion to complex type.
 

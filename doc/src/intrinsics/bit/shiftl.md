@@ -1,4 +1,4 @@
-# shiftl(x, shift)
+# shiftl(x, shift): Shift Left
 
 Logical shift left function.
 

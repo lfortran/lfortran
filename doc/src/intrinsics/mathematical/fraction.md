@@ -1,4 +1,4 @@
-# fraction(x)
+# fraction(x): Fractional Part in Model Representation
 
 Fractional part of the model representation.
 

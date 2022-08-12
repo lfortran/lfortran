@@ -1,4 +1,4 @@
-# aimag(x)
+# aimag(x): Imaginary Part
 
 Imaginary part of complex number.
 

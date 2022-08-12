@@ -1,4 +1,4 @@
-# cpu_time(x)
+# cpu_time(x): CPU Elapsed Time
 
 CPU elapsed time in seconds.
 

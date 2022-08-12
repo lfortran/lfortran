@@ -1,4 +1,4 @@
-# floor(x, kind)
+# floor(x, kind): Integer Floor
 
 Integer floor function.
 

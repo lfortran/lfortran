@@ -1,4 +1,4 @@
-# blt(x, y)
+# blt(x, y): Bitwise Less Than
 
 Bitwise less than.
 

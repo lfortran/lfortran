@@ -1,4 +1,4 @@
-# lge(x, y)
+# lge(x, y): Lexically Greater or Equal
 
 Lexically greater than or equal.
 

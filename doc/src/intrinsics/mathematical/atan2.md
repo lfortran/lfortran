@@ -1,4 +1,4 @@
-# atan2(y, x)
+# atan2(y, x): ArcTangent 
 
 Arctangent function or inverse tangent function.
 

@@ -1,4 +1,4 @@
-# ceiling(x)
+# ceiling(x): Integer Ceiling
 
 Integer ceiling function
 

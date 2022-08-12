@@ -1,4 +1,4 @@
-# bge(x, y)
+# bge(x, y): Bitwise Greater or Equal
 
 Bitwise greater than or equal to.
 

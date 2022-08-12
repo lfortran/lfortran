@@ -1,6 +1,6 @@
-# dim(x, y)
+# dim(x, y): Positive Difference or 0
 
-Positive different or 0.
+Positive difference or 0.
 
 ## Declaration
 

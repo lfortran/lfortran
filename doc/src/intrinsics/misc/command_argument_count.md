@@ -1,4 +1,4 @@
-# command_argument_count()
+# command_argument_count(): Number of Command Line Arguments
 
 Get number of command line arguments.
 

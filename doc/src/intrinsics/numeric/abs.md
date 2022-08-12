@@ -1,4 +1,4 @@
-# abs(x)
+# abs(x): Absolute Value
 
 Absolute value.
 

@@ -1,4 +1,4 @@
-# anint(x, [kind])
+# anint(x, [kind]): Round to Nearest Whole Number
 
 Round to nearest whole number.
 
