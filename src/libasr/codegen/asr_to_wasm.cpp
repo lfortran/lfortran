@@ -542,13 +542,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Function(const ASR::Function_t &x) {
-#ifndef HAVE_BUILD_TO_WASM
-        if (is_unsupported_function(x)) {
+#ifdef HAVE_BUILD_TO_WASM
+        if (x.m_abi == ASR::abiType::BindC && x.m_deftype == ASR::deftypeType::Interface) {
+            add_func_to_imports(x);
             return;
         }
 #else
-        if (x.m_abi == ASR::abiType::BindC && x.m_deftype == ASR::deftypeType::Interface) {
-            add_func_to_imports(x);
+        if (is_unsupported_function(x)) {
             return;
         }
 #endif
