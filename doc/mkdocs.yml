@@ -1,15 +1,78 @@
 site_name: LFortran Documentation
+site_url: https://docs.lfortran.org/
+
+repo_name: lfortran/lfortran
+repo_url: https://github.com/lfortran/lfortran
+
+docs_dir: src
+
+theme:
+    name: material
+    palette:
+        - scheme: default
+          primary: orange
+          toggle:
+              icon: material/brightness-7
+              name: Switch to dark mode
+
+        - scheme: slate
+          primary: orange
+          toggle:
+              icon: material/brightness-4
+              name: Switch to light mode
+
+    highlightjs: true
+    hljs_languages:
+        - fortran
+
+    include_search_page: false
+    search_index_only: true
+
+    language: en
+    features:
+        - navigation.indexes
+        - navigation.sections
+        - navigation.tabs
+        - navigation.top
+        - navigation.tracking
+        - search.highlight
+        - search.share
+        - search.suggest
+        - toc.follow
+
+plugins:
+    - search
+
+extra:
+    social:
+        - icon: fontawesome/brands/github
+          link: https://github.com/lfortran
+
+markdown_extensions:
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
+
 
 nav:
     - Home: index.md
-    - installation.md
-    - language.md
-    - progress.md
+    - Getting started:
+        - Installation: installation.md
+        - Language: language.md
+    - LFortran Development Status:
+        - Progress: progress.md
     - Developer's Guide:
-        - design.md
-        - developer_tutorial.md
-        - ast_and_asr.md
-        - contributing.md
+        - LFortran Design: design.md
+        - Developer Tutorial: developer_tutorial.md
+        - Difference between an AST and ASR: ast_and_asr.md
+        - Contributing: contributing.md
     - LFortran Intrinsics:
         - Array Intrinsic Functions:
             - intrinsics/array/allocated.md
@@ -69,18 +132,6 @@ nav:
 #repo_url: https://gitlab.com/lfortran/lfortran
 #edit_uri: blob/master/doc/src
 
-markdown_extensions:
-  - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
-  - pymdownx.highlight:
-      anchor_linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.superfences
-  - pymdownx.arithmatex:
-      generic: true
-
 extra_css:
     - ansi.css
 
@@ -89,12 +140,4 @@ extra_javascript:
     - https://polyfill.io/v3/polyfill.min.js?features=es6
     - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
-theme:
-    name: material
-    palette:
-      primary: orange
-    highlightjs: true
-    hljs_languages:
-        - fortran
 
-docs_dir: src
