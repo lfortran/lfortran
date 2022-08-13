@@ -1,7 +1,3 @@
-module a
-implicit none
-
-end module
 program functions_01
 implicit none
     
