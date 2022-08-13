@@ -936,6 +936,42 @@ public:
                 // data x, y / 1.0, 2.0 /
                 AST::AttrData_t *a = AST::down_cast<AST::AttrData_t>(x.m_attributes[0]);
                 if (a->n_object != a->n_value) {
+                    if (a->n_object == 1) {
+                        this->visit_expr(*a->m_object[0]);
+                        ASR::expr_t* object = ASRUtils::EXPR(tmp);
+                        ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
+                        if (ASRUtils::is_array(obj_type)) { // it is an array
+                            Vec<ASR::expr_t*> body;
+                            body.reserve(al, a->n_value);
+                            for (size_t i=0; i< a->n_value; i++) {
+                                this->visit_expr(*a->m_value[i]);
+                                ASR::expr_t* value = LFortran::ASRUtils::EXPR(tmp);
+                                if (ASRUtils::expr_type(value)->type != obj_type->type) {
+                                    throw SemanticError("Type mismatch during data initialization",
+                                        x.base.base.loc);
+                                }
+                                body.push_back(al, value);
+                            }
+                            Vec<ASR::dimension_t> dims;
+                            dims.reserve(al, 1);
+                            ASR::dimension_t dim;
+                            dim.loc = x.base.base.loc;
+                            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                                                                          4, nullptr, 0));
+                            ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+                            ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                                a->n_value, int32_type));
+                            dim.m_start = one;
+                            dim.m_length = x_n_args;
+                            dims.push_back(al, dim);
+                            obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
+                            tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
+                                body.size(), obj_type);
+                            tmp = ASR::make_Assignment_t(al, x.base.base.loc, object, ASRUtils::EXPR(tmp),
+                                                         nullptr);
+                            return;
+                        }
+                    }
                     throw SemanticError("The number of values and variables must match in a data statement",
                         x.base.base.loc);
                 }
