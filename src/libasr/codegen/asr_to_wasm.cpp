@@ -76,6 +76,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     diag::Diagnostics &diag;
 
     bool intrinsic_module;
+    SymbolTable* global_scope;
+    Location global_scope_loc;
     SymbolFuncInfo* cur_sym_info;
     uint32_t nesting_level;
     uint32_t cur_loop_nesting_level;
@@ -137,11 +139,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::encode_section(code, m_data_section, m_al, 11U, no_of_data_segments);
     }
 
-    ASR::asr_t* get_import_func_var_type(const ASR::TranslationUnit_t &x, std::pair<ASR::ttypeType, uint32_t> &type) {
+    ASR::asr_t* get_import_func_var_type(std::pair<ASR::ttypeType, uint32_t> &type) {
         switch (type.first)
         {
-            case ASR::ttypeType::Integer: return ASR::make_Integer_t(m_al, x.base.base.loc, type.second, nullptr, 0);
-            case ASR::ttypeType::Real: return ASR::make_Real_t(m_al, x.base.base.loc, type.second, nullptr, 0);
+            case ASR::ttypeType::Integer: return ASR::make_Integer_t(m_al, global_scope_loc, type.second, nullptr, 0);
+            case ASR::ttypeType::Real: return ASR::make_Real_t(m_al, global_scope_loc, type.second, nullptr, 0);
             default: throw CodeGenError("Unsupported Type in Import Function");
         }
         return nullptr;
@@ -165,16 +167,16 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         uint32_t var_idx;
         for(var_idx = 0; var_idx < import_func.param_types.size(); var_idx++) {
             auto param = import_func.param_types[var_idx];
-            auto type = get_import_func_var_type(x, param);
-            auto variable = ASR::make_Variable_t(m_al, x.base.base.loc, nullptr, s2c(m_al, std::to_string(var_idx)),
+            auto type = get_import_func_var_type(param);
+            auto variable = ASR::make_Variable_t(m_al, global_scope_loc, nullptr, s2c(m_al, std::to_string(var_idx)),
                 ASR::intentType::In, nullptr, nullptr, ASR::storage_typeType::Default,
                 ASRUtils::TYPE(type), ASR::abiType::Source, ASR::accessType::Public,
                 ASR::presenceType::Required, false);
-            auto var = ASR::make_Var_t(m_al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(variable));
+            auto var = ASR::make_Var_t(m_al, global_scope_loc, ASR::down_cast<ASR::symbol_t>(variable));
             params.push_back(m_al, ASRUtils::EXPR(var));
         }
 
-        auto func = ASR::make_Function_t(m_al, x.base.base.loc, x.m_global_scope, s2c(m_al, import_func.name),
+        auto func = ASR::make_Function_t(m_al, global_scope_loc, global_scope, s2c(m_al, import_func.name),
                 params.data(), params.size(), nullptr, 0, nullptr, 0, nullptr, ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Implementation, nullptr, false, false, false);
         m_import_func_asr_map[import_func.name] = func;
@@ -185,7 +187,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         no_of_imports++;
     }
 
-    void emit_imports(const ASR::TranslationUnit_t &x){
+    void emit_imports(){
         std::vector<ImportFunc> import_funcs = {
             {"print_i32", { {ASR::ttypeType::Integer, 4} }, {}},
             {"print_i64", { {ASR::ttypeType::Integer, 8} }, {}},
@@ -209,7 +211,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // must be empty:
         LFORTRAN_ASSERT(x.n_items == 0);
 
-        emit_imports(x);
+        global_scope = x.m_global_scope;
+        global_scope_loc = x.base.base.loc;
+
+        emit_imports();
 
         {
             // Process intrinsic modules in the right order
