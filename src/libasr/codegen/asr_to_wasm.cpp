@@ -148,23 +148,23 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void add_func_to_imports(const ASR::Function_t &x) {
-        ImportFunc imp_fun;
-        imp_fun.name = x.m_name;
+        ImportFunc import_func;
+        import_func.name = x.m_name;
         for(size_t i = 0; i < x.n_args; i++) {
             ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_args[i]);
-            imp_fun.param_types.push_back({ttype->type, ASRUtils::extract_kind_from_ttype_t(ttype)});
+            import_func.param_types.push_back({ttype->type, ASRUtils::extract_kind_from_ttype_t(ttype)});
         }
 
         // Todo: Result types are currenty not supported
-        import_function(imp_fun);
+        import_function(import_func);
     }
 
-    void import_function(ImportFunc &imp_fun) {
+    void import_function(ImportFunc &import_func) {
         Vec<ASR::expr_t*> params;
-        params.reserve(m_al, imp_fun.param_types.size());
+        params.reserve(m_al, import_func.param_types.size());
         uint32_t var_idx;
-        for(var_idx = 0; var_idx < imp_fun.param_types.size(); var_idx++) {
-            auto param = imp_fun.param_types[var_idx];
+        for(var_idx = 0; var_idx < import_func.param_types.size(); var_idx++) {
+            auto param = import_func.param_types[var_idx];
             auto type = get_import_func_var_type(x, param);
             auto variable = ASR::make_Variable_t(m_al, x.base.base.loc, nullptr, s2c(m_al, std::to_string(var_idx)),
                 ASR::intentType::In, nullptr, nullptr, ASR::storage_typeType::Default,
@@ -174,13 +174,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             params.push_back(m_al, ASRUtils::EXPR(var));
         }
 
-        auto func = ASR::make_Function_t(m_al, x.base.base.loc, x.m_global_scope, s2c(m_al, imp_fun.name),
+        auto func = ASR::make_Function_t(m_al, x.base.base.loc, x.m_global_scope, s2c(m_al, import_func.name),
                 params.data(), params.size(), nullptr, 0, nullptr, 0, nullptr, ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Implementation, nullptr, false, false, false);
-        m_import_func_asr_map[imp_fun.name] = func;
+        m_import_func_asr_map[import_func.name] = func;
 
 
-        wasm::emit_import_fn(m_import_section, m_al, "js", imp_fun.name, no_of_types);
+        wasm::emit_import_fn(m_import_section, m_al, "js", import_func.name, no_of_types);
         emit_function_prototype(*((ASR::Function_t *)func));
         no_of_imports++;
     }
