@@ -52,6 +52,10 @@ nav:
             - intrinsics/numeric/conjg.md
             - intrinsics/numeric/digits.md
             - intrinsics/numeric/dim.md
+            - intrinsics/numeric/epsilon.md
+            - intrinsics/numeric/erf.md
+            - intrinsics/numeric/erfc.md
+            - intrinsics/numeric/exp.md
             - intrinsics/numeric/floor.md
             - intrinsics/numeric/mod.md
         - Miscellaneous Intrinsic Functions:
