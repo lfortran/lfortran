@@ -31,10 +31,8 @@ jobs:
           extra-specs: |
             python=${{ matrix.python-version }}
             sel(unix): bison=3.4
-            sel(unix): rapidjson
             sel(win): m2-bison=3.0.4
             sel(win): m2-filesystem
-            sel(win): rapidjson
 
       - uses: hendrikmuhs/ccache-action@main
         with:
