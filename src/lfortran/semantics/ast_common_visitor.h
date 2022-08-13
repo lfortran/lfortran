@@ -943,9 +943,9 @@ public:
                         if (ASRUtils::is_array(obj_type)) { // it is an array
                             Vec<ASR::expr_t*> body;
                             body.reserve(al, a->n_value);
-                            for (size_t i=0; i< a->n_value; i++) {
-                                this->visit_expr(*a->m_value[i]);
-                                ASR::expr_t* value = LFortran::ASRUtils::EXPR(tmp);
+                            for (size_t j=0; j < a->n_value; j++) {
+                                this->visit_expr(*a->m_value[j]);
+                                ASR::expr_t* value = ASRUtils::EXPR(tmp);
                                 if (ASRUtils::expr_type(value)->type != obj_type->type) {
                                     throw SemanticError("Type mismatch during data initialization",
                                         x.base.base.loc);
@@ -967,8 +967,9 @@ public:
                             obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
                             tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
                                 body.size(), obj_type);
-                            tmp = ASR::make_Assignment_t(al, x.base.base.loc, object, ASRUtils::EXPR(tmp),
-                                                         nullptr);
+                            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
+                            ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+                            v2->m_value = ASRUtils::EXPR(tmp);
                             return;
                         }
                     }
