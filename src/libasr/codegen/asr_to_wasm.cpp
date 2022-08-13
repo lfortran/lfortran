@@ -55,7 +55,7 @@ static uint64_t get_hash(ASR::asr_t *node)
     return (uint64_t)node;
 }
 
-struct import_func{
+struct ImportFunc{
     std::string name;
     std::vector<std::pair<ASR::ttypeType, uint32_t>> param_types, result_types;
 };
@@ -148,7 +148,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void add_func_to_imports(const ASR::Function_t &x) {
-        import_func imp_fun;
+        ImportFunc imp_fun;
         imp_fun.name = x.m_name;
         for(size_t i = 0; i < x.n_args; i++) {
             ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_args[i]);
@@ -159,7 +159,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         import_function(imp_fun);
     }
 
-    void import_function(import_func &imp_fun) {
+    void import_function(ImportFunc &imp_fun) {
         Vec<ASR::expr_t*> params;
         params.reserve(m_al, imp_fun.param_types.size());
         uint32_t var_idx;
@@ -186,7 +186,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void emit_imports(const ASR::TranslationUnit_t &x){
-        std::vector<import_func> import_funcs = {
+        std::vector<ImportFunc> import_funcs = {
             {"print_i32", { {ASR::ttypeType::Integer, 4} }, {}},
             {"print_i64", { {ASR::ttypeType::Integer, 8} }, {}},
             {"print_f32", { {ASR::ttypeType::Real, 4} }, {}},
@@ -196,8 +196,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             {"set_exit_code", { {ASR::ttypeType::Integer, 4} }, {}}
          };
 
-        for (auto import_func:import_funcs) {
-            import_function(import_func);
+        for (auto ImportFunc:import_funcs) {
+            import_function(ImportFunc);
         }
 
         wasm::emit_import_mem(m_import_section, m_al, "js", "memory", min_no_pages, max_no_pages);
