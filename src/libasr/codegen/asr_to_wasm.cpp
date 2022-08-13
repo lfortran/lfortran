@@ -1100,21 +1100,15 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         uint32_t kind = ASRUtils::extract_kind_from_ttype_t(ttype);
         ASR::dimension_t* m_dims;
         ASRUtils::extract_dimensions_from_ttype(ttype, m_dims);
-        if (x.m_args[0].m_right) {
-            this->visit_expr(*x.m_args[0].m_right);
-            wasm::emit_i32_const(m_code_section, m_al, 1);
-            wasm::emit_i32_sub(m_code_section, m_al);
-        } else {
-            diag.codegen_warning_label("/* FIXME right index */", {x.base.base.loc}, "");
-        }
 
-        for(uint32_t i = 1; i < x.n_args; i++) {
+        wasm::emit_i32_const(m_code_section, m_al, 0);
+        for(uint32_t i = 0; i < x.n_args; i++) {
             if (x.m_args[i].m_right) {
                 this->visit_expr(*x.m_args[i].m_right);
                 wasm::emit_i32_const(m_code_section, m_al, 1);
                 wasm::emit_i32_sub(m_code_section, m_al);
 
-                for (int j = i - 1; j >= 0; j--) {
+                for (size_t j = i + 1; j < x.n_args; j++) {
                     this->visit_expr(*m_dims[j].m_length);
                     wasm::emit_i32_mul(m_code_section, m_al);
                 }
