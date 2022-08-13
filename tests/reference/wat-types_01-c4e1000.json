@@ -2,11 +2,11 @@
     "basename": "wat-types_01-c4e1000",
     "cmd": "lfortran --no-color --show-wat {infile}",
     "infile": "tests/../integration_tests/types_01.f90",
-    "infile_hash": "551d14053f907f18f3ffcd47309e735206789f8bd754d11187c8fab3",
+    "infile_hash": "19525f408609f7fb101a9f5fb43c103ac83c704fe10395a28c7cebf0",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "wat-types_01-c4e1000.stdout",
-    "stdout_hash": "a91c0f6098d1cd8052e37f25b06dfe284ac75eb9949d87392b647f78",
+    "stdout_hash": "9a912d06623602108ac63e21bb393f610071021be92b140aa0694fb2",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

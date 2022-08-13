@@ -2,11 +2,11 @@
     "basename": "llvm-types_01-642cab3",
     "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
     "infile": "tests/../integration_tests/types_01.f90",
-    "infile_hash": "551d14053f907f18f3ffcd47309e735206789f8bd754d11187c8fab3",
+    "infile_hash": "19525f408609f7fb101a9f5fb43c103ac83c704fe10395a28c7cebf0",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-types_01-642cab3.stdout",
-    "stdout_hash": "bdcd2446a55cdb1c757f3d609afe59685af4517831d386833e9f9e64",
+    "stdout_hash": "1a9875871b76c58fe766cde31fcc35f9765afdd91913ddadf3ea5b30",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
