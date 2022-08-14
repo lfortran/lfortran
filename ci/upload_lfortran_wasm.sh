@@ -3,7 +3,7 @@
 set -e
 set -x
 
-deploy_repo_pull="git@github.com:lfortran/lcompilers_frontend.git"
+deploy_repo_pull="https://github.com/lfortran/lcompilers_frontend.git"
 deploy_repo_push="git@github.com:lfortran/lcompilers_frontend.git"
 
 git_hash=$(git rev-parse --short "$GITHUB_SHA")
