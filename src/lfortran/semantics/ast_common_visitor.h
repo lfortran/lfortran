@@ -702,7 +702,7 @@ public:
             // TODO:
             // If there is an active "implicit real" construct in the current
             // scope, we need to use it.
-            // Otherwise: 
+            // Otherwise:
             if (compiler_options.implicit_typing) {
                 ASR::intentType intent;
                 if (std::find(current_procedure_args.begin(),
@@ -2346,6 +2346,57 @@ public:
         return ASR::make_PointerToCPtr_t(al, x.base.base.loc, v_Var, type, nullptr);
     }
 
+    ASR::asr_t* handle_intrinsic_float(Allocator &al, Vec<ASR::call_arg_t> args,
+                                        const Location &loc) {
+        ASR::expr_t *arg = nullptr, *value = nullptr;
+        ASR::ttype_t *type = nullptr;
+        if (args.size() > 0) {
+            arg = args[0].m_value;
+            type = ASRUtils::expr_type(arg);
+        }
+        ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+                                    8, nullptr, 0));
+        if (!arg) {
+            return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
+        }
+        if (ASRUtils::is_integer(*type)) {
+            if (ASRUtils::expr_value(arg) != nullptr) {
+                double dval = ASR::down_cast<ASR::IntegerConstant_t>(
+                                        ASRUtils::expr_value(arg))->m_n;
+                value =  ASR::down_cast<ASR::expr_t>(make_RealConstant_t(al,
+                                loc, dval, to_type));
+            }
+            return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
+                al, loc, arg, ASR::cast_kindType::IntegerToReal,
+                to_type, value));
+        } else if (ASRUtils::is_logical(*type)) {
+            if (ASRUtils::expr_value(arg) != nullptr) {
+                double dval = ASR::down_cast<ASR::LogicalConstant_t>(
+                                        ASRUtils::expr_value(arg))->m_value;
+                value =  ASR::down_cast<ASR::expr_t>(make_RealConstant_t(al,
+                                loc, dval, to_type));
+            }
+            return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
+                al, loc, arg, ASR::cast_kindType::LogicalToReal,
+                to_type, value));
+        } else if (ASRUtils::is_real(*type)) {
+            // float() always returns 64-bit floating point numbers.
+            if (ASRUtils::extract_kind_from_ttype_t(type) != 8) {
+                return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
+                    al, loc, arg, ASR::cast_kindType::RealToReal,
+                    to_type, value));
+            }
+            return (ASR::asr_t *)arg;
+        } else {
+            std::string stype = ASRUtils::type_to_str(type);
+            throw SemanticError(
+                "Conversion of '" + stype + "' to float is not Implemented",
+                loc);
+        }
+        // TODO: Make this work if the argument is, let's say, a class.
+        return nullptr;
+    }
+
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         SymbolTable *scope = current_scope;
         std::string var_name = to_lower(x.m_func);
@@ -2363,6 +2414,12 @@ public:
             v = current_scope->resolve_symbol(var_name);
         }
         if (!v) {
+            if (var_name == "float" || var_name == "dble") {
+                Vec<ASR::call_arg_t> args;
+                visit_expr_list(x.m_args, x.n_args, args);
+                tmp = handle_intrinsic_float(al, args, x.base.base.loc);
+                return;
+            }
             bool is_function = true;
             v = intrinsic_as_node(x, is_function);
             if( !is_function ) {
