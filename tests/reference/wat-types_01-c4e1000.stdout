@@ -23,6 +23,10 @@
         local.set 0
         f32.const 1.000000
         local.set 0
+        f32.const 2.000000
+        local.set 0
+        f32.const 3.000000
+        local.set 0
         i32.const 0
         call 6
         return
