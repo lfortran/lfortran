@@ -136,6 +136,13 @@ jobs:
             emcc -v
             em++ -v
 
+      - name: Build to WASM
+        shell: bash -l {0}
+        run: |
+            set -ex
+            source $HOME/ext/emsdk_env.sh # Activate Emscripten
+            ./build_to_wasm.sh
+
   debug:
     name: Check Debug build
     runs-on: ubuntu-latest
