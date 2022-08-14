@@ -74,6 +74,56 @@ jobs:
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\test.xsh
 
+  build_to_wasm:
+    name: Build LFortran to wasm
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.10"]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/provision-with-micromamba@main
+        with:
+          environment-file: ci/environment_linux.yml
+          extra-specs: |
+            python=3.10
+            emscripten
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      # - name: Setup Platform
+      #   shell: bash -l {0}
+      #   run: |
+      #       echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
+      #       echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+      #       echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+
+      # - name: Build (Linux / macOS)
+      #   shell: bash -l {0}
+      #   if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+      #   run: |
+      #       xonsh ci/build_tmp.xsh
+
+      # - name: Test (Linux / macOS)
+      #   shell: bash -l {0}
+      #   if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+      #   run: |
+      #       xonsh ci/test.xsh
+
+      - name: Show Emscripten Info
+        shell: bash -l {0}
+        run: |
+            emcc -v
+            em++ -v
+
   debug:
     name: Check Debug build
     runs-on: ubuntu-latest
