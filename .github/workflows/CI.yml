@@ -115,6 +115,9 @@ jobs:
       - name: Install Emscripten from Git
         shell: bash -l {0}
         run: |
+            mkdir $HOME/ext
+            cd $HOME/ext
+
             git clone https://github.com/emscripten-core/emsdk.git
             cd emsdk
 
@@ -124,13 +127,12 @@ jobs:
             # Make the "latest" SDK "active" for the current user. (writes .emscripten file)
             ./emsdk activate latest
 
-            # Activate PATH and other environment variables in the current terminal
-            source ./emsdk_env.sh
-
-
       - name: Show Emscripten Info
         shell: bash -l {0}
         run: |
+            set -ex
+            # Activate PATH and other environment variables in the current terminal
+            source $HOME/ext/emsdk_env.sh
             emcc -v
             em++ -v
 
