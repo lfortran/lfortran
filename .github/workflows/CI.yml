@@ -150,6 +150,13 @@ jobs:
             source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
             node src/lfortran/tests/test_lfortran.js
 
+      - name: Upload to dev.lfortran.org
+        shell: bash -l {0}
+        run: |
+            ci/upload_lfortran_wasm.sh
+        env:
+          SSH_PRIVATE_KEY_LCOMPILERS_FRONTEND: ${{ secrets.SSH_PRIVATE_KEY_LCOMPILERS_FRONTEND }}
+
   debug:
     name: Check Debug build
     runs-on: ubuntu-latest
