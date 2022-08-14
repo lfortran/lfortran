@@ -93,25 +93,6 @@ jobs:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
-      # - name: Setup Platform
-      #   shell: bash -l {0}
-      #   run: |
-      #       echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
-      #       echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-      #       echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-
-      # - name: Build (Linux / macOS)
-      #   shell: bash -l {0}
-      #   if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-      #   run: |
-      #       xonsh ci/build_tmp.xsh
-
-      # - name: Test (Linux / macOS)
-      #   shell: bash -l {0}
-      #   if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-      #   run: |
-      #       xonsh ci/test.xsh
-
       - name: Install Emscripten from Git
         shell: bash -l {0}
         run: |
