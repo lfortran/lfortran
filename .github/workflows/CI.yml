@@ -143,6 +143,13 @@ jobs:
             source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
             ./build_to_wasm.sh
 
+      - name: Test built lfortran.wasm
+        shell: bash -l {0}
+        run: |
+            set -ex
+            source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
+            node src/lfortran/tests/test_lfortran.js
+
   debug:
     name: Check Debug build
     runs-on: ubuntu-latest
