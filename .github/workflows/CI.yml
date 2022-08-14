@@ -18,7 +18,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["windows-2019", "macos-latest", "ubuntu-latest"]
+        # "windows-2019", "macos-latest",
+        os: [ "ubuntu-latest"]
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v2
@@ -74,259 +75,311 @@ jobs:
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\test.xsh
 
-  debug:
-    name: Check Debug build
-    runs-on: ubuntu-latest
+  # debug:
+  #   name: Check Debug build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+
+  #     - uses: mamba-org/provision-with-micromamba@v12
+  #       with:
+  #         environment-file: ci/environment_linux.yml
+  #         extra-specs: |
+  #           python=3.10
+
+  #     - uses: hendrikmuhs/ccache-action@main
+  #       with:
+  #         variant: sccache
+  #         key: ${{ github.job }}-${{ matrix.os }}
+
+  #     - name: Build Linux
+  #       shell: bash -l {0}
+  #       run: |
+  #           ./build0.sh
+  #           cmake . -GNinja \
+  #             -DCMAKE_BUILD_TYPE=Debug \
+  #             -DWITH_LLVM=yes \
+  #             -DLFORTRAN_BUILD_ALL=yes \
+  #             -DWITH_STACKTRACE=no \
+  #             -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+  #             -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+  #             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+  #             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+  #           cmake --build . -j16 --target install
+
+  #     - name: Test Linux
+  #       shell: bash -l {0}
+  #       run: |
+  #           ctest
+  #           ./run_tests.py
+  #           cd integration_tests
+  #           ./run_tests.py -b llvm
+
+  # test_llvm_14:
+  #   name: Test LLVM 14
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+
+  #     - uses: mamba-org/provision-with-micromamba@v12
+  #       with:
+  #         environment-file: ci/environment_linux_llvm14.yml
+  #         extra-specs: |
+  #           python=3.10
+
+  #     - uses: hendrikmuhs/ccache-action@main
+  #       with:
+  #         variant: sccache
+  #         key: ${{ github.job }}-${{ matrix.os }}
+
+  #     - name: Build Linux
+  #       shell: bash -l {0}
+  #       run: |
+  #           ./build0.sh
+  #           cmake . -GNinja \
+  #             -DCMAKE_BUILD_TYPE=Debug \
+  #             -DWITH_LLVM=yes \
+  #             -DLFORTRAN_BUILD_ALL=yes \
+  #             -DWITH_STACKTRACE=no \
+  #             -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+  #             -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+  #             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+  #             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+  #           cmake --build . -j16 --target install
+
+  #     - name: Test Linux
+  #       shell: bash -l {0}
+  #       run: |
+  #           cd integration_tests
+  #           ./run_tests.py -b llvm
+
+  # test_without_llvm:
+  #   name: Test without LLVM Backend
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+
+  #     - uses: mamba-org/provision-with-micromamba@v12
+  #       with:
+  #         environment-file: ci/environment_linux.yml
+  #         extra-specs: |
+  #           python=3.10
+
+  #     - name: Test
+  #       shell: bash -l {0}
+  #       run: |
+  #         xonsh ci/test_without_llvm_backend.xsh
+
+  # test_cpp:
+  #   name: Test CPP
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+
+  #     - uses: mamba-org/provision-with-micromamba@v12
+  #       with:
+  #         environment-file: ci/environment_linux.yml
+  #         extra-specs: |
+  #           python=3.10
+
+  #     - name: Test CPP
+  #       shell: bash -l {0}
+  #       run: |
+  #           xonsh ci/test_cpp_version.xsh
+
+  # test_wasm:
+  #   name: Test WASM
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+
+  #     - uses: mamba-org/provision-with-micromamba@v12
+  #       with:
+  #         environment-file: ci/environment_linux.yml
+  #         extra-specs: |
+  #           python=3.10
+  #           nodejs
+
+  #     - uses: hendrikmuhs/ccache-action@main
+  #       with:
+  #         variant: sccache
+  #         key: ${{ github.job }}-${{ matrix.os }}
+
+  #     - name: Show Node Info
+  #       shell: bash -l {0}
+  #       run: |
+  #         set -ex
+  #         which node
+  #         node --version
+
+  #     - name: Build Linux
+  #       shell: bash -l {0}
+  #       run: |
+  #           ./build0.sh
+  #           cmake . -GNinja \
+  #             -DCMAKE_BUILD_TYPE=Debug \
+  #             -DWITH_LLVM=yes \
+  #             -DLFORTRAN_BUILD_ALL=yes \
+  #             -DWITH_STACKTRACE=no \
+  #             -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+  #             -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+  #             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+  #             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+  #           cmake --build . -j16 --target install
+
+  #     - name: Test Linux
+  #       shell: bash -l {0}
+  #       run: |
+  #           cd integration_tests
+  #           ./run_tests.py -b wasm
+
+  # upload_tarball:
+  #   name: Upload Tarball
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+
+  #     - uses: mamba-org/provision-with-micromamba@v12
+  #       with:
+  #         environment-file: ci/environment_linux.yml
+  #         extra-specs: |
+  #           python=3.10
+
+  #     - name: Upload Tarball
+  #       shell: bash -l {0}
+  #       run: |
+  #         ./build0.sh
+  #         lfortran_version=$(<version)
+  #         ci/create_source_tarball.sh $lfortran_version
+  #         ci/upload_tarball.sh
+  #       env:
+  #         SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
+
+  # upload_docs:
+  #   name: Documentation
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+
+  #     - uses: mamba-org/provision-with-micromamba@v12
+  #       with:
+  #         environment-file: ci/environment_linux.yml
+  #         extra-specs: |
+  #           python=3.10
+  #           nbconvert=5.6.0
+  #           mkdocs=1.3.0
+
+  #     - name: Install Dependencies
+  #       shell: bash -l {0}
+  #       run: |
+  #         pip install mkdocs-material==8.2.16
+  #         pip install 'jinja2 < 3.1'
+  #         pip install jupyter-client==6.1.12
+
+  #     - uses: hendrikmuhs/ccache-action@main
+  #       with:
+  #         variant: sccache
+  #         key: ${{ github.job }}-${{ matrix.os }}
+
+
+  #     - name: Build Kernel
+  #       shell: bash -l {0}
+  #       run: |
+  #         ./build0.sh
+  #         export CXXFLAGS="-Werror"
+  #         cmake . -GNinja \
+  #           -DCMAKE_BUILD_TYPE=Debug \
+  #           -DWITH_LLVM=yes \
+  #           -DWITH_XEUS=yes \
+  #           -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+  #           -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+  #           -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+  #           -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+  #         ninja install
+  #         ctest --output-on-failure
+  #         jupyter kernelspec list --json
+
+  #     - name: Build Docs
+  #       shell: bash -l {0}
+  #       run: |
+  #         cd doc
+  #         python convert_nb.py
+  #         mkdocs build
+
+  #     - name: Upload Docs
+  #       shell: bash -l {0}
+  #       run: |
+  #         cd doc
+  #         ../ci/upload_docs.sh
+  #       env:
+  #         SSH_PRIVATE_KEY_DOCS: ${{ secrets.SSH_PRIVATE_KEY_DOCS }}
+
+  build_emscripten:
+    name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.10"]
+
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v12
+      - uses: mamba-org/provision-with-micromamba@main
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
-            python=3.10
+            python=${{ matrix.python-version }}
+            emsdk
 
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Build Linux
+      - name: create emscripten prefix
         shell: bash -l {0}
         run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          # install same emsdk as upstream
+          emsdk install 3.1.2
+          emsdk activate 3.1.2
+          # create environment with cross-compiled dependencies
+          micromamba create -n emx \
+            -c https://repo.mamba.pm/emscripten-forge \
+            --platform=emscripten-32 \
+            xeus nlohmann_json xtl
 
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
-        shell: bash -l {0}
-        run: |
-            ctest
-            ./run_tests.py
-            cd integration_tests
-            ./run_tests.py -b llvm
-
-  test_llvm_14:
-    name: Test LLVM 14
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/provision-with-micromamba@v12
-        with:
-          environment-file: ci/environment_linux_llvm14.yml
-          extra-specs: |
-            python=3.10
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Build Linux
-        shell: bash -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
-        shell: bash -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b llvm
-
-  test_without_llvm:
-    name: Test without LLVM Backend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/provision-with-micromamba@v12
-        with:
-          environment-file: ci/environment_linux.yml
-          extra-specs: |
-            python=3.10
-
-      - name: Test
-        shell: bash -l {0}
-        run: |
-          xonsh ci/test_without_llvm_backend.xsh
-
-  test_cpp:
-    name: Test CPP
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/provision-with-micromamba@v12
-        with:
-          environment-file: ci/environment_linux.yml
-          extra-specs: |
-            python=3.10
-
-      - name: Test CPP
-        shell: bash -l {0}
-        run: |
-            xonsh ci/test_cpp_version.xsh
-
-  test_wasm:
-    name: Test WASM
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/provision-with-micromamba@v12
-        with:
-          environment-file: ci/environment_linux.yml
-          extra-specs: |
-            python=3.10
-            nodejs
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Show Node Info
-        shell: bash -l {0}
-        run: |
-          set -ex
-          which node
-          node --version
-
-      - name: Build Linux
-        shell: bash -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
-        shell: bash -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b wasm
-
-  upload_tarball:
-    name: Upload Tarball
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/provision-with-micromamba@v12
-        with:
-          environment-file: ci/environment_linux.yml
-          extra-specs: |
-            python=3.10
-
-      - name: Upload Tarball
+      - name: compile to emscripten
         shell: bash -l {0}
         run: |
           ./build0.sh
-          lfortran_version=$(<version)
-          ci/create_source_tarball.sh $lfortran_version
-          ci/upload_tarball.sh
-        env:
-          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
 
-  upload_docs:
-    name: Documentation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+          emsdk activate 3.1.2
+          source $CONDA_EMSDK_DIR/emsdk_env.sh
+          micromamba activate emx --stack
 
-      - uses: mamba-org/provision-with-micromamba@v12
-        with:
-          environment-file: ci/environment_linux.yml
-          extra-specs: |
-            python=3.10
-            nbconvert=5.6.0
-            mkdocs=1.3.0
+          mkdir embuild
+          cd embuild
+          emcmake cmake .. -GNinja \
+            -DWITH_XEUS=ON \
+            -DLFORTRAN_BUILD_TO_WASM=ON \
+            -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
 
-      - name: Install Dependencies
-        shell: bash -l {0}
-        run: |
-          pip install mkdocs-material==8.2.16
-          pip install 'jinja2 < 3.1'
-          pip install jupyter-client==6.1.12
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-
-      - name: Build Kernel
-        shell: bash -l {0}
-        run: |
-          ./build0.sh
-          export CXXFLAGS="-Werror"
-          cmake . -GNinja \
-            -DCMAKE_BUILD_TYPE=Debug \
-            -DWITH_LLVM=yes \
-            -DWITH_XEUS=yes \
-            -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-            -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-          ninja install
-          ctest --output-on-failure
-          jupyter kernelspec list --json
-
-      - name: Build Docs
-        shell: bash -l {0}
-        run: |
-          cd doc
-          python convert_nb.py
-          mkdocs build
-
-      - name: Upload Docs
-        shell: bash -l {0}
-        run: |
-          cd doc
-          ../ci/upload_docs.sh
-        env:
-          SSH_PRIVATE_KEY_DOCS: ${{ secrets.SSH_PRIVATE_KEY_DOCS }}
+          ninja
+          node ./src/lfortran/mini_wasm_test.js
