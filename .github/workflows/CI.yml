@@ -132,7 +132,7 @@ jobs:
         run: |
             set -ex
             # Activate PATH and other environment variables in the current terminal
-            source $HOME/ext/emsdk_env.sh
+            source $HOME/ext/emsdk/emsdk_env.sh
             emcc -v
             em++ -v
 
@@ -140,7 +140,7 @@ jobs:
         shell: bash -l {0}
         run: |
             set -ex
-            source $HOME/ext/emsdk_env.sh # Activate Emscripten
+            source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
             ./build_to_wasm.sh
 
   debug:
