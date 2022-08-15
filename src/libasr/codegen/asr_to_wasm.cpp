@@ -534,11 +534,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Function(const ASR::Function_t &x) {
-        if (x.m_abi == ASR::abiType::BindC && x.m_deftype == ASR::deftypeType::Interface) {
-            add_func_to_imports(x);
+        if (is_unsupported_function(x)) {
             return;
         }
-        if (is_unsupported_function(x)) {
+        if (x.m_abi == ASR::abiType::BindC && x.m_deftype == ASR::deftypeType::Interface) {
+            add_func_to_imports(x);
             return;
         }
         emit_function_prototype(x);
