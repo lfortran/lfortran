@@ -1379,8 +1379,6 @@ int main(int argc, char *argv[])
         bool arg_v = false;
         bool arg_E = false;
         bool arg_g = false;
-        std::string arg_J;
-        std::vector<std::string> arg_I;
         std::vector<std::string> arg_l;
         std::vector<std::string> arg_L;
         std::string arg_o;
@@ -1419,7 +1417,7 @@ int main(int argc, char *argv[])
         std::string arg_pywrap_file;
         std::string arg_pywrap_array_order="f";
 
-        CompilerOptions compiler_options;
+        CompilerOptions& compiler_options = LFortran::get_compiler_options();
 
         LCompilers::PassManager lfortran_pass_manager;
 
@@ -1434,8 +1432,8 @@ int main(int argc, char *argv[])
         app.add_flag("-E", arg_E, "Preprocess only; do not compile, assemble or link");
         app.add_option("-l", arg_l, "Link library option");
         app.add_option("-L", arg_L, "Library path option");
-        app.add_option("-I", arg_I, "Include path")->allow_extra_args(false);
-        app.add_option("-J", arg_J, "Where to save mod files");
+        app.add_option("-I", compiler_options.include_dirs, "Include path");
+        app.add_option("-J", compiler_options.mod_files_dir, "Where to save mod files");
         app.add_flag("-g", arg_g, "Compile with debugging information");
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", arg_version, "Display compiler version information");

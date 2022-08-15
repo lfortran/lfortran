@@ -11,6 +11,12 @@
 
 namespace LFortran {
 
+static CompilerOptions compiler_options;
+
+CompilerOptions& get_compiler_options() {
+    return compiler_options;
+}
+
 bool read_file(const std::string &filename, std::string &text)
 {
     std::ifstream ifs(filename.c_str(), std::ios::in | std::ios::binary

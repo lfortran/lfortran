@@ -2,6 +2,8 @@
 #define LIBASR_UTILS_H
 
 #include <string>
+#include <filesystem>
+#include <vector>
 #include <libasr/containers.h>
 
 namespace LFortran {
@@ -17,6 +19,8 @@ enum Platform {
 Platform get_platform();
 
 struct CompilerOptions {
+    std::filesystem::path mod_files_dir;
+    std::vector<std::filesystem::path> include_dirs;
     bool fixed_form = false;
     bool c_preprocessor = false;
     std::vector<std::string> c_preprocessor_defines;
@@ -42,6 +46,7 @@ struct CompilerOptions {
 };
 
 
+CompilerOptions& get_compiler_options();
 bool read_file(const std::string &filename, std::string &text);
 bool present(Vec<char*> &v, const char* name);
 int initialize();
