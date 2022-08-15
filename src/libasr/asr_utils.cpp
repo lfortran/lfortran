@@ -1,5 +1,7 @@
 #include <unordered_set>
 #include <map>
+#include <vector>
+#include <filesystem>
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 #include <libasr/serialization.h>
@@ -236,19 +238,30 @@ void set_intrinsic(ASR::TranslationUnit_t* trans_unit) {
 ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
                                                 const std::string &rl_path) {
-    std::string modfilename = msym + ".mod";
-    if (intrinsic) {
-        modfilename = rl_path + "/" + modfilename;
-    }
+    CompilerOptions& compiler_options = get_compiler_options();
+    std::filesystem::path filename {msym + ".mod"};
+    std::vector<std::filesystem::path> mod_files_dirs;
+    
+    // inserting rl_path first is important to keep the previous behavior
+    // whether rl_path should be used to search for mod files is another matter
+    mod_files_dirs.push_back( std::filesystem::path{rl_path} );
+    mod_files_dirs.push_back( compiler_options.mod_files_dir );
+    mod_files_dirs.insert(mod_files_dirs.end(),
+			  compiler_options.include_dirs.begin(),
+			  compiler_options.include_dirs.end());
 
-    std::string modfile;
-    if (!read_file(modfilename, modfile)) return nullptr;
-    ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false,
-        symtab);
-    if (intrinsic) {
-        set_intrinsic(asr);
+    for (std::filesystem::path p : mod_files_dirs) {
+      std::string modfile;
+
+      if (read_file(p / filename, modfile)) {
+	ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false, symtab);
+	if (intrinsic) {
+	  set_intrinsic(asr);
+	}
+	return asr;
+      }
     }
-    return asr;
+    return nullptr;
 }
 
 ASR::asr_t* getDerivedRef_t(Allocator& al, const Location& loc,

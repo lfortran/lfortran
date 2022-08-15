@@ -1,5 +1,6 @@
 #include <chrono>
 #include <iostream>
+#include <filesystem>
 #include <stdlib.h>
 
 #define CLI11_HAS_FILESYSTEM 0
@@ -605,6 +606,8 @@ int emit_c(const std::string &infile, CompilerOptions& compiler_options)
 
 int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
 {
+  CompilerOptions& compiler_options = LFortran::get_compiler_options();
+
     for (auto &item : u.m_global_scope->get_scope()) {
         if (LFortran::ASR::is_a<LFortran::ASR::Module_t>(*item.second)) {
             LFortran::ASR::Module_t *m = LFortran::ASR::down_cast<LFortran::ASR::Module_t>(item.second);
@@ -634,10 +637,11 @@ int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
             LFORTRAN_ASSERT(LFortran::asr_verify(u));
 
 
-            std::string modfile = std::string(m->m_name) + ".mod";
+            std::filesystem::path filename { std::string(m->m_name) + ".mod" };
+	    std::filesystem::path fullpath = compiler_options.mod_files_dir / filename;
             {
                 std::ofstream out;
-                out.open(modfile, std::ofstream::out | std::ofstream::binary);
+                out.open(fullpath, std::ofstream::out | std::ofstream::binary);
                 out << modfile_binary;
             }
         }

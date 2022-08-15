@@ -45,7 +45,10 @@ struct CompilerOptions {
     CompilerOptions () : platform{get_platform()} {};
 };
 
-
+// The reference returned should only ever be written by the cli arg parser.
+// Absolutely do not use this as some kind of message broker.
+// In the future it could be interesting to turn this into a singleton
+// with setters and getters.
 CompilerOptions& get_compiler_options();
 bool read_file(const std::string &filename, std::string &text);
 bool present(Vec<char*> &v, const char* name);
