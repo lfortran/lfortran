@@ -6,8 +6,7 @@
     (type (;4;) (func (param i32 i32) (result)))
     (type (;5;) (func (param) (result)))
     (type (;6;) (func (param i32) (result)))
-    (type (;7;) (func (param f32) (result f32)))
-    (type (;8;) (func (param) (result)))
+    (type (;7;) (func (param) (result)))
     (import "js" "print_i32" (func (;0;) (type 0)))
     (import "js" "print_i64" (func (;1;) (type 1)))
     (import "js" "print_f32" (func (;2;) (type 2)))
@@ -16,23 +15,7 @@
     (import "js" "flush_buf" (func (;5;) (type 5)))
     (import "js" "set_exit_code" (func (;6;) (type 6)))
     (import "js" "memory" (memory (;0;) 100 100))
-    (func $7 (type 7) (param f32) (result f32)
-        (local f32)
-        local.get 0
-        f32.const 0.000000
-        f32.ge
-        if
-            local.get 0
-            local.set 1
-        else
-            local.get 0
-            f32.neg
-            local.set 1
-        end
-        local.get 1
-        return
-    )
-    (func $8 (type 8) (param) (result)
+    (func $7 (type 7) (param) (result)
         (local f32)
         f32.const 1.500000
         local.set 0
@@ -72,8 +55,7 @@
         call 6
         return
     )
-    (export "sabs" (func $7))
-    (export "_lcompilers_main" (func $8))
+    (export "_lcompilers_main" (func $7))
     (data (;0;) (i32.const 0) "ERROR STOP")
     (data (;1;) (i32.const 10) "ERROR STOP")
 )
