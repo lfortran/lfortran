@@ -1,4 +1,4 @@
-# size(x)
+# size(x): Size of Array
 
 Returns the size of an array `x`.
 

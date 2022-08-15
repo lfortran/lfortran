@@ -18,6 +18,7 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
     void visit_Call(uint32_t func_index) { src += indent + "call " + std::to_string(func_index); }
     void visit_Br(uint32_t label_index) { src += indent + "br " + std::to_string(label_index); }
     void visit_BrIf(uint32_t label_index) { src += indent + "br_if " + std::to_string(label_index); }
+    void visit_Drop() { src += indent + "drop"; }
     void visit_LocalGet(uint32_t localidx) { src += indent + "local.get " + std::to_string(localidx); }
     void visit_LocalSet(uint32_t localidx) { src += indent + "local.set " + std::to_string(localidx); }
     void visit_EmtpyBlockType() {}

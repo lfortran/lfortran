@@ -1,4 +1,4 @@
-# kind(x)
+# kind(x): Kind of an Entity
 
 Kind of an entity.
 

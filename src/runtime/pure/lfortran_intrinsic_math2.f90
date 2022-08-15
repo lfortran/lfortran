@@ -343,6 +343,24 @@ else
 end if
 end function
 
+elemental integer function max0(x, y) result(r)
+integer, intent(in) :: x, y
+if (x > y) then
+    r = x
+else
+    r = y
+end if
+end function
+
+elemental integer function min0(x, y) result(r)
+integer, intent(in) :: x, y
+if (x < y) then
+    r = x
+else
+    r = y
+end if
+end function
+
 elemental integer(i8) function imax8(x, y) result(r)
 integer(i8), intent(in) :: x, y
 if (x > y) then

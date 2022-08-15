@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
 import sys
-sys.path.append("src/libasr")
+import os
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+sys.path.append(os.path.join(ROOT_DIR, "src", "libasr"))
+
 from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 
 
@@ -107,7 +111,7 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
 
     if asr:
         # run fixed form
-        if filename.endswith(".f"): 
+        if filename.endswith(".f"):
             run_test(
                 filename,
                 "asr",
