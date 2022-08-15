@@ -499,7 +499,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             wasm::emit_i32_const(m_code_section,m_al, 0 /* zero exit code */);
             wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["set_exit_code"])]->index);
         }
-        if ((x.n_body > 0) && !ASR::is_a<ASR::Return_t>(*x.m_body[x.n_body - 1])) {
+        if ((x.n_body == 0) || ((x.n_body > 0) && !ASR::is_a<ASR::Return_t>(*x.m_body[x.n_body - 1]))) {
             handle_return();
         }
         wasm::emit_expr_end(m_code_section, m_al);
