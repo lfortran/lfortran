@@ -514,7 +514,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     bool is_unsupported_function(const ASR::Function_t& x) {
         if(!x.n_body) {
             diag.codegen_warning_label("Function with no body", {x.base.base.loc}, std::string(x.m_name));
-            return true;
+            // return true;
         }
         if (x.m_abi == ASR::abiType::BindC
                 && x.m_deftype == ASR::deftypeType::Interface) {
