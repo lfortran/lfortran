@@ -252,7 +252,7 @@ std::string WASMDecoder::get_wat() {
     for(uint32_t i = 0; i < imports.size(); i++){
         result += indent + "(import \"" + imports[i].mod_name + "\" \"" + imports[i].name + "\" ";
         if(imports[i].kind == 0x00){
-            result += "(func (;" + std::to_string(i) + ";) (type " + std::to_string(imports[i].type_idx) + ")))";
+            result += "(func (;" + std::to_string(imports[i].type_idx) + ";) (type " + std::to_string(imports[i].type_idx) + ")))";
         }
         else if(imports[i].kind == 0x02){
             result += "(memory (;0;) " + std::to_string(imports[i].mem_page_size_limits.first) + " "
