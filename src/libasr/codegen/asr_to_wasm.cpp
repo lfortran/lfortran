@@ -511,21 +511,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         no_of_functions++;
     }
 
-    template <typename T>
-    bool is_unsupported_function(const T& x) {
-        std::string func_or_sub = "";
-        if (x.class_type == ASR::symbolType::Function) {
-            func_or_sub = "Function";
-        } else {
-            throw CodeGenError("has_c_function_call: C call unknown type");
-        }
+    bool is_unsupported_function(const ASR::Function_t& x) {
         if(!x.n_body) {
-            diag.codegen_warning_label(func_or_sub + " with no body", {x.base.base.loc}, std::string(x.m_name));
+            diag.codegen_warning_label("Function with no body", {x.base.base.loc}, std::string(x.m_name));
             return true;
         }
         if (x.m_abi == ASR::abiType::BindC
                 && x.m_deftype == ASR::deftypeType::Interface) {
-                diag.codegen_warning_label("WASM: BindC and Interface " + func_or_sub + " not yet spported", { x.base.base.loc }, std::string(x.m_name));
+                diag.codegen_warning_label("WASM: BindC and Interface Function not yet spported", { x.base.base.loc }, std::string(x.m_name));
                 return true;
         }
         for (size_t i = 0; i < x.n_body; i++) {
@@ -533,7 +526,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 auto sub_call = (const ASR::SubroutineCall_t &)(*x.m_body[i]);
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(sub_call.m_name));
                 if (s->m_abi == ASR::abiType::BindC && s->m_deftype == ASR::deftypeType::Interface) {
-                    diag.codegen_warning_label("WASM: Calls to C subroutine are not yet supported", {s->base.base.loc}, func_or_sub + ": calls " + std::string(s->m_name));
+                    diag.codegen_warning_label("WASM: Calls to C subroutine are not yet supported", {s->base.base.loc}, "Function: calls " + std::string(s->m_name));
                     return true;
                 }
             }
