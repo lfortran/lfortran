@@ -150,15 +150,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void add_func_to_imports(const ASR::Function_t &x) {
-        ImportFunc import_func;
-        import_func.name = x.m_name;
-        for(size_t i = 0; i < x.n_args; i++) {
-            ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_args[i]);
-            import_func.param_types.push_back({ttype->type, ASRUtils::extract_kind_from_ttype_t(ttype)});
-        }
-
-        // Todo: Result types are currenty not supported
-        import_function(import_func);
+        wasm::emit_import_fn(m_import_section, m_al, "js", x.m_name, no_of_types);
+        emit_function_prototype(x);
+        no_of_imports++;
     }
 
     void import_function(ImportFunc &import_func) {
