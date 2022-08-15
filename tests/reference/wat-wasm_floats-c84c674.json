@@ -6,8 +6,8 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "wat-wasm_floats-c84c674.stdout",
-    "stdout_hash": "7ca35dff4e3011fdbb39d918636f5d6d5fbc36b817cc474a002f2c55",
-    "stderr": "wat-wasm_floats-c84c674.stderr",
-    "stderr_hash": "abbd235f0041f4a31605825c1d89d51574623d404d0b4c313d41411f",
+    "stdout_hash": "2c11bb77906ba4caf212a61da1a50fa49b3c5f7f4bb1d56dff883041",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

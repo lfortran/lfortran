@@ -1,54 +1,41 @@
-Internal Compiler Error: Unhandled exception
-BFD: DWARF error: section .debug_info is larger than its filesize! (0x93ef57 vs 0x530ea0)
-Traceback (most recent call last):
-[2m  Binary file "[0m[1m[35m$DIR/src/bin/lfortran[39m[0m[2m", in _start()[0m
-[2m  Binary file "[0m[1m[35m/lib/x86_64-linux-gnu/libc.so.6[39m[0m[2m", in __libc_start_main()[0m
-[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 1664, in ??[0m
-    return emit_wat(arg_file, compiler_options);
-[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 779, in ??[0m
-    LFortran::Result<std::string> r = fe.get_wat(input, lm, diagnostics);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 384, in LFortran::FortranEvaluator::get_wat(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LFortran::LocationManager&, LFortran::diag::Diagnostics&)[0m
-    Result<Vec<uint8_t>> wasm = get_wasm(code, lm, diagnostics);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 371, in LFortran::FortranEvaluator::get_wasm(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LFortran::LocationManager&, LFortran::diag::Diagnostics&)[0m
-    return asr_to_wasm_bytes_stream(*asr.result, al, diagnostics);
-[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_wasm.cpp[39m[0m[2m", line 1691, in LFortran::asr_to_wasm_bytes_stream(LFortran::ASR::TranslationUnit_t&, Allocator&, LFortran::diag::Diagnostics&)[0m
-    v.visit_asr((ASR::asr_t &)asr);
-[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3728, in LFortran::ASR::BaseVisitor<LFortran::ASRToWASMVisitor>::visit_asr(LFortran::ASR::asr_t const&)[0m
-    void visit_asr(const asr_t &b) { visit_asr_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3706, in ??[0m
-    case asrType::unit: { v.visit_unit((const unit_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3729, in LFortran::ASR::BaseVisitor<LFortran::ASRToWASMVisitor>::visit_unit(LFortran::ASR::unit_t const&)[0m
-    void visit_unit(const unit_t &b) { visit_unit_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3506, in ??[0m
-    case unitType::TranslationUnit: { v.visit_TranslationUnit((const TranslationUnit_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_wasm.cpp[39m[0m[2m", line 258, in LFortran::ASRToWASMVisitor::visit_TranslationUnit(LFortran::ASR::TranslationUnit_t const&)[0m
-    visit_symbol(*item.second);
-[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3731, in LFortran::ASR::BaseVisitor<LFortran::ASRToWASMVisitor>::visit_symbol(LFortran::ASR::symbol_t const&)[0m
-    void visit_symbol(const symbol_t &b) { visit_symbol_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3514, in ??[0m
-    case symbolType::Program: { v.visit_Program((const Program_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_wasm.cpp[39m[0m[2m", line 295, in LFortran::ASRToWASMVisitor::visit_Program(LFortran::ASR::Program_t const&)[0m
-    this->visit_Function(*((ASR::Function_t *)main_func));
-[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_wasm.cpp[39m[0m[2m", line 545, in LFortran::ASRToWASMVisitor::visit_Function(LFortran::ASR::Function_t const&)[0m
-    emit_function_body(x);
-[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_wasm.cpp[39m[0m[2m", line 496, in LFortran::ASRToWASMVisitor::emit_function_body(LFortran::ASR::Function_t const&)[0m
-    this->visit_stmt(*x.m_body[i]);
-[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3744, in LFortran::ASR::BaseVisitor<LFortran::ASRToWASMVisitor>::visit_stmt(LFortran::ASR::stmt_t const&)[0m
-    void visit_stmt(const stmt_t &b) { visit_stmt_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3547, in ??[0m
-    case stmtType::If: { v.visit_If((const If_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_wasm.cpp[39m[0m[2m", line 1621, in LFortran::ASRToWASMVisitor::visit_If(LFortran::ASR::If_t const&)[0m
-    this->visit_expr(*x.m_test);
-[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3786, in LFortran::ASR::BaseVisitor<LFortran::ASRToWASMVisitor>::visit_expr(LFortran::ASR::expr_t const&)[0m
-    void visit_expr(const expr_t &b) { visit_expr_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3595, in ??[0m
-    case exprType::RealCompare: { v.visit_RealCompare((const RealCompare_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_wasm.cpp[39m[0m[2m", line 970, in LFortran::ASRToWASMVisitor::visit_RealCompare(LFortran::ASR::RealCompare_t const&)[0m
-    handle_real_compare(x);
-[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_wasm.cpp[39m[0m[2m", line 936, in LFortran::ASRToWASMVisitor::handle_real_compare(LFortran::ASR::RealCompare_t const&)[0m
-    this->visit_expr(*x.m_left);
-[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3786, in LFortran::ASR::BaseVisitor<LFortran::ASRToWASMVisitor>::visit_expr(LFortran::ASR::expr_t const&)[0m
-    void visit_expr(const expr_t &b) { visit_expr_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3584, in ??[0m
-    case exprType::FunctionCall: { v.visit_FunctionCall((const FunctionCall_t &)x); return; }
-AssertFailed: m_func_name_idx_map.find(get_hash((ASR::asr_t *)fn)) != m_func_name_idx_map.end()
+warning: Function with no body
+ --> tests/../integration_tests/expr_08.f90:1:1
+  |
+1 | program expr_08
+  | ^ char
+
+warning: Function with no body
+ --> tests/../integration_tests/expr_08.f90:1:1
+  |
+1 | program expr_08
+  | ^ move_alloc
+
+warning: WASM: Calls to C Intrinsic Functions are not yet supported
+ --> tests/../integration_tests/expr_08.f90:1:1
+  |
+1 | program expr_08
+  | ^ Function: calls c_cpu_time
+
+warning: WASM: Calls to C Intrinsic Functions are not yet supported
+ --> tests/../integration_tests/expr_08.f90:1:1
+  |
+1 | program expr_08
+  | ^ Function: calls c_dp_rand_num
+
+warning: WASM: Calls to C Intrinsic Functions are not yet supported
+ --> tests/../integration_tests/expr_08.f90:1:1
+  |
+1 | program expr_08
+  | ^ Function: calls c_i32sys_clock
+
+warning: WASM: Calls to C Intrinsic Functions are not yet supported
+ --> tests/../integration_tests/expr_08.f90:1:1
+  |
+1 | program expr_08
+  | ^ Function: calls c_i64sys_clock
+
+warning: WASM: Calls to C Intrinsic Functions are not yet supported
+ --> tests/../integration_tests/expr_08.f90:1:1
+  |
+1 | program expr_08
+  | ^ Function: calls c_sp_rand_num

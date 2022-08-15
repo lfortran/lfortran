@@ -4,56 +4,38 @@ warning: Function with no body
 1 | program abs_03
   | ^ char
 
-warning: WASM: C Intrinsic Functions not yet spported
- --> tests/../integration_tests/abs_03.f90:1:1
-  |
-1 | program abs_03
-  | ^ char
-
 warning: Function with no body
  --> tests/../integration_tests/abs_03.f90:1:1
   |
 1 | program abs_03
   | ^ move_alloc
 
-warning: WASM: C Intrinsic Functions not yet spported
+warning: WASM: Calls to C Intrinsic Functions are not yet supported
  --> tests/../integration_tests/abs_03.f90:1:1
   |
 1 | program abs_03
-  | ^ move_alloc
+  | ^ Function: calls c_cpu_time
 
-warning: WASM: C Intrinsic Functions not yet spported
+warning: WASM: Calls to C Intrinsic Functions are not yet supported
  --> tests/../integration_tests/abs_03.f90:1:1
   |
 1 | program abs_03
-  | ^ cpu_time
+  | ^ Function: calls c_dp_rand_num
 
-warning: WASM: C Intrinsic Functions not yet spported
+warning: WASM: Calls to C Intrinsic Functions are not yet supported
  --> tests/../integration_tests/abs_03.f90:1:1
   |
 1 | program abs_03
-  | ^ dp_rand_num
+  | ^ Function: calls c_i32sys_clock
 
-warning: WASM: C Intrinsic Functions not yet spported
+warning: WASM: Calls to C Intrinsic Functions are not yet supported
  --> tests/../integration_tests/abs_03.f90:1:1
   |
 1 | program abs_03
-  | ^ i32sys_clock
+  | ^ Function: calls c_i64sys_clock
 
-warning: WASM: C Intrinsic Functions not yet spported
+warning: WASM: Calls to C Intrinsic Functions are not yet supported
  --> tests/../integration_tests/abs_03.f90:1:1
   |
 1 | program abs_03
-  | ^ i64sys_clock
-
-warning: WASM: C Intrinsic Functions not yet spported
- --> tests/../integration_tests/abs_03.f90:1:1
-  |
-1 | program abs_03
-  | ^ iabs
-
-warning: WASM: C Intrinsic Functions not yet spported
- --> tests/../integration_tests/abs_03.f90:1:1
-  |
-1 | program abs_03
-  | ^ sp_rand_num
+  | ^ Function: calls c_sp_rand_num
