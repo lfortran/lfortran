@@ -28,7 +28,7 @@ public:
     bool from_block;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
-            CompilerOptions &compiler_options)
+            CompilerOptions& compiler_options)
          : CommonVisitor(al, nullptr, diagnostics, compiler_options),
            asr{unit}, from_block{false} {}
 
@@ -1521,7 +1521,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
-        CompilerOptions &compiler_options)
+        CompilerOptions& compiler_options)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options);
     try {

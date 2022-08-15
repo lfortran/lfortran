@@ -22,18 +22,18 @@ namespace LFortran {
 Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
         SymbolTable *symbol_table,
-        CompilerOptions &compiler_options);
+        CompilerOptions& compiler_options);
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
-        CompilerOptions &compiler_options);
+        CompilerOptions& compiler_options);
 
 Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics,
     SymbolTable *symbol_table, bool symtab_only,
-    CompilerOptions &compiler_options)
+    CompilerOptions& compiler_options)
 {
     ASR::asr_t *unit;
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,

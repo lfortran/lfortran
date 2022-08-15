@@ -114,7 +114,7 @@ struct Diagnostics {
     std::vector<Diagnostic> diagnostics;
 
     std::string render(const std::string &input,
-            const LocationManager &lm, const CompilerOptions &compiler_options);
+            const LocationManager &lm, const CompilerOptions& compiler_options);
 
     // Returns true iff diagnostics contains at least one error message
     bool has_error() const;

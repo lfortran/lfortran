@@ -62,7 +62,7 @@ bool Diagnostics::has_error() const {
 }
 
 std::string Diagnostics::render(const std::string &input,
-        const LocationManager &lm, const CompilerOptions &compiler_options) {
+        const LocationManager &lm, const CompilerOptions& compiler_options) {
     std::string out;
     for (auto &d : this->diagnostics) {
         if (compiler_options.no_warnings && d.level != Level::Error) {

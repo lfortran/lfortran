@@ -9,7 +9,7 @@
 namespace LFortran
 {
 
-CPreprocessor::CPreprocessor(CompilerOptions &compiler_options)
+CPreprocessor::CPreprocessor(CompilerOptions& compiler_options)
     : compiler_options{compiler_options} {
     CPPMacro md;
     md.expansion = "1";
