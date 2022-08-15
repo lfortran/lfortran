@@ -516,7 +516,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             diag.codegen_warning_label("Function with no body", {x.base.base.loc}, std::string(x.m_name));
             // return true;
         }
-        if (ASRUtils::is_intrinsic_function2(&x)) {
+        if (x.m_abi == ASR::abiType::BindC && x.m_deftype == ASR::deftypeType::Interface
+            && ASRUtils::is_intrinsic_function2(&x)) {
                 diag.codegen_warning_label("WASM: C Intrinsic Functions not yet spported", { x.base.base.loc }, std::string(x.m_name));
                 return true;
         }
@@ -524,7 +525,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             if (x.m_body[i]->type == ASR::stmtType::SubroutineCall) {
                 auto sub_call = (const ASR::SubroutineCall_t &)(*x.m_body[i]);
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(sub_call.m_name));
-                if (ASRUtils::is_intrinsic_function2(s)) {
+                if (s->m_abi == ASR::abiType::BindC && s->m_deftype == ASR::deftypeType::Interface
+                && ASRUtils::is_intrinsic_function2(s)) {
                     diag.codegen_warning_label("WASM: Calls to C Intrinsic Functions are not yet supported", {x.m_body[i]->base.loc}, "Function: calls " + std::string(s->m_name));
                     return true;
                 }
