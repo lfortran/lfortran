@@ -6,8 +6,8 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "wat-expr_08-74f99b7.stdout",
-    "stdout_hash": "b7097f0d74a0dae163dd497164700ef1054b2d1fc3e29c31d51a6d14",
+    "stdout_hash": "efb3846f7453045336ef6309bdd4165311671884504b3045c5f2e78c",
     "stderr": "wat-expr_08-74f99b7.stderr",
-    "stderr_hash": "6ccafaa4cbd960b23882366a12e8aff41ba8375846b04e994092bdc6",
+    "stderr_hash": "25356a52554e79e4544883910172de15b66ecc764c6695baa9bd5fbb",
     "returncode": 0
 }
