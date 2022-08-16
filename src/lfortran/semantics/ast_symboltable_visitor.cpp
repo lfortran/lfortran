@@ -595,7 +595,7 @@ public:
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
-        visit_DeclarationUtil(x);
+        visit_DeclarationUtil(x, global_scope);
     }
 
     void visit_DerivedType(const AST::DerivedType_t &x) {

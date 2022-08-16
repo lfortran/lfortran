@@ -779,7 +779,7 @@ public:
         return false;
     }
 
-    void visit_DeclarationUtil(const AST::Declaration_t &x) {
+    void visit_DeclarationUtil(const AST::Declaration_t &x, SymbolTable *global_scope = nullptr) {
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
                 AST::is_a<AST::AttrNamelist_t>(*x.m_attributes[0])) {
@@ -885,9 +885,74 @@ public:
                                 // Ignore Intrinsic attribute
                             } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrExternal) {
-                                // TODO
-                                throw SemanticError("Attribute declaration not "
-                                    "supported yet", x.base.base.loc);
+                                auto fn_name = sym.data();
+                                auto v = current_scope->resolve_symbol(fn_name);
+                                
+                                if (v) throw SemanticError("External procedure already declared in same scope", s.loc);
+                                if (global_scope != nullptr) {
+                                    
+                                    auto pscope = current_scope;
+                                    SymbolTable *parent_scope = current_scope->parent;
+                                    current_scope = al.make_new<SymbolTable>(parent_scope);
+                                    tmp = ASR::make_Function_t(
+                                        al, s.loc,
+                                        /* a_symtab */ current_scope,
+                                        /* a_name */ s2c(al, sym),
+                                        /* a_args */ nullptr,
+                                        /* n_args */ 0,
+                                        nullptr, 0,
+                                        /* a_body */ nullptr,
+                                        /* n_body */ 0,
+                                        nullptr,
+                                        ASR::abiType::Source,
+                                        ASR::accessType::Public, ASR::deftypeType::Interface, nullptr,
+                                        false, false, false);
+                                    parent_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
+                                    current_scope = pscope; 
+                                    
+                                    // the below works BUT declares function WITHIN program symboltable -> that's not the goal, right?
+                                    // SymbolTable *parent_scope = current_scope;
+                                    // current_scope = al.make_new<SymbolTable>(parent_scope);
+                                    // tmp = ASR::make_Function_t(
+                                    //    al, s.loc,
+                                    //    /* a_symtab */ current_scope,
+                                    //    /* a_name */ s2c(al, sym),
+                                    //    /* a_args */ nullptr,
+                                    //    /* n_args */ 0,
+                                    //    nullptr, 0,
+                                    //    /* a_body */ nullptr,
+                                    //    /* n_body */ 0,
+                                    //    nullptr,
+                                    //    ASR::abiType::Source,
+                                    //    ASR::accessType::Public, ASR::deftypeType::Interface, nullptr,
+                                    //    false, false, false);
+                                    // parent_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
+                                    // current_scope = parent_scope; // this assumes we would then parse the procedure body but we actually move along
+                                    
+
+
+                                    // auto function = ASR::make_Function_t(al, s.loc, current_scope->parent, s2c(al, sym),
+                                    //     nullptr, 0, nullptr, 0, nullptr, 0, nullptr,
+                                    //     ASR::abiType::Source, ASR::accessType::Public,
+                                    //     ASR::deftypeType::Interface, nullptr, false, false, false);
+                                    // auto new_symbol = ASR::down_cast<ASR::symbol_t>(function);
+                                    // auto new_function = ASR::down_cast<ASR::Function_t>(new_symbol);
+                                    // tmp = function; // Up-cast?
+                                    // // new_function->m_symtab->asr_owner = (ASR::asr_t*) new_symbol;
+                                    // current_scope->parent->add_symbol(sym, new_symbol);
+                                    // // new_function->m_symtab->asr_owner = (ASR::asr_t*) new_symbol;
+                                    
+                                    // std::cout << "(in AttrVisit): parent scope is " << current_scope->parent << "\n";
+                                    // std::cout << "in AttrVisit: current_scope->asr_owner is: " << current_scope->asr_owner << "\n";
+                                    // std::cout << "in AttrVisit: current_scope->parent->asr_owner is: " << current_scope->parent->asr_owner << "\n";
+                                    // std::cout << "in AttrVisit: x is " << &function << "\n";
+                                    // std::cout << "in AttrVisit: tmp is " << tmp << "\n";
+                                    // std::cout << "in AttrVisit: &tmp is " << &tmp << "\n";
+                                    // std::cout << "in AttrVisit: new_function->m_symtab->asr_owner is " << new_function->m_symtab->asr_owner << "\n";
+                                    // std::cout << "in AttrVisit: new_function->m_symtab->counter is " << new_function->m_symtab->counter << "\n";
+                                } else {
+                                    throw SemanticError("Can only parse declarations within Body Visitor", x.base.base.loc);
+                                }
                             } else {
                                 throw SemanticError("Attribute declaration not "
                                         "supported", x.base.base.loc);
