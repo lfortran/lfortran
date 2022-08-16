@@ -1,0 +1,5 @@
+warning: WASM: C Intrinsic Functions not yet spported
+ --> tests/wasm_floats.f90:1:1
+  |
+1 | program wasm_floats
+  | ^ kind

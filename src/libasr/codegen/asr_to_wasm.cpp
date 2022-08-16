@@ -150,15 +150,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void add_func_to_imports(const ASR::Function_t &x) {
-        ImportFunc import_func;
-        import_func.name = x.m_name;
-        for(size_t i = 0; i < x.n_args; i++) {
-            ASR::ttype_t* ttype = ASRUtils::expr_type(x.m_args[i]);
-            import_func.param_types.push_back({ttype->type, ASRUtils::extract_kind_from_ttype_t(ttype)});
-        }
-
-        // Todo: Result types are currenty not supported
-        import_function(import_func);
+        wasm::emit_import_fn(m_import_section, m_al, "js", x.m_name, no_of_types);
+        emit_function_prototype(x);
+        no_of_imports++;
     }
 
     void import_function(ImportFunc &import_func) {
@@ -499,7 +493,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             wasm::emit_i32_const(m_code_section,m_al, 0 /* zero exit code */);
             wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map["set_exit_code"])]->index);
         }
-        if ((x.n_body > 0) && !ASR::is_a<ASR::Return_t>(*x.m_body[x.n_body - 1])) {
+        if ((x.n_body == 0) || ((x.n_body > 0) && !ASR::is_a<ASR::Return_t>(*x.m_body[x.n_body - 1]))) {
             handle_return();
         }
         wasm::emit_expr_end(m_code_section, m_al);
@@ -511,29 +505,23 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         no_of_functions++;
     }
 
-    template <typename T>
-    bool is_unsupported_function(const T& x) {
-        std::string func_or_sub = "";
-        if (x.class_type == ASR::symbolType::Function) {
-            func_or_sub = "Function";
-        } else {
-            throw CodeGenError("has_c_function_call: C call unknown type");
-        }
+    bool is_unsupported_function(const ASR::Function_t& x) {
         if(!x.n_body) {
-            diag.codegen_warning_label(func_or_sub + " with no body", {x.base.base.loc}, std::string(x.m_name));
-            return true;
+            diag.codegen_warning_label("Function with no body", {x.base.base.loc}, std::string(x.m_name));
+            // return true;
         }
-        if (x.m_abi == ASR::abiType::BindC
-                && x.m_deftype == ASR::deftypeType::Interface) {
-                diag.codegen_warning_label("WASM: BindC and Interface " + func_or_sub + " not yet spported", { x.base.base.loc }, std::string(x.m_name));
+        if (x.m_abi == ASR::abiType::BindC && x.m_deftype == ASR::deftypeType::Interface
+            && ASRUtils::is_intrinsic_function2(&x)) {
+                diag.codegen_warning_label("WASM: C Intrinsic Functions not yet spported", { x.base.base.loc }, std::string(x.m_name));
                 return true;
         }
         for (size_t i = 0; i < x.n_body; i++) {
             if (x.m_body[i]->type == ASR::stmtType::SubroutineCall) {
                 auto sub_call = (const ASR::SubroutineCall_t &)(*x.m_body[i]);
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(sub_call.m_name));
-                if (s->m_abi == ASR::abiType::BindC && s->m_deftype == ASR::deftypeType::Interface) {
-                    diag.codegen_warning_label("WASM: Calls to C subroutine are not yet supported", {s->base.base.loc}, func_or_sub + ": calls " + std::string(s->m_name));
+                if (s->m_abi == ASR::abiType::BindC && s->m_deftype == ASR::deftypeType::Interface
+                && ASRUtils::is_intrinsic_function2(s)) {
+                    diag.codegen_warning_label("WASM: Calls to C Intrinsic Functions are not yet supported", {x.m_body[i]->base.loc}, "Function: calls " + std::string(s->m_name));
                     return true;
                 }
             }
@@ -542,16 +530,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Function(const ASR::Function_t &x) {
-#ifdef HAVE_BUILD_TO_WASM
+        if (is_unsupported_function(x)) {
+            return;
+        }
         if (x.m_abi == ASR::abiType::BindC && x.m_deftype == ASR::deftypeType::Interface) {
             add_func_to_imports(x);
             return;
         }
-#else
-        if (is_unsupported_function(x)) {
-            return;
-        }
-#endif
         emit_function_prototype(x);
         emit_function_body(x);
     }
@@ -1263,12 +1248,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             visit_expr(*x.m_args[i].m_value);
         }
 
-        if (fn->m_abi == ASR::abiType::BindC && fn->m_deftype == ASR::deftypeType::Interface) {
-            wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map[fn->m_name])]->index);
-        } else {
-            LFORTRAN_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)fn)) != m_func_name_idx_map.end())
-            wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash((ASR::asr_t *)fn)]->index);
-        }
+        LFORTRAN_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)fn)) != m_func_name_idx_map.end())
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash((ASR::asr_t *)fn)]->index);
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
@@ -1293,15 +1274,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             throw CodeGenError("visitSubroutineCall: Number of arguments passed do not match the number of parameters");
         }
 
-        if (s->m_abi == ASR::abiType::BindC && s->m_deftype == ASR::deftypeType::Interface) {
-            wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash(m_import_func_asr_map[s->m_name])]->index);
-        } else {
-            LFORTRAN_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)s)) != m_func_name_idx_map.end())
-            wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash((ASR::asr_t *)s)]->index);
-            for(auto return_var:intent_out_passed_vars) {
-                LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)return_var)) != m_var_name_idx_map.end());
-                wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)return_var)]);
-            }
+        LFORTRAN_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)s)) != m_func_name_idx_map.end())
+        wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[get_hash((ASR::asr_t *)s)]->index);
+        for(auto return_var:intent_out_passed_vars) {
+            LFORTRAN_ASSERT(m_var_name_idx_map.find(get_hash((ASR::asr_t *)return_var)) != m_var_name_idx_map.end());
+            wasm::emit_set_local(m_code_section, m_al, m_var_name_idx_map[get_hash((ASR::asr_t *)return_var)]);
         }
     }
 
@@ -1690,9 +1667,11 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr, Alloc
     ASRToWASMVisitor v(al, diagnostics);
     Vec<uint8_t> wasm_bytes;
 
-    pass_replace_do_loops(al, asr);
-    pass_array_by_data(al, asr);
-    pass_unused_functions(al, asr, true);
+    LCompilers::PassOptions pass_options;
+    pass_replace_do_loops(al, asr, pass_options);
+    pass_array_by_data(al, asr, pass_options);
+    pass_options.always_run = true;
+    pass_unused_functions(al, asr, pass_options);
 
 #ifdef SHOW_ASR
     std::cout << pickle(asr, true /* use colors */, true /* indent */,

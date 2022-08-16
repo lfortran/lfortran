@@ -1,0 +1,5 @@
+warning: WASM: C Intrinsic Functions not yet spported
+ --> tests/../integration_tests/types_15.f90:1:1
+  |
+1 | program types_15
+  | ^ kind

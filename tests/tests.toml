@@ -339,6 +339,10 @@ filename = "wasm_main_program.f90"
 wat = true
 
 [[test]]
+filename = "wasm_bind_c.f90"
+wat = true
+
+[[test]]
 filename = "../integration_tests/if_05.f90"
 wat = true
 
