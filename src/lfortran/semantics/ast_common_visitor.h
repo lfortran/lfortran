@@ -888,7 +888,8 @@ public:
                                 auto fn_name = sym.data();
                                 auto v = current_scope->resolve_symbol(fn_name);
                                 
-                                if (v) throw SemanticError("External procedure already declared in same scope", s.loc);
+                                // TODO: make this a warning (to be consistent with other compilers in behavior)
+                                // if (v) throw SemanticError("External procedure already declared in same scope", s.loc);
                                 if (global_scope != nullptr) {
                                     
                                     auto pscope = current_scope;

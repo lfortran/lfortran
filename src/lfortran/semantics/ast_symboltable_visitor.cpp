@@ -335,9 +335,9 @@ public:
                 f2->m_abi == ASR::abiType::Interactive) {
                 // Previous declaration will be shadowed
                 parent_scope->erase_symbol(sym_name);
-            } else {
+            } /*else {
                 throw SemanticError("Subroutine already defined", tmp->loc);
-            }
+            }*/
         }
         if( sym_name == interface_name ) {
             parent_scope->erase_symbol(sym_name);

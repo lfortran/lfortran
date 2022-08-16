@@ -7,8 +7,7 @@ c replicate this behavior
 
       program main
           external inner_scope
-          integer b
-          call inner_scope(b) ! this should fail in compilation, not earlier
-          
+          integer b, c
+          call inner_scope(b, c) ! this should fail in compilation, not earlier          
       end program
 

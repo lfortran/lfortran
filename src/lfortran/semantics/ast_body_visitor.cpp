@@ -1143,9 +1143,36 @@ public:
             
             Vec<ASR::expr_t *> exprs;  exprs.reserve(al, x.n_args);
             for (size_t i=0;i<x.n_args;++i) {
-                exprs.push_back(al, args[i].m_value);
-                const ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(args[i].m_value);
-                current_scope->add_symbol("b" + i , ASR::down_cast<ASR::symbol_t>(ASR::make_Var_t(al, arg_var->base.base.loc, arg_var->m_v)));
+                // exprs.push_back(al, args[i].m_value);
+                auto type = LFortran::ASRUtils::expr_type(args[i].m_value);
+                auto var = LFortran::ASRUtils::EXPR2VAR(args[i].m_value);
+                auto sym = current_scope->get_symbol(var->m_name); // program scope
+                
+
+                
+                if (sym == nullptr) throw SemanticError("Variable not declared", args[i].loc);
+                else {
+                    auto new_var = ASR::make_Variable_t(
+                        al, var->base.base.loc,
+                        f->m_symtab, s2c(al, var->m_name), var->m_intent,
+                        var->m_symbolic_value, var->m_value, var->m_storage,
+                        var->m_type, var->m_abi, var->m_access, var->m_presence, var->m_value_attr
+                    );
+                    auto new_sym = ASR::down_cast<ASR::symbol_t>(new_var);
+
+                    // auto vart = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, new_sym));
+                    exprs.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, new_sym)));
+                    f->m_symtab->add_symbol(var->m_name, new_sym);
+                    
+                    // f->m_symtab->add_symbol(var->m_name, ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, var->base.base.loc,
+                    //     f->m_symtab, s2c(al, var->m_name), ASR::intentType::Unspecified,
+                    //     var->m_symbolic_value, var->m_value, ASR::storage_typeType::Default,
+                    //     var->m_type, var->m_abi, var->m_access, var->m_presence, var->m_value_attr)));
+                }
+
+            
+                // const ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(args[i].m_value);
+                // current_scope->add_symbol("b" + i , ASR::down_cast<ASR::symbol_t>(ASR::make_Var_t(al, arg_var->base.base.loc, arg_var->m_v)));
                 
                 // const ASR::symbol_t* sym = LFortran::ASRUtils::symbol_get_past_external(arg_var->m_v);
                 // if( sym->type != ASR::symbolType::Variable )  throw SemanticError("All call args must be variables here", subrout_call->base.base.loc);
