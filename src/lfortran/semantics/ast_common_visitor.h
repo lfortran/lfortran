@@ -2615,6 +2615,10 @@ public:
                 loc);
         }
         char *fn_name = ASRUtils::symbol_name(t);
+        std::string fn_name_str = std::string(fn_name);
+        if( current_scope->get_symbol(fn_name_str) != nullptr ) {
+            fn_name = s2c(al, current_scope->get_unique_name(fn_name_str));
+        }
         ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
             al, t->base.loc,
             /* a_symtab */ current_scope,

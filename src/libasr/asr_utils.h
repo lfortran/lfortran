@@ -1508,6 +1508,7 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
             current_expr = current_expr_copy;
         }
         x->m_name = new_es;
+        x->m_original_name = nullptr;
     }
 
     void replace_Var(ASR::Var_t* x) {
