@@ -10,4 +10,10 @@ program arrays_17
     print *, real_kinds2
     if (real_kinds2(1) /= 4) error stop
     if (real_kinds2(2) /= 8) error stop
+
+    real_kinds2 = [1, 2]
+    print *, size(real_kinds2)
+    print *, real_kinds2
+    if (real_kinds2(1) /= 1) error stop
+    if (real_kinds2(2) /= 2) error stop
 end program
