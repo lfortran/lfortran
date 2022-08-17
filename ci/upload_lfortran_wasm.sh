@@ -24,6 +24,7 @@ mkdir $HOME/repos
 cd $HOME/repos
 
 git clone ${deploy_repo_pull} wasm_builds
+mkdir -p wasm_builds/docs/${dest_dir}
 cd wasm_builds/docs/${dest_dir}
 mkdir ${git_hash}
 cp $D/src/bin/lfortran.js ${git_hash}/lfortran.js
