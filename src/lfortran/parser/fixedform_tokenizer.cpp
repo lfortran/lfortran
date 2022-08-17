@@ -446,6 +446,11 @@ struct FixedFormRecursiveDescent {
      */
     void tokenize_line(const std::string &chop, unsigned char *&cur) {
         YYSTYPE y1;
+        int match_levels = -1;
+        if (chop == "if" || chop == "if(") {
+            match_levels = 0;
+        }
+
         if (chop != "") {
             std::string l(chop); 
             y1.string.from_str(m_a, l);
@@ -489,7 +494,37 @@ struct FixedFormRecursiveDescent {
                 locations.push_back(loc);
                 break;
             }
+           
+            if (match_levels == 0 && tokens[tokens.size()-1] == yytokentype::TK_RPAREN && next_is(t.cur, "call")) {
+                YYSTYPE y3;
+                std::string l("call"); 
+                y3.string.from_str(m_a, l);
+                stypes.push_back(y3);
+                tokens.push_back(yytokentype::KW_CALL);
+                
+                Location loc_local;
+                // this needs to be checked
+                loc_local.first = t.tok+1 - t.string_start;
+                loc_local.last = t.cur+4 - t.string_start-1;
+                t.tok = t.cur;
+                t.cur += l.size();
+                locations.push_back(loc_local);
+                // set it back
+                match_levels = -1;
+                continue;
+            }
+
+
             auto token = t.lex(m_a, y2, loc, diag);
+            if (match_levels > -1 && token == yytokentype::TK_LPAREN) {
+                match_levels++;
+            }
+
+            if (match_levels > -1 && token == yytokentype::TK_RPAREN) {
+                match_levels--;
+            }
+
+            
             // we need to disentangle "goto999" as the tokenizer cannot do it
             // on its own
             if (next_is(t.tok, "goto") && token != yytokentype::KW_GOTO) {
@@ -504,15 +539,10 @@ struct FixedFormRecursiveDescent {
                 locations.push_back(loc);
 
                 YYSTYPE y3;
-                // TODO check if we actually just didn't get the arguments right (t.tok+4, t.cur)
                 lex_int_large(m_a, t.tok + 4,t.cur,
                     y3.int_suffix.int_n,
                     y3.int_suffix.int_kind);
-                tokens.push_back(yytokentype::TK_INTEGER);
-                
-                // y3.n = std::stoi(tostr(t.tok+4,t.cur));
-                // tokens.push_back(yytokentype::TK_LABEL);
-                
+                tokens.push_back(yytokentype::TK_INTEGER);              
                 stypes.push_back(y3);
                 loc.first = t.tok+4 - t.string_start;
                 loc.last = t.cur - t.string_start-1;
@@ -521,11 +551,7 @@ struct FixedFormRecursiveDescent {
                 
                 continue;
             }
-            // TODO: handle
-            // We should have most types right by now; we have to check if
-            // the types in the parser match and then adapt to that.
-
-
+            
             len = t.cur - t.tok;
 
             tokens.push_back(token);
