@@ -45,7 +45,7 @@ else
     if [[ ${git_ref:0:11} == "refs/tags/v" ]]; then
         echo "The pipeline was triggered from a tag 'v*'"
     else
-        # We are either on a non-master branch, or tagged with a tag that does
+        # We are either on a non-main branch, or tagged with a tag that does
         # not start with v*. We skip the upload.
         echo "Not a main branch, not tagged with v*, skipping..."
         exit 0
@@ -62,6 +62,6 @@ ssh-add <(echo "$SSH_PRIVATE_KEY_LCOMPILERS_FRONTEND" | base64 -d)
 set -x
 
 
-git push ${deploy_repo_push} master:master
+git push ${deploy_repo_push} main:main
 echo "New commit pushed at:"
 echo "https://github.com/lfortran/lcompilers_frontend/commit/${dest_commit}"
