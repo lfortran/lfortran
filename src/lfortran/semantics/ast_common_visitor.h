@@ -936,6 +936,51 @@ public:
                 // data x, y / 1.0, 2.0 /
                 AST::AttrData_t *a = AST::down_cast<AST::AttrData_t>(x.m_attributes[0]);
                 if (a->n_object != a->n_value) {
+                    if (a->n_object == 1) {
+                        this->visit_expr(*a->m_object[0]);
+                        ASR::expr_t* object = ASRUtils::EXPR(tmp);
+                        ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
+                        if (ASRUtils::is_array(obj_type)) { // it is an array
+                            Vec<ASR::expr_t*> body;
+                            body.reserve(al, a->n_value);
+                            for (size_t j=0; j < a->n_value; j++) {
+                                this->visit_expr(*a->m_value[j]);
+                                ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                                if (ASRUtils::expr_type(value)->type != obj_type->type) {
+                                    throw SemanticError("Type mismatch during data initialization",
+                                        x.base.base.loc);
+                                }
+                                ASR::expr_t* value_value = ASRUtils::expr_value(value);
+                                if (value_value) {
+                                    body.push_back(al, value_value);
+                                } else {
+                                    throw SemanticError("The value in data must be a constant",
+                                        x.base.base.loc);
+                                }
+
+                            }
+                            Vec<ASR::dimension_t> dims;
+                            dims.reserve(al, 1);
+                            ASR::dimension_t dim;
+                            dim.loc = x.base.base.loc;
+                            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                                                                          4, nullptr, 0));
+                            ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+                            ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                                a->n_value, int32_type));
+                            dim.m_start = one;
+                            dim.m_length = x_n_args;
+                            dims.push_back(al, dim);
+                            obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
+                            tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
+                                body.size(), obj_type);
+                            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
+                            ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+                            v2->m_value = ASRUtils::EXPR(tmp);
+                            v2->m_symbolic_value = ASRUtils::EXPR(tmp);
+                            return;
+                        }
+                    }
                     throw SemanticError("The number of values and variables must match in a data statement",
                         x.base.base.loc);
                 }
