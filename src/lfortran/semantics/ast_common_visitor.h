@@ -2107,7 +2107,26 @@ public:
         int64_t kind_const = handle_kind(kind);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
                                             kind_const, nullptr, 0));
-        return ASR::make_ArraySize_t(al, x.base.base.loc, v_Var, dim, type, nullptr);
+        ASR::dimension_t* m_dims = nullptr;
+        int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(v_Var), m_dims);
+        int64_t compile_time_size = 1;
+        for( int i = 0; i < n_dims; i++ ) {
+            ASR::dimension_t m_dim = m_dims[i];
+            ASR::expr_t* length_expr = m_dim.m_length;
+            int64_t length = -1;
+            ASRUtils::extract_value(length_expr, length);
+            if( length == -1 ) {
+                compile_time_size = -1;
+                break ;
+            }
+            compile_time_size *= length;
+        }
+        ASR::expr_t* size_compiletime = nullptr;
+        if( compile_time_size != -1 ) {
+            size_compiletime = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                                compile_time_size, type));
+        }
+        return ASR::make_ArraySize_t(al, x.base.base.loc, v_Var, dim, type, size_compiletime);
     }
 
     ASR::asr_t* create_ArrayTranspose(const AST::FuncCallOrArray_t& x) {
