@@ -13,4 +13,6 @@ integer, parameter :: input_unit = 5
 integer, parameter :: output_unit = 6
 integer, parameter :: error_unit = 0
 
+integer, parameter :: real_kinds(2) = [4, 8]
+
 end module
