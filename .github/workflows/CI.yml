@@ -74,8 +74,8 @@ jobs:
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\test.xsh
 
-  build_to_wasm:
-    name: Build LFortran to wasm
+  build_to_wasm_and_upload:
+    name: Build LFortran to WASM and Upload
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v2
