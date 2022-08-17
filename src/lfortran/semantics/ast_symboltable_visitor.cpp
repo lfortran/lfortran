@@ -335,9 +335,11 @@ public:
                 f2->m_abi == ASR::abiType::Interactive) {
                 // Previous declaration will be shadowed
                 parent_scope->erase_symbol(sym_name);
-            } /*else {
+            } else if (this->external_functions[sym_name].first != nullptr) {
+                // do not throw error?
+            } else {
                 throw SemanticError("Subroutine already defined", tmp->loc);
-            }*/
+            }
         }
         if( sym_name == interface_name ) {
             parent_scope->erase_symbol(sym_name);
@@ -595,7 +597,7 @@ public:
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
-        visit_DeclarationUtil(x, global_scope);
+        visit_DeclarationUtil(x);
     }
 
     void visit_DerivedType(const AST::DerivedType_t &x) {
@@ -1035,7 +1037,7 @@ public:
         }
         if (ASR::is_a<ASR::Function_t>(*t) &&
             ASR::down_cast<ASR::Function_t>(t)->m_return_var == nullptr) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
+            if (current_scope->get_symbol(local_sym) != nullptr && !(this->external_functions[local_sym].first != nullptr)) {
                 throw SemanticError("Subroutine already defined",
                     loc);
             }

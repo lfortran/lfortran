@@ -10,6 +10,7 @@
 #include <lfortran/semantics/comptime_eval.h>
 
 #include <string>
+#include <unordered_map>
 
 using LFortran::diag::Level;
 using LFortran::diag::Stage;
@@ -640,6 +641,8 @@ public:
     SymbolTable *current_scope;
     ASR::Module_t *current_module = nullptr;
     Vec<char *> current_module_dependencies;
+    // maps procedure name to a pair (ASR function node pointer, arguments initialized)
+    std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> external_functions;
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
     std::set<std::string> intrinsic_module_procedures_as_asr_nodes = {
@@ -779,7 +782,7 @@ public:
         return false;
     }
 
-    void visit_DeclarationUtil(const AST::Declaration_t &x, SymbolTable *global_scope = nullptr) {
+    void visit_DeclarationUtil(const AST::Declaration_t &x) {
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
                 AST::is_a<AST::AttrNamelist_t>(*x.m_attributes[0])) {
@@ -883,77 +886,33 @@ public:
                             } else if(sa->m_attr == AST::simple_attributeType
                                     ::AttrIntrinsic) {
                                 // Ignore Intrinsic attribute
+                            
+                            // enable `EXTERNAL` attribute
                             } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrExternal) {
                                 auto fn_name = sym.data();
                                 auto v = current_scope->resolve_symbol(fn_name);
                                 
-                                // TODO: make this a warning (to be consistent with other compilers in behavior)
-                                // if (v) throw SemanticError("External procedure already declared in same scope", s.loc);
-                                if (global_scope != nullptr) {
-                                    
-                                    auto pscope = current_scope;
-                                    SymbolTable *parent_scope = current_scope->parent;
-                                    current_scope = al.make_new<SymbolTable>(parent_scope);
-                                    tmp = ASR::make_Function_t(
-                                        al, s.loc,
-                                        /* a_symtab */ current_scope,
-                                        /* a_name */ s2c(al, sym),
-                                        /* a_args */ nullptr,
-                                        /* n_args */ 0,
-                                        nullptr, 0,
-                                        /* a_body */ nullptr,
-                                        /* n_body */ 0,
-                                        nullptr,
-                                        ASR::abiType::Source,
-                                        ASR::accessType::Public, ASR::deftypeType::Interface, nullptr,
-                                        false, false, false);
-                                    parent_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
-                                    current_scope = pscope; 
-                                    
-                                    // the below works BUT declares function WITHIN program symboltable -> that's not the goal, right?
-                                    // SymbolTable *parent_scope = current_scope;
-                                    // current_scope = al.make_new<SymbolTable>(parent_scope);
-                                    // tmp = ASR::make_Function_t(
-                                    //    al, s.loc,
-                                    //    /* a_symtab */ current_scope,
-                                    //    /* a_name */ s2c(al, sym),
-                                    //    /* a_args */ nullptr,
-                                    //    /* n_args */ 0,
-                                    //    nullptr, 0,
-                                    //    /* a_body */ nullptr,
-                                    //    /* n_body */ 0,
-                                    //    nullptr,
-                                    //    ASR::abiType::Source,
-                                    //    ASR::accessType::Public, ASR::deftypeType::Interface, nullptr,
-                                    //    false, false, false);
-                                    // parent_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
-                                    // current_scope = parent_scope; // this assumes we would then parse the procedure body but we actually move along
-                                    
-
-
-                                    // auto function = ASR::make_Function_t(al, s.loc, current_scope->parent, s2c(al, sym),
-                                    //     nullptr, 0, nullptr, 0, nullptr, 0, nullptr,
-                                    //     ASR::abiType::Source, ASR::accessType::Public,
-                                    //     ASR::deftypeType::Interface, nullptr, false, false, false);
-                                    // auto new_symbol = ASR::down_cast<ASR::symbol_t>(function);
-                                    // auto new_function = ASR::down_cast<ASR::Function_t>(new_symbol);
-                                    // tmp = function; // Up-cast?
-                                    // // new_function->m_symtab->asr_owner = (ASR::asr_t*) new_symbol;
-                                    // current_scope->parent->add_symbol(sym, new_symbol);
-                                    // // new_function->m_symtab->asr_owner = (ASR::asr_t*) new_symbol;
-                                    
-                                    // std::cout << "(in AttrVisit): parent scope is " << current_scope->parent << "\n";
-                                    // std::cout << "in AttrVisit: current_scope->asr_owner is: " << current_scope->asr_owner << "\n";
-                                    // std::cout << "in AttrVisit: current_scope->parent->asr_owner is: " << current_scope->parent->asr_owner << "\n";
-                                    // std::cout << "in AttrVisit: x is " << &function << "\n";
-                                    // std::cout << "in AttrVisit: tmp is " << tmp << "\n";
-                                    // std::cout << "in AttrVisit: &tmp is " << &tmp << "\n";
-                                    // std::cout << "in AttrVisit: new_function->m_symtab->asr_owner is " << new_function->m_symtab->asr_owner << "\n";
-                                    // std::cout << "in AttrVisit: new_function->m_symtab->counter is " << new_function->m_symtab->counter << "\n";
-                                } else {
-                                    throw SemanticError("Can only parse declarations within Body Visitor", x.base.base.loc);
-                                }
+                                if (v && external_functions[fn_name].second) throw SemanticError("External procedure already declared in same scope", s.loc);                                    
+                                auto pscope = current_scope;
+                                SymbolTable *parent_scope = current_scope->parent;
+                                current_scope = al.make_new<SymbolTable>(parent_scope);
+                                tmp = ASR::make_Function_t(
+                                    al, s.loc,
+                                    /* a_symtab */ current_scope,
+                                    /* a_name */ s2c(al, sym),
+                                    /* a_args */ nullptr,
+                                    /* n_args */ 0,
+                                    nullptr, 0,
+                                    /* a_body */ nullptr,
+                                    /* n_body */ 0,
+                                    nullptr,
+                                    ASR::abiType::Source,
+                                    ASR::accessType::Public, ASR::deftypeType::Interface, nullptr,
+                                    false, false, false);
+                                parent_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
+                                external_functions[fn_name] = {ASR::down_cast<ASR::symbol_t>(tmp), false};
+                                current_scope = pscope; 
                             } else {
                                 throw SemanticError("Attribute declaration not "
                                         "supported", x.base.base.loc);
@@ -961,7 +920,7 @@ public:
                         }
                     }
                 }
-            // enable sole `dimension` attribute
+            // enable sole `DIMENSION` attribute
             } else if (AST::is_a<AST::AttrDimension_t>(*x.m_attributes[0])
                     && x.n_attributes == 1) {
                 for (size_t i=0;i<x.n_syms;++i) { // symbols for line only

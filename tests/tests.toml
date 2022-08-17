@@ -1973,6 +1973,14 @@ filename = "fixedform_subroutine.f"
 ast = true
 
 [[test]]
+filename = "fixedform_return2.f"
+ast = true
+
+[[test]]
+filename = "fixedform_data.f"
+ast = true
+
+[[test]]
 filename = "comments1.f90"
 ast = true
 
@@ -2190,6 +2198,10 @@ filename = "implicit_typing2.f90"
 asr_implicit_typing = true
 
 [[test]]
+filename = "dimension_attr2.f90"
+asr_implicit_typing = true
+
+[[test]]
 filename = "dimension_attr.f"
 ast = true
 asr = true
@@ -2213,3 +2225,22 @@ ast = true
 [[test]]
 filename = "errors/fixed_form_5.f"
 ast = true
+
+[[test]]
+filename = "errors/arithmetic_if1.f90"
+asr = true
+
+[[test]]
+filename = "fixed_form_external.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "fixed_form_external_simple.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "fixed_form_external_simple_outer.f"
+ast = true
+asr = true

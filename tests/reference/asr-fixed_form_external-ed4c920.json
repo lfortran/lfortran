@@ -1,0 +1,13 @@
+{
+    "basename": "asr-fixed_form_external-ed4c920",
+    "cmd": "lfortran --fixed-form --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/fixed_form_external.f",
+    "infile_hash": "99b2c32b2b37cdec3587bee004a1ec41f4ac7545bd60d981aa3ff7fc",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-fixed_form_external-ed4c920.stdout",
+    "stdout_hash": "40859cf8d41c55473c9d3db80e7f778600793f6c96488b059034b06d",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
