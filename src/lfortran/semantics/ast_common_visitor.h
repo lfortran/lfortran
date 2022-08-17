@@ -950,7 +950,14 @@ public:
                                     throw SemanticError("Type mismatch during data initialization",
                                         x.base.base.loc);
                                 }
-                                body.push_back(al, value);
+                                ASR::expr_t* value_value = ASRUtils::expr_value(value);
+                                if (value_value) {
+                                    body.push_back(al, value_value);
+                                } else {
+                                    throw SemanticError("The value in data must be a constant",
+                                        x.base.base.loc);
+                                }
+
                             }
                             Vec<ASR::dimension_t> dims;
                             dims.reserve(al, 1);
@@ -970,6 +977,7 @@ public:
                             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
                             ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
                             v2->m_value = ASRUtils::EXPR(tmp);
+                            v2->m_symbolic_value = ASRUtils::EXPR(tmp);
                             return;
                         }
                     }
