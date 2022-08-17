@@ -29,6 +29,8 @@ mkdir ${git_hash}
 cp $D/src/bin/lfortran.js ${git_hash}/lfortran.js
 cp $D/src/bin/lfortran.wasm ${git_hash}/lfortran.wasm
 
+python $D/ci/wasm_builds_update_json.py ${dest_dir} ${lfortran_version} ${git_hash}
+
 git config user.name "Deploy"
 git config user.email "noreply@deploylfortran.com"
 COMMIT_MESSAGE="Deploying on $(date "+%Y-%m-%d %H:%M:%S")"
