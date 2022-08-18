@@ -252,8 +252,9 @@ ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &m
 
     for (std::filesystem::path p : mod_files_dirs) {
       std::string modfile;
+      std::filesystem::path full_path = p / filename;
 
-      if (read_file(p / filename, modfile)) {
+      if (read_file(full_path.string(), modfile)) {
 	ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false, symtab);
 	if (intrinsic) {
 	  set_intrinsic(asr);
