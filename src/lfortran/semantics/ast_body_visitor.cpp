@@ -847,9 +847,18 @@ public:
         current_scope = v->m_symtab;
         current_module = v;
 
+        for (size_t i=0; i<x.n_decl; i++) {
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Template){
+                visit_unit_decl2(*x.m_decl[i]);
+            }
+        }
+
+        // We have to visit unit_decl_2 because in the example, the Template is directly inside the module and 
+        // Template is a unit_decl_2
+
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
-        }
+        }       
 
         current_scope = old_scope;
         current_module = nullptr;
@@ -925,6 +934,10 @@ public:
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->get_symbol(subrout_name);
         }
+        for (size_t i=0; i<x.n_decl; i++) {
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
+                visit_unit_decl2(*x.m_decl[i]);
+        }
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
@@ -965,6 +978,11 @@ public:
 
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
+        }
+
+        for (size_t i=0; i<x.n_decl; i++) {
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
+                visit_unit_decl2(*x.m_decl[i]);
         }
 
         current_scope = old_scope;
@@ -1574,17 +1592,28 @@ public:
         tmp = ASR::make_Nullify_t(al, x.base.base.loc, arg_vec.p, arg_vec.size());
     }
 
+    void visit_Template(const AST::Template_t &x){
+        is_template = true;
+        for (size_t i=0; i<x.n_contains; i++) {
+            this->visit_program_unit(*x.m_contains[i]);
+        }
+        is_template = false;
+    }
 };
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
-        CompilerOptions &compiler_options)
+        CompilerOptions &compiler_options,
+        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options);
     try {
+        b.is_body_visitor = true;
+        b.template_type_parameters = template_type_parameters;
         b.visit_TranslationUnit(ast);
+        b.is_body_visitor = false;
     } catch (const SemanticError &e) {
         Error error;
         diagnostics.diagnostics.push_back(e.d);

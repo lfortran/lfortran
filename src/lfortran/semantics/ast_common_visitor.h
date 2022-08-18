@@ -10,6 +10,8 @@
 #include <lfortran/semantics/comptime_eval.h>
 
 #include <string>
+#include <unordered_set>
+#include <map>
 
 using LFortran::diag::Level;
 using LFortran::diag::Stage;
@@ -661,6 +663,13 @@ public:
     std::vector<TypeMissingData*> type_info;
     ASR::abiType current_procedure_abi_type = ASR::abiType::Source;
     bool is_derived_type = false;
+    bool is_body_visitor = false;
+    bool is_template = false;
+    bool is_current_procedure_templated = false;
+    std::map<std::string, std::vector<ASR::asr_t*>> template_type_parameters;
+    std::vector<ASR::asr_t*> current_template_type_parameters;
+    std::unordered_set<int> current_procedure_used_type_parameter_indices;
+
     Vec<char*> data_member_names;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
@@ -2730,10 +2739,12 @@ public:
         ASR::expr_t **conversion_cand = &left;
         ASR::ttype_t *source_type = left_type;
         ASR::ttype_t *dest_type = right_type;
-
-        ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
+        if(!ASRUtils::is_generic(*left_type) && !ASRUtils::is_generic(*right_type)){
+            ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
                                                     right_type, conversion_cand,
                                                     &source_type, &dest_type);
+        }
+            
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, conversion_cand,
                                             source_type, dest_type);
 
@@ -2790,6 +2801,8 @@ public:
 
             asr = ASR::make_IntegerBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
+        } else if (ASRUtils::is_generic(*left_type) || ASRUtils::is_generic(*right_type)){
+            asr = ASR::make_TemplateBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
         } else if (ASRUtils::is_real(*dest_type)) {
 
             if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
