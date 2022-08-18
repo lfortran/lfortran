@@ -783,7 +783,7 @@ msgstr ""
 
 #: ../../doc/src/index.md:134
 msgid "Getting started"
-msgstr ""
+msgstr "Začínáme"
 
 #: ../../doc/src/index.md:141 ../../doc/src/progress.md:1
 msgid "LFortran Development Status"
@@ -839,7 +839,7 @@ msgstr ""
 
 #: ../../doc/src/index.md:21
 msgid "Works today"
-msgstr ""
+msgstr "Co funguje dnes"
 
 #: ../../doc/src/index.md:23
 #, python-format
@@ -885,7 +885,7 @@ msgstr ""
 
 #: ../../doc/src/index.md:51
 msgid "Planned"
-msgstr ""
+msgstr "Plánováno"
 
 #: ../../doc/src/index.md:53
 msgid ""
