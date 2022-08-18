@@ -679,6 +679,15 @@ public:
         current_module_dependencies.reserve(al, 4);
     }
 
+    ASR::symbol_t* resolve_symbol(const Location &loc, const std::string &sub_name) {
+        SymbolTable *scope = current_scope;
+        ASR::symbol_t *sub = scope->resolve_symbol(sub_name);
+        if (!sub) {
+            throw SemanticError("Symbol '" + sub_name + "' not declared", loc);
+        }
+        return sub;
+    }
+
     ASR::symbol_t* declare_implicit_variable(const Location &loc,
             const std::string &var_name, ASR::intentType intent) {
         ASR::ttype_t *type;
@@ -1148,139 +1157,8 @@ public:
                     }
                     process_dims(al, dims, s.m_dim, s.n_dim);
                 }
-                ASR::ttype_t *type;
-                int a_kind = 4;
-                if (sym_type->m_type != AST::decl_typeType::TypeCharacter &&
-                    sym_type->m_kind != nullptr &&
-                    sym_type->m_kind->m_value != nullptr) {
-                    this->visit_expr(*sym_type->m_kind->m_value);
-                    ASR::expr_t* kind_expr = LFortran::ASRUtils::EXPR(tmp);
-                    a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, x.base.base.loc);
-                }
-                if (sym_type->m_type == AST::decl_typeType::TypeReal) {
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
-                        a_kind, dims.p, dims.size()));
-                    if (is_pointer) {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc,
-                            type));
-                    }
-                } else if (sym_type->m_type == AST::decl_typeType::TypeDoublePrecision) {
-                    a_kind = 8;
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
-                        a_kind, dims.p, dims.size()));
-                    if (is_pointer) {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc,
-                            type));
-                    }
-                } else if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
-                        a_kind, dims.p, dims.size()));
-                    if (is_pointer) {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc,
-                            type));
-                    }
-                } else if (sym_type->m_type == AST::decl_typeType::TypeLogical) {
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4,
-                        dims.p, dims.size()));
-                    if (is_pointer) {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc,
-                            type));
-                    }
-                } else if (sym_type->m_type == AST::decl_typeType::TypeComplex) {
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc,
-                        a_kind, dims.p, dims.size()));
-                    if (is_pointer) {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc,
-                            type));
-                    }
-                } else if (sym_type->m_type == AST::decl_typeType::TypeCharacter) {
-                    int a_len = -10;
-                    ASR::expr_t *len_expr = nullptr;
-                    TypeMissingData* char_data = al.make_new<TypeMissingData>();
-                    // TODO: take into account m_kind->m_id and all kind items
-                    if (sym_type->m_kind != nullptr) {
-                        switch (sym_type->m_kind->m_type) {
-                            case (AST::kind_item_typeType::Value) : {
-                                LFORTRAN_ASSERT(sym_type->m_kind->m_value != nullptr);
-                                if( sym_type->m_kind->m_value->type == AST::exprType::FuncCallOrArray ) {
-                                    char_data->expr = sym_type->m_kind->m_value;
-                                    char_data->scope = current_scope;
-                                    char_data->sym_type = current_symbol;
-                                    a_len = 1;
-                                } else {
-                                    this->visit_expr(*sym_type->m_kind->m_value);
-                                    ASR::expr_t* len_expr0 = LFortran::ASRUtils::EXPR(tmp);
-                                    a_len = ASRUtils::extract_len<SemanticError>(len_expr0, x.base.base.loc);
-                                    if (a_len == -3) {
-                                        len_expr = len_expr0;
-                                    }
-                                }
-                                break;
-                            }
-                            case (AST::kind_item_typeType::Star) : {
-                                LFORTRAN_ASSERT(sym_type->m_kind->m_value == nullptr);
-                                a_len = -1;
-                                break;
-                            }
-                            case (AST::kind_item_typeType::Colon) : {
-                                LFORTRAN_ASSERT(sym_type->m_kind->m_value == nullptr);
-                                a_len = -2;
-                                break;
-                            }
-                        }
-                    } else {
-                        a_len = 1; // The default len of "character :: x" is 1
-                    }
-                    LFORTRAN_ASSERT(a_len != -10)
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, len_expr,
-                        dims.p, dims.size()));
-                    if( char_data->scope != nullptr ) {
-                        char_data->type = type;
-                        type_info.push_back(char_data);
-                    }
-                } else if (sym_type->m_type == AST::decl_typeType::TypeType) {
-                    LFORTRAN_ASSERT(sym_type->m_name);
-                    std::string derived_type_name = to_lower(sym_type->m_name);
-                    ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
-                    if( is_c_ptr(v, derived_type_name) ) {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
-                    } else {
-                        if (!v) {
-                            throw SemanticError("Derived type '"
-                                + derived_type_name + "' not declared", x.base.base.loc);
-
-                        }
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Derived_t(al, x.base.base.loc, v,
-                            dims.p, dims.size()));
-                    }
-                } else if (sym_type->m_type == AST::decl_typeType::TypeClass) {
-                    std::string derived_type_name;
-                    if( !sym_type->m_name ) {
-                        derived_type_name = "~abstract_type";
-                    } else {
-                        derived_type_name = to_lower(sym_type->m_name);
-                    }
-                    ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
-                    if( !v ) {
-                        if( derived_type_name != "~abstract_type" ) {
-                            throw SemanticError("Derived type '" + derived_type_name
-                                                + "' not declared", x.base.base.loc);
-                        }
-                        SymbolTable *parent_scope = current_scope;
-                        current_scope = al.make_new<SymbolTable>(parent_scope);
-                        ASR::asr_t* dtype = ASR::make_DerivedType_t(al, x.base.base.loc, current_scope,
-                                                        s2c(al, to_lower(derived_type_name)), nullptr, 0,
-                                                        ASR::abiType::Source, dflt_access, nullptr);
-                        v = ASR::down_cast<ASR::symbol_t>(dtype);
-                        parent_scope->add_symbol(derived_type_name, v);
-                        current_scope = parent_scope;
-                    }
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Class_t(al,
-                        x.base.base.loc, v, dims.p, dims.size()));
-                } else {
-                    throw SemanticError("Type not implemented yet.",
-                         x.base.base.loc);
-                }
+                ASR::ttype_t *type = determine_type(x.base.base.loc, x.m_vartype, is_pointer, dims);
+                
                 ASR::expr_t* init_expr = nullptr;
                 ASR::expr_t* value = nullptr;
                 if (s.m_initializer != nullptr) {
@@ -1344,6 +1222,164 @@ public:
                 }
             } // for m_syms
         }
+    }
+
+    ASR::ttype_t* determine_type(const Location &loc, AST::decl_attribute_t* decl_attribute, bool is_pointer, Vec<ASR::dimension_t>& dims){
+        AST::AttrType_t *sym_type = AST::down_cast<AST::AttrType_t>(decl_attribute);
+        ASR::ttype_t *type;
+
+        int a_kind = 4;
+        if (sym_type->m_type != AST::decl_typeType::TypeCharacter &&
+            sym_type->m_kind != nullptr &&
+            sym_type->m_kind->m_value != nullptr) {
+            this->visit_expr(*sym_type->m_kind->m_value);
+            ASR::expr_t* kind_expr = LFortran::ASRUtils::EXPR(tmp);
+            a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
+        }
+        if (sym_type->m_type == AST::decl_typeType::TypeReal) {
+            type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+                a_kind, dims.p, dims.size()));
+            if (is_pointer) {
+                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                    type));
+            }
+        } else if (sym_type->m_type == AST::decl_typeType::TypeDoublePrecision) {
+            a_kind = 8;
+            type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+                a_kind, dims.p, dims.size()));
+            if (is_pointer) {
+                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                    type));
+            }
+        } else if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
+            type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+                a_kind, dims.p, dims.size()));
+            if (is_pointer) {
+                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                    type));
+            }
+        } else if (sym_type->m_type == AST::decl_typeType::TypeLogical) {
+            type = LFortran::ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4,
+                dims.p, dims.size()));
+            if (is_pointer) {
+                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                    type));
+            }
+        } else if (sym_type->m_type == AST::decl_typeType::TypeComplex) {
+            type = LFortran::ASRUtils::TYPE(ASR::make_Complex_t(al, loc,
+                a_kind, dims.p, dims.size()));
+            if (is_pointer) {
+                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                    type));
+            }
+        } else if (sym_type->m_type == AST::decl_typeType::TypeCharacter) {
+            int a_len = -10;
+            ASR::expr_t *len_expr = nullptr;
+            TypeMissingData* char_data = al.make_new<TypeMissingData>();
+            // TODO: take into account m_kind->m_id and all kind items
+            if (sym_type->m_kind != nullptr) {
+                switch (sym_type->m_kind->m_type) {
+                    case (AST::kind_item_typeType::Value) : {
+                        LFORTRAN_ASSERT(sym_type->m_kind->m_value != nullptr);
+                        if( sym_type->m_kind->m_value->type == AST::exprType::FuncCallOrArray ) {
+                            char_data->expr = sym_type->m_kind->m_value;
+                            char_data->scope = current_scope;
+                            char_data->sym_type = current_symbol;
+                            a_len = 1;
+                        } else {
+                            this->visit_expr(*sym_type->m_kind->m_value);
+                            ASR::expr_t* len_expr0 = LFortran::ASRUtils::EXPR(tmp);
+                            a_len = ASRUtils::extract_len<SemanticError>(len_expr0, loc);
+                            if (a_len == -3) {
+                                len_expr = len_expr0;
+                            }
+                        }
+                        break;
+                    }
+                    case (AST::kind_item_typeType::Star) : {
+                        LFORTRAN_ASSERT(sym_type->m_kind->m_value == nullptr);
+                        a_len = -1;
+                        break;
+                    }
+                    case (AST::kind_item_typeType::Colon) : {
+                        LFORTRAN_ASSERT(sym_type->m_kind->m_value == nullptr);
+                        a_len = -2;
+                        break;
+                    }
+                }
+            } else {
+                a_len = 1; // The default len of "character :: x" is 1
+            }
+            LFORTRAN_ASSERT(a_len != -10)
+            type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, a_len, len_expr,
+                dims.p, dims.size()));
+            if( char_data->scope != nullptr ) {
+                char_data->type = type;
+                type_info.push_back(char_data);
+            }
+        } else if (sym_type->m_type == AST::decl_typeType::TypeType) {
+            LFORTRAN_ASSERT(sym_type->m_name);
+            std::string derived_type_name = to_lower(sym_type->m_name);
+            bool type_param = false;
+            if(is_template){
+                for(size_t i = 0; i < current_template_type_parameters.size(); i++){
+                    ASR::TypeParameter_t* param = ASR::down_cast2<ASR::TypeParameter_t>(current_template_type_parameters[i]);
+                    std::string name = std::string(param->m_param);
+
+                    if(name.compare(derived_type_name) == 0){
+                        current_procedure_used_type_parameter_indices.insert(i);
+                        is_current_procedure_templated = true;
+                        type_param = true;
+                        type = LFortran::ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc, 
+                                                        s2c(al, derived_type_name), nullptr, 0));
+                    }
+                }
+            }
+
+            ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
+            if(!type_param){
+                if( is_c_ptr(v, derived_type_name) ) {
+                    type = LFortran::ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+                } else {
+                    if (!v) {
+                        throw SemanticError("Derived type '"
+                            + derived_type_name + "' not declared", loc);
+
+                    }
+                    type = LFortran::ASRUtils::TYPE(ASR::make_Derived_t(al, loc, v,
+                        dims.p, dims.size()));
+                }
+            }
+        } else if (sym_type->m_type == AST::decl_typeType::TypeClass) {
+            std::string derived_type_name;
+            if( !sym_type->m_name ) {
+                derived_type_name = "~abstract_type";
+            } else {
+                derived_type_name = to_lower(sym_type->m_name);
+            }
+            ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
+            if( !v ) {
+                if( derived_type_name != "~abstract_type" ) {
+                    throw SemanticError("Derived type '" + derived_type_name
+                                        + "' not declared", loc);
+                }
+                SymbolTable *parent_scope = current_scope;
+                current_scope = al.make_new<SymbolTable>(parent_scope);
+                ASR::asr_t* dtype = ASR::make_DerivedType_t(al, loc, current_scope,
+                                                s2c(al, to_lower(derived_type_name)), nullptr, 0,
+                                                ASR::abiType::Source, dflt_access, nullptr);
+                v = ASR::down_cast<ASR::symbol_t>(dtype);
+                parent_scope->add_symbol(derived_type_name, v);
+                current_scope = parent_scope;
+            }
+            type = LFortran::ASRUtils::TYPE(ASR::make_Class_t(al,
+                loc, v, dims.p, dims.size()));
+        } else {
+            throw SemanticError("Type not implemented yet.",
+                    loc);
+        }
+
+        return type;
     }
 
 

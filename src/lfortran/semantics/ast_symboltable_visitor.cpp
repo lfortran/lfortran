@@ -92,16 +92,6 @@ public:
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options)
       : CommonVisitor(al, symbol_table, diagnostics, compiler_options) {}
 
-
-    ASR::symbol_t* resolve_symbol(const Location &loc, const std::string &sub_name) {
-        SymbolTable *scope = current_scope;
-        ASR::symbol_t *sub = scope->resolve_symbol(sub_name);
-        if (!sub) {
-            throw SemanticError("Symbol '" + sub_name + "' not declared", loc);
-        }
-        return sub;
-    }
-
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
             current_scope = al.make_new<SymbolTable>(nullptr);
@@ -343,6 +333,7 @@ public:
             parent_scope->erase_symbol(sym_name);
             sym_name = sym_name + "~genericprocedure";
         }
+
 
         tmp = ASR::make_Function_t(
             al, x.base.base.loc,
@@ -614,10 +605,16 @@ public:
         current_procedure_args.clear();
         current_procedure_abi_type = ASR::abiType::Source;
         current_symbol = -1;
+        current_procedure_used_type_parameter_indices.clear();
+        is_current_procedure_templated = false;
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
         visit_DeclarationUtil(x);
+    }
+
+    void visit_Instantiate(const AST::Instantiate_t &){
+        
     }
 
     void visit_DerivedType(const AST::DerivedType_t &x) {
