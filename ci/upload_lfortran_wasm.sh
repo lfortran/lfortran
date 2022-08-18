@@ -24,11 +24,10 @@ mkdir $HOME/repos
 cd $HOME/repos
 
 git clone ${deploy_repo_pull} wasm_builds
-mkdir -p wasm_builds/docs/${dest_dir}
-cd wasm_builds/docs/${dest_dir}
-mkdir ${git_hash}
-cp $D/src/bin/lfortran.js ${git_hash}/lfortran.js
-cp $D/src/bin/lfortran.wasm ${git_hash}/lfortran.wasm
+mkdir -p wasm_builds/docs/${dest_dir}/${git_hash}
+cd wasm_builds/docs
+cp $D/src/bin/lfortran.js ${dest_dir}/${git_hash}/lfortran.js
+cp $D/src/bin/lfortran.wasm ${dest_dir}/${git_hash}/lfortran.wasm
 
 python $D/ci/wasm_builds_update_json.py ${dest_dir} ${lfortran_version} ${git_hash}
 
