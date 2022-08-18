@@ -5,15 +5,17 @@
     (type (;3;) (func (param f64) (result)))
     (type (;4;) (func (param i32 i32) (result)))
     (type (;5;) (func (param) (result)))
-    (type (;6;) (func (param) (result)))
+    (type (;6;) (func (param i32) (result)))
+    (type (;7;) (func (param) (result)))
     (import "js" "print_i32" (func (;0;) (type 0)))
     (import "js" "print_i64" (func (;1;) (type 1)))
     (import "js" "print_f32" (func (;2;) (type 2)))
     (import "js" "print_f64" (func (;3;) (type 3)))
     (import "js" "print_str" (func (;4;) (type 4)))
     (import "js" "flush_buf" (func (;5;) (type 5)))
-    (import "js" "memory" (memory (;0;) 10 100))
-    (func $6 (type 6) (param) (result)
+    (import "js" "set_exit_code" (func (;6;) (type 6)))
+    (import "js" "memory" (memory (;0;) 100 100))
+    (func $7 (type 7) (param) (result)
         (local i32 i32 i32 i32)
         i32.const 0
         local.set 3
@@ -52,7 +54,7 @@
             call 4
             call 5
             i32.const 1
-            call 0
+            call 6
             unreachable
         end
         local.get 3
@@ -115,7 +117,7 @@
             call 4
             call 5
             i32.const 1
-            call 0
+            call 6
             unreachable
         end
         local.get 0
@@ -172,15 +174,17 @@
             call 4
             call 5
             i32.const 1
-            call 0
+            call 6
             unreachable
         end
         local.get 0
         call 0
         call 5
+        i32.const 0
+        call 6
         return
     )
-    (export "_lcompilers_main" (func $6))
+    (export "_lcompilers_main" (func $7))
     (data (;0;) (i32.const 0) "ERROR STOP")
     (data (;1;) (i32.const 10) "ERROR STOP")
     (data (;2;) (i32.const 20) "ERROR STOP")

@@ -1206,6 +1206,26 @@ public:
         tmp = const_tuple;
     }
 
+    void visit_IntegerBitLen(const ASR::IntegerBitLen_t& x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        llvm::Value *int_val = tmp;
+        int int_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        std::string runtime_func_name = "_lpython_bit_length" + std::to_string(int_kind);
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getInt32Ty(context), {
+                        getIntType(int_kind)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        tmp = builder->CreateCall(fn, {int_val});
+    }
+
     void visit_ListAppend(const ASR::ListAppend_t& x) {
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
@@ -1281,7 +1301,10 @@ public:
             uint32_t v_h = get_hash((ASR::asr_t*)v);
             LFORTRAN_ASSERT(llvm_symtab.find(v_h) != llvm_symtab.end());
             array = llvm_symtab[v_h];
-            is_argument = v->m_intent == ASRUtils::intent_in || v->m_intent == ASRUtils::intent_out;
+            is_argument = (v->m_intent == ASRUtils::intent_in)
+                 || (v->m_intent == ASRUtils::intent_out)
+                 || (v->m_intent == ASRUtils::intent_inout)
+                 || (v->m_intent == ASRUtils::intent_unspecified);
         } else {
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
@@ -5318,7 +5341,10 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         Platform platform, const std::string &run_fn)
 {
     ASRToLLVMVisitor v(al, context, platform, diagnostics);
-    pass_manager.apply_passes(al, &asr, run_fn, false);
+    LCompilers::PassOptions pass_options;
+    pass_options.run_fun = run_fn;
+    pass_options.always_run = false;
+    pass_manager.apply_passes(al, &asr, pass_options);
 
     // Uncomment for debugging the ASR after the transformation
     // std::cout << pickle(asr, true, true, true) << std::endl;

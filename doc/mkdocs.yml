@@ -1,26 +1,97 @@
 site_name: LFortran Documentation
+site_url: https://docs.lfortran.org/
+
+repo_name: lfortran/lfortran
+repo_url: https://github.com/lfortran/lfortran
+
+docs_dir: src
+
+theme:
+    name: material
+    palette:
+        - scheme: default
+          primary: orange
+          toggle:
+              icon: material/brightness-7
+              name: Switch to dark mode
+
+        - scheme: slate
+          primary: orange
+          toggle:
+              icon: material/brightness-4
+              name: Switch to light mode
+
+    highlightjs: true
+    hljs_languages:
+        - fortran
+
+    include_search_page: false
+    search_index_only: true
+
+    language: en
+    features:
+        - navigation.indexes
+        - navigation.sections
+        - navigation.tabs
+        - navigation.top
+        - navigation.tracking
+        - search.highlight
+        - search.share
+        - search.suggest
+        - toc.follow
+
+plugins:
+    - search
+
+extra:
+    social:
+        - icon: fontawesome/brands/github
+          link: https://github.com/lfortran
+
+markdown_extensions:
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
+
 
 nav:
     - Home: index.md
-    - installation.md
-    - language.md
-    - progress.md
+    - Getting started:
+        - Installation: installation.md
+        - Language: language.md
+    - LFortran Development Status:
+        - Progress: progress.md
     - Developer's Guide:
-        - design.md
-        - developer_tutorial.md
-        - ast_and_asr.md
-        - contributing.md
+        - LFortran Design: design.md
+        - Developer Tutorial: developer_tutorial.md
+        - Difference between an AST and ASR: ast_and_asr.md
+        - Contributing: contributing.md
     - LFortran Intrinsics:
         - Array Intrinsic Functions:
-            - intrinsics/array/size.md
             - intrinsics/array/allocated.md
+            - intrinsics/array/cshift.md
+            - intrinsics/array/size.md
         - Bit Intrinsic Functions:
+            - intrinsics/bit/bge.md
+            - intrinsics/bit/bgt.md
+            - intrinsics/bit/bit_size.md
+            - intrinsics/bit/ble.md
+            - intrinsics/bit/blt.md
+            - intrinsics/bit/btest.md
             - intrinsics/bit/shiftl.md
             - intrinsics/bit/shiftr.md
         - Character Intrinsic Functions:
             - intrinsics/character/achar.md
             - intrinsics/character/adjustl.md
             - intrinsics/character/adjustr.md
+            - intrinsics/character/char.md
             - intrinsics/character/lge.md
             - intrinsics/character/len_trim.md
         - Kind Type Intrinsic Functions:
@@ -40,27 +111,27 @@ nav:
             - intrinsics/numeric/aint.md
             - intrinsics/numeric/anint.md
             - intrinsics/numeric/ceiling.md
+            - intrinsics/numeric/cmplx.md
+            - intrinsics/numeric/conjg.md
+            - intrinsics/numeric/digits.md
+            - intrinsics/numeric/dim.md
+            - intrinsics/numeric/epsilon.md
+            - intrinsics/numeric/erf.md
+            - intrinsics/numeric/erfc.md
+            - intrinsics/numeric/exp.md
             - intrinsics/numeric/floor.md
+            - intrinsics/numeric/gamma.md
             - intrinsics/numeric/mod.md
         - Miscellaneous Intrinsic Functions:
+            - intrinsics/misc/command_argument_count.md
+            - intrinsics/misc/cpu_time.md
+            - intrinsics/misc/date_and_time.md
             - intrinsics/misc/new_line.md
 
 # Until https://gitlab.com/lfortran/lfortran/issues/89 is fixed, we disable the
 # "Edit on GitLab" link:
 #repo_url: https://gitlab.com/lfortran/lfortran
 #edit_uri: blob/master/doc/src
-
-markdown_extensions:
-  - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
-  - pymdownx.highlight:
-      anchor_linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.superfences
-  - pymdownx.arithmatex:
-      generic: true
 
 extra_css:
     - ansi.css
@@ -70,12 +141,4 @@ extra_javascript:
     - https://polyfill.io/v3/polyfill.min.js?features=es6
     - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
-theme:
-    name: material
-    palette:
-      primary: orange
-    highlightjs: true
-    hljs_languages:
-        - fortran
 
-docs_dir: src

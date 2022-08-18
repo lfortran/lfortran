@@ -1,4 +1,4 @@
-# asin(x)
+# asin(x): Trigonometric Arcsine
 
 Trigonometric arcsine function.
 

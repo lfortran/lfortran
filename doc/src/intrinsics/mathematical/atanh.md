@@ -1,4 +1,4 @@
-# atanh(x)
+# atanh(x): Inverse Hyperbolic Tangent
 
 Inverse hyperbolic tangent function.
 

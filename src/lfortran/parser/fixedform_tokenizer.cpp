@@ -267,7 +267,8 @@ std::vector<std::string> declarators{
             "dimension",
             "character",
             "logical",
-            "bytes"
+            "bytes",
+            "data"
         };
 
 std::vector<std::string> lines{};
@@ -300,7 +301,9 @@ struct FixedFormRecursiveDescent {
     std::vector<Location> locations;
 
     FixedFormRecursiveDescent(diag::Diagnostics &diag,
-        Allocator &m_a) : diag{diag}, m_a{m_a} {};
+        Allocator &m_a) : diag{diag}, m_a{m_a} {
+            t.fixed_form = true;
+        };
 
     // Auxiliary functions:
 
@@ -334,7 +337,7 @@ struct FixedFormRecursiveDescent {
         });
     }
 
-    bool eat_label(unsigned char *&cur) {
+    int64_t eat_label(unsigned char *&cur) {
         // consume label if it is available
         // for line beginnings
         const int reserved_cols = 6;
@@ -362,12 +365,12 @@ struct FixedFormRecursiveDescent {
             // int token = yytokentype::TK_LABEL;
             // tokens.push_back(token);
             cur+=reserved_cols;
-            return true;
+            return y.int_suffix.int_n.n;
         }
-        return false;
+        return -1;
     }
 
-    bool eat_label_inline(unsigned char *&cur) {
+    int64_t eat_label_inline(unsigned char *&cur) {
         // consume label if it is available
         auto start = cur;
         auto cur2 = cur;
@@ -393,9 +396,9 @@ struct FixedFormRecursiveDescent {
             loc.last = cur - string_start + label.size();
             locations.push_back(loc);
             cur+=count+1; // TODO revisit
-            return true;
+            return yy.int_suffix.int_n.n;
         }
-        return false;
+        return -1;
     }
 
     void next_line(unsigned char *&cur) {
@@ -436,6 +439,11 @@ struct FixedFormRecursiveDescent {
     // `cur` unchanged).
 
 
+    /*
+     * The line must start with `chop` which is returned as a keyword
+     * (not an identifier).
+     * Then the rest of the line is tokenized, including the new line.
+     */
     void tokenize_line(const std::string &chop, unsigned char *&cur) {
         YYSTYPE y1;
         if (chop != "") {
@@ -624,12 +632,48 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "return")) {
+            tokenize_line("return", cur);
+            return true;
+        }
+
+        if (next_is(cur, "common")) {
+            tokenize_line("common", cur);
+            return true;
+        }
+
+        if (next_is(cur, "save")) {
+            tokenize_line("save", cur);
+            return true;
+        }
+
+        if (next_is(cur, "entry")) {
+            tokenize_line("entry", cur);
+            return true;
+        }
+
+        if (next_is(cur, "implicit")) {
+            tokenize_line("implicit", cur);
+            return true;
+        }
+
         return false;
     }
 
-    bool find_terminal(unsigned char *&cur) {
-        // TODO: check that this label is the same label as the do loop label
-        eat_label(cur);
+    bool lex_do_terminal(unsigned char *&cur, int64_t do_label) {
+        if (*cur == '\0') {
+            Location loc;
+            loc.first = 1;
+            loc.last = 1;
+            throw parser_local::TokenizerError("End of file inside a do loop", loc);
+        }
+        int64_t label = eat_label(cur);
+        bool label_match = false;
+        if (label != -1) {
+            if (label == do_label) {
+                label_match = true;
+            }
+        }
         if (next_is(cur, "enddo")) {
             tokenize_line("enddo", cur);
             return true;
@@ -637,6 +681,28 @@ struct FixedFormRecursiveDescent {
             // the usual terminal statement for do loops
             tokenize_line("continue", cur);
             //only append iff (tokens[tokens.size()-2] == yytokentype::TK_LABEL && tokens[tokens.size()-1 == yytokentype::KW_CONTINUE])
+
+            // return an explicit "end do" token here
+            std::string l("enddo");
+            YYSTYPE y2;
+            y2.string.from_str(m_a, l);
+            stypes.push_back(y2);
+            tokens.push_back(yytokentype::KW_END_DO);
+            Location loc;
+            loc.first = t.cur - string_start;
+            loc.last = t.cur - string_start + l.size();
+            locations.push_back(loc);
+            // And a new line
+            l = "\n";
+            y2.string.from_str(m_a, l);
+            stypes.push_back(y2);
+            tokens.push_back(yytokentype::TK_NEWLINE);
+            loc.first = t.cur - string_start;
+            loc.last = t.cur - string_start + 1;
+            locations.push_back(loc);
+            return true;
+        } else if (label_match) {
+            lex_body_statement(cur);
 
             // return an explicit "end do" token here
             std::string l("enddo");
@@ -676,13 +742,15 @@ struct FixedFormRecursiveDescent {
         loc.last = cur - string_start + l.size();
         locations.push_back(loc);
         cur += l.size();
-        if (eat_label_inline(cur)) {
+        int64_t do_label = eat_label_inline(cur);
+        if (do_label != -1) {
             cur--; // un-advance as eat_label_inline moves 1 char too far when making checks
         }
         tokenize_line("", cur); // tokenize rest of line where `do` starts
-        while (lex_body_statement(cur));
-        if (!find_terminal(cur)) {
-            error(cur, "Expecting termination symbol for do loop");
+        while (!lex_do_terminal(cur, do_label)) {
+            if (!lex_body_statement(cur)) {
+                throw parser_local::TokenizerError("End of file inside a do loop 2", loc);
+            };
         }
     }
 
@@ -720,9 +788,6 @@ struct FixedFormRecursiveDescent {
     void lex_subroutine(unsigned char *&cur) {
         while(lex_body_statement(cur));
         eat_label(cur);
-        if (next_is(cur, "return")) {
-            tokenize_line("", cur);
-        }
         if (next_is(cur, "endsubroutine")) {
             tokenize_line("endsubroutine", cur);
         } else if (next_is(cur, "end")) {
@@ -732,7 +797,8 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    void lex_program(unsigned char *&cur) {
+    void lex_program(unsigned char *&cur, bool explicit_program) {
+        if (explicit_program) tokenize_line("program", cur);
         while(lex_body_statement(cur));
         eat_label(cur);
         if (next_is(cur, "endprogram")) {
@@ -747,9 +813,6 @@ struct FixedFormRecursiveDescent {
     void lex_function(unsigned char *&cur) {
         while(lex_body_statement(cur));
         eat_label(cur);
-        if (next_is(cur, "return")) {
-            tokenize_line("return", cur);
-        }
 
         if (next_is(cur, "endfunction")) {
             tokenize_line("endfunction", cur);
@@ -810,7 +873,7 @@ struct FixedFormRecursiveDescent {
         return true;
     }
 
-    bool add_implicit_program(unsigned char *&cur) {
+    bool is_implicit_program(unsigned char *cur) {
         auto cpy = cur;
         auto prev = cpy;
         for (;;) {
@@ -819,6 +882,41 @@ struct FixedFormRecursiveDescent {
             prev = cpy;
         }
         if (next_is(prev, "endprogram\n") || next_is(prev, "end\n")) {
+            return true;
+        }
+        return false;
+    }
+
+    bool is_program(unsigned char *cur) {
+        return next_is(cur, "program");
+    }
+
+
+    void lex_global_scope_item(unsigned char *&cur) {
+        // we can define a global assignment
+        unsigned char *nline = cur; next_line(nline);
+        // eat_label(cur);
+        std::vector<std::string> program_keywords{};
+        std::vector<std::string> subroutine_keywords{"recursive", "pure",
+            "elemental"};
+        std::vector<std::string> function_keywords{"recursive", "pure",
+            "elemental",
+            "real", "character", "complex", "integer", "logical",
+            "doubleprecision"};
+
+        if (next_is(cur, "include")) tokenize_line("include", cur);
+        if (is_program(cur)) {
+            lex_program(cur, true);
+        } else if (is_declaration(cur, "subroutine", subroutine_keywords)) {
+            lex_subroutine(cur);
+        } else if (is_declaration(cur, "function", function_keywords)) {
+            lex_function(cur);
+        /* TODO
+        }  else if (is_declaration(cur, "blockdata", blockdata_keywords)) {
+            lex_block_data(cur);
+        } 
+        */
+        } else if (is_implicit_program(cur)) {
             std::string prog{"program"};
             // TODO -- mangling
             std::string name{"implicit_program_lfortran"};
@@ -828,50 +926,22 @@ struct FixedFormRecursiveDescent {
             stypes.push_back(y);
             tokens.push_back(yytokentype::KW_PROGRAM);
             Location loc;
-            loc.first = prev - string_start;
-            loc.last = prev - string_start + prog.size();
+            loc.first = cur - string_start;
+            loc.last = cur - string_start + prog.size();
             locations.push_back(loc);
             y.string.from_str(m_a, name);
             stypes.push_back(y);
             tokens.push_back(yytokentype::TK_NAME);
-            loc.first = prev - string_start + prog.size();
-            loc.last = prev - string_start + prog.size() + name.size();
+            loc.first = cur - string_start + prog.size();
+            loc.last = cur - string_start + prog.size() + name.size();
             locations.push_back(loc);
             y.string.from_str(m_a, "\n");
             stypes.push_back(y);
             tokens.push_back(yytokentype::TK_NEWLINE);
-            loc.first = prev - string_start + prog.size() + name.size();
-            loc.last = prev - string_start + prog.size() + name.size() + 1;
+            loc.first = cur - string_start + prog.size() + name.size();
+            loc.last = cur - string_start + prog.size() + name.size() + 1;
             locations.push_back(loc);
-            lex_program(cur);
-            return true;
-        }
-        return false;
-    }
-
-
-    void lex_global_scope_item(unsigned char *&cur) {
-        // we can define a global assignment
-        unsigned char *nline = cur; next_line(nline);
-        // eat_label(cur);
-        std::vector<std::string> program_keywords{};
-        std::vector<std::string> subroutine_keywords{"recursive"};
-        std::vector<std::string> function_keywords{"recursive", "result", "character", "complex", "integer", "doubleprecision", "external"};
-
-        if (next_is(cur, "include")) tokenize_line("include", cur);
-        if (is_declaration(cur, "program", program_keywords)) {
-            lex_program(cur);
-        } else if (is_declaration(cur, "subroutine", subroutine_keywords)) {
-            lex_subroutine(cur);
-        } else if (is_declaration(cur, "function", function_keywords)) {
-            lex_function(cur);
-        }
-        /* TODO
-          else if (is_declaration(cur, "blockdata", blockdata_keywords)) {
-            lex_block_data(cur);
-        } 
-        */ else if (add_implicit_program(cur)) {
-            // give compiler a chance for implicitly defined programs
+            lex_program(cur, false);
         } else {
             error(cur, "ICE: Cannot recognize global scope entity");
         }

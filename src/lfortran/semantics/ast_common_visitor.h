@@ -702,7 +702,7 @@ public:
             // TODO:
             // If there is an active "implicit real" construct in the current
             // scope, we need to use it.
-            // Otherwise: 
+            // Otherwise:
             if (compiler_options.implicit_typing) {
                 ASR::intentType intent;
                 if (std::find(current_procedure_args.begin(),
@@ -903,7 +903,21 @@ public:
                     std::string sym = to_lower(s.m_name);
                     ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
                     // get actual variable from SymTab, not the current line
-                    if (get_sym == nullptr) throw SemanticError("Cannot set dimension for undeclared variable", x.base.base.loc);
+                    if (get_sym == nullptr) {
+                        if (compiler_options.implicit_typing) {
+                            ASR::intentType intent;
+                            if (std::find(current_procedure_args.begin(),
+                                    current_procedure_args.end(), sym) !=
+                                    current_procedure_args.end()) {
+                                intent = LFortran::ASRUtils::intent_unspecified;
+                            } else {
+                                intent = LFortran::ASRUtils::intent_local;
+                            }
+                            get_sym = declare_implicit_variable(s.loc, sym, intent);
+                        } else {
+                            throw SemanticError("Cannot set dimension for undeclared variable", x.base.base.loc);
+                        }
+                    }
                     if (ASR::is_a<ASR::Variable_t>(*get_sym)) {
                         Vec<ASR::dimension_t> dims;
                         dims.reserve(al, 0);
@@ -915,6 +929,28 @@ public:
                     } else {
                         throw SemanticError("Cannot attribute non-variable type with dimension", x.base.base.loc);
                     }
+                }
+            } else if (AST::is_a<AST::AttrData_t>(*x.m_attributes[0])
+                    && x.n_attributes == 1 && x.n_syms == 0) {
+                // Example:
+                // data x, y / 1.0, 2.0 /
+                AST::AttrData_t *a = AST::down_cast<AST::AttrData_t>(x.m_attributes[0]);
+                if (a->n_object != a->n_value) {
+                    throw SemanticError("The number of values and variables must match in a data statement",
+                        x.base.base.loc);
+                }
+                for (size_t i=0;i<a->n_object;++i) {
+                    this->visit_expr(*a->m_object[i]);
+                    ASR::expr_t* object = LFortran::ASRUtils::EXPR(tmp);
+                    this->visit_expr(*a->m_value[i]);
+                    ASR::expr_t* value = LFortran::ASRUtils::EXPR(tmp);
+                    // The parser ensures object is a TK_NAME
+                    // The `visit_expr` ensures it resolves as an expression
+                    // which must be a `Var_t` pointing to a `Variable_t`,
+                    // so no checks are needed:
+                    ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
+                    ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+                    v2->m_value = value;
                 }
             } else {
                 throw SemanticError("Attribute declaration not supported",
@@ -2310,6 +2346,57 @@ public:
         return ASR::make_PointerToCPtr_t(al, x.base.base.loc, v_Var, type, nullptr);
     }
 
+    ASR::asr_t* handle_intrinsic_float(Allocator &al, Vec<ASR::call_arg_t> args,
+                                        const Location &loc) {
+        ASR::expr_t *arg = nullptr, *value = nullptr;
+        ASR::ttype_t *type = nullptr;
+        if (args.size() > 0) {
+            arg = args[0].m_value;
+            type = ASRUtils::expr_type(arg);
+        }
+        ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+                                    8, nullptr, 0));
+        if (!arg) {
+            return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
+        }
+        if (ASRUtils::is_integer(*type)) {
+            if (ASRUtils::expr_value(arg) != nullptr) {
+                double dval = ASR::down_cast<ASR::IntegerConstant_t>(
+                                        ASRUtils::expr_value(arg))->m_n;
+                value =  ASR::down_cast<ASR::expr_t>(make_RealConstant_t(al,
+                                loc, dval, to_type));
+            }
+            return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
+                al, loc, arg, ASR::cast_kindType::IntegerToReal,
+                to_type, value));
+        } else if (ASRUtils::is_logical(*type)) {
+            if (ASRUtils::expr_value(arg) != nullptr) {
+                double dval = ASR::down_cast<ASR::LogicalConstant_t>(
+                                        ASRUtils::expr_value(arg))->m_value;
+                value =  ASR::down_cast<ASR::expr_t>(make_RealConstant_t(al,
+                                loc, dval, to_type));
+            }
+            return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
+                al, loc, arg, ASR::cast_kindType::LogicalToReal,
+                to_type, value));
+        } else if (ASRUtils::is_real(*type)) {
+            // float() always returns 64-bit floating point numbers.
+            if (ASRUtils::extract_kind_from_ttype_t(type) != 8) {
+                return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
+                    al, loc, arg, ASR::cast_kindType::RealToReal,
+                    to_type, value));
+            }
+            return (ASR::asr_t *)arg;
+        } else {
+            std::string stype = ASRUtils::type_to_str(type);
+            throw SemanticError(
+                "Conversion of '" + stype + "' to float is not Implemented",
+                loc);
+        }
+        // TODO: Make this work if the argument is, let's say, a class.
+        return nullptr;
+    }
+
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         SymbolTable *scope = current_scope;
         std::string var_name = to_lower(x.m_func);
@@ -2327,6 +2414,12 @@ public:
             v = current_scope->resolve_symbol(var_name);
         }
         if (!v) {
+            if (var_name == "float" || var_name == "dble") {
+                Vec<ASR::call_arg_t> args;
+                visit_expr_list(x.m_args, x.n_args, args);
+                tmp = handle_intrinsic_float(al, args, x.base.base.loc);
+                return;
+            }
             bool is_function = true;
             v = intrinsic_as_node(x, is_function);
             if( !is_function ) {

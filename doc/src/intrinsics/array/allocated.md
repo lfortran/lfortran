@@ -1,4 +1,4 @@
-# allocated(x)
+# allocated(x): Status Check
 
 Logical status of an allocatable integer.
 

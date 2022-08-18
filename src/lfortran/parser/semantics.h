@@ -1454,22 +1454,25 @@ return make_Program_t(al, a_loc,
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr)
 
 void add_ws_warning(const Location &loc,
-        LFortran::diag::Diagnostics &diagnostics, int end_token) {
-    if (end_token == yytokentype::KW_ENDDO) {
-        diagnostics.parser_style_label(
-            "Use 'end do' instead of 'enddo'",
-            {loc},
-            "help: write this as 'end do'");
-    } else if (end_token == yytokentype::KW_ENDIF) {
-        diagnostics.parser_style_label(
-            "Use 'end if' instead of 'endif'",
-            {loc},
-            "help: write this as 'end if'");
+        LFortran::diag::Diagnostics &diagnostics, bool fixed_form,
+        int end_token) {
+    if (!fixed_form) {
+        if (end_token == yytokentype::KW_ENDDO) {
+            diagnostics.parser_style_label(
+                "Use 'end do' instead of 'enddo'",
+                {loc},
+                "help: write this as 'end do'");
+        } else if (end_token == yytokentype::KW_ENDIF) {
+            diagnostics.parser_style_label(
+                "Use 'end if' instead of 'endif'",
+                {loc},
+                "help: write this as 'end if'");
+        }
     }
 }
 
-#define WARN_ENDDO(l) add_ws_warning(l, p.diag, KW_ENDDO)
-#define WARN_ENDIF(l) add_ws_warning(l, p.diag, KW_ENDIF)
+#define WARN_ENDDO(l) add_ws_warning(l, p.diag, p.fixed_form, KW_ENDDO)
+#define WARN_ENDIF(l) add_ws_warning(l, p.diag, p.fixed_form, KW_ENDIF)
 
 #define DO1(trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
         nullptr, nullptr, nullptr, nullptr, \

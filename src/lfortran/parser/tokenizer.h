@@ -15,6 +15,7 @@ public:
     unsigned char *cur_line;
     unsigned int line_num;
     unsigned char *string_start;
+    bool fixed_form=false;
 
     int last_token=-1;
 
@@ -58,7 +59,7 @@ public:
         loc.first = tok-string_start;
         loc.last = cur-string_start-1;
     }
-    void add_rel_warning(diag::Diagnostics &diagnostics, int rel_token) const;
+    void add_rel_warning(diag::Diagnostics &diagnostics, bool fixed_form, int rel_token) const;
 };
 
 bool lex_int(const unsigned char *s, const unsigned char *e, uint64_t &u,

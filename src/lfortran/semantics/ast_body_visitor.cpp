@@ -1249,6 +1249,65 @@ public:
                 body.size(), orelse.p, orelse.size());
     }
 
+    void visit_IfArithmetic(const AST::IfArithmetic_t &x) {
+        visit_expr(*x.m_test);
+        ASR::expr_t *test_int = ASRUtils::EXPR(tmp);
+        ASR::ttype_t *test_int_type = ASRUtils::expr_type(test_int);
+        bool is_int  = ASR::is_a<ASR::Integer_t>(*test_int_type);
+        bool is_real = ASR::is_a<ASR::Real_t>(*test_int_type);
+        if (!is_int && !is_real) {
+            throw SemanticError("Arithmetic if (x) requires an integer or real for `x`", test_int->base.loc);
+        }
+        ASR::expr_t *test_lt, *test_gt; 
+        int kind = ASRUtils::extract_kind_from_ttype_t(test_int_type);
+        if (is_int) {
+            ASR::ttype_t *type0 = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, x.base.base.loc, kind, nullptr, 0));
+            ASR::expr_t *right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                x.base.base.loc, 0, type0));
+            ASR::ttype_t *type = ASRUtils::TYPE(
+                ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+            ASR::expr_t *value = nullptr;
+            test_lt = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, test_int->base.loc,
+                test_int, ASR::cmpopType::Lt, right, type, value));
+            test_gt = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, test_int->base.loc,
+                test_int, ASR::cmpopType::Gt, right, type, value));
+        } else {
+            ASR::ttype_t *type0 = ASRUtils::TYPE(
+                ASR::make_Real_t(al, x.base.base.loc, kind, nullptr, 0));
+            ASR::expr_t *right = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
+                x.base.base.loc, 0, type0));
+            ASR::ttype_t *type = ASRUtils::TYPE(
+                ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+            ASR::expr_t *value = nullptr;
+            test_lt = ASRUtils::EXPR(ASR::make_RealCompare_t(al, test_int->base.loc,
+                test_int, ASR::cmpopType::Lt, right, type, value));
+            test_gt = ASRUtils::EXPR(ASR::make_RealCompare_t(al, test_int->base.loc,
+                test_int, ASR::cmpopType::Gt, right, type, value));
+        }
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        body.push_back(al, ASRUtils::STMT(
+            ASR::make_GoTo_t(al, x.base.base.loc, x.m_lt_label)));
+        Vec<ASR::stmt_t*> orelse;
+        orelse.reserve(al, 1);
+
+        Vec<ASR::stmt_t*> body_gt;
+        body_gt.reserve(al, 1);
+        body_gt.push_back(al, ASRUtils::STMT(
+            ASR::make_GoTo_t(al, x.base.base.loc, x.m_gt_label)));
+        Vec<ASR::stmt_t*> orelse_gt;
+        orelse_gt.reserve(al, 1);
+        orelse_gt.push_back(al, ASRUtils::STMT(
+            ASR::make_GoTo_t(al, x.base.base.loc, x.m_eq_label)));
+
+        orelse.push_back(al, ASRUtils::STMT(
+            ASR::make_If_t(al, x.base.base.loc, test_gt, body_gt.p,
+                body_gt.size(), orelse_gt.p, orelse_gt.size())));
+        tmp = ASR::make_If_t(al, x.base.base.loc, test_lt, body.p,
+                body.size(), orelse.p, orelse.size());
+    }
+
     void visit_WhileLoop(const AST::WhileLoop_t &x) {
         visit_expr(*x.m_test);
         ASR::expr_t *test = LFortran::ASRUtils::EXPR(tmp);

@@ -32,7 +32,7 @@ public:
         result.reserve(al, 32);
     }
 
-    void parse(const std::string &input);
+    bool parse(const std::string &input);
     void handle_yyerror(const Location &loc, const std::string &msg);
 };
 

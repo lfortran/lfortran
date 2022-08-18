@@ -56,4 +56,20 @@ int initialize();
 
 } // LFortran
 
+namespace LCompilers {
+
+    struct PassOptions {
+        std::string run_fun; // for global_stmts pass
+        std::string runtime_library_dir;
+        bool always_run; // for unused_functions pass
+        bool inline_external_symbol_calls; // for inline_function_calls pass
+        int64_t unroll_factor; // for loop_unroll pass
+
+        PassOptions(): always_run(false), inline_external_symbol_calls(true),
+                       unroll_factor(32)
+        {}
+    };
+
+}
+
 #endif // LIBASR_UTILS_H

@@ -1,4 +1,4 @@
-# achar(x, kind)
+# achar(x, kind): To Character in ASCII set.
 
 Character represented by in the ASCII character set.
 

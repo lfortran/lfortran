@@ -29,12 +29,8 @@ The main development repository is at GitHub:
 
 https://github.com/lfortran/lfortran
 
-Please send Pull Requests (PRs) there.
+Please send Pull Requests (PRs) and open issues there.
 
-We moved to the above GitHub repository from GitLab on July 18, 2022. For now
-we are still using our old GitLab repository as an issue tracker:
-https://gitlab.com/lfortran/lfortran,
-please use it to open issues.
 See the [CONTRIBUTING](CONTRIBUTING.md) document for more information.
 
 Main mailinglist:
@@ -42,3 +38,5 @@ Main mailinglist:
 https://groups.io/g/lfortran
 
 You can also chat with us on Zulip ([![project chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://lfortran.zulipchat.com/)).
+
+Note: We moved to the above GitHub repository from GitLab on July 18, 2022.
