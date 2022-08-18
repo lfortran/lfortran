@@ -269,6 +269,7 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %token <string> KW_INOUT
 %token <string> KW_IN_OUT
 %token <string> KW_INQUIRE
+%token <string> KW_INSTANTIATE
 %token <string> KW_INTEGER
 %token <string> KW_INTENT
 %token <string> KW_INTERFACE
@@ -337,6 +338,7 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %token <string> KW_TARGET
 %token <string> KW_TEAM
 %token <string> KW_TEAM_NUMBER
+%token <string> KW_TEMPLATE
 %token <string> KW_THEN
 %token <string> KW_TO
 %token <string> KW_TYPE
@@ -363,9 +365,11 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %type <ast> block_data
 %type <ast> decl
 %type <vec_ast> decl_star
+%type <ast> instantiate
 %type <ast> interface_decl
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
+%type <ast> template_decl
 %type <ast> enum_decl
 %type <ast> program
 %type <ast> subroutine
@@ -395,6 +399,7 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %type <dim> array_comp_decl
 %type <codim> coarray_comp_decl
 %type <ast> var_type
+%type <vec_ast> var_type_star
 %type <ast> fn_mod
 %type <vec_ast> fn_mod_plus
 %type <vec_ast> var_modifiers
@@ -693,6 +698,17 @@ derived_type_decl
             $$ = DERIVED_TYPE1($2, $3, $5, TRIVIA($7, $11, @$), $8, $9, @$); }
     ;
 
+template_decl
+    : KW_TEMPLATE id "(" id_list ")" sep decl_star
+        contains_block_opt KW_END KW_TEMPLATE sep {
+            $$ = TEMPLATE($2, $4, $7, $8, @$); }
+    ;
+
+instantiate
+    : KW_INSTANTIATE id "(" var_type_star ")" "," KW_ONLY ":" use_symbol_list sep {
+        $$ = INSTANTIATE($2, $4, $9, @$); }
+    ;
+
 end_type
     : KW_END_TYPE id_opt
     | KW_ENDTYPE id_opt
@@ -956,6 +972,7 @@ decl
     : var_decl
     | interface_decl
     | derived_type_decl
+    | template_decl
     | enum_decl
     ;
 
@@ -1327,6 +1344,12 @@ var_modifier
     | KW_LEN { $$ = SIMPLE_ATTR(Len, @$); }
     ;
 
+// var_type*
+var_type_star
+    : var_type_star "," var_type { $$ = $1; LIST_ADD($$, $3); }
+    | var_type { LIST_NEW($$); LIST_ADD($$, $1); }
+    | %empty { LIST_NEW($$); }
+    ;
 
 var_type
     : KW_INTEGER { $$ = ATTR_TYPE(Integer, @$); }
@@ -1449,8 +1472,10 @@ decl_statement
     : var_decl
     | interface_decl
     | derived_type_decl
+    | template_decl
     | enum_decl
     | statement
+    | instantiate
     ;
 
 statement
@@ -2366,6 +2391,7 @@ id
     | KW_INCLUDE { $$ = SYMBOL($1, @$); }
     | KW_INOUT { $$ = SYMBOL($1, @$); }
     | KW_INQUIRE { $$ = SYMBOL($1, @$); }
+    | KW_INSTANTIATE { $$ = SYMBOL($1, @$); }
     | KW_INTEGER { $$ = SYMBOL($1, @$); }
     | KW_INTENT { $$ = SYMBOL($1, @$); }
     | KW_INTERFACE { $$ = SYMBOL($1, @$); }
@@ -2430,6 +2456,7 @@ id
     | KW_TARGET { $$ = SYMBOL($1, @$); }
     | KW_TEAM { $$ = SYMBOL($1, @$); }
     | KW_TEAM_NUMBER { $$ = SYMBOL($1, @$); }
+    | KW_TEMPLATE { $$ = SYMBOL($1, @$); }
     | KW_THEN { $$ = SYMBOL($1, @$); }
     | KW_TO { $$ = SYMBOL($1, @$); }
     | KW_TYPE { $$ = SYMBOL($1, @$); }
