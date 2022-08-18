@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-18 21:34+0000\n"
+"PO-Revision-Date: 2022-08-19 09:32+0000\n"
 "Last-Translator: Sebastian Ehlert <awvwgk@gmail.com>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/de/>\n"
@@ -594,7 +594,7 @@ msgstr ""
 
 #: ../../doc/src/design.md:82
 msgid "Notes:"
-msgstr ""
+msgstr "Anmerkungen:"
 
 #: ../../doc/src/design.md:84
 msgid ""
