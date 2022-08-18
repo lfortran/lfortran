@@ -1092,8 +1092,21 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 this->visit_expr(*x.m_args[i].m_right);
                 wasm::emit_i32_const(m_code_section, m_al, 1);
                 wasm::emit_i32_sub(m_code_section, m_al);
+                size_t jmin, jmax;
 
-                for (size_t j = 0; j < i; j++) {
+                // TODO: add this flag to ASR for each array:
+                bool column_major = true;
+                if (column_major) {
+                    // Column-major order
+                    jmin = 0;
+                    jmax = i;
+                } else {
+                    // Row-major order
+                    jmin = i+1;
+                    jmax = x.n_args;
+                }
+
+                for (size_t j = jmin; j < jmax; j++) {
                     this->visit_expr(*m_dims[j].m_length);
                     wasm::emit_i32_mul(m_code_section, m_al);
                 }
