@@ -250,19 +250,19 @@ ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &m
 			  compiler_options.include_dirs.begin(),
 			  compiler_options.include_dirs.end());
 
-    for (std::filesystem::path p : mod_files_dirs) {
-      std::string modfile;
-      std::filesystem::path full_path = p / filename;
+	for (std::filesystem::path p : mod_files_dirs) {
+		std::string modfile;
+		std::filesystem::path full_path = p / filename;
 
-      if (read_file(full_path.string(), modfile)) {
-	ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false, symtab);
-	if (intrinsic) {
-	  set_intrinsic(asr);
+		if (read_file(full_path.string(), modfile)) {
+			ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false, symtab);
+			if (intrinsic) {
+				set_intrinsic(asr);
+			}
+			return asr;
+		}
 	}
-	return asr;
-      }
-    }
-    return nullptr;
+	return nullptr;
 }
 
 ASR::asr_t* getDerivedRef_t(Allocator& al, const Location& loc,
