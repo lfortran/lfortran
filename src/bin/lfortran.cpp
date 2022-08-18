@@ -364,7 +364,7 @@ int prompt(bool verbose)
 }
 #endif
 
-int emit_prescan(const std::string &infile, CompilerOptions& compiler_options)
+int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
     LFortran::LocationManager lm;
@@ -375,7 +375,7 @@ int emit_prescan(const std::string &infile, CompilerOptions& compiler_options)
     return 0;
 }
 
-int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOptions& compiler_options)
+int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
     // Src -> Tokens
@@ -410,7 +410,7 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
     return 0;
 }
 
-int emit_ast(const std::string &infile, CompilerOptions& compiler_options)
+int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -429,7 +429,7 @@ int emit_ast(const std::string &infile, CompilerOptions& compiler_options)
     }
 }
 
-int emit_ast_f90(const std::string &infile, CompilerOptions& compiler_options)
+int emit_ast_f90(const std::string &infile, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
     LFortran::FortranEvaluator fe(compiler_options);
@@ -450,7 +450,7 @@ int emit_ast_f90(const std::string &infile, CompilerOptions& compiler_options)
 }
 
 int format(const std::string &infile, bool inplace, bool color, int indent,
-    bool indent_unit, CompilerOptions& compiler_options)
+    bool indent_unit, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -484,7 +484,7 @@ int format(const std::string &infile, bool inplace, bool color, int indent,
 }
 
 int python_wrapper(const std::string &infile, std::string array_order,
-    CompilerOptions& compiler_options)
+    CompilerOptions &compiler_options)
 {
 
     bool c_order = (0==array_order.compare("c"));
@@ -541,7 +541,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
 
 int emit_asr(const std::string &infile,
     LCompilers::PassManager& pass_manager,
-    bool with_intrinsic_modules, CompilerOptions& compiler_options)
+    bool with_intrinsic_modules, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -568,7 +568,7 @@ int emit_asr(const std::string &infile,
     return 0;
 }
 
-int emit_cpp(const std::string &infile, CompilerOptions& compiler_options)
+int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -587,7 +587,7 @@ int emit_cpp(const std::string &infile, CompilerOptions& compiler_options)
     }
 }
 
-int emit_c(const std::string &infile, CompilerOptions& compiler_options)
+int emit_c(const std::string &infile, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -655,7 +655,7 @@ int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
 #ifdef HAVE_LFORTRAN_LLVM
 
 int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
-              CompilerOptions& compiler_options)
+              CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -675,7 +675,7 @@ int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
     }
 }
 
-int emit_asm(const std::string &infile, CompilerOptions& compiler_options)
+int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -699,7 +699,7 @@ int emit_asm(const std::string &infile, CompilerOptions& compiler_options)
 int compile_to_object_file(const std::string &infile,
         const std::string &outfile,
         bool assembly,
-        CompilerOptions& compiler_options)
+        CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -768,14 +768,14 @@ int compile_to_object_file(const std::string &infile,
 }
 
 int compile_to_assembly_file(const std::string &infile,
-    const std::string &outfile, CompilerOptions& compiler_options)
+    const std::string &outfile, CompilerOptions &compiler_options)
 {
     return compile_to_object_file(infile, outfile, true, compiler_options);
 }
 #endif // HAVE_LFORTRAN_LLVM
 
 
-int emit_wat(const std::string &infile, CompilerOptions& compiler_options)
+int emit_wat(const std::string &infile, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -796,7 +796,7 @@ int emit_wat(const std::string &infile, CompilerOptions& compiler_options)
 
 int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         bool time_report,
-        CompilerOptions& compiler_options)
+        CompilerOptions &compiler_options)
 {
     int time_file_read=0;
     int time_src_to_ast=0;
@@ -892,7 +892,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
 
 int compile_to_binary_wasm(const std::string &infile, const std::string &outfile,
         bool time_report,
-        CompilerOptions& compiler_options)
+        CompilerOptions &compiler_options)
 {
     int time_file_read=0;
     int time_src_to_ast=0;
@@ -990,7 +990,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
 int compile_to_object_file_cpp(const std::string &infile,
         const std::string &outfile,
         bool assembly, bool kokkos, const std::string &rtlib_header_dir,
-        CompilerOptions& compiler_options)
+        CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -1097,7 +1097,7 @@ int link_executable(const std::vector<std::string> &infiles,
     const std::string &outfile,
     const std::string &runtime_library_dir, Backend backend,
     bool static_executable, bool link_with_gcc, bool kokkos,
-    CompilerOptions& compiler_options)
+    CompilerOptions &compiler_options)
 {
     /*
     The `gcc` line for dynamic linking that is constructed below:
@@ -1264,7 +1264,7 @@ int link_executable(const std::vector<std::string> &infiles,
     }
 }
 
-int emit_c_preprocessor(const std::string &infile, CompilerOptions& compiler_options)
+int emit_c_preprocessor(const std::string &infile, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 

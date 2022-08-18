@@ -636,7 +636,7 @@ public:
 
     ASR::asr_t *tmp;
     Allocator &al;
-    CompilerOptions& compiler_options;
+    CompilerOptions &compiler_options;
     SymbolTable *current_scope;
     ASR::Module_t *current_module = nullptr;
     Vec<char *> current_module_dependencies;
@@ -664,7 +664,7 @@ public:
     Vec<char*> data_member_names;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
-            diag::Diagnostics &diagnostics, CompilerOptions& compiler_options)
+            diag::Diagnostics &diagnostics, CompilerOptions &compiler_options)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table} {
         current_module_dependencies.reserve(al, 4);

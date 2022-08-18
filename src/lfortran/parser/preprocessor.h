@@ -25,9 +25,9 @@ typedef std::map<std::string, CPPMacro> cpp_symtab;
 class CPreprocessor
 {
 public:
-    CompilerOptions& compiler_options;
+    CompilerOptions &compiler_options;
     cpp_symtab macro_definitions;
-    CPreprocessor(CompilerOptions& compiler_options);
+    CPreprocessor(CompilerOptions &compiler_options);
     std::string token(unsigned char *tok, unsigned char* cur) const;
     std::string run(const std::string &input, LocationManager &lm,
         cpp_symtab &macro_definitions) const;
