@@ -1093,7 +1093,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 wasm::emit_i32_const(m_code_section, m_al, 1);
                 wasm::emit_i32_sub(m_code_section, m_al);
 
-                for (size_t j = i + 1; j < x.n_args; j++) {
+                for (size_t j = 0; j < i; j++) {
                     this->visit_expr(*m_dims[j].m_length);
                     wasm::emit_i32_mul(m_code_section, m_al);
                 }
