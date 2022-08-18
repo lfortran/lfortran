@@ -11,22 +11,21 @@ class FunctionInstantiator : public ASR::BaseExprStmtDuplicator<FunctionInstanti
 public: 
     SymbolTable *current_scope;
     std::map<std::string, ASR::ttype_t*> subs;
-    int new_function_num;
+    std::string new_function_name;
 
     FunctionInstantiator(Allocator &al, std::map<std::string, ASR::ttype_t*> subs, 
-            SymbolTable *current_scope, int new_function_num):
+            SymbolTable *current_scope, std::string new_function_name):
         BaseExprStmtDuplicator(al),
         current_scope{current_scope},
         subs{subs},
-        new_function_num{new_function_num}
+        new_function_name{new_function_name}
         {}
 
     ASR::asr_t* instantiate_Function(ASR::Function_t &x) {
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
-        std::string func_name = x.m_name;
-        func_name = "__lpython_generic_" + func_name + "_" + std::to_string(new_function_num);
+        std::string func_name = new_function_name;
 
         Vec<ASR::expr_t*> args;
         args.reserve(al, x.n_args);
@@ -322,8 +321,8 @@ public:
 };
 
 ASR::symbol_t* pass_instantiate_generic_function(Allocator &al, std::map<std::string, ASR::ttype_t*> subs,
-        SymbolTable *current_scope, int new_function_num, ASR::Function_t &func) {
-    FunctionInstantiator tf(al, subs, current_scope, new_function_num);
+        SymbolTable *current_scope, std::string new_function_name, ASR::Function_t &func) {
+    FunctionInstantiator tf(al, subs, current_scope, new_function_name);
     ASR::asr_t *new_function = tf.instantiate_Function(func);
     return ASR::down_cast<ASR::symbol_t>(new_function);
 }
