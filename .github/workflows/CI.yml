@@ -74,8 +74,8 @@ jobs:
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\test.xsh
 
-  build_to_wasm:
-    name: Build LFortran to wasm
+  build_to_wasm_and_upload:
+    name: Build LFortran to WASM and Upload
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v2
@@ -131,12 +131,12 @@ jobs:
             source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
             node src/lfortran/tests/test_lfortran.js
 
-      - name: Upload to dev.lfortran.org
+      - name: Upload to wasm_builds
         shell: bash -l {0}
         run: |
             ci/upload_lfortran_wasm.sh
         env:
-          SSH_PRIVATE_KEY_LCOMPILERS_FRONTEND: ${{ secrets.SSH_PRIVATE_KEY_LCOMPILERS_FRONTEND }}
+          SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
 
   debug:
     name: Check Debug build
