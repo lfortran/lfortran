@@ -81,6 +81,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     SymbolFuncInfo* cur_sym_info;
     uint32_t nesting_level;
     uint32_t cur_loop_nesting_level;
+    bool is_prototype_only;
 
     Vec<uint8_t> m_type_section;
     Vec<uint8_t> m_import_section;
@@ -106,6 +107,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
    public:
     ASRToWASMVisitor(Allocator &al, diag::Diagnostics &diagnostics): m_al(al), diag(diagnostics) {
         intrinsic_module = false;
+        is_prototype_only = false;
         nesting_level = 0;
         cur_loop_nesting_level = 0;
         no_of_types = 0;
@@ -209,6 +211,37 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         global_scope_loc = x.base.base.loc;
 
         emit_imports();
+
+        {
+            // Pre-declare all functions first, then generate code
+            // Otherwise some function might not be found.
+            is_prototype_only = true;
+            {
+                // Process intrinsic modules in the right order
+                std::vector<std::string> build_order
+                    = ASRUtils::determine_module_dependencies(x);
+                for (auto &item : build_order) {
+                    LFORTRAN_ASSERT(x.m_global_scope->get_scope().find(item)
+                        != x.m_global_scope->get_scope().end());
+                    if (startswith(item, "lfortran_intrinsic")) {
+                        ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
+                        if (ASR::is_a<ASR::Module_t>(*mod)) {
+                            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(mod);
+                            declare_all_functions(*(m->m_symtab));
+                        }
+                    }
+                }
+
+                // then the main program:
+                for (auto &item : x.m_global_scope->get_scope()) {
+                    if (ASR::is_a<ASR::Program_t>(*item.second)) {
+                        ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(item.second);
+                        declare_all_functions(*(p->m_symtab));
+                    }
+                }
+            }
+            is_prototype_only = false;
+        }
 
         {
             // Process intrinsic modules in the right order
@@ -531,11 +564,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         if (is_unsupported_function(x)) {
             return;
         }
-        if (x.m_abi == ASR::abiType::BindC && x.m_deftype == ASR::deftypeType::Interface) {
-            add_func_to_imports(x);
-            return;
+        if (is_prototype_only) {
+            if (x.m_abi == ASR::abiType::BindC && x.m_deftype == ASR::deftypeType::Interface) {
+                add_func_to_imports(x);
+                return;
+            }
+            emit_function_prototype(x);
         }
-        emit_function_prototype(x);
         emit_function_body(x);
     }
 
