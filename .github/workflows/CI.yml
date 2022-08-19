@@ -320,7 +320,7 @@ jobs:
       - name: Upload Tarball
         shell: bash -l {0}
         run: |
-          ci/create_source_tarball.sh
+          xonsh ci/create_source_tarball.xsh
           ci/upload_tarball.sh
         env:
           SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}

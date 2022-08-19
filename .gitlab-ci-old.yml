@@ -20,7 +20,7 @@ prepare tarball:
     GIT_DEPTH: 0 # fetch all commits and tags
   script:
     - sudo apk add --no-cache cmake
-    - ci/create_source_tarball.sh
+    - xonsh ci/create_source_tarball.xsh
     - ci/upload_tarball.sh
   artifacts:
     paths:
