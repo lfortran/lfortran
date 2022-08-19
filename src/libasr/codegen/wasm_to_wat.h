@@ -245,6 +245,7 @@ class WASMDecoder {
     }
 
     void load_file(std::string filename);
+    bool is_preamble_ok(uint32_t offset);
     void decode_type_section(uint32_t offset);
     void decode_imports_section(uint32_t offset);
     void decode_function_section(uint32_t offset);
