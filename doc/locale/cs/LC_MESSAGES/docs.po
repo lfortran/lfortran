@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-19 09:32+0000\n"
+"PO-Revision-Date: 2022-08-22 11:19+0000\n"
 "Last-Translator: Ondřej Čertík <ondrej@certik.us>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/cs/>\n"
@@ -109,23 +109,23 @@ msgstr ""
 
 #: ../../doc/src/contributing.md:8
 msgid "Basic Setup"
-msgstr ""
+msgstr "Základní instalace"
 
 #: ../../doc/src/contributing.md:10
 msgid "To contribute, make sure your set up:"
-msgstr ""
+msgstr "Abyste mohli přispět, ujistěte se, že jste nainstalovali:"
 
 #: ../../doc/src/contributing.md:12
 msgid "Your username + email"
-msgstr ""
+msgstr "Vaše uživatelské jméno + email"
 
 #: ../../doc/src/contributing.md:13
 msgid "Your `~/.gitconfig`"
-msgstr ""
+msgstr "Váš `~/.gitconfig`"
 
 #: ../../doc/src/contributing.md:14
 msgid "Your shell prompt to display the current branch name"
-msgstr ""
+msgstr "Váš terminál aby zobrazil aktuální název větve"
 
 #: ../../doc/src/contributing.md:16
 msgid "Fork LFortran"
