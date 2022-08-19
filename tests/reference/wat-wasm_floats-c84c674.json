@@ -2,11 +2,11 @@
     "basename": "wat-wasm_floats-c84c674",
     "cmd": "lfortran --no-color --show-wat {infile}",
     "infile": "tests/wasm_floats.f90",
-    "infile_hash": "22da6b33efa52364fd1208da7e1d8c02b4a4d4ec4999b09517b107c2",
+    "infile_hash": "22347aea9335acde79ca97e6bfa841deffceb7f262d3abe84bbd6d7d",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "wat-wasm_floats-c84c674.stdout",
-    "stdout_hash": "2c11bb77906ba4caf212a61da1a50fa49b3c5f7f4bb1d56dff883041",
+    "stdout_hash": "688a51e31e2b34c7771f03a8fe0c185655e7abfe8a04fc0bfe3430d5",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
