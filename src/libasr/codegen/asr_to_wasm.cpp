@@ -254,6 +254,15 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void declare_all_functions(const SymbolTable &symtab) {
+        for (auto &item : symtab.get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
+                this->visit_Function(*s);
+            }
+        }
+    }
+
     void visit_Module(const ASR::Module_t &x) {
         if (startswith(x.m_name, "lfortran_intrinsic_")) {
             intrinsic_module = true;
@@ -261,26 +270,15 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             intrinsic_module = false;
         }
 
-        std::string contains;
-
-        // Generate the bodies of subroutines
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
-                this->visit_Function(*s);
-            }
-        }
+        // Generate the bodies of functions and subroutines
+        declare_all_functions(x.m_symtab);
         intrinsic_module = false;
     }
 
     void visit_Program(const ASR::Program_t &x) {
 
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
-                visit_Function(*s);
-            }
-        }
+        // Generate the bodies of functions and subroutines
+        declare_all_functions(x.m_symtab);
 
         // Generate main program code
         auto main_func = ASR::make_Function_t(m_al, x.base.base.loc, x.m_symtab, s2c(m_al, "_lcompilers_main"),
