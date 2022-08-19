@@ -3,35 +3,38 @@
 # This file is distributed under the same license as the LFortran package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: LFortran \n"
+"Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"PO-Revision-Date: 2022-08-19 09:32+0000\n"
+"Last-Translator: Ondřej Čertík <ondrej@certik.us>\n"
+"Language-Team: Czech <https://hosted.weblate.org/projects/fortran-lang/"
+"lfortran-docs/cs/>\n"
+"Language: cs\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+"X-Generator: Weblate 4.14-dev\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../../doc/src/ast_and_asr.ipynb:9
 msgid "Difference between an AST and ASR"
-msgstr ""
+msgstr "Rozdíly mezi AST a ASR"
 
 #: ../../doc/src/ast_and_asr.ipynb:11
 msgid "Let us take a simple Fortran code:"
-msgstr ""
+msgstr "Vezměme tento jednoduchý zdrojový kód ve Fortranu:"
 
 #: ../../doc/src/ast_and_asr.ipynb:22
 msgid "and look at how the AST and ASR looks like."
-msgstr ""
+msgstr "a podívejme se jak AST a ASR vypadá."
 
 #: ../../doc/src/ast_and_asr.ipynb:25 ../../doc/src/progress.md
 msgid "AST"
-msgstr ""
+msgstr "AST"
 
 #: ../../doc/src/ast_and_asr.ipynb:76
 msgid ""
@@ -40,10 +43,13 @@ msgid ""
 "such as ``a`` are represented by a ``Name`` node, and are not connected "
 "to their declarations yet."
 msgstr ""
+"AST nemá žádné semantické informace, ale má uzly které reprezentují "
+"deklarace jako ``integer, intent(in) :: a``. Proměnné jako ``a`` jsou "
+"reprezentovány uzlem ``Name`` a nejsou ještě propojeny se svými deklaracemi."
 
 #: ../../doc/src/ast_and_asr.ipynb:88 ../../doc/src/progress.md
 msgid "ASR"
-msgstr ""
+msgstr "ASR"
 
 #: ../../doc/src/ast_and_asr.ipynb:139
 msgid ""
@@ -51,22 +57,29 @@ msgid ""
 "``Function`` have a symbol table and do not have any declaration nodes. "
 "Variables are simply pointers to the symbol table."
 msgstr ""
+"ASR má všechny semantické informace (typy, atd.), uzly jako ``Function`` "
+"mají tabulku symbolů a nemají uzly s deklaracemi. Proměnné jsou přímo "
+"ukazatelé do tabulky symbolů."
 
 #: ../../doc/src/ast_and_asr.ipynb:142
 msgid "Discussion"
-msgstr ""
+msgstr "Diskuze"
 
 #: ../../doc/src/ast_and_asr.ipynb:144
 msgid ""
 "The above was a simple example. Things get more apparent for more "
 "complicated examples, such as:"
 msgstr ""
+"Nahoře byl jednoduchý příklad. Věci budou jasnější když si rozebereme "
+"komplikovanější problémy, jako například:"
 
 #: ../../doc/src/ast_and_asr.ipynb:160
 msgid ""
 "AST must represent all the ``use`` statements and the ``interface`` "
 "block, and keep things semantically consistent."
 msgstr ""
+"AST musí reprezentovat všechny ``use`` řádky a ``interface`` blok a ASR uzly "
+"musí být semanticky konzistentní."
 
 #: ../../doc/src/ast_and_asr.ipynb:162
 msgid ""
@@ -839,7 +852,7 @@ msgstr ""
 
 #: ../../doc/src/index.md:21
 msgid "Works today"
-msgstr "Co funguje dnes"
+msgstr "Funguje dnes"
 
 #: ../../doc/src/index.md:23
 #, python-format
@@ -4509,4 +4522,3 @@ msgstr ""
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/nint/t01_scalar_real.f90)"
 msgstr ""
-
