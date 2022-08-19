@@ -133,6 +133,15 @@ RUN(NAME expr_04 LABELS gfortran llvm cpp)
 RUN(NAME expr_05 LABELS gfortran llvm cpp)
 RUN(NAME expr_06 LABELS gfortran llvm)
 RUN(NAME expr_07 LABELS gfortran llvm)
+RUN(NAME expr_08 LABELS gfortran llvm wasm)
+RUN(NAME expr_09 LABELS gfortran llvm wasm)
+
+RUN(NAME data_01 LABELS gfortran llvm)
+RUN(NAME minmax_01 LABELS gfortran llvm)
+RUN(NAME arithmetic_if_01 LABELS gfortran llvm)
+RUN(NAME arithmetic_if_02 LABELS gfortran llvm)
+RUN(NAME arithmetic_if_03 LABELS gfortran llvm)
+RUN(NAME arithmetic_if_04 LABELS gfortran llvm)
 
 RUN(NAME variables_01 LABELS gfortran llvm cpp x86)
 RUN(NAME variables_02 LABELS gfortran llvm cpp x86)
@@ -176,6 +185,8 @@ RUN(NAME functions_07 LABELS gfortran llvm)
 RUN(NAME functions_08 LABELS gfortran llvm)
 RUN(NAME functions_09 LABELS gfortran)
 RUN(NAME functions_10 LABELS gfortran)
+RUN(NAME functions_11 LABELS gfortran llvm)
+
 
 RUN(NAME types_01 LABELS gfortran llvm cpp)
 RUN(NAME types_02 LABELS gfortran llvm cpp)
@@ -213,17 +224,18 @@ RUN(NAME arrays_op_8 LABELS gfortran llvm)
 RUN(NAME arrays_op_9 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_14 LABELS gfortran llvm)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm)
-RUN(NAME arrays_03_func LABELS gfortran cpp llvm)
+RUN(NAME arrays_03_func LABELS gfortran cpp llvm wasm)
 RUN(NAME arrays_03_func_pass_arr_dims LABELS gfortran cpp llvm wasm)
-RUN(NAME arrays_04_func LABELS gfortran cpp llvm)
+RUN(NAME arrays_04_func LABELS gfortran cpp llvm wasm)
 RUN(NAME arrays_04_func_pass_arr_dims LABELS gfortran cpp llvm wasm)
 RUN(NAME arrays_05 LABELS gfortran llvm cpp wasm)
+RUN(NAME arrays_17 LABELS gfortran llvm)
 
 # GFortran
 RUN(NAME arrays_02 LABELS gfortran)
 RUN(NAME arrays_06 LABELS gfortran llvm)
 RUN(NAME arrays_07 LABELS gfortran llvm)
-RUN(NAME arrays_08_func LABELS gfortran llvm)
+RUN(NAME arrays_08_func LABELS gfortran llvm wasm)
 RUN(NAME arrays_08_func_pass_arr_dims LABELS gfortran llvm wasm)
 RUN(NAME arrays_09 LABELS gfortran)
 RUN(NAME arrays_10 LABELS gfortran)
@@ -231,6 +243,7 @@ RUN(NAME arrays_11 LABELS gfortran llvm cpp)
 RUN(NAME arrays_12 LABELS gfortran) # constant arrays
 RUN(NAME arrays_13 LABELS gfortran llvm) # constant arrays
 RUN(NAME arrays_inputs_15 LABELS gfortran llvm) # constant arrays
+RUN(NAME arrays_16_func LABELS gfortran llvm)
 
 RUN(NAME arrays_intrin_01 LABELS gfortran) # minval, maxval
 RUN(NAME arrays_intrin_02 LABELS gfortran) # all, any
@@ -305,6 +318,7 @@ RUN(NAME intrinsics_41 LABELS gfortran) # command_argument_count
 RUN(NAME intrinsics_42 LABELS gfortran) # hypot
 RUN(NAME intrinsics_43 LABELS gfortran) # dim
 RUN(NAME intrinsics_44 LABELS gfortran) # cshift
+RUN(NAME intrinsics_45 LABELS gfortran llvm) # iso_fortran_env
 RUN(NAME intrinsics_open_close_read_write LABELS gfortran)
 
 RUN(NAME parameter_01 LABELS gfortran)

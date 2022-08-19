@@ -247,7 +247,7 @@ If you have any questions or need help, please ask as at our
 
 Please note that all participants of this project are expected to follow our
 Code of Conduct. By participating in this project you agree to abide by its
-terms. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+terms. See [CODE_OF_CONDUCT.md](https://github.com/lfortran/lfortran/blob/main/CODE_OF_CONDUCT.md).
 
 By submitting a PR you agree to license your contribution under
-the LFortran's BSD [license](LICENSE) unless explicitly noted otherwise.
+the LFortran's BSD [license](https://github.com/lfortran/lfortran/blob/main/LICENSE) unless explicitly noted otherwise.

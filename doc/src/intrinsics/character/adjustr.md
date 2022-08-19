@@ -1,4 +1,4 @@
-# adjustr(string)
+# adjustr(string): Right Adjust String
 
 Right adjust a string.
 

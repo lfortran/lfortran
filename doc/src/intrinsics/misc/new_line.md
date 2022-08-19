@@ -1,4 +1,4 @@
-# new_line(x)
+# new_line(x): New Line Character
 
 New line character.
 

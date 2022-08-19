@@ -1,0 +1,13 @@
+{
+    "basename": "ast-fixed_form_4-656a640",
+    "cmd": "lfortran --fixed-form --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/fixed_form_4.f",
+    "infile_hash": "ead212bbc34e4848d189561c4e6474149e4afb1bfeda6f7e46b90b12",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "ast-fixed_form_4-656a640.stderr",
+    "stderr_hash": "dd0de417e4cccdc2321f322a53b4aa0c212ae0ee3dbdaf980d13ec3a",
+    "returncode": 2
+}

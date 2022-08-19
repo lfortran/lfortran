@@ -1206,6 +1206,26 @@ public:
         tmp = const_tuple;
     }
 
+    void visit_IntegerBitLen(const ASR::IntegerBitLen_t& x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        llvm::Value *int_val = tmp;
+        int int_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        std::string runtime_func_name = "_lpython_bit_length" + std::to_string(int_kind);
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getInt32Ty(context), {
+                        getIntType(int_kind)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        tmp = builder->CreateCall(fn, {int_val});
+    }
+
     void visit_ListAppend(const ASR::ListAppend_t& x) {
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
@@ -1247,6 +1267,11 @@ public:
         }
     }
 
+    void visit_TupleLen(const ASR::TupleLen_t& x) {
+        LFORTRAN_ASSERT(x.m_value);
+        this->visit_expr(*x.m_value);
+    }
+
     void visit_TupleItem(const ASR::TupleItem_t& x) {
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
@@ -1276,7 +1301,10 @@ public:
             uint32_t v_h = get_hash((ASR::asr_t*)v);
             LFORTRAN_ASSERT(llvm_symtab.find(v_h) != llvm_symtab.end());
             array = llvm_symtab[v_h];
-            is_argument = v->m_intent == ASRUtils::intent_in;
+            is_argument = (v->m_intent == ASRUtils::intent_in)
+                 || (v->m_intent == ASRUtils::intent_out)
+                 || (v->m_intent == ASRUtils::intent_inout)
+                 || (v->m_intent == ASRUtils::intent_unspecified);
         } else {
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
@@ -1985,8 +2013,7 @@ public:
                 a_kind = v_type->m_kind;
                 if( n_dims > 0 ) {
                     if (m_abi == ASR::abiType::BindC ||
-                        (!ASRUtils::is_dimension_empty(v_type->m_dims, v_type->n_dims) &&
-                        arg_intent == ASRUtils::intent_in)) {
+                        (!ASRUtils::is_dimension_empty(v_type->m_dims, v_type->n_dims))) {
                         // Bind(C) arrays are represened as a pointer
                         type = getIntType(a_kind, true);
                     } else {
@@ -2022,8 +2049,7 @@ public:
                 a_kind = v_type->m_kind;
                 if( n_dims > 0 ) {
                     if (m_abi == ASR::abiType::BindC ||
-                        (!ASRUtils::is_dimension_empty(v_type->m_dims, v_type->n_dims) &&
-                          arg_intent == ASRUtils::intent_in)) {
+                        (!ASRUtils::is_dimension_empty(v_type->m_dims, v_type->n_dims))) {
                         // Bind(C) arrays are represened as a pointer
                         type = getFPType(a_kind, true);
                     } else {
@@ -2049,7 +2075,10 @@ public:
                 ASR::Complex_t* v_type = down_cast<ASR::Complex_t>(asr_type);
                 n_dims = v_type->n_dims;
                 a_kind = v_type->m_kind;
-                if( n_dims > 0 ) {
+                if (m_abi != ASR::abiType::BindC &&
+                    (!ASRUtils::is_dimension_empty(v_type->m_dims, v_type->n_dims))) {
+                    type = getComplexType(a_kind, true);
+                } else if( n_dims > 0 ) {
                     is_array_type = true;
                     llvm::Type* el_type = get_el_type(asr_type);
                     if( m_storage == ASR::storage_typeType::Allocatable ) {
@@ -2102,12 +2131,18 @@ public:
                 n_dims = v_type->n_dims;
                 a_kind = v_type->m_kind;
                 if( n_dims > 0 ) {
-                    is_array_type = true;
-                    llvm::Type* el_type = get_el_type(asr_type);
-                    if( m_storage == ASR::storage_typeType::Allocatable ) {
-                        type = arr_descr->get_malloc_array_type(asr_type, a_kind, n_dims, el_type, true);
+                    if (m_abi == ASR::abiType::BindC ||
+                        (!ASRUtils::is_dimension_empty(v_type->m_dims, v_type->n_dims))) {
+                        // Bind(C) arrays are represened as a pointer
+                        type = llvm::Type::getInt1PtrTy(context);
                     } else {
-                        type = arr_descr->get_array_type(asr_type, a_kind, n_dims, el_type, true);
+                        is_array_type = true;
+                        llvm::Type* el_type = get_el_type(asr_type);
+                        if( m_storage == ASR::storage_typeType::Allocatable ) {
+                            type = arr_descr->get_malloc_array_type(asr_type, a_kind, n_dims, el_type, true);
+                        } else {
+                            type = arr_descr->get_array_type(asr_type, a_kind, n_dims, el_type, true);
+                        }
                     }
                 } else {
                     type = llvm::Type::getInt1PtrTy(context);
@@ -4727,8 +4762,7 @@ public:
                                 size_t n;
                                 n = ASRUtils::extract_dimensions_from_ttype(orig_arg->m_type, dims);
                                 tmp = arr_descr->convert_to_argument(tmp, new_arr_type,
-                                                                    (!ASRUtils::is_dimension_empty(dims, n) &&
-                                                                    orig_arg->m_intent == ASRUtils::intent_in));
+                                                                    (!ASRUtils::is_dimension_empty(dims, n)));
                             } else if ( x_abi == ASR::abiType::BindC ) {
                                 if( arr_descr->is_array(tmp) ) {
                                     tmp = CreateLoad(arr_descr->get_pointer_to_data(tmp));
@@ -5307,7 +5341,10 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         Platform platform, const std::string &run_fn)
 {
     ASRToLLVMVisitor v(al, context, platform, diagnostics);
-    pass_manager.apply_passes(al, &asr, run_fn, false);
+    LCompilers::PassOptions pass_options;
+    pass_options.run_fun = run_fn;
+    pass_options.always_run = false;
+    pass_manager.apply_passes(al, &asr, pass_options);
 
     // Uncomment for debugging the ASR after the transformation
     // std::cout << pickle(asr, true, true, true) << std::endl;

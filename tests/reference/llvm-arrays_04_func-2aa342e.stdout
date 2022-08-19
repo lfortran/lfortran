@@ -41,7 +41,7 @@ return:                                           ; preds = %ifcont
   ret float %5
 }
 
-define float @sum(%array* %a) {
+define float @sum_a(float* %a, i32* %"1a", i32* %"2a") {
 .entry:
   %i = alloca i32, align 4
   %r = alloca float, align 4
@@ -50,79 +50,47 @@ define float @sum(%array* %a) {
   store i32 0, i32* %i, align 4
   br label %loop.head
 
-loop.head:                                        ; preds = %loop.body2, %.entry
+loop.head:                                        ; preds = %loop.body, %.entry
   %0 = load i32, i32* %i, align 4
   %1 = add i32 %0, 1
-  %2 = getelementptr %array, %array* %a, i32 0, i32 2
-  %3 = load %dimension_descriptor*, %dimension_descriptor** %2, align 8
-  %4 = getelementptr %array, %array* %a, i32 0, i32 4
-  %5 = load i32, i32* %4, align 4
-  %6 = alloca i32, align 4
-  store i32 1, i32* %6, align 4
-  %7 = alloca i32, align 4
-  store i32 0, i32* %7, align 4
-  br label %loop.head1
+  %2 = load i32, i32* %"2a", align 4
+  %3 = mul i32 1, %2
+  %4 = icmp sle i32 %1, %3
+  br i1 %4, label %loop.body, label %loop.end
 
-loop.head1:                                       ; preds = %loop.body, %loop.head
-  %8 = load i32, i32* %7, align 4
-  %9 = icmp slt i32 %8, %5
-  br i1 %9, label %loop.body, label %loop.end
-
-loop.body:                                        ; preds = %loop.head1
-  %10 = load i32, i32* %7, align 4
-  %11 = load i32, i32* %6, align 4
-  %12 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %3, i32 %10
-  %13 = getelementptr %dimension_descriptor, %dimension_descriptor* %12, i32 0, i32 2
-  %14 = load i32, i32* %13, align 4
-  %15 = mul i32 %11, %14
-  store i32 %15, i32* %6, align 4
-  %16 = add i32 %10, 1
-  store i32 %16, i32* %7, align 4
-  br label %loop.head1
-
-loop.end:                                         ; preds = %loop.head1
-  %17 = load i32, i32* %6, align 4
-  %18 = icmp sle i32 %1, %17
-  br i1 %18, label %loop.body2, label %loop.end3
-
-loop.body2:                                       ; preds = %loop.end
-  %19 = load i32, i32* %i, align 4
-  %20 = add i32 %19, 1
-  store i32 %20, i32* %i, align 4
-  %21 = load float, float* %r, align 4
-  %22 = load i32, i32* %i, align 4
-  %23 = getelementptr %array, %array* %a, i32 0, i32 2
-  %24 = load %dimension_descriptor*, %dimension_descriptor** %23, align 8
-  %25 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %24, i32 0
-  %26 = getelementptr %dimension_descriptor, %dimension_descriptor* %25, i32 0, i32 1
-  %27 = load i32, i32* %26, align 4
-  %28 = sub i32 %22, %27
-  %29 = mul i32 1, %28
-  %30 = add i32 0, %29
-  %31 = getelementptr %dimension_descriptor, %dimension_descriptor* %25, i32 0, i32 2
-  %32 = load i32, i32* %31, align 4
-  %33 = mul i32 1, %32
-  %34 = getelementptr %array, %array* %a, i32 0, i32 0
-  %35 = load float*, float** %34, align 8
-  %36 = getelementptr inbounds float, float* %35, i32 %30
-  %37 = load float, float* %36, align 4
-  %38 = fadd float %21, %37
-  store float %38, float* %r, align 4
+loop.body:                                        ; preds = %loop.head
+  %5 = load i32, i32* %i, align 4
+  %6 = add i32 %5, 1
+  store i32 %6, i32* %i, align 4
+  %7 = load float, float* %r, align 4
+  %8 = load i32, i32* %i, align 4
+  %9 = load i32, i32* %"1a", align 4
+  %10 = load i32, i32* %"2a", align 4
+  %11 = sub i32 %8, %9
+  %12 = mul i32 1, %11
+  %13 = add i32 0, %12
+  %14 = mul i32 1, %10
+  %15 = getelementptr inbounds float, float* %a, i32 %13
+  %16 = load float, float* %15, align 4
+  %17 = fadd float %7, %16
+  store float %17, float* %r, align 4
   br label %loop.head
 
-loop.end3:                                        ; preds = %loop.end
+loop.end:                                         ; preds = %loop.head
   br label %return
 
-return:                                           ; preds = %loop.end3
-  %39 = load float, float* %r, align 4
-  ret float %39
+return:                                           ; preds = %loop.end
+  %18 = load float, float* %r, align 4
+  ret float %18
 }
 
 declare void @_lfortran_printf(i8*, ...)
 
 define i32 @main() {
 .entry:
-  %call_arg_value = alloca float, align 4
+  %call_arg_value2 = alloca float, align 4
+  %call_arg_value1 = alloca i32, align 4
+  %call_arg_value = alloca i32, align 4
   %a = alloca %array, align 8
   %0 = getelementptr %array, %array* %a, i32 0, i32 1
   store i32 0, i32* %0, align 4
@@ -194,15 +162,18 @@ define i32 @main() {
   %55 = load float*, float** %54, align 8
   %56 = getelementptr inbounds float, float* %55, i32 %50
   store float 1.000000e+00, float* %56, align 4
-  %57 = alloca %array, align 8
-  %58 = call float @sum(%array* %a)
-  store float %58, float* %b, align 4
-  %59 = load float, float* %b, align 4
-  %60 = fsub float %59, 6.000000e+00
-  store float %60, float* %call_arg_value, align 4
-  %61 = call float @abs(float* %call_arg_value)
-  %62 = fcmp ugt float %61, 0x3EE4F8B580000000
-  br i1 %62, label %then, label %else
+  %57 = getelementptr %array, %array* %a, i32 0, i32 0
+  %58 = load float*, float** %57, align 8
+  store i32 1, i32* %call_arg_value, align 4
+  store i32 3, i32* %call_arg_value1, align 4
+  %59 = call float @sum_a(float* %58, i32* %call_arg_value, i32* %call_arg_value1)
+  store float %59, float* %b, align 4
+  %60 = load float, float* %b, align 4
+  %61 = fsub float %60, 6.000000e+00
+  store float %61, float* %call_arg_value2, align 4
+  %62 = call float @abs(float* %call_arg_value2)
+  %63 = fcmp ugt float %62, 0x3EE4F8B580000000
+  br i1 %63, label %then, label %else
 
 then:                                             ; preds = %.entry
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @8, i32 0, i32 0))

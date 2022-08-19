@@ -17,6 +17,7 @@
 #include <lfortran/parser/parser_stype.h>
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
+#include <libasr/pass/instantiate_template.h>
 
 namespace LFortran {
 
@@ -414,6 +415,35 @@ public:
         fill_args_for_rewind_inquire_flush(x, 3, args, 3, argname2idx, node_name);
         ASR::expr_t *unit = args[0], *iostat = args[1], *err = args[2];
         tmp = ASR::make_FileRewind_t(al, x.base.base.loc, x.m_label, unit, iostat, err);
+    }
+
+    void visit_Instantiate(const AST::Instantiate_t &x){
+        std::string template_name = std::string(x.m_name);
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 0);
+
+        // Check if the template exists
+        if(template_type_parameters.find(x.m_name) == template_type_parameters.end()){
+            throw SemanticError("Use of unspecified template", x.base.base.loc);
+        }
+
+        // Check if number of type parameters match
+        if(template_type_parameters[template_name].size() != x.n_types){
+            throw SemanticError("Number of template arguments don't match", x.base.base.loc);
+        }
+
+        std::map<std::string, ASR::ttype_t*> subs;
+        for(size_t i = 0; i < x.n_types; i++){
+            ASR::ttype_t* type = determine_type(x.base.base.loc, x.m_types[i], false, dims);
+            subs[ASR::down_cast2<ASR::TypeParameter_t>(template_type_parameters[template_name][i])->m_param] = type;
+        }
+
+        for(size_t i = 0; i < x.n_symbols; i++){
+            AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
+            ASR::symbol_t* s = resolve_symbol(x.base.base.loc, use_symbol->m_remote_sym);
+            pass_instantiate_generic_function(al, subs, current_scope, use_symbol->m_local_rename,
+                                                *ASR::down_cast<ASR::Function_t>(s));
+        }
     }
 
     void visit_Inquire(const AST::Inquire_t& x) {
@@ -847,9 +877,18 @@ public:
         current_scope = v->m_symtab;
         current_module = v;
 
+        for (size_t i=0; i<x.n_decl; i++) {
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Template){
+                visit_unit_decl2(*x.m_decl[i]);
+            }
+        }
+
+        // We have to visit unit_decl_2 because in the example, the Template is directly inside the module and 
+        // Template is a unit_decl_2
+
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
-        }
+        }       
 
         current_scope = old_scope;
         current_module = nullptr;
@@ -925,6 +964,10 @@ public:
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->get_symbol(subrout_name);
         }
+        for (size_t i=0; i<x.n_decl; i++) {
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
+                visit_unit_decl2(*x.m_decl[i]);
+        }
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
@@ -965,6 +1008,11 @@ public:
 
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
+        }
+
+        for (size_t i=0; i<x.n_decl; i++) {
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
+                visit_unit_decl2(*x.m_decl[i]);
         }
 
         current_scope = old_scope;
@@ -1249,6 +1297,65 @@ public:
                 body.size(), orelse.p, orelse.size());
     }
 
+    void visit_IfArithmetic(const AST::IfArithmetic_t &x) {
+        visit_expr(*x.m_test);
+        ASR::expr_t *test_int = ASRUtils::EXPR(tmp);
+        ASR::ttype_t *test_int_type = ASRUtils::expr_type(test_int);
+        bool is_int  = ASR::is_a<ASR::Integer_t>(*test_int_type);
+        bool is_real = ASR::is_a<ASR::Real_t>(*test_int_type);
+        if (!is_int && !is_real) {
+            throw SemanticError("Arithmetic if (x) requires an integer or real for `x`", test_int->base.loc);
+        }
+        ASR::expr_t *test_lt, *test_gt; 
+        int kind = ASRUtils::extract_kind_from_ttype_t(test_int_type);
+        if (is_int) {
+            ASR::ttype_t *type0 = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, x.base.base.loc, kind, nullptr, 0));
+            ASR::expr_t *right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                x.base.base.loc, 0, type0));
+            ASR::ttype_t *type = ASRUtils::TYPE(
+                ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+            ASR::expr_t *value = nullptr;
+            test_lt = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, test_int->base.loc,
+                test_int, ASR::cmpopType::Lt, right, type, value));
+            test_gt = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, test_int->base.loc,
+                test_int, ASR::cmpopType::Gt, right, type, value));
+        } else {
+            ASR::ttype_t *type0 = ASRUtils::TYPE(
+                ASR::make_Real_t(al, x.base.base.loc, kind, nullptr, 0));
+            ASR::expr_t *right = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
+                x.base.base.loc, 0, type0));
+            ASR::ttype_t *type = ASRUtils::TYPE(
+                ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+            ASR::expr_t *value = nullptr;
+            test_lt = ASRUtils::EXPR(ASR::make_RealCompare_t(al, test_int->base.loc,
+                test_int, ASR::cmpopType::Lt, right, type, value));
+            test_gt = ASRUtils::EXPR(ASR::make_RealCompare_t(al, test_int->base.loc,
+                test_int, ASR::cmpopType::Gt, right, type, value));
+        }
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        body.push_back(al, ASRUtils::STMT(
+            ASR::make_GoTo_t(al, x.base.base.loc, x.m_lt_label)));
+        Vec<ASR::stmt_t*> orelse;
+        orelse.reserve(al, 1);
+
+        Vec<ASR::stmt_t*> body_gt;
+        body_gt.reserve(al, 1);
+        body_gt.push_back(al, ASRUtils::STMT(
+            ASR::make_GoTo_t(al, x.base.base.loc, x.m_gt_label)));
+        Vec<ASR::stmt_t*> orelse_gt;
+        orelse_gt.reserve(al, 1);
+        orelse_gt.push_back(al, ASRUtils::STMT(
+            ASR::make_GoTo_t(al, x.base.base.loc, x.m_eq_label)));
+
+        orelse.push_back(al, ASRUtils::STMT(
+            ASR::make_If_t(al, x.base.base.loc, test_gt, body_gt.p,
+                body_gt.size(), orelse_gt.p, orelse_gt.size())));
+        tmp = ASR::make_If_t(al, x.base.base.loc, test_lt, body.p,
+                body.size(), orelse.p, orelse.size());
+    }
+
     void visit_WhileLoop(const AST::WhileLoop_t &x) {
         visit_expr(*x.m_test);
         ASR::expr_t *test = LFortran::ASRUtils::EXPR(tmp);
@@ -1515,17 +1622,28 @@ public:
         tmp = ASR::make_Nullify_t(al, x.base.base.loc, arg_vec.p, arg_vec.size());
     }
 
+    void visit_Template(const AST::Template_t &x){
+        is_template = true;
+        for (size_t i=0; i<x.n_contains; i++) {
+            this->visit_program_unit(*x.m_contains[i]);
+        }
+        is_template = false;
+    }
 };
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
-        CompilerOptions &compiler_options)
+        CompilerOptions &compiler_options,
+        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options);
     try {
+        b.is_body_visitor = true;
+        b.template_type_parameters = template_type_parameters;
         b.visit_TranslationUnit(ast);
+        b.is_body_visitor = false;
     } catch (const SemanticError &e) {
         Error error;
         diagnostics.diagnostics.push_back(e.d);

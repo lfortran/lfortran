@@ -1,4 +1,4 @@
-# shiftr(x, shift)
+# shiftr(x, shift): Shift Right
 
 Logical shift right function.
 

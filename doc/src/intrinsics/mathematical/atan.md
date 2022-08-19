@@ -1,4 +1,4 @@
-# atan(x)
+# atan(x): Trigonometric ArcTangent
 
 Trigonometric arctangent (inverse arctangent) function.
 

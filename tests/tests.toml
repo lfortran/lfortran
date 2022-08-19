@@ -12,6 +12,11 @@ asr_indent = true
 ast = true
 
 [[test]]
+filename = "../integration_tests/template_add.f90"
+ast = true
+asr = true
+
+[[test]]
 filename = "subroutine2.f90"
 ast = true
 
@@ -336,6 +341,10 @@ wat = true
 
 [[test]]
 filename = "wasm_main_program.f90"
+wat = true
+
+[[test]]
+filename = "wasm_bind_c.f90"
 wat = true
 
 [[test]]
@@ -1679,6 +1688,14 @@ filename = "../integration_tests/expr_07.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/expr_08.f90"
+wat = true
+
+[[test]]
+filename = "../integration_tests/expr_09.f90"
+wat = true
+
+[[test]]
 filename = "../integration_tests/modules_11.f90"
 ast = true
 asr = true
@@ -1925,11 +1942,47 @@ filename = "fixed_form2.f"
 ast = true
 
 [[test]]
+filename = "fixed_form3.f"
+ast = true
+
+[[test]]
+filename = "fixed_form4.f"
+ast = true
+
+[[test]]
 filename = "fixedform_doloop.f"
 ast = true
 
 [[test]]
 filename = "fixedform_doloop2.f"
+ast = true
+
+[[test]]
+filename = "fixedform_doloop3.f"
+ast = true
+
+[[test]]
+filename = "fixedform_assign_minimal.f"
+ast = true
+
+[[test]]
+filename = "fixedform_assignment.f"
+ast = true
+
+[[test]]
+filename = "fixedform_nestedloop_implicit.f"
+ast = true
+
+[[test]]
+filename = "fixedform_subroutine.f"
+ast = true
+
+[[test]]
+filename = "fixedform_return2.f"
+ast = true
+
+[[test]]
+filename = "fixedform_data.f"
 ast = true
 
 [[test]]
@@ -2148,3 +2201,36 @@ asr_implicit_typing = true
 [[test]]
 filename = "implicit_typing2.f90"
 asr_implicit_typing = true
+
+[[test]]
+filename = "dimension_attr2.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "dimension_attr.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "errors/fixed_form_1.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_2.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_3.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_4.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_5.f"
+ast = true
+
+[[test]]
+filename = "errors/arithmetic_if1.f90"
+asr = true

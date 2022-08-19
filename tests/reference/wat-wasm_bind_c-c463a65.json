@@ -1,0 +1,13 @@
+{
+    "basename": "wat-wasm_bind_c-c463a65",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/wasm_bind_c.f90",
+    "infile_hash": "ef2aa4a9db67037588bb3e9c1c30b34f3b5667563e65890fc5f06b9a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-wasm_bind_c-c463a65.stdout",
+    "stdout_hash": "a015f78eb782de377f3de72b14c9c438cde4dfc3ec2892e2a2e99e27",
+    "stderr": "wat-wasm_bind_c-c463a65.stderr",
+    "stderr_hash": "8d99047ec90cdc381c5a55f9a99d6c32773ed04ab014666258e118d1",
+    "returncode": 0
+}

@@ -53,13 +53,14 @@ cd docs-deploy
 rm -rf docs
 mkdir docs
 echo "docs.lfortran.org" > docs/CNAME
+touch docs/.nojekyll
 cp -r $D/site/* docs/
 
 git config user.name "Deploy"
 git config user.email "noreply@deploy"
 COMMIT_MESSAGE="Deploying on $(date "+%Y-%m-%d %H:%M:%S")"
 
-git add .
+git add docs
 git commit -m "${COMMIT_MESSAGE}"
 
 git push origin +master:$dest_branch

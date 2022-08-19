@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <cctype>
 
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/parser.tab.hh>
@@ -18,7 +19,9 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
 {
     Parser p(al, diagnostics, fixed_form);
     try {
-        p.parse(s);
+        if (!p.parse(s)) {
+            return Error();
+        };
     } catch (const parser_local::TokenizerError &e) {
         Error error;
         diagnostics.diagnostics.push_back(e.d);
@@ -40,7 +43,7 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         p.result.p, p.result.size());
 }
 
-void Parser::parse(const std::string &input)
+bool Parser::parse(const std::string &input)
 {
     inp = input;
     if (inp.size() > 0) {
@@ -51,13 +54,13 @@ void Parser::parse(const std::string &input)
     if (!fixed_form) {
         m_tokenizer.set_string(inp);
         if (yyparse(*this) == 0) {
-            return;
+            return true;
         }
     } else {
         f_tokenizer.set_string(inp);
-        f_tokenizer.tokenize_input(diag, m_a);
+        if (!f_tokenizer.tokenize_input(diag, m_a)) return false;
         if (yyparse(*this) == 0) {
-            return;
+            return true;
         }
     }
     throw parser_local::ParserError("Parsing unsuccessful (internal compiler error)");
@@ -214,6 +217,7 @@ void copy_label(std::string &out, const std::string &s, size_t &pos)
     }
 }
 
+// Only used in fixed-form
 void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
     LocationManager &lm)
 {
@@ -230,7 +234,8 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
             lm.out_start.push_back(out.size());
             lm.in_start.push_back(pos);
         } else {
-            out += s[pos];
+            // Copy the character, but covert to lowercase
+            out += tolower(s[pos]);
             pos++;
         }
     }
@@ -263,25 +268,23 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
         std::string out;
         size_t pos = 0;
         /* Note:
-         * This should be a valid fixed form prescanner, except the following
-         * features which are currently not implemented:
+         * This is a fixed-form prescanner, which:
+         *
+         *   * Removes all whitespace
+         *   * Joins continuation lines
+         *   * Removes comments
+         *   * Handles the first 6 columns
+         *   * Converts to lowercase
+         *
+         * features which are currently not yet implemented:
          *
          *   * Continuation lines after comment(s) or empty lines (they will be
          *     appended to the previous comment, and thus skipped)
          *   * Characters after column 72 are included, but should be ignored
-         *   * White space is preserved (but should be removed)
          *
-         * The parser together with this fixed form prescanner works as a fixed
-         * form parser with some limitations. Due to the last point above,
-         * white space is not ignored because it is needed for the parser, so
-         * the following are not supported:
-         *
-         *   * Extra space: `.  and.`, `3.5 55 d0`, ...
-         *   * Missing space: `doi=1,5`, `callsome_subroutine(x)`
-         *
-         * It turns out most fixed form codes use white space as one would
-         * expect, so it is not such a big problem and the fixes needed to do
-         * in the fixed form Fortran code are relatively minor in practice.
+         * After the prescanner, the tokenizer is itself a recursive descent
+         * parser that correctly identifies tokens so that the Bison
+         * parser can parse it correctly.
          */
         while (true) {
             const char *p = &s[pos];
@@ -555,6 +558,7 @@ std::string token2text(const int token)
         T(KW_INCLUDE, "include")
         T(KW_INOUT, "inout")
         T(KW_INQUIRE, "inquire")
+        T(KW_INSTANTIATE, "instantiate")
         T(KW_INTEGER, "integer")
         T(KW_INTENT, "intent")
         T(KW_INTERFACE, "interface")
@@ -623,6 +627,7 @@ std::string token2text(const int token)
         T(KW_TARGET, "target")
         T(KW_TEAM, "team")
         T(KW_TEAM_NUMBER, "team_number")
+        T(KW_TEMPLATE, "template")
         T(KW_THEN, "then")
         T(KW_TO, "to")
         T(KW_TYPE, "type")
@@ -651,11 +656,17 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
         std::string token_str;
         // Determine the unexpected token's type:
         if (this->fixed_form) {
-            unsigned int invalid_token = this->f_tokenizer.token_pos - 1;            
-            if (invalid_token >= f_tokenizer.tokens.size()) {
-                invalid_token = f_tokenizer.tokens.size()-1;
+            unsigned int invalid_token = this->f_tokenizer.token_pos;
+            if (invalid_token == 0 || invalid_token > f_tokenizer.tokens.size()) {
+                message = "unknown error";
+                throw parser_local::ParserError(message, loc);
             }
+            invalid_token--;
+            LFORTRAN_ASSERT(invalid_token < f_tokenizer.tokens.size())
+            LFORTRAN_ASSERT(invalid_token < f_tokenizer.locations.size())
             token = f_tokenizer.tokens[invalid_token];
+            Location loc = f_tokenizer.locations[invalid_token];
+            token_str = f_tokenizer.token_at_loc(loc);
         } else {
             LFortran::YYSTYPE yylval_;
             YYLTYPE yyloc_;

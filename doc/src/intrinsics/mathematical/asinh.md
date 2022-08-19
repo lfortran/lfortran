@@ -1,4 +1,4 @@
-# asinh(x)
+# asinh(x): Inverse Hyperbolic Arcsine
 
 Inverse hyperbolic arcsine function.
 

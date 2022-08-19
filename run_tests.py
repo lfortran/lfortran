@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
 import sys
-sys.path.append("src/libasr")
+import os
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+sys.path.append(os.path.join(ROOT_DIR, "src", "libasr"))
+
 from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 
 
@@ -106,13 +110,23 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
             update_reference)
 
     if asr:
-        run_test(
-            filename,
-            "asr",
-            "lfortran --show-asr --no-color {infile} -o {outfile}",
-            filename,
-            update_reference,
-            extra_args)
+        # run fixed form
+        if filename.endswith(".f"):
+            run_test(
+                filename,
+                "asr",
+                "lfortran --fixed-form --show-asr --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                extra_args)
+        else:
+            run_test(
+                filename,
+                "asr",
+                "lfortran --show-asr --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                extra_args)
 
     if asr_implicit_typing:
         run_test(

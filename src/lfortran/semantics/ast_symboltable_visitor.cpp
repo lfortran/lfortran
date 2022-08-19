@@ -92,16 +92,6 @@ public:
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options)
       : CommonVisitor(al, symbol_table, diagnostics, compiler_options) {}
 
-
-    ASR::symbol_t* resolve_symbol(const Location &loc, const std::string &sub_name) {
-        SymbolTable *scope = current_scope;
-        ASR::symbol_t *sub = scope->resolve_symbol(sub_name);
-        if (!sub) {
-            throw SemanticError("Symbol '" + sub_name + "' not declared", loc);
-        }
-        return sub;
-    }
-
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
             current_scope = al.make_new<SymbolTable>(nullptr);
@@ -483,6 +473,10 @@ public:
                     type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind, nullptr, 0));
                     break;
                 }
+                case (AST::decl_typeType::TypeDoublePrecision) : {
+                    type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
+                    break;
+                }
                 case (AST::decl_typeType::TypeComplex) : {
                     type = LFortran::ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind, nullptr, 0));
                     break;
@@ -504,7 +498,23 @@ public:
                             + derived_type_name + "' not declared", x.base.base.loc);
 
                     }
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Derived_t(al, x.base.base.loc, v,
+                    
+                    // Check whether this function is templated
+                    bool type_param = false;
+                    if(is_template){
+                        for(size_t i = 0; i < current_template_type_parameters.size(); i++){
+                            ASR::TypeParameter_t* param = ASR::down_cast2<ASR::TypeParameter_t>(current_template_type_parameters[i]);
+                            std::string name = std::string(param->m_param);
+
+                            if(name.compare(derived_type_name) == 0){
+                                current_procedure_used_type_parameter_indices.insert(i);
+                                is_current_procedure_templated = true;
+                                type_param = true;
+                            }
+                        }
+                    }
+                    if(type_param) type = LFortran::ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, nullptr, nullptr, 0));
+                    else type = LFortran::ASRUtils::TYPE(ASR::make_Derived_t(al, x.base.base.loc, v,
                         nullptr, 0));
                     break;
                 }
@@ -570,6 +580,12 @@ public:
                 is_elemental = is_elemental || simple_func_attr->m_attr == AST::simple_attributeType::AttrElemental;
             }
         }
+        Vec<ASR::ttype_t*> params;
+        params.reserve(al, current_procedure_used_type_parameter_indices.size()); 
+        for(auto i = current_procedure_used_type_parameter_indices.begin(); i != current_procedure_used_type_parameter_indices.end(); i++){
+            ASR::asr_t* param = current_template_type_parameters[*i];
+            params.push_back(al, ASR::down_cast<ASR::ttype_t>(param));
+        }
 
         tmp = ASR::make_Function_t(
             al, x.base.base.loc,
@@ -577,7 +593,8 @@ public:
             /* a_name */ s2c(al, to_lower(sym_name)),
             /* a_args */ args.p,
             /* n_args */ args.size(),
-            nullptr, 0,
+            /* a_type_parameters */ is_current_procedure_templated ? params.p : nullptr,
+            /* n_type_parameters */ params.size(),
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ LFortran::ASRUtils::EXPR(return_var_ref),
@@ -588,10 +605,16 @@ public:
         current_procedure_args.clear();
         current_procedure_abi_type = ASR::abiType::Source;
         current_symbol = -1;
+        current_procedure_used_type_parameter_indices.clear();
+        is_current_procedure_templated = false;
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
         visit_DeclarationUtil(x);
+    }
+
+    void visit_Instantiate(const AST::Instantiate_t &){
+        
     }
 
     void visit_DerivedType(const AST::DerivedType_t &x) {
@@ -633,10 +656,13 @@ public:
             }
             parent_sym = parent_scope->get_symbol(parent_sym_name);
         }
+        if(is_template && data_member_names.size() == 0){
+            current_template_type_parameters.push_back(ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0));
+        }
         tmp = ASR::make_DerivedType_t(al, x.base.base.loc, current_scope,
-                s2c(al, to_lower(x.m_name)), data_member_names.p, data_member_names.size(),
-                ASR::abiType::Source, dflt_access, parent_sym);
-        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+            s2c(al, to_lower(x.m_name)), data_member_names.p, data_member_names.size(),
+            ASR::abiType::Source, dflt_access, parent_sym);
+            parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         is_derived_type = false;
     }
@@ -1278,11 +1304,27 @@ public:
         }
     }
 
+    void visit_Template(const AST::Template_t &x){
+        is_template = true;
+        // For interface and typeparameters(derived type)
+        for (size_t i=0; i<x.n_decl; i++) {
+            this->visit_unit_decl2(*x.m_decl[i]);
+        }
+
+        for (size_t i=0; i<x.n_contains; i++) {
+            this->visit_program_unit(*x.m_contains[i]);
+        }
+
+        is_template = false;
+        template_type_parameters[x.m_name] = current_template_type_parameters;
+    }
+
 };
 
 Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
-        SymbolTable *symbol_table, CompilerOptions &compiler_options)
+        SymbolTable *symbol_table, CompilerOptions &compiler_options,
+        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options);
     try {
@@ -1296,6 +1338,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         return error;
     }
     ASR::asr_t *unit = v.tmp;
+    template_type_parameters = v.template_type_parameters;
     return unit;
 }
 

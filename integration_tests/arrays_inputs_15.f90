@@ -1,4 +1,4 @@
-program arrays_08_func
+program arrays_inputs_15
 implicit none
 integer :: x(10), y(10), i
 logical :: r
