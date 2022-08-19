@@ -3,27 +3,30 @@
 # This file is distributed under the same license as the LFortran package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: LFortran \n"
+"Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"PO-Revision-Date: 2022-08-19 09:32+0000\n"
+"Last-Translator: Ian Giestas Pauli <iangiestaspauli@gmail.com>\n"
+"Language-Team: Portuguese <https://hosted.weblate.org/projects/fortran-lang/"
+"lfortran-docs/pt/>\n"
+"Language: pt\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 4.14-dev\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../../doc/src/ast_and_asr.ipynb:9
 msgid "Difference between an AST and ASR"
-msgstr ""
+msgstr "Diferenças entre uma AST e uma ASR"
 
 #: ../../doc/src/ast_and_asr.ipynb:11
 msgid "Let us take a simple Fortran code:"
-msgstr ""
+msgstr "Tomemos um simples código Fortran:"
 
 #: ../../doc/src/ast_and_asr.ipynb:22
 msgid "and look at how the AST and ASR looks like."
@@ -31,7 +34,7 @@ msgstr ""
 
 #: ../../doc/src/ast_and_asr.ipynb:25 ../../doc/src/progress.md
 msgid "AST"
-msgstr ""
+msgstr "AST"
 
 #: ../../doc/src/ast_and_asr.ipynb:76
 msgid ""
@@ -40,10 +43,14 @@ msgid ""
 "such as ``a`` are represented by a ``Name`` node, and are not connected "
 "to their declarations yet."
 msgstr ""
+"A AST não possui nenhuma informação semântica, mas sim \"nós\" que "
+"representam declarações do tipo ``integer, intent(in) :: a``. Variáveis como "
+"``a`` são representadas pelo nó ``Name`` e ainda não estão conectadas às "
+"suas declarações."
 
 #: ../../doc/src/ast_and_asr.ipynb:88 ../../doc/src/progress.md
 msgid "ASR"
-msgstr ""
+msgstr "ASR"
 
 #: ../../doc/src/ast_and_asr.ipynb:139
 msgid ""
@@ -51,16 +58,21 @@ msgid ""
 "``Function`` have a symbol table and do not have any declaration nodes. "
 "Variables are simply pointers to the symbol table."
 msgstr ""
+"Uma ASR possui toda a informação semântica (tipos, etc.), nós do tipo "
+"``Function`` possuem uma tabela de símbolos e não tem nenhuma nó de "
+"declaração. Variáveis são simplesmente ponteiros para a tabela de símbolos."
 
 #: ../../doc/src/ast_and_asr.ipynb:142
 msgid "Discussion"
-msgstr ""
+msgstr "Discussão"
 
 #: ../../doc/src/ast_and_asr.ipynb:144
 msgid ""
 "The above was a simple example. Things get more apparent for more "
 "complicated examples, such as:"
 msgstr ""
+"O exemplo acima foi simples. As coisas ficam mais evidentes para exemplos "
+"mais complicados, como:"
 
 #: ../../doc/src/ast_and_asr.ipynb:160
 msgid ""
@@ -4509,4 +4521,3 @@ msgstr ""
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/nint/t01_scalar_real.f90)"
 msgstr ""
-
