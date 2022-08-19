@@ -151,12 +151,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         return nullptr;
     }
 
-    void add_func_to_imports(const ASR::Function_t &x) {
-        wasm::emit_import_fn(m_import_section, m_al, "js", x.m_name, no_of_types);
-        emit_function_prototype(x);
-        no_of_imports++;
-    }
-
     void import_function(ImportFunc &import_func) {
         Vec<ASR::expr_t*> params;
         params.reserve(m_al, import_func.param_types.size());
@@ -566,10 +560,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         if (is_prototype_only) {
             if (x.m_abi == ASR::abiType::BindC && x.m_deftype == ASR::deftypeType::Interface) {
-                add_func_to_imports(x);
-                return;
+                wasm::emit_import_fn(m_import_section, m_al, "js", x.m_name, no_of_types);
+                no_of_imports++;
             }
             emit_function_prototype(x);
+            return;
         }
         emit_function_body(x);
     }
