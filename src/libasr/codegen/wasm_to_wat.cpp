@@ -98,7 +98,7 @@ class WASMDecoder {
 
         for (uint32_t i = 0; i < no_of_func_types; i++) {
             if (wasm_bytes[offset] != 0x60) {
-                throw LFortran::LCompilersException("Invalid type section");
+                throw CodeGenError("Invalid type section");
             }
             offset++;
 
@@ -167,10 +167,7 @@ class WASMDecoder {
                 }
 
                 default: {
-                    std::cout << "Only importing functions and memory are "
-                                 "currently supported"
-                              << std::endl;
-                    LFORTRAN_ASSERT(false);
+                    throw CodeGenError("Only importing functions and memory are currently supported");
                 }
             }
         }
@@ -247,7 +244,7 @@ class WASMDecoder {
         for (uint32_t i = 0; i < no_of_data_segments; i++) {
             uint32_t num = read_u32(wasm_bytes, offset);
             if (num != 0) {
-                throw LFortran::LCompilersException(
+                throw CodeGenError(
                     "Only active default memory (index = 0) is currently "
                     "supported");
             }
@@ -273,13 +270,11 @@ class WASMDecoder {
         // first 8 bytes are magic number and wasm version number
         uint32_t index = 0;
         if (!is_preamble_ok(index)) {
-            std::cout << "Unexpected Preamble: ";
+            std::cerr << "Unexpected Preamble: ";
             for (size_t i = 0; i < PREAMBLE_SIZE; i++) {
-                printf("0x%.02X, ", wasm_bytes[i]);
+                fprintf(stderr, "0x%.02X, ", wasm_bytes[i]);
             }
-            std::cout << "\nExpected: 0x00, 0x61, 0x73, 0x6D, 0x01, "
-                         "0x00, 0x00, 0x00"
-                      << std::endl;
+            throw CodeGenError("Expected: 0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00");
         }
         index += PREAMBLE_SIZE;
         while (index < wasm_bytes.size()) {
