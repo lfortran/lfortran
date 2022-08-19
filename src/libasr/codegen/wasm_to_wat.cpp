@@ -43,6 +43,7 @@ class WASMDecoder {
     std::unordered_map<uint8_t, std::string> kind_to_string;
 
     Allocator &al;
+    diag::Diagnostics &diag;
     Vec<uint8_t> wasm_bytes;
     size_t PREAMBLE_SIZE;
 
@@ -53,7 +54,7 @@ class WASMDecoder {
     Vec<wasm::Code> codes;
     Vec<wasm::Data> data_segments;
 
-    WASMDecoder(Allocator &al) : al(al) {
+    WASMDecoder(Allocator &al, diag::Diagnostics &diagonostics) : al(al), diag(diagonostics) {
         var_type_to_string = {
             {0x7F, "i32"}, {0x7E, "i64"}, {0x7D, "f32"}, {0x7C, "f64"}};
         kind_to_string = {
