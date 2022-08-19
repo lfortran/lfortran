@@ -10,7 +10,7 @@ if (NOT LFORTRAN_TARBALL)
     find_program(GIT_BIN git REQUIRED)
     find_program(RE2C_BIN re2c REQUIRED)
     find_package(Python3 REQUIRED)
-    find_package(BISON 3.4 REQUIRED)
+    find_package(BISON 3.0.4 REQUIRED)
 
     # Fetch the version from git
     execute_process(
