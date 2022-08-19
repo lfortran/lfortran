@@ -146,6 +146,7 @@ def build_docs(language: str) -> None:
             str(root / "site" / language),
             f"-Dlanguage={language}",
         ],
+        cwd=root,
     )
 
 
