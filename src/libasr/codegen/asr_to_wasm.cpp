@@ -298,14 +298,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
 
         // Generate the bodies of functions and subroutines
-        declare_all_functions(x.m_symtab);
+        declare_all_functions(*x.m_symtab);
         intrinsic_module = false;
     }
 
     void visit_Program(const ASR::Program_t &x) {
 
         // Generate the bodies of functions and subroutines
-        declare_all_functions(x.m_symtab);
+        declare_all_functions(*x.m_symtab);
 
         // Generate main program code
         auto main_func = ASR::make_Function_t(m_al, x.base.base.loc, x.m_symtab, s2c(m_al, "_lcompilers_main"),
