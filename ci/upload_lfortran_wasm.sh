@@ -29,7 +29,7 @@ cd wasm_builds/docs
 cp $D/src/bin/lfortran.js ${dest_dir}/${git_hash}/lfortran.js
 cp $D/src/bin/lfortran.wasm ${dest_dir}/${git_hash}/lfortran.wasm
 
-echo "$git_hash" >> ${dest_dir}/latest_commit
+echo "$git_hash" > ${dest_dir}/latest_commit # overwrite the file instead of appending to it
 python $D/ci/wasm_builds_update_json.py ${dest_dir} ${lfortran_version} ${git_hash}
 
 git config user.name "Deploy"
