@@ -3,35 +3,38 @@
 # This file is distributed under the same license as the LFortran package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: LFortran \n"
+"Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"PO-Revision-Date: 2022-08-19 09:32+0000\n"
+"Last-Translator: Sebastian Ehlert <awvwgk@gmail.com>\n"
+"Language-Team: German <https://hosted.weblate.org/projects/fortran-lang/"
+"lfortran-docs/de/>\n"
+"Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.14-dev\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../../doc/src/ast_and_asr.ipynb:9
 msgid "Difference between an AST and ASR"
-msgstr ""
+msgstr "Unterschied zwischen AST und ASR"
 
 #: ../../doc/src/ast_and_asr.ipynb:11
 msgid "Let us take a simple Fortran code:"
-msgstr ""
+msgstr "Nehmen wir einen einfachen Fortran-Code:"
 
 #: ../../doc/src/ast_and_asr.ipynb:22
 msgid "and look at how the AST and ASR looks like."
-msgstr ""
+msgstr "und sehen uns an, wie der AST und die ASR aussehen."
 
 #: ../../doc/src/ast_and_asr.ipynb:25 ../../doc/src/progress.md
 msgid "AST"
-msgstr ""
+msgstr "AST"
 
 #: ../../doc/src/ast_and_asr.ipynb:76
 msgid ""
@@ -40,10 +43,14 @@ msgid ""
 "such as ``a`` are represented by a ``Name`` node, and are not connected "
 "to their declarations yet."
 msgstr ""
+"Der AST enthält keine semantischen Informationen, hat aber Knoten zur "
+"Darstellung von Deklarationen wie ``integer, intent(in) :: a``. Variablen "
+"wie ``a`` werden durch einen ``Name`` Knoten dargestellt und sind noch nicht "
+"mit ihren Deklarationen verbunden."
 
 #: ../../doc/src/ast_and_asr.ipynb:88 ../../doc/src/progress.md
 msgid "ASR"
-msgstr ""
+msgstr "ASR"
 
 #: ../../doc/src/ast_and_asr.ipynb:139
 msgid ""
@@ -51,22 +58,29 @@ msgid ""
 "``Function`` have a symbol table and do not have any declaration nodes. "
 "Variables are simply pointers to the symbol table."
 msgstr ""
+"Die ASR enthält alle semantischen Informationen (Typen usw.), Knoten wie "
+"``Function`` haben eine Symboltabelle und keine Deklarationsknoten. "
+"Variablen sind einfach Zeiger auf die Symboltabelle."
 
 #: ../../doc/src/ast_and_asr.ipynb:142
 msgid "Discussion"
-msgstr ""
+msgstr "Diskussion"
 
 #: ../../doc/src/ast_and_asr.ipynb:144
 msgid ""
 "The above was a simple example. Things get more apparent for more "
 "complicated examples, such as:"
 msgstr ""
+"Das obige Beispiel war ein einfaches. Bei komplizierteren Beispielen, wie z. "
+"B. dem folgenden, werden die Dinge deutlicher:"
 
 #: ../../doc/src/ast_and_asr.ipynb:160
 msgid ""
 "AST must represent all the ``use`` statements and the ``interface`` "
 "block, and keep things semantically consistent."
 msgstr ""
+"AST muss alle ``use`` Anweisungen und den ``interface`` Block repräsentieren "
+"und die Dinge semantisch konsistent halten."
 
 #: ../../doc/src/ast_and_asr.ipynb:162
 msgid ""
@@ -75,16 +89,22 @@ msgid ""
 " are defined in the ``gfort_interop`` module, and so ASR does not have "
 "any of these declaration nodes."
 msgstr ""
+"ASR hingegen verfolgt die ``c_desc1_int32``, ``c_desc1_t`` und "
+"``f2b_c_wrapper`` in der Symboltabelle und weiß, dass sie im Modul "
+"``gfort_interop`` definiert sind, so dass ASR keinen dieser "
+"Deklarationsknoten hat."
 
 #: ../../doc/src/ast_and_asr.ipynb:164
 msgid ""
 "When converting from ASR to AST, LFortran will create all the appropriate"
 " AST declaration nodes automatically and correctly."
 msgstr ""
+"Bei der Konvertierung von ASR nach AST erstellt LFortran alle entsprechenden "
+"AST-Deklarationsknoten automatisch und korrekt."
 
 #: ../../doc/src/contributing.md:1
 msgid "Contributing"
-msgstr ""
+msgstr "Beitragen"
 
 #: ../../doc/src/contributing.md:3
 msgid ""
@@ -353,11 +373,11 @@ msgstr ""
 
 #: ../../doc/src/design.md:1
 msgid "LFortran Design"
-msgstr ""
+msgstr "LFortran-Design"
 
 #: ../../doc/src/design.md:3
 msgid "High Level Overview"
-msgstr ""
+msgstr "Allgemeine Übersicht"
 
 #: ../../doc/src/design.md:5 ../../doc/src/developer_tutorial.ipynb:16
 msgid ""
@@ -366,6 +386,10 @@ msgid ""
 "and users are encouraged to use them independently for other applications"
 " and build tools on top:"
 msgstr ""
+"LFortran ist um zwei unabhängige Module herum aufgebaut, AST und ASR, die "
+"beide eigenständig sind (völlig unabhängig vom Rest von LFortran), und die "
+"Benutzer werden ermutigt, sie unabhängig für andere Anwendungen zu verwenden "
+"und darauf aufbauende Werkzeuge zu erstellen:"
 
 #: ../../doc/src/design.md:10
 msgid ""
@@ -373,6 +397,10 @@ msgid ""
 " source code, strictly based on syntax, no semantic is included. The AST "
 "module can convert itself to Fortran source code."
 msgstr ""
+"Abstrakter Syntaxbaum (abstract syntax tree, AST), Modul `lfortran.ast`: "
+"Stellt einen beliebigen Fortran-Quellcode dar, der ausschließlich auf der "
+"Syntax basiert und keine Semantik enthält. Das AST-Modul kann sich selbst in "
+"Fortran-Quellcode umwandeln."
 
 #: ../../doc/src/design.md:14
 msgid ""
@@ -381,20 +409,27 @@ msgid ""
 "code is not allowed (an error will be given). The ASR module can convert "
 "itself to an AST."
 msgstr ""
+"Abstrakte semantische Repräsentation (abstract semantic representation, ASR)"
+", Modul `lfortran.asr`: Stellt einen gültigen Fortran-Quellcode dar, die "
+"gesamte Semantik ist enthalten. Ungültiger Fortran-Code ist nicht erlaubt ("
+"es wird ein Fehler ausgegeben). Das ASR-Modul kann sich selbst in einen AST "
+"umwandeln."
 
 #: ../../doc/src/design.md:19
 msgid ""
 "The LFortran compiler is then composed of the following independent "
 "stages:"
 msgstr ""
+"Der LFortran-Compiler setzt sich dann aus den folgenden unabhängigen Stufen "
+"zusammen:"
 
 #: ../../doc/src/design.md:21
 msgid "Parsing: converts Fortran source code to an AST"
-msgstr ""
+msgstr "Parsing: Konvertiert Fortran-Quellcode in einen AST"
 
 #: ../../doc/src/design.md:22
 msgid "Semantic: converts an AST to an ASR"
-msgstr ""
+msgstr "Semantisch: wandelt einen AST in eine ASR um"
 
 #: ../../doc/src/design.md:23
 msgid ""
@@ -402,6 +437,9 @@ msgid ""
 "(things like inlining functions, eliminating redundant expressions or "
 "statements, etc.)"
 msgstr ""
+"Optimierungen auf hoher Ebene: Optimierung der ASR zu einer möglicherweise "
+"schnelleren/einfacheren ASR (z. B. Inlining von Funktionen, Beseitigung "
+"redundanter Ausdrücke oder Anweisungen usw.)"
 
 #: ../../doc/src/design.md:26
 msgid ""
@@ -409,6 +447,10 @@ msgid ""
 " an LLVM IR. This stage also does all other optimizations that do not "
 "produce an ASR, but still make sense to do before passing to LLVM IR."
 msgstr ""
+"LLVM IR-Code-Generierung und Optimierungen auf niedrigerer Ebene: wandelt "
+"eine ASR in eine LLVM IR um. In dieser Phase werden auch alle anderen "
+"Optimierungen durchgeführt, die keine ASR erzeugen, aber dennoch sinnvoll "
+"sind, bevor sie an LLVM IR übergeben werden."
 
 #: ../../doc/src/design.md:29
 msgid ""
@@ -417,6 +459,10 @@ msgid ""
 " file, or it is loaded and executed using JIT as part of the interactive "
 "LFortran session or in a Jupyter kernel)."
 msgstr ""
+"Erzeugung von Maschinencode: LLVM führt dann alle Optimierungen durch und "
+"generiert Maschinencode (z. B. eine binäre ausführbare Datei, eine "
+"Bibliothek, eine Objektdatei, oder sie wird geladen und mit JIT als Teil der "
+"interaktiven LFortran-Sitzung oder in einem Jupyter-Kernel ausgeführt)."
 
 #: ../../doc/src/design.md:34
 msgid ""
@@ -428,56 +474,73 @@ msgid ""
 "machine code directly. In other words, one can use LFortran to easily "
 "convert between the three equivalent representations:"
 msgstr ""
+"LFortran ist als Bibliothek strukturiert, und so kann man zum Beispiel den "
+"Parser verwenden, um einen AST zu erhalten und etwas damit zu tun, oder man "
+"kann dann den semantischen Analysator verwenden, um ASR zu erhalten und "
+"etwas damit zu tun. Man kann die ASR direkt generieren (z.B. aus SymPy) und "
+"dann entweder in AST und in einen Fortran-Quellcode konvertieren oder "
+"LFortran verwenden, um sie direkt in Maschinencode zu kompilieren. Mit "
+"anderen Worten, man kann LFortran verwenden, um einfach zwischen den drei "
+"äquivalenten Darstellungen zu konvertieren:"
 
 #: ../../doc/src/design.md:42
 msgid "Fortran source code"
-msgstr ""
+msgstr "Fortran-Quellcode"
 
 #: ../../doc/src/design.md:43 ../../doc/src/developer_tutorial.ipynb:23
 msgid "Abstract Syntax Tree (AST)"
-msgstr ""
+msgstr "Abstrakter Syntaxbaum (AST)"
 
 #: ../../doc/src/design.md:44 ../../doc/src/developer_tutorial.ipynb:159
 msgid "Abstract Semantic Representation (ASR)"
-msgstr ""
+msgstr "Abstrakte semantische Repräsentation (ASR)"
 
 #: ../../doc/src/design.md:46
 msgid "They are all equivalent in the following sense:"
-msgstr ""
+msgstr "Sie sind alle im folgenden Sinne gleichwertig:"
 
 #: ../../doc/src/design.md:48
 msgid "Any ASR can always be converted to an equivalent AST"
-msgstr ""
+msgstr "Jeder ASR kann jederzeit in einen entsprechenden AST umgewandelt werden"
 
 #: ../../doc/src/design.md:49
 msgid "Any AST can always be converted to an equivalent Fortran source code"
 msgstr ""
+"Jeder AST kann jederzeit in einen entsprechenden Fortran-Quellcode "
+"konvertiert werden"
 
 #: ../../doc/src/design.md:50
 msgid ""
 "Any Fortran source code can always be either converted to an equivalent "
 "AST or one gets a syntax error"
 msgstr ""
+"Jeglicher Fortran-Quellcode kann immer entweder in einen äquivalenten AST "
+"konvertiert werden oder man bekommt einen Syntaxfehler"
 
 #: ../../doc/src/design.md:52
 msgid ""
 "Any AST can always be either converted to an equivalent ASR or one gets a"
 " semantic error"
 msgstr ""
+"Jeder AST kann immer entweder in einen äquivalenten ASR umgewandelt werden "
+"oder man erhält einen semantischen Fehler"
 
 #: ../../doc/src/design.md:55
 msgid ""
 "So when a conversion can be done, they are equivalent, and the conversion"
 " can always be done unless the code is invalid."
 msgstr ""
+"Wenn also eine Konvertierung möglich ist, sind sie gleichwertig, und die "
+"Konvertierung kann immer durchgeführt werden, es sei denn, der Code ist "
+"ungültig."
 
 #: ../../doc/src/design.md:58
 msgid "ASR Design Details"
-msgstr ""
+msgstr "Details zum ASR-Design"
 
 #: ../../doc/src/design.md:60
 msgid "The ASR is designed to have the following features:"
-msgstr ""
+msgstr "Die ASR ist mit den folgenden Merkmalen ausgestattet:"
 
 #: ../../doc/src/design.md:62
 msgid ""
@@ -485,12 +548,18 @@ msgid ""
 " not lose any semantic information). ASR can be converted to AST, and AST"
 " to Fortran source code which is functionally equivalent to the original."
 msgstr ""
+"ASR ist immer noch semantisch äquivalent zum ursprünglichen Fortran-Code ("
+"und hat keine semantischen Informationen verloren). ASR kann in AST und AST "
+"in Fortran-Quellcode konvertiert werden, welcher funktional dem Original "
+"entspricht."
 
 #: ../../doc/src/design.md:66
 msgid ""
 "ASR is as simple as possible: it does not contain any information that "
 "could not be inferred from ASR."
 msgstr ""
+"Die ASR ist so einfach wie möglich: sie enthält keine Informationen, die "
+"nicht aus der ASR abgeleitet werden könnten."
 
 #: ../../doc/src/design.md:69
 msgid ""
@@ -508,10 +577,24 @@ msgid ""
 "always contain valid Fortran code and the rest of LFortran can depend on "
 "it."
 msgstr ""
+"Die ASR C++-Klassen (in Zukunft) sind ähnlich wie die SymEngine konzipiert: "
+"Sie werden einmal konstruiert und sind danach unveränderlich. Der "
+"Konstruktor prüft im Debug-Modus eher, ob alle Anforderungen erfüllt sind ("
+"z.B., dass alle Variablen in einer Funktion ein Dummy-Argument haben, dass "
+"explizite Arrays nicht zuweisbar sind und alle anderen Fortran-"
+"Anforderungen, um es zu einem gültigen Code zu machen), aber im Release-"
+"Modus konstruiert er die Klasse schnell und ohne Prüfungen. Dann gibt es "
+"Builder-Klassen, die die ASR-C++-Klassen so konstruieren, dass sie die "
+"Anforderungen erfüllen (die im Debug-Modus überprüft werden), und der "
+"Builder gibt eine Fehlermeldung aus, wenn ein Code kein gültiger Fortran-"
+"Code ist, und wenn er keine Fehlermeldung ausgibt, dann sind die ASR-C++-"
+"Klassen korrekt konstruiert. Somit enthalten die ASR-Klassen "
+"konstruktionsbedingt immer gültigen Fortran-Code und der Rest von LFortran "
+"kann davon abhängen."
 
 #: ../../doc/src/design.md:82
 msgid "Notes:"
-msgstr ""
+msgstr "Anmerkungen:"
 
 #: ../../doc/src/design.md:84
 msgid ""
@@ -4509,4 +4592,3 @@ msgstr ""
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/nint/t01_scalar_real.f90)"
 msgstr ""
-

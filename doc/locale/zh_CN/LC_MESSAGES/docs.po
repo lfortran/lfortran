@@ -3,35 +3,38 @@
 # This file is distributed under the same license as the LFortran package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: LFortran \n"
+"Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"PO-Revision-Date: 2022-08-19 09:32+0000\n"
+"Last-Translator: 左志华 <zuo.zhihua@qq.com>\n"
+"Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
+"fortran-lang/lfortran-docs/zh_Hans/>\n"
+"Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.14-dev\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../../doc/src/ast_and_asr.ipynb:9
 msgid "Difference between an AST and ASR"
-msgstr ""
+msgstr "AST 和 ASR 之间的区别"
 
 #: ../../doc/src/ast_and_asr.ipynb:11
 msgid "Let us take a simple Fortran code:"
-msgstr ""
+msgstr "让我们看一个简单的 Fortran 代码："
 
 #: ../../doc/src/ast_and_asr.ipynb:22
 msgid "and look at how the AST and ASR looks like."
-msgstr ""
+msgstr "看看 AST 和 ASR 的样子。"
 
 #: ../../doc/src/ast_and_asr.ipynb:25 ../../doc/src/progress.md
 msgid "AST"
-msgstr ""
+msgstr "AST"
 
 #: ../../doc/src/ast_and_asr.ipynb:76
 msgid ""
@@ -40,33 +43,36 @@ msgid ""
 "such as ``a`` are represented by a ``Name`` node, and are not connected "
 "to their declarations yet."
 msgstr ""
+"AST 没有任何语义信息，但具有表示声明的节点，例如 ``integer, intent(in) :: "
+"a``。诸如 ``a`` 之类的变量由 ``Name`` 节点表示，并且尚未连接到它们的声明。"
 
 #: ../../doc/src/ast_and_asr.ipynb:88 ../../doc/src/progress.md
 msgid "ASR"
-msgstr ""
+msgstr "ASR"
 
 #: ../../doc/src/ast_and_asr.ipynb:139
 msgid ""
 "The ASR has all the semantic information (types, etc.), nodes like "
 "``Function`` have a symbol table and do not have any declaration nodes. "
 "Variables are simply pointers to the symbol table."
-msgstr ""
+msgstr "ASR 有所有的语义信息（类型等），像 ``Function`` "
+"这样的节点有一个符号表，没有任何声明节点。变量只是指向符号表的指针。"
 
 #: ../../doc/src/ast_and_asr.ipynb:142
 msgid "Discussion"
-msgstr ""
+msgstr "讨论"
 
 #: ../../doc/src/ast_and_asr.ipynb:144
 msgid ""
 "The above was a simple example. Things get more apparent for more "
 "complicated examples, such as:"
-msgstr ""
+msgstr "上面是一个简单的例子。对于更复杂的示例，事情变得更加明显，例如："
 
 #: ../../doc/src/ast_and_asr.ipynb:160
 msgid ""
 "AST must represent all the ``use`` statements and the ``interface`` "
 "block, and keep things semantically consistent."
-msgstr ""
+msgstr "AST 必须代表所有的 ``use`` 语句和 ``interface`` 块，并保持语义一致。"
 
 #: ../../doc/src/ast_and_asr.ipynb:162
 msgid ""
@@ -75,16 +81,19 @@ msgid ""
 " are defined in the ``gfort_interop`` module, and so ASR does not have "
 "any of these declaration nodes."
 msgstr ""
+"另一方面，ASR 跟踪符号表中的 ``c_desc1_int32``、``c_desc1_t`` 和 "
+"``f2b_c_wrapper``，并且知道它们是在``gfort_interop`` 模块中定义的，因此 ASR "
+"没有任何这些声明节点。"
 
 #: ../../doc/src/ast_and_asr.ipynb:164
 msgid ""
 "When converting from ASR to AST, LFortran will create all the appropriate"
 " AST declaration nodes automatically and correctly."
-msgstr ""
+msgstr "从 ASR 转换为 AST 时，LFortran 将自动且正确地创建所有适当的 AST 声明节点。"
 
 #: ../../doc/src/contributing.md:1
 msgid "Contributing"
-msgstr ""
+msgstr "贡献"
 
 #: ../../doc/src/contributing.md:3
 msgid ""
@@ -93,60 +102,68 @@ msgid ""
 " do, it is not complicated. We will help you with any technical issues "
 "and help improve your contribution so that it can be merged."
 msgstr ""
+"我们欢迎任何人的贡献，即使您是开源新手。起初为编译器做贡献可能听起来令人生畏"
+"，但可以尝试去做，这并不复杂。我们将帮助您解决任何技术问题并帮助改进您的贡献"
+"，以便将其合并。"
 
 #: ../../doc/src/contributing.md:8
 msgid "Basic Setup"
-msgstr ""
+msgstr "基本设置"
 
 #: ../../doc/src/contributing.md:10
 msgid "To contribute, make sure your set up:"
-msgstr ""
+msgstr "要做出贡献，请确保您的设置："
 
 #: ../../doc/src/contributing.md:12
 msgid "Your username + email"
-msgstr ""
+msgstr "您的用户名 + 电子邮件"
 
 #: ../../doc/src/contributing.md:13
 msgid "Your `~/.gitconfig`"
-msgstr ""
+msgstr "你的 `~/.gitconfig`"
 
 #: ../../doc/src/contributing.md:14
 msgid "Your shell prompt to display the current branch name"
-msgstr ""
+msgstr "您的 shell 提示显示当前分支名称"
 
 #: ../../doc/src/contributing.md:16
 msgid "Fork LFortran"
-msgstr ""
+msgstr "拉取分叉 LFortran"
 
 #: ../../doc/src/contributing.md:18
 msgid ""
 "Step 1. Create a fork of the [project "
 "repository](https://github.com/lfortran/lfortran)"
-msgstr ""
+msgstr "步骤 1. 创建 [项目存储库](https://github.com/lfortran/lfortran) 的分支"
 
 #: ../../doc/src/contributing.md:20
 msgid ""
 "Step 2. Set up your [SSH key](https://docs.github.com/en/authentication"
 "/connecting-to-github-with-ssh) with GitHub"
 msgstr ""
+"步骤 2. 使用 GitHub 设置您的 [SSH 密钥](https://docs.github.com/en/"
+"authentication/connecting-to-github-with-ssh)"
 
 #: ../../doc/src/contributing.md:22
 msgid ""
 "Step 3. Clone the project repository from GitHub and set up your remote "
 "repository"
-msgstr ""
+msgstr "步骤 3. 从 GitHub 克隆项目存储库并设置您的远程存储库"
 
 #: ../../doc/src/contributing.md:29
 msgid ""
 ":fontawesome-solid-edit: `REMOTE_NAME` is the name of your remote "
 "repository and could be any name you like, for example your first name."
-msgstr ""
+msgstr ":fontawesome-solid-edit: `REMOTE_NAME` "
+"是你的远程仓库的名字，可以是你喜欢的任何名字，例如你的名字。"
 
 #: ../../doc/src/contributing.md:31
 msgid ""
 ":fontawesome-solid-edit: `YOUR_GITHUB_ID` is your user ID on GitHub and "
 "should be part of your account path."
 msgstr ""
+":fontawesome-solid-edit: `YOUR_GITHUB_ID` 是您在 GitHub 上的用户 "
+"ID，应该是您帐户路径的一部分。"
 
 #: ../../doc/src/contributing.md:33
 msgid ""
@@ -783,7 +800,7 @@ msgstr ""
 
 #: ../../doc/src/index.md:134
 msgid "Getting started"
-msgstr ""
+msgstr "开始"
 
 #: ../../doc/src/index.md:141 ../../doc/src/progress.md:1
 msgid "LFortran Development Status"
@@ -4509,4 +4526,3 @@ msgstr ""
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/nint/t01_scalar_real.f90)"
 msgstr ""
-
