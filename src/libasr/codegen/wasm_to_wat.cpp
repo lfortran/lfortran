@@ -27,7 +27,7 @@ void WASMDecoder::load_file(std::string filename) {
 
 bool WASMDecoder::is_preamble_ok(uint32_t offset) {
     uint8_t expected_preamble[] = {0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00};
-    for (size_t i = 0; i < 8; i++) {
+    for (size_t i = 0; i < PREAMBLE_SIZE; i++) {
         uint8_t cur_byte = read_b8(wasm_bytes, offset);
         if (cur_byte != expected_preamble[i]) {
             return false;
@@ -206,12 +206,12 @@ void WASMDecoder::decode_wasm() {
     uint32_t index = 0;
     if (!is_preamble_ok(index)) {
         std::cout << "Unexpected Preamble: ";
-        for (size_t i = 0; i < 8; i++) {
+        for (size_t i = 0; i < PREAMBLE_SIZE; i++) {
             printf("0x%x, ", wasm_bytes[i]);
         }
         std::cout << "\nExpected: 0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00" << std::endl;
     }
-    index += 8;
+    index += PREAMBLE_SIZE;
     while (index < wasm_bytes.size()) {
         uint32_t section_id = read_u32(wasm_bytes, index);
         uint32_t section_size = read_u32(wasm_bytes, index);
