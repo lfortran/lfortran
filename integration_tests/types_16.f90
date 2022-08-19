@@ -1,4 +1,4 @@
-program wasm_floats
+program types_16
     implicit none
     integer, parameter :: dp = kind(0.d0)
 
