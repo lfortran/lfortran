@@ -2,11 +2,11 @@
     "basename": "wat-wasm1-8a138d6",
     "cmd": "lfortran --no-color --show-wat {infile}",
     "infile": "tests/wasm1.f90",
-    "infile_hash": "6027c04f5ca0464227bf7443522c5d118cadf6e4404c9224bbc63d7b",
+    "infile_hash": "23d205c649ffca4c7d77e3b0e23240fbf79e99247a00dfa0d96efc81",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "wat-wasm1-8a138d6.stdout",
-    "stdout_hash": "1d37bdcaea7109f0d03544317d289c8e4d00ef87c7711f1e33cc9599",
+    "stdout_hash": "e696902b4301d2c0ebbded5f6e87a7df19c576b9dc45c7329476ed0e",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

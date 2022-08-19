@@ -7,8 +7,8 @@
     (type (;5;) (func (param) (result)))
     (type (;6;) (func (param i32) (result)))
     (type (;7;) (func (param i32) (result i32)))
-    (type (;8;) (func (param f64) (result f64)))
-    (type (;9;) (func (param f32 f32) (result f32)))
+    (type (;8;) (func (param f32 f32) (result f32)))
+    (type (;9;) (func (param f64) (result f64)))
     (type (;10;) (func (param) (result f32)))
     (type (;11;) (func (param) (result f32)))
     (type (;12;) (func (param) (result f64)))
@@ -29,22 +29,25 @@
         local.get 1
         return
     )
-    (func $8 (type 8) (param f64) (result f64)
-        (local f64)
-        local.get 0
-        local.get 0
-        f64.mul
-        local.set 1
-        local.get 1
-        return
-    )
-    (func $9 (type 9) (param f32 f32) (result f32)
+    (func $8 (type 8) (param f32 f32) (result f32)
         (local f32)
         local.get 0
         local.get 1
         f32.add
         local.set 2
         local.get 2
+        return
+    )
+    (func $9 (type 9) (param f64) (result f64)
+        (local f64 f64)
+        call 12
+        local.set 2
+        local.get 2
+        local.get 0
+        call 13
+        f64.mul
+        local.set 1
+        local.get 1
         return
     )
     (func $10 (type 10) (param) (result f32)
@@ -69,12 +72,9 @@
         return
     )
     (func $13 (type 13) (param f64) (result f64)
-        (local f64 f64)
-        call 12
-        local.set 2
-        local.get 2
+        (local f64)
         local.get 0
-        call 8
+        local.get 0
         f64.mul
         local.set 1
         local.get 1
@@ -86,7 +86,7 @@
         local.set 0
         f32.const -2.300000
         f32.const 5.600000
-        call 9
+        call 8
         call 2
         call 5
         call 10
@@ -99,7 +99,7 @@
         call 3
         call 5
         f64.const 5.000000
-        call 13
+        call 9
         call 3
         call 5
         i32.const 0
@@ -107,11 +107,11 @@
         return
     )
     (export "kind" (func $7))
-    (export "a_sqr" (func $8))
-    (export "add_floats" (func $9))
+    (export "add_floats" (func $8))
+    (export "computecirclearea" (func $9))
     (export "get_neg_f32" (func $10))
     (export "get_pi" (func $11))
     (export "get_pi_64" (func $12))
-    (export "z_computecirclearea" (func $13))
+    (export "sqr" (func $13))
     (export "_lcompilers_main" (func $14))
 )

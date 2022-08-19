@@ -81,6 +81,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     SymbolFuncInfo* cur_sym_info;
     uint32_t nesting_level;
     uint32_t cur_loop_nesting_level;
+    bool is_prototype_only;
 
     Vec<uint8_t> m_type_section;
     Vec<uint8_t> m_import_section;
@@ -106,6 +107,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
    public:
     ASRToWASMVisitor(Allocator &al, diag::Diagnostics &diagnostics): m_al(al), diag(diagnostics) {
         intrinsic_module = false;
+        is_prototype_only = false;
         nesting_level = 0;
         cur_loop_nesting_level = 0;
         no_of_types = 0;
@@ -147,12 +149,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             default: throw CodeGenError("Unsupported Type in Import Function");
         }
         return nullptr;
-    }
-
-    void add_func_to_imports(const ASR::Function_t &x) {
-        wasm::emit_import_fn(m_import_section, m_al, "js", x.m_name, no_of_types);
-        emit_function_prototype(x);
-        no_of_imports++;
     }
 
     void import_function(ImportFunc &import_func) {
@@ -211,6 +207,37 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         emit_imports();
 
         {
+            // Pre-declare all functions first, then generate code
+            // Otherwise some function might not be found.
+            is_prototype_only = true;
+            {
+                // Process intrinsic modules in the right order
+                std::vector<std::string> build_order
+                    = ASRUtils::determine_module_dependencies(x);
+                for (auto &item : build_order) {
+                    LFORTRAN_ASSERT(x.m_global_scope->get_scope().find(item)
+                        != x.m_global_scope->get_scope().end());
+                    if (startswith(item, "lfortran_intrinsic")) {
+                        ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
+                        if (ASR::is_a<ASR::Module_t>(*mod)) {
+                            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(mod);
+                            declare_all_functions(*(m->m_symtab));
+                        }
+                    }
+                }
+
+                // then the main program:
+                for (auto &item : x.m_global_scope->get_scope()) {
+                    if (ASR::is_a<ASR::Program_t>(*item.second)) {
+                        ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(item.second);
+                        declare_all_functions(*(p->m_symtab));
+                    }
+                }
+            }
+            is_prototype_only = false;
+        }
+
+        {
             // Process intrinsic modules in the right order
             std::vector<std::string> build_order
                 = ASRUtils::determine_module_dependencies(x);
@@ -254,6 +281,15 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void declare_all_functions(const SymbolTable &symtab) {
+        for (auto &item : symtab.get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
+                this->visit_Function(*s);
+            }
+        }
+    }
+
     void visit_Module(const ASR::Module_t &x) {
         if (startswith(x.m_name, "lfortran_intrinsic_")) {
             intrinsic_module = true;
@@ -261,32 +297,22 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             intrinsic_module = false;
         }
 
-        std::string contains;
-
-        // Generate the bodies of subroutines
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
-                this->visit_Function(*s);
-            }
-        }
+        // Generate the bodies of functions and subroutines
+        declare_all_functions(*x.m_symtab);
         intrinsic_module = false;
     }
 
     void visit_Program(const ASR::Program_t &x) {
 
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
-                visit_Function(*s);
-            }
-        }
+        // Generate the bodies of functions and subroutines
+        declare_all_functions(*x.m_symtab);
 
         // Generate main program code
         auto main_func = ASR::make_Function_t(m_al, x.base.base.loc, x.m_symtab, s2c(m_al, "_lcompilers_main"),
             nullptr, 0, nullptr, 0, x.m_body, x.n_body, nullptr, ASR::abiType::Source, ASR::accessType::Public,
             ASR::deftypeType::Implementation, nullptr, false, false, false);
-        this->visit_Function(*((ASR::Function_t *)main_func));
+        emit_function_prototype(*((ASR::Function_t *)main_func));
+        emit_function_body(*((ASR::Function_t *)main_func));
     }
 
     void emit_var_type(Vec<uint8_t> &code, ASR::Variable_t *v){
@@ -533,11 +559,18 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         if (is_unsupported_function(x)) {
             return;
         }
-        if (x.m_abi == ASR::abiType::BindC && x.m_deftype == ASR::deftypeType::Interface) {
-            add_func_to_imports(x);
+        if (is_prototype_only) {
+            if (x.m_abi == ASR::abiType::BindC && x.m_deftype == ASR::deftypeType::Interface) {
+                wasm::emit_import_fn(m_import_section, m_al, "js", x.m_name, no_of_types);
+                no_of_imports++;
+            }
+            emit_function_prototype(x);
             return;
         }
-        emit_function_prototype(x);
+        if (x.m_abi == ASR::abiType::BindC && x.m_deftype == ASR::deftypeType::Interface) {
+            /* functions of abiType BindC and are Interfaces are already handled */
+            return;
+        }
         emit_function_body(x);
     }
 
