@@ -216,49 +216,7 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
 
 }  // namespace WASM_INSTS_VISITOR
 
-namespace wasm {
-
-class WASMDecoder {
-   public:
-    std::unordered_map<uint8_t, std::string> var_type_to_string;
-    std::unordered_map<uint8_t, std::string> kind_to_string;
-
-    Allocator &al;
-    Vec<uint8_t> wasm_bytes;
-    size_t PREAMBLE_SIZE;
-
-    Vec<wasm::FuncType> func_types;
-    Vec<wasm::Import> imports;
-    Vec<uint32_t> type_indices;
-    Vec<wasm::Export> exports;
-    Vec<wasm::Code> codes;
-    Vec<wasm::Data> data_segments;
-
-    WASMDecoder(Allocator &al) : al(al) {
-        var_type_to_string = {{0x7F, "i32"}, {0x7E, "i64"}, {0x7D, "f32"}, {0x7C, "f64"}};
-        kind_to_string = {{0x00, "func"}, {0x01, "table"}, {0x02, "mem"}, {0x03, "global"}};
-
-        PREAMBLE_SIZE = 8 /* BYTES */;
-        // wasm_bytes.reserve(al, 1024 * 128);
-        // func_types.reserve(al, 1024 * 128);
-        // type_indices.reserve(al, 1024 * 128);
-        // exports.reserve(al, 1024 * 128);
-        // codes.reserve(al, 1024 * 128);
-    }
-
-    void load_file(std::string filename);
-    bool is_preamble_ok(uint32_t offset);
-    void decode_type_section(uint32_t offset);
-    void decode_imports_section(uint32_t offset);
-    void decode_function_section(uint32_t offset);
-    void decode_export_section(uint32_t offset);
-    void decode_code_section(uint32_t offset);
-    void decode_data_section(uint32_t offset);
-    void decode_wasm();
-    std::string get_wat();
-};
-
-}  // namespace wasm
+Result<std::string> wasm_to_wat(Vec<uint8_t> &wasm_bytes, Allocator &al, diag::Diagnostics &diagnostics);
 
 }  // namespace LFortran
 
