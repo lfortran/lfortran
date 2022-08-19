@@ -216,6 +216,7 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
 
 }  // namespace WASM_INSTS_VISITOR
 
+Result<std::string> wasm_to_wat(Vec<uint8_t> &wasm_bytes, Allocator &al, diag::Diagnostics &diagnostics);
 
 }  // namespace LFortran
 

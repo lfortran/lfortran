@@ -415,4 +415,22 @@ class WASMDecoder {
 
 }  // namespace wasm
 
+Result<std::string> wasm_to_wat(Vec<uint8_t> &wasm_bytes, Allocator &al, diag::Diagnostics &diagnostics) {
+    wasm::WASMDecoder wasm_decoder(al, diagnostics);
+    wasm_decoder.wasm_bytes.from_pointer_n(wasm_bytes.data(), wasm_bytes.size());
+
+    std::string wat;
+
+    try {
+        wasm_decoder.decode_wasm();
+    } catch (const CodeGenError &e) {
+        diagnostics.diagnostics.push_back(e.d);
+        return Error();
+    }
+
+    wat = wasm_decoder.get_wat();
+
+    return wat;
+}
+
 }  // namespace LFortran
