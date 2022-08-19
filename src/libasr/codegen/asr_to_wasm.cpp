@@ -311,7 +311,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         auto main_func = ASR::make_Function_t(m_al, x.base.base.loc, x.m_symtab, s2c(m_al, "_lcompilers_main"),
             nullptr, 0, nullptr, 0, x.m_body, x.n_body, nullptr, ASR::abiType::Source, ASR::accessType::Public,
             ASR::deftypeType::Implementation, nullptr, false, false, false);
-        this->visit_Function(*((ASR::Function_t *)main_func));
+        emit_function_prototype(*((ASR::Function_t *)main_func));
+        emit_function_body(*((ASR::Function_t *)main_func));
     }
 
     void emit_var_type(Vec<uint8_t> &code, ASR::Variable_t *v){
