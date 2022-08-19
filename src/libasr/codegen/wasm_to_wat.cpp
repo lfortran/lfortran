@@ -207,7 +207,7 @@ void WASMDecoder::decode_wasm() {
     if (!is_preamble_ok(index)) {
         std::cout << "Unexpected Preamble: ";
         for (size_t i = 0; i < PREAMBLE_SIZE; i++) {
-            printf("0x%x, ", wasm_bytes[i]);
+            printf("0x%.02X, ", wasm_bytes[i]);
         }
         std::cout << "\nExpected: 0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00" << std::endl;
     }
