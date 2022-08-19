@@ -567,6 +567,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             emit_function_prototype(x);
             return;
         }
+        if (x.m_abi == ASR::abiType::BindC && x.m_deftype == ASR::deftypeType::Interface) {
+            /* functions of abiType BindC and are Interfaces are already handled */
+            return;
+        }
         emit_function_body(x);
     }
 
