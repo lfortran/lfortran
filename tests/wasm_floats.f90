@@ -6,10 +6,10 @@ program wasm_floats
     print *, get_neg_f32()
     print *, get_pi()
     print *, get_pi_64()
-    print *, z_computeCircleArea(5.0_dp)
+    print *, computeCircleArea(5.0_dp)
 
     contains
-    function a_sqr(x) result(r)
+    function sqr(x) result(r)
         implicit none
         real(dp), intent(in):: x
         real(dp) :: r
@@ -42,12 +42,12 @@ program wasm_floats
         return
     end function
 
-    function z_computeCircleArea(radius) result(area)
+    function computeCircleArea(radius) result(area)
         implicit none
         real(dp), intent(in):: radius
         real(dp) :: PI, area
         PI = get_pi_64()
-        area = PI * a_sqr(radius)
+        area = PI * sqr(radius)
         return
     end function
 end program
