@@ -13,6 +13,28 @@
 
 namespace LFortran {
 
+namespace {
+
+// This exception is used to abort the visitor pattern when an error occurs.
+class CodeGenAbort {};
+
+// Local exception that is only used in this file to exit the visitor
+// pattern and caught later (not propagated outside)
+class CodeGenError {
+   public:
+    diag::Diagnostic d;
+
+   public:
+    CodeGenError(const std::string &msg)
+        : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen)} {}
+
+    CodeGenError(const std::string &msg, const Location &loc)
+        : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen,
+                             {diag::Label("", {loc})})} {}
+};
+
+}  // namespace
+
 namespace wasm {
 
 class WASMDecoder {
