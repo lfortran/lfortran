@@ -1548,14 +1548,18 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
-    void visit_StringConstant(const ASR::StringConstant_t &x) {
+    void emit_string(std::string str) {
         // Todo: Add a check here if there is memory available to store the
         // given string
-        wasm::emit_str_const(m_data_section, m_al, avail_mem_loc, x.m_s);
+        wasm::emit_str_const(m_data_section, m_al, avail_mem_loc, str);
         // Add string location in memory onto stack
         wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
-        avail_mem_loc += strlen(x.m_s);
+        avail_mem_loc += str.length();
         no_of_data_segments++;
+    }
+
+    void visit_StringConstant(const ASR::StringConstant_t &x) {
+        emit_string(x.m_s);
     }
 
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
