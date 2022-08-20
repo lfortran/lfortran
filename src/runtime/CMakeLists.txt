@@ -2,10 +2,16 @@ cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
 project(lfortran_unif_runtime C Fortran)
 
+# if(CMAKE_C_COMPILER_ID MATCHES GNU)
+#   set(CMAKE_Fortran_FLAGS "--link-with-gcc -I/home/tuco/miniconda3/envs/lfortran-dev/include -L/home/tuco/miniconda3/envs/lfortran-dev/lib -llibkokkoscore.so")
+# endif()
+
+# Normally this would be set to "-nocpp" but lfortran doesn't support this option
+set(CMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_OFF "")
+
 # If we are only building the runtime library the user
 # should provide a lfortran binary.
 if(NOT WITH_RUNTIME_LIBRARY_ONLY)
-  set(CMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_OFF "")
   # set(CMAKE_Fortran_COMPILER_FRONTEND_VARIANT "flang")
   # set(CMAKE_Fortran_COMPILER_ID "lfortran")
   # set(CMAKE_Fortran_COMPILER_WORKS TRUE)
