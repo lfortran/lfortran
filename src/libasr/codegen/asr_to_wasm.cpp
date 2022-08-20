@@ -1342,15 +1342,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     // webassembly
     void print_wasm_debug_statement(std::string message, bool endline = true) {
         static int debug_mem_space = 10000 + avail_mem_loc;
-        wasm::emit_str_const(m_data_section, m_al, debug_mem_space, message);
-        last_str_len = message.length();
-        debug_mem_space += last_str_len;
-        no_of_data_segments++;
-
-        // push string location and its size on function stack
-        wasm::emit_i32_const(m_code_section, m_al,
-                             debug_mem_space - last_str_len);
-        wasm::emit_i32_const(m_code_section, m_al, last_str_len);
+        uint32_t avail_mem_loc_copy = avail_mem_loc;
+        avail_mem_loc = debug_mem_space;
+        emit_string(message);
+        avail_mem_loc = avail_mem_loc_copy;  // restore avail_mem_loc
+        // push string length on function stack
+        wasm::emit_i32_const(m_code_section, m_al, message.length());
 
         // call JavaScript print_str
         wasm::emit_call(
