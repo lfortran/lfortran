@@ -408,12 +408,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             } else if (ASRUtils::is_character(*v->m_type)) {
                 ASR::Character_t *v_int =
                     ASR::down_cast<ASR::Character_t>(v->m_type);
-                /* Currently Assuming character as integer of kind 1 */
 
                 if (is_array) {
                     wasm::emit_b8(code, m_al, wasm::type::i32);
                 } else {
                     if (v_int->m_kind == 1) {
+                        /*  Character is stored as string in memory.
+                            The variable points to this location in memory
+                        */
                         wasm::emit_b8(code, m_al, wasm::type::i32);
                     } else {
                         throw CodeGenError(
@@ -1304,7 +1306,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         switch (v->m_type->type) {
             case ASR::ttypeType::Integer:
             case ASR::ttypeType::Logical:
-            case ASR::ttypeType::Real: {
+            case ASR::ttypeType::Real:
+            case ASR::ttypeType::Character: {
                 LFORTRAN_ASSERT(
                     m_var_name_idx_map.find(get_hash((ASR::asr_t *)v)) !=
                     m_var_name_idx_map.end());
@@ -1549,8 +1552,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // Todo: Add a check here if there is memory available to store the
         // given string
         wasm::emit_str_const(m_data_section, m_al, avail_mem_loc, x.m_s);
-        last_str_len = strlen(x.m_s);
-        avail_mem_loc += last_str_len;
+        // Add string location in memory onto stack
+        wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
+        avail_mem_loc += strlen(x.m_s);
         no_of_data_segments++;
     }
 
@@ -1901,10 +1905,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     }
                 }
             } else if (t->type == ASR::ttypeType::Character) {
-                // push string location and its size on function stack
-                wasm::emit_i32_const(m_code_section, m_al,
-                                     avail_mem_loc - last_str_len);
-                wasm::emit_i32_const(m_code_section, m_al, last_str_len);
+                // the string location is already on function stack
+
+                // now, push the string length onto stack
+                wasm::emit_i32_const(
+                    m_code_section, m_al,
+                    ASR::down_cast<ASR::Character_t>(t)->m_len);
 
                 // call JavaScript print_str
                 wasm::emit_call(
