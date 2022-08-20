@@ -1,15 +1,3 @@
-warning: Function with no body
- --> tests/../integration_tests/abs_03.f90:1:1
-  |
-1 | program abs_03
-  | ^ char
-
-warning: Function with no body
- --> tests/../integration_tests/abs_03.f90:1:1
-  |
-1 | program abs_03
-  | ^ move_alloc
-
 warning: WASM: Calls to C Intrinsic Functions are not yet supported
  --> tests/../integration_tests/abs_03.f90:1:1
   |
@@ -39,18 +27,6 @@ warning: WASM: Calls to C Intrinsic Functions are not yet supported
   |
 1 | program abs_03
   | ^ Function: calls c_sp_rand_num
-
-warning: Function with no body
- --> tests/../integration_tests/abs_03.f90:1:1
-  |
-1 | program abs_03
-  | ^ char
-
-warning: Function with no body
- --> tests/../integration_tests/abs_03.f90:1:1
-  |
-1 | program abs_03
-  | ^ move_alloc
 
 warning: WASM: Calls to C Intrinsic Functions are not yet supported
  --> tests/../integration_tests/abs_03.f90:1:1
