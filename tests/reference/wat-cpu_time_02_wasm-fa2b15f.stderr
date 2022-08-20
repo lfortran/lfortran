@@ -1,0 +1,19 @@
+warning: Function with no body
+ --> tests/../integration_tests/cpu_time_02_wasm.f90:6:5 - 9:19
+  |
+6 |        subroutine cpu_time(t) bind(c)
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+9 |        end subroutine
+  | ...^^^^^^^^^^^^^^^^^^^ cpu_time
+
+warning: Function with no body
+ --> tests/../integration_tests/cpu_time_02_wasm.f90:6:5 - 9:19
+  |
+6 |        subroutine cpu_time(t) bind(c)
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+9 |        end subroutine
+  | ...^^^^^^^^^^^^^^^^^^^ cpu_time
