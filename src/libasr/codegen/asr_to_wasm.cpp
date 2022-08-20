@@ -1977,13 +1977,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void print_msg(std::string msg) {
-        ASR::StringConstant_t n;
-        n.m_s = new char[msg.length() + 1];
-        strcpy(n.m_s, msg.c_str());
-        visit_StringConstant(n);
-        wasm::emit_i32_const(m_code_section, m_al,
-                             avail_mem_loc - last_str_len);
-        wasm::emit_i32_const(m_code_section, m_al, last_str_len);
+        emit_string(msg);
+        // push string length on function stack
+        wasm::emit_i32_const(m_code_section, m_al, msg.length());
         wasm::emit_call(
             m_code_section, m_al,
             m_func_name_idx_map[get_hash(m_import_func_asr_map["print_str"])]
