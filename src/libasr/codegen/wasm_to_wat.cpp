@@ -54,7 +54,8 @@ class WASMDecoder {
     Vec<wasm::Code> codes;
     Vec<wasm::Data> data_segments;
 
-    WASMDecoder(Allocator &al, diag::Diagnostics &diagonostics) : al(al), diag(diagonostics) {
+    WASMDecoder(Allocator &al, diag::Diagnostics &diagonostics)
+        : al(al), diag(diagonostics) {
         var_type_to_string = {
             {0x7F, "i32"}, {0x7E, "i64"}, {0x7D, "f32"}, {0x7C, "f64"}};
         kind_to_string = {
@@ -167,7 +168,9 @@ class WASMDecoder {
                 }
 
                 default: {
-                    throw CodeGenError("Only importing functions and memory are currently supported");
+                    throw CodeGenError(
+                        "Only importing functions and memory are currently "
+                        "supported");
                 }
             }
         }
@@ -274,7 +277,8 @@ class WASMDecoder {
             for (size_t i = 0; i < PREAMBLE_SIZE; i++) {
                 fprintf(stderr, "0x%.02X, ", wasm_bytes[i]);
             }
-            throw CodeGenError("Expected: 0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00");
+            throw CodeGenError(
+                "Expected: 0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00");
         }
         index += PREAMBLE_SIZE;
         while (index < wasm_bytes.size()) {
@@ -410,9 +414,11 @@ class WASMDecoder {
 
 }  // namespace wasm
 
-Result<std::string> wasm_to_wat(Vec<uint8_t> &wasm_bytes, Allocator &al, diag::Diagnostics &diagnostics) {
+Result<std::string> wasm_to_wat(Vec<uint8_t> &wasm_bytes, Allocator &al,
+                                diag::Diagnostics &diagnostics) {
     wasm::WASMDecoder wasm_decoder(al, diagnostics);
-    wasm_decoder.wasm_bytes.from_pointer_n(wasm_bytes.data(), wasm_bytes.size());
+    wasm_decoder.wasm_bytes.from_pointer_n(wasm_bytes.data(),
+                                           wasm_bytes.size());
 
     std::string wat;
 
