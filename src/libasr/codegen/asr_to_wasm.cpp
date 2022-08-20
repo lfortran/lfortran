@@ -85,7 +85,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     uint32_t no_of_functions;
     uint32_t no_of_imports;
     uint32_t no_of_data_segments;
-    uint32_t last_str_len;
     uint32_t avail_mem_loc;
 
     uint32_t min_no_pages;
@@ -408,12 +407,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             } else if (ASRUtils::is_character(*v->m_type)) {
                 ASR::Character_t *v_int =
                     ASR::down_cast<ASR::Character_t>(v->m_type);
-                /* Currently Assuming character as integer of kind 1 */
 
                 if (is_array) {
                     wasm::emit_b8(code, m_al, wasm::type::i32);
                 } else {
                     if (v_int->m_kind == 1) {
+                        /*  Character is stored as string in memory.
+                            The variable points to this location in memory
+                        */
                         wasm::emit_b8(code, m_al, wasm::type::i32);
                     } else {
                         throw CodeGenError(
@@ -1304,7 +1305,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         switch (v->m_type->type) {
             case ASR::ttypeType::Integer:
             case ASR::ttypeType::Logical:
-            case ASR::ttypeType::Real: {
+            case ASR::ttypeType::Real:
+            case ASR::ttypeType::Character: {
                 LFORTRAN_ASSERT(
                     m_var_name_idx_map.find(get_hash((ASR::asr_t *)v)) !=
                     m_var_name_idx_map.end());
@@ -1339,15 +1341,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     // webassembly
     void print_wasm_debug_statement(std::string message, bool endline = true) {
         static int debug_mem_space = 10000 + avail_mem_loc;
-        wasm::emit_str_const(m_data_section, m_al, debug_mem_space, message);
-        last_str_len = message.length();
-        debug_mem_space += last_str_len;
-        no_of_data_segments++;
-
-        // push string location and its size on function stack
-        wasm::emit_i32_const(m_code_section, m_al,
-                             debug_mem_space - last_str_len);
-        wasm::emit_i32_const(m_code_section, m_al, last_str_len);
+        uint32_t avail_mem_loc_copy = avail_mem_loc;
+        avail_mem_loc = debug_mem_space;
+        emit_string(message);
+        avail_mem_loc = avail_mem_loc_copy;  // restore avail_mem_loc
+        // push string length on function stack
+        wasm::emit_i32_const(m_code_section, m_al, message.length());
 
         // call JavaScript print_str
         wasm::emit_call(
@@ -1545,13 +1544,18 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
-    void visit_StringConstant(const ASR::StringConstant_t &x) {
+    void emit_string(std::string str) {
         // Todo: Add a check here if there is memory available to store the
         // given string
-        wasm::emit_str_const(m_data_section, m_al, avail_mem_loc, x.m_s);
-        last_str_len = strlen(x.m_s);
-        avail_mem_loc += last_str_len;
+        wasm::emit_str_const(m_data_section, m_al, avail_mem_loc, str);
+        // Add string location in memory onto stack
+        wasm::emit_i32_const(m_code_section, m_al, avail_mem_loc);
+        avail_mem_loc += str.length();
         no_of_data_segments++;
+    }
+
+    void visit_StringConstant(const ASR::StringConstant_t &x) {
+        emit_string(x.m_s);
     }
 
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
@@ -1901,10 +1905,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     }
                 }
             } else if (t->type == ASR::ttypeType::Character) {
-                // push string location and its size on function stack
-                wasm::emit_i32_const(m_code_section, m_al,
-                                     avail_mem_loc - last_str_len);
-                wasm::emit_i32_const(m_code_section, m_al, last_str_len);
+                // the string location is already on function stack
+
+                // now, push the string length onto stack
+                wasm::emit_i32_const(
+                    m_code_section, m_al,
+                    ASR::down_cast<ASR::Character_t>(t)->m_len);
 
                 // call JavaScript print_str
                 wasm::emit_call(
@@ -1967,13 +1973,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void print_msg(std::string msg) {
-        ASR::StringConstant_t n;
-        n.m_s = new char[msg.length() + 1];
-        strcpy(n.m_s, msg.c_str());
-        visit_StringConstant(n);
-        wasm::emit_i32_const(m_code_section, m_al,
-                             avail_mem_loc - last_str_len);
-        wasm::emit_i32_const(m_code_section, m_al, last_str_len);
+        emit_string(msg);
+        // push string length on function stack
+        wasm::emit_i32_const(m_code_section, m_al, msg.length());
         wasm::emit_call(
             m_code_section, m_al,
             m_func_name_idx_map[get_hash(m_import_func_asr_map["print_str"])]
