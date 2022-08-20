@@ -785,6 +785,7 @@ void save_js_glue(std::string filename) {
         outputBuffer.length = 0;
     }
     const set_exit_code = (exit_code_val) => exit_code.val = exit_code_val;
+    const cpu_time = (time) => (Date.now() / 1000); // Date.now() returns milliseconds, so divide by 1000
     var imports = {
         js: {
             memory: memory,
@@ -796,6 +797,7 @@ void save_js_glue(std::string filename) {
             print_str: printStr,
             flush_buf: flushBuffer,
             set_exit_code: set_exit_code,
+            cpu_time: cpu_time
         },
     };
     return imports;
