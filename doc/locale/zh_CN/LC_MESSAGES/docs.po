@@ -9,7 +9,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
 "PO-Revision-Date: 2022-08-22 11:19+0000\n"
-"Last-Translator: Ys413 <2020172007@stu.mdjnu.edu.cn>\n"
+"Last-Translator: St Maxwell <st_maxwell@outlook.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "fortran-lang/lfortran-docs/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -849,7 +849,7 @@ msgstr "这是任何想要开发 LFortran 或构建工具的人的教程。"
 
 #: ../../doc/src/developer_tutorial.ipynb:14
 msgid "Introduction"
-msgstr "介绍"
+msgstr "入门"
 
 #: ../../doc/src/developer_tutorial.ipynb:18
 msgid ""
