@@ -85,7 +85,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     uint32_t no_of_functions;
     uint32_t no_of_imports;
     uint32_t no_of_data_segments;
-    uint32_t last_str_len;
     uint32_t avail_mem_loc;
 
     uint32_t min_no_pages;
