@@ -1215,8 +1215,8 @@ int link_executable(const std::vector<std::string> &infiles,
         }
         if (kokkos) {
             std::string kokkos_dir = get_kokkos_dir();
-            post_options += kokkos_dir + "/lib/libkokkoscontainers.a "
-                + kokkos_dir + "/lib/libkokkoscore.a -ldl";
+            post_options += kokkos_dir + "/lib/libkokkoscontainers.so "
+                + kokkos_dir + "/lib/libkokkoscore.so -ldl";
         }
         std::string cmd = CXX + options + " -o " + outfile + " ";
         for (auto &s : infiles) {

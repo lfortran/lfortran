@@ -7,19 +7,13 @@ project(lfortran_unif_runtime C Fortran)
 # endif()
 
 # Normally this would be set to "-nocpp" but lfortran doesn't support this option
-set(CMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_OFF "")
+# set(CMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_OFF "")
 
 # If we are only building the runtime library the user
 # should provide a lfortran binary.
 if(NOT WITH_RUNTIME_LIBRARY_ONLY)
-  # set(CMAKE_Fortran_COMPILER_FRONTEND_VARIANT "flang")
-  # set(CMAKE_Fortran_COMPILER_ID "lfortran")
   # set(CMAKE_Fortran_COMPILER_WORKS TRUE)
-  # set(CMAKE_Fortran_COMPILER_ID_RUN TRUE)
-  # set(CMAKE_Fortran_COMPILER_FORCED TRUE)
   set(CMAKE_Fortran_COMPILER ${CMAKE_CURRENT_BINARY_DIR}/../bin/lfortran)
-  # set(CMAKE_Fortran_COMPILER "lfortran")
-  # set(CMAKE_Fortran_COMPILER /home/tuco/Projects/LFortran/lfortran/inst/bin/lfortran)
 endif()
 
 # lfortran needs this to find the .mod files created during the build
@@ -29,8 +23,8 @@ macro(lfrotran_compile_runtime name dir)
   add_library(${name} OBJECT ${dir}/${name}.f90)
   target_compile_options(${name} PUBLIC "--backend=cpp")
   set_target_properties(${name} PROPERTIES
-    POSITION_INDEPENDENT_CODE False
-    Fortran_PREPROCESS False)
+    POSITION_INDEPENDENT_CODE False)
+    # Fortran_PREPROCESS False)
 
   # If we are only building the runtime libraries assume
   # the user already built lfortran and don't require
