@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-20 09:22+0000\n"
+"PO-Revision-Date: 2022-08-22 11:19+0000\n"
 "Last-Translator: 左志华 <zuo.zhihua@qq.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "fortran-lang/lfortran-docs/zh_Hans/>\n"
@@ -1088,14 +1088,16 @@ msgid ""
 "tracker](https://gitlab.com/lfortran/lfortran/issues) that you want us to"
 " prioritize (feel free to create new ones if we are missing anything)."
 msgstr ""
+"请在我们的 [问题跟踪器](https://gitlab.com/lfortran/lfortran/issues) 中对您希"
+"望我们优先考虑的问题进行投票（如果我们遗漏任何内容，请随时创建新问题）。"
 
 #: ../../doc/src/index.md:81
 msgid "Roadmap"
-msgstr ""
+msgstr "路线图"
 
 #: ../../doc/src/index.md:83
 msgid "Here is our roadmap how to get all the planned features above implemented:"
-msgstr ""
+msgstr "以下是我们如何实现上述所有计划功能的路线图："
 
 #: ../../doc/src/index.md:85
 msgid ""
@@ -1104,6 +1106,8 @@ msgid ""
 "code generation and old semantics, that used to annotate the AST tree, "
 "which was messy."
 msgstr ""
+"端口代码生成以使用 ASR 并通过所有当前测试 ([#74](https://gitlab.com/lfortran/"
+"lfortran/issues/74))。删除用于注释 AST 树的旧代码生成和旧语义，这很混乱。"
 
 #: ../../doc/src/index.md:89
 msgid ""
@@ -1112,16 +1116,21 @@ msgid ""
 "([#52](https://gitlab.com/lfortran/lfortran/issues/52)). This will allow "
 "right away to use production codes with LFortran."
 msgstr ""
+"获取使用 `use` 模块的 GFortran 模块文件，包括假定大小和假定形状数组 "
+"([#52](https://gitlab.com/lfortran/lfortran/issues/52))。"
+"这将允许立即将生产代码与 LFortran 一起使用。"
 
 #: ../../doc/src/index.md:93
 msgid "Do these at the same time:"
-msgstr ""
+msgstr "同时做这些："
 
 #: ../../doc/src/index.md:95
 msgid ""
 "a) Implement more Fortran features, until eventually full Fortran 2018 is"
 "  supported ([#58](https://gitlab.com/lfortran/lfortran/issues/58))."
 msgstr ""
+"a) 实现更多 Fortran 功能，直到最终支持完整的 Fortran 2018 "
+"([#58](https://gitlab.com/lfortran/lfortran/issues/58))。"
 
 #: ../../doc/src/index.md:98
 msgid ""
@@ -1130,6 +1139,9 @@ msgid ""
 "will not change (or only minimally), so the user experience  from Python "
 "will not change."
 msgstr ""
+"b) 逐渐转向 C++ 以获得稳健性和速度（[#70](https://gitlab.com/lfortran/"
+"lfortran/issues/70)）。 Python API 不会改变（或只有很小的改变），因此 Python "
+"的用户体验不会改变。"
 
 #: ../../doc/src/index.md:103
 msgid ""
@@ -1145,10 +1157,18 @@ msgid ""
 "([#12](https://gitlab.com/lfortran/lfortran/issues/12)),  and other ideas"
 " ([#29](https://gitlab.com/lfortran/lfortran/issues/29))."
 msgstr ""
+"c) 实现所有其他很酷的功能：用于 C 和 Python 的 `use` 模块和自动包装器 "
+"([#44](https://gitlab.com/lfortran/lfortran/issues/44))，现代硬件支持 ([# "
+"57](https://gitlab.com/lfortran/lfortran/issues/57))，生成较旧的 Fortran "
+"标准 ([#72](https://gitlab.com/lfortran/lfortran/issues/72)) , Fortran "
+"doctest 功能 ([#73](https://gitlab.com/lfortran/lfortran/issues/73)), SymPy "
+"集成 ([#71](https://gitlab.com/lfortran/lfortran/issues/71))、IDE 的语言服务 "
+"([#12](https://gitlab.com/lfortran/lfortran/issues/12)) 和其他想法 "
+"([#29](https://gitlab.com/lfortran/lfortran/issues/29))。"
 
 #: ../../doc/src/index.md:118
 msgid "The step 1. is an internal refactoring that will not take long."
-msgstr ""
+msgstr "第 1 步是内部重构，不会花费很长时间。"
 
 #: ../../doc/src/index.md:120
 msgid ""
@@ -1163,25 +1183,32 @@ msgid ""
 " the given feature. We expect to be finished with the step 2. by the end "
 "of summer 2019, hopefully sooner."
 msgstr ""
+"第 2 步将允许 LFortran 立即与生产代码交互使用（生产代码将使用 GFortran "
+"编译，然后“使用”LFortran 中的任何模块，并且可以交互调用函数/子例程，"
+"模块本身可以使用任何GFortran 支持的功能，但 API 必须适合 LFortran 理解的子集 "
+"--- 对于大量应用程序，带有数组参数的简单函数/子例程就足够了）。这将使 "
+"LFortran 可供第一批用户使用，并且在 LFortran 支持给定功能之前，"
+"始终可以临时使用 GFortran。我们预计在 2019 年夏末完成第 2 步，希望能更快。"
 
 #: ../../doc/src/index.md:130
 msgid ""
 "Finally the step 3. will improve LFortran overall, allowing the first "
 "users to contribute back, growing the community and making LFortran "
 "gradually useful for more and more people."
-msgstr ""
+msgstr "最后，第 3 步将整体改进 LFortran，允许第一批用户回馈，发展社区并使 LFortran "
+"逐渐对越来越多的人有用。"
 
 #: ../../doc/src/installation.md:1
 msgid "Installation"
-msgstr ""
+msgstr "安装"
 
 #: ../../doc/src/installation.md:3
 msgid "All the instructions below work on Linux, macOS and Windows."
-msgstr ""
+msgstr "以下所有说明都适用于 Linux、macOS 和 Windows。"
 
 #: ../../doc/src/installation.md:5
 msgid "Binaries"
-msgstr ""
+msgstr "二进制文件"
 
 #: ../../doc/src/installation.md:7
 msgid ""
@@ -1192,10 +1219,13 @@ msgid ""
 "environment (you can choose any name, here we chose `lf`) and activate "
 "it:"
 msgstr ""
+"安装 LFortran 的推荐方法是使用 Conda。例如，按照您的平台的说明安装 "
+"[Miniconda](https://conda.io/en/latest/miniconda.html)，安装 "
+"Conda。然后创建一个新环境（你可以选择任何名称，这里我们选择了`lf`）并激活它："
 
 #: ../../doc/src/installation.md:16
 msgid "Then install LFortran by:"
-msgstr ""
+msgstr "然后通过以下方式安装 LFortran："
 
 #: ../../doc/src/installation.md:20
 msgid ""
@@ -1203,24 +1233,26 @@ msgid ""
 "start the interactive prompt by executing `lfortran`, or see the command "
 "line options using `lfortran -h`."
 msgstr ""
+"现在 `lf` 环境有 `lfortran` 编译器可用，你可以通过执行 `lfortran` "
+"启动交互式提示，或使用 `lfortran -h` 查看命令行选项。"
 
 #: ../../doc/src/installation.md:24
 msgid ""
 "The Jupyter kernel is automatically installed by the above command, so "
 "after installing Jupyter itself:"
-msgstr ""
+msgstr "Jupyter 内核是通过上面的命令自动安装的，所以在安装 Jupyter 本身之后："
 
 #: ../../doc/src/installation.md:28
 msgid "You can create a Fortran based Jupyter notebook by executing:"
-msgstr ""
+msgstr "你可以通过执行以下命令来创建基于 Fortran 的 Jupyter 笔记本："
 
 #: ../../doc/src/installation.md:32
 msgid "and selecting `New->Fortran`."
-msgstr ""
+msgstr "并选择`New->Fortran`。"
 
 #: ../../doc/src/installation.md:35
 msgid "Build From a Source Tarball"
-msgstr ""
+msgstr "从源代码构建"
 
 #: ../../doc/src/installation.md:37
 msgid ""
@@ -1229,48 +1261,54 @@ msgid ""
 "etc.). The source tarball has all the generated files included and has "
 "minimal dependencies."
 msgstr ""
+"如果你只想自己或在包管理器（Spack、Conda、Debian 等）中安装 "
+"LFortran，建议使用此方法。源代码包含所有生成的文件，并且具有最小的依赖关系。"
 
 #: ../../doc/src/installation.md:39
 msgid "First we have to install dependencies, for example using Conda:"
-msgstr ""
+msgstr "首先，我们必须安装依赖项，例如使用 Conda："
 
 #: ../../doc/src/installation.md:44
 msgid ""
 "Then download a tarball from "
 "[https://lfortran.org/download/](https://lfortran.org/download/), e.g.:"
 msgstr ""
+"然后从 [https://lfortran.org/download/](https://lfortran.org/download/) "
+"下载源代码，例如："
 
 #: ../../doc/src/installation.md:52
 msgid "And build:"
-msgstr ""
+msgstr "并构建："
 
 #: ../../doc/src/installation.md:58
 msgid "This will install the `lfortran` into the `inst/bin`."
-msgstr ""
+msgstr "这会将 `lfortran` 安装到 `inst/bin` 中。"
 
 #: ../../doc/src/installation.md:60
 msgid "Build From Git"
-msgstr ""
+msgstr "从 Git 构建"
 
 #: ../../doc/src/installation.md:62
 msgid ""
 "We assume you have C++ compilers installed, as well as `git` and `wget`. "
 "In Ubuntu, you can also install `binutils-dev` for stacktraces."
 msgstr ""
+"我们假设你安装了 C++ 编译器，以及 `git` 和 `wget`。在 Ubuntu 中，你还可以为 "
+"stacktraces 安装 `binutils-dev`。"
 
 #: ../../doc/src/installation.md:65
 msgid ""
 "If you do not have Conda installed, you can do so on Linux (and similarly"
 " on other platforms):"
-msgstr ""
+msgstr "如果你没有安装 Conda，你可以在 Linux 上安装（在其他平台上类似）："
 
 #: ../../doc/src/installation.md:72
 msgid "Then prepare the environment:"
-msgstr ""
+msgstr "然后准备环境："
 
 #: ../../doc/src/installation.md:77
 msgid "Clone the LFortran git repository:"
-msgstr ""
+msgstr "克隆 LFortran git 存储库："
 
 #: ../../doc/src/installation.md:82
 msgid ""
@@ -2064,7 +2102,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:74
 #: ../../doc/src/intrinsics/numeric/mod.md:95
 msgid "See Also"
-msgstr ""
+msgstr "也可以看看"
 
 #: ../../doc/src/intrinsics/array/cshift.md:1
 msgid "cshift(A, shift [, dim]): Circular Shift"
@@ -2671,7 +2709,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/misc/date_and_time.md:41
 #: ../../doc/src/intrinsics/misc/new_line.md:58
 msgid "None."
-msgstr ""
+msgstr "无。"
 
 #: ../../doc/src/intrinsics/mathematical.md:1
 msgid "Mathematical Intrinsic Functions"
@@ -4509,7 +4547,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md:309
 msgid "asin"
-msgstr ""
+msgstr "asin"
 
 #: ../../doc/src/progress.md:311
 msgid "Directory: `tests/intrinsic/asin`"
@@ -4529,7 +4567,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md:320
 msgid "acos"
-msgstr ""
+msgstr "acos"
 
 #: ../../doc/src/progress.md:322
 msgid "Directory: `tests/intrinsic/acos`"
