@@ -3,13 +3,12 @@
 $RAISE_SUBPROC_ERROR = True
 trace on
 
-import argparse
-
-
-# Generate the version, parser, tokenizer and AST from the ASDL files.
 mkdir "tarball"
 pushd "tarball"
-cmake ..
+# Call on CMake to generate the version, parser, tokenizer and AST from the ASDL files.
+# Disabling ZLIB has no effect on the generated files and is purely done due to
+# the GitHub Actions MacOS build environment being unable to detect Anaconda's zlib.
+cmake .. -DWITH_ZLIB=NO
 popd
 rm -rf "tarball"
 
