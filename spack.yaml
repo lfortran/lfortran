@@ -13,8 +13,7 @@
 #
 # Then build LFortran as usual:
 #
-#     cmake .
-#     ./build1.sh
+#     ./build.sh
 #
 # And everything should be automatically found.
 
