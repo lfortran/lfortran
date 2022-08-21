@@ -9,7 +9,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
 "PO-Revision-Date: 2022-08-22 11:19+0000\n"
-"Last-Translator: 左志华 <zuo.zhihua@qq.com>\n"
+"Last-Translator: Ys413 <2020172007@stu.mdjnu.edu.cn>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "fortran-lang/lfortran-docs/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -1315,24 +1315,26 @@ msgid ""
 "Generate files that are needed for the build (this step depends on "
 "`re2c`, `bison` and `python`):"
 msgstr ""
+"Generate files that are needed for the build (this step depends on `re2c`, "
+"`bison` and `python`):"
 
 #: ../../doc/src/installation.md:86
 msgid ""
 "Now the process is the same as installing from the source tarball. For "
 "example to build in Debug mode:"
-msgstr ""
+msgstr "现在的过程与从源tarball安装相同。例如在Debug模式下构建:"
 
 #: ../../doc/src/installation.md:92
 msgid "Run tests:"
-msgstr ""
+msgstr "运行测试:"
 
 #: ../../doc/src/installation.md:97
 msgid "Run an interactive prompt:"
-msgstr ""
+msgstr "运行交互式提示符:"
 
 #: ../../doc/src/installation.md:102
 msgid "Build from Git on Windows with Visual Studio"
-msgstr ""
+msgstr "在Windows上使用Visual Studio从Git构建"
 
 #: ../../doc/src/installation.md:104
 msgid ""
@@ -1340,40 +1342,45 @@ msgid ""
 "download the Community version for free from: "
 "https://visualstudio.microsoft.com/downloads/."
 msgstr ""
+"安装Visual Studio (MSVC)，例如2022版本，可以从: https://visualstudio."
+"microsoft.com/downloads/ 免费下载社区版本。"
 
 #: ../../doc/src/installation.md:107
 msgid ""
 "Install miniforge using the Windows installer from https://github.com"
 "/conda-forge/miniforge."
 msgstr ""
+"使用来自 https://github.com/conda-forge/miniforge 的 Windows 安装程序安装 "
+"miniforge。"
 
 #: ../../doc/src/installation.md:109
+#, fuzzy
 msgid "Launch the Miniforge Prompt from the Desktop."
-msgstr ""
+msgstr "从桌面上启动 Miniforge Prompt。"
 
 #: ../../doc/src/installation.md:111
 msgid "In the shell, initialize the MSVC compiler using:"
-msgstr ""
+msgstr "在shell中，用以下方法初始化MSVC编译器:"
 
 #: ../../doc/src/installation.md:117
 msgid "You can optionally test that MSVC works by:"
-msgstr ""
+msgstr "你可以选择通过以下方式测试MSVC是否工作:"
 
 #: ../../doc/src/installation.md:122
 msgid "Both commands must print help (several pages)."
-msgstr ""
+msgstr "这两个命令都必须打印帮助信息（若干页）。"
 
 #: ../../doc/src/installation.md:124
 msgid "Now you can download and build LFortran:"
-msgstr ""
+msgstr "现在你可以下载并建立LFortran:"
 
 #: ../../doc/src/installation.md:134
 msgid "If everything compiled, then you can use LFortran as follows:"
-msgstr ""
+msgstr "如果一切都编译好了，那么你就可以使用LFortran，如下所示:"
 
 #: ../../doc/src/installation.md:140
 msgid "And so on."
-msgstr ""
+msgstr "等等 。"
 
 #: ../../doc/src/installation.md:142
 msgid ""
@@ -1381,6 +1388,8 @@ msgid ""
 "is only available when the MSVC bat script above is ran. If you forget to"
 " activate it, LFortran's linking will fail."
 msgstr ""
+"注意：LFortran目前使用MSVC的链接器程序（`link`），只有在运行上面的MSVC "
+"bat脚本时才能使用。如果你忘记激活它，LFortran的链接就会失败。"
 
 #: ../../doc/src/installation.md:146
 msgid ""
@@ -1390,116 +1399,120 @@ msgid ""
 "`vim`.  For this reason the Conda build `environment_win.yml` contains "
 "everything needed, including `git`."
 msgstr ""
+"注意：miniforge shell似乎在运行某个版本的`git-bash`（尽管它是`cmd.exe`），它"
+"有一些类似unix的文件系统挂载在`/usr`，有几个命令可用，如`ls`、`which`、`git`"
+"、`vim`。 由于这个原因，Conda构建的`environment_win."
+"yml`包含了所有需要的东西，包括`git`。"
 
 #: ../../doc/src/installation.md:152
 msgid "Build from Git on Windows with WSL"
-msgstr ""
+msgstr "用WSL在Windows上从Git构建"
 
 #: ../../doc/src/installation.md:153
 msgid "In windows search \"turn windows features on or off\"."
-msgstr ""
+msgstr "在windows中搜索 \"打开或关闭windows功能\"。"
 
 #: ../../doc/src/installation.md:154
 msgid "Tick Windows subsystem for Linux."
-msgstr ""
+msgstr "标记Linux的Windows子系统。"
 
 #: ../../doc/src/installation.md:155
 msgid "Press OK and restart computer."
-msgstr ""
+msgstr "按 \"确定 \"并重新启动计算机。"
 
 #: ../../doc/src/installation.md:156
 msgid "Go to Microsoft store and download Ubuntu 20.04, and launch it."
-msgstr ""
+msgstr "到微软商店下载Ubuntu 20.04，并启动它。"
 
 #: ../../doc/src/installation.md:157
 msgid "Run the following commands."
-msgstr ""
+msgstr "运行下列程序语句。"
 
 #: ../../doc/src/installation.md:164
 msgid "Now do the following to configure the path"
-msgstr ""
+msgstr "现在做以下工作来配置路径"
 
 #: ../../doc/src/installation.md:168
 msgid "Then go to the bottom of the file and paste the following"
-msgstr ""
+msgstr "然后转到文件底部，粘贴以下内容"
 
 #: ../../doc/src/installation.md:172
 msgid "Then press ctrl + O (save), Enter (confirm), ctrl + X (exit)"
-msgstr ""
+msgstr "然后按ctrl + O（保存），Enter（确认），ctrl + X（退出）"
 
 #: ../../doc/src/installation.md:173
 msgid "After that restart Ubuntu"
-msgstr ""
+msgstr "之后，重新启动Ubuntu"
 
 #: ../../doc/src/installation.md:174
 msgid "Run the following"
-msgstr ""
+msgstr "运行以下内容"
 
 #: ../../doc/src/installation.md:179
 msgid "Restart Ubuntu again"
-msgstr ""
+msgstr "再次重启Ubuntu"
 
 #: ../../doc/src/installation.md:187
 msgid ""
 "You can change the directory to a Windows location using `cd /mnt/[drive "
 "letter]/[windows location]`."
-msgstr ""
+msgstr "你可以使用 `cd /mnt/[drive letter]/[windows location]`将目录改为Windows位置。"
 
 #: ../../doc/src/installation.md:188
 msgid "e.g. `cd mnt/c/Users/name/source/repos/`"
-msgstr ""
+msgstr "例如：`cd mnt/c/Users/name/source/repos/`"
 
 #: ../../doc/src/installation.md:190
 msgid "Now clone the LFortran git repository"
-msgstr ""
+msgstr "现在克隆LFortran的git仓库"
 
 #: ../../doc/src/installation.md:196
 msgid "Run the following commands"
-msgstr ""
+msgstr "运行以下命令"
 
 #: ../../doc/src/installation.md:204
 msgid "If everything compiles, you can use LFortran as follows"
-msgstr ""
+msgstr "如果一切都能编译，你可以使用LFortran，如下所示"
 
 #: ../../doc/src/installation.md:210
 msgid "Run an interactive prompt"
-msgstr ""
+msgstr "运行交互式提示符"
 
 #: ../../doc/src/installation.md:215
 msgid "Run tests"
-msgstr ""
+msgstr "运行测试"
 
 #: ../../doc/src/installation.md:221
 msgid "Enabling the Jupyter Kernel"
-msgstr ""
+msgstr "启用Jupyter内核"
 
 #: ../../doc/src/installation.md:223
 msgid "To install the Jupyter kernel, install the following Conda packages also:"
-msgstr ""
+msgstr "要安装Jupyter内核，还要安装以下Conda软件包:"
 
 #: ../../doc/src/installation.md:227
 msgid ""
 "and enable the kernel by `-DWITH_XEUS=yes` and install into "
 "`$CONDA_PREFIX`. For example:"
-msgstr ""
+msgstr "并通过`-DWITH_XEUS=yes`启用内核，然后安装到`$CONDA_PREFIX`。比如说:"
 
 #: ../../doc/src/installation.md:239
 msgid ""
 "To use it, install Jupyter (`conda install jupyter`) and test that the "
 "LFortran kernel was found:"
-msgstr ""
+msgstr "要使用它，请安装Jupyter（`conda install jupyter`）并测试是否找到LFortran内核:"
 
 #: ../../doc/src/installation.md:244
 msgid "Then launch a Jupyter notebook as follows:"
-msgstr ""
+msgstr "然后启动Jupyter notebook，如下所示:"
 
 #: ../../doc/src/installation.md:248
 msgid "Click `New->Fortran`. To launch a terminal jupyter LFortran console:"
-msgstr ""
+msgstr "单击`新的- > Fortran`。启动jupyter LFortran终端控制台:"
 
 #: ../../doc/src/installation.md:254
 msgid "Build From Git with Nix"
-msgstr ""
+msgstr "使用Nix从Git构建"
 
 #: ../../doc/src/installation.md:256
 msgid ""
@@ -1508,21 +1521,24 @@ msgid ""
 "the development environment. If you want, you can report bugs in a `nix-"
 "shell` environment to make it easier for others to reproduce."
 msgstr ""
+"确保精确环境和依赖关系的方法之一是使用`nix`。这将确保系统的依赖性不会干扰到开"
+"发环境。如果你愿意，你可以在`nix-shell`环境下报告bug，以方便别人复制。"
 
 #: ../../doc/src/installation.md:258
 msgid "With Root"
-msgstr ""
+msgstr "带有 root 权限"
 
 #: ../../doc/src/installation.md:260
 msgid ""
 "We start by getting `nix`. The following multi-user installation will "
 "work on any machine with a Linux distribution, MacOS or Windows (via "
 "WSL):"
-msgstr ""
+msgstr "我们从获得`nix`开始。下面的多用户安装将在任何装有Linux发行版、MacOS或Windows"
+"（通过WSL）的机器上工作:"
 
 #: ../../doc/src/installation.md:264
 msgid "Without Root"
-msgstr ""
+msgstr "不带有 root 权限"
 
 #: ../../doc/src/installation.md:266
 msgid ""
@@ -1530,40 +1546,43 @@ msgid ""
 "on Linux distributions we can use [nix-"
 "portable](https://github.com/DavHau/nix-portable)."
 msgstr ""
+"如果你想不给`nix`提供机器的root权限，在Linux发行版上，我们可以使用[nix-"
+"portable] (https://github.com/DavHau/nix-portable)。"
 
 #: ../../doc/src/installation.md:270
 msgid ""
 "Now just prepend all `nix-shell` commands with `NP_RUNTIME=bwrap ./nix-"
 "portable `. So:"
-msgstr ""
+msgstr "现在只要在所有 `nix-shell `命令前加上 `NP_RUNTIME=bwrap . /nix-"
+"portable`。所以："
 
 #: ../../doc/src/installation.md:278
 msgid "Development"
-msgstr ""
+msgstr "开发"
 
 #: ../../doc/src/installation.md:280
 msgid "Now we can enter the development environment:"
-msgstr ""
+msgstr "现在进入开发环境:"
 
 #: ../../doc/src/installation.md:284
 msgid ""
 "The `--pure` flag ensures no system dependencies are used in the "
 "environment."
-msgstr ""
+msgstr "`--pure`标志确保在环境中不使用系统依赖。"
 
 #: ../../doc/src/installation.md:286
 msgid "The build steps are the same as with the `ci`:"
-msgstr ""
+msgstr "构建步骤与 `ci `相同:"
 
 #: ../../doc/src/installation.md:292
 msgid ""
 "To change the compilation environment from `gcc` (default) to `clang` we "
 "can use `--argstr`:"
-msgstr ""
+msgstr "要把编译环境从`gcc`（默认）改为`clang`，我们可以使用`--argstr`:"
 
 #: ../../doc/src/installation.md:297
 msgid "Note About Dependencies"
-msgstr ""
+msgstr "关于依赖性的说明"
 
 #: ../../doc/src/installation.md:299
 msgid ""
@@ -1571,6 +1590,8 @@ msgid ""
 "[https://lfortran.org/download/](https://lfortran.org/download/), which "
 "only depends on LLVM, CMake and a C++ compiler."
 msgstr ""
+"我们鼓励终端用户（和发行版）使用来自 [https://lfortran.org/download/] "
+"(https://lfortran.org/download/)的tarball，它只依赖于LLVM、CMake和C++编译器。"
 
 #: ../../doc/src/installation.md:303
 msgid ""
@@ -1578,34 +1599,42 @@ msgid ""
 " and contains some autogenerated files: the parser, the AST and ASR "
 "nodes, which is generated by an ASDL translator (requires Python)."
 msgstr ""
+"这个tarball是由我们的CI（持续集成）自动生成的，包含一些自动生成的文件：解析器"
+"、AST和ASR节点，由ASDL翻译器生成（需要Python）。"
 
 #: ../../doc/src/installation.md:307
 msgid "The instructions from git are to be used when developing LFortran itself."
-msgstr ""
+msgstr "在开发LFortran本身时要使用来自git的指令。"
 
 #: ../../doc/src/installation.md:309
 msgid "Note for users who do not use Conda"
-msgstr ""
+msgstr "不使用Conda的用户注意"
 
 #: ../../doc/src/installation.md:311
+#, fuzzy
 msgid ""
 "Following are the dependencies necessary for installing this repository "
 "in development mode,"
-msgstr ""
+msgstr "以下是在开发模式下安装此版本库的必要依赖,"
 
 #: ../../doc/src/installation.md:314
+#, fuzzy
 msgid "[Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)"
-msgstr ""
+msgstr "[Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)"
 
 #: ../../doc/src/installation.md:315
+#, fuzzy
 msgid ""
 "[LLVM - 11.0.1](https://github.com/llvm/llvm-"
 "project/releases/download/llvmorg-11.0.1/llvm-11.0.1.src.tar.xz)"
 msgstr ""
+"[LLVM - 11.0.1](https://github.com/llvm/llvm-project/releases/download/"
+"llvmorg-11.0.1/llvm-11.0.1.src.tar.xz)"
 
 #: ../../doc/src/installation.md:316
+#, fuzzy
 msgid "[re2c - 2.0.3](https://re2c.org/install/install.html)"
-msgstr ""
+msgstr "[re2c - 2.0.3](https://re2c.org/install/install.html)"
 
 #: ../../doc/src/installation.md:317
 msgid ""
@@ -1614,10 +1643,13 @@ msgid ""
 " - Make sure that you should enable the required options related to this "
 "dependency to build the dynamic libraries (the ones ending with `.so`)."
 msgstr ""
+"[binutils - 2.31.90](ftp://sourceware.org/pub/binutils/snapshots/binutils-2."
+"31.90.tar.xz) - 确保你应该启用与此依赖关系相关的必要选项来构建动态库（以`."
+"so`结尾的库）。"
 
 #: ../../doc/src/installation.md:319
 msgid "Stacktraces"
-msgstr ""
+msgstr "堆栈跟踪"
 
 #: ../../doc/src/installation.md:321
 msgid ""
@@ -1629,18 +1661,24 @@ msgid ""
 "option after installing the prerequisites on each platform per the "
 "instructions below."
 msgstr ""
+"LFortran 可以在出现未处理的异常时打印堆栈跟踪，也可以在任何编译器错误时使用 "
+"`--show-stacktrace` 选项。这对开发编译器本身很有帮助，可以看到LFortran中的问"
+"题所在。默认情况下，堆栈跟踪支持是关闭的，要启用它，需要在每个平台上按照下面"
+"的说明安装先决条件后，用`-DWITH_STACKTRACE=yes` cmake选项编译LFortran。"
 
 #: ../../doc/src/installation.md:328
+#, fuzzy
 msgid "Ubuntu"
-msgstr ""
+msgstr "Ubuntu"
 
 #: ../../doc/src/installation.md:330
 msgid "In Ubuntu, `apt install binutils-dev`."
-msgstr ""
+msgstr "在Ubuntu系统, `apt install binutils-dev`."
 
 #: ../../doc/src/installation.md:332
+#, fuzzy
 msgid "macOS"
-msgstr ""
+msgstr "macOS"
 
 #: ../../doc/src/installation.md:334
 msgid ""
@@ -1650,18 +1688,23 @@ msgid ""
 "store the debug information, see `src/bin/CMakeLists.txt` for more "
 "details). If it does not work, please report a bug."
 msgstr ""
+"如果你在macOS上使用默认的Clang编译器，那么堆栈跟踪应该正好在基于Intel和M1的ma"
+"cOS上工作（CMake构建系统自动调用`dsymtuil`工具和我们的Python脚本来存储调试信"
+"息，更多细节见`src/bin/CMakeLists.txt`）。如果不能工作，请报告一个错误。"
 
 #: ../../doc/src/installation.md:340
 msgid ""
 "If you do not like the default way, an alternative is to use bintutils. "
 "For that, first install [Spack](https://spack.io/), then:"
-msgstr ""
+msgstr "如果你不喜欢默认的方式，另一个选择是使用bintutils。为此，首先安装[Spack](http"
+"s://spack.io/)，然后:"
 
 #: ../../doc/src/installation.md:347
 msgid ""
 "The last command will show a full path to the installed `binutils` "
 "package. Add this path to your shell config file, e.g.:"
-msgstr ""
+msgstr "最后一条命令将显示已安装的`binutils`软件包的完整路径。把这个路径添加到你的she"
+"ll配置文件中，例如:"
 
 #: ../../doc/src/installation.md:352
 msgid ""
@@ -1670,18 +1713,21 @@ msgid ""
 " option. The `$CONDA_PREFIX` is there if you install some other "
 "dependencies (such as `llvm`) using Conda, otherwise you can remove it."
 msgstr ""
+"并使用`-DCMAKE_PREFIX_PATH=\"$CMAKE_PREFIX_PATH_LFORTRAN;$CONDA_PREFIX\"` cma"
+"ke选项编译LFortran。`$CONDA_PREFIX`是在你使用Conda安装了一些其他的依赖项（如`"
+"llvm`）的情况下出现的，否则你可以把它删除。"
 
 #: ../../doc/src/intrinsics/array.md:1
 msgid "Array Intrinsic Functions"
-msgstr ""
+msgstr "数组内在函数"
 
 #: ../../doc/src/intrinsics/array/allocated.md:1
 msgid "allocated(x): Status Check"
-msgstr ""
+msgstr "已分配（x）：状态检查"
 
 #: ../../doc/src/intrinsics/array/allocated.md:3
 msgid "Logical status of an allocatable integer."
-msgstr ""
+msgstr "可分配整数的逻辑状态。"
 
 #: ../../doc/src/intrinsics/array/allocated.md:5
 #: ../../doc/src/intrinsics/array/cshift.md:5
@@ -1728,7 +1774,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:5
 #: ../../doc/src/intrinsics/numeric/mod.md:5
 msgid "Declaration"
-msgstr ""
+msgstr "声明"
 
 #: ../../doc/src/intrinsics/array/allocated.md:7
 #: ../../doc/src/intrinsics/array/cshift.md:7
@@ -1775,7 +1821,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:7
 #: ../../doc/src/intrinsics/numeric/mod.md:7
 msgid "Syntax"
-msgstr ""
+msgstr "句法"
 
 #: ../../doc/src/intrinsics/array/allocated.md:14
 #: ../../doc/src/intrinsics/array/cshift.md:14
@@ -1824,11 +1870,11 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:14
 #: ../../doc/src/intrinsics/numeric/mod.md:15
 msgid "Arguments"
-msgstr ""
+msgstr "论据"
 
 #: ../../doc/src/intrinsics/array/allocated.md:16
 msgid "`x` is an integer input parameter."
-msgstr ""
+msgstr "`x` 是一个整数输入参数。"
 
 #: ../../doc/src/intrinsics/array/allocated.md:18
 #: ../../doc/src/intrinsics/array/cshift.md:22
@@ -1872,13 +1918,13 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:19
 #: ../../doc/src/intrinsics/numeric/mod.md:22
 msgid "Return values"
-msgstr ""
+msgstr "返回值"
 
 #: ../../doc/src/intrinsics/array/allocated.md:20
 msgid ""
 "The return value is a logical scalar with the default logical kind type "
 "parameter."
-msgstr ""
+msgstr "返回值是具有默认逻辑种类类型参数的逻辑标量。"
 
 #: ../../doc/src/intrinsics/array/allocated.md:23
 #: ../../doc/src/intrinsics/array/cshift.md:26
@@ -1927,14 +1973,15 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:23
 #: ../../doc/src/intrinsics/numeric/mod.md:31 ../../doc/src/progress.md
 msgid "Description"
-msgstr ""
+msgstr "说明"
 
 #: ../../doc/src/intrinsics/array/allocated.md:25
 msgid ""
 "`allocated(x)` checks the allocation status of a integer input parameter."
 " It returns a logical value as `TRUE` if the input argument `x` is "
 "allocated, `FALSE` otherwise."
-msgstr ""
+msgstr "`allocated(x)` 检查整数输入参数的分配状态。 "
+"如果分配了输入参数`x`，则返回逻辑值`TRUE`，否则返回`FALSE`。"
 
 #: ../../doc/src/intrinsics/array/allocated.md:29
 #: ../../doc/src/intrinsics/array/cshift.md:39
@@ -4706,5 +4753,8 @@ msgid "Directory: `tests/intrinsic/nint`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/nint/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/nint/t01_scalar_real.f90)"
