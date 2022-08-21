@@ -161,7 +161,7 @@ if (HAVE_BUILD_TO_WASM)
     # In build_to_wasm.sh, we need CMAKE_CXX_FLAGS_DEBUG="-Wall -Wextra -fexceptions" flags for exception support
     set(WASM_COMPILE_FLAGS "-g0 -fexceptions")
     set(WASM_LINK_FLAGS
-      "-g0 -Oz -fexceptions --embed-file asset_dir -Wall -Wextra --no-entry -s ASSERTIONS -s ALLOW_MEMORY_GROWTH=1 -s WASM_BIGINT -s \"EXPORTED_RUNTIME_METHODS=['cwrap']\""
+      "-g0 -Oz -fexceptions --preload-file asset_dir -Wall -Wextra --no-entry -s ASSERTIONS -s ALLOW_MEMORY_GROWTH=1 -s WASM_BIGINT -s \"EXPORTED_RUNTIME_METHODS=['cwrap']\""
     )
     set_target_properties(lfortran PROPERTIES COMPILE_FLAGS ${WASM_COMPILE_FLAGS})
     set_target_properties(lfortran PROPERTIES LINK_FLAGS ${WASM_LINK_FLAGS})
