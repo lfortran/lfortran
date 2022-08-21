@@ -149,14 +149,14 @@ if (HAVE_BUILD_TO_WASM)
     #     "-s WASM_BIGINT" # Allow use of i64 integers. ASR is needing this option to be enabled.
     #     "-s EXPORTED_RUNTIME_METHODS=['cwrap']" # Export cwarp. cwarp helps us to call our EMSCRIPTEN_KEEPALIVE functions
     # )
-    
+
     # Some extra flags below that we may need in future. But these may/might increase the code size
     # "--preload-file ./asset_dir"
     # "-s SAFE_HEAP=1"
     # "-s \"EXPORTED_RUNTIME_METHODS=['ccall']\""
     # "-s EXPORTED_FUNCTIONS=\"['_free', '_malloc']\""
-    
-    # Notes: 
+
+    # Notes:
     # STANDALONE_WASM is disabling support for exceptions, so it is currently omitted
     # In build_to_wasm.sh, we need CMAKE_CXX_FLAGS_DEBUG="-Wall -Wextra -fexceptions" flags for exception support
     set(WASM_COMPILE_FLAGS "-g0 -fexceptions")
