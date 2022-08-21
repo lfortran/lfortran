@@ -36,8 +36,8 @@ cd ..
 
 cd lfortran
 git clean -dfx
-git fetch origin merge-requests/$MR/head:mr-origin-$MR
-git checkout mr-origin-$MR
+git fetch origin pull/$PR/head:pr-origin-$PR
+git checkout pr-origin-$PR
 
 mkdir pr
 cd pr
