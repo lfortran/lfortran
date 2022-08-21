@@ -498,7 +498,7 @@ public:
                             + derived_type_name + "' not declared", x.base.base.loc);
 
                     }
-                    
+
                     // Check whether this function is templated
                     bool type_param = false;
                     if(is_template){
@@ -581,7 +581,7 @@ public:
             }
         }
         Vec<ASR::ttype_t*> params;
-        params.reserve(al, current_procedure_used_type_parameter_indices.size()); 
+        params.reserve(al, current_procedure_used_type_parameter_indices.size());
         for(auto i = current_procedure_used_type_parameter_indices.begin(); i != current_procedure_used_type_parameter_indices.end(); i++){
             ASR::asr_t* param = current_template_type_parameters[*i];
             params.push_back(al, ASR::down_cast<ASR::ttype_t>(param));
@@ -614,7 +614,7 @@ public:
     }
 
     void visit_Instantiate(const AST::Instantiate_t &){
-        
+
     }
 
     void visit_DerivedType(const AST::DerivedType_t &x) {
