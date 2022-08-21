@@ -1,0 +1,13 @@
+{
+    "basename": "wat-types_16-57fa580",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/../integration_tests/types_16.f90",
+    "infile_hash": "c130af47594694449f9ae111b8985bb8567fd26e86979d127d34257b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-types_16-57fa580.stdout",
+    "stdout_hash": "688a51e31e2b34c7771f03a8fe0c185655e7abfe8a04fc0bfe3430d5",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

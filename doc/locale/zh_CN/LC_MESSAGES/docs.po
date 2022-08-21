@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-19 09:32+0000\n"
+"PO-Revision-Date: 2022-08-20 09:22+0000\n"
 "Last-Translator: 左志华 <zuo.zhihua@qq.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "fortran-lang/lfortran-docs/zh_Hans/>\n"
@@ -75,6 +75,7 @@ msgid ""
 msgstr "AST 必须代表所有的 ``use`` 语句和 ``interface`` 块，并保持语义一致。"
 
 #: ../../doc/src/ast_and_asr.ipynb:162
+#, fuzzy
 msgid ""
 "ASR, on the other hand, keeps track of the ``c_desc1_int32``, "
 "``c_desc1_t`` and ``f2b_c_wrapper`` in the symbol table and it knows they"
@@ -82,7 +83,7 @@ msgid ""
 "any of these declaration nodes."
 msgstr ""
 "另一方面，ASR 跟踪符号表中的 ``c_desc1_int32``、``c_desc1_t`` 和 "
-"``f2b_c_wrapper``，并且知道它们是在``gfort_interop`` 模块中定义的，因此 ASR "
+"``f2b_c_wrapper``，并且知道它们是在 ``gfort_interop`` 模块中定义的，因此 ASR "
 "没有任何这些声明节点。"
 
 #: ../../doc/src/ast_and_asr.ipynb:164
@@ -169,37 +170,38 @@ msgstr ""
 msgid ""
 "You can use `git remote -v` to check if the new remote is set up "
 "correctly."
-msgstr ""
+msgstr "您可以使用 `git remote -v` 检查新远程地址是否设置正确。"
 
 #: ../../doc/src/contributing.md:35
 msgid "Send a New Merge Request"
-msgstr ""
+msgstr "发送新的合并请求"
 
 #: ../../doc/src/contributing.md:37
 msgid "Step 1. Create a new branch"
-msgstr ""
+msgstr "步骤 1. 创建一个新分支"
 
 #: ../../doc/src/contributing.md:42
 msgid "Step 2. Make changes in relevant file(s)"
-msgstr ""
+msgstr "步骤 2. 更改相关文件"
 
 #: ../../doc/src/contributing.md:44
 msgid "Step 3. Commit the changes:"
-msgstr ""
+msgstr "步骤 3. 提交更改："
 
 #: ../../doc/src/contributing.md:51
 msgid ""
 "[Here](https://chris.beams.io/posts/git-commit/) are some great tips on "
 "writing good commit messages."
-msgstr ""
+msgstr "[这里](https://chris.beams.io/posts/git-commit/) "
+"是一些关于编写好的提交消息的好技巧。"
 
 #: ../../doc/src/contributing.md:53
 msgid "Step 4. Check to ensure that your changes look good"
-msgstr ""
+msgstr "第 4 步：检查以确保您的更改看起来不错"
 
 #: ../../doc/src/contributing.md:58
 msgid "Step 5. Send the merge request"
-msgstr ""
+msgstr "步骤 5. 发送合并请求"
 
 #: ../../doc/src/contributing.md:64
 msgid ""
@@ -209,46 +211,52 @@ msgid ""
 " clicking on the link, write a title and a concise description then click"
 " the \"Create\" button. Yay you are now all set."
 msgstr ""
+"该命令会将新分支 `fix1` 推送到您之前创建的远程存储库 `REMOTE_NAME` 中。此外，"
+"它还将显示一个链接，您可以单击该链接以打开新的合并请求。单击链接后，写下标题"
+"和简明描述，然后单击 `创建` 按钮。是的，你现在一切就绪。"
 
 #: ../../doc/src/contributing.md:66
 msgid "Add New Features"
-msgstr ""
+msgstr "添加新功能"
 
 #: ../../doc/src/contributing.md:68
 msgid ""
 "The example below shows the steps it would take to create a caret binary "
 "operator **^** which computes the average value of the two operands."
-msgstr ""
+msgstr "下面的示例显示了创建插入符号二元运算符 **^** "
+"所需的步骤，该运算符计算两个操作数的平均值。"
 
 #: ../../doc/src/contributing.md:70
 msgid "Create New Token(s)"
-msgstr ""
+msgstr "创建新令牌"
 
 #: ../../doc/src/contributing.md:72
 msgid ""
 "We extend the *tokenizer.re* as well as *parser.yy* to add the new token "
 "**^**. We also tell LFortran how to print the new token in *parser.cpp*."
 msgstr ""
+"我们扩展了 *tokenizer.re* 和 *parser.yy* 以添加新的令牌 **^**。我们还告诉 "
+"LFortran 如何在 *parser.cpp* 中打印新标记。"
 
 #: ../../doc/src/contributing.md:75
 msgid ":fontawesome-solid-code: *src/lfortran/parser/tokenizer.re*"
-msgstr ""
+msgstr ":fontawesome-solid-code: *src/lfortran/parser/tokenizer.re*"
 
 #: ../../doc/src/contributing.md:80
 msgid ":fontawesome-solid-code: *src/lfortran/parser/parser.yy*"
-msgstr ""
+msgstr ":fontawesome-solid-code: *src/lfortran/parser/parser.yy*"
 
 #: ../../doc/src/contributing.md:85
 msgid ":fontawesome-solid-code: *src/lfortran/parser/parser.cpp*"
-msgstr ""
+msgstr ":fontawesome-solid-code: *src/lfortran/parser/parser.cpp*"
 
 #: ../../doc/src/contributing.md:94
 msgid "The added code is tested with `lfortran --show-tokens examples2/expr2.f90`"
-msgstr ""
+msgstr "添加的代码使用 `lfortran --show-tokens examples2/expr2.f90` 进行测试"
 
 #: ../../doc/src/contributing.md:96
 msgid "Parse the New Token"
-msgstr ""
+msgstr "解析新令牌"
 
 #: ../../doc/src/contributing.md:98
 msgid ""
@@ -258,50 +266,55 @@ msgid ""
 "*semantics.h*.Finally we extend *pickle.cpp* so that the new operator can"
 " print itself."
 msgstr ""
+"现在我们必须解析 new 运算符。我们通过使用插入符运算符扩展 BinOp 并修改 *AST."
+"asdl* 文件将其添加到 AST。然后我们将它添加到 *parse.yy* 中以正确解析并在 "
+"*semantics.h* 中生成新的 AST。最后我们扩展 *pickle.cpp* "
+"以便新的操作符可以打印自己。"
 
 #: ../../doc/src/contributing.md:102
 msgid ":fontawesome-solid-code:*grammar/AST.asdl*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*grammar/AST.asdl*"
 
 #: ../../doc/src/contributing.md:107
 msgid ":fontawesome-solid-code:*src/lfortran/parser/parser.yy*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/parser/parser.yy*"
 
 #: ../../doc/src/contributing.md:116
 msgid ":fontawesome-solid-code:*src/lfortran/parser/semantics.h*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/parser/semantics.h*"
 
 #: ../../doc/src/contributing.md:121
 msgid ":fontawesome-solid-code:*src/lfortran/pickle.cpp*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/pickle.cpp*"
 
 #: ../../doc/src/contributing.md:132
 msgid "The section is tested with `lfortran --show-ast examples/expr2.f90`"
-msgstr ""
+msgstr "该部分使用 `lfortran --show-ast examples/expr2.f90` 进行测试"
 
 #: ../../doc/src/contributing.md:134
 msgid "Implement the Semantics of the New Token"
-msgstr ""
+msgstr "实现新令牌的语义"
 
 #: ../../doc/src/contributing.md:136
 msgid ""
 "We first extend the ASR in *ASR.asdl* and add ^ as a BinOp operator "
 "option."
-msgstr ""
+msgstr "我们首先在 *ASR.asdl* 中扩展 ASR，并添加 ^ 作为 BinOp 运算符选项。"
 
 #: ../../doc/src/contributing.md:138
 msgid ":fontawesome-solid-code:*src/libasr/ASR.asdl*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/libasr/ASR.asdl*"
 
 #: ../../doc/src/contributing.md:142
 msgid ":fontawesome-solid-code:*src/lfortran/semantics/ast_common_visitor.h*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/semantics/ast_common_visitor.h*"
 
 #: ../../doc/src/contributing.md:179
 msgid ""
 "Then we transform it from AST to ASR by extending "
 "*src/lfortran/semantics/ast_common_visitor.h*."
-msgstr ""
+msgstr "然后我们通过扩展 *src/lfortran/semantics/ast_common_visitor.h* 将其从 AST "
+"转换为 ASR。"
 
 #: ../../doc/src/contributing.md:181
 msgid ""
@@ -309,14 +322,16 @@ msgid ""
 " as `e = (2+3)^5` which is evaluated at compile time. An expression such "
 "as `e = x^5` is evaluated at run time only."
 msgstr ""
+"我们还将它添加到由表达式触发的编译时评估中，例如在编译时评估的 `e = "
+"(2+3)^5`。诸如`e = x^5`之类的表达式仅在运行时进行评估。"
 
 #: ../../doc/src/contributing.md:183
 msgid "The section is tested with `lfortran --show-asr examples/expr2.f90`"
-msgstr ""
+msgstr "该部分使用 `lfortran --show-asr examples/expr2.f90` 进行测试"
 
 #: ../../doc/src/contributing.md:184
 msgid "Implement the New Token in LLVM"
-msgstr ""
+msgstr "在 LLVM 中实现新令牌"
 
 #: ../../doc/src/contributing.md:186
 msgid ""
@@ -324,26 +339,29 @@ msgid ""
 " operator. We first add the two numbers then divide by two. :fontawesome-"
 "solid-code:*src/lfortran/codegen/asr_to_llvm.cpp*"
 msgstr ""
+"为了在 LLVM 中实现，我们通过处理 new 运算符来扩展 BinOp "
+"转换。我们首先将两个数字相加，然后除以 2。 :fontawesome-solid-code:*src/"
+"lfortran/codegen/asr_to_llvm.cpp*"
 
 #: ../../doc/src/contributing.md:217
 msgid "The section is tested with `lfortran --show-llvm examples/expr2.f90`"
-msgstr ""
+msgstr "该部分使用 `lfortran --show-llvm examples/expr2.f90` 进行测试"
 
 #: ../../doc/src/contributing.md:219
 msgid "Now when LLVM works, we can test the final executable by:"
-msgstr ""
+msgstr "现在当 LLVM 工作时，我们可以通过以下方式测试最终的可执行文件："
 
 #: ../../doc/src/contributing.md:224
 msgid "And it should print 6."
-msgstr ""
+msgstr "它应该打印 6。"
 
 #: ../../doc/src/contributing.md:226
 msgid "It also works interactively:"
-msgstr ""
+msgstr "它还可以交互工作："
 
 #: ../../doc/src/contributing.md:242
 msgid "Reach Out"
-msgstr ""
+msgstr "得到"
 
 #: ../../doc/src/contributing.md:244
 msgid ""
@@ -351,6 +369,8 @@ msgid ""
 "[mailinglist](https://groups.io/g/lfortran) or a "
 "[chat](https://lfortran.zulipchat.com/)."
 msgstr ""
+"如果您有任何问题或需要帮助，请通过我们的 [mailinglist](https://groups.io/g/"
+"lfortran) 或 [chat](https://lfortran.zulipchat.com/) 提问。"
 
 #: ../../doc/src/contributing.md:248
 msgid ""
@@ -359,6 +379,9 @@ msgid ""
 "by its terms. See "
 "[CODE_OF_CONDUCT.md](https://github.com/lfortran/lfortran/blob/main/CODE_OF_CONDUCT.md)."
 msgstr ""
+"请注意，该项目的所有参与者都应遵守我们的行为准则。参与本项目即表示您同意遵守"
+"其条款。请参阅 [CODE_OF_CONDUCT.md](https://github.com/lfortran/lfortran/"
+"blob/main/CODE_OF_CONDUCT.md)。"
 
 #: ../../doc/src/contributing.md:252
 msgid ""
@@ -367,14 +390,16 @@ msgid ""
 "[license](https://github.com/lfortran/lfortran/blob/main/LICENSE) unless "
 "explicitly noted otherwise."
 msgstr ""
+"通过提交 PR，您同意根据 LFortran 的 BSD [许可](https://github.com/lfortran/"
+"lfortran/blob/main/LICENSE) 许可您的贡献，除非另有明确说明。"
 
 #: ../../doc/src/design.md:1
 msgid "LFortran Design"
-msgstr ""
+msgstr "LFortran Design"
 
 #: ../../doc/src/design.md:3
 msgid "High Level Overview"
-msgstr ""
+msgstr "高级概述"
 
 #: ../../doc/src/design.md:5 ../../doc/src/developer_tutorial.ipynb:16
 msgid ""
@@ -383,6 +408,9 @@ msgid ""
 "and users are encouraged to use them independently for other applications"
 " and build tools on top:"
 msgstr ""
+"LFortran 围绕两个独立的模块 AST 和 ASR 构建，这两个模块都是独立的（"
+"完全独立于 LFortran "
+"的其余部分），鼓励用户将它们独立用于其他应用程序并在其上构建工具："
 
 #: ../../doc/src/design.md:10
 msgid ""
@@ -390,6 +418,8 @@ msgid ""
 " source code, strictly based on syntax, no semantic is included. The AST "
 "module can convert itself to Fortran source code."
 msgstr ""
+"抽象语法树 (AST)，模块 `lfortran.ast`：表示任何 Fortran "
+"源代码，严格基于语法，不包含语义。 AST 模块可以将自身转换为 Fortran 源代码。"
 
 #: ../../doc/src/design.md:14
 msgid ""
@@ -398,27 +428,31 @@ msgid ""
 "code is not allowed (an error will be given). The ASR module can convert "
 "itself to an AST."
 msgstr ""
+"抽象语义表示 (ASR)，模块 `lfortran.asr`：表示有效的 Fortran "
+"源代码，包括所有语义。不允许使用无效的 Fortran 代码（将给出错误）。 ASR "
+"模块可以将自身转换为 AST。"
 
 #: ../../doc/src/design.md:19
 msgid ""
 "The LFortran compiler is then composed of the following independent "
 "stages:"
-msgstr ""
+msgstr "LFortran 编译器由以下独立阶段组成："
 
 #: ../../doc/src/design.md:21
 msgid "Parsing: converts Fortran source code to an AST"
-msgstr ""
+msgstr "解析：将 Fortran 源代码转换为 AST"
 
 #: ../../doc/src/design.md:22
 msgid "Semantic: converts an AST to an ASR"
-msgstr ""
+msgstr "语义：将 AST 转换为 ASR"
 
 #: ../../doc/src/design.md:23
 msgid ""
 "High level optimizations: optimize ASR to a possibly faster/simpler ASR "
 "(things like inlining functions, eliminating redundant expressions or "
 "statements, etc.)"
-msgstr ""
+msgstr "高级优化：将 ASR 优化为可能更快/更简单的 "
+"ASR（内联函数、消除冗余表达式或语句等）"
 
 #: ../../doc/src/design.md:26
 msgid ""
@@ -426,6 +460,8 @@ msgid ""
 " an LLVM IR. This stage also does all other optimizations that do not "
 "produce an ASR, but still make sense to do before passing to LLVM IR."
 msgstr ""
+"LLVM IR 代码生成和较低级别的优化：将 ASR 转换为 LLVM IR。"
+"此阶段还执行所有其他不产生 ASR，但在传递给 LLVM IR 之前仍然有意义的优化。"
 
 #: ../../doc/src/design.md:29
 msgid ""
@@ -434,6 +470,9 @@ msgid ""
 " file, or it is loaded and executed using JIT as part of the interactive "
 "LFortran session or in a Jupyter kernel)."
 msgstr ""
+"机器代码生成：LLVM "
+"然后进行所有优化并生成机器代码（例如二进制可执行文件、库、目标文件，或者使用 "
+"JIT 作为交互式 LFortran 会话的一部分或在 Jupyter 内核中加载和执行）。"
 
 #: ../../doc/src/design.md:34
 msgid ""
@@ -445,56 +484,62 @@ msgid ""
 "machine code directly. In other words, one can use LFortran to easily "
 "convert between the three equivalent representations:"
 msgstr ""
+"LFortran 被构造为一个库，因此可以使用解析器获取 AST 并对其进行处理，"
+"或者然后可以使用语义分析器获取 ASR 并对其进行处理。可以直接生成 ASR（例如，"
+"从 SymPy），然后转换为 AST 和 Fortran 源代码，或者使用 LFortran "
+"直接将其编译为机器代码。换句话说，可以使用 LFortran "
+"在三种等效表示之间轻松转换："
 
 #: ../../doc/src/design.md:42
 msgid "Fortran source code"
-msgstr ""
+msgstr "Fortran 源代码"
 
 #: ../../doc/src/design.md:43 ../../doc/src/developer_tutorial.ipynb:23
 msgid "Abstract Syntax Tree (AST)"
-msgstr ""
+msgstr "抽象语法树 (AST)"
 
 #: ../../doc/src/design.md:44 ../../doc/src/developer_tutorial.ipynb:159
 msgid "Abstract Semantic Representation (ASR)"
-msgstr ""
+msgstr "抽象语义表示 (ASR)"
 
 #: ../../doc/src/design.md:46
 msgid "They are all equivalent in the following sense:"
-msgstr ""
+msgstr "它们在以下意义上都是等价的："
 
 #: ../../doc/src/design.md:48
 msgid "Any ASR can always be converted to an equivalent AST"
-msgstr ""
+msgstr "任何 ASR 始终可以转换为等效的 AST"
 
 #: ../../doc/src/design.md:49
 msgid "Any AST can always be converted to an equivalent Fortran source code"
-msgstr ""
+msgstr "任何 AST 始终可以转换为等效的 Fortran 源代码"
 
 #: ../../doc/src/design.md:50
 msgid ""
 "Any Fortran source code can always be either converted to an equivalent "
 "AST or one gets a syntax error"
-msgstr ""
+msgstr "任何 Fortran 源代码总是可以转换为等效的 AST 或出现语法错误"
 
 #: ../../doc/src/design.md:52
 msgid ""
 "Any AST can always be either converted to an equivalent ASR or one gets a"
 " semantic error"
-msgstr ""
+msgstr "任何 AST 总是可以转换为等效的 ASR 或者出现语义错误"
 
 #: ../../doc/src/design.md:55
 msgid ""
 "So when a conversion can be done, they are equivalent, and the conversion"
 " can always be done unless the code is invalid."
-msgstr ""
+msgstr "因此，当可以进行转换时，它们是等效的，并且除非代码无效，否则始终可以进行转换"
+"。"
 
 #: ../../doc/src/design.md:58
 msgid "ASR Design Details"
-msgstr ""
+msgstr "ASR 设计细节"
 
 #: ../../doc/src/design.md:60
 msgid "The ASR is designed to have the following features:"
-msgstr ""
+msgstr "ASR 旨在具有以下功能："
 
 #: ../../doc/src/design.md:62
 msgid ""
@@ -502,12 +547,14 @@ msgid ""
 " not lose any semantic information). ASR can be converted to AST, and AST"
 " to Fortran source code which is functionally equivalent to the original."
 msgstr ""
+"ASR 在语义上仍然等同于原始 Fortran 代码（它没有丢失任何语义信息）。 ASR "
+"可以转换为 AST，AST 可以转换为 Fortran 源代码，在功能上与原始代码相同。"
 
 #: ../../doc/src/design.md:66
 msgid ""
 "ASR is as simple as possible: it does not contain any information that "
 "could not be inferred from ASR."
-msgstr ""
+msgstr "ASR 尽可能简单：它不包含任何无法从 ASR 推断出的信息。"
 
 #: ../../doc/src/design.md:69
 msgid ""
@@ -525,17 +572,27 @@ msgid ""
 "always contain valid Fortran code and the rest of LFortran can depend on "
 "it."
 msgstr ""
+"ASR C++ 类（未来）的设计类似于 "
+"SymEngine：它们被构造一次，之后它们是不可变的。构造函数在 Debug "
+"中检查是否满足所有要求（例如，函数中的所有变量都有一个虚拟参数集，"
+"显式形状数组不可分配以及所有其他 Fortran "
+"要求使其成为有效代码），但在发布模式它无需检查即可快速构建类。然后是构建 ASR "
+"C++ 类以满足要求的构建器类（在调试模式下检查），如果代码不是有效的 Fortran "
+"代码，构建器会给出错误消息，如果它没有给出错误消息，则 ASR C++ "
+"类构造正确。因此，通过构造，ASR 类总是包含有效的 Fortran 代码，而 LFortran "
+"的其余部分可以依赖它。"
 
 #: ../../doc/src/design.md:82
 msgid "Notes:"
-msgstr ""
+msgstr "注意："
 
 #: ../../doc/src/design.md:84
 msgid ""
 "Information that is lost when parsing source to AST: whitespace, "
 "multiline/single line if statement distinction, case sensitivity of "
 "keywords."
-msgstr ""
+msgstr "将源解析为 AST 时丢失的信息：空格、多行/单行 if "
+"语句区分、关键字的区分大小写。"
 
 #: ../../doc/src/design.md:87
 msgid ""
@@ -546,6 +603,10 @@ msgid ""
 "order), as ASR only represents the aggregated type information in the "
 "symbol table."
 msgstr ""
+"从 AST 到 ASR 时丢失的信息：如何定义变量的详细语法以及类型属性的顺序（"
+"数组维度是否使用 `dimension` "
+"属性，或变量处的括号；或每个声明行有多少个变量或它们的顺序），因为 ASR "
+"仅表示符号表中的聚合类型信息。"
 
 #: ../../doc/src/design.md:90
 msgid ""
@@ -562,12 +623,19 @@ msgid ""
 "example a function references a module, a module references the global "
 "scope)."
 msgstr ""
+"ASR 是生成 Fortran "
+"代码的最简单方法，因为不必担心关于如何以及在何处声明事物的详细语法（如在 AST "
+"中）。一个为模块指定符号表，然后为每个符号（函数、全局变量、类型……）指定局部"
+"变量，如果这是一个接口，则需要指定在哪里可以找到实现，否则为body 提供了语句，"
+"这些节点与 AST 中的几乎相同，除了每个变量只是对符号表中的符号的引用（因此通过"
+"构造一个不能有未定义的变量）。每个节点（例如 Function 或 "
+"Module）的符号表也引用其父节点（例如，函数引用模块，模块引用全局范围）。"
 
 #: ../../doc/src/design.md:102
 msgid ""
 "The ASR can be directly converted to an AST without gathering any other "
 "information. And the AST directly to Fortran source code."
-msgstr ""
+msgstr "ASR 可以直接转换为 AST，而无需收集任何其他信息。而AST直接转为Fortran源代码。"
 
 #: ../../doc/src/design.md:105
 msgid ""
@@ -575,10 +643,12 @@ msgid ""
 "is enforced by checks in the ASR C++ constructors (in Debug build). When "
 "an ASR is used, one can assume it is valid."
 msgstr ""
+"ASR 始终表示语义上有效的 Fortran 代码。这是通过检查 ASR C++ "
+"构造函数（在调试版本中）来强制执行的。当使用 ASR 时，可以假定它是有效的。"
 
 #: ../../doc/src/design.md:109
 msgid "Fortran 2008"
-msgstr ""
+msgstr "Fortran 2008"
 
 #: ../../doc/src/design.md:111
 msgid ""
@@ -587,18 +657,21 @@ msgid ""
 "collection of _program units_ (either all in one file, or in separate "
 "files), where each _program unit_ is one of:"
 msgstr ""
+"Fortran 2008 [标准](https://j3-fortran.org/doc/year/10/10-007.pdf) 第 2 章“"
+"Fortran 概念”指定 Fortran 代码是_程序单元_的集合（全部在一个文件中） "
+"，或在单独的文件中），其中每个 _程序单元_ 是以下之一："
 
 #: ../../doc/src/design.md:116 ../../doc/src/design.md:131
 msgid "main program"
-msgstr ""
+msgstr "主程序"
 
 #: ../../doc/src/design.md:117 ../../doc/src/design.md:132
 msgid "module or submodule"
-msgstr ""
+msgstr "模块或子模块"
 
 #: ../../doc/src/design.md:118 ../../doc/src/design.md:133
 msgid "function or subroutine"
-msgstr ""
+msgstr "函数或子程序"
 
 #: ../../doc/src/design.md:120
 msgid ""
@@ -606,10 +679,12 @@ msgid ""
 " initial values for data objects in named _common blocks_, but we do not "
 "recommend the use of _common blocks_ (use modules instead)."
 msgstr ""
+"注意：它也可以是_block data_程序单元，用于为命名的_common "
+"blocks_中的数据对象提供初始值，但我们不建议使用_common blocks_（改用模块）。"
 
 #: ../../doc/src/design.md:124
 msgid "LFortran Extension"
-msgstr ""
+msgstr "LFortran 扩展"
 
 #: ../../doc/src/design.md:126
 msgid ""
@@ -618,22 +693,25 @@ msgid ""
 "statements, declarations, use statements and expressions. We define "
 "_global scope_ as a collection of the following items:"
 msgstr ""
+"我们通过引入_全局范围_来扩展 Fortran 语言，它不仅是_程序单元_列表（如 F2008 "
+"中），还可以包括语句、声明、使用语句和表达式。我们将_全局范围_定义为以下项目"
+"的集合："
 
 #: ../../doc/src/design.md:134
 msgid "use statement"
-msgstr ""
+msgstr "使用声明"
 
 #: ../../doc/src/design.md:135
 msgid "declaration"
-msgstr ""
+msgstr "声明"
 
 #: ../../doc/src/design.md:136
 msgid "statement"
-msgstr ""
+msgstr "声明"
 
 #: ../../doc/src/design.md:137
 msgid "expression"
-msgstr ""
+msgstr "表达"
 
 #: ../../doc/src/design.md:139
 msgid ""
@@ -644,6 +722,10 @@ msgid ""
 "at the top level of _global scope_. Types must be fully specified inside "
 "main programs, modules, functions and subroutines, just like in F2008."
 msgstr ""
+"此外，如果变量没有在赋值语句中定义（例如`x = "
+"5+3`），则从右侧推断变量的类型（例如，`x` in `x = 5+3 ` 将是 `integer` 类型，"
+"而 `y = 5._dp` 中的 `y` 将是 `real(dp)` 类型）。此规则仅适用于 _全局范围_ "
+"的顶层。类型必须在主程序、模块、函数和子程序中完全指定，就像在 F2008 中一样。"
 
 #: ../../doc/src/design.md:146
 msgid ""
@@ -652,24 +734,26 @@ msgid ""
 "functions, subroutines, statements and expressions at the top level of "
 "_global scope_ use and operate on this symbol table."
 msgstr ""
+"_全局范围_ 有自己的符号表。主程序和模块/子模块看不到此符号表中的任何符号。但"
+"是_全局范围_顶层的函数、子例程、语句和表达式使用和操作这个符号表。"
 
 #: ../../doc/src/design.md:151
 msgid ""
 "The _global scope_ has the following symbols predefined in the symbol "
 "table:"
-msgstr ""
+msgstr "_全局范围_ 在符号表中预定义了以下符号："
 
 #: ../../doc/src/design.md:153
 msgid ""
 "the usual standard set of Fortran functions (such as `size`, `sin`, "
 "`cos`, ...)"
-msgstr ""
+msgstr "通常的标准 Fortran 函数集（例如 `size`、`sin`、`cos`...）"
 
 #: ../../doc/src/design.md:155
 msgid ""
 "the `dp` double precision symbol, so that one can use `5._dp` for double "
 "precision."
-msgstr ""
+msgstr "`dp` 双精度符号，因此可以使用 `5._dp` 表示双精度。"
 
 #: ../../doc/src/design.md:158
 msgid ""
@@ -683,6 +767,11 @@ msgid ""
 "arguments returning the expression, compiled, loaded, executed and the "
 "return value is returned to the user."
 msgstr ""
+"_全局作用域_中的每一项解释如下：主程序编译成同名可执行文件并执行；编译和加载"
+"模块、函数和子程序； use 语句和声明将那些具有正确类型的符号添加到_全局作用域_"
+"符号表中，但不生成任何代码；语句被包装到一个没有参数的匿名子例程中，编译、加"
+"载和执行；表达式被包装到一个匿名函数中，没有参数返回表达式，编译、加载、执行"
+"并将返回值返回给用户。"
 
 #: ../../doc/src/design.md:168
 msgid ""
@@ -694,30 +783,35 @@ msgid ""
 "subroutines or functions and by adding type declarations) and compile it "
 "with `lfortran` or any other Fortran compiler."
 msgstr ""
+"_全局作用域_ "
+"总是按照上一段逐项解释。它旨在允许交互式使用、实验和编写简单的脚本。 "
+"_全局作用域_ 中的代码必须使用 `lfortran` 解释。对于更复杂的（生产）代码，建议"
+"将其转换为模块和程序（通过将松散的语句包装成子例程或函数并添加类型声明）"
+"并使用 `lfortran` 或任何其他 Fortran 编译器对其进行编译。"
 
 #: ../../doc/src/design.md:176
 msgid "Here are some examples of valid code in _global scope_:"
-msgstr ""
+msgstr "以下是 _全局作用域_ 中的一些有效代码示例："
 
 #: ../../doc/src/design.md:178
 msgid "Example 1"
-msgstr ""
+msgstr "示例 1"
 
 #: ../../doc/src/design.md:185
 msgid "Example 2"
-msgstr ""
+msgstr "示例 2"
 
 #: ../../doc/src/design.md:197
 msgid "Example 3"
-msgstr ""
+msgstr "示例 3"
 
 #: ../../doc/src/design.md:209
 msgid "Example 4"
-msgstr ""
+msgstr "示例 4"
 
 #: ../../doc/src/design.md:217
 msgid "Design Considerations"
-msgstr ""
+msgstr "设计注意事项"
 
 #: ../../doc/src/design.md:219
 msgid ""
@@ -728,6 +822,9 @@ msgid ""
 "inside functions, subroutines, modules or programs this relaxation does "
 "not apply."
 msgstr ""
+"选择 Fortran 的 LFortran 扩展是为了尽量减少更改的数量。特别是，"
+"只有_全局作用域_的顶层放宽了一些 Fortran 规则（例如使指定类型可选）以允许简单"
+"快速的交互使用，但在函数、子例程、模块或程序内部，这种放宽并不适用."
 
 #: ../../doc/src/design.md:225
 msgid ""
@@ -736,27 +833,31 @@ msgid ""
 "Fortran code using programs and modules, so that it can be compiled by "
 "any Fortran compiler."
 msgstr ""
+"更改的数量保持在最低限度，"
+"以便使用程序和模块将_全局作用域_中的代码直接转换为符合标准的 Fortran 代码，"
+"以便任何 Fortran 编译器都可以编译它。"
 
 #: ../../doc/src/developer_tutorial.ipynb:9
 msgid "Developer Tutorial"
-msgstr ""
+msgstr "开发者教程"
 
 #: ../../doc/src/developer_tutorial.ipynb:11
 msgid ""
 "This is a tutorial for anybody who wants to either develop LFortran or "
 "build tools on top."
-msgstr ""
+msgstr "这是任何想要开发 LFortran 或构建工具的人的教程。"
 
 #: ../../doc/src/developer_tutorial.ipynb:14
 msgid "Introduction"
-msgstr ""
+msgstr "介绍"
 
 #: ../../doc/src/developer_tutorial.ipynb:18
 msgid ""
 "Abstract Syntax Tree (AST): Represents any Fortran source code, strictly "
 "based on syntax, no semantic is included. The AST module can convert "
 "itself to Fortran source code."
-msgstr ""
+msgstr "抽象语法树 (AST)：表示任何 Fortran 源代码，严格基于语法，不包含语义。 AST "
+"模块可以将自身转换为 Fortran 源代码。"
 
 #: ../../doc/src/developer_tutorial.ipynb:20
 msgid ""
@@ -764,39 +865,45 @@ msgid ""
 " code, all semantic is included. Invalid Fortran code is not allowed (an "
 "error will be given). The ASR module can convert itself to an AST."
 msgstr ""
+"抽象语义表示 (ASR)：表示有效的 Fortran 源代码，包括所有语义。"
+"不允许使用无效的 Fortran 代码（将给出错误）。 ASR 模块可以将自身转换为 AST。"
 
 #: ../../doc/src/developer_tutorial.ipynb:25
 msgid ""
 "Fortran source code can be parsed into an AST using the ``src_to_ast()`` "
 "function:"
-msgstr ""
+msgstr "Fortran 源代码可以使用 ``src_to_ast()`` 函数解析为 AST："
 
 #: ../../doc/src/developer_tutorial.ipynb:49
 #, python-format
 msgid "We can pretty print it using the ``%%showast`` magic:"
-msgstr ""
+msgstr "我们可以使用 ``%%showast`` 魔法漂亮地打印它："
 
 #: ../../doc/src/developer_tutorial.ipynb:98
 #, python-format
 msgid "We can convert AST to Fortran source code using ``%%showfmt``:"
-msgstr ""
+msgstr "我们可以使用 ``%%showfmt`` 将 AST 转换为 Fortran 源代码："
 
 #: ../../doc/src/developer_tutorial.ipynb:156
 msgid ""
 "All AST nodes and their arguments are described in `AST.asdl "
 "<https://github.com/lfortran/lfortran/blob/master/grammar/AST.asdl>`__."
 msgstr ""
+"所有 AST 节点及其参数都在 `AST.asdl <https://github.com/lfortran/lfortran/"
+"blob/master/grammar/AST.asdl>`__ 中描述。"
 
 #: ../../doc/src/developer_tutorial.ipynb:170
 #, python-format
 msgid "We can pretty print using the ``%%showasr`` magic:"
-msgstr ""
+msgstr "我们可以使用 ``%%showasr`` 魔法进行漂亮的打印："
 
 #: ../../doc/src/developer_tutorial.ipynb:219
 msgid ""
 "All ASR nodes and their arguments are described in `ASR.asdl "
 "<https://github.com/lfortran/lfortran/blob/master/src/libasr/ASR.asdl>`__."
 msgstr ""
+"所有 ASR 节点及其参数都在 `ASR.asdl <https://github.com/lfortran/lfortran/"
+"blob/master/src/libasr/ASR.asdl>`__ 中描述。"
 
 #: ../../doc/src/index.md:134
 msgid "Getting started"
@@ -804,19 +911,19 @@ msgstr "开始"
 
 #: ../../doc/src/index.md:141 ../../doc/src/progress.md:1
 msgid "LFortran Development Status"
-msgstr ""
+msgstr "LFortran 开发现状"
 
 #: ../../doc/src/index.md:147
 msgid "Developer's Guide"
-msgstr ""
+msgstr "开发者指南"
 
 #: ../../doc/src/index.md:156
 msgid "LFortran Intrinsics"
-msgstr ""
+msgstr "LFortran 内在函数"
 
 #: ../../doc/src/index.md:1
 msgid "LFortran Documentation"
-msgstr ""
+msgstr "LFortran 文档"
 
 #: ../../doc/src/index.md:3
 msgid ""
@@ -826,6 +933,10 @@ msgid ""
 "compile to binaries with the goal to run user's code on modern "
 "architectures such as multi-core CPUs and GPUs."
 msgstr ""
+"LFortran 是建立在 LLVM 之上的现代开源（BSD 许可）交互式 Fortran "
+"编译器。它可以交互地执行用户代码以允许探索性工作（很像 Python、MATLAB 或 "
+"Julia），也可以编译为二进制文件，目标是在多核 CPU 和 GPU "
+"等现代架构上运行用户代码。"
 
 #: ../../doc/src/index.md:9
 #, python-format
@@ -837,14 +948,19 @@ msgid ""
 "[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gl/lfortran%2Fweb"
 "%2Flfortran-binder/master?filepath=Demo.ipynb)"
 msgstr ""
+"网站：[https://lfortran.org/](https://lfortran.org/) "
+"主存储库：[https://github.com/lfortran/lfortran](https://github.com/lfortran/"
+"lfortran) 使用 Binder 在线尝试：[![Binder](https://mybinder.org/badge_logo."
+"svg)](https://mybinder.org/v2/gl/lfortran%2Fweb%2Flfortran-binder/"
+"master?filepath=Demo.ipynb)"
 
 #: ../../doc/src/index.md:9
 msgid "Binder"
-msgstr ""
+msgstr "Binder"
 
 #: ../../doc/src/index.md:16
 msgid "Feature Highlights"
-msgstr ""
+msgstr "功能亮点"
 
 #: ../../doc/src/index.md:18
 msgid ""
@@ -853,10 +969,13 @@ msgid ""
 "[Development Status](progress.md) section for more information on "
 "features being supported and being worked on."
 msgstr ""
+"LFortran 正在开发中，有些功能现在可以使用，有些功能正在实现中。您还可以查看 ["
+"Development Status](progress.md) "
+"部分，了解有关受支持和正在开发的功能的更多信息。"
 
 #: ../../doc/src/index.md:21
 msgid "Works today"
-msgstr ""
+msgstr "现有功能"
 
 #: ../../doc/src/index.md:23
 #, python-format
@@ -869,6 +988,12 @@ msgid ""
 "%2Flfortran-binder/master?filepath=Demo.ipynb)   example notebook).   Or "
 "it can be used from the command-line in an interactive prompt (REPL)."
 msgstr ""
+"**交互式，Jupyter 支持** LFortran 可以从 Jupyter 用作 Fortran 内核，允许 "
+"Python/Julia 风格的快速原型设计和探索性工作流程（参见示例笔记： "
+"[静态(https://nbviewer.jupyter.org/gist/certik/"
+"f1d28a486510810d824869ab0c491b1c) 或  [交互](https://mybinder.org/v2/gl/"
+"lfortran%2Fweb%2Flfortran-binder/master?filepath=Demo.ipynb)。或者，"
+"它可以在交互式提示 (REPL) 中的命令行中使用。"
 
 #: ../../doc/src/index.md:32
 msgid ""
@@ -879,6 +1004,10 @@ msgid ""
 "build tools on top. See the [Design](design.md)   and [Developer "
 "Tutorial](developer_tutorial.md) documents for more details."
 msgstr ""
+"**简洁、模块化设计，可用作库** LFortran 围绕两个独立模块 AST 和 ASR "
+"构建，这两个模块都是独立的（完全独立于 LFortran 的其余部分），鼓励用户将它们"
+"独立用于其他应用程序并在上面构建工具。有关详细信息，请参阅 [Design](design."
+"md) 和 [Developer Tutorial](developer_tutorial.md) 文档。"
 
 #: ../../doc/src/index.md:39
 msgid ""
@@ -887,28 +1016,31 @@ msgid ""
 "with any Fortran compiler and linked with the   original GFortran "
 "compiled module."
 msgstr ""
+"**与 GFortran 的互操作** LFortran 可以将 GFortran 模块文件解析为 ASR "
+"并生成一个 Fortran 包装器，该包装器可以用任何 Fortran 编译器编译并与原始 "
+"GFortran 编译模块链接。"
 
 #: ../../doc/src/index.md:44
 msgid ""
 "**Create executables**   It can create executables just like other "
 "Fortran compilers."
-msgstr ""
+msgstr "**创建可执行文件** 它可以像其他 Fortran 编译器一样创建可执行文件。"
 
 #: ../../doc/src/index.md:47
 msgid ""
 "**Runs on Linux, Mac and Windows**   All three platforms are regularly "
 "tested by our CI."
-msgstr ""
+msgstr "**在 Linux、Mac 和 Windows 上运行** 所有三个平台都由我们的 CI 定期测试。"
 
 #: ../../doc/src/index.md:51
 msgid "Planned"
-msgstr ""
+msgstr "计划"
 
 #: ../../doc/src/index.md:53
 msgid ""
 "These features are under development, there is a link to the "
 "corresponding issue so that you can track the progress by following it."
-msgstr ""
+msgstr "已计划这些功能正在开发中，有对应 issue 的链接，方便大家关注跟踪进度。"
 
 #: ../../doc/src/index.md:56
 msgid ""
@@ -921,6 +1053,12 @@ msgid ""
 " planned,   see [#56](https://gitlab.com/lfortran/lfortran/issues/56)), "
 "which allows to   use LFortran with production codes today."
 msgstr ""
+"**与其他语言（以及其他 Fortran 编译器）的原生互操作** 只需使用 `use` "
+"语句即可自动调用其他语言（如 C 或 Python）编写的代码，参见 "
+"[#44](https://gitlab.com/lfortran/lfortran/issues/44)。它理解其他 Fortran "
+"编译器模块文件（可以`use`它们）及其 ABI 以正确链接（支持 "
+"GFortran，计划使用其他编译器，请参阅 [#56](https://gitlab.com/lfortran/"
+"lfortran/问题/56))，它允许今天将 LFortran 与生产代码一起使用。"
 
 #: ../../doc/src/index.md:65
 msgid ""
@@ -929,6 +1067,9 @@ msgid ""
 "constructs (such as `do concurrent`)   to run on multi-core CPUs and "
 "GPUs, see   [#57](https://gitlab.com/lfortran/lfortran/issues/57)."
 msgstr ""
+"**现代硬件支持**感谢 LLVM，LFortran 的目标是在现代硬件上运行，并利用原生 "
+"Fortran 语言结构（例如 `do concurrent`）在多核 CPU 和 GPU 上运行，请参阅 [# "
+"57](https://gitlab.com/lfortran/lfortran/issues/57)。"
 
 #: ../../doc/src/index.md:71
 msgid ""
@@ -937,6 +1078,9 @@ msgid ""
 "latest Fortran 2018 standard, see   "
 "[#58](https://gitlab.com/lfortran/lfortran/issues/58)."
 msgstr ""
+"**完整的 Fortran 2018 支持** 目前只实现了 Fortran 的一个子集，"
+"但目标是完整实现最新的 Fortran 2018 标准，请参阅 [#58](https://gitlab.com/"
+"lfortran/lfortran/issue/58)。"
 
 #: ../../doc/src/index.md:77
 msgid ""

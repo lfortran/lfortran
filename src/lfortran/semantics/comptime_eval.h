@@ -91,9 +91,18 @@ struct IntrinsicProcedures {
             {"selected_real_kind", {m_kind, &eval_selected_real_kind, true}},
             {"selected_char_kind", {m_kind, &eval_selected_char_kind, true}},
             {"exp", {m_math, &eval_exp, true}},
+            {"dexp", {m_math, &eval_dexp, true}},
+            {"sexp", {m_math, &eval_sexp, true}},
+            {"cexp", {m_math, &eval_cexp, true}},
+            {"zexp", {m_math, &eval_zexp, true}},
             {"range", {m_math, &eval_range, false}},
             {"epsilon", {m_math, &eval_epsilon, false}},
             {"log", {m_math, &eval_log, true}},
+            {"alog", {m_math, &eval_alog, true}},
+            {"slog", {m_math, &eval_slog, true}},
+            {"dlog", {m_math, &eval_dlog, true}},
+            {"clog", {m_math, &eval_clog, true}},
+            {"zlog", {m_math, &eval_zlog, true}},
             {"erf", {m_math, &eval_erf, true}},
             {"erfc", {m_math, &eval_erfc, true}},
             {"abs", {m_math, &eval_abs, true}},
@@ -479,8 +488,14 @@ struct IntrinsicProcedures {
 #define TRIG_CB2(X) static ASR::expr_t *eval_##X(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) { \
         return eval_trig(al, loc, args, &X, &lfortran_z##X); \
     }
+#define TRIG2_CB(X, Y) static std::complex<double> lfortran_z##Y(std::complex<double> x) { return std::X(x); }
+#define TRIG2_CB2(X, Y) static ASR::expr_t *eval_##Y(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) { \
+        return eval_trig(al, loc, args, &X, &lfortran_z##Y); \
+    }
 #define TRIG(X) TRIG_CB(X) \
     TRIG_CB2(X)
+#define TRIG2(X, Y) TRIG2_CB(X, Y) \
+    TRIG2_CB2(X, Y)
 
 TRIG(sin)
 TRIG(cos)
@@ -498,6 +513,17 @@ TRIG(atanh)
 TRIG(exp)
 TRIG(log)
 TRIG(sqrt)
+
+TRIG2(exp, dexp)
+TRIG2(exp, sexp)
+TRIG2(exp, cexp)
+TRIG2(exp, zexp)
+
+TRIG2(log, alog)
+TRIG2(log, dlog)
+TRIG2(log, slog)
+TRIG2(log, clog)
+TRIG2(log, zlog)
 
     static ASR::expr_t *eval_erf(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         return eval_trig(al, loc, args, &erf, nullptr);

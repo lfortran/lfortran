@@ -336,7 +336,7 @@ filename = "wasm_unary_minus.f90"
 wat = true
 
 [[test]]
-filename = "wasm_floats.f90"
+filename = "../integration_tests/types_16.f90"
 wat = true
 
 [[test]]
@@ -345,6 +345,10 @@ wat = true
 
 [[test]]
 filename = "wasm_bind_c.f90"
+wat = true
+
+[[test]]
+filename = "../integration_tests/cpu_time_02_wasm.f90"
 wat = true
 
 [[test]]
