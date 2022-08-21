@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
-set -e
-set -x
+set -ex
+
+./build1.sh
+
+mkdir -p src/bin/asset_dir
+cp src/runtime/*.mod src/bin/asset_dir
+git clean -dfx -e src/bin/asset_dir
 
 emcmake cmake \
     -DCMAKE_BUILD_TYPE=Debug \
