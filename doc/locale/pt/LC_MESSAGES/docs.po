@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-22 11:19+0000\n"
+"PO-Revision-Date: 2022-08-27 14:18+0000\n"
 "Last-Translator: Ian Giestas Pauli <iangiestaspauli@gmail.com>\n"
 "Language-Team: Portuguese <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/pt/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.14-dev\n"
+"X-Generator: Weblate 4.14.1-dev\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../../doc/src/ast_and_asr.ipynb:9
@@ -388,7 +388,7 @@ msgstr ""
 
 #: ../../doc/src/contributing.md:242
 msgid "Reach Out"
-msgstr ""
+msgstr "Entre em contato"
 
 #: ../../doc/src/contributing.md:244
 msgid ""
@@ -396,6 +396,9 @@ msgid ""
 "[mailinglist](https://groups.io/g/lfortran) or a "
 "[chat](https://lfortran.zulipchat.com/)."
 msgstr ""
+"Se você tiver alguma dúvida ou precisa de ajuda, por favor pergunte na nossa "
+"[lista de e-mail](https://groups.io/g/lfortran) ou no [chat](https://lfortran"
+".zulipchat.com/)."
 
 #: ../../doc/src/contributing.md:248
 msgid ""
@@ -404,6 +407,10 @@ msgid ""
 "by its terms. See "
 "[CODE_OF_CONDUCT.md](https://github.com/lfortran/lfortran/blob/main/CODE_OF_CONDUCT.md)."
 msgstr ""
+"Por favor, note que todos os participantes deste projeto devem seguir nosso "
+"Código de Conduta. Ao participar deste projeto, você concorda em cumprir "
+"seus termos. Consulte [CODE_OF_CONDUCT.md](https://github.com/lfortran/"
+"lfortran/blob/main/CODE_OF_CONDUCT.md)."
 
 #: ../../doc/src/contributing.md:252
 msgid ""
@@ -412,14 +419,17 @@ msgid ""
 "[license](https://github.com/lfortran/lfortran/blob/main/LICENSE) unless "
 "explicitly noted otherwise."
 msgstr ""
+"Ao enviar um PR, você concorda em licenciar sua contribuição sob a [licença "
+"BSD](https://github.com/lfortran/lfortran/blob/main/LICENSE) da LFortran, "
+"menos nos casos em que é explicitamente dito o contrário."
 
 #: ../../doc/src/design.md:1
 msgid "LFortran Design"
-msgstr ""
+msgstr "Design do LFortran"
 
 #: ../../doc/src/design.md:3
 msgid "High Level Overview"
-msgstr ""
+msgstr "Visão Geral de Alto Nível"
 
 #: ../../doc/src/design.md:5 ../../doc/src/developer_tutorial.ipynb:16
 msgid ""
@@ -428,6 +438,10 @@ msgid ""
 "and users are encouraged to use them independently for other applications"
 " and build tools on top:"
 msgstr ""
+"LFortran está estruturado em torno de dois módulos independentes, AST e ASR, "
+"ambos autônomos (completamente independentes do resto do projeto) e os "
+"utilizadores são encorajados a utilizá-los independentemente para outras "
+"aplicações e a construir ferramentas com base nisso:"
 
 #: ../../doc/src/design.md:10
 msgid ""
@@ -435,6 +449,9 @@ msgid ""
 " source code, strictly based on syntax, no semantic is included. The AST "
 "module can convert itself to Fortran source code."
 msgstr ""
+"Árvore de Sintaxe Abstrata (AST), módulo `lfortran.ast`: representa qualquer "
+"código-fonte Fortran, estritamente baseado na sintaxe, nenhuma semântica "
+"está incluída. O módulo AST pode ser convertido em código em Fortran."
 
 #: ../../doc/src/design.md:14
 msgid ""
@@ -443,20 +460,25 @@ msgid ""
 "code is not allowed (an error will be given). The ASR module can convert "
 "itself to an AST."
 msgstr ""
+"Representação Semântica Abstrata (ASR), o módulo `lfortran.asr`: representa "
+"um código-fonte Fortran válido, toda a semântica está incluída. Não é "
+"permitido códigos inválidos em Fortran (será dado um erro). O módulo ASR "
+"pode ser convertido em uma AST."
 
 #: ../../doc/src/design.md:19
 msgid ""
 "The LFortran compiler is then composed of the following independent "
 "stages:"
 msgstr ""
+"O compilador LFortran é então composto pelas seguintes etapas independentes:"
 
 #: ../../doc/src/design.md:21
 msgid "Parsing: converts Fortran source code to an AST"
-msgstr ""
+msgstr "Análise: converte o código-fonte Fortran em uma AST"
 
 #: ../../doc/src/design.md:22
 msgid "Semantic: converts an AST to an ASR"
-msgstr ""
+msgstr "Semântica: converte uma AST em uma ASR"
 
 #: ../../doc/src/design.md:23
 msgid ""
@@ -464,6 +486,9 @@ msgid ""
 "(things like inlining functions, eliminating redundant expressions or "
 "statements, etc.)"
 msgstr ""
+"Otimizações de alto nível: otimiza a ASR para uma simplificá-la e "
+"possivelmente torná-la mais rápida (coisas como alinhamento de funções, "
+"eliminação de expressões ou comandos redundantes, etc.)"
 
 #: ../../doc/src/design.md:26
 msgid ""
@@ -471,6 +496,9 @@ msgid ""
 " an LLVM IR. This stage also does all other optimizations that do not "
 "produce an ASR, but still make sense to do before passing to LLVM IR."
 msgstr ""
+"Geração de código LLVM IR e otimizações de baixo nível: converte uma ASR em "
+"uma LLVM IR. Nesta etapa são feitas outras otimizações que não produzem uma "
+"ASR, porém ainda faz sentido fazê-las antes de passá-las ao LLVM IR."
 
 #: ../../doc/src/design.md:29
 msgid ""
@@ -479,6 +507,10 @@ msgid ""
 " file, or it is loaded and executed using JIT as part of the interactive "
 "LFortran session or in a Jupyter kernel)."
 msgstr ""
+"Geração de código de máquina: LLVM fará todas as suas otimizações e gerará "
+"código de máquina (como um executável, uma biblioteca, um arquivo objeto, ou "
+"carregado e executado usando JIT como parte de uma sessão interativa "
+"LFortran ou em um kernel do Jupyter)."
 
 #: ../../doc/src/design.md:34
 msgid ""
@@ -573,7 +605,7 @@ msgstr ""
 
 #: ../../doc/src/design.md:82
 msgid "Notes:"
-msgstr ""
+msgstr "Notas:"
 
 #: ../../doc/src/design.md:84
 msgid ""
@@ -623,7 +655,7 @@ msgstr ""
 
 #: ../../doc/src/design.md:109
 msgid "Fortran 2008"
-msgstr ""
+msgstr "Fortran 2008"
 
 #: ../../doc/src/design.md:111
 msgid ""
@@ -635,7 +667,7 @@ msgstr ""
 
 #: ../../doc/src/design.md:116 ../../doc/src/design.md:131
 msgid "main program"
-msgstr ""
+msgstr "Programa principal"
 
 #: ../../doc/src/design.md:117 ../../doc/src/design.md:132
 msgid "module or submodule"
@@ -654,7 +686,7 @@ msgstr ""
 
 #: ../../doc/src/design.md:124
 msgid "LFortran Extension"
-msgstr ""
+msgstr "Extensão do LFortran"
 
 #: ../../doc/src/design.md:126
 msgid ""
@@ -666,19 +698,19 @@ msgstr ""
 
 #: ../../doc/src/design.md:134
 msgid "use statement"
-msgstr ""
+msgstr "comando use"
 
 #: ../../doc/src/design.md:135
 msgid "declaration"
-msgstr ""
+msgstr "declaração"
 
 #: ../../doc/src/design.md:136
 msgid "statement"
-msgstr ""
+msgstr "comando"
 
 #: ../../doc/src/design.md:137
 msgid "expression"
-msgstr ""
+msgstr "expressão"
 
 #: ../../doc/src/design.md:139
 msgid ""
@@ -746,23 +778,23 @@ msgstr ""
 
 #: ../../doc/src/design.md:178
 msgid "Example 1"
-msgstr ""
+msgstr "Exemplo 1"
 
 #: ../../doc/src/design.md:185
 msgid "Example 2"
-msgstr ""
+msgstr "Exemplo 2"
 
 #: ../../doc/src/design.md:197
 msgid "Example 3"
-msgstr ""
+msgstr "Exemplo 3"
 
 #: ../../doc/src/design.md:209
 msgid "Example 4"
-msgstr ""
+msgstr "Exemplo 4"
 
 #: ../../doc/src/design.md:217
 msgid "Design Considerations"
-msgstr ""
+msgstr "Considerações de Design"
 
 #: ../../doc/src/design.md:219
 msgid ""
@@ -784,7 +816,7 @@ msgstr ""
 
 #: ../../doc/src/developer_tutorial.ipynb:9
 msgid "Developer Tutorial"
-msgstr ""
+msgstr "Tutorial de Desenvolvedor"
 
 #: ../../doc/src/developer_tutorial.ipynb:11
 msgid ""
@@ -794,7 +826,7 @@ msgstr ""
 
 #: ../../doc/src/developer_tutorial.ipynb:14
 msgid "Introduction"
-msgstr ""
+msgstr "Introdução"
 
 #: ../../doc/src/developer_tutorial.ipynb:18
 msgid ""
@@ -845,7 +877,7 @@ msgstr ""
 
 #: ../../doc/src/index.md:134
 msgid "Getting started"
-msgstr ""
+msgstr "Começando"
 
 #: ../../doc/src/index.md:141 ../../doc/src/progress.md:1
 msgid "LFortran Development Status"
@@ -853,15 +885,15 @@ msgstr ""
 
 #: ../../doc/src/index.md:147
 msgid "Developer's Guide"
-msgstr ""
+msgstr "Guia do Desenvolvedor"
 
 #: ../../doc/src/index.md:156
 msgid "LFortran Intrinsics"
-msgstr ""
+msgstr "Funções Intrínsecas do LFortran"
 
 #: ../../doc/src/index.md:1
 msgid "LFortran Documentation"
-msgstr ""
+msgstr "Documentação do LFortran"
 
 #: ../../doc/src/index.md:3
 msgid ""
@@ -885,11 +917,11 @@ msgstr ""
 
 #: ../../doc/src/index.md:9
 msgid "Binder"
-msgstr ""
+msgstr "Binder"
 
 #: ../../doc/src/index.md:16
 msgid "Feature Highlights"
-msgstr ""
+msgstr "Recursos em Destaque"
 
 #: ../../doc/src/index.md:18
 msgid ""
@@ -901,7 +933,7 @@ msgstr ""
 
 #: ../../doc/src/index.md:21
 msgid "Works today"
-msgstr ""
+msgstr "Funciona atualmente"
 
 #: ../../doc/src/index.md:23
 #, python-format
@@ -947,7 +979,7 @@ msgstr ""
 
 #: ../../doc/src/index.md:51
 msgid "Planned"
-msgstr ""
+msgstr "Planejado"
 
 #: ../../doc/src/index.md:53
 msgid ""
@@ -991,8 +1023,9 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/index.md:81
+#, fuzzy
 msgid "Roadmap"
-msgstr ""
+msgstr "Guia dos planos"
 
 #: ../../doc/src/index.md:83
 msgid "Here is our roadmap how to get all the planned features above implemented:"
@@ -1074,7 +1107,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:1
 msgid "Installation"
-msgstr ""
+msgstr "Instalação"
 
 #: ../../doc/src/installation.md:3
 msgid "All the instructions below work on Linux, macOS and Windows."
@@ -1082,7 +1115,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:5
 msgid "Binaries"
-msgstr ""
+msgstr "Binários"
 
 #: ../../doc/src/installation.md:7
 msgid ""
@@ -1143,7 +1176,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:52
 msgid "And build:"
-msgstr ""
+msgstr "E compile:"
 
 #: ../../doc/src/installation.md:58
 msgid "This will install the `lfortran` into the `inst/bin`."
@@ -1187,7 +1220,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:92
 msgid "Run tests:"
-msgstr ""
+msgstr "Rode os testes:"
 
 #: ../../doc/src/installation.md:97
 msgid "Run an interactive prompt:"
@@ -1330,7 +1363,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:215
 msgid "Run tests"
-msgstr ""
+msgstr "Rode os testes"
 
 #: ../../doc/src/installation.md:221
 msgid "Enabling the Jupyter Kernel"
@@ -1374,7 +1407,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:258
 msgid "With Root"
-msgstr ""
+msgstr "Com Root"
 
 #: ../../doc/src/installation.md:260
 msgid ""
@@ -1385,7 +1418,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:264
 msgid "Without Root"
-msgstr ""
+msgstr "Sem Root"
 
 #: ../../doc/src/installation.md:266
 msgid ""
@@ -1402,7 +1435,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:278
 msgid "Development"
-msgstr ""
+msgstr "Desenvolvimento"
 
 #: ../../doc/src/installation.md:280
 msgid "Now we can enter the development environment:"
@@ -1479,8 +1512,9 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/installation.md:319
+#, fuzzy
 msgid "Stacktraces"
-msgstr ""
+msgstr "Stacktraces"
 
 #: ../../doc/src/installation.md:321
 msgid ""
@@ -1495,7 +1529,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:328
 msgid "Ubuntu"
-msgstr ""
+msgstr "Ubuntu"
 
 #: ../../doc/src/installation.md:330
 msgid "In Ubuntu, `apt install binutils-dev`."
@@ -1503,7 +1537,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:332
 msgid "macOS"
-msgstr ""
+msgstr "macOS"
 
 #: ../../doc/src/installation.md:334
 msgid ""
@@ -1590,8 +1624,9 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/floor.md:5
 #: ../../doc/src/intrinsics/numeric/gamma.md:5
 #: ../../doc/src/intrinsics/numeric/mod.md:5
+#, fuzzy
 msgid "Declaration"
-msgstr ""
+msgstr "Declaração"
 
 #: ../../doc/src/intrinsics/array/allocated.md:7
 #: ../../doc/src/intrinsics/array/cshift.md:7
@@ -1638,7 +1673,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:7
 #: ../../doc/src/intrinsics/numeric/mod.md:7
 msgid "Syntax"
-msgstr ""
+msgstr "Sintaxe"
 
 #: ../../doc/src/intrinsics/array/allocated.md:14
 #: ../../doc/src/intrinsics/array/cshift.md:14
@@ -1687,7 +1722,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:14
 #: ../../doc/src/intrinsics/numeric/mod.md:15
 msgid "Arguments"
-msgstr ""
+msgstr "Argumentos"
 
 #: ../../doc/src/intrinsics/array/allocated.md:16
 msgid "`x` is an integer input parameter."
@@ -1735,7 +1770,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:19
 #: ../../doc/src/intrinsics/numeric/mod.md:22
 msgid "Return values"
-msgstr ""
+msgstr "Valores de retorno"
 
 #: ../../doc/src/intrinsics/array/allocated.md:20
 msgid ""
@@ -1790,7 +1825,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:23
 #: ../../doc/src/intrinsics/numeric/mod.md:31 ../../doc/src/progress.md
 msgid "Description"
-msgstr ""
+msgstr "Descrição"
 
 #: ../../doc/src/intrinsics/array/allocated.md:25
 msgid ""
@@ -1846,7 +1881,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:38
 #: ../../doc/src/intrinsics/numeric/mod.md:43
 msgid "Types"
-msgstr ""
+msgstr "Tipos"
 
 #: ../../doc/src/intrinsics/array/allocated.md:31
 #: ../../doc/src/intrinsics/array/size.md:35
@@ -1902,7 +1937,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:58
 #: ../../doc/src/intrinsics/numeric/mod.md:80
 msgid "Examples"
-msgstr ""
+msgstr "Exemplos"
 
 #: ../../doc/src/intrinsics/array/allocated.md:59
 #: ../../doc/src/intrinsics/array/cshift.md:55
@@ -1916,7 +1951,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/mathematical/atanh.md:77
 #: ../../doc/src/intrinsics/mathematical/fraction.md:44
 msgid "**Result**:"
-msgstr ""
+msgstr "**Resultado**:"
 
 #: ../../doc/src/intrinsics/array/allocated.md:65
 #: ../../doc/src/intrinsics/array/cshift.md:62
@@ -1965,7 +2000,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:74
 #: ../../doc/src/intrinsics/numeric/mod.md:95
 msgid "See Also"
-msgstr ""
+msgstr "Veja Também"
 
 #: ../../doc/src/intrinsics/array/cshift.md:1
 msgid "cshift(A, shift [, dim]): Circular Shift"
@@ -2053,8 +2088,9 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/intrinsics/array/size.md:57
+#, fuzzy
 msgid "[shape](), [reshape]()."
-msgstr ""
+msgstr "[shape](), [reshape]()."
 
 #: ../../doc/src/intrinsics/bit.md:1
 msgid "Bit Intrinsic Functions"
@@ -2132,7 +2168,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:67
 #: ../../doc/src/intrinsics/numeric/mod.md:89
 msgid "**Result:**"
-msgstr ""
+msgstr "**Resultado:**"
 
 #: ../../doc/src/intrinsics/bit/bge.md:70
 msgid "[bgt](bgt.md), [ble](ble.md), [blt](blt.md)."
@@ -2291,8 +2327,9 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:82
+#, fuzzy
 msgid "[shiftr](shiftr.md)."
-msgstr ""
+msgstr "[shiftr](shiftr.md)."
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:1
 msgid "shiftr(x, shift): Shift Right"
@@ -2311,8 +2348,9 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:82
+#, fuzzy
 msgid "[shiftl](shiftl.md)."
-msgstr ""
+msgstr "[shiftl](shiftl.md)."
 
 #: ../../doc/src/intrinsics/character.md:1
 msgid "Character Intrinsic Functions"
@@ -2338,7 +2376,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/character/char.md:21
 #: ../../doc/src/intrinsics/character/len_trim.md:18
 msgid "Return value"
-msgstr ""
+msgstr "Valor de retorno"
 
 #: ../../doc/src/intrinsics/character/achar.md:22
 #: ../../doc/src/intrinsics/character/char.md:23
@@ -2374,8 +2412,9 @@ msgstr ""
 #: ../../doc/src/intrinsics/character/achar.md:71
 #: ../../doc/src/intrinsics/character/adjustl.md:64
 #: ../../doc/src/intrinsics/character/len_trim.md:65
+#, fuzzy
 msgid "[lge](lge.md)."
-msgstr ""
+msgstr "[lge](lge.md)."
 
 #: ../../doc/src/intrinsics/character/adjustl.md:1
 msgid "adjustl(string): Left Adjust String"
@@ -2430,8 +2469,9 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/intrinsics/character/adjustr.md:65
+#, fuzzy
 msgid "[adjustl](adjustl.md)."
-msgstr ""
+msgstr "[adjustl](adjustl.md)."
 
 #: ../../doc/src/intrinsics/character/char.md:1
 msgid "char(x, [, kind]): Integer to Character"
@@ -2531,8 +2571,9 @@ msgid "Argument types should be of type character literal."
 msgstr ""
 
 #: ../../doc/src/intrinsics/character/lge.md:81
+#, fuzzy
 msgid "[len_trim](len_trim.md)."
-msgstr ""
+msgstr "[len_trim](len_trim.md)."
 
 #: ../../doc/src/intrinsics/kind-type.md:1
 msgid "Kind Type Intrinsic Functions"
@@ -2572,7 +2613,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/misc/date_and_time.md:41
 #: ../../doc/src/intrinsics/misc/new_line.md:58
 msgid "None."
-msgstr ""
+msgstr "Nenhum."
 
 #: ../../doc/src/intrinsics/mathematical.md:1
 msgid "Mathematical Intrinsic Functions"
@@ -2624,8 +2665,9 @@ msgid "Supported argument types float, double, complex float, complex double."
 msgstr ""
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:84
+#, fuzzy
 msgid "[asin](asin.md), [atan](atan.md)."
-msgstr ""
+msgstr "[asin](asin.md), [atan](atan.md)."
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:1
 msgid "acosh(x): Inverse Hyperbolic Cosine"
@@ -2680,8 +2722,9 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:88
+#, fuzzy
 msgid "[asinh](asinh.md), [atanh](atanh.md)."
-msgstr ""
+msgstr "[asinh](asinh.md), [atanh](atanh.md)."
 
 #: ../../doc/src/intrinsics/mathematical/asin.md:1
 msgid "asin(x): Trigonometric Arcsine"
@@ -2703,8 +2746,9 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/intrinsics/mathematical/asin.md:84
+#, fuzzy
 msgid "[acos](acos.md), [atan](atan.md)."
-msgstr ""
+msgstr "[acos](acos.md), [atan](atan.md)."
 
 #: ../../doc/src/intrinsics/mathematical/asinh.md:1
 msgid "asinh(x): Inverse Hyperbolic Arcsine"
@@ -2729,8 +2773,9 @@ msgid "$\\frac{-\\pi}{2} <= aimag (asinh(x)) <= \\frac{\\pi}{2}$"
 msgstr ""
 
 #: ../../doc/src/intrinsics/mathematical/asinh.md:80
+#, fuzzy
 msgid "[acosh](acosh.md), [atanh](atanh.md)."
-msgstr ""
+msgstr "[acosh](acosh.md), [atanh](atanh.md)."
 
 #: ../../doc/src/intrinsics/mathematical/atan.md:1
 msgid "atan(x): Trigonometric ArcTangent"
@@ -2753,8 +2798,9 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/intrinsics/mathematical/atan.md:84
+#, fuzzy
 msgid "[asin](asin.md), [acos](acos.md)."
-msgstr ""
+msgstr "[asin](asin.md), [acos](acos.md)."
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:1
 msgid "atan2(y, x): ArcTangent"
@@ -2798,8 +2844,9 @@ msgid "It is also represented as:"
 msgstr ""
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:35
+#, fuzzy
 msgid "$tan^{-1}(\\frac{y}{x})$"
-msgstr ""
+msgstr "$tan^{-1}(\\frac{y}{x})$"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:37
 msgid "If `x` is nonzero, the result lies in the range:"
@@ -2869,8 +2916,9 @@ msgid "$-1.0 < atanh(x) < 1.0$"
 msgstr ""
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:84
+#, fuzzy
 msgid "[asinh](asinh.md), [acosh](acosh.md)."
-msgstr ""
+msgstr "[asinh](asinh.md), [acosh](acosh.md)."
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:1
 msgid "fraction(x): Fractional Part in Model Representation"
@@ -2930,7 +2978,7 @@ msgstr ""
 
 #: ../../doc/src/intrinsics/misc/command_argument_count.md:29
 msgid "Any."
-msgstr ""
+msgstr "Qualquer um."
 
 #: ../../doc/src/intrinsics/misc/cpu_time.md:1
 msgid "cpu_time(x): CPU Elapsed Time"
@@ -3051,8 +3099,9 @@ msgid "Unavailable or errorneous date and time parameters return blanks."
 msgstr ""
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:92
+#, fuzzy
 msgid "[cpu_time](cpu_time.md)."
-msgstr ""
+msgstr "[cpu_time](cpu_time.md)."
 
 #: ../../doc/src/intrinsics/misc/new_line.md:1
 msgid "new_line(x): New Line Character"
@@ -3094,7 +3143,7 @@ msgstr ""
 
 #: ../../doc/src/intrinsics/numeric/abs.md:3
 msgid "Absolute value."
-msgstr ""
+msgstr "Valor absoluto."
 
 #: ../../doc/src/intrinsics/numeric/abs.md:17
 msgid "`x` the input value, can be integer, real, or complex."
@@ -3113,8 +3162,9 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/intrinsics/numeric/abs.md:29
+#, fuzzy
 msgid "$|x|$"
-msgstr ""
+msgstr "$|x|$"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:31
 msgid "If `x` is complex, the result is calculated using mathematical formula:"
@@ -3134,8 +3184,9 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/abs.md:98
 #: ../../doc/src/intrinsics/numeric/aimag.md:70
 #: ../../doc/src/intrinsics/numeric/mod.md:97
+#, fuzzy
 msgid "[ceiling](ceiling.md), [floor](floor.md)."
-msgstr ""
+msgstr "[ceiling](ceiling.md), [floor](floor.md)."
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:1
 msgid "aimag(x): Imaginary Part"
@@ -3233,8 +3284,9 @@ msgstr ""
 
 #: ../../doc/src/intrinsics/numeric/aint.md:57
 #: ../../doc/src/intrinsics/numeric/floor.md:85
+#, fuzzy
 msgid "[ceiling](ceiling.md), [mod](mod.md)."
-msgstr ""
+msgstr "[ceiling](ceiling.md), [mod](mod.md)."
 
 #: ../../doc/src/intrinsics/numeric/anint.md:1
 msgid "anint(x, [kind]): Round to Nearest Whole Number"
@@ -3263,8 +3315,9 @@ msgid "If `x` is greater than 0, `anint(x)` returns `aint(x + 0.5)`."
 msgstr ""
 
 #: ../../doc/src/intrinsics/numeric/anint.md:60
+#, fuzzy
 msgid "[aint](aint.md)."
-msgstr ""
+msgstr "[aint](aint.md)."
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:1
 msgid "ceiling(x): Integer Ceiling"
@@ -3291,8 +3344,9 @@ msgid "Supported input parameter types are integer and real."
 msgstr ""
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:66
+#, fuzzy
 msgid "[floor](floor.md), [mod](mod.md)."
-msgstr ""
+msgstr "[floor](floor.md), [mod](mod.md)."
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:1
 msgid "cmplx(x [, [, kind]]): Convert to Complex"
@@ -3417,12 +3471,13 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/intrinsics/numeric/epsilon.md:1
+#, fuzzy
 msgid "epsilon(x): Epsilon"
-msgstr ""
+msgstr "epsilon(x): Epsilon"
 
 #: ../../doc/src/intrinsics/numeric/epsilon.md:3
 msgid "Epsilon function."
-msgstr ""
+msgstr "Função Epsilon."
 
 #: ../../doc/src/intrinsics/numeric/epsilon.md:20
 msgid "The return value is of same type as of the input argument."
@@ -3440,11 +3495,11 @@ msgstr ""
 
 #: ../../doc/src/intrinsics/numeric/erf.md:1
 msgid "erf(x): Error"
-msgstr ""
+msgstr "erf(x): Erro"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:3
 msgid "Error function."
-msgstr ""
+msgstr "Função Erro."
 
 #: ../../doc/src/intrinsics/numeric/erf.md:20
 msgid ""
@@ -3464,12 +3519,14 @@ msgid "$-1 \\leq erf (x) \\leq 1$"
 msgstr ""
 
 #: ../../doc/src/intrinsics/numeric/erf.md:31
+#, fuzzy
 msgid "$\\frac{2}{\\sqrt\\pi}\\int_0^xe^{-t^2}dt$"
-msgstr ""
+msgstr "$\\frac{2}{\\sqrt\\pi}\\int_0^xe^{-t^2}dt$"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:69
+#, fuzzy
 msgid "[erfc](erfc.md)."
-msgstr ""
+msgstr "[erfc](erfc.md)."
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:1
 msgid "erfc(x): Complementary Error"
@@ -3490,8 +3547,9 @@ msgid "$0 \\leq erf (x) \\leq 2$"
 msgstr ""
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:31
+#, fuzzy
 msgid "$\\frac{2}{\\sqrt\\pi}\\int_{x}^{\\infty}e^{-t^2}dt$"
-msgstr ""
+msgstr "$\\frac{2}{\\sqrt\\pi}\\int_{x}^{\\infty}e^{-t^2}dt$"
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:33
 msgid ""
@@ -3500,16 +3558,17 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:72
+#, fuzzy
 msgid "[erf](erf.md)."
-msgstr ""
+msgstr "[erf](erf.md)."
 
 #: ../../doc/src/intrinsics/numeric/exp.md:1
 msgid "exp(x): Exponential"
-msgstr ""
+msgstr "exp(x): Exponencial"
 
 #: ../../doc/src/intrinsics/numeric/exp.md:3
 msgid "Exponential function."
-msgstr ""
+msgstr "Função Exponencial."
 
 #: ../../doc/src/intrinsics/numeric/exp.md:16
 msgid "`x` the input value must be of type real or complex."
@@ -3568,11 +3627,11 @@ msgstr ""
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:1
 msgid "gamma(x): Gamma"
-msgstr ""
+msgstr "gamma(x): Gama"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:3
 msgid "Gamma function."
-msgstr ""
+msgstr "Função Gama."
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:16
 msgid ""
@@ -3613,8 +3672,9 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:76
+#, fuzzy
 msgid "[epsilon](epsilon.md)"
-msgstr ""
+msgstr "[epsilon](epsilon.md)"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:1
 msgid "mod(x, y): Modulus"
@@ -3670,7 +3730,7 @@ msgstr ""
 
 #: ../../doc/src/language.md:1
 msgid "Fortran Language"
-msgstr ""
+msgstr "Linguagem Fortran"
 
 #: ../../doc/src/language.md:3
 msgid "Background and Motivation"
@@ -3689,7 +3749,7 @@ msgstr ""
 
 #: ../../doc/src/language.md:12
 msgid "Some highlights:"
-msgstr ""
+msgstr "Alguns destaques:"
 
 #: ../../doc/src/language.md:14
 msgid ""
@@ -3706,11 +3766,11 @@ msgstr ""
 
 #: ../../doc/src/language.md:19
 msgid "Complex numbers;"
-msgstr ""
+msgstr "Números complexos;"
 
 #: ../../doc/src/language.md:20
 msgid "Special functions;"
-msgstr ""
+msgstr "Funções especiais;"
 
 #: ../../doc/src/language.md:21
 msgid "Structures and pointers for more general data representation."
@@ -3806,7 +3866,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md:32
 msgid "Topics"
-msgstr ""
+msgstr "Tópicos"
 
 #: ../../doc/src/progress.md:34
 msgid "Full programs that compute something interesting"
@@ -3822,35 +3882,41 @@ msgstr ""
 
 #: ../../doc/src/progress.md
 msgid "LLVM"
-msgstr ""
+msgstr "LLVM"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "BIN"
-msgstr ""
+msgstr "BIN"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "RUN"
-msgstr ""
+msgstr "RUN"
 
 #: ../../doc/src/progress.md
 msgid "Filename"
-msgstr ""
+msgstr "Nome do arquivo"
 
 #: ../../doc/src/progress.md
 msgid "`Pure Fortran sin(x) implementation`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "✅"
-msgstr ""
+msgstr "✅"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_sin_implementation.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/programs/numerics/t01_sin_implementation.f90)"
 msgstr ""
+"[t01_sin_implementation.f90](https://gitlab.com/lfortran/compiler_tester/-/"
+"blob/master/tests/programs/numerics/t01_sin_implementation.f90)"
 
 #: ../../doc/src/progress.md:45
 msgid "Modules"
-msgstr ""
+msgstr "Módulos"
 
 #: ../../doc/src/progress.md:47
 msgid "Basic Usage"
@@ -3865,8 +3931,11 @@ msgid "`Basic modules`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/basic/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"modules/basic/t01.f90)"
 
 #: ../../doc/src/progress.md:56
 msgid "Module Functions and Subroutines"
@@ -3881,28 +3950,37 @@ msgid "`Module functions`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/procedures/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"modules/procedures/t01.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`Module subroutines`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/procedures/t02.f90)"
 msgstr ""
+"[t02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"modules/procedures/t02.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`Nested subroutines`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/procedures/t03.f90)"
 msgstr ""
+"[t03.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"modules/procedures/t03.f90)"
 
 #: ../../doc/src/progress.md:67
 msgid "Expressions"
-msgstr ""
+msgstr "Expressões"
 
 #: ../../doc/src/progress.md:69
 msgid "Arithmetic Operations"
@@ -3913,44 +3991,58 @@ msgid "Directory: `tests/expressions/arit`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "`+,-,*,/,**`"
-msgstr ""
+msgstr "`+,-,*,/,**`"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[basic_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/arit/basic_operations.f90)"
 msgstr ""
+"[basic_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/expressions/arit/basic_operations.f90)"
 
 #: ../../doc/src/progress.md:78
 msgid "Integers"
-msgstr ""
+msgstr "Inteiros"
 
 #: ../../doc/src/progress.md:80
 msgid "Directory: `tests/expressions/integers`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "`integers`"
-msgstr ""
+msgstr "`integers`"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[integer_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/integers/integer_kind.f90)"
 msgstr ""
+"[integer_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/expressions/integers/integer_kind.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`relational operations`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_rel_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/integers/t01_rel_operations.f90)"
 msgstr ""
+"[t01_rel_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/expressions/integers/t01_rel_operations.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`logical operations`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02_logical_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/integers/t02_logical_operations.f90)"
 msgstr ""
+"[t02_logical_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/"
+"blob/master/tests/expressions/integers/t02_logical_operations.f90)"
 
 #: ../../doc/src/progress.md:89
 msgid "Real Numbers"
@@ -3965,20 +4057,27 @@ msgid "`single/double reals`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[real_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/reals/real_kind.f90)"
 msgstr ""
+"[real_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/expressions/reals/real_kind.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`defined operator`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "❌"
-msgstr ""
+msgstr "❌"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_def_op.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/reals/t01_def_op.f90)"
 msgstr ""
+"[t01_def_op.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/expressions/reals/t01_def_op.f90)"
 
 #: ../../doc/src/progress.md:99
 msgid "Complex Numbers"
@@ -3993,36 +4092,46 @@ msgid "`single/double complex`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[complex_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/complex/complex_kind.f90)"
 msgstr ""
+"[complex_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/expressions/complex/complex_kind.f90)"
 
 #: ../../doc/src/progress.md:108
 msgid "Strings"
-msgstr ""
+msgstr "Cadeia de Caracteres"
 
 #: ../../doc/src/progress.md:110
 msgid "Directory: `tests/expressions/character`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "`character`"
-msgstr ""
+msgstr "`character`"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_character.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/character/t01_character.f90)"
 msgstr ""
+"[t01_character.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/expressions/character/t01_character.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`string concatenation`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02_concat_operation.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/character/t02_concat_operation.f90)"
 msgstr ""
+"[t02_concat_operation.f90](https://gitlab.com/lfortran/compiler_tester/-/"
+"blob/master/tests/expressions/character/t02_concat_operation.f90)"
 
 #: ../../doc/src/progress.md:118
 msgid "Derived Types"
-msgstr ""
+msgstr "Tipos Derivados"
 
 #: ../../doc/src/progress.md:120
 msgid "Directory: `tests/expressions/derived_type`"
@@ -4033,12 +4142,15 @@ msgid "`basic derived types`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_derived_type.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/derived_type/t01_derived_type.f90)"
 msgstr ""
+"[t01_derived_type.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/expressions/derived_type/t01_derived_type.f90)"
 
 #: ../../doc/src/progress.md:127
 msgid "Statements"
-msgstr ""
+msgstr "Comandos"
 
 #: ../../doc/src/progress.md:129
 msgid "Allocate Statement"
@@ -4053,8 +4165,11 @@ msgid "`allocate statement`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/allocate/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/allocate/t01.f90)"
 
 #: ../../doc/src/progress.md:138
 msgid "Block Statement"
@@ -4069,8 +4184,11 @@ msgid "`block statement`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/block/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/block/t01.f90)"
 
 #: ../../doc/src/progress.md:147
 msgid "Goto Statement"
@@ -4085,16 +4203,22 @@ msgid "`computed go-to statement`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/goto/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/goto/t01.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`go-to statement`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/goto/t02.f90)"
 msgstr ""
+"[t02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/goto/t02.f90)"
 
 #: ../../doc/src/progress.md:157
 msgid "If Statement"
@@ -4109,32 +4233,44 @@ msgid "`Test .false.`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[if_01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_01.f90)"
 msgstr ""
+"[if_01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/if/if_01.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`single line if statement`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[if_02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_02.f90)"
 msgstr ""
+"[if_02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/if/if_02.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`multi line if statement`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[if_03.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_03.f90)"
 msgstr ""
+"[if_03.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/if/if_03.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`nested if statements`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[if_04.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_04.f90)"
 msgstr ""
+"[if_04.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/if/if_04.f90)"
 
 #: ../../doc/src/progress.md:169
 msgid "While Statement"
@@ -4149,16 +4285,22 @@ msgid "`Simple while loops`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[while_01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/while/while_01.f90)"
 msgstr ""
+"[while_01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/statements/while/while_01.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`exit / cycle in while loops`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[while_02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/while/while_02.f90)"
 msgstr ""
+"[while_02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/statements/while/while_02.f90)"
 
 #: ../../doc/src/progress.md:179
 msgid "Print Statement"
@@ -4173,8 +4315,11 @@ msgid "`Basic print`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/print/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/print/t01.f90)"
 
 #: ../../doc/src/progress.md:188
 msgid "Open, Read, Write, Close Statement"
@@ -4185,12 +4330,16 @@ msgid "Directory: `tests/statements/file_io`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "`open/read/write/close`"
-msgstr ""
+msgstr "`open/read/write/close`"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/file_io/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/file_io/t01.f90)"
 
 #: ../../doc/src/progress.md:197
 msgid "Intrinsic Functions"
@@ -4198,7 +4347,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md:199
 msgid "abs"
-msgstr ""
+msgstr "abs"
 
 #: ../../doc/src/progress.md:201
 msgid "Directory: `tests/intrinsic/abs`"
@@ -4209,365 +4358,512 @@ msgid "`scalar single/double real`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/abs/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/abs/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`scalar single/double complex`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/abs/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/abs/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`array 1D single/double real`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/abs/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/abs/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:210
 msgid "exp"
-msgstr ""
+msgstr "exp"
 
 #: ../../doc/src/progress.md:212
 msgid "Directory: `tests/intrinsic/exp`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/exp/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/exp/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/exp/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/exp/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/exp/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/exp/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:221
 msgid "log"
-msgstr ""
+msgstr "log"
 
 #: ../../doc/src/progress.md:223
 msgid "Directory: `tests/intrinsic/log`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/log/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/log/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/log/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/log/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/log/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/log/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:232
 msgid "sqrt"
-msgstr ""
+msgstr "sqrt"
 
 #: ../../doc/src/progress.md:234
 msgid "Directory: `tests/intrinsic/sqrt`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sqrt/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sqrt/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sqrt/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sqrt/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sqrt/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sqrt/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:243
 msgid "sin"
-msgstr ""
+msgstr "sin"
 
 #: ../../doc/src/progress.md:245
 msgid "Directory: `tests/intrinsic/sin`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sin/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sin/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sin/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sin/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sin/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sin/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:254
 msgid "cos"
-msgstr ""
+msgstr "cos"
 
 #: ../../doc/src/progress.md:256
 msgid "Directory: `tests/intrinsic/cos`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cos/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cos/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cos/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cos/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cos/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cos/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:265
 msgid "tan"
-msgstr ""
+msgstr "tan"
 
 #: ../../doc/src/progress.md:267
 msgid "Directory: `tests/intrinsic/tan`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tan/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tan/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tan/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tan/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tan/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tan/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:276
 msgid "sinh"
-msgstr ""
+msgstr "sinh"
 
 #: ../../doc/src/progress.md:278
 msgid "Directory: `tests/intrinsic/sinh`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sinh/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sinh/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sinh/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sinh/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sinh/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sinh/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:287
 msgid "cosh"
-msgstr ""
+msgstr "cosh"
 
 #: ../../doc/src/progress.md:289
 msgid "Directory: `tests/intrinsic/cosh`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cosh/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cosh/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cosh/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cosh/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cosh/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cosh/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:298
 msgid "tanh"
-msgstr ""
+msgstr "tanh"
 
 #: ../../doc/src/progress.md:300
 msgid "Directory: `tests/intrinsic/tanh`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tanh/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tanh/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tanh/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tanh/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tanh/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tanh/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:309
 msgid "asin"
-msgstr ""
+msgstr "asin"
 
 #: ../../doc/src/progress.md:311
 msgid "Directory: `tests/intrinsic/asin`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/asin/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/asin/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/asin/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/asin/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/asin/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/asin/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:320
 msgid "acos"
-msgstr ""
+msgstr "acos"
 
 #: ../../doc/src/progress.md:322
 msgid "Directory: `tests/intrinsic/acos`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/acos/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/acos/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/acos/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/acos/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/acos/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/acos/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:331
 msgid "atan"
-msgstr ""
+msgstr "atan"
 
 #: ../../doc/src/progress.md:333
 msgid "Directory: `tests/intrinsic/atan`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/atan/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/atan/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/atan/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/atan/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/atan/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/atan/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:342
 msgid "modulo"
-msgstr ""
+msgstr "modulo"
 
 #: ../../doc/src/progress.md:344
 msgid "Directory: `tests/intrinsic/modulo`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/modulo/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/modulo/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/modulo/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/modulo/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:352
 msgid "mod"
-msgstr ""
+msgstr "mod"
 
 #: ../../doc/src/progress.md:354
 msgid "Directory: `tests/intrinsic/mod`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/mod/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/mod/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/mod/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/mod/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:362
 msgid "min"
-msgstr ""
+msgstr "min"
 
 #: ../../doc/src/progress.md:364
 msgid "Directory: `tests/intrinsic/min`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/min/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/min/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:371
 msgid "max"
-msgstr ""
+msgstr "max"
 
 #: ../../doc/src/progress.md:373
 msgid "Directory: `tests/intrinsic/max`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/max/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/max/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:380
 msgid "int"
-msgstr ""
+msgstr "int"
 
 #: ../../doc/src/progress.md:382
 msgid "Directory: `tests/intrinsic/int`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/int/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/int/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:389
 msgid "real"
-msgstr ""
+msgstr "real"
 
 #: ../../doc/src/progress.md:391
 msgid "Directory: `tests/intrinsic/real`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/real/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/real/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:398
 msgid "floor"
-msgstr ""
+msgstr "floor"
 
 #: ../../doc/src/progress.md:400
 msgid "Directory: `tests/intrinsic/floor`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/floor/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/floor/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:407
 msgid "nint"
-msgstr ""
+msgstr "nint"
 
 #: ../../doc/src/progress.md:409
 msgid "Directory: `tests/intrinsic/nint`"
 msgstr ""
 
 #: ../../doc/src/progress.md
+#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/nint/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/nint/t01_scalar_real.f90)"
