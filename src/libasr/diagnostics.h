@@ -184,6 +184,27 @@ struct Diagnostics {
     }
 };
 
+struct ColorsANSI {
+    inline static const std::string RESET       = "\033[0;0m";
+    inline static const std::string BLACK       = "\033[0;30m";    /* Black */
+    inline static const std::string RED         = "\033[0;31m";    /* Red */
+    inline static const std::string GREEN       = "\033[0;32m";    /* Green */
+    inline static const std::string YELLOW      = "\033[0;33m";    /* Yellow */
+    inline static const std::string BLUE        = "\033[0;34m";    /* Blue */
+    inline static const std::string MAGENTA     = "\033[0;35m";    /* Magenta */
+    inline static const std::string CYAN        = "\033[0;36m";    /* Cyan */
+    inline static const std::string WHITE       = "\033[0;37m";    /* White */
+    inline static const std::string BOLD        = "\033[0;1m";     /* Bold */
+    inline static const std::string BOLDBLACK   = "\033[0;30;1m";  /* Bold Black */
+    inline static const std::string BOLDRED     = "\033[0;31;1m";  /* Bold Red */
+    inline static const std::string BOLDGREEN   = "\033[0;32;1m";  /* Bold Green */
+    inline static const std::string BOLDYELLOW  = "\033[0;33;1m";  /* Bold Yellow */
+    inline static const std::string BOLDBLUE    = "\033[0;34;1m";  /* Bold Blue */
+    inline static const std::string BOLDMAGENTA = "\033[0;35;1m";  /* Bold Magenta */
+    inline static const std::string BOLDCYAN    = "\033[0;36;1m";  /* Bold Cyan */
+    inline static const std::string BOLDWHITE   = "\033[0;37;1m";  /* Bold White */
+};
+
 std::string render_diagnostic_human(const Diagnostic &d, bool use_colors);
 std::string render_diagnostic_short(const Diagnostic &d);
 

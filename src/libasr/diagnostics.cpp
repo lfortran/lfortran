@@ -8,8 +8,8 @@
 
 namespace LFortran::diag {
 
-const static std::string redon  = "\033[0;31m";
-const static std::string redoff = "\033[0;00m";
+const static std::string redon  = ColorsANSI::RED;
+const static std::string redoff = ColorsANSI::RESET;
 
 std::string highlight_line(const std::string &line,
         const size_t first_column,
@@ -82,8 +82,8 @@ std::string Diagnostics::render(const std::string &input,
     if (compiler_options.error_format == "human") {
         if (this->diagnostics.size() > 0 && !compiler_options.no_error_banner) {
             if (!compiler_options.no_warnings || has_error()) {
-                std::string bold  = "\033[0;1m";
-                std::string reset = "\033[0;00m";
+                std::string bold  = ColorsANSI::BOLD;
+                std::string reset = ColorsANSI::RESET;
                 if (!compiler_options.use_colors) {
                     bold = "";
                     reset = "";
@@ -157,12 +157,12 @@ std::string render_diagnostic_short(Diagnostic &d, const std::string &input,
 }
 
 std::string render_diagnostic_human(const Diagnostic &d, bool use_colors) {
-    std::string bold  = "\033[0;1m";
-    std::string red_bold  = "\033[0;31;1m";
-    std::string yellow_bold  = "\033[0;33;1m";
-    std::string green_bold  = "\033[0;32;1m";
-    std::string blue_bold  = "\033[0;34;1m";
-    std::string reset = "\033[0;00m";
+    std::string bold  = ColorsANSI::BOLD;
+    std::string red_bold  = ColorsANSI::BOLDCYAN;
+    std::string yellow_bold  = ColorsANSI::BOLDYELLOW;
+    std::string green_bold  = ColorsANSI::BOLDGREEN;
+    std::string blue_bold  = ColorsANSI::BOLDBLUE;
+    std::string reset = ColorsANSI::RESET;
     if (!use_colors) {
         bold = "";
         red_bold = "";
@@ -312,13 +312,9 @@ std::tuple<std::string, std::string, std::string> diag_level_to_str(const Diagno
     std::string message_type = "";
     std::string primary_color = "";
     std::string type_color = "";
-    std::string bold  = "\033[0;1m";
-    std::string red_bold  = "\033[0;31;1m";
-    std::string yellow_bold  = "\033[0;33;1m";
-    std::string green_bold  = "\033[0;32;1m";
     switch (d.level) {
         case (Level::Error):
-            primary_color = red_bold;
+            primary_color = ColorsANSI::BOLDRED;
             type_color = primary_color;
             switch (d.stage) {
                 case (Stage::CPreprocessor):
@@ -345,23 +341,23 @@ std::tuple<std::string, std::string, std::string> diag_level_to_str(const Diagno
             }
             break;
         case (Level::Warning):
-            primary_color = yellow_bold;
+            primary_color = ColorsANSI::BOLDYELLOW;
             type_color = primary_color;
             message_type = "warning";
             break;
         case (Level::Note):
-            primary_color = bold;
+            primary_color = ColorsANSI::BOLD;
             type_color = primary_color;
             message_type = "note";
             break;
         case (Level::Help):
-            primary_color = bold;
+            primary_color = ColorsANSI::BOLD;
             type_color = primary_color;
             message_type = "help";
             break;
         case (Level::Style):
-            primary_color = green_bold;
-            type_color = yellow_bold;
+            primary_color = ColorsANSI::BOLDGREEN;
+            type_color = ColorsANSI::BOLDYELLOW;
             message_type = "style suggestion";
             break;
     }
