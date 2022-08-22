@@ -3,6 +3,7 @@
           print *, a
       end subroutine
 
+
       program main
           if (0<1) then
               print *, "first branch"
@@ -11,6 +12,8 @@
           endif
 
 50        call f(1)
+
+          if (0<2) return
 
           if (0>1) goto 50
 
