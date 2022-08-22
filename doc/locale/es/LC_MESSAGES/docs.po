@@ -3,35 +3,38 @@
 # This file is distributed under the same license as the LFortran package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: LFortran \n"
+"Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"PO-Revision-Date: 2022-08-22 11:19+0000\n"
+"Last-Translator: Asdrubal Lozada-Blanco <aslozada@gmail.com>\n"
+"Language-Team: Spanish <https://hosted.weblate.org/projects/fortran-lang/"
+"lfortran-docs/es/>\n"
+"Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.14-dev\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../../doc/src/ast_and_asr.ipynb:9
 msgid "Difference between an AST and ASR"
-msgstr ""
+msgstr "Diferencias entre un AST y una ASR"
 
 #: ../../doc/src/ast_and_asr.ipynb:11
 msgid "Let us take a simple Fortran code:"
-msgstr ""
+msgstr "Tomemos un código Fortran simple:"
 
 #: ../../doc/src/ast_and_asr.ipynb:22
 msgid "and look at how the AST and ASR looks like."
-msgstr ""
+msgstr "y verifiquemos en que se parecen AST y ASR."
 
 #: ../../doc/src/ast_and_asr.ipynb:25 ../../doc/src/progress.md
 msgid "AST"
-msgstr ""
+msgstr "AST"
 
 #: ../../doc/src/ast_and_asr.ipynb:76
 msgid ""
@@ -40,10 +43,14 @@ msgid ""
 "such as ``a`` are represented by a ``Name`` node, and are not connected "
 "to their declarations yet."
 msgstr ""
+"El AST no tiene información semántica, pero tiene nodos para representar "
+"declaraciones tales como ``integer, intent(in) :: a``. Variables tales como "
+"``a`` son representadas por un nodo ``Name`` , y aún no están conectadas a "
+"sus declaraciones."
 
 #: ../../doc/src/ast_and_asr.ipynb:88 ../../doc/src/progress.md
 msgid "ASR"
-msgstr ""
+msgstr "ASR"
 
 #: ../../doc/src/ast_and_asr.ipynb:139
 msgid ""
@@ -51,22 +58,29 @@ msgid ""
 "``Function`` have a symbol table and do not have any declaration nodes. "
 "Variables are simply pointers to the symbol table."
 msgstr ""
+"La ASR tiene toda la información semántica (tipos, etc.), nodos como "
+"``Function`` tienen una tabla de símbolos y no tienen ningún nodo de "
+"declaración. Variables son únicamente punteros para la tabla de símbolos."
 
 #: ../../doc/src/ast_and_asr.ipynb:142
 msgid "Discussion"
-msgstr ""
+msgstr "Discusión"
 
 #: ../../doc/src/ast_and_asr.ipynb:144
 msgid ""
 "The above was a simple example. Things get more apparent for more "
 "complicated examples, such as:"
 msgstr ""
+"El anterior fué un ejemplo simple. Las cosas se vuelven mas evidentes para "
+"ejemplos más complicados, tales como:"
 
 #: ../../doc/src/ast_and_asr.ipynb:160
 msgid ""
 "AST must represent all the ``use`` statements and the ``interface`` "
 "block, and keep things semantically consistent."
 msgstr ""
+"AST puede representar todos las declaraciones ``use`` y el bloque "
+"``interface``, y mantiene las cosas semánticamente consistentes."
 
 #: ../../doc/src/ast_and_asr.ipynb:162
 msgid ""
@@ -75,16 +89,22 @@ msgid ""
 " are defined in the ``gfort_interop`` module, and so ASR does not have "
 "any of these declaration nodes."
 msgstr ""
+"ASR, por otro lado, realiza un seguimiento de ``c_desc1_int32``, "
+"``c_desc1_t`` y ``f2b_c_wrapper`` en la tabla de símbolos y sabe que están "
+"definidos en el módulo ``gfort_interop``, y así ASR no tiene ninguno de "
+"estos nodos de declaración."
 
 #: ../../doc/src/ast_and_asr.ipynb:164
 msgid ""
 "When converting from ASR to AST, LFortran will create all the appropriate"
 " AST declaration nodes automatically and correctly."
 msgstr ""
+"Al convertir de ASR a AST, LFortran creará automática y correctamente todos "
+"los nodos de declaración AST apropiados."
 
 #: ../../doc/src/contributing.md:1
 msgid "Contributing"
-msgstr ""
+msgstr "Contribuyendo"
 
 #: ../../doc/src/contributing.md:3
 msgid ""
@@ -93,96 +113,114 @@ msgid ""
 " do, it is not complicated. We will help you with any technical issues "
 "and help improve your contribution so that it can be merged."
 msgstr ""
+"Damos la bienvenida a todas las contribuciones, aún si usted es nuevo en "
+"código abierto. Al principio, puede parecer abrumador contribuir a un "
+"compilador, pero hágalo, no es complicado. Ayudaremos con cualquier problema "
+"técnico, así como a mejorar su contribución para que esta pueda integrarse."
 
 #: ../../doc/src/contributing.md:8
 msgid "Basic Setup"
-msgstr ""
+msgstr "Configuración básica"
 
 #: ../../doc/src/contributing.md:10
 msgid "To contribute, make sure your set up:"
-msgstr ""
+msgstr "Para contribuir, asegúrese de configurar:"
 
 #: ../../doc/src/contributing.md:12
 msgid "Your username + email"
-msgstr ""
+msgstr "Su nombre de usuario + correo electrónico"
 
 #: ../../doc/src/contributing.md:13
 msgid "Your `~/.gitconfig`"
-msgstr ""
+msgstr "Su `~/.gitconfig`"
 
 #: ../../doc/src/contributing.md:14
 msgid "Your shell prompt to display the current branch name"
-msgstr ""
+msgstr "Su indicador de interfaz para mostrar el nombre de la rama actual"
 
 #: ../../doc/src/contributing.md:16
 msgid "Fork LFortran"
-msgstr ""
+msgstr "Bifurcar LFortran"
 
 #: ../../doc/src/contributing.md:18
 msgid ""
 "Step 1. Create a fork of the [project "
 "repository](https://github.com/lfortran/lfortran)"
 msgstr ""
+"Paso 1. Crear una bifurcación del [repositorio del proyecto](https://github."
+"com/lfortran/lfortran)"
 
 #: ../../doc/src/contributing.md:20
 msgid ""
 "Step 2. Set up your [SSH key](https://docs.github.com/en/authentication"
 "/connecting-to-github-with-ssh) with GitHub"
 msgstr ""
+"Paso 2. Configure su [clave SSH](https://docs.github.com/en/authentication/"
+"connecting-to-github-with-ssh) con GitHub"
 
 #: ../../doc/src/contributing.md:22
 msgid ""
 "Step 3. Clone the project repository from GitHub and set up your remote "
 "repository"
 msgstr ""
+"Paso 3. Clone el repositório del proyecto desde Github y configure su "
+"repositório remoto"
 
 #: ../../doc/src/contributing.md:29
 msgid ""
 ":fontawesome-solid-edit: `REMOTE_NAME` is the name of your remote "
 "repository and could be any name you like, for example your first name."
 msgstr ""
+":fontawesome-solid-edit: `REMOTE_NAME` es el nombre de su repositório remoto "
+"y puede ser cualquier nombre de su elección, por ejemplo su primer nombre."
 
 #: ../../doc/src/contributing.md:31
 msgid ""
 ":fontawesome-solid-edit: `YOUR_GITHUB_ID` is your user ID on GitHub and "
 "should be part of your account path."
 msgstr ""
+":fontawesome-solid-edit: `YOUR_GITHUB_ID` es su identificador de usuario en "
+"Github y debe ser parte de la ruta de su cuenta."
 
 #: ../../doc/src/contributing.md:33
 msgid ""
 "You can use `git remote -v` to check if the new remote is set up "
 "correctly."
 msgstr ""
+"Usted puede usar `git remote -v` para verificar si el nuevo enlace remoto "
+"está correctamente configurado."
 
 #: ../../doc/src/contributing.md:35
 msgid "Send a New Merge Request"
-msgstr ""
+msgstr "Enviar una nueva solicitud de fusión"
 
 #: ../../doc/src/contributing.md:37
 msgid "Step 1. Create a new branch"
-msgstr ""
+msgstr "Paso 1. Crear una nueva rama"
 
 #: ../../doc/src/contributing.md:42
 msgid "Step 2. Make changes in relevant file(s)"
-msgstr ""
+msgstr "Paso 2. Realizar cambios en archivos relevantes"
 
 #: ../../doc/src/contributing.md:44
 msgid "Step 3. Commit the changes:"
-msgstr ""
+msgstr "Paso 3. Confirmar los cambios:"
 
 #: ../../doc/src/contributing.md:51
 msgid ""
 "[Here](https://chris.beams.io/posts/git-commit/) are some great tips on "
 "writing good commit messages."
 msgstr ""
+"[Aquí](https://chris.beams.io/posts/git-commit/) algunos consejos sobre como "
+"escribir buenos mensajes de confirmación."
 
 #: ../../doc/src/contributing.md:53
 msgid "Step 4. Check to ensure that your changes look good"
-msgstr ""
+msgstr "Paso 4. Verifique que sus cambios se vean bien"
 
 #: ../../doc/src/contributing.md:58
 msgid "Step 5. Send the merge request"
-msgstr ""
+msgstr "Paso 5. Enviar la solicitud de fusión"
 
 #: ../../doc/src/contributing.md:64
 msgid ""
@@ -192,46 +230,59 @@ msgid ""
 " clicking on the link, write a title and a concise description then click"
 " the \"Create\" button. Yay you are now all set."
 msgstr ""
+"El comando insertará la nueva rama `fix1` en su repositorio remoto "
+"`REMOTE_NAME` que creó anteriormente. Además, también mostrará un enlace en "
+"el que puede hacer clic para abrir la nueva solicitud de fusión. Después de "
+"hacer clic en el enlace, escriba un título y una descripción concisa y luego "
+"haga clic en el botón \"Create\". Sí, ya está todo listo."
 
 #: ../../doc/src/contributing.md:66
 msgid "Add New Features"
-msgstr ""
+msgstr "Adicionar nuevas características"
 
 #: ../../doc/src/contributing.md:68
 msgid ""
 "The example below shows the steps it would take to create a caret binary "
 "operator **^** which computes the average value of the two operands."
 msgstr ""
+"El siguiente ejemplo muestra los pasos necesarios para crear un operador "
+"binario de intercalación **^** que calcula el valor promedio de los dos "
+"operandos."
 
 #: ../../doc/src/contributing.md:70
 msgid "Create New Token(s)"
-msgstr ""
+msgstr "Crear un nuevo identificador"
 
 #: ../../doc/src/contributing.md:72
 msgid ""
 "We extend the *tokenizer.re* as well as *parser.yy* to add the new token "
 "**^**. We also tell LFortran how to print the new token in *parser.cpp*."
 msgstr ""
+"Extendemos el *tokenizer.re* así como el *parser.yy* para adcionar el nuevo "
+"indentificador **^**. También le decimos a LFortran como imprimir el nuevo "
+"identificador en *parser.cpp*."
 
 #: ../../doc/src/contributing.md:75
 msgid ":fontawesome-solid-code: *src/lfortran/parser/tokenizer.re*"
-msgstr ""
+msgstr ":fontawesome-solid-code: *src/lfortran/parser/tokenizer.re*"
 
 #: ../../doc/src/contributing.md:80
 msgid ":fontawesome-solid-code: *src/lfortran/parser/parser.yy*"
-msgstr ""
+msgstr ":fontawesome-solid-code: *src/lfortran/parser/parser.yy*"
 
 #: ../../doc/src/contributing.md:85
 msgid ":fontawesome-solid-code: *src/lfortran/parser/parser.cpp*"
-msgstr ""
+msgstr ":fontawesome-solid-code: *src/lfortran/parser/parser.cpp*"
 
 #: ../../doc/src/contributing.md:94
 msgid "The added code is tested with `lfortran --show-tokens examples2/expr2.f90`"
 msgstr ""
+"El código adicionado es evaluado con `lfortran --show-tokens examples2/expr2."
+"f90`"
 
 #: ../../doc/src/contributing.md:96
 msgid "Parse the New Token"
-msgstr ""
+msgstr "Analizar el nuevo identificador"
 
 #: ../../doc/src/contributing.md:98
 msgid ""
@@ -241,50 +292,59 @@ msgid ""
 "*semantics.h*.Finally we extend *pickle.cpp* so that the new operator can"
 " print itself."
 msgstr ""
+"Ahora tenemos que analizar el nuevo operador. Lo agregamos al AST "
+"extendiendo BinOp con un operador de intercalación y modificando el archivo "
+"*AST.asdl*. Luego lo agregamos en *parse.yy* para analizar correctamente y "
+"generar el nuevo AST en *semantics.h*. Finalmente, extendemos *pickle.cpp* "
+"para que el nuevo operador pueda imprimirse solo."
 
 #: ../../doc/src/contributing.md:102
 msgid ":fontawesome-solid-code:*grammar/AST.asdl*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*grammar/AST.asdl*"
 
 #: ../../doc/src/contributing.md:107
 msgid ":fontawesome-solid-code:*src/lfortran/parser/parser.yy*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/parser/parser.yy*"
 
 #: ../../doc/src/contributing.md:116
 msgid ":fontawesome-solid-code:*src/lfortran/parser/semantics.h*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/parser/semantics.h*"
 
 #: ../../doc/src/contributing.md:121
 msgid ":fontawesome-solid-code:*src/lfortran/pickle.cpp*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/pickle.cpp*"
 
 #: ../../doc/src/contributing.md:132
 msgid "The section is tested with `lfortran --show-ast examples/expr2.f90`"
-msgstr ""
+msgstr "La sección es evaluada con `lfortran --show-ast examples/expr2.f90`"
 
 #: ../../doc/src/contributing.md:134
 msgid "Implement the Semantics of the New Token"
-msgstr ""
+msgstr "Implementar todas las semánticas del nuevo identificador"
 
 #: ../../doc/src/contributing.md:136
 msgid ""
 "We first extend the ASR in *ASR.asdl* and add ^ as a BinOp operator "
 "option."
 msgstr ""
+"Primero extendemos el ASR en *ASR.asdl* y adicionamos ^ como una opción del "
+"operador BinOp."
 
 #: ../../doc/src/contributing.md:138
 msgid ":fontawesome-solid-code:*src/libasr/ASR.asdl*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/libasr/ASR.asdl*"
 
 #: ../../doc/src/contributing.md:142
 msgid ":fontawesome-solid-code:*src/lfortran/semantics/ast_common_visitor.h*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/semantics/ast_common_visitor.h*"
 
 #: ../../doc/src/contributing.md:179
 msgid ""
 "Then we transform it from AST to ASR by extending "
 "*src/lfortran/semantics/ast_common_visitor.h*."
 msgstr ""
+"Después lo transformamos desde AST para ASR extendiendo *src/lfortran/"
+"semantics/ast_common_visitor.h*."
 
 #: ../../doc/src/contributing.md:181
 msgid ""
@@ -292,14 +352,17 @@ msgid ""
 " as `e = (2+3)^5` which is evaluated at compile time. An expression such "
 "as `e = x^5` is evaluated at run time only."
 msgstr ""
+"También lo agregamos a la evaluación en tiempo de compilación desencadenada "
+"por expresiones como `e = (2+3)^5`, que se evalúa en tiempo de compilación. "
+"Una expresión como `e = x^5` se evalúa solo en tiempo de ejecución."
 
 #: ../../doc/src/contributing.md:183
 msgid "The section is tested with `lfortran --show-asr examples/expr2.f90`"
-msgstr ""
+msgstr "La sección es evaluada con `lfortran --show-asr examples/expr2.f90`"
 
 #: ../../doc/src/contributing.md:184
 msgid "Implement the New Token in LLVM"
-msgstr ""
+msgstr "Implementando el nuevo identificador en LLVM"
 
 #: ../../doc/src/contributing.md:186
 msgid ""
@@ -307,26 +370,29 @@ msgid ""
 " operator. We first add the two numbers then divide by two. :fontawesome-"
 "solid-code:*src/lfortran/codegen/asr_to_llvm.cpp*"
 msgstr ""
+"Para implementar en LLVM, extendemos la traducción de BinOp manejando el "
+"nuevo operador. Primero sumamos los dos números y luego dividimos por dos. "
+":fontawesome-solid-code:*src/lfortran/codegen/asr_to_llvm.cpp*"
 
 #: ../../doc/src/contributing.md:217
 msgid "The section is tested with `lfortran --show-llvm examples/expr2.f90`"
-msgstr ""
+msgstr "La sección es evaluada con `lfortran --show-llvm examples/expr2.f90`"
 
 #: ../../doc/src/contributing.md:219
 msgid "Now when LLVM works, we can test the final executable by:"
-msgstr ""
+msgstr "Ahora, cuando LLVM funciona, podemos probar el ejecutable final:"
 
 #: ../../doc/src/contributing.md:224
 msgid "And it should print 6."
-msgstr ""
+msgstr "Y debería imprimir 6."
 
 #: ../../doc/src/contributing.md:226
 msgid "It also works interactively:"
-msgstr ""
+msgstr "También funciona de forma interactiva:"
 
 #: ../../doc/src/contributing.md:242
 msgid "Reach Out"
-msgstr ""
+msgstr "Alcanzar"
 
 #: ../../doc/src/contributing.md:244
 msgid ""
@@ -334,6 +400,9 @@ msgid ""
 "[mailinglist](https://groups.io/g/lfortran) or a "
 "[chat](https://lfortran.zulipchat.com/)."
 msgstr ""
+"Si tiene alguna pregunta o necesita ayuda, pregunte en nuestra [lista de "
+"correo](https://groups.io/g/lfortran) o un [chat](https://lfortran.zulipchat."
+"com/)."
 
 #: ../../doc/src/contributing.md:248
 msgid ""
@@ -342,6 +411,10 @@ msgid ""
 "by its terms. See "
 "[CODE_OF_CONDUCT.md](https://github.com/lfortran/lfortran/blob/main/CODE_OF_CONDUCT.md)."
 msgstr ""
+"Tenga en cuenta que se espera que todos los participantes de este proyecto "
+"sigan nuestro Código de conducta. Al participar en este proyecto, usted "
+"acepta cumplir con sus términos. Ver [CODE_OF_CONDUCT.md](https://github.com/"
+"lfortran/lfortran/blob/main/CODE_OF_CONDUCT.md)."
 
 #: ../../doc/src/contributing.md:252
 msgid ""
@@ -350,14 +423,17 @@ msgid ""
 "[license](https://github.com/lfortran/lfortran/blob/main/LICENSE) unless "
 "explicitly noted otherwise."
 msgstr ""
+"Al enviar un PR, acepta licenciar su contribución bajo la "
+"[licencia](https://github.com/lfortran/lfortran/blob/main/LICENSE) BSD de "
+"LFortran, a menos que se indique explícitamente lo contrario."
 
 #: ../../doc/src/design.md:1
 msgid "LFortran Design"
-msgstr ""
+msgstr "Diseño de LFortran"
 
 #: ../../doc/src/design.md:3
 msgid "High Level Overview"
-msgstr ""
+msgstr "Descripción general de alto nivel"
 
 #: ../../doc/src/design.md:5 ../../doc/src/developer_tutorial.ipynb:16
 msgid ""
@@ -366,6 +442,10 @@ msgid ""
 "and users are encouraged to use them independently for other applications"
 " and build tools on top:"
 msgstr ""
+"LFortran está estructurado en torno a dos módulos independientes, AST y ASR, "
+"los cuales son independientes (completamente independientes del resto de "
+"LFortran) y se anima a los usuarios a usarlos de forma independiente para "
+"otras aplicaciones y crear herramientas en la parte superior:"
 
 #: ../../doc/src/design.md:10
 msgid ""
@@ -373,6 +453,10 @@ msgid ""
 " source code, strictly based on syntax, no semantic is included. The AST "
 "module can convert itself to Fortran source code."
 msgstr ""
+"Árbol de sintaxis abstracta (AST), módulo `lfortran.ast`: representa "
+"cualquier código fuente de Fortran, basado estrictamente en la sintaxis, no "
+"se incluye semántica. El módulo AST puede convertirse en código fuente de "
+"Fortran."
 
 #: ../../doc/src/design.md:14
 msgid ""
@@ -381,20 +465,26 @@ msgid ""
 "code is not allowed (an error will be given). The ASR module can convert "
 "itself to an AST."
 msgstr ""
+"Representación semántica abstracta (ASR), módulo `lfortran.asr`: Representa "
+"un código fuente de Fortran válido, se incluye toda la semántica. No se "
+"permite el código Fortran no válido (se dará un error). El módulo ASR puede "
+"convertirse en un AST."
 
 #: ../../doc/src/design.md:19
 msgid ""
 "The LFortran compiler is then composed of the following independent "
 "stages:"
 msgstr ""
+"El compilador LFortran está compuesto por las siguientes etapas "
+"independientes:"
 
 #: ../../doc/src/design.md:21
 msgid "Parsing: converts Fortran source code to an AST"
-msgstr ""
+msgstr "Análisis: convierte el código fuente de Fortran en un AST"
 
 #: ../../doc/src/design.md:22
 msgid "Semantic: converts an AST to an ASR"
-msgstr ""
+msgstr "Semántica: Convertir un AST para un ASR"
 
 #: ../../doc/src/design.md:23
 msgid ""
@@ -402,6 +492,9 @@ msgid ""
 "(things like inlining functions, eliminating redundant expressions or "
 "statements, etc.)"
 msgstr ""
+"Optimización de alto nivel: optimizar ASR para un ASR posiblemente mas "
+"simple y mas rápido (cosas como alinear funciones, eliminar expresiones o "
+"declaraciones redundantes, etc.)"
 
 #: ../../doc/src/design.md:26
 msgid ""
@@ -409,6 +502,10 @@ msgid ""
 " an LLVM IR. This stage also does all other optimizations that do not "
 "produce an ASR, but still make sense to do before passing to LLVM IR."
 msgstr ""
+"Generación de código LLVM IR y optimizaciones de nivel inferior: convierte "
+"un ASR en un LLVM IR. Esta etapa también realiza todas las demás "
+"optimizaciones que no producen un ASR, pero que aún tiene sentido antes de "
+"pasar a LLVM IR."
 
 #: ../../doc/src/design.md:29
 msgid ""
@@ -417,6 +514,10 @@ msgid ""
 " file, or it is loaded and executed using JIT as part of the interactive "
 "LFortran session or in a Jupyter kernel)."
 msgstr ""
+"Generación de código de máquina: LLVM luego realiza todas sus optimizaciones "
+"y genera código de máquina (como un ejecutable binario, una biblioteca, un "
+"archivo de objeto, o se carga y ejecuta usando JIT como parte de la sesión "
+"interactiva de LFortran o en un núcleo de Jupyter)."
 
 #: ../../doc/src/design.md:34
 msgid ""
@@ -428,56 +529,71 @@ msgid ""
 "machine code directly. In other words, one can use LFortran to easily "
 "convert between the three equivalent representations:"
 msgstr ""
+"LFortran está estructurado como una biblioteca, por lo que, por ejemplo, se "
+"puede usar el analizador para obtener un AST y hacer algo con él, o se puede "
+"usar el analizador semántico para obtener ASR y hacer algo con él. Uno puede "
+"generar la ASR directamente (por ejemplo, desde SymPy) y luego convertirlo a "
+"AST y a un código fuente de Fortran, o usar LFortran para compilarlo en "
+"código de máquina directamente. En otras palabras, uno puede usar LFortran "
+"para convertir fácilmente entre las tres representaciones equivalentes:"
 
 #: ../../doc/src/design.md:42
 msgid "Fortran source code"
-msgstr ""
+msgstr "Código fuente de Fortran"
 
 #: ../../doc/src/design.md:43 ../../doc/src/developer_tutorial.ipynb:23
 msgid "Abstract Syntax Tree (AST)"
-msgstr ""
+msgstr "Árbol de sintaxis abstracta (AST)"
 
 #: ../../doc/src/design.md:44 ../../doc/src/developer_tutorial.ipynb:159
 msgid "Abstract Semantic Representation (ASR)"
-msgstr ""
+msgstr "Representación semántica abstracta (ASR)"
 
 #: ../../doc/src/design.md:46
 msgid "They are all equivalent in the following sense:"
-msgstr ""
+msgstr "Estos son todos equivalentes en el siguiente sentido:"
 
 #: ../../doc/src/design.md:48
 msgid "Any ASR can always be converted to an equivalent AST"
-msgstr ""
+msgstr "Cualquier ASR puede siempre ser convertido a un AST equivalente"
 
 #: ../../doc/src/design.md:49
 msgid "Any AST can always be converted to an equivalent Fortran source code"
 msgstr ""
+"Cualquier AST puede ser siempre convertido a un código fuente Fortran "
+"equivalente"
 
 #: ../../doc/src/design.md:50
 msgid ""
 "Any Fortran source code can always be either converted to an equivalent "
 "AST or one gets a syntax error"
 msgstr ""
+"Cualquier código fuente de Fortran siempre se puede convertir a un AST "
+"equivalente o se obtiene un error de sintaxis"
 
 #: ../../doc/src/design.md:52
 msgid ""
 "Any AST can always be either converted to an equivalent ASR or one gets a"
 " semantic error"
 msgstr ""
+"Cualquier AST siempre se puede convertir a un ASR equivalente o se obtiene "
+"un error semántico"
 
 #: ../../doc/src/design.md:55
 msgid ""
 "So when a conversion can be done, they are equivalent, and the conversion"
 " can always be done unless the code is invalid."
 msgstr ""
+"Así, cuando se puede realizar una conversión estos son equivalentes, y la "
+"conversión siempre se puede realizar a menos que el código no sea válido."
 
 #: ../../doc/src/design.md:58
 msgid "ASR Design Details"
-msgstr ""
+msgstr "Detalles de diseño de una ASR"
 
 #: ../../doc/src/design.md:60
 msgid "The ASR is designed to have the following features:"
-msgstr ""
+msgstr "Una ASR está diseñada para tener las características siguientes:"
 
 #: ../../doc/src/design.md:62
 msgid ""
@@ -485,12 +601,18 @@ msgid ""
 " not lose any semantic information). ASR can be converted to AST, and AST"
 " to Fortran source code which is functionally equivalent to the original."
 msgstr ""
+"Una ASR sigue siendo semánticamente equivalente al código Fortran original ("
+"esta no pierde información semántica). Una ASR puede ser convertida a un "
+"AST, y un AST a un código fuente Fortran que es funcionalmente equivalente "
+"al original."
 
 #: ../../doc/src/design.md:66
 msgid ""
 "ASR is as simple as possible: it does not contain any information that "
 "could not be inferred from ASR."
 msgstr ""
+"Una ASR es lo más simple posible: no contiene ninguna información que no "
+"pueda deducirse de una ASR."
 
 #: ../../doc/src/design.md:69
 msgid ""
@@ -508,10 +630,23 @@ msgid ""
 "always contain valid Fortran code and the rest of LFortran can depend on "
 "it."
 msgstr ""
+"Las clases ASR C++ (en el futuro) están diseñadas de manera similar a "
+"SymEngine: se construyen una vez y luego son inmutables. El constructor "
+"verifica en modo depuración que se cumplan todos los requisitos (por "
+"ejemplo, que todas las variables en una función tengan un conjunto de "
+"argumentos ficticios, que las matrices de forma explícita no se puedan "
+"asignar y todos los demás requisitos de Fortran para que sea un código "
+"válido), pero en modo de lanzamiento, construye rápidamente la clase sin "
+"controles. Luego, hay clases de constructores que construyen las clases ASR "
+"C++ para cumplir con los requisitos (verificados en el modo de depuración) y "
+"el constructor da un mensaje de error si un código no es un código Fortran "
+"válido, y si no da un mensaje de error, entonces las clases ASR C++ están "
+"construidas correctamente. Así, por construcción, las clases ASR siempre "
+"contienen código Fortran válido y el resto de LFortran puede depender de él."
 
 #: ../../doc/src/design.md:82
 msgid "Notes:"
-msgstr ""
+msgstr "Notas:"
 
 #: ../../doc/src/design.md:84
 msgid ""
@@ -519,6 +654,9 @@ msgid ""
 "multiline/single line if statement distinction, case sensitivity of "
 "keywords."
 msgstr ""
+"Información que se pierde al analizar la fuente en un AST: espacios en "
+"blanco, distinción de declaración if de varias líneas/una sola línea, "
+"distinción entre mayúsculas y minúsculas de palabras clave."
 
 #: ../../doc/src/design.md:87
 msgid ""
@@ -529,6 +667,11 @@ msgid ""
 "order), as ASR only represents the aggregated type information in the "
 "symbol table."
 msgstr ""
+"Información que se pierde al pasar de un AST a una ASR: sintaxis detallada, "
+"cómo se definieron las variables y el orden de los atributos de tipo (si la "
+"dimensión de matriz usa el atributo `dimensión` o paréntesis en la variable, "
+"o cuántas variables hay por línea de declaración o su orden), ya que una ASR "
+"solo representa la información de tipo agregada en la tabla de símbolos."
 
 #: ../../doc/src/design.md:90
 msgid ""
@@ -545,12 +688,27 @@ msgid ""
 "example a function references a module, a module references the global "
 "scope)."
 msgstr ""
+"Una ASR es la forma más sencilla de generar código Fortran, ya que uno no "
+"tiene que preocuparse por la sintaxis detallada (como en un AST) sobre cómo "
+"y dónde se declaran las cosas. Uno especifica la tabla de símbolos para un "
+"módulo, luego para cada símbolo (funciones, variables globales, tipos, ...) "
+"uno especifica las variables locales y si se trata de una interfaz, entonces "
+"uno necesita especificar dónde puede encontrar una implementación, de lo "
+"contrario un cuerpo se suministra con declaraciones, esos nodos son casi los "
+"mismos que en un AST, excepto que cada variable es solo una referencia a un "
+"símbolo en la tabla de símbolos (por lo que, por construcción, uno no puede "
+"tener variables indefinidas). La tabla de símbolos para cada nodo, como "
+"Función o Módulo, también hace referencia a su padre (por ejemplo, una "
+"función hace referencia a un módulo, un módulo hace referencia al ámbito "
+"global)."
 
 #: ../../doc/src/design.md:102
 msgid ""
 "The ASR can be directly converted to an AST without gathering any other "
 "information. And the AST directly to Fortran source code."
 msgstr ""
+"Una ASR se puede convertir directamente en un AST sin recopilar ninguna otra "
+"información. Y un AST directamente al código fuente de Fortran."
 
 #: ../../doc/src/design.md:105
 msgid ""
@@ -558,10 +716,14 @@ msgid ""
 "is enforced by checks in the ASR C++ constructors (in Debug build). When "
 "an ASR is used, one can assume it is valid."
 msgstr ""
+"Una ASR siempre representa un código Fortran semánticamente válido. Esto se "
+"aplica mediante comprobaciones en los constructores de una ASR C++ (en la "
+"compilación de depuración). Cuando se utiliza una ASR, se puede suponer que "
+"es válido."
 
 #: ../../doc/src/design.md:109
 msgid "Fortran 2008"
-msgstr ""
+msgstr "Fortran 2008"
 
 #: ../../doc/src/design.md:111
 msgid ""
@@ -570,18 +732,22 @@ msgid ""
 "collection of _program units_ (either all in one file, or in separate "
 "files), where each _program unit_ is one of:"
 msgstr ""
+"Fortran 2008 [estándar](https://j3-fortran.org/doc/year/10/10-007.pdf) "
+"capítulo 2 \"Conceptos de Fortran\" especifica que el código Fortran es una "
+"colección de _unidades de programa_ (ya sea todo en un archivo , o en "
+"archivos separados), donde cada _unidad de programa_ es una de:"
 
 #: ../../doc/src/design.md:116 ../../doc/src/design.md:131
 msgid "main program"
-msgstr ""
+msgstr "programa principal"
 
 #: ../../doc/src/design.md:117 ../../doc/src/design.md:132
 msgid "module or submodule"
-msgstr ""
+msgstr "módulo o submódulo"
 
 #: ../../doc/src/design.md:118 ../../doc/src/design.md:133
 msgid "function or subroutine"
-msgstr ""
+msgstr "función o subrutina"
 
 #: ../../doc/src/design.md:120
 msgid ""
@@ -4509,4 +4675,3 @@ msgstr ""
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/nint/t01_scalar_real.f90)"
 msgstr ""
-

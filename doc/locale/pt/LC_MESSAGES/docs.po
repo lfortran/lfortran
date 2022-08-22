@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-19 09:32+0000\n"
+"PO-Revision-Date: 2022-08-22 11:19+0000\n"
 "Last-Translator: Ian Giestas Pauli <iangiestaspauli@gmail.com>\n"
 "Language-Team: Portuguese <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/pt/>\n"
@@ -30,7 +30,7 @@ msgstr "Tomemos um simples código Fortran:"
 
 #: ../../doc/src/ast_and_asr.ipynb:22
 msgid "and look at how the AST and ASR looks like."
-msgstr ""
+msgstr "e veja como são a AST e a ASR."
 
 #: ../../doc/src/ast_and_asr.ipynb:25 ../../doc/src/progress.md
 msgid "AST"
@@ -79,6 +79,8 @@ msgid ""
 "AST must represent all the ``use`` statements and the ``interface`` "
 "block, and keep things semantically consistent."
 msgstr ""
+"As AST devem representar todos os comandos ``use`` e blocos de ``interface``"
+", bem como manter as coisas semanticamente consistentes."
 
 #: ../../doc/src/ast_and_asr.ipynb:162
 msgid ""
@@ -87,16 +89,22 @@ msgid ""
 " are defined in the ``gfort_interop`` module, and so ASR does not have "
 "any of these declaration nodes."
 msgstr ""
+"As ASR, por outro lado, devem manter os registros de ``c_desc1_int32``, "
+"``c_desc1_t`` e ``f2b_c_wrapper`` na tabela de símbolos e sabe que eles "
+"foram definidos no módulo ``gfort_interop`` e portanto a ASR não possui "
+"nenhuma desses nós de declaração."
 
 #: ../../doc/src/ast_and_asr.ipynb:164
 msgid ""
 "When converting from ASR to AST, LFortran will create all the appropriate"
 " AST declaration nodes automatically and correctly."
 msgstr ""
+"Ao converter uma ASR em uma AST, o LFortran criará todos os nós de "
+"declaração da AST apropriados de forma automática e correta."
 
 #: ../../doc/src/contributing.md:1
 msgid "Contributing"
-msgstr ""
+msgstr "Contribuindo"
 
 #: ../../doc/src/contributing.md:3
 msgid ""
@@ -105,96 +113,115 @@ msgid ""
 " do, it is not complicated. We will help you with any technical issues "
 "and help improve your contribution so that it can be merged."
 msgstr ""
+"Aceitamos contribuições de qualquer pessoa, mesmo se você é novo(a) ao mundo "
+"do código fonte aberto. Pode parecer assustador contribuir com um compilador "
+"logo no início, mas por favor o faça, não é complicado. Vamos te ajudar com "
+"qualquer problema técnico e ajudar com sua contribuição até que esta seja "
+"implementada."
 
 #: ../../doc/src/contributing.md:8
 msgid "Basic Setup"
-msgstr ""
+msgstr "Configuração Básica"
 
 #: ../../doc/src/contributing.md:10
 msgid "To contribute, make sure your set up:"
-msgstr ""
+msgstr "Para contribuir, certifique-se de sua configuração:"
 
 #: ../../doc/src/contributing.md:12
 msgid "Your username + email"
-msgstr ""
+msgstr "Seu nome de usuário + e-mail"
 
 #: ../../doc/src/contributing.md:13
 msgid "Your `~/.gitconfig`"
-msgstr ""
+msgstr "Seu `~/.gitconfig`"
 
 #: ../../doc/src/contributing.md:14
 msgid "Your shell prompt to display the current branch name"
-msgstr ""
+msgstr "Seu prompt de shell para exibir o nome atual do branch"
 
 #: ../../doc/src/contributing.md:16
 msgid "Fork LFortran"
-msgstr ""
+msgstr "Fork o LFortran"
 
 #: ../../doc/src/contributing.md:18
 msgid ""
 "Step 1. Create a fork of the [project "
 "repository](https://github.com/lfortran/lfortran)"
 msgstr ""
+"Passo 1. Crie um fork do [repositório do projeto](https://github.com/"
+"lfortran/lfortran)"
 
 #: ../../doc/src/contributing.md:20
 msgid ""
 "Step 2. Set up your [SSH key](https://docs.github.com/en/authentication"
 "/connecting-to-github-with-ssh) with GitHub"
 msgstr ""
+"Passo 2. Configure sua [chave SSH](https://docs.github.com/en/authentication/"
+"connecting-to-github-with-ssh) no GitHub"
 
 #: ../../doc/src/contributing.md:22
 msgid ""
 "Step 3. Clone the project repository from GitHub and set up your remote "
 "repository"
 msgstr ""
+"Passo 3. Clone o repositório do projeto a partir do GitHub e configure seu "
+"repositório remoto"
 
 #: ../../doc/src/contributing.md:29
 msgid ""
 ":fontawesome-solid-edit: `REMOTE_NAME` is the name of your remote "
 "repository and could be any name you like, for example your first name."
 msgstr ""
+":fontawesome-solid-edit: `REMOTE_NAME` é o nome do seu repositório remoto e "
+"pode ser qualquer nome que você queira, por exemplo seu primeiro nome."
 
 #: ../../doc/src/contributing.md:31
 msgid ""
 ":fontawesome-solid-edit: `YOUR_GITHUB_ID` is your user ID on GitHub and "
 "should be part of your account path."
 msgstr ""
+":fontawesome-solid-edit: `YOUR_GITHUB_ID` é a sua identificação de usuário "
+"no GitHub e deve ser parte do caminho da sua conta."
 
 #: ../../doc/src/contributing.md:33
 msgid ""
 "You can use `git remote -v` to check if the new remote is set up "
 "correctly."
 msgstr ""
+"Você pode usar `git remote -v`para checar se o novo repositório está "
+"configurado corretamente."
 
 #: ../../doc/src/contributing.md:35
 msgid "Send a New Merge Request"
-msgstr ""
+msgstr "Envie uma nova requisição de Merge"
 
 #: ../../doc/src/contributing.md:37
 msgid "Step 1. Create a new branch"
-msgstr ""
+msgstr "Passo 1. Crie um novo ramo"
 
 #: ../../doc/src/contributing.md:42
 msgid "Step 2. Make changes in relevant file(s)"
-msgstr ""
+msgstr "Passo 3. Faça mudanças no(s) arquivo(s) relevante(s)"
 
 #: ../../doc/src/contributing.md:44
 msgid "Step 3. Commit the changes:"
-msgstr ""
+msgstr "Passo 3. Realize o commit de suas mudanças:"
 
 #: ../../doc/src/contributing.md:51
 msgid ""
 "[Here](https://chris.beams.io/posts/git-commit/) are some great tips on "
 "writing good commit messages."
 msgstr ""
+"[Veja aqui](https://chris.beams.io/posts/git-commit/) algumas dicas "
+"excelentes sobre como escrever boas mensagens de commit."
 
 #: ../../doc/src/contributing.md:53
 msgid "Step 4. Check to ensure that your changes look good"
-msgstr ""
+msgstr "Passo 4. Se assegure de que suas mudanças estão boas"
 
 #: ../../doc/src/contributing.md:58
 msgid "Step 5. Send the merge request"
-msgstr ""
+msgstr "Passo 5. Envie o pedido de merge"
 
 #: ../../doc/src/contributing.md:64
 msgid ""
@@ -204,46 +231,58 @@ msgid ""
 " clicking on the link, write a title and a concise description then click"
 " the \"Create\" button. Yay you are now all set."
 msgstr ""
+"O comando irá enviar o novo ramo `fix1` para o seu repositório remoto "
+"`REMOTE_NAME` que você criou anteriormente. Além disso, será mostrado um "
+"link que você pode clicar para abrir o novo pedido de merge. Após clicar no "
+"link, escreva um título com uma descrição breve e clique em no botão \"Create"
+"\". Uhull! Agora está tudo pronto."
 
 #: ../../doc/src/contributing.md:66
 msgid "Add New Features"
-msgstr ""
+msgstr "Adicionar Novos Recursos"
 
 #: ../../doc/src/contributing.md:68
 msgid ""
 "The example below shows the steps it would take to create a caret binary "
 "operator **^** which computes the average value of the two operands."
 msgstr ""
+"O exemplo abaixo mostra os passos que seriam necessários para criar o "
+"operador binário **^** que calcula o valor médio dos dois operandos."
 
 #: ../../doc/src/contributing.md:70
 msgid "Create New Token(s)"
-msgstr ""
+msgstr "Crie Novos Tokens"
 
 #: ../../doc/src/contributing.md:72
 msgid ""
 "We extend the *tokenizer.re* as well as *parser.yy* to add the new token "
 "**^**. We also tell LFortran how to print the new token in *parser.cpp*."
 msgstr ""
+"Estendemos o *tokenizer.re* bem como o *parser.yy* de modo a adicionar o "
+"novo token **^**. Também dizemos ao LFortran como ele deve mostrar na tela o "
+"novo token no arquivo *parser.cpp*."
 
 #: ../../doc/src/contributing.md:75
 msgid ":fontawesome-solid-code: *src/lfortran/parser/tokenizer.re*"
-msgstr ""
+msgstr ":fontawesome-solid-code: *src/lfortran/parser/tokenizer.re*"
 
 #: ../../doc/src/contributing.md:80
 msgid ":fontawesome-solid-code: *src/lfortran/parser/parser.yy*"
-msgstr ""
+msgstr ":fontawesome-solid-code: *src/lfortran/parser/parser.yy*"
 
 #: ../../doc/src/contributing.md:85
 msgid ":fontawesome-solid-code: *src/lfortran/parser/parser.cpp*"
-msgstr ""
+msgstr ":fontawesome-solid-code: *src/lfortran/parser/parser.cpp*"
 
 #: ../../doc/src/contributing.md:94
 msgid "The added code is tested with `lfortran --show-tokens examples2/expr2.f90`"
 msgstr ""
+"O código adicionado é testado com o comando `lfortran --show-tokens "
+"examples2/expr2.f90`"
 
 #: ../../doc/src/contributing.md:96
 msgid "Parse the New Token"
-msgstr ""
+msgstr "Realize o Parsing do Novo Token"
 
 #: ../../doc/src/contributing.md:98
 msgid ""
@@ -253,50 +292,61 @@ msgid ""
 "*semantics.h*.Finally we extend *pickle.cpp* so that the new operator can"
 " print itself."
 msgstr ""
+"Agora temos que fazer o parsing do novo operador. Nós adicionamos ele à AST "
+"ao extender o BinOp com o operador \"chapéu\" ao modificar o arquivo *AST."
+"asdl*. Então, colocamos ele no *parse.yy* para realizar o parsing "
+"apropriadamente e gerar a nova AST em *semantics.h*. Por fim, estendemos o "
+"arquivo *pickle.cpp* para que o novo operador possa ser mostrado."
 
 #: ../../doc/src/contributing.md:102
 msgid ":fontawesome-solid-code:*grammar/AST.asdl*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*grammar/AST.asdl*"
 
 #: ../../doc/src/contributing.md:107
 msgid ":fontawesome-solid-code:*src/lfortran/parser/parser.yy*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/parser/parser.yy*"
 
 #: ../../doc/src/contributing.md:116
 msgid ":fontawesome-solid-code:*src/lfortran/parser/semantics.h*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/parser/semantics.h*"
 
 #: ../../doc/src/contributing.md:121
 msgid ":fontawesome-solid-code:*src/lfortran/pickle.cpp*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/pickle.cpp*"
 
 #: ../../doc/src/contributing.md:132
 msgid "The section is tested with `lfortran --show-ast examples/expr2.f90`"
 msgstr ""
+"Esta seção é testada usando o comando `lfortran --show-ast examples/expr2."
+"f90`"
 
 #: ../../doc/src/contributing.md:134
 msgid "Implement the Semantics of the New Token"
-msgstr ""
+msgstr "Implementar a Semântica do Novo Token"
 
 #: ../../doc/src/contributing.md:136
 msgid ""
 "We first extend the ASR in *ASR.asdl* and add ^ as a BinOp operator "
 "option."
 msgstr ""
+"Primeiro estendemos a ASR em *ASR.asdl* e adicionamos o \"^\" como um "
+"operador do tipo BinOp."
 
 #: ../../doc/src/contributing.md:138
 msgid ":fontawesome-solid-code:*src/libasr/ASR.asdl*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/libasr/ASR.asdl*"
 
 #: ../../doc/src/contributing.md:142
 msgid ":fontawesome-solid-code:*src/lfortran/semantics/ast_common_visitor.h*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/semantics/ast_common_visitor.h*"
 
 #: ../../doc/src/contributing.md:179
 msgid ""
 "Then we transform it from AST to ASR by extending "
 "*src/lfortran/semantics/ast_common_visitor.h*."
 msgstr ""
+"Então, transformamos da AST para a ASR editando o arquivo *src/lfortran/"
+"semantics/ast_common_visitor.h*."
 
 #: ../../doc/src/contributing.md:181
 msgid ""
