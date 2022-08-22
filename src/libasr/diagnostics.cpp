@@ -173,7 +173,7 @@ std::string render_diagnostic_human(const Diagnostic &d, bool use_colors) {
     }
     std::stringstream out;
 
-    auto [message_type, primary_color, type_color] = diag_level_to_str(d);
+    auto [message_type, primary_color, type_color] = diag_level_to_str(d, use_colors);
     out << type_color << message_type << reset << bold << ": " << d.message << reset << std::endl;
 
     if (d.labels.size() > 0) {
@@ -302,19 +302,20 @@ std::string render_diagnostic_short(const Diagnostic &d) {
         out << s.filename << ":" << s.first_line << "-" << s.last_line << ":";
         out << s.first_column << "-" << s.last_column << ": ";
     }
-    auto [message_type, primary, type] = diag_level_to_str(d);
+    auto [message_type, primary, type] = diag_level_to_str(d, false);
     out << message_type << ": " << d.message << std::endl;
 
     return out.str();
 }
 
-std::tuple<std::string, std::string, std::string> diag_level_to_str(const Diagnostic &d){
+std::tuple<std::string, std::string, std::string> diag_level_to_str(
+    const Diagnostic &d, const bool use_color) {
     std::string message_type = "";
     std::string primary_color = "";
     std::string type_color = "";
     switch (d.level) {
         case (Level::Error):
-            primary_color = ColorsANSI::BOLDRED;
+            primary_color = use_color ? ColorsANSI::BOLDRED : "";
             type_color = primary_color;
             switch (d.stage) {
                 case (Stage::CPreprocessor):
@@ -341,23 +342,23 @@ std::tuple<std::string, std::string, std::string> diag_level_to_str(const Diagno
             }
             break;
         case (Level::Warning):
-            primary_color = ColorsANSI::BOLDYELLOW;
+            primary_color = use_color ? ColorsANSI::BOLDYELLOW : "";
             type_color = primary_color;
             message_type = "warning";
             break;
         case (Level::Note):
-            primary_color = ColorsANSI::BOLD;
+            primary_color = use_color ? ColorsANSI::BOLD : "";
             type_color = primary_color;
             message_type = "note";
             break;
         case (Level::Help):
-            primary_color = ColorsANSI::BOLD;
+            primary_color = use_color ? ColorsANSI::BOLD : "";
             type_color = primary_color;
             message_type = "help";
             break;
         case (Level::Style):
-            primary_color = ColorsANSI::BOLDGREEN;
-            type_color = ColorsANSI::BOLDYELLOW;
+            primary_color = use_color ? ColorsANSI::BOLDGREEN : "";
+            type_color = use_color ? ColorsANSI::BOLDYELLOW : "";
             message_type = "style suggestion";
             break;
     }

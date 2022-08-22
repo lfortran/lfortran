@@ -220,6 +220,7 @@ std::string render_diagnostic_short(Diagnostic &d, const std::string &input,
  * Any changes to this method must be reflected in the linters.
  *
  * @param d Diagnostic object.
+ * @param use_colors Include ANSI color codes in the return tuple.
  * @return std::tuple<std::string, std::string, std::string>
  * message_type, primary color & type color
  *
@@ -245,7 +246,8 @@ std::string render_diagnostic_short(Diagnostic &d, const std::string &input,
  * - Severity: Style
  *    + style suggestion
  */
-std::tuple<std::string, std::string, std::string> diag_level_to_str(const Diagnostic &d);
+std::tuple<std::string, std::string, std::string> diag_level_to_str(const Diagnostic &d,
+        const bool use_colors = true);
 
 } // namespace diag
 } // namespace LFortran
