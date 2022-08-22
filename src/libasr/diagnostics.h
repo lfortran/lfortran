@@ -1,6 +1,7 @@
 #ifndef LFORTRAN_DIAGNOSTICS_H
 #define LFORTRAN_DIAGNOSTICS_H
 
+#include <tuple>
 #include <libasr/location.h>
 #include <libasr/stacktrace.h>
 
@@ -191,6 +192,39 @@ std::string render_diagnostic_human(Diagnostic &d, const std::string &input,
         const LocationManager &lm, bool use_colors, bool show_stacktrace); 
 std::string render_diagnostic_short(Diagnostic &d, const std::string &input,
         const LocationManager &lm); 
+/**
+ * @brief Convert diagnostic `Level` i.e. severity to string and color accordingly.
+ *
+ * This method defines the Severity part of the REGEX linters must implement.
+ * Any changes to this method must be reflected in the linters.
+ *
+ * @param d Diagnostic object.
+ * @return std::tuple<std::string, std::string, std::string>
+ * message_type, primary color & type color
+ *
+ * Possible `messages_types` and their severities are:
+ * - Severity: Error
+ *    + C preprocessor error
+ *    + prescanner error
+ *    + tokenizer error
+ *    + syntax error
+ *    + semantic error
+ *    + ASR pass error
+ *    + code generation error
+ *
+ * - Severity: Warning
+ *    + warning
+ *
+ * - Severity: Note
+ *    + note
+ *
+ * - Severity: Help
+ *    + help
+ *
+ * - Severity: Style
+ *    + style suggestion
+ */
+std::tuple<std::string, std::string, std::string> diag_level_to_str(const Diagnostic &d);
 
 } // namespace diag
 } // namespace LFortran
