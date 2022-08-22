@@ -386,15 +386,14 @@ std::string render_diagnostic_short(const Diagnostic &d) {
             break;
     }
 
+    // Message anatomy:
+    // <filename>:<line start>-<end>:<column start>-<end>: <severity>: <message>
     if (d.labels.size() > 0) {
         Label l = d.labels[0];
         Span s = l.spans[0];
         // TODO: print the primary line+column here, not the first label:
-        out << s.filename << ":" << s.first_line << ":" << s.first_column;
-        if (s.first_line != s.last_line) {
-            out << " - " << s.last_line << ":" << s.last_column;
-        }
-        out << " ";
+        out << s.filename << ":" << s.first_line << "-" << s.last_line << ":";
+        out << s.first_column << "-" << s.last_column << ": ";
     }
 
     out << message_type << ": " << d.message << std::endl;
