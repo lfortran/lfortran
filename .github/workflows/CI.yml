@@ -74,8 +74,8 @@ jobs:
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\test.xsh
 
-  build_to_wasm:
-    name: Build LFortran to wasm
+  build_to_wasm_and_upload:
+    name: Build LFortran to WASM and Upload
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v2
@@ -131,12 +131,12 @@ jobs:
             source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
             node src/lfortran/tests/test_lfortran.js
 
-      - name: Upload to dev.lfortran.org
+      - name: Upload to wasm_builds
         shell: bash -l {0}
         run: |
             ci/upload_lfortran_wasm.sh
         env:
-          SSH_PRIVATE_KEY_LCOMPILERS_FRONTEND: ${{ secrets.SSH_PRIVATE_KEY_LCOMPILERS_FRONTEND }}
+          SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
 
   debug:
     name: Check Debug build
@@ -346,21 +346,16 @@ jobs:
           environment-file: ci/environment_linux.yml
           extra-specs: |
             python=3.10
-            nbconvert=5.6.0
-            mkdocs=1.3.0
-
-      - name: Install Dependencies
-        shell: bash -l {0}
-        run: |
-          pip install mkdocs-material==8.2.16
-          pip install 'jinja2 < 3.1'
-          pip install jupyter-client==6.1.12
+            nbsphinx=0.8.9
+            myst-parser=0.18.0
+            sphinx=4.5.0
+            sphinx-copybutton=0.5.0
+            sphinx-material=0.0.35
 
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
-
 
       - name: Build Kernel
         shell: bash -l {0}
@@ -382,15 +377,14 @@ jobs:
 
       - name: Build Docs
         shell: bash -l {0}
+        working-directory: doc
         run: |
-          cd doc
-          python convert_nb.py
-          mkdocs build
+          $(command -v python) build.py
 
       - name: Upload Docs
         shell: bash -l {0}
+        working-directory: doc
         run: |
-          cd doc
           ../ci/upload_docs.sh
         env:
           SSH_PRIVATE_KEY_DOCS: ${{ secrets.SSH_PRIVATE_KEY_DOCS }}

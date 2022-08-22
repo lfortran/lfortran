@@ -130,3 +130,37 @@ We expect to be finished with the step 2. by the end of summer 2019, hopefully s
 Finally the step 3. will improve LFortran overall, allowing the first users
 to contribute back, growing the community and making LFortran gradually useful
 for more and more people.
+
+```{toctree}
+:caption: Getting started
+:hidden:
+installation
+language
+```
+
+```{toctree}
+:caption: LFortran Development Status
+:hidden:
+progress
+```
+
+```{toctree}
+:caption: Developer's Guide
+:hidden:
+design
+developer_tutorial
+ast_and_asr
+contributing
+```
+
+```{toctree}
+:caption: LFortran Intrinsics
+:hidden:
+intrinsics/array
+intrinsics/bit
+intrinsics/character
+intrinsics/kind-type
+intrinsics/mathematical
+intrinsics/numeric
+intrinsics/misc
+```

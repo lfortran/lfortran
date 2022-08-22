@@ -384,10 +384,7 @@ Result<std::string> FortranEvaluator::get_wat(const std::string &code,
     Result<Vec<uint8_t>> wasm = get_wasm(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (wasm.ok) {
-            wasm::WASMDecoder wasm_decoder(al);
-            wasm_decoder.wasm_bytes.from_pointer_n(wasm.result.data(), wasm.result.size());
-            wasm_decoder.decode_wasm();
-            return wasm_decoder.get_wat();
+            return wasm_to_wat(wasm.result, al, diagnostics);
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
         return wasm.error;
