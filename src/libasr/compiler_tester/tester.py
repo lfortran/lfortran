@@ -352,6 +352,16 @@ def tester_main(compiler, single_test):
     os.environ["PATH"] = os.path.join(SRC_DIR, "bin") \
         + os.pathsep + os.environ["PATH"]
     test_data = toml.load(open(os.path.join(ROOT_DIR, "tests", "tests.toml")))
+
+    if list_tests:
+        print("All available tests and their options:")
+        test_data["test"] = sorted(test_data["test"], key = lambda d: d["filename"])
+        for test in test_data["test"]:
+            options = [k for k in test.keys() if k != "filename"]
+            test_and_options = test["filename"] + " " + str(options) 
+            log.info(test_and_options)
+        return
+
     if specific_test:
         # some fuzzy comparison to get all seemingly fitting tests tested
         specific = [test for test in test_data["test"]
@@ -385,8 +395,6 @@ def tester_main(compiler, single_test):
             for f in futures:
                 if not f:
                     ex.shutdown(wait=False)
-    if list_tests:
-        return
 
     if update_reference:
         log.info("Test references updated.")
