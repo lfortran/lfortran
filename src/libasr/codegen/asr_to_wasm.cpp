@@ -202,6 +202,29 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             import_function(ImportFunc);
         }
 
+        // In WASM: The indices of the imports precede the indices of other
+        // definitions in the same index space. Therefore, declare the import
+        // functions before defined functions
+        for (auto &item : global_scope->get_scope()) {
+            if (ASR::is_a<ASR::Program_t>(*item.second)) {
+                ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(item.second);
+                for (auto &item : p->m_symtab->get_scope()) {
+                    if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                        ASR::Function_t *fn =
+                            ASR::down_cast<ASR::Function_t>(item.second);
+                        if (fn->m_abi == ASR::abiType::BindC &&
+                            fn->m_deftype == ASR::deftypeType::Interface &&
+                            !ASRUtils::is_intrinsic_function2(fn)) {
+                            wasm::emit_import_fn(m_import_section, m_al, "js",
+                                                 fn->m_name, no_of_types);
+                            no_of_imports++;
+                            emit_function_prototype(*fn);
+                        }
+                    }
+                }
+            }
+        }
+
         wasm::emit_import_mem(m_import_section, m_al, "js", "memory",
                               min_no_pages, max_no_pages);
         no_of_imports++;
@@ -590,12 +613,16 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     bool is_unsupported_function(const ASR::Function_t &x) {
+        if (!x.n_body) {
+            return true;
+        }
         if (x.m_abi == ASR::abiType::BindC &&
-            x.m_deftype == ASR::deftypeType::Interface &&
-            ASRUtils::is_intrinsic_function2(&x)) {
-            diag.codegen_warning_label(
-                "WASM: C Intrinsic Functions not yet spported",
-                {x.base.base.loc}, std::string(x.m_name));
+            x.m_deftype == ASR::deftypeType::Interface) {
+            if (ASRUtils::is_intrinsic_function2(&x)) {
+                diag.codegen_warning_label(
+                    "WASM: C Intrinsic Functions not yet spported",
+                    {x.base.base.loc}, std::string(x.m_name));
+            }
             return true;
         }
         for (size_t i = 0; i < x.n_body; i++) {
@@ -623,19 +650,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             return;
         }
         if (is_prototype_only) {
-            if (x.m_abi == ASR::abiType::BindC &&
-                x.m_deftype == ASR::deftypeType::Interface) {
-                wasm::emit_import_fn(m_import_section, m_al, "js", x.m_name,
-                                     no_of_types);
-                no_of_imports++;
-            }
             emit_function_prototype(x);
-            return;
-        }
-        if (x.m_abi == ASR::abiType::BindC &&
-            x.m_deftype == ASR::deftypeType::Interface) {
-            /* functions of abiType BindC and are Interfaces are already handled
-             */
             return;
         }
         emit_function_body(x);
