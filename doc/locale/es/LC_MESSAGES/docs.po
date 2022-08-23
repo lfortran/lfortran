@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-22 11:19+0000\n"
+"PO-Revision-Date: 2022-08-27 14:18+0000\n"
 "Last-Translator: Asdrubal Lozada-Blanco <aslozada@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/es/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.14-dev\n"
+"X-Generator: Weblate 4.14.1-dev\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../../doc/src/ast_and_asr.ipynb:9
@@ -755,10 +755,14 @@ msgid ""
 " initial values for data objects in named _common blocks_, but we do not "
 "recommend the use of _common blocks_ (use modules instead)."
 msgstr ""
+"Nota: También puede ser una unidad de programa de _bloques de datos_, que se "
+"utiliza para proporcionar valores iniciales para objetos de datos en "
+"_bloques comunes_ con nombre, pero no recomendamos el uso de _bloques "
+"comunes_ (utilice módulos en su lugar)."
 
 #: ../../doc/src/design.md:124
 msgid "LFortran Extension"
-msgstr ""
+msgstr "Extensión LFortran"
 
 #: ../../doc/src/design.md:126
 msgid ""
@@ -767,22 +771,26 @@ msgid ""
 "statements, declarations, use statements and expressions. We define "
 "_global scope_ as a collection of the following items:"
 msgstr ""
+"Extendemos el lenguaje Fortran introduciendo un _alcance global_, que no es "
+"sola la lista de _unidades de programa_ (como en F2800) sino que puede "
+"también incluir declaraciones, expresiones y declaraciones de uso. Definimos "
+"_alcance global_ como una colección de los elementos siguientes:"
 
 #: ../../doc/src/design.md:134
 msgid "use statement"
-msgstr ""
+msgstr "declaración de uso"
 
 #: ../../doc/src/design.md:135
 msgid "declaration"
-msgstr ""
+msgstr "declaración"
 
 #: ../../doc/src/design.md:136
 msgid "statement"
-msgstr ""
+msgstr "declaración"
 
 #: ../../doc/src/design.md:137
 msgid "expression"
-msgstr ""
+msgstr "expresión"
 
 #: ../../doc/src/design.md:139
 msgid ""
@@ -793,6 +801,13 @@ msgid ""
 "at the top level of _global scope_. Types must be fully specified inside "
 "main programs, modules, functions and subroutines, just like in F2008."
 msgstr ""
+"Además, si una variable no está definida en una instrucción de asignación ("
+"como `x = 5+3`), el tipo de variable se deduce del lado derecho (por "
+"ejemplo, `x` en `x = 5+3`). ` sería de tipo `integer`, y `y` en `y = 5._dp` "
+"sería de tipo `real(dp)`). Esta regla solo se aplica en el nivel superior de "
+"_alcance global_. Los tipos deben especificarse completamente dentro de los "
+"programas, módulos, funciones y subrutinas principales, al igual que en "
+"F2008."
 
 #: ../../doc/src/design.md:146
 msgid ""
@@ -801,24 +816,34 @@ msgid ""
 "functions, subroutines, statements and expressions at the top level of "
 "_global scope_ use and operate on this symbol table."
 msgstr ""
+"El _alcance global_ tiene su propia tabla de símbolos. El programa principal "
+"y el módulo/submódulo no ven ningún símbolo de esta tabla de símbolos. Pero "
+"las funciones, subrutinas, declaraciones y expresiones en el nivel superior "
+"del _alcance global_ usan y operan en esta tabla de símbolos."
 
 #: ../../doc/src/design.md:151
 msgid ""
 "The _global scope_ has the following symbols predefined in the symbol "
 "table:"
 msgstr ""
+"El _alcance global_ tiene los siguientes símbolos predefinidos en la tabla "
+"de símbolos:"
 
 #: ../../doc/src/design.md:153
 msgid ""
 "the usual standard set of Fortran functions (such as `size`, `sin`, "
 "`cos`, ...)"
 msgstr ""
+"el conjunto estándar habitual de funciones de Fortran (como `size`, `sin`, "
+"`cos`, ...)"
 
 #: ../../doc/src/design.md:155
 msgid ""
 "the `dp` double precision symbol, so that one can use `5._dp` for double "
 "precision."
 msgstr ""
+"el símbolo de doble precisión `dp`, por lo que se puede usar `5._dp` para "
+"doble precisión."
 
 #: ../../doc/src/design.md:158
 msgid ""
@@ -832,6 +857,15 @@ msgid ""
 "arguments returning the expression, compiled, loaded, executed and the "
 "return value is returned to the user."
 msgstr ""
+"Cada elemento del _alcance global_ se interpreta de la siguiente manera: el "
+"programa principal se compila en un ejecutable con el mismo nombre y se "
+"ejecuta; se compilan y cargan módulos, funciones y subrutinas; use sentencia "
+"y declaración agrega esos símbolos con el tipo adecuado en la tabla de "
+"símbolos _alcance global_, pero no genera ningún código; la declaración se "
+"envuelve en una subrutina anónima sin argumentos, se compila, se carga y se "
+"ejecuta; expresión se envuelve en una función anónima sin argumentos que "
+"devuelven la expresión, compilada, cargada, ejecutada y el valor de retorno "
+"se devuelve al usuario."
 
 #: ../../doc/src/design.md:168
 msgid ""
@@ -843,30 +877,37 @@ msgid ""
 "subroutines or functions and by adding type declarations) and compile it "
 "with `lfortran` or any other Fortran compiler."
 msgstr ""
+"El _alcance global_ siempre se interpreta, elemento por elemento, según el "
+"párrafo anterior. Está destinado a permitir el uso interactivo, la "
+"experimentación y la escritura de scripts simples. El código en _alcance "
+"global_ debe interpretarse usando `lfortran`. Para código más complejo (de "
+"producción), se recomienda convertirlo en módulos y programas (envolviendo "
+"sentencias sueltas en subrutinas o funciones y agregando declaraciones de "
+"tipo) y compilarlo con `lfortran` o cualquier otro compilador de Fortran."
 
 #: ../../doc/src/design.md:176
 msgid "Here are some examples of valid code in _global scope_:"
-msgstr ""
+msgstr "Aquí algunos ejemplos de código válidos en _alcance global_:"
 
 #: ../../doc/src/design.md:178
 msgid "Example 1"
-msgstr ""
+msgstr "Ejemplo 1"
 
 #: ../../doc/src/design.md:185
 msgid "Example 2"
-msgstr ""
+msgstr "Ejemplo 2"
 
 #: ../../doc/src/design.md:197
 msgid "Example 3"
-msgstr ""
+msgstr "Ejemplo 3"
 
 #: ../../doc/src/design.md:209
 msgid "Example 4"
-msgstr ""
+msgstr "Ejemplo 4"
 
 #: ../../doc/src/design.md:217
 msgid "Design Considerations"
-msgstr ""
+msgstr "Consideraciones de diseño"
 
 #: ../../doc/src/design.md:219
 msgid ""
@@ -877,6 +918,12 @@ msgid ""
 "inside functions, subroutines, modules or programs this relaxation does "
 "not apply."
 msgstr ""
+"La extensión LFortran de Fortran se eligió de manera que se minimice el "
+"número de cambios. En particular, solo el nivel superior del _alcance "
+"global_ ha relajado algunas de las reglas de Fortran (como hacer que la "
+"especificación de tipos sea opcional) para permitir un uso interactivo "
+"simple y rápido, pero dentro de las funciones, subrutinas, módulos o "
+"programas, esta relajación no se aplica."
 
 #: ../../doc/src/design.md:225
 msgid ""
@@ -885,20 +932,26 @@ msgid ""
 "Fortran code using programs and modules, so that it can be compiled by "
 "any Fortran compiler."
 msgstr ""
+"El número de cambios se mantuvo al mínimo para que sea sencillo convertir el "
+"código en _alcance global_ en código Fortran compatible con el estándar "
+"utilizando programas y módulos, de modo que pueda ser compilado por "
+"cualquier compilador de Fortran."
 
 #: ../../doc/src/developer_tutorial.ipynb:9
 msgid "Developer Tutorial"
-msgstr ""
+msgstr "Tutorial para desarrolladores"
 
 #: ../../doc/src/developer_tutorial.ipynb:11
 msgid ""
 "This is a tutorial for anybody who wants to either develop LFortran or "
 "build tools on top."
 msgstr ""
+"Este es un tutorial para cualquiera que quiera desarrollar LFortran o "
+"construir herramientas sobre este."
 
 #: ../../doc/src/developer_tutorial.ipynb:14
 msgid "Introduction"
-msgstr ""
+msgstr "Introducción"
 
 #: ../../doc/src/developer_tutorial.ipynb:18
 msgid ""
@@ -906,6 +959,9 @@ msgid ""
 "based on syntax, no semantic is included. The AST module can convert "
 "itself to Fortran source code."
 msgstr ""
+"Árbol de sintaxis abstracta (AST): Representa cualquier código fuente "
+"Fortran, basado estrictamente en la sintaxis, la semántica no está incluida. "
+"El módulo AST puede convertirse en código fuente de Fortran."
 
 #: ../../doc/src/developer_tutorial.ipynb:20
 msgid ""
@@ -913,59 +969,69 @@ msgid ""
 " code, all semantic is included. Invalid Fortran code is not allowed (an "
 "error will be given). The ASR module can convert itself to an AST."
 msgstr ""
+"Representación de semántica abstracta (ASR): Representa un código fuente "
+"Fortran válido, toda la semántica está incluida. Código Fortran inválido no "
+"es permitido (un error será emitido). El módulo ASR puede convertirse en un "
+"AST."
 
 #: ../../doc/src/developer_tutorial.ipynb:25
 msgid ""
 "Fortran source code can be parsed into an AST using the ``src_to_ast()`` "
 "function:"
 msgstr ""
+"Código fuente Fortran puede ser analizado en un AST usando la función "
+"``src_to_ast()``:"
 
 #: ../../doc/src/developer_tutorial.ipynb:49
 #, python-format
 msgid "We can pretty print it using the ``%%showast`` magic:"
-msgstr ""
+msgstr "Podemos imprimir usando el truco ``%%showast``:"
 
 #: ../../doc/src/developer_tutorial.ipynb:98
 #, python-format
 msgid "We can convert AST to Fortran source code using ``%%showfmt``:"
-msgstr ""
+msgstr "Podemos convertir un AST a código fuente Fortran usando ``%%showfmt``:"
 
 #: ../../doc/src/developer_tutorial.ipynb:156
 msgid ""
 "All AST nodes and their arguments are described in `AST.asdl "
 "<https://github.com/lfortran/lfortran/blob/master/grammar/AST.asdl>`__."
 msgstr ""
+"Todos los nodos AST y sus argumentos están descritos en `AST.asdl "
+"<https://github.com/lfortran/lfortran/blob/master/grammar/AST.asdl>`__."
 
 #: ../../doc/src/developer_tutorial.ipynb:170
 #, python-format
 msgid "We can pretty print using the ``%%showasr`` magic:"
-msgstr ""
+msgstr "Podemos imprimir usando el truco ``%%showasr``:"
 
 #: ../../doc/src/developer_tutorial.ipynb:219
 msgid ""
 "All ASR nodes and their arguments are described in `ASR.asdl "
 "<https://github.com/lfortran/lfortran/blob/master/src/libasr/ASR.asdl>`__."
 msgstr ""
+"Todos los nodos ASR y sus argumentos están descritos en `ASR.asdl "
+"<https://github.com/lfortran/lfortran/blob/master/src/libasr/ASR.asdl>`__."
 
 #: ../../doc/src/index.md:134
 msgid "Getting started"
-msgstr ""
+msgstr "Iniciando"
 
 #: ../../doc/src/index.md:141 ../../doc/src/progress.md:1
 msgid "LFortran Development Status"
-msgstr ""
+msgstr "Estado del desarrollo de LFortran"
 
 #: ../../doc/src/index.md:147
 msgid "Developer's Guide"
-msgstr ""
+msgstr "Guía del desarrollador"
 
 #: ../../doc/src/index.md:156
 msgid "LFortran Intrinsics"
-msgstr ""
+msgstr "Intrínsecos de LFortran"
 
 #: ../../doc/src/index.md:1
 msgid "LFortran Documentation"
-msgstr ""
+msgstr "Documentación de LFortran"
 
 #: ../../doc/src/index.md:3
 msgid ""
@@ -975,6 +1041,12 @@ msgid ""
 "compile to binaries with the goal to run user's code on modern "
 "architectures such as multi-core CPUs and GPUs."
 msgstr ""
+"LFortran es un moderno compilador interactivo de Fortran de código abierto ("
+"bajo la licencia BSD) construido sobre LLVM. Este puede ejecutar código de "
+"usuario interactivamente para permitir trabajo exploratório (similar a "
+"Python, MATLAB o Julia) , así como compilar para generar archivos binarios "
+"con el objetivo de ejecutar el código de usuario en arquitecturas modernas, "
+"como CPU y GPU de varios núcleos."
 
 #: ../../doc/src/index.md:9
 #, python-format
@@ -986,6 +1058,11 @@ msgid ""
 "[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gl/lfortran%2Fweb"
 "%2Flfortran-binder/master?filepath=Demo.ipynb)"
 msgstr ""
+"Página web: [https://lfortran.org/](https://lfortran.org/)   Main repository:"
+" [https://github.com/lfortran/lfortran](https://github.com/lfortran/lfortran)"
+"   Try online using Binder: [![Binder](https://mybinder.org/badge_logo."
+"svg)](https://mybinder.org/v2/gl/lfortran%2Fweb%2Flfortran-binder/"
+"master?filepath=Demo.ipynb)"
 
 #: ../../doc/src/index.md:9
 msgid "Binder"
@@ -993,7 +1070,7 @@ msgstr ""
 
 #: ../../doc/src/index.md:16
 msgid "Feature Highlights"
-msgstr ""
+msgstr "Características destacadas"
 
 #: ../../doc/src/index.md:18
 msgid ""
@@ -1002,10 +1079,14 @@ msgid ""
 "[Development Status](progress.md) section for more information on "
 "features being supported and being worked on."
 msgstr ""
+"LFortran está en desarrollo, hay características que funcionan actualmente y "
+"hay características que se están implementando. También puede consultar la "
+"sección [Estado de desarrollo](progress.md) para obtener más información "
+"sobre las funciones compatibles y en las que se está trabajando."
 
 #: ../../doc/src/index.md:21
 msgid "Works today"
-msgstr ""
+msgstr "Trabajando actualmente"
 
 #: ../../doc/src/index.md:23
 #, python-format
@@ -1018,6 +1099,14 @@ msgid ""
 "%2Flfortran-binder/master?filepath=Demo.ipynb)   example notebook).   Or "
 "it can be used from the command-line in an interactive prompt (REPL)."
 msgstr ""
+"**Interactivo, compatible con Jupyter** LFortran se puede usar desde Jupyter "
+"como un kernel de Fortran, lo que permite un flujo de trabajo exploratorio y "
+"de creación rápida de prototipos al estilo de Python/Julia (ver "
+"[static](https://nbviewer.jupyter.org/gist/certik "
+"/f1d28a486510810d824869ab0c491b1c) o [interactivo](https://mybinder.org/v2/"
+"gl/lfortran%2Fweb%2Flfortran-binder/master?filepath=Demo.ipynb) cuaderno de "
+"ejemplo). O se puede usar desde la línea de comandos en un indicador "
+"interactivo (REPL)."
 
 #: ../../doc/src/index.md:32
 msgid ""
@@ -1028,6 +1117,13 @@ msgid ""
 "build tools on top. See the [Design](design.md)   and [Developer "
 "Tutorial](developer_tutorial.md) documents for more details."
 msgstr ""
+"**Diseño limpio y modular, utilizable como biblioteca** LFortran está "
+"estructurado en torno a dos módulos independientes, AST y ASR, ambos "
+"independientes (completamente independientes del resto de LFortran) y se "
+"recomienda a los usuarios que los utilicen de forma independiente para otras "
+"aplicaciones y construir herramientas en la parte superior. Consulte los "
+"documentos [Diseño](design.md) y [Tutorial para "
+"desarrolladores](developer_tutorial.md) para obtener más detalles."
 
 #: ../../doc/src/index.md:39
 msgid ""
@@ -1036,28 +1132,38 @@ msgid ""
 "with any Fortran compiler and linked with the   original GFortran "
 "compiled module."
 msgstr ""
+"**Interoperación con GFortran** LFortran puede analizar los archivos del "
+"módulo GFortran en una ASR y generar un contenedor Fortran que se puede "
+"compilar con cualquier compilador Fortran y vincular con el módulo compilado "
+"GFortran original."
 
 #: ../../doc/src/index.md:44
 msgid ""
 "**Create executables**   It can create executables just like other "
 "Fortran compilers."
 msgstr ""
+"**Crear ejecutables** Puede crear ejecutables como otros compiladores de "
+"Fortran."
 
 #: ../../doc/src/index.md:47
 msgid ""
 "**Runs on Linux, Mac and Windows**   All three platforms are regularly "
 "tested by our CI."
 msgstr ""
+"**Se ejecuta en Linux, Mac y Windows** Las tres plataformas son probadas "
+"regularmente por nuestro CI."
 
 #: ../../doc/src/index.md:51
 msgid "Planned"
-msgstr ""
+msgstr "Planificación"
 
 #: ../../doc/src/index.md:53
 msgid ""
 "These features are under development, there is a link to the "
 "corresponding issue so that you can track the progress by following it."
 msgstr ""
+"Estas características están en desarrollo, hay un enlace al problema "
+"correspondiente para que pueda seguir el avance."
 
 #: ../../doc/src/index.md:56
 msgid ""
@@ -1070,6 +1176,15 @@ msgid ""
 " planned,   see [#56](https://gitlab.com/lfortran/lfortran/issues/56)), "
 "which allows to   use LFortran with production codes today."
 msgstr ""
+"**Interoperación nativa con otros lenguajes (y otros compiladores de "
+"Fortran)** Esta puede puede llamar automáticamente código escrito en otros "
+"lenguajes (tales como C o Python) simplemente usando la instrucción `use`, "
+"ver [#44](https://gitlab.com/lfortran/lfortran/issues/44). Comprende otros "
+"archivos de módulos de compiladores de Fortran (uno puede simplemente "
+"\"usarlos\") y su ABI para enlazar correctamente (se admite GFortran, se "
+"planean otros compiladores, consulte [# 56](https://gitlab.com/lfortran/"
+"lfortran/ issues/56)), que permite utilizar LFortran con códigos de "
+"producción en la actualidad."
 
 #: ../../doc/src/index.md:65
 msgid ""
@@ -1078,6 +1193,11 @@ msgid ""
 "constructs (such as `do concurrent`)   to run on multi-core CPUs and "
 "GPUs, see   [#57](https://gitlab.com/lfortran/lfortran/issues/57)."
 msgstr ""
+"**Compatibilidad con hardware moderno** Gracias a LLVM, el objetivo de "
+"LFortran es ejecutarse en hardware moderno y aprovechar las construcciones "
+"nativas del lenguaje Fortran (como `do concurrent`) para ejecutarse en CPU y "
+"GPU multinúcleo, consulte [# 57](https://gitlab.com/lfortran/lfortran/issues/"
+"57)."
 
 #: ../../doc/src/index.md:71
 msgid ""
@@ -1086,6 +1206,10 @@ msgid ""
 "latest Fortran 2018 standard, see   "
 "[#58](https://gitlab.com/lfortran/lfortran/issues/58)."
 msgstr ""
+"**Compatibilidad completa con Fortran 2018** Actualmente solo se implementa "
+"un subconjunto de Fortran, pero el objetivo es tener una implementación "
+"completa del último estándar de Fortran 2018, consulte [#58](https://gitlab."
+"com/lfortran/lfortran /temas/58)."
 
 #: ../../doc/src/index.md:77
 msgid ""
@@ -1093,14 +1217,19 @@ msgid ""
 "tracker](https://gitlab.com/lfortran/lfortran/issues) that you want us to"
 " prioritize (feel free to create new ones if we are missing anything)."
 msgstr ""
+"Vote sobre los problemas en nuestro [seguidor de problemas](https://gitlab."
+"com/lfortran/lfortran/issues) que desea que prioricemos (no dude en crear "
+"nuevos si nos falta algo)."
 
 #: ../../doc/src/index.md:81
 msgid "Roadmap"
-msgstr ""
+msgstr "Guía"
 
 #: ../../doc/src/index.md:83
 msgid "Here is our roadmap how to get all the planned features above implemented:"
 msgstr ""
+"Aquí está nuestra guía sobre cómo implementar todas las funciones "
+"planificadas anteriormente:"
 
 #: ../../doc/src/index.md:85
 msgid ""
@@ -1109,6 +1238,10 @@ msgid ""
 "code generation and old semantics, that used to annotate the AST tree, "
 "which was messy."
 msgstr ""
+"Generación de código de puerto para usar una ASR y pasar todas las pruebas "
+"actuales ([#74](https://gitlab.com/lfortran/lfortran/issues/74)). Elimine la "
+"generación de código anterior y la semántica anterior, que solía anotar el "
+"árbol AST, que estaba desordenado."
 
 #: ../../doc/src/index.md:89
 msgid ""
@@ -1117,16 +1250,23 @@ msgid ""
 "([#52](https://gitlab.com/lfortran/lfortran/issues/52)). This will allow "
 "right away to use production codes with LFortran."
 msgstr ""
+"Obtenga los archivos del módulo GFortran que funcionan con el módulo `use`, "
+"tanto matrices de tamaño supuesto como de forma supuesta "
+"([#52](https://gitlab.com/lfortran/lfortran/issues/52)). Esto permitirá de "
+"inmediato utilizar códigos de producción con LFortran."
 
 #: ../../doc/src/index.md:93
 msgid "Do these at the same time:"
-msgstr ""
+msgstr "Hacer esto al mismo tiempo:"
 
 #: ../../doc/src/index.md:95
 msgid ""
 "a) Implement more Fortran features, until eventually full Fortran 2018 is"
 "  supported ([#58](https://gitlab.com/lfortran/lfortran/issues/58))."
 msgstr ""
+"a) Implementar más funciones de Fortran, hasta que finalmente se admita "
+"Fortran 2018 completo ([#58](https://gitlab.com/lfortran/lfortran/issues/"
+"58))."
 
 #: ../../doc/src/index.md:98
 msgid ""
@@ -1135,6 +1275,10 @@ msgid ""
 "will not change (or only minimally), so the user experience  from Python "
 "will not change."
 msgstr ""
+"b) Muévase gradualmente a C++ para obtener robustez y velocidad "
+"([#70](https://gitlab.com/lfortran/lfortran/issues/70)). La API de Python no "
+"cambiará (o solo mínimamente), por lo que la experiencia del usuario de "
+"Python no cambiará."
 
 #: ../../doc/src/index.md:103
 msgid ""
@@ -1150,10 +1294,20 @@ msgid ""
 "([#12](https://gitlab.com/lfortran/lfortran/issues/12)),  and other ideas"
 " ([#29](https://gitlab.com/lfortran/lfortran/issues/29))."
 msgstr ""
+"c) Implemente todas las demás funciones interesantes: módulo `use` para C y "
+"Python y envoltorios automáticos ([#44](https://gitlab.com/lfortran/lfortran/"
+"issues/44)), soporte de hardware moderno ([# 57](https://gitlab.com/lfortran/"
+"lfortran/issues/57)), generando un estándar anterior de Fortran "
+"([#72](https://gitlab.com/lfortran/lfortran/issues/72)) , función de prueba "
+"de documentos de Fortran ([#73](https://gitlab.com/lfortran/lfortran/issues/"
+"73)), integración de SymPy ([#71](https://gitlab.com/lfortran/lfortran/"
+"issues/ 71)), servicio de lenguaje para IDE ([#12](https://gitlab.com/"
+"lfortran/lfortran/issues/12)), y otras ideas ([#29](https://gitlab.com/"
+"lfortran /lfortran/issues/29))."
 
 #: ../../doc/src/index.md:118
 msgid "The step 1. is an internal refactoring that will not take long."
-msgstr ""
+msgstr "El paso 1. es una restauración interna que no llevará mucho tiempo."
 
 #: ../../doc/src/index.md:120
 msgid ""
@@ -1168,6 +1322,17 @@ msgid ""
 " the given feature. We expect to be finished with the step 2. by the end "
 "of summer 2019, hopefully sooner."
 msgstr ""
+"El paso 2 permitirá que LFortran se use de forma interactiva con los códigos "
+"de producción de inmediato (el código de producción se compilará con "
+"GFortran, luego uno \"usa\" cualquier módulo en LFortran y las funciones/"
+"subrutinas se pueden llamar de forma interactiva, el módulo en sí puede usar "
+"cualquier Función compatible con GFortran, pero la API debe encajar en el "
+"subconjunto que comprende LFortran --- para una gran cantidad de "
+"aplicaciones, las funciones/subrutinas simples con argumentos de matriz son "
+"suficientes). Esto hará que LFortran sea utilizable para los primeros "
+"usuarios y siempre se puede usar GFortran temporalmente hasta que LFortran "
+"admita la función dada. Esperamos terminar con el paso 2 a fines del verano "
+"de 2019, con suerte antes."
 
 #: ../../doc/src/index.md:130
 msgid ""
@@ -1175,18 +1340,22 @@ msgid ""
 "users to contribute back, growing the community and making LFortran "
 "gradually useful for more and more people."
 msgstr ""
+"Finalmente, el paso 3 mejorará LFortran en general, permitiendo que los "
+"primeros usuarios contribuyan, haciendo crecer la comunidad y haciendo que "
+"LFortran sea gradualmente útil para más y más personas."
 
 #: ../../doc/src/installation.md:1
 msgid "Installation"
-msgstr ""
+msgstr "Instalación"
 
 #: ../../doc/src/installation.md:3
 msgid "All the instructions below work on Linux, macOS and Windows."
 msgstr ""
+"Todas las instruciones a continuación funcionan en Linux, macOS y Windows."
 
 #: ../../doc/src/installation.md:5
 msgid "Binaries"
-msgstr ""
+msgstr "Binarios"
 
 #: ../../doc/src/installation.md:7
 msgid ""
@@ -1197,10 +1366,15 @@ msgid ""
 "environment (you can choose any name, here we chose `lf`) and activate "
 "it:"
 msgstr ""
+"La forma recomendada de instalar LFortran es usando Conda. Instale Conda, "
+"por ejemplo, instalando la instalación de [Miniconda](https://conda.io/en/"
+"latest/miniconda.html) siguiendo las instrucciones allí para su plataforma. "
+"Luego cree un nuevo entorno (puede elegir cualquier nombre, aquí elegimos "
+"`lf`) y actívelo:"
 
 #: ../../doc/src/installation.md:16
 msgid "Then install LFortran by:"
-msgstr ""
+msgstr "Luego instale LFortran haciendo:"
 
 #: ../../doc/src/installation.md:20
 msgid ""
@@ -1208,24 +1382,29 @@ msgid ""
 "start the interactive prompt by executing `lfortran`, or see the command "
 "line options using `lfortran -h`."
 msgstr ""
+"Ahora que el entorno `lf` tiene disponible el compilador `lfortran`, puede "
+"iniciar el aviso interactivo ejecutando `lfortran`, o ver las opciones de la "
+"línea de comando usando `lfortran -h`."
 
 #: ../../doc/src/installation.md:24
 msgid ""
 "The Jupyter kernel is automatically installed by the above command, so "
 "after installing Jupyter itself:"
 msgstr ""
+"El núcleo Jupyter es automáticamente instalado con el comando anterior, por "
+"lo que después de instalar Jupyter:"
 
 #: ../../doc/src/installation.md:28
 msgid "You can create a Fortran based Jupyter notebook by executing:"
-msgstr ""
+msgstr "Puede crear un cuaderno Jupyter basado en Fortran ejecutando:"
 
 #: ../../doc/src/installation.md:32
 msgid "and selecting `New->Fortran`."
-msgstr ""
+msgstr "y seleccionando `New->Fortran`."
 
 #: ../../doc/src/installation.md:35
 msgid "Build From a Source Tarball"
-msgstr ""
+msgstr "Construir desde una fuente de archivo tar"
 
 #: ../../doc/src/installation.md:37
 msgid ""
@@ -1234,72 +1413,86 @@ msgid ""
 "etc.). The source tarball has all the generated files included and has "
 "minimal dependencies."
 msgstr ""
+"Este método es el método recomendado si solo desea instalar LFortran, ya sea "
+"usted mismo o en un administrador de paquetes (Spack, Conda, Debian, etc.). "
+"La fuente de archivo tar tiene todos los archivos generados incluidos y "
+"tiene dependencias mínimas."
 
 #: ../../doc/src/installation.md:39
 msgid "First we have to install dependencies, for example using Conda:"
-msgstr ""
+msgstr "Primero tenemos que instalar dependencias, por ejemplo usando Conda:"
 
 #: ../../doc/src/installation.md:44
 msgid ""
 "Then download a tarball from "
 "[https://lfortran.org/download/](https://lfortran.org/download/), e.g.:"
 msgstr ""
+"Luego descargue un archivo tar de [https://lfortran.org/download/"
+"](https://lfortran.org/download/), por ejemplo:"
 
 #: ../../doc/src/installation.md:52
 msgid "And build:"
-msgstr ""
+msgstr "Y construir:"
 
 #: ../../doc/src/installation.md:58
 msgid "This will install the `lfortran` into the `inst/bin`."
-msgstr ""
+msgstr "Esto instalará `lfortran` en `inst/bin`."
 
 #: ../../doc/src/installation.md:60
 msgid "Build From Git"
-msgstr ""
+msgstr "Construir desde Git"
 
 #: ../../doc/src/installation.md:62
 msgid ""
 "We assume you have C++ compilers installed, as well as `git` and `wget`. "
 "In Ubuntu, you can also install `binutils-dev` for stacktraces."
 msgstr ""
+"Suponemos que tiene instalados compiladores de C++, así como `git` y `wget`. "
+"En Ubuntu, también puede instalar `binutils-dev` para stacktraces."
 
 #: ../../doc/src/installation.md:65
 msgid ""
 "If you do not have Conda installed, you can do so on Linux (and similarly"
 " on other platforms):"
 msgstr ""
+"Si no tiene Conda instalado, puede hacerlo en Linux (y de manera similar en "
+"otras plataformas):"
 
 #: ../../doc/src/installation.md:72
 msgid "Then prepare the environment:"
-msgstr ""
+msgstr "Luego prepara el ambiente:"
 
 #: ../../doc/src/installation.md:77
 msgid "Clone the LFortran git repository:"
-msgstr ""
+msgstr "Clone el repositorio git de LFortran:"
 
 #: ../../doc/src/installation.md:82
 msgid ""
 "Generate files that are needed for the build (this step depends on "
 "`re2c`, `bison` and `python`):"
 msgstr ""
+"Genere los archivos necesarios para la compilación (este paso depende de "
+"`re2c`, `bison` y `python`):"
 
 #: ../../doc/src/installation.md:86
 msgid ""
 "Now the process is the same as installing from the source tarball. For "
 "example to build in Debug mode:"
 msgstr ""
+"Ahora el proceso es el mismo que el de la instalación desde el tarball de "
+"origen. Por ejemplo, para compilar en modo de depuración:"
 
 #: ../../doc/src/installation.md:92
 msgid "Run tests:"
-msgstr ""
+msgstr "Ejecutar pruebas:"
 
 #: ../../doc/src/installation.md:97
 msgid "Run an interactive prompt:"
-msgstr ""
+msgstr "Ejecute un aviso interactivo:"
 
 #: ../../doc/src/installation.md:102
 msgid "Build from Git on Windows with Visual Studio"
-msgstr ""
+msgstr "Cree desde Git en Windows con Visual Studio"
 
 #: ../../doc/src/installation.md:104
 msgid ""
@@ -1307,40 +1500,45 @@ msgid ""
 "download the Community version for free from: "
 "https://visualstudio.microsoft.com/downloads/."
 msgstr ""
+"Instale Visual Studio (MSVC), por ejemplo la versión 2022, puede descargar "
+"la versión Community de forma gratuita desde: https://visualstudio.microsoft."
+"com/downloads/."
 
 #: ../../doc/src/installation.md:107
 msgid ""
 "Install miniforge using the Windows installer from https://github.com"
 "/conda-forge/miniforge."
 msgstr ""
+"Instale miniforge usando el instalador de Windows desde https://github.com/"
+"conda-forge/miniforge."
 
 #: ../../doc/src/installation.md:109
 msgid "Launch the Miniforge Prompt from the Desktop."
-msgstr ""
+msgstr "Inicie el indicador de Miniforge desde el escritorio."
 
 #: ../../doc/src/installation.md:111
 msgid "In the shell, initialize the MSVC compiler using:"
-msgstr ""
+msgstr "En la interfaz, inicialice el compilador MSVC usando:"
 
 #: ../../doc/src/installation.md:117
 msgid "You can optionally test that MSVC works by:"
-msgstr ""
+msgstr "Opcionalmente, puede probar que MSVC funciona:"
 
 #: ../../doc/src/installation.md:122
 msgid "Both commands must print help (several pages)."
-msgstr ""
+msgstr "Ambos comandos deben imprimir ayuda (varias páginas)."
 
 #: ../../doc/src/installation.md:124
 msgid "Now you can download and build LFortran:"
-msgstr ""
+msgstr "Ahora puede descargar y compilar LFortran:"
 
 #: ../../doc/src/installation.md:134
 msgid "If everything compiled, then you can use LFortran as follows:"
-msgstr ""
+msgstr "Si todo está compilado, puede usar LFortran de la siguiente manera:"
 
 #: ../../doc/src/installation.md:140
 msgid "And so on."
-msgstr ""
+msgstr "Y así."
 
 #: ../../doc/src/installation.md:142
 msgid ""
@@ -1348,6 +1546,9 @@ msgid ""
 "is only available when the MSVC bat script above is ran. If you forget to"
 " activate it, LFortran's linking will fail."
 msgstr ""
+"Nota: LFortran actualmente usa el programa enlazador de MSVC (`link`), que "
+"solo está disponible cuando se ejecuta el script bat de MSVC anterior. Si "
+"olvida activarlo, la vinculación de LFortran fallará."
 
 #: ../../doc/src/installation.md:146
 msgid ""
@@ -1357,10 +1558,15 @@ msgid ""
 "`vim`.  For this reason the Conda build `environment_win.yml` contains "
 "everything needed, including `git`."
 msgstr ""
+"Nota: la terminal de miniforge parece estar ejecutando alguna versión de "
+"`git-bash` (aunque es `cmd.exe`), que tiene un sistema de archivos tipo Unix "
+"montado en `/usr` y varios comandos disponibles como `ls` , `cuál`, `git`, "
+"`vim`. Por esta razón, la compilación de Conda `environment_win.yml` "
+"contiene todo lo necesario, incluido `git`."
 
 #: ../../doc/src/installation.md:152
 msgid "Build from Git on Windows with WSL"
-msgstr ""
+msgstr "Construya desde Git en Windows con WSL"
 
 #: ../../doc/src/installation.md:153
 msgid "In windows search \"turn windows features on or off\"."
@@ -1368,105 +1574,115 @@ msgstr ""
 
 #: ../../doc/src/installation.md:154
 msgid "Tick Windows subsystem for Linux."
-msgstr ""
+msgstr "Marque el subsistema de Windows para Linux."
 
 #: ../../doc/src/installation.md:155
 msgid "Press OK and restart computer."
-msgstr ""
+msgstr "Presione Aceptar y reinicie la computadora."
 
 #: ../../doc/src/installation.md:156
 msgid "Go to Microsoft store and download Ubuntu 20.04, and launch it."
-msgstr ""
+msgstr "Vaya a la tienda de Microsoft, descargue Ubuntu 20.04 y ejecútelo."
 
 #: ../../doc/src/installation.md:157
 msgid "Run the following commands."
-msgstr ""
+msgstr "Ejecute los siguientes comandos."
 
 #: ../../doc/src/installation.md:164
 msgid "Now do the following to configure the path"
-msgstr ""
+msgstr "Ahora haga lo siguiente para configurar la ruta"
 
 #: ../../doc/src/installation.md:168
 msgid "Then go to the bottom of the file and paste the following"
-msgstr ""
+msgstr "Luego ve al final del archivo y pega lo siguiente"
 
 #: ../../doc/src/installation.md:172
 msgid "Then press ctrl + O (save), Enter (confirm), ctrl + X (exit)"
-msgstr ""
+msgstr "Luego presione ctrl + O (guardar), Enter (confirmar), ctrl + X (salir)"
 
 #: ../../doc/src/installation.md:173
 msgid "After that restart Ubuntu"
-msgstr ""
+msgstr "Después de eso, reinicie Ubuntu"
 
 #: ../../doc/src/installation.md:174
 msgid "Run the following"
-msgstr ""
+msgstr "Ejecute lo siguiente"
 
 #: ../../doc/src/installation.md:179
 msgid "Restart Ubuntu again"
-msgstr ""
+msgstr "Reinicie Ubuntu de nuevo"
 
 #: ../../doc/src/installation.md:187
 msgid ""
 "You can change the directory to a Windows location using `cd /mnt/[drive "
 "letter]/[windows location]`."
 msgstr ""
+"Puede cambiar el directorio a una ubicación de Windows usando `cd /mnt/["
+"letra de unidad]/[ubicación de Windows]`."
 
 #: ../../doc/src/installation.md:188
 msgid "e.g. `cd mnt/c/Users/name/source/repos/`"
-msgstr ""
+msgstr "p.ej. `cd mnt/c/Users/name/source/repos/`"
 
 #: ../../doc/src/installation.md:190
 msgid "Now clone the LFortran git repository"
-msgstr ""
+msgstr "Ahora clone el repositorio LFortran git"
 
 #: ../../doc/src/installation.md:196
 msgid "Run the following commands"
-msgstr ""
+msgstr "Ejecute los siguientes comandos"
 
 #: ../../doc/src/installation.md:204
 msgid "If everything compiles, you can use LFortran as follows"
-msgstr ""
+msgstr "Si todo se compila, puede usar LFortran de la siguiente manera"
 
 #: ../../doc/src/installation.md:210
 msgid "Run an interactive prompt"
-msgstr ""
+msgstr "Ejecutar un aviso interactivo"
 
 #: ../../doc/src/installation.md:215
 msgid "Run tests"
-msgstr ""
+msgstr "Ejecutar pruebas"
 
 #: ../../doc/src/installation.md:221
 msgid "Enabling the Jupyter Kernel"
-msgstr ""
+msgstr "Habilitación del núcleo de Jupyter"
 
 #: ../../doc/src/installation.md:223
 msgid "To install the Jupyter kernel, install the following Conda packages also:"
 msgstr ""
+"Para instalar el kernel de Jupyter, instale también los siguientes paquetes "
+"de Conda:"
 
 #: ../../doc/src/installation.md:227
 msgid ""
 "and enable the kernel by `-DWITH_XEUS=yes` and install into "
 "`$CONDA_PREFIX`. For example:"
 msgstr ""
+"y habilite el núcleo con `-DWITH_XEUS=yes` e instálelo en `$CONDA_PREFIX`. "
+"Por ejemplo:"
 
 #: ../../doc/src/installation.md:239
 msgid ""
 "To use it, install Jupyter (`conda install jupyter`) and test that the "
 "LFortran kernel was found:"
 msgstr ""
+"Para usarlo, instale Jupyter (`conda install jupyter`) y pruebe que se "
+"encontró el núcleo de LFortran:"
 
 #: ../../doc/src/installation.md:244
 msgid "Then launch a Jupyter notebook as follows:"
-msgstr ""
+msgstr "Luego inicie un cuaderno Jupyter de la siguiente manera:"
 
 #: ../../doc/src/installation.md:248
 msgid "Click `New->Fortran`. To launch a terminal jupyter LFortran console:"
 msgstr ""
+"Haga clic en `New->Fortran`. Para iniciar una consola terminal jupyter "
+"LFortran:"
 
 #: ../../doc/src/installation.md:254
 msgid "Build From Git with Nix"
-msgstr ""
+msgstr "Construir desde Git con Nix"
 
 #: ../../doc/src/installation.md:256
 msgid ""
@@ -1475,6 +1691,10 @@ msgid ""
 "the development environment. If you want, you can report bugs in a `nix-"
 "shell` environment to make it easier for others to reproduce."
 msgstr ""
+"Una de las formas de garantizar el entorno y las dependencias exactos es con "
+"`nix`. Esto garantizará que las dependencias del sistema no interfieran con "
+"el entorno de desarrollo. Si lo desea, puede informar de errores en un "
+"entorno `nix-shell` para que sea más fácil para otros reproducirlos."
 
 #: ../../doc/src/installation.md:258
 msgid "With Root"
@@ -1486,6 +1706,9 @@ msgid ""
 "work on any machine with a Linux distribution, MacOS or Windows (via "
 "WSL):"
 msgstr ""
+"Empezamos por obtener `nix`. La siguiente instalación multiusuario "
+"funcionará en cualquier máquina con una distribución de Linux, MacOS o "
+"Windows (a través de WSL):"
 
 #: ../../doc/src/installation.md:264
 msgid "Without Root"
@@ -1497,40 +1720,49 @@ msgid ""
 "on Linux distributions we can use [nix-"
 "portable](https://github.com/DavHau/nix-portable)."
 msgstr ""
+"Si no desea proporcionar a `nix` acceso raíz a su máquina, en las "
+"distribuciones de Linux podemos usar [nix-portable](https://github.com/"
+"DavHau/nix-portable)."
 
 #: ../../doc/src/installation.md:270
 msgid ""
 "Now just prepend all `nix-shell` commands with `NP_RUNTIME=bwrap ./nix-"
 "portable `. So:"
 msgstr ""
+"Ahora solo anteponga todos los comandos `nix-shell` con `NP_RUNTIME=bwrap "
+"./nix-portable`. Asi que:"
 
 #: ../../doc/src/installation.md:278
 msgid "Development"
-msgstr ""
+msgstr "Desarrollo"
 
 #: ../../doc/src/installation.md:280
 msgid "Now we can enter the development environment:"
-msgstr ""
+msgstr "Ahora podemos entrar en el entorno de desarrollo:"
 
 #: ../../doc/src/installation.md:284
 msgid ""
 "The `--pure` flag ensures no system dependencies are used in the "
 "environment."
 msgstr ""
+"El indicador `--pure` garantiza que no se utilicen dependencias del sistema "
+"en el entorno."
 
 #: ../../doc/src/installation.md:286
 msgid "The build steps are the same as with the `ci`:"
-msgstr ""
+msgstr "Los pasos de compilación son los mismos que con el `ci`:"
 
 #: ../../doc/src/installation.md:292
 msgid ""
 "To change the compilation environment from `gcc` (default) to `clang` we "
 "can use `--argstr`:"
 msgstr ""
+"Para cambiar el entorno de compilación de `gcc` (predeterminado) a `clang` "
+"podemos usar `--argstr`:"
 
 #: ../../doc/src/installation.md:297
 msgid "Note About Dependencies"
-msgstr ""
+msgstr "Nota sobre las dependencias"
 
 #: ../../doc/src/installation.md:299
 msgid ""
@@ -1538,6 +1770,9 @@ msgid ""
 "[https://lfortran.org/download/](https://lfortran.org/download/), which "
 "only depends on LLVM, CMake and a C++ compiler."
 msgstr ""
+"Se alienta a los usuarios finales (y las distribuciones) a usar el archivo "
+"tar de [https://lfortran.org/download/](https://lfortran.org/download/), que "
+"solo depende de LLVM, CMake y un compilador de C++."
 
 #: ../../doc/src/installation.md:303
 msgid ""
@@ -1545,34 +1780,42 @@ msgid ""
 " and contains some autogenerated files: the parser, the AST and ASR "
 "nodes, which is generated by an ASDL translator (requires Python)."
 msgstr ""
+"El archivo tar es generado automáticamente por nuestro CI (integración "
+"continua) y contiene algunos archivos generados automáticamente: el "
+"analizador, los nodos AST y ASR, que es generado por un traductor ASDL ("
+"requiere Python)."
 
 #: ../../doc/src/installation.md:307
 msgid "The instructions from git are to be used when developing LFortran itself."
-msgstr ""
+msgstr "Las instrucciones de git deben usarse al desarrollar LFortran en sí."
 
 #: ../../doc/src/installation.md:309
 msgid "Note for users who do not use Conda"
-msgstr ""
+msgstr "Nota para usuarios que no utilizan Conda"
 
 #: ../../doc/src/installation.md:311
 msgid ""
 "Following are the dependencies necessary for installing this repository "
 "in development mode,"
 msgstr ""
+"Las siguientes son las dependencias necesarias para instalar este "
+"repositorio en modo de desarrollo,"
 
 #: ../../doc/src/installation.md:314
 msgid "[Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)"
-msgstr ""
+msgstr "[Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)"
 
 #: ../../doc/src/installation.md:315
 msgid ""
 "[LLVM - 11.0.1](https://github.com/llvm/llvm-"
 "project/releases/download/llvmorg-11.0.1/llvm-11.0.1.src.tar.xz)"
 msgstr ""
+"[LLVM - 11.0.1](https://github.com/llvm/llvm-project/releases/download/"
+"llvmorg-11.0.1/llvm-11.0.1.src.tar.xz)"
 
 #: ../../doc/src/installation.md:316
 msgid "[re2c - 2.0.3](https://re2c.org/install/install.html)"
-msgstr ""
+msgstr "[re2c - 2.0.3](https://re2c.org/install/install.html)"
 
 #: ../../doc/src/installation.md:317
 msgid ""
@@ -1581,6 +1824,10 @@ msgid ""
 " - Make sure that you should enable the required options related to this "
 "dependency to build the dynamic libraries (the ones ending with `.so`)."
 msgstr ""
+"[binutils - 2.31.90](ftp://sourceware.org/pub/binutils/snapshots/binutils-2."
+"31.90.tar.xz): asegúrese de habilitar las opciones necesarias relacionadas "
+"con esta dependencia para crear la dinámica bibliotecas (las que terminan en "
+"`.so`)."
 
 #: ../../doc/src/installation.md:319
 msgid "Stacktraces"
@@ -1596,18 +1843,25 @@ msgid ""
 "option after installing the prerequisites on each platform per the "
 "instructions below."
 msgstr ""
+"LFortran puede imprimir stacktraces cuando hay una excepción no controlada, "
+"así como en cualquier error del compilador con la opción `--show-stacktrace`"
+". Esto es muy útil para desarrollar el propio compilador para ver dónde está "
+"el problema en LFortran. La compatibilidad con stacktrace está desactivada "
+"de manera predeterminada; para habilitarla, compile LFortran con la opción "
+"cmake `-DWITH_STACKTRACE=yes` después de instalar los requisitos previos en "
+"cada plataforma según las instrucciones a continuación."
 
 #: ../../doc/src/installation.md:328
 msgid "Ubuntu"
-msgstr ""
+msgstr "Ubuntu"
 
 #: ../../doc/src/installation.md:330
 msgid "In Ubuntu, `apt install binutils-dev`."
-msgstr ""
+msgstr "En Ubuntu, `apt install binutils-dev`."
 
 #: ../../doc/src/installation.md:332
 msgid "macOS"
-msgstr ""
+msgstr "macOS"
 
 #: ../../doc/src/installation.md:334
 msgid ""
@@ -1617,18 +1871,29 @@ msgid ""
 "store the debug information, see `src/bin/CMakeLists.txt` for more "
 "details). If it does not work, please report a bug."
 msgstr ""
+"Si usa el compilador Clang predeterminado en macOS, entonces los "
+"seguimientos de pila deberían funcionar tanto en macOS basados en Intel como "
+"en M1 (el sistema de compilación CMake invoca automáticamente la herramienta "
+"`dsymtuil` y nuestras secuencias de comandos de Python para almacenar la "
+"información de depuración, consulte `src/bin /CMakeLists.txt` para más "
+"detalles). Si no funciona, informe un error."
 
 #: ../../doc/src/installation.md:340
 msgid ""
 "If you do not like the default way, an alternative is to use bintutils. "
 "For that, first install [Spack](https://spack.io/), then:"
 msgstr ""
+"Si no le gusta la forma predeterminada, una alternativa es usar bintutils. "
+"Para eso, primero instale [Spack](https://spack.io/), luego:"
 
 #: ../../doc/src/installation.md:347
 msgid ""
 "The last command will show a full path to the installed `binutils` "
 "package. Add this path to your shell config file, e.g.:"
 msgstr ""
+"El último comando mostrará una ruta completa al paquete `binutils` "
+"instalado. Agregue esta ruta a su archivo de configuración de la interfaz, "
+"por ejemplo:"
 
 #: ../../doc/src/installation.md:352
 msgid ""
@@ -1637,18 +1902,22 @@ msgid ""
 " option. The `$CONDA_PREFIX` is there if you install some other "
 "dependencies (such as `llvm`) using Conda, otherwise you can remove it."
 msgstr ""
+"y compile LFortran con la opción cmake `-DCMAKE_PREFIX_PATH=\""
+"$CMAKE_PREFIX_PATH_LFORTRAN;$CONDA_PREFIX\"`. El `$CONDA_PREFIX` está ahí si "
+"instala algunas otras dependencias (como `llvm`) usando Conda, de lo "
+"contrario, puede eliminarlo."
 
 #: ../../doc/src/intrinsics/array.md:1
 msgid "Array Intrinsic Functions"
-msgstr ""
+msgstr "Funciones intrínsecas de matriz"
 
 #: ../../doc/src/intrinsics/array/allocated.md:1
 msgid "allocated(x): Status Check"
-msgstr ""
+msgstr "allocated(x): verificación de estado"
 
 #: ../../doc/src/intrinsics/array/allocated.md:3
 msgid "Logical status of an allocatable integer."
-msgstr ""
+msgstr "Estado lógico de un entero asignable."
 
 #: ../../doc/src/intrinsics/array/allocated.md:5
 #: ../../doc/src/intrinsics/array/cshift.md:5
@@ -1695,7 +1964,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:5
 #: ../../doc/src/intrinsics/numeric/mod.md:5
 msgid "Declaration"
-msgstr ""
+msgstr "Declaración"
 
 #: ../../doc/src/intrinsics/array/allocated.md:7
 #: ../../doc/src/intrinsics/array/cshift.md:7
@@ -1742,7 +2011,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:7
 #: ../../doc/src/intrinsics/numeric/mod.md:7
 msgid "Syntax"
-msgstr ""
+msgstr "Sintaxis"
 
 #: ../../doc/src/intrinsics/array/allocated.md:14
 #: ../../doc/src/intrinsics/array/cshift.md:14
@@ -1791,11 +2060,11 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:14
 #: ../../doc/src/intrinsics/numeric/mod.md:15
 msgid "Arguments"
-msgstr ""
+msgstr "Argumentos"
 
 #: ../../doc/src/intrinsics/array/allocated.md:16
 msgid "`x` is an integer input parameter."
-msgstr ""
+msgstr "`x` es un parámetro de entrada entero."
 
 #: ../../doc/src/intrinsics/array/allocated.md:18
 #: ../../doc/src/intrinsics/array/cshift.md:22
@@ -1839,13 +2108,15 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:19
 #: ../../doc/src/intrinsics/numeric/mod.md:22
 msgid "Return values"
-msgstr ""
+msgstr "Valores devueltos"
 
 #: ../../doc/src/intrinsics/array/allocated.md:20
 msgid ""
 "The return value is a logical scalar with the default logical kind type "
 "parameter."
 msgstr ""
+"El valor devuelto es un escalar lógico con el parámetro de tipo de tipo "
+"lógico predeterminado."
 
 #: ../../doc/src/intrinsics/array/allocated.md:23
 #: ../../doc/src/intrinsics/array/cshift.md:26
@@ -1894,7 +2165,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:23
 #: ../../doc/src/intrinsics/numeric/mod.md:31 ../../doc/src/progress.md
 msgid "Description"
-msgstr ""
+msgstr "Descripción"
 
 #: ../../doc/src/intrinsics/array/allocated.md:25
 msgid ""
@@ -1902,6 +2173,9 @@ msgid ""
 " It returns a logical value as `TRUE` if the input argument `x` is "
 "allocated, `FALSE` otherwise."
 msgstr ""
+"`allocated(x)` comprueba el estado de asignación de un parámetro de entrada "
+"entero. Devuelve un valor lógico como `VERDADERO` si se asigna el argumento "
+"de entrada `x`, `FALSO` en caso contrario."
 
 #: ../../doc/src/intrinsics/array/allocated.md:29
 #: ../../doc/src/intrinsics/array/cshift.md:39
@@ -1950,14 +2224,14 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:38
 #: ../../doc/src/intrinsics/numeric/mod.md:43
 msgid "Types"
-msgstr ""
+msgstr "Tipos"
 
 #: ../../doc/src/intrinsics/array/allocated.md:31
 #: ../../doc/src/intrinsics/array/size.md:35
 #: ../../doc/src/intrinsics/character/achar.md:39
 #: ../../doc/src/intrinsics/character/char.md:40
 msgid "Supported argument type is integer."
-msgstr ""
+msgstr "El tipo de argumento admitido es entero."
 
 #: ../../doc/src/intrinsics/array/allocated.md:46
 #: ../../doc/src/intrinsics/array/cshift.md:43
@@ -2006,7 +2280,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:58
 #: ../../doc/src/intrinsics/numeric/mod.md:80
 msgid "Examples"
-msgstr ""
+msgstr "Ejemplos"
 
 #: ../../doc/src/intrinsics/array/allocated.md:59
 #: ../../doc/src/intrinsics/array/cshift.md:55
@@ -2020,7 +2294,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/mathematical/atanh.md:77
 #: ../../doc/src/intrinsics/mathematical/fraction.md:44
 msgid "**Result**:"
-msgstr ""
+msgstr "**Result**:"
 
 #: ../../doc/src/intrinsics/array/allocated.md:65
 #: ../../doc/src/intrinsics/array/cshift.md:62
@@ -2069,36 +2343,40 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:74
 #: ../../doc/src/intrinsics/numeric/mod.md:95
 msgid "See Also"
-msgstr ""
+msgstr "Ver también"
 
 #: ../../doc/src/intrinsics/array/cshift.md:1
 msgid "cshift(A, shift [, dim]): Circular Shift"
-msgstr ""
+msgstr "cshift(A, shift [, dim]): Desplazamiento circular"
 
 #: ../../doc/src/intrinsics/array/cshift.md:3
 msgid "Circular shift elements of an array."
-msgstr ""
+msgstr "Elementos de desplazamiento circular de una matriz."
 
 #: ../../doc/src/intrinsics/array/cshift.md:16
 #: ../../doc/src/intrinsics/array/size.md:16
 msgid "`A` the input array of any type or rank."
-msgstr ""
+msgstr "`A` la matriz de entrada de cualquier tipo o rango."
 
 #: ../../doc/src/intrinsics/array/cshift.md:18
 msgid "`shift` the input value of integer type."
-msgstr ""
+msgstr "`shift` el valor de entrada de tipo entero."
 
 #: ../../doc/src/intrinsics/array/cshift.md:20
 msgid ""
 "`dim` optional dimension, if present, `cshift` returns the result of this"
 " dimension."
 msgstr ""
+"Dimensión opcional `dim`, si está presente, `cshift` devuelve el resultado "
+"de esta dimensión."
 
 #: ../../doc/src/intrinsics/array/cshift.md:24
 msgid ""
 "The return value is of input array type and rank as the `A` array input "
 "argument."
 msgstr ""
+"El valor devuelto es del tipo de matriz de entrada y se clasifica como el "
+"argumento de entrada de la matriz `A`."
 
 #: ../../doc/src/intrinsics/array/cshift.md:28
 msgid ""
@@ -2106,6 +2384,9 @@ msgid ""
 " array along the dimension of `dim`. Default value of `dim` is 1, used "
 "when `dim` is not passed."
 msgstr ""
+"**cshift(A, shift [, dim])** realiza un desplazamiento circular en los "
+"elementos de la matriz `A` a lo largo de la dimensión de `dim`. El valor "
+"predeterminado de `dim` es 1, se usa cuando no se pasa `dim`."
 
 #: ../../doc/src/intrinsics/array/cshift.md:32
 msgid ""
@@ -2113,40 +2394,50 @@ msgid ""
 "`shift` places. If rank is greater than one, then all complexte rank one "
 "sections of array along the given dimension are shifted."
 msgstr ""
+"Si el rango de la matriz es 1, entonces todos los elementos de la matriz se "
+"desplazan en lugares de `shift`. Si el rango es mayor que uno, todas las "
+"secciones complejas de rango uno de la matriz a lo largo de la dimensión "
+"dada se desplazan."
 
 #: ../../doc/src/intrinsics/array/cshift.md:36
 msgid ""
 "Elements shifted out one end of each rank one section are shifted back in"
 " the other end."
 msgstr ""
+"Los elementos desplazados en un extremo de cada rango de una sección se "
+"desplazan hacia atrás en el otro extremo."
 
 #: ../../doc/src/intrinsics/array/cshift.md:41
 msgid ""
 "Supported argument type is array for `A` and integer for `shift` and "
 "`dim`."
 msgstr ""
+"El tipo de argumento admitido es una matriz para `A` y un número entero para "
+"`shift` y `dim`."
 
 #: ../../doc/src/intrinsics/array/size.md:1
 msgid "size(x): Size of Array"
-msgstr ""
+msgstr "size(x): tamaño de la matriz"
 
 #: ../../doc/src/intrinsics/array/size.md:3
 msgid "Returns the size of an array `x`."
-msgstr ""
+msgstr "Devuelve el tamaño de una matriz `x`."
 
 #: ../../doc/src/intrinsics/array/size.md:18
 msgid ""
 "`dim` optional dimension, if present, `size` returns the size of this "
 "dimension."
 msgstr ""
+"Dimensión opcional `dim`, si está presente, `size` devuelve el tamaño de "
+"esta dimensión."
 
 #: ../../doc/src/intrinsics/array/size.md:20
 msgid "`kind` optional the kind of the return value."
-msgstr ""
+msgstr "`kind` opcional el tipo del valor de retorno."
 
 #: ../../doc/src/intrinsics/array/size.md:24
 msgid "`n` the size of an array (integer)."
-msgstr ""
+msgstr "`n` el tamaño de una matriz (entero)."
 
 #: ../../doc/src/intrinsics/array/size.md:28
 msgid ""
@@ -2155,22 +2446,27 @@ msgid ""
 " which case it only returns the size of this particular dimension. The "
 "`kind` argument can be used to specify the integer kind of the result."
 msgstr ""
+"La función intrínseca `size` devuelve el tamaño de una matriz. Devuelve el "
+"producto de todas las dimensiones, a menos que se especifique el argumento "
+"`dim`, en cuyo caso solo devuelve el tamaño de esta dimensión en particular. "
+"El argumento `kind` se puede utilizar para especificar el tipo entero del "
+"resultado."
 
 #: ../../doc/src/intrinsics/array/size.md:57
 msgid "[shape](), [reshape]()."
-msgstr ""
+msgstr "[shape](), [reshape]()."
 
 #: ../../doc/src/intrinsics/bit.md:1
 msgid "Bit Intrinsic Functions"
-msgstr ""
+msgstr "Funciones intrínsecas de bits"
 
 #: ../../doc/src/intrinsics/bit/bge.md:1
 msgid "bge(x, y): Bitwise Greater or Equal"
-msgstr ""
+msgstr "bge(x, y): bit a bit mayor o igual"
 
 #: ../../doc/src/intrinsics/bit/bge.md:3
 msgid "Bitwise greater than or equal to."
-msgstr ""
+msgstr "Bit a bit mayor o igual que."
 
 #: ../../doc/src/intrinsics/bit/bge.md:16
 #: ../../doc/src/intrinsics/bit/bgt.md:16
@@ -2178,19 +2474,23 @@ msgstr ""
 #: ../../doc/src/intrinsics/bit/blt.md:16
 msgid "`x` and `y` are integer input values. Both input values are of same kind."
 msgstr ""
+"`x` e `y` son valores de entrada enteros. Ambos valores de entrada son del "
+"mismo tipo."
 
 #: ../../doc/src/intrinsics/bit/bge.md:20
 #: ../../doc/src/intrinsics/bit/bgt.md:20
 #: ../../doc/src/intrinsics/bit/ble.md:20
 #: ../../doc/src/intrinsics/bit/blt.md:20
 msgid "The return value is of type logical and of the default kind."
-msgstr ""
+msgstr "El valor devuelto es de tipo lógico y del tipo predeterminado."
 
 #: ../../doc/src/intrinsics/bit/bge.md:24
 msgid ""
 "`bge(x, y)` calculates if two integer input values is bitwise greater "
 "than or equal to another."
 msgstr ""
+"`bge(x, y)` calcula si dos valores de entrada enteros son bit a bit mayores "
+"o iguales que otro."
 
 #: ../../doc/src/intrinsics/bit/bge.md:29
 #: ../../doc/src/intrinsics/bit/bgt.md:29
@@ -2199,6 +2499,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/bit/btest.md:34
 msgid "Supported input types is integer of 32 bit and 64 bit size."
 msgstr ""
+"Los tipos de entrada admitidos son números enteros de 32 bits y 64 bits."
 
 #: ../../doc/src/intrinsics/bit/bge.md:60
 #: ../../doc/src/intrinsics/bit/bgt.md:59
@@ -2236,110 +2537,120 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:67
 #: ../../doc/src/intrinsics/numeric/mod.md:89
 msgid "**Result:**"
-msgstr ""
+msgstr "**Result:**"
 
 #: ../../doc/src/intrinsics/bit/bge.md:70
 msgid "[bgt](bgt.md), [ble](ble.md), [blt](blt.md)."
-msgstr ""
+msgstr "[bgt](bgt.md), [ble](ble.md), [blt](blt.md)."
 
 #: ../../doc/src/intrinsics/bit/bgt.md:1
 msgid "bgt(x, y): Bitwise Greater Than"
-msgstr ""
+msgstr "bgt(x, y): bit a bit mayor que"
 
 #: ../../doc/src/intrinsics/bit/bgt.md:3
 msgid "Bitwise greater than."
-msgstr ""
+msgstr "Bit a bit mayor que."
 
 #: ../../doc/src/intrinsics/bit/bgt.md:24
 msgid ""
 "`bgt(x, y)` calculates if one integer input values is bitwise greater "
 "than the other."
 msgstr ""
+"`bgt(x, y)` calcula si un valor de entrada entero es bit a bit mayor que el "
+"otro."
 
 #: ../../doc/src/intrinsics/bit/bgt.md:68
 msgid "[bge](bge.md), [ble](ble.md), [blt](blt.md)."
-msgstr ""
+msgstr "[bge](bge.md), [ble](ble.md), [blt](blt.md)."
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:1
 msgid "bit_size(x): Bit Size"
-msgstr ""
+msgstr "bit_size(x): tamaño de bit"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:3
 msgid "Bit size."
-msgstr ""
+msgstr "Tamaño de bits."
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:16
 msgid "`x` is integer input value."
-msgstr ""
+msgstr "`x` es un valor de entrada entero."
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:20
 #: ../../doc/src/intrinsics/numeric/digits.md:19
 msgid "The return value is of type integer."
-msgstr ""
+msgstr "El valor devuelto es de tipo entero."
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:24
 msgid ""
 "`bit_size(x)` calculates the number of bits including sign bit of binary "
 "representation of `x`."
 msgstr ""
+"`bit_size(x)` calcula el número de bits, incluido el bit de signo de la "
+"representación binaria de `x`."
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:29
 msgid "Supported input types is integer."
-msgstr ""
+msgstr "Los tipos de entrada admitidos son enteros."
 
 #: ../../doc/src/intrinsics/bit/ble.md:1
 msgid "bge(x, y): Bitwise Less or Equal"
-msgstr ""
+msgstr "bge(x, y): bit a bit menor o igual"
 
 #: ../../doc/src/intrinsics/bit/ble.md:3
 msgid "Bitwise less than or equal to."
-msgstr ""
+msgstr "Bit a bit menor o igual que."
 
 #: ../../doc/src/intrinsics/bit/ble.md:24
 msgid ""
 "`ble(x, y)` calculates if one integer input values is bitwise less than "
 "or equal to other."
 msgstr ""
+"`ble(x, y)` calcula si un valor de entrada entero es bit a bit menor o igual "
+"que otro."
 
 #: ../../doc/src/intrinsics/bit/ble.md:70
 msgid "[bgt](bgt.md), [bge](bge.md), [blt](blt.md)."
-msgstr ""
+msgstr "[bgt](bgt.md), [bge](bge.md), [blt](blt.md)."
 
 #: ../../doc/src/intrinsics/bit/blt.md:1
 msgid "blt(x, y): Bitwise Less Than"
-msgstr ""
+msgstr "blt(x, y): bit a bit menor que"
 
 #: ../../doc/src/intrinsics/bit/blt.md:3
 msgid "Bitwise less than."
-msgstr ""
+msgstr "Bit a bit menor que."
 
 #: ../../doc/src/intrinsics/bit/blt.md:24
 msgid ""
 "`blt(x, y)` calculates if one integer input values is bitwise less than "
 "the other."
 msgstr ""
+"`blt(x, y)` calcula si un valor de entrada entero es bit a bit menor que el "
+"otro."
 
 #: ../../doc/src/intrinsics/bit/blt.md:68
 msgid "[bge](bge.md), [ble](ble.md), [bgt](bgt.md)."
-msgstr ""
+msgstr "[bge](bge.md), [ble](ble.md), [bgt](bgt.md)."
 
 #: ../../doc/src/intrinsics/bit/btest.md:1
 msgid "btest(x, pos): Bit Test at Position"
-msgstr ""
+msgstr "btest(x, pos): Prueba de bits en la posición"
 
 #: ../../doc/src/intrinsics/bit/btest.md:3
 msgid "Bit test."
-msgstr ""
+msgstr "Prueba de bits."
 
 #: ../../doc/src/intrinsics/bit/btest.md:16
 msgid ""
 "`x` and `pos` are integer input values. Both input values are of same "
 "kind. `pos` represents position in `x`."
 msgstr ""
+"`x` y `pos` son valores de entrada enteros. Ambos valores de entrada son del "
+"mismo tipo. `pos` representa la posición en `x`."
 
 #: ../../doc/src/intrinsics/bit/btest.md:21
 msgid "The return value is of type logical."
-msgstr ""
+msgstr "El valor de retorno es de tipo lógico."
 
 #: ../../doc/src/intrinsics/bit/btest.md:25
 msgid ""
@@ -2347,25 +2658,30 @@ msgid ""
 "set. The counting of the bits starts at 0, at least significant bit (LSB)"
 " i.e., the rightmost bit in `x`."
 msgstr ""
+"`btest(x, pos)` calcula si el bit `pos` en el valor entero de entrada `x` "
+"está establecido. El conteo de bits comienza en 0, al menos el bit "
+"significativo (LSB), es decir, el bit más a la derecha en `x`."
 
 #: ../../doc/src/intrinsics/bit/btest.md:29
 msgid ""
 "If `pos` less than 0 or greater than `bit_size()`, `btest(x, pos)` errors"
 " with not allowed message."
 msgstr ""
+"Si `pos` es menor que 0 o mayor que `bit_size()`, `btest(x, pos)` tiene un "
+"mensaje de error no permitido."
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:1
 msgid "shiftl(x, shift): Shift Left"
-msgstr ""
+msgstr "shiftl(x, shift): Desplazamiento a la izquierda"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:3
 msgid "Logical shift left function."
-msgstr ""
+msgstr "Función de desplazamiento lógico a la izquierda."
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:16
 #: ../../doc/src/intrinsics/bit/shiftr.md:16
 msgid "`x` is an integer input value."
-msgstr ""
+msgstr "`x` es un valor de entrada entero."
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:18
 #: ../../doc/src/intrinsics/bit/shiftr.md:18
@@ -2373,11 +2689,13 @@ msgid ""
 "`shift` an unsigned integer value less than or equal to the bit size of "
 "`x`. The possible values are 7, 31, and 63."
 msgstr ""
+"`shift` un valor entero sin signo menor o igual que el tamaño de bit de `x`. "
+"Los valores posibles son 7, 31 y 63."
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:23
 #: ../../doc/src/intrinsics/bit/shiftr.md:23
 msgid "The return value is of type integer and of the same kind as `x`."
-msgstr ""
+msgstr "El valor devuelto es de tipo entero y del mismo tipo que `x`."
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:27
 msgid ""
@@ -2386,6 +2704,11 @@ msgid ""
 "MSB(**M**ost **S**ignificant **B**it). Bits shifted from the left end "
 "i.e., MSB bits are lost. Zeroes are appended to the opposite right end."
 msgstr ""
+"**shiftl(x, shift)** desplaza lógicamente a la izquierda `x` por el número "
+"de bits de `shift`. `shiftl` cambia de LSB(**L**este **S**significativo "
+"**B**it) a MSB(**M**más **S**significativo **B**it). Bits desplazados desde "
+"el extremo izquierdo, es decir, se pierden bits MSB. Los ceros se agregan al "
+"extremo derecho opuesto."
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:34
 #: ../../doc/src/intrinsics/bit/shiftr.md:34
@@ -2393,18 +2716,20 @@ msgid ""
 "Supported types in unsigned integer value `x` and unsigned integer value "
 "`shift` from (7, 31, 63) less than or equal to bit size of `x`."
 msgstr ""
+"Tipos admitidos en valor entero sin signo `x` y valor entero sin signo "
+"`shift` de (7, 31, 63) menor o igual que el tamaño de bit de `x`."
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:82
 msgid "[shiftr](shiftr.md)."
-msgstr ""
+msgstr "[shiftr](shiftr.md)."
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:1
 msgid "shiftr(x, shift): Shift Right"
-msgstr ""
+msgstr "shiftr(x, shift): Desplazamiento a la derecha"
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:3
 msgid "Logical shift right function."
-msgstr ""
+msgstr "Función de desplazamiento lógico a la derecha."
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:27
 msgid ""
@@ -2413,28 +2738,35 @@ msgid ""
 "LSB(**L**east **S**ignificant **B**it). Bits shifted from the right end "
 "i.e., LSB bits are lost. Zeroes are appended to the opposite left end."
 msgstr ""
+"**shiftr(x, shift)** lógicamente desplaza a la derecha `x` por el número de "
+"bits de `shift`. `shiftr` cambia de MSB(**M**más **S**significativo **B**it) "
+"a LSB(**L**este **S**significativo **B**it). Bits desplazados desde el "
+"extremo derecho, es decir, los bits LSB se pierden. Los ceros se añaden al "
+"extremo izquierdo opuesto."
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:82
 msgid "[shiftl](shiftl.md)."
-msgstr ""
+msgstr "[shiftl](shiftl.md)."
 
 #: ../../doc/src/intrinsics/character.md:1
 msgid "Character Intrinsic Functions"
-msgstr ""
+msgstr "Funciones intrínsecas de carácter"
 
 #: ../../doc/src/intrinsics/character/achar.md:1
 msgid "achar(x, kind): To Character in ASCII set."
-msgstr ""
+msgstr "achar(x, kind): Para Carácter en conjunto ASCII."
 
 #: ../../doc/src/intrinsics/character/achar.md:3
 msgid "Character represented by in the ASCII character set."
-msgstr ""
+msgstr "Carácter representado por en el juego de caracteres ASCII."
 
 #: ../../doc/src/intrinsics/character/achar.md:16
 msgid ""
 "`x`: the input value of integer type. `kind`: an optional input value of "
 "type integer constant expression for initialization."
 msgstr ""
+"`x`: el valor de entrada de tipo entero. `kind`: un valor de entrada "
+"opcional de expresión constante de tipo entero para la inicialización."
 
 #: ../../doc/src/intrinsics/character/achar.md:20
 #: ../../doc/src/intrinsics/character/adjustl.md:18
@@ -2442,12 +2774,12 @@ msgstr ""
 #: ../../doc/src/intrinsics/character/char.md:21
 #: ../../doc/src/intrinsics/character/len_trim.md:18
 msgid "Return value"
-msgstr ""
+msgstr "Valor devuelto"
 
 #: ../../doc/src/intrinsics/character/achar.md:22
 #: ../../doc/src/intrinsics/character/char.md:23
 msgid "The return value is of type character of length 1."
-msgstr ""
+msgstr "El valor de retorno es de tipo carácter de longitud 1."
 
 #: ../../doc/src/intrinsics/character/achar.md:24
 #: ../../doc/src/intrinsics/character/char.md:25
@@ -2455,12 +2787,16 @@ msgid ""
 "The return value is of kind `kind` if optional input value is passed, "
 "otherwise the kind is default kind."
 msgstr ""
+"El valor devuelto es del tipo `kind` si se pasa un valor de entrada opcional;"
+" de lo contrario, el tipo es el tipo predeterminado."
 
 #: ../../doc/src/intrinsics/character/achar.md:29
 msgid ""
 "**achar(x, kind)** returns the character represented by the ASCII "
 "character set at `x` position."
 msgstr ""
+"**achar(x, kind)** devuelve el carácter representado por el juego de "
+"caracteres ASCII en la posición `x`."
 
 #: ../../doc/src/intrinsics/character/achar.md:32
 #: ../../doc/src/intrinsics/character/char.md:33
@@ -2469,25 +2805,28 @@ msgid ""
 "not represented in the ASCII character set, the return value is "
 "undefined."
 msgstr ""
+"Si `x` está fuera del valor entero del juego de caracteres ASCII, es decir, "
+"si `x` no está representado en el juego de caracteres ASCII, el valor "
+"devuelto no está definido."
 
 #: ../../doc/src/intrinsics/character/achar.md:35
 #: ../../doc/src/intrinsics/character/char.md:36
 msgid "It is a runtime builtin function."
-msgstr ""
+msgstr "Es una función incorporada en tiempo de ejecución."
 
 #: ../../doc/src/intrinsics/character/achar.md:71
 #: ../../doc/src/intrinsics/character/adjustl.md:64
 #: ../../doc/src/intrinsics/character/len_trim.md:65
 msgid "[lge](lge.md)."
-msgstr ""
+msgstr "[lge](lge.md)."
 
 #: ../../doc/src/intrinsics/character/adjustl.md:1
 msgid "adjustl(string): Left Adjust String"
-msgstr ""
+msgstr "adjustl(string): ajuste de cadena a izquierda"
 
 #: ../../doc/src/intrinsics/character/adjustl.md:3
 msgid "Left adjust a string."
-msgstr ""
+msgstr "Ajusta a izquierda una cadena."
 
 #: ../../doc/src/intrinsics/character/adjustl.md:16
 #: ../../doc/src/intrinsics/character/adjustr.md:16
