@@ -7,39 +7,40 @@
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 
+using LFortran::AST::Assignment_t;
 using LFortran::AST::ast_t;
+using LFortran::AST::astType;
+using LFortran::AST::BinOp_t;
+using LFortran::AST::cmpopType;
+using LFortran::AST::Compare_t;
+using LFortran::AST::Cycle_t;
 using LFortran::AST::Declaration_t;
+using LFortran::AST::DoLoop_t;
+using LFortran::AST::Exit_t;
 using LFortran::AST::expr_t;
-using LFortran::AST::stmt_t;
+using LFortran::AST::exprType;
+using LFortran::AST::Function_t;
+using LFortran::AST::If_t;
 using LFortran::AST::Name_t;
 using LFortran::AST::Num_t;
-using LFortran::AST::BinOp_t;
-using LFortran::AST::UnaryOp_t;
-using LFortran::AST::Compare_t;
-using LFortran::AST::If_t;
-using LFortran::AST::Assignment_t;
-using LFortran::AST::WhileLoop_t;
-using LFortran::AST::Exit_t;
-using LFortran::AST::Return_t;
-using LFortran::AST::Cycle_t;
-using LFortran::AST::DoLoop_t;
-using LFortran::AST::Subroutine_t;
-using LFortran::AST::Function_t;
-using LFortran::AST::Program_t;
-using LFortran::AST::astType;
-using LFortran::AST::exprType;
-using LFortran::AST::stmtType;
 using LFortran::AST::operatorType;
-using LFortran::AST::unaryopType;
-using LFortran::AST::cmpopType;
-using LFortran::AST::TranslationUnit_t;
 using LFortran::AST::PickleBaseVisitor;
+using LFortran::AST::Program_t;
+using LFortran::AST::Return_t;
+using LFortran::AST::stmt_t;
+using LFortran::AST::stmtType;
+using LFortran::AST::Subroutine_t;
+using LFortran::AST::TranslationUnit_t;
+using LFortran::AST::UnaryOp_t;
+using LFortran::AST::unaryopType;
+using LFortran::AST::WhileLoop_t;
 
 
-namespace LFortran {
+namespace LFortran
+{
 
-std::string pickle(int token, const LFortran::YYSTYPE &yystype,
-        bool /* colors */)
+std::string
+pickle(int token, const LFortran::YYSTYPE& yystype, bool /* colors */)
 {
     std::string t;
     t += "(";
@@ -79,38 +80,56 @@ std::string pickle(int token, const LFortran::YYSTYPE &yystype,
     return t;
 }
 
-std::string op2str(const operatorType type)
+std::string
+op2str(const operatorType type)
 {
     switch (type) {
-        case (operatorType::Add) : return "+";
-        case (operatorType::Sub) : return "-";
-        case (operatorType::Mul) : return "*";
-        case (operatorType::Div) : return "/";
-        case (operatorType::Pow) : return "**";
+        case (operatorType::Add):
+            return "+";
+        case (operatorType::Sub):
+            return "-";
+        case (operatorType::Mul):
+            return "*";
+        case (operatorType::Div):
+            return "/";
+        case (operatorType::Pow):
+            return "**";
     }
     throw std::runtime_error("Unknown type");
 }
 
-std::string unop2str(const unaryopType type)
+std::string
+unop2str(const unaryopType type)
 {
     switch (type) {
-        case (unaryopType::Invert) : return "inv";
-        case (unaryopType::Not) : return "not";
-        case (unaryopType::UAdd) : return "u+";
-        case (unaryopType::USub) : return "u-";
+        case (unaryopType::Invert):
+            return "inv";
+        case (unaryopType::Not):
+            return "not";
+        case (unaryopType::UAdd):
+            return "u+";
+        case (unaryopType::USub):
+            return "u-";
     }
     throw std::runtime_error("Unknown type");
 }
 
-std::string compare2str(const cmpopType type)
+std::string
+compare2str(const cmpopType type)
 {
     switch (type) {
-        case (cmpopType::Eq) : return "==";
-        case (cmpopType::NotEq) : return "/=";
-        case (cmpopType::Lt) : return "<";
-        case (cmpopType::LtE) : return "<=";
-        case (cmpopType::Gt) : return ">";
-        case (cmpopType::GtE) : return ">=";
+        case (cmpopType::Eq):
+            return "==";
+        case (cmpopType::NotEq):
+            return "/=";
+        case (cmpopType::Lt):
+            return "<";
+        case (cmpopType::LtE):
+            return "<=";
+        case (cmpopType::Gt):
+            return ">";
+        case (cmpopType::GtE):
+            return ">=";
     }
     throw std::runtime_error("Unknown type");
 }
@@ -118,7 +137,8 @@ std::string compare2str(const cmpopType type)
 class PickleVisitor : public PickleBaseVisitor<PickleVisitor>
 {
 public:
-    void visit_BinOp(const BinOp_t &x) {
+    void visit_BinOp(const BinOp_t& x)
+    {
         s.append("(");
         // We do not print BinOp +, but rather just +. It is still uniquely
         // determined that + means BinOp's +.
@@ -133,14 +153,16 @@ public:
         this->visit_expr(*x.m_right);
         s.append(")");
     }
-    void visit_UnaryOp(const UnaryOp_t &x) {
+    void visit_UnaryOp(const UnaryOp_t& x)
+    {
         s.append("(");
         s.append(unop2str(x.m_op));
         s.append(" ");
         this->visit_expr(*x.m_operand);
         s.append(")");
     }
-    void visit_Compare(const Compare_t &x) {
+    void visit_Compare(const Compare_t& x)
+    {
         s.append("(");
         s.append(compare2str(x.m_op));
         s.append(" ");
@@ -149,7 +171,8 @@ public:
         this->visit_expr(*x.m_right);
         s.append(")");
     }
-    void visit_Name(const Name_t &x) {
+    void visit_Name(const Name_t& x)
+    {
         if (use_colors) {
             s.append(color(fg::yellow));
         }
@@ -158,7 +181,8 @@ public:
             s.append(color(fg::reset));
         }
     }
-    void visit_Num(const Num_t &x) {
+    void visit_Num(const Num_t& x)
+    {
         if (use_colors) {
             s.append(color(fg::cyan));
         }
@@ -171,12 +195,15 @@ public:
             s += x.m_kind;
         }
     }
-    std::string get_str() {
+    std::string get_str()
+    {
         return s;
     }
 };
 
-std::string pickle(LFortran::AST::ast_t &ast, bool colors, bool indent) {
+std::string
+pickle(LFortran::AST::ast_t& ast, bool colors, bool indent)
+{
     PickleVisitor v;
     v.use_colors = colors;
     v.indent = indent;
@@ -184,27 +211,30 @@ std::string pickle(LFortran::AST::ast_t &ast, bool colors, bool indent) {
     return v.get_str();
 }
 
-std::string pickle(AST::TranslationUnit_t &ast, bool colors,bool indent) {
+std::string
+pickle(AST::TranslationUnit_t& ast, bool colors, bool indent)
+{
     PickleVisitor v;
     v.use_colors = colors;
     v.indent = indent;
-    v.visit_ast((AST::ast_t&)(ast));
+    v.visit_ast((AST::ast_t&) (ast));
     return v.get_str();
 }
 
 /* -----------------------------------------------------------------------*/
 // ASR
 
-class ASRPickleVisitor :
-    public LFortran::ASR::PickleBaseVisitor<ASRPickleVisitor>
+class ASRPickleVisitor : public LFortran::ASR::PickleBaseVisitor<ASRPickleVisitor>
 {
 public:
     bool show_intrinsic_modules;
 
-    std::string get_str() {
+    std::string get_str()
+    {
         return s;
     }
-    void visit_symbol(const ASR::symbol_t &x) {
+    void visit_symbol(const ASR::symbol_t& x)
+    {
         s.append(LFortran::ASRUtils::symbol_parent_symtab(&x)->get_counter());
         s.append(" ");
         if (use_colors) {
@@ -215,7 +245,8 @@ public:
             s.append(color(fg::reset));
         }
     }
-    void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
+    void visit_IntegerConstant(const ASR::IntegerConstant_t& x)
+    {
         s.append("(");
         if (use_colors) {
             s.append(color(style::bold));
@@ -238,9 +269,9 @@ public:
         this->visit_ttype(*x.m_type);
         s.append(")");
     }
-    void visit_Module(const ASR::Module_t &x) {
-        if (!show_intrinsic_modules &&
-                    startswith(x.m_name, "lfortran_intrinsic_")) {
+    void visit_Module(const ASR::Module_t& x)
+    {
+        if (!show_intrinsic_modules && startswith(x.m_name, "lfortran_intrinsic_")) {
             s.append("(");
             if (use_colors) {
                 s.append(color(style::bold));
@@ -260,8 +291,9 @@ public:
     }
 };
 
-std::string pickle(LFortran::ASR::asr_t &asr, bool colors, bool indent,
-        bool show_intrinsic_modules) {
+std::string
+pickle(LFortran::ASR::asr_t& asr, bool colors, bool indent, bool show_intrinsic_modules)
+{
     ASRPickleVisitor v;
     v.use_colors = colors;
     v.indent = indent;
@@ -270,8 +302,10 @@ std::string pickle(LFortran::ASR::asr_t &asr, bool colors, bool indent,
     return v.get_str();
 }
 
-std::string pickle(LFortran::ASR::TranslationUnit_t &asr, bool colors, bool indent, bool show_intrinsic_modules) {
-    return pickle((ASR::asr_t &)asr, colors, indent, show_intrinsic_modules);
+std::string
+pickle(LFortran::ASR::TranslationUnit_t& asr, bool colors, bool indent, bool show_intrinsic_modules)
+{
+    return pickle((ASR::asr_t&) asr, colors, indent, show_intrinsic_modules);
 }
 
 }

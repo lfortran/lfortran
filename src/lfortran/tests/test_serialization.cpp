@@ -12,13 +12,14 @@
 #include <libasr/asr_verify.h>
 #include <libasr/utils.h>
 
-using LFortran::TRY;
-using LFortran::string_to_uint64;
-using LFortran::uint64_to_string;
 using LFortran::string_to_uint32;
+using LFortran::string_to_uint64;
+using LFortran::TRY;
 using LFortran::uint32_to_string;
+using LFortran::uint64_to_string;
 
-TEST_CASE("Integer conversion") {
+TEST_CASE("Integer conversion")
+{
     uint64_t i;
     i = 1;
     CHECK(string_to_uint32(uint32_to_string(i)) == i);
@@ -53,8 +54,10 @@ TEST_CASE("Integer conversion") {
     CHECK(string_to_uint64(uint64_to_string(i)) == i);
 }
 
-void ast_ser(const std::string &src) {
-    Allocator al(4*1024);
+void
+ast_ser(const std::string& src)
+{
+    Allocator al(4 * 1024);
 
     LFortran::AST::TranslationUnit_t* result;
     LFortran::diag::Diagnostics diagnostics;
@@ -62,7 +65,7 @@ void ast_ser(const std::string &src) {
     std::string ast_orig = LFortran::pickle(*result);
     std::string binary = LFortran::serialize(*result);
 
-    LFortran::AST::ast_t *ast;
+    LFortran::AST::ast_t* ast;
     ast = LFortran::deserialize_ast(al, binary);
     CHECK(LFortran::AST::is_a<LFortran::AST::unit_t>(*ast));
 
@@ -71,24 +74,26 @@ void ast_ser(const std::string &src) {
     CHECK(ast_orig == ast_new);
 }
 
-void asr_ser(const std::string &src) {
-    Allocator al(4*1024);
+void
+asr_ser(const std::string& src)
+{
+    Allocator al(4 * 1024);
 
     LFortran::AST::TranslationUnit_t* ast0;
     LFortran::diag::Diagnostics diagnostics;
     LFortran::CompilerOptions compiler_options;
     ast0 = TRY(LFortran::parse(al, src, diagnostics));
-    LFortran::ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast0,
-        diagnostics, nullptr, false, compiler_options));
+    LFortran::ASR::TranslationUnit_t* asr
+        = TRY(LFortran::ast_to_asr(al, *ast0, diagnostics, nullptr, false, compiler_options));
 
     std::string asr_orig = LFortran::pickle(*asr);
     std::string binary = LFortran::serialize(*asr);
 
-    LFortran::ASR::asr_t *asr_new0;
+    LFortran::ASR::asr_t* asr_new0;
     LFortran::SymbolTable symtab(nullptr);
     asr_new0 = LFortran::deserialize_asr(al, binary, true, symtab);
     CHECK(LFortran::ASR::is_a<LFortran::ASR::unit_t>(*asr_new0));
-    LFortran::ASR::TranslationUnit_t *tu
+    LFortran::ASR::TranslationUnit_t* tu
         = LFortran::ASR::down_cast2<LFortran::ASR::TranslationUnit_t>(asr_new0);
     fix_external_symbols(*tu, symtab);
     LFORTRAN_ASSERT(LFortran::asr_verify(*tu));
@@ -98,27 +103,29 @@ void asr_ser(const std::string &src) {
     CHECK(asr_orig == asr_new);
 }
 
-void asr_mod(const std::string &src) {
-    Allocator al(4*1024);
+void
+asr_mod(const std::string& src)
+{
+    Allocator al(4 * 1024);
 
     LFortran::AST::TranslationUnit_t* ast0;
     LFortran::diag::Diagnostics diagnostics;
     LFortran::CompilerOptions compiler_options;
     ast0 = TRY(LFortran::parse(al, src, diagnostics));
-    LFortran::ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast0,
-        diagnostics, nullptr, false, compiler_options));
+    LFortran::ASR::TranslationUnit_t* asr
+        = TRY(LFortran::ast_to_asr(al, *ast0, diagnostics, nullptr, false, compiler_options));
 
     std::string modfile = LFortran::save_modfile(*asr);
     LFortran::SymbolTable symtab(nullptr);
-    LFortran::ASR::TranslationUnit_t *asr2 = LFortran::load_modfile(al,
-            modfile, true, symtab);
+    LFortran::ASR::TranslationUnit_t* asr2 = LFortran::load_modfile(al, modfile, true, symtab);
     fix_external_symbols(*asr2, symtab);
     LFORTRAN_ASSERT(LFortran::asr_verify(*asr2));
 
     CHECK(LFortran::pickle(*asr) == LFortran::pickle(*asr2));
 }
 
-TEST_CASE("AST Tests") {
+TEST_CASE("AST Tests")
+{
     ast_ser("x = 2+2**2");
 
     ast_ser(R"""(
@@ -192,10 +199,10 @@ contains
 
 end program
 )""");
-
 }
 
-TEST_CASE("ASR Tests 1") {
+TEST_CASE("ASR Tests 1")
+{
     asr_ser(R"""(
 program expr2
 implicit none
@@ -206,7 +213,8 @@ end program
 )""");
 }
 
-TEST_CASE("ASR Tests 2") {
+TEST_CASE("ASR Tests 2")
+{
     asr_ser(R"""(
 integer function f(a, b) result(r)
 integer, intent(in) :: a, b
@@ -215,7 +223,8 @@ end function
 )""");
 }
 
-TEST_CASE("ASR Tests 3") {
+TEST_CASE("ASR Tests 3")
+{
     asr_ser(R"""(
 program doconcurrentloop_01
 implicit none
@@ -247,7 +256,8 @@ end program
 )""");
 }
 
-TEST_CASE("ASR Tests 4") {
+TEST_CASE("ASR Tests 4")
+{
     asr_ser(R"""(
 module a
 implicit none
@@ -270,7 +280,8 @@ end
 )""");
 }
 
-TEST_CASE("ASR Tests 5") {
+TEST_CASE("ASR Tests 5")
+{
     asr_ser(R"""(
 program derived_types_03
 implicit none
@@ -300,10 +311,10 @@ contains
 
 end
 )""");
-
 }
 
-TEST_CASE("ASR modfile handling") {
+TEST_CASE("ASR modfile handling")
+{
     asr_mod(R"""(
 module a
 implicit none
@@ -316,10 +327,10 @@ end subroutine
 
 end module
 )""");
-
 }
 
-TEST_CASE("Topological sorting mod_int") {
+TEST_CASE("Topological sorting mod_int")
+{
     std::map<std::string, std::vector<std::string>> deps;
     // 1 depends on 2
     deps["mod_1"].push_back("mod_2");
@@ -327,24 +338,28 @@ TEST_CASE("Topological sorting mod_int") {
     deps["mod_3"].push_back("mod_1");
     deps["mod_2"].push_back("mod_4");
     deps["mod_3"].push_back("mod_4");
-    CHECK(LFortran::ASRUtils::order_deps(deps) == std::vector<std::string>({"mod_4", "mod_2", "mod_1", "mod_3"}));
+    CHECK(LFortran::ASRUtils::order_deps(deps)
+          == std::vector<std::string>({ "mod_4", "mod_2", "mod_1", "mod_3" }));
 
     deps.clear();
     deps["mod_1"].push_back("mod_2");
     deps["mod_1"].push_back("mod_3");
     deps["mod_2"].push_back("mod_4");
     deps["mod_3"].push_back("mod_4");
-    CHECK(LFortran::ASRUtils::order_deps(deps) == std::vector<std::string>({ "mod_4", "mod_2", "mod_3", "mod_1" }));
+    CHECK(LFortran::ASRUtils::order_deps(deps)
+          == std::vector<std::string>({ "mod_4", "mod_2", "mod_3", "mod_1" }));
 
     deps.clear();
     deps["mod_1"].push_back("mod_2");
     deps["mod_3"].push_back("mod_1");
     deps["mod_3"].push_back("mod_4");
     deps["mod_4"].push_back("mod_1");
-    CHECK(LFortran::ASRUtils::order_deps(deps) == std::vector<std::string>({ "mod_2", "mod_1", "mod_4", "mod_3" }));
+    CHECK(LFortran::ASRUtils::order_deps(deps)
+          == std::vector<std::string>({ "mod_2", "mod_1", "mod_4", "mod_3" }));
 }
 
-TEST_CASE("Topological sorting string") {
+TEST_CASE("Topological sorting string")
+{
     std::map<std::string, std::vector<std::string>> deps;
     // A depends on B
     deps["A"].push_back("B");
@@ -352,14 +367,13 @@ TEST_CASE("Topological sorting string") {
     deps["C"].push_back("A");
     deps["B"].push_back("D");
     deps["C"].push_back("D");
-    CHECK(LFortran::ASRUtils::order_deps(deps) == std::vector<std::string>(
-                {"D", "B", "A", "C"}));
+    CHECK(LFortran::ASRUtils::order_deps(deps) == std::vector<std::string>({ "D", "B", "A", "C" }));
 
     deps.clear();
     deps["module_a"].push_back("module_b");
     deps["module_c"].push_back("module_a");
     deps["module_c"].push_back("module_d");
     deps["module_d"].push_back("module_a");
-    CHECK(LFortran::ASRUtils::order_deps(deps) == std::vector<std::string>(
-                {"module_b", "module_a", "module_d", "module_c"}));
+    CHECK(LFortran::ASRUtils::order_deps(deps)
+          == std::vector<std::string>({ "module_b", "module_a", "module_d", "module_c" }));
 }

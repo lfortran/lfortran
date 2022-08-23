@@ -8,7 +8,8 @@
 #include <libasr/bwriter.h>
 
 
-namespace LFortran {
+namespace LFortran
+{
 
 const std::string lfortran_modfile_type_string = "LFortran Modfile";
 
@@ -24,11 +25,14 @@ const std::string lfortran_modfile_type_string = "LFortran Modfile";
 
     Comments below show some possible future improvements to the mod format.
 */
-std::string save_modfile(const ASR::TranslationUnit_t &m) {
-    LFORTRAN_ASSERT(m.m_global_scope->get_scope().size()== 1);
-    for (auto &a : m.m_global_scope->get_scope()) {
+std::string
+save_modfile(const ASR::TranslationUnit_t& m)
+{
+    LFORTRAN_ASSERT(m.m_global_scope->get_scope().size() == 1);
+    for (auto& a : m.m_global_scope->get_scope()) {
         LFORTRAN_ASSERT(ASR::is_a<ASR::Module_t>(*a.second));
-        if ((bool&)a) { } // Suppress unused warning in Release mode
+        if ((bool&) a) {
+        }  // Suppress unused warning in Release mode
     }
 #ifdef WITH_LFORTRAN_BINARY_MODFILES
     BinaryWriter b;
@@ -57,8 +61,9 @@ std::string save_modfile(const ASR::TranslationUnit_t &m) {
     return b.get_str();
 }
 
-ASR::TranslationUnit_t* load_modfile(Allocator &al, const std::string &s,
-        bool load_symtab_id, SymbolTable &symtab) {
+ASR::TranslationUnit_t*
+load_modfile(Allocator& al, const std::string& s, bool load_symtab_id, SymbolTable& symtab)
+{
 #ifdef WITH_LFORTRAN_BINARY_MODFILES
     BinaryReader b(s);
 #else
@@ -70,13 +75,15 @@ ASR::TranslationUnit_t* load_modfile(Allocator &al, const std::string &s,
     }
     std::string version = b.read_string();
     if (version != LFORTRAN_VERSION) {
-        throw LCompilersException("Incompatible format: LFortran Modfile was generated using version '" + version + "', but current LFortran version is '" + LFORTRAN_VERSION + "'");
+        throw LCompilersException(
+            "Incompatible format: LFortran Modfile was generated using version '" + version
+            + "', but current LFortran version is '" + LFORTRAN_VERSION + "'");
     }
     std::string asr_binary = b.read_string();
-    ASR::asr_t *asr = deserialize_asr(al, asr_binary, load_symtab_id, symtab);
+    ASR::asr_t* asr = deserialize_asr(al, asr_binary, load_symtab_id, symtab);
 
-    ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(asr);
+    ASR::TranslationUnit_t* tu = ASR::down_cast2<ASR::TranslationUnit_t>(asr);
     return tu;
 }
 
-} // namespace LFortran
+}  // namespace LFortran

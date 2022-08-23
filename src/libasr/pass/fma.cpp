@@ -10,7 +10,8 @@
 #include <utility>
 
 
-namespace LFortran {
+namespace LFortran
+{
 
 using ASR::down_cast;
 using ASR::is_a;
@@ -35,7 +36,7 @@ to:
 class FMAVisitor : public PassUtils::SkipOptimizationFunctionVisitor<FMAVisitor>
 {
 private:
-    ASR::TranslationUnit_t &unit;
+    ASR::TranslationUnit_t& unit;
 
     std::string rl_path;
 
@@ -46,13 +47,18 @@ private:
     bool from_fma;
 
 public:
-    FMAVisitor(Allocator &al_, ASR::TranslationUnit_t &unit_, const std::string& rl_path_) : SkipOptimizationFunctionVisitor(al_),
-    unit(unit_), rl_path(rl_path_), fma_var(nullptr), from_fma(false)
+    FMAVisitor(Allocator& al_, ASR::TranslationUnit_t& unit_, const std::string& rl_path_)
+        : SkipOptimizationFunctionVisitor(al_)
+        , unit(unit_)
+        , rl_path(rl_path_)
+        , fma_var(nullptr)
+        , from_fma(false)
     {
         pass_result.reserve(al, 1);
     }
 
-    bool is_BinOpMul(ASR::expr_t* expr) {
+    bool is_BinOpMul(ASR::expr_t* expr)
+    {
         if (ASR::is_a<ASR::RealBinOp_t>(*expr)) {
             ASR::RealBinOp_t* expr_binop = ASR::down_cast<ASR::RealBinOp_t>(expr);
             return expr_binop->m_op == ASR::binopType::Mul;
@@ -60,13 +66,20 @@ public:
         return false;
     }
 
-    void visit_IntegerBinOp(const ASR::IntegerBinOp_t& /*x*/) { }
-    void visit_ComplexBinOp(const ASR::ComplexBinOp_t& /*x*/) { }
-    void visit_LogicalBinOp(const ASR::LogicalBinOp_t& /*x*/) { }
+    void visit_IntegerBinOp(const ASR::IntegerBinOp_t& /*x*/)
+    {
+    }
+    void visit_ComplexBinOp(const ASR::ComplexBinOp_t& /*x*/)
+    {
+    }
+    void visit_LogicalBinOp(const ASR::LogicalBinOp_t& /*x*/)
+    {
+    }
 
-    void visit_RealBinOp(const ASR::RealBinOp_t& x_const) {
-        if( !from_fma ) {
-            return ;
+    void visit_RealBinOp(const ASR::RealBinOp_t& x_const)
+    {
+        if (!from_fma) {
+            return;
         }
 
         from_fma = true;
@@ -75,98 +88,114 @@ public:
 
         fma_var = nullptr;
         visit_expr(*x.m_left);
-        if( fma_var ) {
+        if (fma_var) {
             x.m_left = fma_var;
         }
 
         fma_var = nullptr;
         visit_expr(*x.m_right);
-        if( fma_var ) {
+        if (fma_var) {
             x.m_right = fma_var;
         }
         fma_var = nullptr;
 
-        if( x.m_op != ASR::binopType::Add && x.m_op != ASR::binopType::Sub ) {
-            return ;
+        if (x.m_op != ASR::binopType::Add && x.m_op != ASR::binopType::Sub) {
+            return;
         }
         ASR::expr_t *mul_expr = nullptr, *other_expr = nullptr;
         bool is_mul_expr_negative = false, is_other_expr_negative = false;
-        if( is_BinOpMul(x.m_right) ) {
+        if (is_BinOpMul(x.m_right)) {
             mul_expr = x.m_right;
             other_expr = x.m_left;
             is_mul_expr_negative = (x.m_op == ASR::binopType::Sub);
-        } else if( is_BinOpMul(x.m_left) ) {
+        } else if (is_BinOpMul(x.m_left)) {
             mul_expr = x.m_left;
             other_expr = x.m_right;
             is_other_expr_negative = (x.m_op == ASR::binopType::Sub);
         } else {
-            return ;
+            return;
         }
 
-        if( is_other_expr_negative ) {
-            other_expr = ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(al, other_expr->base.loc, other_expr,
-                ASRUtils::expr_type(other_expr), nullptr));
+        if (is_other_expr_negative) {
+            other_expr = ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(
+                al, other_expr->base.loc, other_expr, ASRUtils::expr_type(other_expr), nullptr));
         }
 
         ASR::RealBinOp_t* mul_binop = ASR::down_cast<ASR::RealBinOp_t>(mul_expr);
         ASR::expr_t *first_arg = mul_binop->m_left, *second_arg = mul_binop->m_right;
 
-        if( is_mul_expr_negative ) {
-            first_arg = ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(al, first_arg->base.loc, first_arg,
-                ASRUtils::expr_type(first_arg), nullptr));
+        if (is_mul_expr_negative) {
+            first_arg = ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(
+                al, first_arg->base.loc, first_arg, ASRUtils::expr_type(first_arg), nullptr));
         }
 
-        fma_var = PassUtils::get_fma(other_expr, first_arg, second_arg,
-                                     al, unit, rl_path, current_scope, x.base.base.loc,
-                                     [&](const std::string &msg, const Location &) { throw LCompilersException(msg); });
+        fma_var = PassUtils::get_fma(
+            other_expr,
+            first_arg,
+            second_arg,
+            al,
+            unit,
+            rl_path,
+            current_scope,
+            x.base.base.loc,
+            [&](const std::string& msg, const Location&) { throw LCompilersException(msg); });
         from_fma = false;
     }
 
-    void visit_Assignment(const ASR::Assignment_t& x) {
+    void visit_Assignment(const ASR::Assignment_t& x)
+    {
         from_fma = true;
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
         fma_var = nullptr;
         visit_expr(*x.m_value);
-        if( fma_var ) {
+        if (fma_var) {
             xx.m_value = fma_var;
         }
         fma_var = nullptr;
         from_fma = false;
     }
 
-    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t& x)
+    {
         visit_UnaryOp(x);
     }
-    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t& x)
+    {
         visit_UnaryOp(x);
     }
-    void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
+    void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t& x)
+    {
         visit_UnaryOp(x);
     }
-    void visit_IntegerBitNot(const ASR::IntegerBitNot_t &x) {
+    void visit_IntegerBitNot(const ASR::IntegerBitNot_t& x)
+    {
         visit_UnaryOp(x);
     }
-    void visit_LogicalNot(const ASR::LogicalNot_t &x) {
+    void visit_LogicalNot(const ASR::LogicalNot_t& x)
+    {
         visit_UnaryOp(x);
     }
 
-    template<typename T>
-    void visit_UnaryOp(const T& x) {
+    template <typename T>
+    void visit_UnaryOp(const T& x)
+    {
         from_fma = true;
         T& xx = const_cast<T&>(x);
         fma_var = nullptr;
         visit_expr(*x.m_arg);
-        if( fma_var ) {
+        if (fma_var) {
             xx.m_arg = fma_var;
         }
         fma_var = nullptr;
         from_fma = false;
     }
-
 };
 
-void pass_replace_fma(Allocator &al, ASR::TranslationUnit_t &unit,
-                      const LCompilers::PassOptions& pass_options) {
+void
+pass_replace_fma(Allocator& al,
+                 ASR::TranslationUnit_t& unit,
+                 const LCompilers::PassOptions& pass_options)
+{
     std::string rl_path = pass_options.runtime_library_dir;
     FMAVisitor v(al, unit, rl_path);
     v.visit_TranslationUnit(unit);
@@ -174,4 +203,4 @@ void pass_replace_fma(Allocator &al, ASR::TranslationUnit_t &unit,
 }
 
 
-} // namespace LFortran
+}  // namespace LFortran

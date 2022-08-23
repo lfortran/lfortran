@@ -14,7 +14,7 @@ struct VarType {
     Location loc;
     Str string;
     Vec<AST::kind_item_t> kind;
-    char *identifier;
+    char* identifier;
 };
 
 struct FnArg {
@@ -55,37 +55,37 @@ union YYSTYPE {
     AST::ast_t* ast;
     Vec<AST::ast_t*> vec_ast;
 
-    AST::var_sym_t *var_sym;
+    AST::var_sym_t* var_sym;
     Vec<AST::var_sym_t> vec_var_sym;
 
-    AST::dimension_t *dim;
+    AST::dimension_t* dim;
     Vec<AST::dimension_t> vec_dim;
 
-    AST::codimension_t *codim;
+    AST::codimension_t* codim;
     Vec<AST::codimension_t> vec_codim;
 
     AST::reduce_opType reduce_op_type;
 
-    VarType *var_type;
+    VarType* var_type;
 
-    AST::kind_item_t *kind_arg;
+    AST::kind_item_t* kind_arg;
     Vec<AST::kind_item_t> vec_kind_arg;
 
-    FnArg *fnarg;
+    FnArg* fnarg;
     Vec<FnArg> vec_fnarg;
 
-    CoarrayArg *coarrayarg;
+    CoarrayArg* coarrayarg;
     Vec<CoarrayArg> vec_coarrayarg;
 
-    ArgStarKw *argstarkw;
+    ArgStarKw* argstarkw;
     Vec<ArgStarKw> vec_argstarkw;
 
-    AST::struct_member_t *struct_member;
+    AST::struct_member_t* struct_member;
     Vec<AST::struct_member_t> vec_struct_member;
 
     AST::intrinsicopType interface_op_type;
 
-    AST::equi_t *equi;
+    AST::equi_t* equi;
     Vec<AST::equi_t> vec_equi;
 };
 
@@ -96,7 +96,7 @@ static_assert(std::is_trivial<YYSTYPE>::value);
 // would reduce performance.
 static_assert(sizeof(YYSTYPE) == sizeof(Vec<AST::ast_t*>));
 
-} // namespace LFortran
+}  // namespace LFortran
 
 
 typedef struct LFortran::Location YYLTYPE;
@@ -104,4 +104,4 @@ typedef struct LFortran::Location YYLTYPE;
 #define YYLTYPE_IS_TRIVIAL 0
 
 
-#endif // LFORTRAN_PARSER_STYPE_H
+#endif  // LFORTRAN_PARSER_STYPE_H

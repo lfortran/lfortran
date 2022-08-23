@@ -7,7 +7,8 @@
 #include <libasr/pass/stmt_walk_visitor.h>
 #include <libasr/pass/pass_utils.h>
 
-namespace LFortran {
+namespace LFortran
+{
 
 using ASR::down_cast;
 using ASR::is_a;
@@ -36,21 +37,27 @@ The comparison is >= for c<0.
 class DoLoopVisitor : public ASR::StatementWalkVisitor<DoLoopVisitor>
 {
 public:
-    DoLoopVisitor(Allocator &al) : StatementWalkVisitor(al) {
+    DoLoopVisitor(Allocator& al)
+        : StatementWalkVisitor(al)
+    {
     }
 
-    void visit_DoLoop(const ASR::DoLoop_t &x) {
+    void visit_DoLoop(const ASR::DoLoop_t& x)
+    {
         pass_result = PassUtils::replace_doloop(al, x);
     }
 };
 
-void pass_replace_do_loops(Allocator &al, ASR::TranslationUnit_t &unit,
-                           const LCompilers::PassOptions& /*pass_options*/) {
+void
+pass_replace_do_loops(Allocator& al,
+                      ASR::TranslationUnit_t& unit,
+                      const LCompilers::PassOptions& /*pass_options*/)
+{
     DoLoopVisitor v(al);
     // Each call transforms only one layer of nested loops, so we call it twice
     // to transform doubly nested loops:
     v.asr_changed = true;
-    while( v.asr_changed ) {
+    while (v.asr_changed) {
         v.asr_changed = false;
         v.visit_TranslationUnit(unit);
     }
@@ -58,4 +65,4 @@ void pass_replace_do_loops(Allocator &al, ASR::TranslationUnit_t &unit,
 }
 
 
-} // namespace LFortran
+}  // namespace LFortran

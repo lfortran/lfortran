@@ -3,9 +3,11 @@
 
 #include <libasr/exception.h>
 
-namespace LFortran {
+namespace LFortran
+{
 
-namespace parser_local {
+namespace parser_local
+{
 
     // Local exceptions that are used to terminate the parser.
     // It is not propagated outside.
@@ -16,30 +18,36 @@ namespace parser_local {
     {
     public:
         diag::Diagnostic d;
-    public:
-        TokenizerError(const std::string &msg, const Location &loc)
-            : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::Tokenizer, {
-                diag::Label("", {loc})
-            })}
-        { }
 
-        TokenizerError(const diag::Diagnostic &d) : d{d} { }
+    public:
+        TokenizerError(const std::string& msg, const Location& loc)
+            : d{ diag::Diagnostic(
+                msg, diag::Level::Error, diag::Stage::Tokenizer, { diag::Label("", { loc }) }) }
+        {
+        }
+
+        TokenizerError(const diag::Diagnostic& d)
+            : d{ d }
+        {
+        }
     };
 
     class ParserError
     {
     public:
         LFortran::diag::Diagnostic d;
-    public:
-        ParserError(const std::string &msg, const LFortran::Location &loc)
-            : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::Parser, {
-                    diag::Label("", {loc})
-                })}
-        { }
 
-        ParserError(const std::string &msg)
-            : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::Parser)}
-        { }
+    public:
+        ParserError(const std::string& msg, const LFortran::Location& loc)
+            : d{ diag::Diagnostic(
+                msg, diag::Level::Error, diag::Stage::Parser, { diag::Label("", { loc }) }) }
+        {
+        }
+
+        ParserError(const std::string& msg)
+            : d{ diag::Diagnostic(msg, diag::Level::Error, diag::Stage::Parser) }
+        {
+        }
     };
 
 }

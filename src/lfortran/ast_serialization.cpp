@@ -9,21 +9,26 @@
 #include <libasr/bwriter.h>
 #include <libasr/string_utils.h>
 
-using LFortran::ASRUtils::symbol_parent_symtab;
 using LFortran::ASRUtils::symbol_name;
+using LFortran::ASRUtils::symbol_parent_symtab;
 
-namespace LFortran {
+namespace LFortran
+{
 
-class ASTSerializationVisitor :
+class ASTSerializationVisitor
+    :
 #ifdef WITH_LFORTRAN_BINARY_MODFILES
-        public BinaryWriter,
+    public BinaryWriter
+    ,
 #else
-        public TextWriter,
+    public TextWriter
+    ,
 #endif
-        public AST::SerializationBaseVisitor<ASTSerializationVisitor>
+    public AST::SerializationBaseVisitor<ASTSerializationVisitor>
 {
 public:
-    void write_bool(bool b) {
+    void write_bool(bool b)
+    {
         if (b) {
             write_int8(1);
         } else {
@@ -32,40 +37,54 @@ public:
     }
 };
 
-std::string serialize(const AST::ast_t &ast) {
+std::string
+serialize(const AST::ast_t& ast)
+{
     ASTSerializationVisitor v;
     v.write_int8(ast.type);
     v.visit_ast(ast);
     return v.get_str();
 }
 
-std::string serialize(const AST::TranslationUnit_t &unit) {
-    return serialize((AST::ast_t&)(unit));
+std::string
+serialize(const AST::TranslationUnit_t& unit)
+{
+    return serialize((AST::ast_t&) (unit));
 }
 
-class ASTDeserializationVisitor :
+class ASTDeserializationVisitor
+    :
 #ifdef WITH_LFORTRAN_BINARY_MODFILES
-    public BinaryReader,
+    public BinaryReader
+    ,
 #else
-    public TextReader,
+    public TextReader
+    ,
 #endif
     public AST::DeserializationBaseVisitor<ASTDeserializationVisitor>
 {
 public:
-    ASTDeserializationVisitor(Allocator &al, const std::string &s) :
+    ASTDeserializationVisitor(Allocator& al, const std::string& s)
+        :
 #ifdef WITH_LFORTRAN_BINARY_MODFILES
-        BinaryReader(s),
+        BinaryReader(s)
+        ,
 #else
-        TextReader(s),
+        TextReader(s)
+        ,
 #endif
-        DeserializationBaseVisitor(al, true) {}
+        DeserializationBaseVisitor(al, true)
+    {
+    }
 
-    bool read_bool() {
+    bool read_bool()
+    {
         uint8_t b = read_int8();
         return (b == 1);
     }
 
-    char* read_cstring() {
+    char* read_cstring()
+    {
         std::string s = read_string();
         LFortran::Str cs;
         cs.from_str_view(s);
@@ -74,10 +93,12 @@ public:
     }
 };
 
-AST::ast_t* deserialize_ast(Allocator &al, const std::string &s) {
+AST::ast_t*
+deserialize_ast(Allocator& al, const std::string& s)
+{
     ASTDeserializationVisitor v(al, s);
     return v.deserialize_node();
 }
 
 
-} // namespace LFortran
+}  // namespace LFortran

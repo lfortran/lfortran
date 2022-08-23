@@ -3,7 +3,8 @@
 #include <libasr/config.h>
 #include <libasr/stacktrace.h>
 
-int h()
+int
+h()
 {
     LFortran::show_stacktrace();
     std::vector<LFortran::StacktraceItem> d = LFortran::get_stacktrace_addresses();
@@ -22,26 +23,30 @@ int h()
     return 42;
 }
 
-int compare (const void * a, const void * b)
+int
+compare(const void* a, const void* b)
 {
     h();
-    return ( *(int*)a - *(int*)b );
+    return (*(int*) a - *(int*) b);
 }
 
-int g()
+int
+g()
 {
-    std::vector<int> values = {50, 40};
+    std::vector<int> values = { 50, 40 };
 
     qsort(&values[0], values.size(), sizeof(int), compare);
     return values[0];
 }
 
-int f()
+int
+f()
 {
     return g();
 }
 
-int main()
+int
+main()
 {
     int r;
     r = f();

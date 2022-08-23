@@ -7,7 +7,9 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/pickle.h>
 
-std::string construct_fortran(size_t N) {
+std::string
+construct_fortran(size_t N)
+{
     std::string sub_template = R"(
 subroutine g{num1}(x)
     integer, intent(inout) :: x
@@ -39,22 +41,19 @@ end program
     text.reserve(2250042);
     text = st0;
     for (size_t i = 0; i < N; i++) {
-        text += fmt::format(call_template,
-                fmt::arg("num1", i+1)
-                );
+        text += fmt::format(call_template, fmt::arg("num1", i + 1));
     }
     text += st1;
     for (size_t i = 0; i < N; i++) {
-        text += fmt::format(sub_template,
-                fmt::arg("num1", i+1),
-                fmt::arg("num2", i+10)
-                );
+        text += fmt::format(sub_template, fmt::arg("num1", i + 1), fmt::arg("num2", i + 10));
     }
     text += st3;
     return text;
 }
 
-std::string construct_c(size_t N) {
+std::string
+construct_c(size_t N)
+{
     std::string sub_template = R"(
 void g{num1}(int *x)
 {{
@@ -83,22 +82,18 @@ int main()
     text.reserve(2250042);
     text = "#include <stdio.h>\n";
     for (size_t i = 0; i < N; i++) {
-        text += fmt::format(sub_template,
-                fmt::arg("num1", i+1),
-                fmt::arg("num2", i+10)
-                );
+        text += fmt::format(sub_template, fmt::arg("num1", i + 1), fmt::arg("num2", i + 10));
     }
     text += st0;
     for (size_t i = 0; i < N; i++) {
-        text += fmt::format(call_template,
-                fmt::arg("num1", i+1)
-                );
+        text += fmt::format(call_template, fmt::arg("num1", i + 1));
     }
     text += st1;
     return text;
 }
 
-int main()
+int
+main()
 {
     int N;
     N = 10000;
@@ -116,7 +111,7 @@ int main()
         file << text;
     }
 
-    Allocator al(64*1024*1024); // The actual size is 31,600,600
+    Allocator al(64 * 1024 * 1024);  // The actual size is 31,600,600
     LFortran::diag::Diagnostics diagnostics;
     std::cout << "Parse" << std::endl;
     auto t1 = std::chrono::high_resolution_clock::now();
@@ -127,9 +122,9 @@ int main()
     std::string p = LFortran::pickle(*result);
     std::cout << "Number of units: " << result->n_items << std::endl;
 
-    std::cout << "Parsing: " <<
-        std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
-        << "ms" << std::endl;
+    std::cout << "Parsing: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "ms"
+              << std::endl;
     std::cout << "String size (bytes):      " << text.size() << std::endl;
     std::cout << "Allocator usage (bytes): " << al.size_current() << std::endl;
     std::cout << "Allocator chunks: " << al.num_chunks() << std::endl;
