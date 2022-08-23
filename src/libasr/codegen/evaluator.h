@@ -13,20 +13,23 @@
 // Forward declare all needed LLVM classes without importing any LLVM header
 // files. Those are only imported in evaluator.cpp and nowhere else, to speed
 // up compilation.
-namespace llvm {
-    class ExecutionEngine;
-    class LLVMContext;
-    class Module;
-    class Function;
-    class TargetMachine;
+namespace llvm
+{
+class ExecutionEngine;
+class LLVMContext;
+class Module;
+class Function;
+class TargetMachine;
 #if LLVM_VERSION_MAJOR <= 11
-    namespace orc {
-        class KaleidoscopeJIT;
-    }
+namespace orc
+{
+    class KaleidoscopeJIT;
+}
 #endif
 }
 
-namespace LFortran {
+namespace LFortran
+{
 
 class LLVMModule
 {
@@ -36,7 +39,7 @@ public:
     ~LLVMModule();
     std::string str();
     // Return a function return type as a string (real / integer)
-    std::string get_return_type(const std::string &fn_name);
+    std::string get_return_type(const std::string& fn_name);
 };
 
 class LLVMEvaluator
@@ -47,36 +50,37 @@ private:
 #endif
     std::unique_ptr<llvm::LLVMContext> context;
     std::string target_triple;
-    llvm::TargetMachine *TM;
+    llvm::TargetMachine* TM;
+
 public:
-    LLVMEvaluator(const std::string &t = "");
+    LLVMEvaluator(const std::string& t = "");
     ~LLVMEvaluator();
-    std::unique_ptr<llvm::Module> parse_module(const std::string &source);
-    void add_module(const std::string &source);
+    std::unique_ptr<llvm::Module> parse_module(const std::string& source);
+    void add_module(const std::string& source);
     void add_module(std::unique_ptr<llvm::Module> mod);
     void add_module(std::unique_ptr<LLVMModule> m);
-    intptr_t get_symbol_address(const std::string &name);
-    int32_t int32fn(const std::string &name);
-    int64_t int64fn(const std::string &name);
-    bool boolfn(const std::string &name);
-    float floatfn(const std::string &name);
-    double doublefn(const std::string &name);
-    std::complex<float> complex4fn(const std::string &name);
-    std::complex<double> complex8fn(const std::string &name);
-    void voidfn(const std::string &name);
-    std::string get_asm(llvm::Module &m);
-    void save_asm_file(llvm::Module &m, const std::string &filename);
-    void save_object_file(llvm::Module &m, const std::string &filename);
-    void create_empty_object_file(const std::string &filename);
-    void opt(llvm::Module &m);
-    static std::string module_to_string(llvm::Module &m);
+    intptr_t get_symbol_address(const std::string& name);
+    int32_t int32fn(const std::string& name);
+    int64_t int64fn(const std::string& name);
+    bool boolfn(const std::string& name);
+    float floatfn(const std::string& name);
+    double doublefn(const std::string& name);
+    std::complex<float> complex4fn(const std::string& name);
+    std::complex<double> complex8fn(const std::string& name);
+    void voidfn(const std::string& name);
+    std::string get_asm(llvm::Module& m);
+    void save_asm_file(llvm::Module& m, const std::string& filename);
+    void save_object_file(llvm::Module& m, const std::string& filename);
+    void create_empty_object_file(const std::string& filename);
+    void opt(llvm::Module& m);
+    static std::string module_to_string(llvm::Module& m);
     static void print_version_message();
-    llvm::LLVMContext &get_context();
+    llvm::LLVMContext& get_context();
     static void print_targets();
     static std::string get_default_target_triple();
 };
 
 
-} // namespace LFortran
+}  // namespace LFortran
 
-#endif // LFORTRAN_EVALUATOR_H
+#endif  // LFORTRAN_EVALUATOR_H

@@ -6,11 +6,11 @@ extern "C" {
 #endif
 
 typedef enum {
-    LFORTRAN_NO_EXCEPTION    = 0,
-    LFORTRAN_RUNTIME_ERROR   = 1,
-    LFORTRAN_EXCEPTION       = 2,
-    LFORTRAN_PARSER_ERROR    = 4,
-    LFORTRAN_ASSERT_FAILED   = 7,
+    LFORTRAN_NO_EXCEPTION = 0,
+    LFORTRAN_RUNTIME_ERROR = 1,
+    LFORTRAN_EXCEPTION = 2,
+    LFORTRAN_PARSER_ERROR = 4,
+    LFORTRAN_ASSERT_FAILED = 7,
     LFORTRAN_ASSEMBLER_ERROR = 8,
 } lfortran_exceptions_t;
 
@@ -52,7 +52,7 @@ namespace LFortran
 struct Error {
 };
 
-template<typename T>
+template <typename T>
 struct Result {
     bool ok;
     union {
@@ -62,37 +62,53 @@ struct Result {
     // Default constructor
     Result() = delete;
     // Success result constructor
-    Result(const T &result) : ok{true}, result{result} {}
+    Result(const T& result)
+        : ok{ true }
+        , result{ result }
+    {
+    }
     // Error result constructor
-    Result(const Error &error) : ok{false}, error{error} {}
+    Result(const Error& error)
+        : ok{ false }
+        , error{ error }
+    {
+    }
     // Destructor
-    ~Result() {
+    ~Result()
+    {
         if (!ok) {
             error.~Error();
         }
     }
     // Copy constructor
-    Result(const Result<T> &other) : ok{other.ok} {
+    Result(const Result<T>& other)
+        : ok{ other.ok }
+    {
         if (ok) {
-            new(&result) T(other.result);
+            new (&result) T(other.result);
         } else {
-            new(&error) Error(other.error);
+            new (&error) Error(other.error);
         }
     }
     // Copy assignment
-    Result<T>& operator=(const Result<T> &other) {
+    Result<T>& operator=(const Result<T>& other)
+    {
         ok = other.ok;
         if (ok) {
-            new(&result) T(other.result);
+            new (&result) T(other.result);
         } else {
-            new(&error) Error(other.error);
+            new (&error) Error(other.error);
         }
         return *this;
     }
     // Move constructor
-    Result(T &&result) : ok{true}, result{std::move(result)} {}
+    Result(T&& result)
+        : ok{ true }
+        , result{ std::move(result) }
+    {
+    }
     // Move assignment
-    Result<T>&& operator=(T &&other) = delete;
+    Result<T>&& operator=(T&& other) = delete;
 };
 
 
@@ -103,15 +119,19 @@ class LCompilersException : public std::exception
     std::string m_msg;
     lfortran_exceptions_t ec;
     std::vector<StacktraceItem> m_stacktrace_addresses;
+
 public:
-    LCompilersException(const std::string &msg, lfortran_exceptions_t error)
-        : m_msg{msg}, ec{error}, m_stacktrace_addresses{get_stacktrace_addresses()}
-    { }
-    LCompilersException(const std::string &msg)
+    LCompilersException(const std::string& msg, lfortran_exceptions_t error)
+        : m_msg{ msg }
+        , ec{ error }
+        , m_stacktrace_addresses{ get_stacktrace_addresses() }
+    {
+    }
+    LCompilersException(const std::string& msg)
         : LCompilersException(msg, LFORTRAN_EXCEPTION)
     {
     }
-    const char *what() const throw()
+    const char* what() const throw()
     {
         return m_msg.c_str();
     }
@@ -122,11 +142,12 @@ public:
     std::string name() const
     {
         switch (ec) {
-            case (lfortran_exceptions_t::LFORTRAN_EXCEPTION) :
+            case (lfortran_exceptions_t::LFORTRAN_EXCEPTION):
                 return "LCompilersException";
-            case (lfortran_exceptions_t::LFORTRAN_ASSERT_FAILED) :
+            case (lfortran_exceptions_t::LFORTRAN_ASSERT_FAILED):
                 return "AssertFailed";
-            default : return "Unknown Exception";
+            default:
+                return "Unknown Exception";
         }
     }
     std::vector<StacktraceItem> stacktrace_addresses() const
@@ -142,7 +163,7 @@ public:
 class AssertFailed : public LCompilersException
 {
 public:
-    AssertFailed(const std::string &msg)
+    AssertFailed(const std::string& msg)
         : LCompilersException(msg, LFORTRAN_ASSERT_FAILED)
     {
     }
@@ -151,23 +172,26 @@ public:
 class AssemblerError : public LCompilersException
 {
 public:
-    AssemblerError(const std::string &msg)
+    AssemblerError(const std::string& msg)
         : LCompilersException(msg, LFORTRAN_ASSEMBLER_ERROR)
     {
     }
 };
 
-template<typename T>
-static inline T TRY(Result<T> result) {
+template <typename T>
+static inline T
+TRY(Result<T> result)
+{
     if (result.ok) {
         return result.result;
     } else {
-        throw LCompilersException("Internal Compiler Error: TRY failed, error was not handled explicitly");
+        throw LCompilersException(
+            "Internal Compiler Error: TRY failed, error was not handled explicitly");
     }
 }
 
 
-} // Namespace LFortran
+}  // Namespace LFortran
 
-#endif // __cplusplus
-#endif // LFORTRAN_EXCEPTION_H
+#endif  // __cplusplus
+#endif  // LFORTRAN_EXCEPTION_H

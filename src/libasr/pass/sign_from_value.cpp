@@ -10,7 +10,8 @@
 #include <string>
 
 
-namespace LFortran {
+namespace LFortran
+{
 
 using ASR::down_cast;
 using ASR::is_a;
@@ -34,7 +35,7 @@ to:
 class SignFromValueVisitor : public PassUtils::SkipOptimizationFunctionVisitor<SignFromValueVisitor>
 {
 private:
-    ASR::TranslationUnit_t &unit;
+    ASR::TranslationUnit_t& unit;
 
     std::string rl_path;
 
@@ -45,57 +46,67 @@ private:
     bool from_sign_from_value;
 
 public:
-    SignFromValueVisitor(Allocator &al_, ASR::TranslationUnit_t &unit_, const std::string& rl_path_) : SkipOptimizationFunctionVisitor(al_),
-    unit(unit_), rl_path(rl_path_), sign_from_value_var(nullptr), from_sign_from_value(false)
+    SignFromValueVisitor(Allocator& al_, ASR::TranslationUnit_t& unit_, const std::string& rl_path_)
+        : SkipOptimizationFunctionVisitor(al_)
+        , unit(unit_)
+        , rl_path(rl_path_)
+        , sign_from_value_var(nullptr)
+        , from_sign_from_value(false)
     {
         pass_result.reserve(al, 1);
     }
 
-    bool is_value_one(ASR::expr_t* expr) {
+    bool is_value_one(ASR::expr_t* expr)
+    {
         double value;
-        if( ASRUtils::is_value_constant(expr, value) ) {
+        if (ASRUtils::is_value_constant(expr, value)) {
             return value == 1.0;
         }
         return false;
     }
 
-    ASR::expr_t* is_extract_sign(ASR::expr_t* expr) {
-        if( !ASR::is_a<ASR::FunctionCall_t>(*expr) ) {
+    ASR::expr_t* is_extract_sign(ASR::expr_t* expr)
+    {
+        if (!ASR::is_a<ASR::FunctionCall_t>(*expr)) {
             return nullptr;
         }
         ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(expr);
         ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(func_call->m_name);
-        if( !ASR::is_a<ASR::Function_t>(*func_sym) ) {
+        if (!ASR::is_a<ASR::Function_t>(*func_sym)) {
             return nullptr;
         }
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
-        if( ASRUtils::is_intrinsic_procedure(func) &&
-            std::string(func->m_name).find("sign") == std::string::npos ) {
+        if (ASRUtils::is_intrinsic_procedure(func)
+            && std::string(func->m_name).find("sign") == std::string::npos) {
             return nullptr;
         }
         ASR::expr_t *arg0 = func_call->m_args[0].m_value, *arg1 = func_call->m_args[1].m_value;
-        if( !is_value_one(arg0) ) {
+        if (!is_value_one(arg0)) {
             return nullptr;
         }
         return arg1;
     }
 
-    void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x) {
+    void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x)
+    {
         handle_BinOp(x);
     }
 
-    void visit_RealBinOp(const ASR::RealBinOp_t& x) {
+    void visit_RealBinOp(const ASR::RealBinOp_t& x)
+    {
         handle_BinOp(x);
     }
 
-    void visit_ComplexBinOp(const ASR::ComplexBinOp_t& x) {
+    void visit_ComplexBinOp(const ASR::ComplexBinOp_t& x)
+    {
         handle_BinOp(x);
     }
 
     template <typename T>
-    void handle_BinOp(const T& x_const) {
-        if( !from_sign_from_value ) {
-            return ;
+    void handle_BinOp(const T& x_const)
+    {
+        if (!from_sign_from_value) {
+            return;
         }
 
         from_sign_from_value = true;
@@ -103,19 +114,19 @@ public:
 
         sign_from_value_var = nullptr;
         visit_expr(*x.m_left);
-        if( sign_from_value_var ) {
+        if (sign_from_value_var) {
             x.m_left = sign_from_value_var;
         }
 
         sign_from_value_var = nullptr;
         visit_expr(*x.m_right);
-        if( sign_from_value_var ) {
+        if (sign_from_value_var) {
             x.m_right = sign_from_value_var;
         }
         sign_from_value_var = nullptr;
 
-        if( x.m_op != ASR::binopType::Mul ) {
-            return ;
+        if (x.m_op != ASR::binopType::Mul) {
+            return;
         }
 
         ASR::expr_t *first_arg = nullptr, *second_arg = nullptr;
@@ -123,36 +134,45 @@ public:
         first_arg = is_extract_sign(x.m_left);
         second_arg = is_extract_sign(x.m_right);
 
-        if( second_arg ) {
+        if (second_arg) {
             first_arg = x.m_left;
-        } else if( first_arg ) {
+        } else if (first_arg) {
             second_arg = x.m_right;
         } else {
-            return ;
+            return;
         }
 
-        sign_from_value_var = PassUtils::get_sign_from_value(first_arg, second_arg,
-                                     al, unit, rl_path, current_scope, x.base.base.loc,
-                                     [&](const std::string &msg, const Location &) { throw LCompilersException(msg); });
+        sign_from_value_var = PassUtils::get_sign_from_value(
+            first_arg,
+            second_arg,
+            al,
+            unit,
+            rl_path,
+            current_scope,
+            x.base.base.loc,
+            [&](const std::string& msg, const Location&) { throw LCompilersException(msg); });
         from_sign_from_value = false;
     }
 
-    void visit_Assignment(const ASR::Assignment_t& x) {
+    void visit_Assignment(const ASR::Assignment_t& x)
+    {
         from_sign_from_value = true;
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
         sign_from_value_var = nullptr;
         visit_expr(*x.m_value);
-        if( sign_from_value_var ) {
+        if (sign_from_value_var) {
             xx.m_value = sign_from_value_var;
         }
         sign_from_value_var = nullptr;
         from_sign_from_value = false;
     }
-
 };
 
-void pass_replace_sign_from_value(Allocator &al, ASR::TranslationUnit_t &unit,
-                                  const LCompilers::PassOptions& pass_options) {
+void
+pass_replace_sign_from_value(Allocator& al,
+                             ASR::TranslationUnit_t& unit,
+                             const LCompilers::PassOptions& pass_options)
+{
     std::string rl_path = pass_options.runtime_library_dir;
     SignFromValueVisitor v(al, unit, rl_path);
     v.visit_TranslationUnit(unit);
@@ -160,4 +180,4 @@ void pass_replace_sign_from_value(Allocator &al, ASR::TranslationUnit_t &unit,
 }
 
 
-} // namespace LFortran
+}  // namespace LFortran

@@ -90,9 +90,9 @@ set(WITH_ZLIB yes
     CACHE BOOL "Compile with ZLIB Library")
 
 # Build to wasm
-set(LFORTRAN_BUILD_TO_WASM no 
+set(LFORTRAN_BUILD_TO_WASM no
     CACHE BOOL "Compile LFortran To WASM")
-    
+
 if (LFORTRAN_BUILD_TO_WASM)
     set(HAVE_BUILD_TO_WASM yes)
     SET(WITH_WHEREAMI no)
@@ -160,7 +160,7 @@ if (WITH_LLVM)
         list(APPEND LFORTRAN_LLVM_COMPONENTS webassemblyasmparser webassemblycodegen webassemblydesc webassemblydisassembler webassemblyinfo)
         add_definitions("-DHAVE_TARGET_WASM=1")
     endif()
-    
+
     llvm_map_components_to_libnames(llvm_libs ${LFORTRAN_LLVM_COMPONENTS})
     unset(LFORTRAN_LLVM_COMPONENTS)
 

@@ -411,5 +411,3 @@ Directory: `tests/intrinsic/nint`
 | Description | AST | ASR | LLVM | BIN | RUN | Filename |
 | ----------- | --- | --- | ---- | --- | --- | -------- |
 | `scalar single/double real` | ✅  | ❌  | ❌   | ❌  | ❌  | [t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/nint/t01_scalar_real.f90) |
-
-

@@ -10,7 +10,8 @@
 #include <utility>
 
 
-namespace LFortran {
+namespace LFortran
+{
 
 using ASR::down_cast;
 using ASR::is_a;
@@ -36,36 +37,38 @@ to:
 class DivToMulVisitor : public PassUtils::PassVisitor<DivToMulVisitor>
 {
 private:
-
     std::string rl_path;
 
 public:
-    DivToMulVisitor(Allocator &al_, const std::string& rl_path_) : PassVisitor(al_, nullptr),
-    rl_path(rl_path_)
+    DivToMulVisitor(Allocator& al_, const std::string& rl_path_)
+        : PassVisitor(al_, nullptr)
+        , rl_path(rl_path_)
     {
         pass_result.reserve(al, 1);
     }
 
-    void visit_RealBinOp(const ASR::RealBinOp_t& x) {
+    void visit_RealBinOp(const ASR::RealBinOp_t& x)
+    {
         visit_expr(*x.m_left);
         visit_expr(*x.m_right);
-        if( x.m_op == ASR::binopType::Div ) {
+        if (x.m_op == ASR::binopType::Div) {
             ASR::expr_t* right_value = ASRUtils::expr_value(x.m_right);
-            if( right_value ) {
+            if (right_value) {
                 double value;
-                if( ASRUtils::extract_value<double>(right_value, value) ) {
+                if (ASRUtils::extract_value<double>(right_value, value)) {
                     bool is_feasible = false;
                     ASR::expr_t* right_inverse = nullptr;
-                    switch( x.m_type->type ) {
+                    switch (x.m_type->type) {
                         case ASR::ttypeType::Real: {
                             is_feasible = true;
-                            right_inverse = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.m_right->base.loc, 1.0/value, x.m_type));
+                            right_inverse = ASRUtils::EXPR(ASR::make_RealConstant_t(
+                                al, x.m_right->base.loc, 1.0 / value, x.m_type));
                             break;
                         }
                         default:
                             break;
                     }
-                    if( is_feasible ) {
+                    if (is_feasible) {
                         ASR::RealBinOp_t& xx = const_cast<ASR::RealBinOp_t&>(x);
                         xx.m_op = ASR::binopType::Mul;
                         xx.m_right = right_inverse;
@@ -74,11 +77,13 @@ public:
             }
         }
     }
-
 };
 
-void pass_replace_div_to_mul(Allocator &al, ASR::TranslationUnit_t &unit,
-                             const LCompilers::PassOptions& pass_options) {
+void
+pass_replace_div_to_mul(Allocator& al,
+                        ASR::TranslationUnit_t& unit,
+                        const LCompilers::PassOptions& pass_options)
+{
     std::string rl_path = pass_options.runtime_library_dir;
     DivToMulVisitor v(al, rl_path);
     v.visit_TranslationUnit(unit);
@@ -86,4 +91,4 @@ void pass_replace_div_to_mul(Allocator &al, ASR::TranslationUnit_t &unit,
 }
 
 
-} // namespace LFortran
+}  // namespace LFortran

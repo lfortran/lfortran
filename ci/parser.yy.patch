@@ -3,7 +3,7 @@ index c773ce871..7c7529101 100644
 --- a/src/lfortran/parser/parser.yy
 +++ b/src/lfortran/parser/parser.yy
 @@ -2283,169 +2283,4 @@ id_opt
- 
+
  id
      : TK_NAME { $$ = SYMBOL($1, @$); }
 -    | KW_ABSTRACT { $$ = SYMBOL($1, @$); }

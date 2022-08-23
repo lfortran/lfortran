@@ -10,24 +10,25 @@
 #include <libasr/bigint.h>
 
 using LFortran::parse;
-using LFortran::TRY;
 using LFortran::Result;
+using LFortran::TRY;
 using LFortran::AST::ast_t;
+using LFortran::AST::BaseWalkVisitor;
 using LFortran::AST::expr_t;
 using LFortran::AST::Name_t;
-using LFortran::AST::BaseWalkVisitor;
 
-using LFortran::BigInt::is_int_ptr;
-using LFortran::BigInt::ptr_to_int;
 using LFortran::BigInt::int_to_ptr;
-using LFortran::BigInt::string_to_largeint;
+using LFortran::BigInt::is_int_ptr;
 using LFortran::BigInt::largeint_to_string;
 using LFortran::BigInt::MAX_SMALL_INT;
 using LFortran::BigInt::MIN_SMALL_INT;
+using LFortran::BigInt::ptr_to_int;
+using LFortran::BigInt::string_to_largeint;
 
 // Print any vector like iterable to a string
 template <class T>
-inline std::ostream &print_vec(std::ostream &out, T &d)
+inline std::ostream&
+print_vec(std::ostream& out, T& d)
 {
     out << "[";
     for (auto p = d.begin(); p != d.end(); p++) {
@@ -40,39 +41,55 @@ inline std::ostream &print_vec(std::ostream &out, T &d)
 }
 
 
-namespace doctest {
-    // Convert std::vector<T> to string for doctest
-    template<typename T> struct StringMaker<std::vector<T>> {
-        static String convert(const std::vector<T> &value) {
-            std::ostringstream oss;
-            print_vec(oss, value);
-            return oss.str().c_str();
-        }
-    };
+namespace doctest
+{
+// Convert std::vector<T> to string for doctest
+template <typename T>
+struct StringMaker<std::vector<T>> {
+    static String convert(const std::vector<T>& value)
+    {
+        std::ostringstream oss;
+        print_vec(oss, value);
+        return oss.str().c_str();
+    }
+};
 }
 
 
 class CountVisitor : public BaseWalkVisitor<CountVisitor>
 {
     int c_;
+
 public:
-    CountVisitor() : c_{0} {}
-    void visit_Name(const Name_t & /* x */) { c_ += 1; }
-    int get_count() {
+    CountVisitor()
+        : c_{ 0 }
+    {
+    }
+    void visit_Name(const Name_t& /* x */)
+    {
+        c_ += 1;
+    }
+    int get_count()
+    {
         return c_;
     }
 };
 
-int count(const ast_t &b) {
+int
+count(const ast_t& b)
+{
     CountVisitor v;
     v.visit_ast(b);
     return v.get_count();
 }
 
-class TokenizerError0 {
+class TokenizerError0
+{
 };
 
-std::vector<int> tokens(Allocator &al, const std::string &input) {
+std::vector<int>
+tokens(Allocator& al, const std::string& input)
+{
     LFortran::diag::Diagnostics diagnostics;
     auto res = LFortran::tokens(al, input, diagnostics, nullptr, nullptr, false);
     if (res.ok) {
@@ -82,25 +99,26 @@ std::vector<int> tokens(Allocator &al, const std::string &input) {
     }
 }
 
-TEST_CASE("Test longer parser (N = 500)") {
+TEST_CASE("Test longer parser (N = 500)")
+{
     int N;
     N = 500;
     std::string text;
     std::string t0 = "(a*z+3+2*x + 3*y - x/(z**2-4) - x**(y**z))";
     text.reserve(22542);
     text = t0;
-    //std::cout << "Construct" << std::endl;
+    // std::cout << "Construct" << std::endl;
     for (int i = 0; i < N; i++) {
         text.append(" * " + t0);
     }
-    Allocator al(1024*1024);
-    //std::cout << "Parse" << std::endl;
+    Allocator al(1024 * 1024);
+    // std::cout << "Parse" << std::endl;
     LFortran::diag::Diagnostics diagnostics;
-    //auto t1 = std::chrono::high_resolution_clock::now();
+    // auto t1 = std::chrono::high_resolution_clock::now();
     auto result = LFortran::TRY(parse(al, text, diagnostics))->m_items[0];
-    //auto t2 = std::chrono::high_resolution_clock::now();
-    //std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
-    //                .count() << "ms" << std::endl;
+    // auto t2 = std::chrono::high_resolution_clock::now();
+    // std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
+    //                 .count() << "ms" << std::endl;
     int c = count(*result);
     /*
     std::cout << "Count: " << c << std::endl;
@@ -110,54 +128,56 @@ TEST_CASE("Test longer parser (N = 500)") {
     CHECK(c == 4509);
 }
 
-TEST_CASE("Test lex_int") {
-    unsigned char *s;
+TEST_CASE("Test lex_int")
+{
+    unsigned char* s;
     uint64_t u;
     LFortran::Str suffix;
 
     // Test ints
-    s = (unsigned char*)"15";
-    CHECK(strlen((char*)s) == 2);
-    REQUIRE(lex_int(s, s+strlen((char*)s), u, suffix));
+    s = (unsigned char*) "15";
+    CHECK(strlen((char*) s) == 2);
+    REQUIRE(lex_int(s, s + strlen((char*) s), u, suffix));
     CHECK(u == 15);
     CHECK(suffix.str() == "");
 
-    s = (unsigned char*)"1";
-    REQUIRE(lex_int(s, s+strlen((char*)s), u, suffix));
+    s = (unsigned char*) "1";
+    REQUIRE(lex_int(s, s + strlen((char*) s), u, suffix));
     CHECK(u == 1);
     CHECK(suffix.str() == "");
 
-    s = (unsigned char*)"9223372036854775807"; // 2^63-1
-    REQUIRE(lex_int(s, s+strlen((char*)s), u, suffix));
+    s = (unsigned char*) "9223372036854775807";  // 2^63-1
+    REQUIRE(lex_int(s, s + strlen((char*) s), u, suffix));
     CHECK(u == 9223372036854775807LL);
     CHECK(suffix.str() == "");
 
-    s = (unsigned char*)"9223372036854775808"; // 2^63
-    REQUIRE(lex_int(s, s+strlen((char*)s), u, suffix));
+    s = (unsigned char*) "9223372036854775808";  // 2^63
+    REQUIRE(lex_int(s, s + strlen((char*) s), u, suffix));
     CHECK(u == 9223372036854775808ULL);
     CHECK(suffix.str() == "");
 
-    s = (unsigned char*)"18446744073709551615"; // 2^64-1
-    REQUIRE(lex_int(s, s+strlen((char*)s), u, suffix));
+    s = (unsigned char*) "18446744073709551615";  // 2^64-1
+    REQUIRE(lex_int(s, s + strlen((char*) s), u, suffix));
     CHECK(u == 18446744073709551615ULL);
     CHECK(suffix.str() == "");
 
-    s = (unsigned char*)"18446744073709551616"; // 2^64
-    REQUIRE(!lex_int(s, s+strlen((char*)s), u, suffix));
+    s = (unsigned char*) "18446744073709551616";  // 2^64
+    REQUIRE(!lex_int(s, s + strlen((char*) s), u, suffix));
 
     // Suffixes
-    s = (unsigned char*)"15_int64";
-    REQUIRE(lex_int(s, s+strlen((char*)s), u, suffix));
+    s = (unsigned char*) "15_int64";
+    REQUIRE(lex_int(s, s + strlen((char*) s), u, suffix));
     CHECK(u == 15);
     CHECK(suffix.str() == "int64");
 
-    s = (unsigned char*)"1234_int64_15_3";
-    REQUIRE(lex_int(s, s+strlen((char*)s), u, suffix));
+    s = (unsigned char*) "1234_int64_15_3";
+    REQUIRE(lex_int(s, s + strlen((char*) s), u, suffix));
     CHECK(u == 1234);
     CHECK(suffix.str() == "int64_15_3");
 }
 
-TEST_CASE("Test Big Int") {
+TEST_CASE("Test Big Int")
+{
     int64_t i;
     void *p, *p2;
 
@@ -174,16 +194,16 @@ TEST_CASE("Test Big Int") {
     // Largest integer that is allowed is 2^62-1
     i = 4611686018427387903LL;
     CHECK(i == MAX_SMALL_INT);
-    CHECK(!is_int_ptr(i)); // this is an integer
+    CHECK(!is_int_ptr(i));  // this is an integer
     i = 4611686018427387904LL;
-    CHECK(is_int_ptr(i)); // this is a pointer
+    CHECK(is_int_ptr(i));  // this is a pointer
 
     // Smallest integer that is allowed is -2^63
     i = -9223372036854775808ULL;
     CHECK(i == MIN_SMALL_INT);
-    CHECK(!is_int_ptr(i)); // this is an integer
-    i = -9223372036854775809ULL; // This does not fit into a signed 64bit int
-    CHECK(is_int_ptr(i)); // this is a pointer
+    CHECK(!is_int_ptr(i));        // this is an integer
+    i = -9223372036854775809ULL;  // This does not fit into a signed 64bit int
+    CHECK(is_int_ptr(i));         // this is a pointer
 
     /* Pointer tests */
     // Smallest pointer value is 0 (nullptr)
@@ -194,14 +214,14 @@ TEST_CASE("Test Big Int") {
     CHECK(p == p2);
 
     // Second smallest pointer value aligned to 4 is 4
-    p = (void*)4;
+    p = (void*) 4;
     i = ptr_to_int(p);
     CHECK(is_int_ptr(i));
     p2 = int_to_ptr(i);
     CHECK(p == p2);
 
     // Maximum pointer value aligned to 4 is (2^64-1)-3
-    p = (void*)18446744073709551612ULL;
+    p = (void*) 18446744073709551612ULL;
     i = ptr_to_int(p);
     CHECK(is_int_ptr(i));
     p2 = int_to_ptr(i);
@@ -210,7 +230,7 @@ TEST_CASE("Test Big Int") {
     /* Big int tests */
     Allocator al(1024);
     LFortran::Str s;
-    char *cs;
+    char* cs;
 
     s.from_str(al, "123");
     i = string_to_largeint(al, s);
@@ -225,7 +245,8 @@ TEST_CASE("Test Big Int") {
     CHECK(std::string(cs) == "123567890123456789012345678901234567890");
 }
 
-TEST_CASE("Test LFortran::Vec") {
+TEST_CASE("Test LFortran::Vec")
+{
     Allocator al(1024);
     LFortran::Vec<int> v;
 
@@ -294,7 +315,8 @@ TEST_CASE("Test LFortran::Vec") {
     CHECK(sv[4] == 5);
 }
 
-TEST_CASE("LFortran::Vec iterators") {
+TEST_CASE("LFortran::Vec iterators")
+{
     Allocator al(1024);
     LFortran::Vec<int> v;
 
@@ -306,14 +328,14 @@ TEST_CASE("LFortran::Vec iterators") {
 
     // Check reference (auto)
     int i = 0;
-    for (auto &a : v) {
+    for (auto& a : v) {
         i += a;
     }
     CHECK(i == 10);
 
     // Check reference (must be const)
     i = 0;
-    for (const int &a : v) {
+    for (const int& a : v) {
         i += a;
     }
     CHECK(i == 10);
@@ -340,10 +362,11 @@ TEST_CASE("LFortran::Vec iterators") {
     CHECK(i == 10);
 }
 
-TEST_CASE("Test LFortran::Str") {
+TEST_CASE("Test LFortran::Str")
+{
     Allocator al(1024);
     LFortran::Str s;
-    const char *data = "Some string.";
+    const char* data = "Some string.";
 
     s.p = const_cast<char*>(data);
     s.n = 2;
@@ -358,14 +381,15 @@ TEST_CASE("Test LFortran::Str") {
     CHECK(scopy[1] == 'o');
     CHECK(scopy[2] == '\x00');
 
-    char *copy = s.c_str(al);
+    char* copy = s.c_str(al);
     CHECK(s.p != copy);
     CHECK(copy[0] == 'S');
     CHECK(copy[1] == 'o');
     CHECK(copy[2] == '\x00');
 }
 
-TEST_CASE("Test LFortran::Allocator") {
+TEST_CASE("Test LFortran::Allocator")
+{
     Allocator al(32);
     // Size is what we asked (32) plus alignment (8) = 40
     CHECK(al.size_total() == 40);
@@ -388,9 +412,10 @@ TEST_CASE("Test LFortran::Allocator") {
     CHECK(al.size_total() == 1032);
 }
 
-TEST_CASE("Test LFortran::Allocator 2") {
+TEST_CASE("Test LFortran::Allocator 2")
+{
     Allocator al(32);
-    int *p = al.allocate<int>();
+    int* p = al.allocate<int>();
     p[0] = 5;
 
     p = al.allocate<int>(3);
@@ -398,7 +423,7 @@ TEST_CASE("Test LFortran::Allocator 2") {
     p[1] = 2;
     p[2] = 3;
 
-    std::vector<int> *v = al.make_new<std::vector<int>>(5);
+    std::vector<int>* v = al.make_new<std::vector<int>>(5);
     CHECK(v->size() == 5);
     // Must manually call the destructor:
     v->~vector<int>();
@@ -406,7 +431,8 @@ TEST_CASE("Test LFortran::Allocator 2") {
 
 using tt = yytokentype;
 
-TEST_CASE("Tokenizer") {
+TEST_CASE("Tokenizer")
+{
     Allocator al(1024);
     std::string s;
     std::vector<int> ref;
@@ -418,44 +444,22 @@ TEST_CASE("Tokenizer") {
     x = 2*y
     subroutine)";
     ref = {
-        tt::KW_SUBROUTINE,
-        tt::TK_NEWLINE,
-        tt::TK_NAME,
-        tt::TK_EQUAL,
-        tt::TK_NAME,
-        tt::TK_NEWLINE,
-        tt::TK_NAME,
-        tt::TK_EQUAL,
-        tt::TK_INTEGER,
-        tt::TK_STAR,
-        tt::TK_NAME,
-        tt::TK_NEWLINE,
-        tt::KW_SUBROUTINE,
-        tt::END_OF_FILE,
+        tt::KW_SUBROUTINE, tt::TK_NEWLINE, tt::TK_NAME,       tt::TK_EQUAL,    tt::TK_NAME,
+        tt::TK_NEWLINE,    tt::TK_NAME,    tt::TK_EQUAL,      tt::TK_INTEGER,  tt::TK_STAR,
+        tt::TK_NAME,       tt::TK_NEWLINE, tt::KW_SUBROUTINE, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = "2*x**3";
     ref = {
-        tt::TK_INTEGER,
-        tt::TK_STAR,
-        tt::TK_NAME,
-        tt::TK_POW,
-        tt::TK_INTEGER,
-        tt::END_OF_FILE,
+        tt::TK_INTEGER, tt::TK_STAR, tt::TK_NAME, tt::TK_POW, tt::TK_INTEGER, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = "(2*x**3)";
     ref = {
-        tt::TK_LPAREN,
-        tt::TK_INTEGER,
-        tt::TK_STAR,
-        tt::TK_NAME,
-        tt::TK_POW,
-        tt::TK_INTEGER,
-        tt::TK_RPAREN,
-        tt::END_OF_FILE,
+        tt::TK_LPAREN, tt::TK_INTEGER, tt::TK_STAR,   tt::TK_NAME,
+        tt::TK_POW,    tt::TK_INTEGER, tt::TK_RPAREN, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
@@ -495,7 +499,7 @@ TEST_CASE("Tokenizer") {
     s = "2*\\";
     CHECK_THROWS_AS(tokens(al, s), TokenizerError0);
 
-    s = "2*4294967295"; // 2**32-1, works everywhere
+    s = "2*4294967295";  // 2**32-1, works everywhere
     ref = {
         tt::TK_INTEGER,
         tt::TK_STAR,
@@ -507,7 +511,7 @@ TEST_CASE("Tokenizer") {
     unsigned long nref = 4294967295U;
     CHECK(stypes[2].int_suffix.int_n.n == nref);
 
-    s = "2*18446744073709551616"; // 2**64, too large, will throw an exception
+    s = "2*18446744073709551616";  // 2**64, too large, will throw an exception
     stypes.clear();
     CHECK(TRY(tokens(al, s, diagnostics, &stypes, nullptr, false)) == ref);
     LFortran::BigInt::BigInt n = stypes[2].int_suffix.int_n;
@@ -525,23 +529,14 @@ TEST_CASE("Tokenizer") {
     CHECK(tokens(al, s) == ref);
     s = "2*x yyyyy";
     ref = {
-        tt::TK_INTEGER,
-        tt::TK_STAR,
-        tt::TK_NAME,
-        tt::TK_NAME,
-        tt::END_OF_FILE,
+        tt::TK_INTEGER, tt::TK_STAR, tt::TK_NAME, tt::TK_NAME, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = "2*x\n**3";
     ref = {
-        tt::TK_INTEGER,
-        tt::TK_STAR,
-        tt::TK_NAME,
-        tt::TK_NEWLINE,
-        tt::TK_POW,
-        tt::TK_INTEGER,
-        tt::END_OF_FILE,
+        tt::TK_INTEGER, tt::TK_STAR,    tt::TK_NAME,     tt::TK_NEWLINE,
+        tt::TK_POW,     tt::TK_INTEGER, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
@@ -552,23 +547,11 @@ TEST_CASE("Tokenizer") {
     x = 2*y
     )";
     ref = {
-        tt::TK_NEWLINE,
-        tt::TK_NAME,
-        tt::TK_EQUAL,
-        tt::TK_INTEGER,
-        tt::TK_NEWLINE,
+        tt::TK_NEWLINE,  tt::TK_NAME,  tt::TK_EQUAL,   tt::TK_INTEGER, tt::TK_NEWLINE,
 
-        tt::TK_NAME,
-        tt::TK_EQUAL,
-        tt::TK_NAME,
-        tt::TK_NEWLINE,
-        tt::TK_NEWLINE,
+        tt::TK_NAME,     tt::TK_EQUAL, tt::TK_NAME,    tt::TK_NEWLINE, tt::TK_NEWLINE,
 
-        tt::TK_NAME,
-        tt::TK_EQUAL,
-        tt::TK_INTEGER,
-        tt::TK_STAR,
-        tt::TK_NAME,
+        tt::TK_NAME,     tt::TK_EQUAL, tt::TK_INTEGER, tt::TK_STAR,    tt::TK_NAME,
         tt::TK_NEWLINE,
 
         tt::END_OF_FILE,
@@ -577,22 +560,11 @@ TEST_CASE("Tokenizer") {
 
     s = "x = 1; x = y;;x = 2*y";
     ref = {
-        tt::TK_NAME,
-        tt::TK_EQUAL,
-        tt::TK_INTEGER,
-        tt::TK_SEMICOLON,
+        tt::TK_NAME,     tt::TK_EQUAL, tt::TK_INTEGER, tt::TK_SEMICOLON,
 
-        tt::TK_NAME,
-        tt::TK_EQUAL,
-        tt::TK_NAME,
-        tt::TK_SEMICOLON,
-        tt::TK_SEMICOLON,
+        tt::TK_NAME,     tt::TK_EQUAL, tt::TK_NAME,    tt::TK_SEMICOLON, tt::TK_SEMICOLON,
 
-        tt::TK_NAME,
-        tt::TK_EQUAL,
-        tt::TK_INTEGER,
-        tt::TK_STAR,
-        tt::TK_NAME,
+        tt::TK_NAME,     tt::TK_EQUAL, tt::TK_INTEGER, tt::TK_STAR,      tt::TK_NAME,
 
         tt::END_OF_FILE,
     };
@@ -600,19 +572,9 @@ TEST_CASE("Tokenizer") {
 
     s = "\n2*x\n\n;;\n**3\n";
     ref = {
-        tt::TK_NEWLINE,
-        tt::TK_INTEGER,
-        tt::TK_STAR,
-        tt::TK_NAME,
-        tt::TK_NEWLINE,
-        tt::TK_NEWLINE,
-        tt::TK_SEMICOLON,
-        tt::TK_SEMICOLON,
-        tt::TK_NEWLINE,
-        tt::TK_POW,
-        tt::TK_INTEGER,
-        tt::TK_NEWLINE,
-        tt::END_OF_FILE,
+        tt::TK_NEWLINE, tt::TK_INTEGER,   tt::TK_STAR,      tt::TK_NAME,    tt::TK_NEWLINE,
+        tt::TK_NEWLINE, tt::TK_SEMICOLON, tt::TK_SEMICOLON, tt::TK_NEWLINE, tt::TK_POW,
+        tt::TK_INTEGER, tt::TK_NEWLINE,   tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
@@ -915,90 +877,46 @@ TEST_CASE("Tokenizer") {
 
     s = "1+1.0+2";
     ref = {
-        tt::TK_INTEGER,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::TK_PLUS,
-        tt::TK_INTEGER,
-        tt::END_OF_FILE,
+        tt::TK_INTEGER, tt::TK_PLUS, tt::TK_REAL, tt::TK_PLUS, tt::TK_INTEGER, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = "1+1d0+2";
     ref = {
-        tt::TK_INTEGER,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::TK_PLUS,
-        tt::TK_INTEGER,
-        tt::END_OF_FILE,
+        tt::TK_INTEGER, tt::TK_PLUS, tt::TK_REAL, tt::TK_PLUS, tt::TK_INTEGER, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = "1D-5+1.e12+2.E-10+1.E+10+1e10";
     ref = {
-        tt::TK_REAL,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::END_OF_FILE,
+        tt::TK_REAL, tt::TK_PLUS, tt::TK_REAL, tt::TK_PLUS, tt::TK_REAL,
+        tt::TK_PLUS, tt::TK_REAL, tt::TK_PLUS, tt::TK_REAL, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = "3 + .3 + .3e-3";
     ref = {
-        tt::TK_INTEGER,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::END_OF_FILE,
+        tt::TK_INTEGER, tt::TK_PLUS, tt::TK_REAL, tt::TK_PLUS, tt::TK_REAL, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = "3 + 3. + 3.e-3";
     ref = {
-        tt::TK_INTEGER,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::END_OF_FILE,
+        tt::TK_INTEGER, tt::TK_PLUS, tt::TK_REAL, tt::TK_PLUS, tt::TK_REAL, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = "3_i + 3._dp + 3.e-3_dp + 0.3_dp + 1e5_dp";
     ref = {
-        tt::TK_INTEGER,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::END_OF_FILE,
+        tt::TK_INTEGER, tt::TK_PLUS, tt::TK_REAL, tt::TK_PLUS, tt::TK_REAL,
+        tt::TK_PLUS,    tt::TK_REAL, tt::TK_PLUS, tt::TK_REAL, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = "3_4 + 3._8 + 3.e-3_8 + 0.3_8 + 1e5_8";
     ref = {
-        tt::TK_INTEGER,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::TK_PLUS,
-        tt::TK_REAL,
-        tt::END_OF_FILE,
+        tt::TK_INTEGER, tt::TK_PLUS, tt::TK_REAL, tt::TK_PLUS, tt::TK_REAL,
+        tt::TK_PLUS,    tt::TK_REAL, tt::TK_PLUS, tt::TK_REAL, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
@@ -1022,23 +940,14 @@ TEST_CASE("Tokenizer") {
 
     s = ".true._lp .and._lp .false._8";
     ref = {
-        tt::TK_TRUE,
-        tt::TK_AND,
-        tt::TK_NAME,
-        tt::TK_FALSE,
-        tt::END_OF_FILE,
+        tt::TK_TRUE, tt::TK_AND, tt::TK_NAME, tt::TK_FALSE, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = ".true. _lp .and. _lp .false. _8";
     ref = {
-        tt::TK_TRUE,
-        tt::TK_NAME,
-        tt::TK_AND,
-        tt::TK_NAME,
-        tt::TK_FALSE,
-        tt::TK_NAME,
-        tt::END_OF_FILE,
+        tt::TK_TRUE,  tt::TK_NAME, tt::TK_AND,      tt::TK_NAME,
+        tt::TK_FALSE, tt::TK_NAME, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
@@ -1050,169 +959,99 @@ TEST_CASE("Tokenizer") {
 
     s = R"(print *, "ok", 3)";
     ref = {
-        tt::KW_PRINT,
-        tt::TK_STAR,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::TK_COMMA,
-        tt::TK_INTEGER,
-        tt::END_OF_FILE,
+        tt::KW_PRINT, tt::TK_STAR,    tt::TK_COMMA,    tt::TK_STRING,
+        tt::TK_COMMA, tt::TK_INTEGER, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = R"(print *, "o'k", 3)";
     ref = {
-        tt::KW_PRINT,
-        tt::TK_STAR,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::TK_COMMA,
-        tt::TK_INTEGER,
-        tt::END_OF_FILE,
+        tt::KW_PRINT, tt::TK_STAR,    tt::TK_COMMA,    tt::TK_STRING,
+        tt::TK_COMMA, tt::TK_INTEGER, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = R"(print *, "o''k", 3)";
     ref = {
-        tt::KW_PRINT,
-        tt::TK_STAR,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::TK_COMMA,
-        tt::TK_INTEGER,
-        tt::END_OF_FILE,
+        tt::KW_PRINT, tt::TK_STAR,    tt::TK_COMMA,    tt::TK_STRING,
+        tt::TK_COMMA, tt::TK_INTEGER, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = R"(print *, "o'x'k", 3)";
     ref = {
-        tt::KW_PRINT,
-        tt::TK_STAR,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::TK_COMMA,
-        tt::TK_INTEGER,
-        tt::END_OF_FILE,
+        tt::KW_PRINT, tt::TK_STAR,    tt::TK_COMMA,    tt::TK_STRING,
+        tt::TK_COMMA, tt::TK_INTEGER, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = R"(print *, "o,""k", 3)";
     ref = {
-        tt::KW_PRINT,
-        tt::TK_STAR,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::TK_COMMA,
-        tt::TK_INTEGER,
-        tt::END_OF_FILE,
+        tt::KW_PRINT, tt::TK_STAR,    tt::TK_COMMA,    tt::TK_STRING,
+        tt::TK_COMMA, tt::TK_INTEGER, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = R"(print *, "o,""k", "s""")";
     ref = {
-        tt::KW_PRINT,
-        tt::TK_STAR,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::END_OF_FILE,
+        tt::KW_PRINT, tt::TK_STAR,   tt::TK_COMMA,    tt::TK_STRING,
+        tt::TK_COMMA, tt::TK_STRING, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = R"(print *, 'ok', 3)";
     ref = {
-        tt::KW_PRINT,
-        tt::TK_STAR,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::TK_COMMA,
-        tt::TK_INTEGER,
-        tt::END_OF_FILE,
+        tt::KW_PRINT, tt::TK_STAR,    tt::TK_COMMA,    tt::TK_STRING,
+        tt::TK_COMMA, tt::TK_INTEGER, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = R"(print *, 'o"k', 3)";
     ref = {
-        tt::KW_PRINT,
-        tt::TK_STAR,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::TK_COMMA,
-        tt::TK_INTEGER,
-        tt::END_OF_FILE,
+        tt::KW_PRINT, tt::TK_STAR,    tt::TK_COMMA,    tt::TK_STRING,
+        tt::TK_COMMA, tt::TK_INTEGER, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = R"(print *, 'o""k', 3)";
     ref = {
-        tt::KW_PRINT,
-        tt::TK_STAR,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::TK_COMMA,
-        tt::TK_INTEGER,
-        tt::END_OF_FILE,
+        tt::KW_PRINT, tt::TK_STAR,    tt::TK_COMMA,    tt::TK_STRING,
+        tt::TK_COMMA, tt::TK_INTEGER, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = R"(print *, 'o"x"k', 3)";
     ref = {
-        tt::KW_PRINT,
-        tt::TK_STAR,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::TK_COMMA,
-        tt::TK_INTEGER,
-        tt::END_OF_FILE,
+        tt::KW_PRINT, tt::TK_STAR,    tt::TK_COMMA,    tt::TK_STRING,
+        tt::TK_COMMA, tt::TK_INTEGER, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = R"(print *, 'o,''k', 3)";
     ref = {
-        tt::KW_PRINT,
-        tt::TK_STAR,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::TK_COMMA,
-        tt::TK_INTEGER,
-        tt::END_OF_FILE,
+        tt::KW_PRINT, tt::TK_STAR,    tt::TK_COMMA,    tt::TK_STRING,
+        tt::TK_COMMA, tt::TK_INTEGER, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = R"(print *, 'o,''k', 's''')";
     ref = {
-        tt::KW_PRINT,
-        tt::TK_STAR,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::END_OF_FILE,
+        tt::KW_PRINT, tt::TK_STAR,   tt::TK_COMMA,    tt::TK_STRING,
+        tt::TK_COMMA, tt::TK_STRING, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = R"(print *, "o,""k", "s''""''")";
     ref = {
-        tt::KW_PRINT,
-        tt::TK_STAR,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::END_OF_FILE,
+        tt::KW_PRINT, tt::TK_STAR,   tt::TK_COMMA,    tt::TK_STRING,
+        tt::TK_COMMA, tt::TK_STRING, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
     s = R"(print *, somekind_"o,""k", otherKind_"s''""''")";
     ref = {
-        tt::KW_PRINT,
-        tt::TK_STAR,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::TK_COMMA,
-        tt::TK_STRING,
-        tt::END_OF_FILE,
+        tt::KW_PRINT, tt::TK_STAR,   tt::TK_COMMA,    tt::TK_STRING,
+        tt::TK_COMMA, tt::TK_STRING, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
@@ -1230,10 +1069,8 @@ TEST_CASE("Tokenizer") {
                y = 5
            end if)";
     ref = {
-        tt::KW_IF, tt::TK_LPAREN, tt::TK_NAME, tt::TK_RPAREN, tt::KW_THEN, tt::TK_NEWLINE,
-        tt::TK_NAME, tt::TK_EQUAL, tt::TK_INTEGER, tt::TK_NEWLINE,
-        tt::KW_END_IF,
-        tt::END_OF_FILE,
+        tt::KW_IF,   tt::TK_LPAREN, tt::TK_NAME,    tt::TK_RPAREN,  tt::KW_THEN,   tt::TK_NEWLINE,
+        tt::TK_NAME, tt::TK_EQUAL,  tt::TK_INTEGER, tt::TK_NEWLINE, tt::KW_END_IF, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
@@ -1241,10 +1078,8 @@ TEST_CASE("Tokenizer") {
                y = 5
            enD  iF)";
     ref = {
-        tt::KW_IF, tt::TK_LPAREN, tt::TK_NAME, tt::TK_RPAREN, tt::KW_THEN, tt::TK_NEWLINE,
-        tt::TK_NAME, tt::TK_EQUAL, tt::TK_INTEGER, tt::TK_NEWLINE,
-        tt::KW_END_IF,
-        tt::END_OF_FILE,
+        tt::KW_IF,   tt::TK_LPAREN, tt::TK_NAME,    tt::TK_RPAREN,  tt::KW_THEN,   tt::TK_NEWLINE,
+        tt::TK_NAME, tt::TK_EQUAL,  tt::TK_INTEGER, tt::TK_NEWLINE, tt::KW_END_IF, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 
@@ -1252,23 +1087,22 @@ TEST_CASE("Tokenizer") {
                y = 5
            endif)";
     ref = {
-        tt::KW_IF, tt::TK_LPAREN, tt::TK_NAME, tt::TK_RPAREN, tt::KW_THEN, tt::TK_NEWLINE,
-        tt::TK_NAME, tt::TK_EQUAL, tt::TK_INTEGER, tt::TK_NEWLINE,
-        tt::KW_ENDIF,
-        tt::END_OF_FILE,
+        tt::KW_IF,   tt::TK_LPAREN, tt::TK_NAME,    tt::TK_RPAREN,  tt::KW_THEN,  tt::TK_NEWLINE,
+        tt::TK_NAME, tt::TK_EQUAL,  tt::TK_INTEGER, tt::TK_NEWLINE, tt::KW_ENDIF, tt::END_OF_FILE,
     };
     CHECK(tokens(al, s) == ref);
 }
 
 #define cast(type, p) (LFortran::AST::type##_t*) (p)
 
-TEST_CASE("Location") {
+TEST_CASE("Location")
+{
     std::string input = R"(subroutine f
     x = y
     x = 213*yz
     end subroutine)";
 
-    Allocator al(1024*1024);
+    Allocator al(1024 * 1024);
     LFortran::diag::Diagnostics diagnostics;
     LFortran::AST::ast_t* result = LFortran::TRY(parse(al, input, diagnostics))->m_items[0];
     CHECK(result->loc.first == 0);
@@ -1310,8 +1144,9 @@ TEST_CASE("Location") {
     CHECK(result->loc.last == 50);
 }
 
-TEST_CASE("Errors") {
-    Allocator al(1024*1024);
+TEST_CASE("Errors")
+{
+    Allocator al(1024 * 1024);
     std::string input;
     LFortran::diag::Diagnostics diagnostics;
 

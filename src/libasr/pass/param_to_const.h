@@ -4,11 +4,14 @@
 #include <libasr/asr.h>
 #include <libasr/utils.h>
 
-namespace LFortran {
+namespace LFortran
+{
 
-    void pass_replace_param_to_const(Allocator &al, ASR::TranslationUnit_t &unit,
-                                     const LCompilers::PassOptions& pass_options);
+void
+pass_replace_param_to_const(Allocator& al,
+                            ASR::TranslationUnit_t& unit,
+                            const LCompilers::PassOptions& pass_options);
 
-} // namespace LFortran
+}  // namespace LFortran
 
-#endif // LFORTRAN_PASS_PARAM_TO_CONST_H
+#endif  // LFORTRAN_PASS_PARAM_TO_CONST_H

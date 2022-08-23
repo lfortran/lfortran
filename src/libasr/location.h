@@ -7,26 +7,30 @@
 namespace LFortran
 {
 
-struct Location
-{
-  uint32_t first;
-  uint32_t last;
+struct Location {
+    uint32_t first;
+    uint32_t last;
 };
 
-static inline uint32_t bisection(const std::vector<uint32_t> &vec, uint32_t i) {
-    if (vec.size() == 0) return 0;
-    if (i < vec[0]) return 0;
-    if (i >= vec[vec.size()-1]) return vec.size();
-    uint32_t i1 = 0, i2 = vec.size()-1;
-    while (i1 < i2-1) {
-        uint32_t imid = (i1+i2)/2;
+static inline uint32_t
+bisection(const std::vector<uint32_t>& vec, uint32_t i)
+{
+    if (vec.size() == 0)
+        return 0;
+    if (i < vec[0])
+        return 0;
+    if (i >= vec[vec.size() - 1])
+        return vec.size();
+    uint32_t i1 = 0, i2 = vec.size() - 1;
+    while (i1 < i2 - 1) {
+        uint32_t imid = (i1 + i2) / 2;
         if (i < vec[imid]) {
             i2 = imid;
         } else {
             i1 = imid;
         }
     }
-    return i1+1;
+    return i1 + 1;
 }
 
 struct LocationManager {
@@ -94,35 +98,37 @@ struct LocationManager {
     //
     //
     //
-    std::vector<uint32_t> out_start; // consecutive intervals in the output code
-    std::vector<uint32_t> in_start; // start + size in the original code
-    std::vector<uint32_t> in_newlines; // position of all \n in the original code
+    std::vector<uint32_t> out_start;    // consecutive intervals in the output code
+    std::vector<uint32_t> in_start;     // start + size in the original code
+    std::vector<uint32_t> in_newlines;  // position of all \n in the original code
 
     // For preprocessor (if preprocessor==true).
     // TODO: design a common structure, that also works with #include, that
     // has these mappings for each file
     bool preprocessor = false;
     std::string in_filename;
-    uint32_t current_line=0;
-    std::vector<uint32_t> out_start0; // consecutive intervals in the output code
-    std::vector<uint32_t> in_start0; // start + size in the original code
-    std::vector<uint32_t> in_size0; // Size of the `in` interval
-    std::vector<uint32_t> interval_type0; // 0 .... 1:1; 1 ... many to many;
-    std::vector<uint32_t> in_newlines0; // position of all \n in the original code
-//    std::vector<uint32_t> filename_id; // file name for each interval, ID
-//    std::vector<std::string> filenames; // filenames lookup for an ID
+    uint32_t current_line = 0;
+    std::vector<uint32_t> out_start0;      // consecutive intervals in the output code
+    std::vector<uint32_t> in_start0;       // start + size in the original code
+    std::vector<uint32_t> in_size0;        // Size of the `in` interval
+    std::vector<uint32_t> interval_type0;  // 0 .... 1:1; 1 ... many to many;
+    std::vector<uint32_t> in_newlines0;    // position of all \n in the original code
+    //    std::vector<uint32_t> filename_id; // file name for each interval, ID
+    //    std::vector<std::string> filenames; // filenames lookup for an ID
 
     // Converts a position in the output code to a position in the original code
     // Every character in the output code has a corresponding location in the
     // original code, so this function always succeeds
-    uint32_t output_to_input_pos(uint32_t out_pos, bool show_last) const {
-        if (out_start.size() == 0) return 0;
-        uint32_t interval = bisection(out_start, out_pos)-1;
+    uint32_t output_to_input_pos(uint32_t out_pos, bool show_last) const
+    {
+        if (out_start.size() == 0)
+            return 0;
+        uint32_t interval = bisection(out_start, out_pos) - 1;
         uint32_t rel_pos = out_pos - out_start[interval];
         uint32_t in_pos = in_start[interval] + rel_pos;
         if (preprocessor) {
             // If preprocessor was used, do one more remapping
-            uint32_t interval0 = bisection(out_start0, in_pos)-1;
+            uint32_t interval0 = bisection(out_start0, in_pos) - 1;
             if (interval_type0[interval0] == 0) {
                 // 1:1 interval
                 uint32_t rel_pos0 = in_pos - out_start0[interval0];
@@ -131,10 +137,10 @@ struct LocationManager {
             } else {
                 // many to many interval
                 uint32_t in_pos0;
-                if (in_pos == out_start0[interval0+1]-1 || show_last) {
+                if (in_pos == out_start0[interval0 + 1] - 1 || show_last) {
                     // The end of the interval in "out" code
                     // Return the end of the interval in "in" code
-                    in_pos0 = in_start0[interval0]+in_size0[interval0]-1;
+                    in_pos0 = in_start0[interval0] + in_size0[interval0] - 1;
                 } else {
                     // Otherwise return the beginning of the interval in "in"
                     in_pos0 = in_start0[interval0];
@@ -150,44 +156,47 @@ struct LocationManager {
     // `position` starts from 0
     // `line` and `col` starts from 1
     // `in_newlines` starts from 0
-    void pos_to_linecol(uint32_t position, uint32_t &line, uint32_t &col) const {
-        const std::vector<uint32_t> *newlines;
+    void pos_to_linecol(uint32_t position, uint32_t& line, uint32_t& col) const
+    {
+        const std::vector<uint32_t>* newlines;
         if (preprocessor) {
             newlines = &in_newlines0;
         } else {
             newlines = &in_newlines;
         }
         int32_t interval = bisection(*newlines, position);
-        if (interval >= 1 && position == (*newlines)[interval-1]) {
+        if (interval >= 1 && position == (*newlines)[interval - 1]) {
             // position is exactly the \n character, make sure `line` is
             // the line with \n, and `col` points to the position of \n
             interval -= 1;
         }
-        line = interval+1;
+        line = interval + 1;
         if (line == 1) {
-            col = position+1;
+            col = position + 1;
         } else {
-            col = position-(*newlines)[interval-1];
+            col = position - (*newlines)[interval - 1];
         }
     }
 
-    void get_newlines(const std::string &s, std::vector<uint32_t> &newlines) {
-        for (uint32_t pos=0; pos < s.size(); pos++) {
-            if (s[pos] == '\n') newlines.push_back(pos);
+    void get_newlines(const std::string& s, std::vector<uint32_t>& newlines)
+    {
+        for (uint32_t pos = 0; pos < s.size(); pos++) {
+            if (s[pos] == '\n')
+                newlines.push_back(pos);
         }
     }
 
-    void init_simple(const std::string &input) {
+    void init_simple(const std::string& input)
+    {
         uint32_t n = input.size();
-        out_start = {0, n};
-        in_start = {0, n};
+        out_start = { 0, n };
+        in_start = { 0, n };
         get_newlines(input, in_newlines);
     }
-
 };
 
 
-} // namespace LFortran
+}  // namespace LFortran
 
 
 #endif

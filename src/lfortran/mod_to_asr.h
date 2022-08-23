@@ -3,10 +3,12 @@
 
 #include <libasr/asr.h>
 
-namespace LFortran {
+namespace LFortran
+{
 
-    ASR::TranslationUnit_t *mod_to_asr(Allocator &al, std::string filename);
+ASR::TranslationUnit_t*
+mod_to_asr(Allocator& al, std::string filename);
 
-} // namespace LFortran
+}  // namespace LFortran
 
-#endif // LFORTRAN_MOD_TO_ASR_H
+#endif  // LFORTRAN_MOD_TO_ASR_H

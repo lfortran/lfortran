@@ -9,7 +9,8 @@ using LFortran::X86Reg;
 
 // Print any vector like iterable to a string
 template <class T>
-inline std::ostream &print_vec(std::ostream &out, T &d)
+inline std::ostream&
+print_vec(std::ostream& out, T& d)
 {
     out << "[";
     for (auto p = d.begin(); p != d.end(); p++) {
@@ -23,7 +24,8 @@ inline std::ostream &print_vec(std::ostream &out, T &d)
 
 // Specialization for `const std::vector<uint8_t>`
 template <>
-inline std::ostream &print_vec(std::ostream &out, const std::vector<uint8_t> &d)
+inline std::ostream&
+print_vec(std::ostream& out, const std::vector<uint8_t>& d)
 {
     out << "[";
     for (auto p = d.begin(); p != d.end(); p++) {
@@ -36,29 +38,35 @@ inline std::ostream &print_vec(std::ostream &out, const std::vector<uint8_t> &d)
 }
 
 
-namespace doctest {
-    // Convert std::vector<T> to string for doctest
-    template<typename T> struct StringMaker<std::vector<T>> {
-        static String convert(const std::vector<T> &value) {
-            std::ostringstream oss;
-            print_vec(oss, value);
-            return oss.str().c_str();
-        }
-    };
+namespace doctest
+{
+// Convert std::vector<T> to string for doctest
+template <typename T>
+struct StringMaker<std::vector<T>> {
+    static String convert(const std::vector<T>& value)
+    {
+        std::ostringstream oss;
+        print_vec(oss, value);
+        return oss.str().c_str();
+    }
+};
 }
 
 // Strips the first character (\n)
-std::string S(const std::string &s) {
+std::string
+S(const std::string& s)
+{
     return s.substr(1, s.size());
 }
 
-TEST_CASE("Store and get instructions") {
+TEST_CASE("Store and get instructions")
+{
     Allocator al(1024);
     LFortran::X86Assembler a(al);
     a.asm_pop_r32(LFortran::X86Reg::eax);
     a.asm_jz_imm8(13);
 
-    LFortran::Vec<uint8_t> &code = a.get_machine_code();
+    LFortran::Vec<uint8_t>& code = a.get_machine_code();
     CHECK(code.size() == 3);
 
 #ifdef LFORTRAN_ASM_PRINT
@@ -73,7 +81,8 @@ BITS 32
 #endif
 }
 
-TEST_CASE("modrm_sib_disp") {
+TEST_CASE("modrm_sib_disp")
+{
     Allocator al(1024);
     LFortran::Vec<uint8_t> code;
     LFortran::X86Reg base;
@@ -82,195 +91,173 @@ TEST_CASE("modrm_sib_disp") {
 
     base = LFortran::X86Reg::ecx;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, nullptr, 1, 0, false);
-    ref = {0xd9};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, nullptr, 1, 0, false);
+    ref = { 0xd9 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ecx;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, nullptr, 1, 0, true);
-    ref = {0x19};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, nullptr, 1, 0, true);
+    ref = { 0x19 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::esi;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, nullptr, 1, 0, true);
-    ref = {0x1e};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, nullptr, 1, 0, true);
+    ref = { 0x1e };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebp;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, nullptr, 1, 0, true);
-    ref = {0x5d, 0x00};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, nullptr, 1, 0, true);
+    ref = { 0x5d, 0x00 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebp;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, nullptr, 1, 3, true);
-    ref = {0x5d, 0x03};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, nullptr, 1, 3, true);
+    ref = { 0x5d, 0x03 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebp;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, nullptr, 1, -3, true);
-    ref = {0x5d, 0xfd};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, nullptr, 1, -3, true);
+    ref = { 0x5d, 0xfd };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebp;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, nullptr, 1, 127, true);
-    ref = {0x5d, 0x7f};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, nullptr, 1, 127, true);
+    ref = { 0x5d, 0x7f };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebp;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, nullptr, 1, 128, true);
-    ref = {0x9d, 0x80, 0x00, 0x00, 0x00};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, nullptr, 1, 128, true);
+    ref = { 0x9d, 0x80, 0x00, 0x00, 0x00 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebp;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, nullptr, 1, -128, true);
-    ref = {0x5d, 0x80};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, nullptr, 1, -128, true);
+    ref = { 0x5d, 0x80 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebp;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, nullptr, 1, -129, true);
-    ref = {0x9d, 0x7f, 0xff, 0xff, 0xff};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, nullptr, 1, -129, true);
+    ref = { 0x9d, 0x7f, 0xff, 0xff, 0xff };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::esp;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, nullptr, 1, 0, true);
-    ref = {0x1c, 0x24};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, nullptr, 1, 0, true);
+    ref = { 0x1c, 0x24 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::eax;
     index = LFortran::X86Reg::ebx;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, &index, 1, 0, true);
-    ref = {0x1c, 0x18};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, &index, 1, 0, true);
+    ref = { 0x1c, 0x18 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebx;
     index = LFortran::X86Reg::eax;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, &index, 1, 0, true);
-    ref = {0x1c, 0x03};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, &index, 1, 0, true);
+    ref = { 0x1c, 0x03 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebx;
     index = LFortran::X86Reg::eax;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, &index, 2, 0, true);
-    ref = {0x1c, 0x43};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, &index, 2, 0, true);
+    ref = { 0x1c, 0x43 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebx;
     index = LFortran::X86Reg::eax;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, &index, 4, 0, true);
-    ref = {0x1c, 0x83};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, &index, 4, 0, true);
+    ref = { 0x1c, 0x83 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebx;
     index = LFortran::X86Reg::eax;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, &index, 8, 0, true);
-    ref = {0x1c, 0xc3};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, &index, 8, 0, true);
+    ref = { 0x1c, 0xc3 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebx;
     index = LFortran::X86Reg::eax;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, &index, 8, 127, true);
-    ref = {0x5c, 0xc3, 0x7f};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, &index, 8, 127, true);
+    ref = { 0x5c, 0xc3, 0x7f };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebx;
     index = LFortran::X86Reg::eax;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, &index, 8, 128, true);
-    ref = {0x9c, 0xc3, 0x80, 0x00, 0x00, 0x00};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, &index, 8, 128, true);
+    ref = { 0x9c, 0xc3, 0x80, 0x00, 0x00, 0x00 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebx;
     index = LFortran::X86Reg::eax;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, &index, 2, 1, true);
-    ref = {0x5c, 0x43, 0x01};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, &index, 2, 1, true);
+    ref = { 0x5c, 0x43, 0x01 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebx;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ebx, &base, nullptr, 1, 1, true);
-    ref = {0x5b, 0x01};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ebx, &base, nullptr, 1, 1, true);
+    ref = { 0x5b, 0x01 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebp;
     index = LFortran::X86Reg::ebx;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ecx, &base, &index, 4, 1, true);
-    ref = {0x4c, 0x9d, 0x01};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ecx, &base, &index, 4, 1, true);
+    ref = { 0x4c, 0x9d, 0x01 };
+    CHECK(code.as_vector() == ref);
 
     base = LFortran::X86Reg::ebp;
     index = LFortran::X86Reg::ebx;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ecx, &base, &index, 4, 128, true);
-    ref = {0x8c, 0x9d, 0x80, 0x00, 0x00, 0x00};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ecx, &base, &index, 4, 128, true);
+    ref = { 0x8c, 0x9d, 0x80, 0x00, 0x00, 0x00 };
+    CHECK(code.as_vector() == ref);
 
     index = LFortran::X86Reg::ebx;
     code.reserve(al, 32);
-    LFortran::modrm_sib_disp(code, al,
-        LFortran::X86Reg::ecx, nullptr, &index, 4, 1, true);
-    ref = {0x0c, 0x9d, 0x01, 0x00, 0x00, 0x00};
-    CHECK( code.as_vector() == ref );
+    LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ecx, nullptr, &index, 4, 1, true);
+    ref = { 0x0c, 0x9d, 0x01, 0x00, 0x00, 0x00 };
+    CHECK(code.as_vector() == ref);
 
     index = LFortran::X86Reg::ebx;
     code.reserve(al, 32);
-    CHECK_THROWS_AS(LFortran::modrm_sib_disp(code, al,
-            LFortran::X86Reg::ecx, nullptr, &index, 3, 1, true),
+    CHECK_THROWS_AS(
+        LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ecx, nullptr, &index, 3, 1, true),
         LFortran::AssemblerError);
 
     index = LFortran::X86Reg::ebx;
     code.reserve(al, 32);
-    CHECK_THROWS_AS(LFortran::modrm_sib_disp(code, al,
-            LFortran::X86Reg::ecx, nullptr, nullptr, 1, 0, false),
+    CHECK_THROWS_AS(
+        LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ecx, nullptr, nullptr, 1, 0, false),
         LFortran::AssemblerError);
 
     index = LFortran::X86Reg::ebx;
     code.reserve(al, 32);
-    CHECK_THROWS_AS(LFortran::modrm_sib_disp(code, al,
-            LFortran::X86Reg::ecx, nullptr, nullptr, 1, 0, true),
+    CHECK_THROWS_AS(
+        LFortran::modrm_sib_disp(code, al, LFortran::X86Reg::ecx, nullptr, nullptr, 1, 0, true),
         LFortran::AssemblerError);
 }
 
-TEST_CASE("Memory operand") {
+TEST_CASE("Memory operand")
+{
     Allocator al(1024);
     LFortran::X86Assembler a(al);
     LFortran::X86Reg base = LFortran::X86Reg::ebx;
@@ -323,7 +310,8 @@ BITS 32
 #endif
 }
 
-TEST_CASE("elf32 binary") {
+TEST_CASE("elf32 binary")
+{
     Allocator al(1024);
     LFortran::X86Assembler a(al);
 
@@ -335,18 +323,18 @@ TEST_CASE("elf32 binary") {
 
     a.add_label("_start");
     // ssize_t write(int fd, const void *buf, size_t count);
-    a.asm_mov_r32_imm32(LFortran::X86Reg::eax, 4); // sys_write
-    a.asm_mov_r32_imm32(LFortran::X86Reg::ebx, 1); // fd (stdout)
-    a.asm_mov_r32_imm32(LFortran::X86Reg::ecx, a.get_defined_symbol("msg").value); // buf
-    a.asm_mov_r32_imm32(LFortran::X86Reg::edx, msg.size()); // count
+    a.asm_mov_r32_imm32(LFortran::X86Reg::eax, 4);                                  // sys_write
+    a.asm_mov_r32_imm32(LFortran::X86Reg::ebx, 1);                                  // fd (stdout)
+    a.asm_mov_r32_imm32(LFortran::X86Reg::ecx, a.get_defined_symbol("msg").value);  // buf
+    a.asm_mov_r32_imm32(LFortran::X86Reg::edx, msg.size());                         // count
     a.asm_int_imm8(0x80);
     a.asm_call_label("exit");
 
     a.add_label("exit");
     // void exit(int status);
-    a.asm_mov_r32_imm32(LFortran::X86Reg::eax, 1); // sys_exit
-    a.asm_mov_r32_imm32(LFortran::X86Reg::ebx, 0); // exit code
-    a.asm_int_imm8(0x80); // syscall
+    a.asm_mov_r32_imm32(LFortran::X86Reg::eax, 1);  // sys_exit
+    a.asm_mov_r32_imm32(LFortran::X86Reg::ebx, 0);  // exit code
+    a.asm_int_imm8(0x80);                           // syscall
 
     LFortran::emit_elf32_footer(a);
 
@@ -455,23 +443,21 @@ filesize equ 0x00000088
 
     std::vector<uint8_t> cref;
 
-    cref = {0x7f, 0x45, 0x4c, 0x46, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x03, 0x00, 0x01, 0x00,
-        0x00, 0x00, 0x61, 0x80, 0x04, 0x08, 0x34, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x34, 0x00, 0x20, 0x00,
-        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x04, 0x08, 0x00, 0x80,
-        0x04, 0x08, 0x88, 0x00, 0x00, 0x00, 0x88, 0x00, 0x00, 0x00, 0x05,
-        0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x48, 0x65, 0x6c, 0x6c,
-        0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x21, 0x0a, 0xb8, 0x04,
-        0x00, 0x00, 0x00, 0xbb, 0x01, 0x00, 0x00, 0x00, 0xb9, 0x54, 0x80,
-        0x04, 0x08, 0xba, 0x0d, 0x00, 0x00, 0x00, 0xcd, 0x80, 0xe8, 0x00,
-        0x00, 0x00, 0x00, 0xb8, 0x01, 0x00, 0x00, 0x00, 0xbb, 0x00, 0x00,
-        0x00, 0x00, 0xcd, 0x80};
-    CHECK( a.get_machine_code().as_vector() == cref );
+    cref = { 0x7f, 0x45, 0x4c, 0x46, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+             0x00, 0x00, 0x02, 0x00, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x61, 0x80, 0x04, 0x08,
+             0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x34, 0x00,
+             0x20, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+             0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x04, 0x08, 0x00, 0x80, 0x04, 0x08, 0x88, 0x00,
+             0x00, 0x00, 0x88, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00,
+             0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x21, 0x0a, 0xb8,
+             0x04, 0x00, 0x00, 0x00, 0xbb, 0x01, 0x00, 0x00, 0x00, 0xb9, 0x54, 0x80, 0x04, 0x08,
+             0xba, 0x0d, 0x00, 0x00, 0x00, 0xcd, 0x80, 0xe8, 0x00, 0x00, 0x00, 0x00, 0xb8, 0x01,
+             0x00, 0x00, 0x00, 0xbb, 0x00, 0x00, 0x00, 0x00, 0xcd, 0x80 };
+    CHECK(a.get_machine_code().as_vector() == cref);
 }
 
-TEST_CASE("print") {
+TEST_CASE("print")
+{
     Allocator al(1024);
     LFortran::X86Assembler a(al);
     std::string msg = "Hello World!\n";
@@ -489,7 +475,8 @@ TEST_CASE("print") {
     a.save_binary("print32");
 }
 
-TEST_CASE("cmp") {
+TEST_CASE("cmp")
+{
     Allocator al(1024);
     LFortran::X86Assembler a(al);
     std::string msg1 = "Branch 1\n";
@@ -519,7 +506,8 @@ TEST_CASE("cmp") {
     a.save_binary("cmp32");
 }
 
-TEST_CASE("subroutines") {
+TEST_CASE("subroutines")
+{
     Allocator al(1024);
     LFortran::X86Assembler a(al);
     std::string msg1 = "Subroutine 1, calling 2\n";
@@ -558,7 +546,8 @@ TEST_CASE("subroutines") {
     a.save_binary("subroutines32");
 }
 
-TEST_CASE("subroutine args") {
+TEST_CASE("subroutine args")
+{
     Allocator al(1024);
     LFortran::X86Assembler a(al);
     std::string msg1 = "Subroutine 1\n";
@@ -571,7 +560,7 @@ TEST_CASE("subroutine args") {
     // Initialize stack
     a.asm_push_r32(X86Reg::ebp);
     a.asm_mov_r32_r32(X86Reg::ebp, X86Reg::esp);
-    a.asm_sub_r32_imm8(X86Reg::esp, 4); // one local variable
+    a.asm_sub_r32_imm8(X86Reg::esp, 4);  // one local variable
 
     LFortran::emit_print(a, "msg1", msg1.size());
 
@@ -596,11 +585,11 @@ TEST_CASE("subroutine args") {
 
     a.add_label("_start");
     // Push arguments to stack (last argument first)
-    a.asm_push_imm8(5); // second argument
-    a.asm_push_imm8(4); // first argument
+    a.asm_push_imm8(5);  // second argument
+    a.asm_push_imm8(4);  // first argument
     a.asm_call_label("sub1");
     // Remove arguments from stack: 2 arguments, 4 bytes each
-    a.asm_add_r32_imm8(LFortran::X86Reg::esp, 2*4);
+    a.asm_add_r32_imm8(LFortran::X86Reg::esp, 2 * 4);
 
     a.asm_cmp_r32_imm8(LFortran::X86Reg::eax, 9);
     a.asm_je_label(".then");
@@ -624,7 +613,8 @@ TEST_CASE("subroutine args") {
     a.save_binary("subroutines_args32");
 }
 
-TEST_CASE("print integer") {
+TEST_CASE("print integer")
+{
     Allocator al(1024);
     LFortran::X86Assembler a(al);
 
