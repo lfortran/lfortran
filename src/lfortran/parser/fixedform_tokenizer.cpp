@@ -299,6 +299,7 @@ struct FixedFormRecursiveDescent {
     std::vector<YYSTYPE> stypes;
     std::vector<int> tokens;
     std::vector<Location> locations;
+    bool abort_loop = false;
 
     FixedFormRecursiveDescent(diag::Diagnostics &diag,
         Allocator &m_a) : diag{diag}, m_a{m_a} {
@@ -674,6 +675,8 @@ struct FixedFormRecursiveDescent {
                 label_match = true;
             }
         }
+        if (label_match) abort_loop = true;
+
         if (next_is(cur, "enddo")) {
             tokenize_line("enddo", cur);
             return true;
@@ -748,6 +751,10 @@ struct FixedFormRecursiveDescent {
         }
         tokenize_line("", cur); // tokenize rest of line where `do` starts
         while (!lex_do_terminal(cur, do_label)) {
+            if (abort_loop) {
+                abort_loop = false;
+                return;
+            }
             if (!lex_body_statement(cur)) {
                 throw parser_local::TokenizerError("End of file inside a do loop 2", loc);
             };
