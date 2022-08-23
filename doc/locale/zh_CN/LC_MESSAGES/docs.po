@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-22 11:19+0000\n"
-"Last-Translator: St Maxwell <st_maxwell@outlook.com>\n"
+"PO-Revision-Date: 2022-08-26 12:30+0000\n"
+"Last-Translator: 左志华 <zuo.zhihua@qq.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "fortran-lang/lfortran-docs/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -948,10 +948,10 @@ msgid ""
 "[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gl/lfortran%2Fweb"
 "%2Flfortran-binder/master?filepath=Demo.ipynb)"
 msgstr ""
-"网站：[https://lfortran.org/](https://lfortran.org/) "
-"主存储库：[https://github.com/lfortran/lfortran](https://github.com/lfortran/"
-"lfortran) 使用 Binder 在线尝试：[![Binder](https://mybinder.org/badge_logo."
-"svg)](https://mybinder.org/v2/gl/lfortran%2Fweb%2Flfortran-binder/"
+"网站：[https://lfortran.org/](https://lfortran.org/"
+")；主存储库：[https://github.com/lfortran/lfortran](https://github.com/"
+"lfortran/lfortran)；使用 Binder 在线尝试：[![Binder](https://mybinder.org/"
+"badge_logo.svg)](https://mybinder.org/v2/gl/lfortran%2Fweb%2Flfortran-binder/"
 "master?filepath=Demo.ipynb)"
 
 #: ../../doc/src/index.md:9
@@ -969,9 +969,9 @@ msgid ""
 "[Development Status](progress.md) section for more information on "
 "features being supported and being worked on."
 msgstr ""
-"LFortran 正在开发中，有些功能现在可以使用，有些功能正在实现中。您还可以查看 ["
+"LFortran 正在开发中，有些功能现在可以使用，有些功能正在实现中。你还可以查看 ["
 "Development Status](progress.md) "
-"部分，了解有关受支持和正在开发的功能的更多信息。"
+"部分，了解有关被支持和正在开发的功能的更多信息。"
 
 #: ../../doc/src/index.md:21
 msgid "Works today"
@@ -988,11 +988,11 @@ msgid ""
 "%2Flfortran-binder/master?filepath=Demo.ipynb)   example notebook).   Or "
 "it can be used from the command-line in an interactive prompt (REPL)."
 msgstr ""
-"**交互式，Jupyter 支持** LFortran 可以从 Jupyter 用作 Fortran 内核，允许 "
+"**交互式，Jupyter 支持**：LFortran 可以在 Jupyter 中用作 Fortran 内核，允许 "
 "Python/Julia 风格的快速原型设计和探索性工作流程（参见示例笔记： "
-"[静态(https://nbviewer.jupyter.org/gist/certik/"
-"f1d28a486510810d824869ab0c491b1c) 或  [交互](https://mybinder.org/v2/gl/"
-"lfortran%2Fweb%2Flfortran-binder/master?filepath=Demo.ipynb)。或者，"
+"[静态](https://nbviewer.jupyter.org/gist/certik/"
+"f1d28a486510810d824869ab0c491b1c) 或 [交互](https://mybinder.org/v2/gl/"
+"lfortran%2Fweb%2Flfortran-binder/master?filepath=Demo.ipynb)）。或者，"
 "它可以在交互式提示 (REPL) 中的命令行中使用。"
 
 #: ../../doc/src/index.md:32
@@ -1004,7 +1004,7 @@ msgid ""
 "build tools on top. See the [Design](design.md)   and [Developer "
 "Tutorial](developer_tutorial.md) documents for more details."
 msgstr ""
-"**简洁、模块化设计，可用作库** LFortran 围绕两个独立模块 AST 和 ASR "
+"**简洁、模块化设计，可用作库**：LFortran 围绕两个独立模块 AST 和 ASR "
 "构建，这两个模块都是独立的（完全独立于 LFortran 的其余部分），鼓励用户将它们"
 "独立用于其他应用程序并在上面构建工具。有关详细信息，请参阅 [Design](design."
 "md) 和 [Developer Tutorial](developer_tutorial.md) 文档。"
@@ -1016,21 +1016,21 @@ msgid ""
 "with any Fortran compiler and linked with the   original GFortran "
 "compiled module."
 msgstr ""
-"**与 GFortran 的互操作** LFortran 可以将 GFortran 模块文件解析为 ASR "
-"并生成一个 Fortran 包装器，该包装器可以用任何 Fortran 编译器编译并与原始 "
+"**与 GFortran 的互操作**：LFortran 可以将 GFortran 模块文件解析为 ASR "
+"并生成一个 Fortran 包装器，该包装器可以用任何 Fortran 编译器编译并与原 "
 "GFortran 编译模块链接。"
 
 #: ../../doc/src/index.md:44
 msgid ""
 "**Create executables**   It can create executables just like other "
 "Fortran compilers."
-msgstr "**创建可执行文件** 它可以像其他 Fortran 编译器一样创建可执行文件。"
+msgstr "**创建可执行文件**：它可以像其他 Fortran 编译器一样创建可执行文件。"
 
 #: ../../doc/src/index.md:47
 msgid ""
 "**Runs on Linux, Mac and Windows**   All three platforms are regularly "
 "tested by our CI."
-msgstr "**在 Linux、Mac 和 Windows 上运行** 所有三个平台都由我们的 CI 定期测试。"
+msgstr "**在 Linux、Mac 和 Windows 上运行**：所有三个平台都由我们的 CI 定期测试。"
 
 #: ../../doc/src/index.md:51
 msgid "Planned"
@@ -1040,7 +1040,7 @@ msgstr "计划"
 msgid ""
 "These features are under development, there is a link to the "
 "corresponding issue so that you can track the progress by following it."
-msgstr "已计划这些功能正在开发中，有对应 issue 的链接，方便大家关注跟踪进度。"
+msgstr "已计划这些功能正在开发中，有对应议题的链接，方便大家关注跟踪进度。"
 
 #: ../../doc/src/index.md:56
 msgid ""
@@ -1053,12 +1053,12 @@ msgid ""
 " planned,   see [#56](https://gitlab.com/lfortran/lfortran/issues/56)), "
 "which allows to   use LFortran with production codes today."
 msgstr ""
-"**与其他语言（以及其他 Fortran 编译器）的原生互操作** 只需使用 `use` "
+"**与其他语言（以及其他 Fortran 编译器）的原生互操作**：只需使用 `use` "
 "语句即可自动调用其他语言（如 C 或 Python）编写的代码，参见 "
 "[#44](https://gitlab.com/lfortran/lfortran/issues/44)。它理解其他 Fortran "
 "编译器模块文件（可以`use`它们）及其 ABI 以正确链接（支持 "
-"GFortran，计划使用其他编译器，请参阅 [#56](https://gitlab.com/lfortran/"
-"lfortran/问题/56))，它允许今天将 LFortran 与生产代码一起使用。"
+"GFortran，计划使用其它编译器，请参阅 [#56](https://gitlab.com/lfortran/"
+"lfortran/问题/56)），它允许将 LFortran 与如今的生产代码一起使用。"
 
 #: ../../doc/src/index.md:65
 msgid ""
@@ -1067,7 +1067,7 @@ msgid ""
 "constructs (such as `do concurrent`)   to run on multi-core CPUs and "
 "GPUs, see   [#57](https://gitlab.com/lfortran/lfortran/issues/57)."
 msgstr ""
-"**现代硬件支持**感谢 LLVM，LFortran 的目标是在现代硬件上运行，并利用原生 "
+"**现代硬件支持**：得益于 LLVM，LFortran 的目标是在现代硬件上运行，并利用原生 "
 "Fortran 语言结构（例如 `do concurrent`）在多核 CPU 和 GPU 上运行，请参阅 [# "
 "57](https://gitlab.com/lfortran/lfortran/issues/57)。"
 
@@ -1078,7 +1078,7 @@ msgid ""
 "latest Fortran 2018 standard, see   "
 "[#58](https://gitlab.com/lfortran/lfortran/issues/58)."
 msgstr ""
-"**完整的 Fortran 2018 支持** 目前只实现了 Fortran 的一个子集，"
+"**完整的 Fortran 2018 支持**：目前只实现了 Fortran 的一个子集，"
 "但目标是完整实现最新的 Fortran 2018 标准，请参阅 [#58](https://gitlab.com/"
 "lfortran/lfortran/issue/58)。"
 
@@ -1088,7 +1088,7 @@ msgid ""
 "tracker](https://gitlab.com/lfortran/lfortran/issues) that you want us to"
 " prioritize (feel free to create new ones if we are missing anything)."
 msgstr ""
-"请在我们的 [问题跟踪器](https://gitlab.com/lfortran/lfortran/issues) 中对您希"
+"请在我们的 [议题跟踪器](https://gitlab.com/lfortran/lfortran/issues) 中对你希"
 "望我们优先考虑的问题进行投票（如果我们遗漏任何内容，请随时创建新问题）。"
 
 #: ../../doc/src/index.md:81
@@ -1157,14 +1157,15 @@ msgid ""
 "([#12](https://gitlab.com/lfortran/lfortran/issues/12)),  and other ideas"
 " ([#29](https://gitlab.com/lfortran/lfortran/issues/29))."
 msgstr ""
-"c) 实现所有其他很酷的功能：用于 C 和 Python 的 `use` 模块和自动包装器 "
-"([#44](https://gitlab.com/lfortran/lfortran/issues/44))，现代硬件支持 ([# "
-"57](https://gitlab.com/lfortran/lfortran/issues/57))，生成较旧的 Fortran "
-"标准 ([#72](https://gitlab.com/lfortran/lfortran/issues/72)) , Fortran "
-"doctest 功能 ([#73](https://gitlab.com/lfortran/lfortran/issues/73)), SymPy "
-"集成 ([#71](https://gitlab.com/lfortran/lfortran/issues/71))、IDE 的语言服务 "
-"([#12](https://gitlab.com/lfortran/lfortran/issues/12)) 和其他想法 "
-"([#29](https://gitlab.com/lfortran/lfortran/issues/29))。"
+"c) 实现所有其他很酷的功能：用于 C 和 Python 的 `use` "
+"模块和自动包装器（[#44](https://gitlab.com/lfortran/lfortran/issues/"
+"44)）、现代硬件支持（[# 57](https://gitlab.com/lfortran/lfortran/issues/"
+"57)）、生成较旧的 Fortran 标准（[#72](https://gitlab.com/lfortran/lfortran/"
+"issues/72)）、Fortran doctest 功能（[#73](https://gitlab.com/lfortran/"
+"lfortran/issues/73)）, SymPy 集成（[#71](https://gitlab.com/lfortran/"
+"lfortran/issues/71)）、IDE 的语言服务（[#12](https://gitlab.com/lfortran/"
+"lfortran/issues/12)）和其他想法（[#29](https://gitlab.com/lfortran/lfortran/"
+"issues/29)）。"
 
 #: ../../doc/src/index.md:118
 msgid "The step 1. is an internal refactoring that will not take long."
@@ -1184,10 +1185,10 @@ msgid ""
 "of summer 2019, hopefully sooner."
 msgstr ""
 "第 2 步将允许 LFortran 立即与生产代码交互使用（生产代码将使用 GFortran "
-"编译，然后“使用”LFortran 中的任何模块，并且可以交互调用函数/子例程，"
-"模块本身可以使用任何GFortran 支持的功能，但 API 必须适合 LFortran 理解的子集 "
-"--- 对于大量应用程序，带有数组参数的简单函数/子例程就足够了）。这将使 "
-"LFortran 可供第一批用户使用，并且在 LFortran 支持给定功能之前，"
+"编译，然后“使用” LFortran 中的任何模块，并且可以交互调用函数/子例程，"
+"模块本身可以使用任何 GFortran 支持的功能，但 API 必须适合 LFortran "
+"理解的子集 —— 对于大量应用程序，带有数组参数的简单函数/子例程就足够了）。"
+"这将使 LFortran 可供第一批用户使用，并且在 LFortran 支持给定功能之前，"
 "始终可以临时使用 GFortran。我们预计在 2019 年夏末完成第 2 步，希望能更快。"
 
 #: ../../doc/src/index.md:130
@@ -2030,14 +2031,14 @@ msgstr "`allocated(x)` 检查整数输入参数的分配状态。 "
 #: ../../doc/src/intrinsics/numeric/gamma.md:38
 #: ../../doc/src/intrinsics/numeric/mod.md:43
 msgid "Types"
-msgstr ""
+msgstr "类型"
 
 #: ../../doc/src/intrinsics/array/allocated.md:31
 #: ../../doc/src/intrinsics/array/size.md:35
 #: ../../doc/src/intrinsics/character/achar.md:39
 #: ../../doc/src/intrinsics/character/char.md:40
 msgid "Supported argument type is integer."
-msgstr ""
+msgstr "支持的参数类型是整型。"
 
 #: ../../doc/src/intrinsics/array/allocated.md:46
 #: ../../doc/src/intrinsics/array/cshift.md:43
@@ -2086,7 +2087,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:58
 #: ../../doc/src/intrinsics/numeric/mod.md:80
 msgid "Examples"
-msgstr ""
+msgstr "示例"
 
 #: ../../doc/src/intrinsics/array/allocated.md:59
 #: ../../doc/src/intrinsics/array/cshift.md:55
@@ -2100,7 +2101,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/mathematical/atanh.md:77
 #: ../../doc/src/intrinsics/mathematical/fraction.md:44
 msgid "**Result**:"
-msgstr ""
+msgstr "**结果**："
 
 #: ../../doc/src/intrinsics/array/allocated.md:65
 #: ../../doc/src/intrinsics/array/cshift.md:62
@@ -2153,32 +2154,32 @@ msgstr "也可以看看"
 
 #: ../../doc/src/intrinsics/array/cshift.md:1
 msgid "cshift(A, shift [, dim]): Circular Shift"
-msgstr ""
+msgstr "cshift(A, shift [, dim]): 循环移位"
 
 #: ../../doc/src/intrinsics/array/cshift.md:3
 msgid "Circular shift elements of an array."
-msgstr ""
+msgstr "数组元素的循环移位。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:16
 #: ../../doc/src/intrinsics/array/size.md:16
 msgid "`A` the input array of any type or rank."
-msgstr ""
+msgstr "`A` 为任何类型或维度的输入数组。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:18
 msgid "`shift` the input value of integer type."
-msgstr ""
+msgstr "`shift` 为整型类型的输入值。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:20
 msgid ""
 "`dim` optional dimension, if present, `cshift` returns the result of this"
 " dimension."
-msgstr ""
+msgstr "`dim` 可选维度，如果存在，`cshift` 返回此维度的结果。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:24
 msgid ""
 "The return value is of input array type and rank as the `A` array input "
 "argument."
-msgstr ""
+msgstr "返回值与数组输入参数 `A` 的类型与维度相同。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:28
 msgid ""
@@ -2186,47 +2187,50 @@ msgid ""
 " array along the dimension of `dim`. Default value of `dim` is 1, used "
 "when `dim` is not passed."
 msgstr ""
+"**cshift(A, shift [, dim])** 沿 `dim` 的维度对 `A` 数组的元素执行循环移位。"
+"当 `dim` 未传递时使用，`dim` 的默认值为 1。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:32
 msgid ""
 "If the rank of array is 1, then all elements of array are shifted by "
 "`shift` places. If rank is greater than one, then all complexte rank one "
 "sections of array along the given dimension are shifted."
-msgstr ""
+msgstr "如果数组的维度数为 1，则数组的所有元素都会移动 `shift` 位。如果维度数大于 "
+"1，则沿给定维度的数组元素都被移动。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:36
 msgid ""
 "Elements shifted out one end of each rank one section are shifted back in"
 " the other end."
-msgstr ""
+msgstr "元素从每一列的一端移出，在另一端移回。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:41
 msgid ""
 "Supported argument type is array for `A` and integer for `shift` and "
 "`dim`."
-msgstr ""
+msgstr "支持的参数类型是 `A` 的数组和 `shift` 和 `dim` 的整数。"
 
 #: ../../doc/src/intrinsics/array/size.md:1
 msgid "size(x): Size of Array"
-msgstr ""
+msgstr "size(x): 数组大小"
 
 #: ../../doc/src/intrinsics/array/size.md:3
 msgid "Returns the size of an array `x`."
-msgstr ""
+msgstr "返回数组 `x` 的大小。"
 
 #: ../../doc/src/intrinsics/array/size.md:18
 msgid ""
 "`dim` optional dimension, if present, `size` returns the size of this "
 "dimension."
-msgstr ""
+msgstr "`dim` 可选维度，如果存在，`size` 返回此维度的大小。"
 
 #: ../../doc/src/intrinsics/array/size.md:20
 msgid "`kind` optional the kind of the return value."
-msgstr ""
+msgstr "`kind` 可选返回值的种类。"
 
 #: ../../doc/src/intrinsics/array/size.md:24
 msgid "`n` the size of an array (integer)."
-msgstr ""
+msgstr "`n` 数组的大小（整型）。"
 
 #: ../../doc/src/intrinsics/array/size.md:28
 msgid ""
@@ -2235,42 +2239,45 @@ msgid ""
 " which case it only returns the size of this particular dimension. The "
 "`kind` argument can be used to specify the integer kind of the result."
 msgstr ""
+"`size` 内部函数返回数组的大小。它返回所有维度的乘积，除非指定了 `dim` "
+"参数，在这种情况下，它只返回这个特定维度的大小。 `kind` "
+"参数可用于指定结果的整数类型。"
 
 #: ../../doc/src/intrinsics/array/size.md:57
 msgid "[shape](), [reshape]()."
-msgstr ""
+msgstr "[shape]()，[reshape]()。"
 
 #: ../../doc/src/intrinsics/bit.md:1
 msgid "Bit Intrinsic Functions"
-msgstr ""
+msgstr "位操作内置函数"
 
 #: ../../doc/src/intrinsics/bit/bge.md:1
 msgid "bge(x, y): Bitwise Greater or Equal"
-msgstr ""
+msgstr "bge(x, y)：按位大于或等于"
 
 #: ../../doc/src/intrinsics/bit/bge.md:3
 msgid "Bitwise greater than or equal to."
-msgstr ""
+msgstr "按位大于或等于。"
 
 #: ../../doc/src/intrinsics/bit/bge.md:16
 #: ../../doc/src/intrinsics/bit/bgt.md:16
 #: ../../doc/src/intrinsics/bit/ble.md:16
 #: ../../doc/src/intrinsics/bit/blt.md:16
 msgid "`x` and `y` are integer input values. Both input values are of same kind."
-msgstr ""
+msgstr "`x` 和 `y` 是整数输入值。两个输入值是同一类型的。"
 
 #: ../../doc/src/intrinsics/bit/bge.md:20
 #: ../../doc/src/intrinsics/bit/bgt.md:20
 #: ../../doc/src/intrinsics/bit/ble.md:20
 #: ../../doc/src/intrinsics/bit/blt.md:20
 msgid "The return value is of type logical and of the default kind."
-msgstr ""
+msgstr "返回值是逻辑类型和默认类型。"
 
 #: ../../doc/src/intrinsics/bit/bge.md:24
 msgid ""
 "`bge(x, y)` calculates if two integer input values is bitwise greater "
 "than or equal to another."
-msgstr ""
+msgstr "`bge(x, y)` 计算两个整数输入值是否按位大于或等于另一个。"
 
 #: ../../doc/src/intrinsics/bit/bge.md:29
 #: ../../doc/src/intrinsics/bit/bgt.md:29
@@ -2278,7 +2285,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/bit/blt.md:29
 #: ../../doc/src/intrinsics/bit/btest.md:34
 msgid "Supported input types is integer of 32 bit and 64 bit size."
-msgstr ""
+msgstr "支持的输入类型是 32 位和 64 位大小的整数。"
 
 #: ../../doc/src/intrinsics/bit/bge.md:60
 #: ../../doc/src/intrinsics/bit/bgt.md:59
@@ -2316,29 +2323,29 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:67
 #: ../../doc/src/intrinsics/numeric/mod.md:89
 msgid "**Result:**"
-msgstr ""
+msgstr "**结果：**"
 
 #: ../../doc/src/intrinsics/bit/bge.md:70
 msgid "[bgt](bgt.md), [ble](ble.md), [blt](blt.md)."
-msgstr ""
+msgstr "[bgt](bgt.md)，[ble](ble.md)，[blt](blt.md)。"
 
 #: ../../doc/src/intrinsics/bit/bgt.md:1
 msgid "bgt(x, y): Bitwise Greater Than"
-msgstr ""
+msgstr "bgt(x, y)：按位大于"
 
 #: ../../doc/src/intrinsics/bit/bgt.md:3
 msgid "Bitwise greater than."
-msgstr ""
+msgstr "按位大于。"
 
 #: ../../doc/src/intrinsics/bit/bgt.md:24
 msgid ""
 "`bgt(x, y)` calculates if one integer input values is bitwise greater "
 "than the other."
-msgstr ""
+msgstr "`bgt(x, y)` 计算一个整数输入值是否按位大于另一个。"
 
 #: ../../doc/src/intrinsics/bit/bgt.md:68
 msgid "[bge](bge.md), [ble](ble.md), [blt](blt.md)."
-msgstr ""
+msgstr "[bge](bge.md)，[ble](ble.md)，[blt](blt.md)。"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:1
 msgid "bit_size(x): Bit Size"
@@ -3054,7 +3061,7 @@ msgstr ""
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:84
 msgid "[asinh](asinh.md), [acosh](acosh.md)."
-msgstr ""
+msgstr "[asinh](asinh.md)，[acosh](acosh.md)。"
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:1
 msgid "fraction(x): Fractional Part in Model Representation"
@@ -3088,7 +3095,7 @@ msgstr ""
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:28
 msgid "$x * {radix(x)}^{(-exponent(x))}$"
-msgstr ""
+msgstr "$x * {radix(x)}^{(-exponent(x))}$"
 
 #: ../../doc/src/intrinsics/misc.md:1
 msgid "Miscellaneous Intrinsic Functions"
@@ -3313,7 +3320,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/dim.md:29
 #: ../../doc/src/intrinsics/numeric/mod.md:45
 msgid "Supported argument types are real and integer."
-msgstr ""
+msgstr "支持的参数类型是实数和整数。"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:98
 #: ../../doc/src/intrinsics/numeric/aimag.md:70
