@@ -4,8 +4,9 @@ repos:
     rev: v4.1.0
     hooks:
     -   id: trailing-whitespace
-        exclude: ".md"
+        exclude: (integration_tests/|\.md|test_error_rendering\.cpp)
     -   id: end-of-file-fixer
+        exclude: (integration_tests/)
     -   id: fix-encoding-pragma
         args: [--remove]
     -   id: check-yaml
@@ -22,4 +23,5 @@ repos:
     hooks:
     -   id: clang-format
         args: [--style=file, -i]
-        exclude: ".json"
+        types_or: [c++, c]
+        exclude: "(integration_tests/)"
