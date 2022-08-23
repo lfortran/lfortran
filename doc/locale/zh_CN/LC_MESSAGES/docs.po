@@ -9,7 +9,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
 "PO-Revision-Date: 2022-08-26 12:30+0000\n"
-"Last-Translator: 左志华 <zuo.zhihua@qq.com>\n"
+"Last-Translator: Ys413 <2020172007@stu.mdjnu.edu.cn>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "fortran-lang/lfortran-docs/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -75,7 +75,6 @@ msgid ""
 msgstr "AST 必须代表所有的 ``use`` 语句和 ``interface`` 块，并保持语义一致。"
 
 #: ../../doc/src/ast_and_asr.ipynb:162
-#, fuzzy
 msgid ""
 "ASR, on the other hand, keeps track of the ``c_desc1_int32``, "
 "``c_desc1_t`` and ``f2b_c_wrapper`` in the symbol table and it knows they"
@@ -1315,9 +1314,7 @@ msgstr "克隆 LFortran git 存储库："
 msgid ""
 "Generate files that are needed for the build (this step depends on "
 "`re2c`, `bison` and `python`):"
-msgstr ""
-"Generate files that are needed for the build (this step depends on `re2c`, "
-"`bison` and `python`):"
+msgstr "生成构建所需的文件（此步骤取决于 `re2c`、`bison` 和 `python`）："
 
 #: ../../doc/src/installation.md:86
 msgid ""
@@ -1355,7 +1352,6 @@ msgstr ""
 "miniforge。"
 
 #: ../../doc/src/installation.md:109
-#, fuzzy
 msgid "Launch the Miniforge Prompt from the Desktop."
 msgstr "从桌面上启动 Miniforge Prompt。"
 
@@ -1547,8 +1543,8 @@ msgid ""
 "on Linux distributions we can use [nix-"
 "portable](https://github.com/DavHau/nix-portable)."
 msgstr ""
-"如果你想不给`nix`提供机器的root权限，在Linux发行版上，我们可以使用[nix-"
-"portable] (https://github.com/DavHau/nix-portable)。"
+"如果你想不给`nix`提供机器的root权限，在Linux发行版上，我们可以使用 [nix-"
+"portable](https://github.com/DavHau/nix-portable).。"
 
 #: ../../doc/src/installation.md:270
 msgid ""
@@ -1591,8 +1587,9 @@ msgid ""
 "[https://lfortran.org/download/](https://lfortran.org/download/), which "
 "only depends on LLVM, CMake and a C++ compiler."
 msgstr ""
-"我们鼓励终端用户（和发行版）使用来自 [https://lfortran.org/download/] "
-"(https://lfortran.org/download/)的tarball，它只依赖于LLVM、CMake和C++编译器。"
+"我们鼓励终端用户（和发行版）使用来自 [https://lfortran.org/download/"
+"](https://lfortran.org/download/"
+")的tarball，它只依赖于LLVM、CMake和C++编译器。"
 
 #: ../../doc/src/installation.md:303
 msgid ""
@@ -1612,19 +1609,16 @@ msgid "Note for users who do not use Conda"
 msgstr "不使用Conda的用户注意"
 
 #: ../../doc/src/installation.md:311
-#, fuzzy
 msgid ""
 "Following are the dependencies necessary for installing this repository "
 "in development mode,"
 msgstr "以下是在开发模式下安装此版本库的必要依赖,"
 
 #: ../../doc/src/installation.md:314
-#, fuzzy
 msgid "[Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)"
 msgstr "[Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)"
 
 #: ../../doc/src/installation.md:315
-#, fuzzy
 msgid ""
 "[LLVM - 11.0.1](https://github.com/llvm/llvm-"
 "project/releases/download/llvmorg-11.0.1/llvm-11.0.1.src.tar.xz)"
@@ -1633,7 +1627,6 @@ msgstr ""
 "llvmorg-11.0.1/llvm-11.0.1.src.tar.xz)"
 
 #: ../../doc/src/installation.md:316
-#, fuzzy
 msgid "[re2c - 2.0.3](https://re2c.org/install/install.html)"
 msgstr "[re2c - 2.0.3](https://re2c.org/install/install.html)"
 
@@ -1668,16 +1661,14 @@ msgstr ""
 "的说明安装先决条件后，用`-DWITH_STACKTRACE=yes` cmake选项编译LFortran。"
 
 #: ../../doc/src/installation.md:328
-#, fuzzy
 msgid "Ubuntu"
-msgstr "Ubuntu"
+msgstr "乌班图(Ubuntu)"
 
 #: ../../doc/src/installation.md:330
 msgid "In Ubuntu, `apt install binutils-dev`."
 msgstr "在Ubuntu系统, `apt install binutils-dev`."
 
 #: ../../doc/src/installation.md:332
-#, fuzzy
 msgid "macOS"
 msgstr "macOS"
 
@@ -2349,84 +2340,85 @@ msgstr "[bge](bge.md)，[ble](ble.md)，[blt](blt.md)。"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:1
 msgid "bit_size(x): Bit Size"
-msgstr ""
+msgstr "bit_size(x): 位大小"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:3
 msgid "Bit size."
-msgstr ""
+msgstr "位大小。"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:16
 msgid "`x` is integer input value."
-msgstr ""
+msgstr "`x` 是整数输入值。"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:20
 #: ../../doc/src/intrinsics/numeric/digits.md:19
 msgid "The return value is of type integer."
-msgstr ""
+msgstr "返回值是整数类型。"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:24
 msgid ""
 "`bit_size(x)` calculates the number of bits including sign bit of binary "
 "representation of `x`."
-msgstr ""
+msgstr "`bit_size(x)` 计算 `x` 的二进制表示的包括符号位在内的位数。"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:29
 msgid "Supported input types is integer."
-msgstr ""
+msgstr "支持的输入类型是整数。"
 
 #: ../../doc/src/intrinsics/bit/ble.md:1
 msgid "bge(x, y): Bitwise Less or Equal"
-msgstr ""
+msgstr "bge(x, y)：按位小于或等于"
 
 #: ../../doc/src/intrinsics/bit/ble.md:3
 msgid "Bitwise less than or equal to."
-msgstr ""
+msgstr "按位小于或等于。"
 
 #: ../../doc/src/intrinsics/bit/ble.md:24
 msgid ""
 "`ble(x, y)` calculates if one integer input values is bitwise less than "
 "or equal to other."
-msgstr ""
+msgstr "`ble(x, y)` 计算一个整数输入值是否按位小于或等于另一个。"
 
 #: ../../doc/src/intrinsics/bit/ble.md:70
 msgid "[bgt](bgt.md), [bge](bge.md), [blt](blt.md)."
-msgstr ""
+msgstr "[bgt](bgt.md), [bge](bge.md), [blt](blt.md)."
 
 #: ../../doc/src/intrinsics/bit/blt.md:1
 msgid "blt(x, y): Bitwise Less Than"
-msgstr ""
+msgstr "blt(x, y)：按位小于"
 
 #: ../../doc/src/intrinsics/bit/blt.md:3
 msgid "Bitwise less than."
-msgstr ""
+msgstr "按位小于。"
 
 #: ../../doc/src/intrinsics/bit/blt.md:24
 msgid ""
 "`blt(x, y)` calculates if one integer input values is bitwise less than "
 "the other."
-msgstr ""
+msgstr "`blt(x, y)` 计算一个整数输入值是否按位小于另一个。"
 
 #: ../../doc/src/intrinsics/bit/blt.md:68
 msgid "[bge](bge.md), [ble](ble.md), [bgt](bgt.md)."
-msgstr ""
+msgstr "[bge](bge.md), [ble](ble.md), [bgt](bgt.md)."
 
 #: ../../doc/src/intrinsics/bit/btest.md:1
 msgid "btest(x, pos): Bit Test at Position"
-msgstr ""
+msgstr "btest(x, pos)：位置位测试"
 
 #: ../../doc/src/intrinsics/bit/btest.md:3
 msgid "Bit test."
-msgstr ""
+msgstr "位测试。"
 
 #: ../../doc/src/intrinsics/bit/btest.md:16
 msgid ""
 "`x` and `pos` are integer input values. Both input values are of same "
 "kind. `pos` represents position in `x`."
-msgstr ""
+msgstr "`x` 和 `pos` 是整数输入值。 两个输入值是同一种类型。 `pos` 表示在 `x` "
+"中的位置。"
 
 #: ../../doc/src/intrinsics/bit/btest.md:21
 msgid "The return value is of type logical."
-msgstr ""
+msgstr "返回值是逻辑类型。"
 
 #: ../../doc/src/intrinsics/bit/btest.md:25
 msgid ""
@@ -2434,37 +2426,40 @@ msgid ""
 "set. The counting of the bits starts at 0, at least significant bit (LSB)"
 " i.e., the rightmost bit in `x`."
 msgstr ""
+"`btest(x, pos)` 计算输入整数值 `x` 中的 `pos` 位是否已设置。 位的计数从 0 "
+"开始，至少是有效位 (LSB)，即“x”中的最右边位。"
 
 #: ../../doc/src/intrinsics/bit/btest.md:29
 msgid ""
 "If `pos` less than 0 or greater than `bit_size()`, `btest(x, pos)` errors"
 " with not allowed message."
-msgstr ""
+msgstr "如果 `pos` 小于 0 或大于 `bit_size()`，则 `btest(x, pos)` "
+"错误并显示不允许的消息。"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:1
 msgid "shiftl(x, shift): Shift Left"
-msgstr ""
+msgstr "shiftl(x, shift): 左移"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:3
 msgid "Logical shift left function."
-msgstr ""
+msgstr "逻辑左移函数。"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:16
 #: ../../doc/src/intrinsics/bit/shiftr.md:16
 msgid "`x` is an integer input value."
-msgstr ""
+msgstr "`x` 是一个整数输入值。"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:18
 #: ../../doc/src/intrinsics/bit/shiftr.md:18
 msgid ""
 "`shift` an unsigned integer value less than or equal to the bit size of "
 "`x`. The possible values are 7, 31, and 63."
-msgstr ""
+msgstr "`shift` 一个小于或等于 `x` 位大小的无符号整数值。 可能的值为 7、31 和 63。"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:23
 #: ../../doc/src/intrinsics/bit/shiftr.md:23
 msgid "The return value is of type integer and of the same kind as `x`."
-msgstr ""
+msgstr "返回值是整数类型，与 `x` 类型相同。"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:27
 msgid ""
@@ -2473,25 +2468,29 @@ msgid ""
 "MSB(**M**ost **S**ignificant **B**it). Bits shifted from the left end "
 "i.e., MSB bits are lost. Zeroes are appended to the opposite right end."
 msgstr ""
+"**shiftl(x, shift)** 逻辑上将“x”左移“shift”位数。 `shiftl` 从 LSB(**L**east "
+"**S**significant **B**it) 转换为 MSB(**M**ost **S**significant **B**it)。 "
+"从左端移位的位，即 MSB 位丢失。 零被附加到相反的右端。"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:34
 #: ../../doc/src/intrinsics/bit/shiftr.md:34
 msgid ""
 "Supported types in unsigned integer value `x` and unsigned integer value "
 "`shift` from (7, 31, 63) less than or equal to bit size of `x`."
-msgstr ""
+msgstr "无符号整数值`x`和无符号整数值`shift`中支持的类型（7、31、63）小于或等于`x`的"
+"位大小。"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:82
 msgid "[shiftr](shiftr.md)."
-msgstr ""
+msgstr "[shiftr](shiftr.md)."
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:1
 msgid "shiftr(x, shift): Shift Right"
-msgstr ""
+msgstr "shiftr(x, shift): 右移"
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:3
 msgid "Logical shift right function."
-msgstr ""
+msgstr "逻辑右移功能。"
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:27
 msgid ""
@@ -2500,28 +2499,31 @@ msgid ""
 "LSB(**L**east **S**ignificant **B**it). Bits shifted from the right end "
 "i.e., LSB bits are lost. Zeroes are appended to the opposite left end."
 msgstr ""
+"**shiftr(x, shift)** 将“x”逻辑右移“shift”位数。 `shiftr` 从 MSB(**M**ost "
+"**S**significant **B**it) 转换为 LSB(**L**east **S**significant **B**it)。 "
+"从右端移位的位，即 LSB 位丢失。 零被附加到相对的左端。"
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:82
 msgid "[shiftl](shiftl.md)."
-msgstr ""
+msgstr "[shiftl](shiftl.md)."
 
 #: ../../doc/src/intrinsics/character.md:1
 msgid "Character Intrinsic Functions"
-msgstr ""
+msgstr "字符内在函数"
 
 #: ../../doc/src/intrinsics/character/achar.md:1
 msgid "achar(x, kind): To Character in ASCII set."
-msgstr ""
+msgstr "achar(x, kind): ASCII 集中的字符。"
 
 #: ../../doc/src/intrinsics/character/achar.md:3
 msgid "Character represented by in the ASCII character set."
-msgstr ""
+msgstr "ASCII 字符集中由 表示的字符。"
 
 #: ../../doc/src/intrinsics/character/achar.md:16
 msgid ""
 "`x`: the input value of integer type. `kind`: an optional input value of "
 "type integer constant expression for initialization."
-msgstr ""
+msgstr "`x`：整数类型的输入值。 `kind`：用于初始化的整数常量表达式类型的可选输入值。"
 
 #: ../../doc/src/intrinsics/character/achar.md:20
 #: ../../doc/src/intrinsics/character/adjustl.md:18
@@ -2529,25 +2531,25 @@ msgstr ""
 #: ../../doc/src/intrinsics/character/char.md:21
 #: ../../doc/src/intrinsics/character/len_trim.md:18
 msgid "Return value"
-msgstr ""
+msgstr "返回值"
 
 #: ../../doc/src/intrinsics/character/achar.md:22
 #: ../../doc/src/intrinsics/character/char.md:23
 msgid "The return value is of type character of length 1."
-msgstr ""
+msgstr "返回值是长度为 1 的字符类型。"
 
 #: ../../doc/src/intrinsics/character/achar.md:24
 #: ../../doc/src/intrinsics/character/char.md:25
 msgid ""
 "The return value is of kind `kind` if optional input value is passed, "
 "otherwise the kind is default kind."
-msgstr ""
+msgstr "如果传入可选输入值，则返回值为 kind `kind`，否则为默认 kind。"
 
 #: ../../doc/src/intrinsics/character/achar.md:29
 msgid ""
 "**achar(x, kind)** returns the character represented by the ASCII "
 "character set at `x` position."
-msgstr ""
+msgstr "**achar(x, kind)** 返回由 ASCII 字符集在 `x` 位置表示的字符。"
 
 #: ../../doc/src/intrinsics/character/achar.md:32
 #: ../../doc/src/intrinsics/character/char.md:33
@@ -2555,160 +2557,165 @@ msgid ""
 "If `x` is outside the ASCII character set integer value, i.e., if `x` is "
 "not represented in the ASCII character set, the return value is "
 "undefined."
-msgstr ""
+msgstr "如果 `x` 在 ASCII 字符集整数值之外，即，如果 `x` 没有在 ASCII "
+"字符集中表示，则返回值未定义。"
 
 #: ../../doc/src/intrinsics/character/achar.md:35
 #: ../../doc/src/intrinsics/character/char.md:36
 msgid "It is a runtime builtin function."
-msgstr ""
+msgstr "它是一个运行时内置函数。"
 
 #: ../../doc/src/intrinsics/character/achar.md:71
 #: ../../doc/src/intrinsics/character/adjustl.md:64
 #: ../../doc/src/intrinsics/character/len_trim.md:65
 msgid "[lge](lge.md)."
-msgstr ""
+msgstr "[lge](lge.md)."
 
 #: ../../doc/src/intrinsics/character/adjustl.md:1
 msgid "adjustl(string): Left Adjust String"
-msgstr ""
+msgstr "adjustl(string): 左调整字符串"
 
 #: ../../doc/src/intrinsics/character/adjustl.md:3
 msgid "Left adjust a string."
-msgstr ""
+msgstr "左调整一个字符串。"
 
 #: ../../doc/src/intrinsics/character/adjustl.md:16
 #: ../../doc/src/intrinsics/character/adjustr.md:16
 msgid "`string`: the input value must be of character type."
-msgstr ""
+msgstr "`string`：输入值必须是字符类型。"
 
 #: ../../doc/src/intrinsics/character/adjustl.md:20
 msgid ""
 "The return value is of type character and of the same kind as of input "
 "value `string`, with leading spaces removed and same number of spaces "
 "appended."
-msgstr ""
+msgstr "返回值是字符类型，与输入值`string`的类型相同，删除了前导空格并附加了相同数量"
+"的空格。"
 
 #: ../../doc/src/intrinsics/character/adjustl.md:25
 msgid ""
 "**adjustl(string)** adjusts input string by removing any leading spaces "
 "and appending same number of spaces."
-msgstr ""
+msgstr "**adjustl(string)** "
+"通过删除任何前导空格并附加相同数量的空格来调整输入字符串。"
 
 #: ../../doc/src/intrinsics/character/adjustl.md:30
 #: ../../doc/src/intrinsics/character/adjustr.md:31
 msgid "Supported argument type is character."
-msgstr ""
+msgstr "支持的参数类型是字符。"
 
 #: ../../doc/src/intrinsics/character/adjustr.md:1
 msgid "adjustr(string): Right Adjust String"
-msgstr ""
+msgstr "调整器（字符串）：右调整字符串"
 
 #: ../../doc/src/intrinsics/character/adjustr.md:3
 msgid "Right adjust a string."
-msgstr ""
+msgstr "右调整一个字符串。"
 
 #: ../../doc/src/intrinsics/character/adjustr.md:20
 msgid ""
 "The return value is of type character and of the same kind as of input "
 "value `string`, with trailing spaces removed and same number of spaces "
 "added at the start."
-msgstr ""
+msgstr "返回值是字符类型，与输入值`string`的类型相同，删除了尾随空格并在开头添加了相"
+"同数量的空格。"
 
 #: ../../doc/src/intrinsics/character/adjustr.md:26
 msgid ""
 "**adjustr(string)** adjusts input string by removing any trailing spaces "
 "and adding same number of spaces at the start of the input string."
-msgstr ""
+msgstr "**adjustr(string)** "
+"通过删除任何尾随空格并在输入字符串的开头添加相同数量的空格来调整输入字符串。"
 
 #: ../../doc/src/intrinsics/character/adjustr.md:65
 msgid "[adjustl](adjustl.md)."
-msgstr ""
+msgstr "[adjustl](adjustl.md)."
 
 #: ../../doc/src/intrinsics/character/char.md:1
 msgid "char(x, [, kind]): Integer to Character"
-msgstr ""
+msgstr "char(x, [, kind])：整数到字符"
 
 #: ../../doc/src/intrinsics/character/char.md:3
 msgid "Integer to character conversion."
-msgstr ""
+msgstr "整数到字符的转换。"
 
 #: ../../doc/src/intrinsics/character/char.md:16
 msgid "`x`: the input value of integer type."
-msgstr ""
+msgstr "`x`：整数类型的输入值。"
 
 #: ../../doc/src/intrinsics/character/char.md:18
 msgid ""
 "`kind`: an optional input value of type integer constant expression for "
 "initialization. This indicates the kind parameter of the result."
-msgstr ""
+msgstr "`kind`：用于初始化的整数常量表达式类型的可选输入值。 这表示结果的种类参数。"
 
 #: ../../doc/src/intrinsics/character/char.md:30
 msgid ""
 "**char(x)** returns the character represented by the ASCII character set "
 "at `x` position."
-msgstr ""
+msgstr "**char(x)** 返回由 ASCII 字符集在 `x` 位置表示的字符。"
 
 #: ../../doc/src/intrinsics/character/char.md:71
 msgid "[achar](achar.md), [iachar](iachar.md), [ichar](ichar.md)"
-msgstr ""
+msgstr "[achar](achar.md), [iachar](iachar.md), [ichar](ichar.md)"
 
 #: ../../doc/src/intrinsics/character/len_trim.md:1
 msgid "len_trim(string): Length Ignoring Trailing Blanks"
-msgstr ""
+msgstr "len_trim(string): 忽略尾随空格的长度"
 
 #: ../../doc/src/intrinsics/character/len_trim.md:3
 msgid "Length of a character string ignoring trailing blank character(s)."
-msgstr ""
+msgstr "忽略尾随空白字符的字符串长度。"
 
 #: ../../doc/src/intrinsics/character/len_trim.md:16
 msgid "`string` the input value of character type."
-msgstr ""
+msgstr "`string` 字符类型的输入值。"
 
 #: ../../doc/src/intrinsics/character/len_trim.md:20
 msgid "The return value is of type unsigned integer."
-msgstr ""
+msgstr "返回值是无符号整数类型。"
 
 #: ../../doc/src/intrinsics/character/len_trim.md:24
 msgid ""
 "**len_trim(string)** returns the length of the character argument without"
 " including trailing blank character(s)."
-msgstr ""
+msgstr "**len_trim(string)** 返回字符参数的长度，不包括尾随空白字符。"
 
 #: ../../doc/src/intrinsics/character/len_trim.md:29
 msgid "Supported argument type is character scalar."
-msgstr ""
+msgstr "支持的参数类型是字符标量。"
 
 #: ../../doc/src/intrinsics/character/lge.md:1
 msgid "lge(x, y): Lexically Greater or Equal"
-msgstr ""
+msgstr "lge(x, y)：词法上大于或等于"
 
 #: ../../doc/src/intrinsics/character/lge.md:3
 msgid "Lexically greater than or equal."
-msgstr ""
+msgstr "词法上大于或等于。"
 
 #: ../../doc/src/intrinsics/character/lge.md:17
 msgid "`x` input value of type character."
-msgstr ""
+msgstr "`x` 类型字符的输入值。"
 
 #: ../../doc/src/intrinsics/character/lge.md:19
 msgid "`y` input value of type character."
-msgstr ""
+msgstr "`y` 类型字符的输入值。"
 
 #: ../../doc/src/intrinsics/character/lge.md:21
 msgid "`x` and `y` can be seen as string A and string B."
-msgstr ""
+msgstr "`x` 和 `y` 可以看作是字符串 A 和字符串 B。"
 
 #: ../../doc/src/intrinsics/character/lge.md:25
 msgid "The return value is of logical `true` or `false` type."
-msgstr ""
+msgstr "返回值是逻辑 `true` 或 `false` 类型。"
 
 #: ../../doc/src/intrinsics/character/lge.md:27
 msgid "`True` if `x` string is lexically greater than or equal to `y`."
-msgstr ""
+msgstr "如果 `x` 字符串在词法上大于或等于 `y`，则为 `True`。"
 
 #: ../../doc/src/intrinsics/character/lge.md:29
 msgid "`False` if they are not."
-msgstr ""
+msgstr "如果不是，则为`False`。"
 
 #: ../../doc/src/intrinsics/character/lge.md:33
 msgid ""
@@ -2716,46 +2723,49 @@ msgid ""
 " equal to input string `y`. The two strings in comparison are interpreted"
 " as containing ASCII character codes."
 msgstr ""
+"**lge(x, y)** 确定输入字符串 `x` 在词法上是否大于或等于输入字符串 `y`。 "
+"比较的两个字符串被解释为包含 ASCII 字符代码。"
 
 #: ../../doc/src/intrinsics/character/lge.md:39
 msgid "Argument types should be of type character literal."
-msgstr ""
+msgstr "参数类型应该是字符文字类型。"
 
 #: ../../doc/src/intrinsics/character/lge.md:81
 msgid "[len_trim](len_trim.md)."
-msgstr ""
+msgstr "[len_trim](len_trim.md)."
 
 #: ../../doc/src/intrinsics/kind-type.md:1
 msgid "Kind Type Intrinsic Functions"
-msgstr ""
+msgstr "种类类型内在函数"
 
 #: ../../doc/src/intrinsics/kind-type/kind.md:1
 msgid "kind(x): Kind of an Entity"
-msgstr ""
+msgstr "kind(x)：实体的种类"
 
 #: ../../doc/src/intrinsics/kind-type/kind.md:3
 msgid "Kind of an entity."
-msgstr ""
+msgstr "一种实体。"
 
 #: ../../doc/src/intrinsics/kind-type/kind.md:16
 msgid ""
 "`x` the input value, can be logical, integer, real, complex, or "
 "character. It may be a scalar or array valued i.e., any intrinsic type."
-msgstr ""
+msgstr "`x` 输入值，可以是逻辑、整数、实数、复数或字符。 "
+"它可以是标量或数组值，即任何内在类型。"
 
 #: ../../doc/src/intrinsics/kind-type/kind.md:21
 msgid "The return value is of integer type and of default integer kind."
-msgstr ""
+msgstr "返回值是整数类型和默认整数类型。"
 
 #: ../../doc/src/intrinsics/kind-type/kind.md:25
 msgid "**kind(x)** returns the kind parameter of the input argument `x`."
-msgstr ""
+msgstr "**kind(x)** 返回输入参数 `x` 的种类参数。"
 
 #: ../../doc/src/intrinsics/kind-type/kind.md:29
 msgid ""
 "Supported argument types are logical, integer, real, complex, or "
 "character."
-msgstr ""
+msgstr "支持的参数类型是逻辑、整数、实数、复数或字符。"
 
 #: ../../doc/src/intrinsics/kind-type/kind.md:81
 #: ../../doc/src/intrinsics/misc/command_argument_count.md:16
@@ -2767,21 +2777,21 @@ msgstr "无。"
 
 #: ../../doc/src/intrinsics/mathematical.md:1
 msgid "Mathematical Intrinsic Functions"
-msgstr ""
+msgstr "数学内在函数"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:1
 msgid "acos(x): Trigonometric Arc Cosine"
-msgstr ""
+msgstr "acos(x)：三角反余弦"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:3
 msgid "Trigonometric arc cosine (inverse cosine) function."
-msgstr ""
+msgstr "三角反余弦（反余弦）函数。"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:16
 #: ../../doc/src/intrinsics/mathematical/asin.md:16
 #: ../../doc/src/intrinsics/mathematical/atan.md:16
 msgid "`x` the input value, can be real or complex; less than or equal to 1."
-msgstr ""
+msgstr "`x` 输入值，可以是实数或复数； 小于或等于 1。"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:20
 #: ../../doc/src/intrinsics/mathematical/acosh.md:21
@@ -2792,18 +2802,19 @@ msgstr ""
 msgid ""
 "The returned value has the kind of the input value and TYPE may be real "
 "or complex."
-msgstr ""
+msgstr "返回值具有输入值的种类，TYPE 可能是实数或复数。"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:25
 msgid "**acos(x)** computes the arcsine of the argument **x**."
-msgstr ""
+msgstr "**acos(x)** 计算参数 **x** 的反正弦值。"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:27
 msgid ""
 "The arc cosine is the inverse function of the cosine function. It is "
 "commonly used in trigonometry to find the angle when the lengths of the "
 "hypotenuse and the base side  of a right triangle are known."
-msgstr ""
+msgstr "反余弦是余弦函数的反函数。 "
+"当已知直角三角形的斜边和底边的长度时，它通常用于三角学中以找到角度。"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:33
 #: ../../doc/src/intrinsics/mathematical/acosh.md:45
@@ -2812,19 +2823,19 @@ msgstr ""
 #: ../../doc/src/intrinsics/mathematical/atan.md:33
 #: ../../doc/src/intrinsics/mathematical/atanh.md:41
 msgid "Supported argument types float, double, complex float, complex double."
-msgstr ""
+msgstr "支持的参数类型 float、double、complex float、complex double。"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:84
 msgid "[asin](asin.md), [atan](atan.md)."
-msgstr ""
+msgstr "[asin](asin.md), [atan](atan.md)."
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:1
 msgid "acosh(x): Inverse Hyperbolic Cosine"
-msgstr ""
+msgstr "acosh(x)：反双曲余弦"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:3
 msgid "Inverse hyperbolic cosine function."
-msgstr ""
+msgstr "反双曲余弦函数。"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:16
 #: ../../doc/src/intrinsics/mathematical/asinh.md:16
@@ -2832,108 +2843,110 @@ msgstr ""
 msgid ""
 "`x` the input value, can be real with value greater than or equal to 1 or"
 " of type complex."
-msgstr ""
+msgstr "`x` 输入值，可以是大于或等于 1 的实数，也可以是复数类型。"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:26
 msgid "**acosh(x)** computes the inverse hyperbolic cosine function of **x**."
-msgstr ""
+msgstr "**acosh(x)** 计算 **x** 的反双曲余弦函数。"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:28
 #: ../../doc/src/intrinsics/mathematical/asinh.md:28
 #: ../../doc/src/intrinsics/mathematical/atanh.md:28
 msgid "The result type and kind are the same as input value `x`."
-msgstr ""
+msgstr "结果类型和种类与输入值`x`相同。"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:30
 msgid ""
 "If the result is complex, the real part is non-negative, and the "
 "imaginary part is expressed in radians and lients in the range"
-msgstr ""
+msgstr "如果结果为复数，则实部为非负数，虚部以弧度和范围内的 lients 表示"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:33
 msgid "$-\\pi <= img (acosh(x)) <= \\pi$"
-msgstr ""
+msgstr "$-\\pi <= img (acosh(x)) <= \\pi$"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:35
 msgid ""
 "For real values $x$ in the domain $x > 1$, the inverse hyperbolic cosine "
 "satisifies:"
-msgstr ""
+msgstr "对于域 $x > 1$ 中的实数值 $x$，反双曲余弦满足："
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:38
 msgid "$cosh^{-1}(x) = \\log(x + \\sqrt{(x^2 - 1)})$"
-msgstr ""
+msgstr "$cosh^{-1}(x) = \\log(x + \\sqrt{(x^2 - 1)})$"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:40
 msgid ""
 "For complex numbers $x = x + iy$, as well as real values in the domain "
 "$-\\infty < z <= 1$, the call $acosh(z)$ returns complex results."
-msgstr ""
+msgstr "对于复数 $x = x + iy$，以及域 $-\\infty < z <= 1$ 中的实数值，调用 $acosh(z)$"
+" 返回复数结果。"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:88
 msgid "[asinh](asinh.md), [atanh](atanh.md)."
-msgstr ""
+msgstr "[asinh](asinh.md), [atanh](atanh.md)."
 
 #: ../../doc/src/intrinsics/mathematical/asin.md:1
 msgid "asin(x): Trigonometric Arcsine"
-msgstr ""
+msgstr "asin(x)：三角反正弦"
 
 #: ../../doc/src/intrinsics/mathematical/asin.md:3
 msgid "Trigonometric arcsine function."
-msgstr ""
+msgstr "三角反正弦函数。"
 
 #: ../../doc/src/intrinsics/mathematical/asin.md:25
 msgid "**asin(x)** computes the arcsine of the argument **x**."
-msgstr ""
+msgstr "**asin(x)** 计算参数 **x** 的反正弦值。"
 
 #: ../../doc/src/intrinsics/mathematical/asin.md:27
 msgid ""
 "The arcsine is the inverse function of the sine function. It is commonly "
 "used in trigonometry to find the angle when the lengths of the hypotenuse"
 " and the opposite side of a right triangle are known."
-msgstr ""
+msgstr "反正弦是正弦函数的反函数。 "
+"当已知直角三角形的斜边和对边的长度时，它通常用于三角学中以找到角度。"
 
 #: ../../doc/src/intrinsics/mathematical/asin.md:84
 msgid "[acos](acos.md), [atan](atan.md)."
-msgstr ""
+msgstr "[acos](acos.md), [atan](atan.md)."
 
 #: ../../doc/src/intrinsics/mathematical/asinh.md:1
 msgid "asinh(x): Inverse Hyperbolic Arcsine"
-msgstr ""
+msgstr "asinh(x)：反双曲反正弦"
 
 #: ../../doc/src/intrinsics/mathematical/asinh.md:3
 msgid "Inverse hyperbolic arcsine function."
-msgstr ""
+msgstr "反双曲反正弦函数。"
 
 #: ../../doc/src/intrinsics/mathematical/asinh.md:26
 msgid "**asinh(x)** computes the inverse hyperbolic arcsine function of **x**."
-msgstr ""
+msgstr "**asinh(x)** 计算 **x** 的反双曲反正弦函数。"
 
 #: ../../doc/src/intrinsics/mathematical/asinh.md:30
 msgid ""
 "If the result is complex, the real part is non-negative, and the "
 "imaginary part is expressed in radians and lies in the range"
-msgstr ""
+msgstr "如果结果为复数，则实部为非负数，虚部以弧度表示，位于范围内"
 
 #: ../../doc/src/intrinsics/mathematical/asinh.md:33
 msgid "$\\frac{-\\pi}{2} <= aimag (asinh(x)) <= \\frac{\\pi}{2}$"
-msgstr ""
+msgstr "$\\frac{-\\pi}{2} <= aimag (asinh(x)) <= \\frac{\\pi}{2}$"
 
 #: ../../doc/src/intrinsics/mathematical/asinh.md:80
 msgid "[acosh](acosh.md), [atanh](atanh.md)."
-msgstr ""
+msgstr "[acosh](acosh.md), [atanh](atanh.md)."
 
 #: ../../doc/src/intrinsics/mathematical/atan.md:1
 msgid "atan(x): Trigonometric ArcTangent"
-msgstr ""
+msgstr "atan(x)：三角函数 ArcTangent"
 
 #: ../../doc/src/intrinsics/mathematical/atan.md:3
 msgid "Trigonometric arctangent (inverse arctangent) function."
-msgstr ""
+msgstr "三角反正切（反正切）函数。"
 
 #: ../../doc/src/intrinsics/mathematical/atan.md:25
 msgid "**atan(x)** computes the arctangent of the argument **x**."
-msgstr ""
+msgstr "**atan(x)** 计算参数 **x** 的反正切。"
 
 #: ../../doc/src/intrinsics/mathematical/atan.md:27
 msgid ""
@@ -2941,40 +2954,42 @@ msgid ""
 " commonly used in trigonometry to find the angle when the lengths of the "
 "opposite side of a right triangle and base are known, i.e., perpendicular"
 " and base length."
-msgstr ""
+msgstr "反正切是反正切函数的反函数。 当直角三角形的对边和底边的长度已知时，即垂直和底"
+"边长度，它通常用于三角学中找到角度。"
 
 #: ../../doc/src/intrinsics/mathematical/atan.md:84
 msgid "[asin](asin.md), [acos](acos.md)."
-msgstr ""
+msgstr "[asin](asin.md), [acos](acos.md)."
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:1
 msgid "atan2(y, x): ArcTangent"
-msgstr ""
+msgstr "atan2(y, x): 反正切"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:3
 msgid "Arctangent function or inverse tangent function."
-msgstr ""
+msgstr "反正切函数或反正切函数。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:15
 msgid "`y` the input value is the imaginary part of the complex expression"
-msgstr ""
+msgstr "`y` 输入值是复数表达式的虚部"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:17
 #: ../../doc/src/intrinsics/numeric/aimag.md:29
 #: ../../doc/src/intrinsics/numeric/cmplx.md:43
 msgid "$x + iy$"
-msgstr ""
+msgstr "$x + iy$"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:19
 msgid "`x` the input value, must be real part of the complex expression."
-msgstr ""
+msgstr "`x` 输入值，必须是复数表达式的实部。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:23
 msgid ""
 "The returned value has the kind and TYPE as of the input value `y`. The "
 "principal value of the argument function of the complex expression $x + "
 "iy$ is returned."
-msgstr ""
+msgstr "返回值具有与输入值 `y` 相同的种类和类型。 返回复杂表达式 $x + iy$ "
+"的参数函数的主值。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:29
 msgid ""
@@ -2983,81 +2998,83 @@ msgid ""
 " into polar coordinates and allows to determine the angle in the correct "
 "quadrant."
 msgstr ""
+"**atan2(y, x)** 计算复数表达式 $x + iy$ 的参数函数的主值。 "
+"这用于从笛卡尔坐标转换为极坐标，并允许确定正确象限中的角度。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:33
 msgid "It is also represented as:"
-msgstr ""
+msgstr "它也表示为："
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:35
 msgid "$tan^{-1}(\\frac{y}{x})$"
-msgstr ""
+msgstr "$tan^{-1}(\\frac{y}{x})$"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:37
 msgid "If `x` is nonzero, the result lies in the range:"
-msgstr ""
+msgstr "如果 `x` 不为零，则结果位于以下范围内："
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:39
 msgid "$-\\pi <= atan(x) <= \\pi$"
-msgstr ""
+msgstr "$-\\pi <= atan(x) <= \\pi$"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:41
 msgid "The sign is positive if `y` is positive."
-msgstr ""
+msgstr "如果`y`为正，则符号为正。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:43
 msgid "If `y` is zero and `x` is strictly positive, then the result is 0."
-msgstr ""
+msgstr "如果 `y` 为零且 `x` 严格为正，则结果为 0。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:45
 msgid "If `x` is negative and `y` is positive zero, then the result is $\\pi$."
-msgstr ""
+msgstr "如果 `x` 为负数且 `y` 为正零，则结果为 $\\pi$。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:47
 msgid "If `x` is negative and `y` is negative zero, then the result is $-\\pi$."
-msgstr ""
+msgstr "如果 `x` 为负且 `y` 为负零，则结果为 $-\\pi$。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:49
 msgid "If `x` is zero, then the magnitude of the result is $\\frac{\\pi}{2}$."
-msgstr ""
+msgstr "如果 `x` 为零，则结果的大小为 $\\frac{\\pi}{2}$。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:51
 msgid "If `y` is negative real zero, the result is $\\frac{-\\pi}{2}$."
-msgstr ""
+msgstr "如果 `y` 为负实零，则结果为 $\\frac{-\\pi}{2}$。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:55
 #: ../../doc/src/intrinsics/mathematical/fraction.md:32
 msgid "Supported argument type is real."
-msgstr ""
+msgstr "支持的参数类型是真实的。"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:1
 msgid "atanh(x): Inverse Hyperbolic Tangent"
-msgstr ""
+msgstr "atanh(x)：反双曲正切"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:3
 msgid "Inverse hyperbolic tangent function."
-msgstr ""
+msgstr "反双曲正切函数。"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:26
 msgid "**atanh(x)** computes the inverse hyperbolic tangent function of **x**."
-msgstr ""
+msgstr "**atanh(x)** 计算 **x** 的反双曲正切函数。"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:30
 msgid ""
 "If the result is complex, the imaginary part is expressed in radians and "
 "lies in the range"
-msgstr ""
+msgstr "如果结果为复数，则虚部以弧度表示，位于范围内"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:33
 msgid "$\\frac{-\\pi}{2} <= aimag (atanh(x)) <= \\frac{\\pi}{2}$"
-msgstr ""
+msgstr "$\\frac{-\\pi}{2} <= aimag (atanh(x)) <= \\frac{\\pi}{2}$"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:35
 msgid "If the result is real, it lies in the range"
-msgstr ""
+msgstr "如果结果是真实的，它位于范围内"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:37
 msgid "$-1.0 < atanh(x) < 1.0$"
-msgstr ""
+msgstr "$-1.0 < atanh(x) < 1.0$"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:84
 msgid "[asinh](asinh.md), [acosh](acosh.md)."
@@ -3065,33 +3082,33 @@ msgstr "[asinh](asinh.md)，[acosh](acosh.md)。"
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:1
 msgid "fraction(x): Fractional Part in Model Representation"
-msgstr ""
+msgstr "fraction(x)：模型表示中的小数部分"
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:3
 msgid "Fractional part of the model representation."
-msgstr ""
+msgstr "模型表示的小数部分。"
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:15
 msgid "`x` the input value, must be real."
-msgstr ""
+msgstr "`x` 输入值，必须是真实的。"
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:19
 msgid ""
 "The returned value has the kind of the input value. The fractional part "
 "of the model representation of the input value is returned."
-msgstr ""
+msgstr "返回值具有输入值的种类。 返回输入值的模型表示的小数部分。"
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:24
 msgid ""
 "**fraction(x)** computes the fractional part of the model representation "
 "of **x**."
-msgstr ""
+msgstr "**fraction(x)** 计算 **x** 的模型表示的小数部分。"
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:26
 #: ../../doc/src/intrinsics/numeric/erf.md:29
 #: ../../doc/src/intrinsics/numeric/erfc.md:29
 msgid "It is calculated using:"
-msgstr ""
+msgstr "它是使用以下方法计算的："
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:28
 msgid "$x * {radix(x)}^{(-exponent(x))}$"
@@ -3099,41 +3116,41 @@ msgstr "$x * {radix(x)}^{(-exponent(x))}$"
 
 #: ../../doc/src/intrinsics/misc.md:1
 msgid "Miscellaneous Intrinsic Functions"
-msgstr ""
+msgstr "其他内在函数"
 
 #: ../../doc/src/intrinsics/misc/command_argument_count.md:1
 msgid "command_argument_count(): Number of Command Line Arguments"
-msgstr ""
+msgstr "command_argument_count()：命令行参数的数量"
 
 #: ../../doc/src/intrinsics/misc/command_argument_count.md:3
 msgid "Get number of command line arguments."
-msgstr ""
+msgstr "获取命令行参数的数量。"
 
 #: ../../doc/src/intrinsics/misc/command_argument_count.md:20
 msgid "The return value is of integer type and of default kind."
-msgstr ""
+msgstr "返回值是整数类型和默认类型。"
 
 #: ../../doc/src/intrinsics/misc/command_argument_count.md:24
 msgid ""
 "**command_argument_count()** returns the number of arguments passed on "
 "the command line when the named program was invoked."
-msgstr ""
+msgstr "**command_argument_count()** 返回调用指定程序时在命令行上传递的参数数量。"
 
 #: ../../doc/src/intrinsics/misc/command_argument_count.md:29
 msgid "Any."
-msgstr ""
+msgstr "任意。"
 
 #: ../../doc/src/intrinsics/misc/cpu_time.md:1
 msgid "cpu_time(x): CPU Elapsed Time"
-msgstr ""
+msgstr "cpu_time(x)：CPU 运行时间"
 
 #: ../../doc/src/intrinsics/misc/cpu_time.md:3
 msgid "CPU elapsed time in seconds."
-msgstr ""
+msgstr "CPU 运行时间（以秒为单位）。"
 
 #: ../../doc/src/intrinsics/misc/cpu_time.md:16
 msgid "`x` the input value should be of type real with `intent(out)`."
-msgstr ""
+msgstr "`x` 输入值应该是带有 `intent(out)` 的实数类型。"
 
 #: ../../doc/src/intrinsics/misc/cpu_time.md:24
 msgid ""
@@ -3142,42 +3159,50 @@ msgid ""
 "microsecond resolution. If no time source is available, TIME is set to "
 "-1.0."
 msgstr ""
+"**cpu_time(time)** 返回一个实数值，以秒为单位表示经过的 CPU 时间。 "
+"如果齿源可用，时间将以微秒分辨率报告。 如果没有可用的时间源，则将 TIME "
+"设置为 -1.0。"
 
 #: ../../doc/src/intrinsics/misc/cpu_time.md:28
 msgid "This is useful for testing segments of code to determine computation time."
-msgstr ""
+msgstr "这对于测试代码段以确定计算时间很有用。"
 
 #: ../../doc/src/intrinsics/misc/cpu_time.md:30
 msgid ""
 "For `cpu_time(time)` the absolute value is meaningless, only differences "
 "between subsequent calls to this subroutine, as shown in the example "
 "below, should be used."
-msgstr ""
+msgstr "`cpu_time(time)` 的绝对值是没有意义的，只有后续调用这个子程序之间的差异，如下"
+"例所示，应该被使用。"
 
 #: ../../doc/src/intrinsics/misc/cpu_time.md:35
 #: ../../doc/src/intrinsics/misc/date_and_time.md:55
 msgid "Supported input parameter types is real with `intent(out)`."
-msgstr ""
+msgstr "支持的输入参数类型在 `intent(out)` 中是真实的。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:1
 msgid "date_and_time([date, time, zone, values]): Date and Time"
-msgstr ""
+msgstr "date_and_time([date, time, zone, values])：日期和时间"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:3
 msgid "Date and time subroutine."
-msgstr ""
+msgstr "日期和时间子程序。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:16
 msgid ""
 "`date` the input value of character type, which has length 8 or larger. "
 "It is of default kind. It is `intent(out)` and has form `ccyymmdd`."
 msgstr ""
+"`date` 字符类型的输入值，长度为 8 或更大。 它是默认类型。 它是 `intent(out)` "
+"并且具有 `ccyymmdd` 的形式。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:19
 msgid ""
 "`time` the input value of character type, which has length 10 or larger. "
 "It is of default kind. It is `intent(out)` and has form `hhmmss.sss`."
 msgstr ""
+"`time` 字符类型的输入值，长度为 10 或更大。 它是默认类型。 它是 `intent(out)`"
+" 并且具有 `hhmmss.sss` 的形式。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:22
 msgid ""
@@ -3186,134 +3211,138 @@ msgid ""
 "representing the difference with respect to Coordinates Universal Time "
 "(UTC). Unavailable time and date parameters return blanks."
 msgstr ""
+"`zone` 字符类型的输入值，长度为 5 或更大。 它是默认类型。 它是 `intent(out)` "
+"并且来自 `(+-)hhmm`，表示相对于坐标世界时 (UTC) 的差异。 "
+"不可用的时间和日期参数返回空白。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:27
 msgid ""
 "`values` the input value of integer type, 8 bits. It is `intent(out)`. It"
 " provides the following:"
-msgstr ""
+msgstr "`values`整数类型的输入值，8位。 它是`intent(out)`。 它提供以下内容："
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:30
 msgid "`value(1)`: The year."
-msgstr ""
+msgstr "`value(1)`：年份。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:31
 msgid "`value(2)`: The month."
-msgstr ""
+msgstr "`value(2)`：月份。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:32
 msgid "`value(3)`: The day of the month."
-msgstr ""
+msgstr "`value(3)`：一个月中的哪一天。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:33
 msgid "`value(4)`: Time difference with UTC in minutes."
-msgstr ""
+msgstr "`value(4)`：与 UTC 的时差，以分钟为单位。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:34
 msgid "`value(5)`: The hour of the day."
-msgstr ""
+msgstr "`value(5)`：一天中的小时。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:35
 msgid "`value(6)`: The minutes of the hour."
-msgstr ""
+msgstr "`value(6)`：小时的分钟数。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:36
 msgid "`value(7)`: The seconds of the minutes."
-msgstr ""
+msgstr "`value(7)`：分钟的秒数。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:37
 msgid "`value(8)`: The milliseconds of the second."
-msgstr ""
+msgstr "`value(8)`：秒的毫秒数。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:45
 msgid ""
 "**date_and_time([date, time, zone, values])** reports the corresponding "
 "date and time information from the real time system clock."
-msgstr ""
+msgstr "**date_and_time([date, time, zone, values])** "
+"从实时系统时钟报告相应的日期和时间信息。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:48
 msgid ""
 "`date`, `time`, `zone`, `values` represents date, time, zone, and values"
 "  as decribed in arguments above."
-msgstr ""
+msgstr "`date`、`time`、`zone`、`values` 表示日期、时间、区域和值，如上述参数中所述。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:51
 msgid "Unavailable or errorneous date and time parameters return blanks."
-msgstr ""
+msgstr "不可用或错误的日期和时间参数返回空白。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:92
 msgid "[cpu_time](cpu_time.md)."
-msgstr ""
+msgstr "[cpu_time](cpu_time.md)."
 
 #: ../../doc/src/intrinsics/misc/new_line.md:1
 msgid "new_line(x): New Line Character"
-msgstr ""
+msgstr "new_line(x)：换行符"
 
 #: ../../doc/src/intrinsics/misc/new_line.md:3
 msgid "New line character."
-msgstr ""
+msgstr "换行符。"
 
 #: ../../doc/src/intrinsics/misc/new_line.md:16
 msgid ""
 "The input parameter `x` must be of type character. It can be a scalar or "
 "an array."
-msgstr ""
+msgstr "输入参数 `x` 必须是字符类型。 它可以是标量或数组。"
 
 #: ../../doc/src/intrinsics/misc/new_line.md:21
 msgid ""
 "The return value is a character of length one with the new line character"
 " appended of the same kind as of `x`."
-msgstr ""
+msgstr "返回值是一个长度为 1 的字符，并附加了与 `x` 相同类型的换行符。"
 
 #: ../../doc/src/intrinsics/misc/new_line.md:26
 msgid ""
 "**new_line(x)** returns the new line character. The return value is the "
 "ASCII newline character."
-msgstr ""
+msgstr "**new_line(x)** 返回换行符。 返回值是 ASCII 换行符。"
 
 #: ../../doc/src/intrinsics/misc/new_line.md:31
 msgid "Supported input parameter types is character."
-msgstr ""
+msgstr "支持的输入参数类型是字符。"
 
 #: ../../doc/src/intrinsics/numeric.md:1
 msgid "Numeric Intrinsic Functions"
-msgstr ""
+msgstr "数值内在函数"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:1
 msgid "abs(x): Absolute Value"
-msgstr ""
+msgstr "abs(x)：绝对值"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:3
 msgid "Absolute value."
-msgstr ""
+msgstr "绝对值。"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:17
 msgid "`x` the input value, can be integer, real, or complex."
-msgstr ""
+msgstr "`x` 输入值，可以是整数、实数或复数。"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:21
 msgid ""
 "The return value is of type and kind same as of `x`. For complex input "
 "value, return value is real."
-msgstr ""
+msgstr "返回值的类型和种类与 `x` 相同。 对于复数输入值，返回值是实数。"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:26
 msgid ""
 "**abs(x)** calculates and returns absolute value of `x`. Result is "
 "calculated using mathematical formula:"
-msgstr ""
+msgstr "**abs(x)** 计算并返回 `x` 的绝对值。 结果使用数学公式计算："
 
 #: ../../doc/src/intrinsics/numeric/abs.md:29
 msgid "$|x|$"
-msgstr ""
+msgstr "$|x|$"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:31
 msgid "If `x` is complex, the result is calculated using mathematical formula:"
-msgstr ""
+msgstr "如果 `x` 是复数，则使用数学公式计算结果："
 
 #: ../../doc/src/intrinsics/numeric/abs.md:33
 msgid "$\\sqrt{(x^2 + y^2)}$"
-msgstr ""
+msgstr "$\\sqrt{(x^2 + y^2)}$"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:37
 #: ../../doc/src/intrinsics/numeric/digits.md:28
@@ -3326,27 +3355,27 @@ msgstr "支持的参数类型是实数和整数。"
 #: ../../doc/src/intrinsics/numeric/aimag.md:70
 #: ../../doc/src/intrinsics/numeric/mod.md:97
 msgid "[ceiling](ceiling.md), [floor](floor.md)."
-msgstr ""
+msgstr "[ceiling](ceiling.md), [floor](floor.md)."
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:1
 msgid "aimag(x): Imaginary Part"
-msgstr ""
+msgstr "目标: 第一部分"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:3
 msgid "Imaginary part of complex number."
-msgstr ""
+msgstr "复数的虚部。"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:17
 msgid "`x` the input value must be of complex type."
-msgstr ""
+msgstr "`x` ，输入值必须是复合类型。"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:21
 msgid "The return value is imaginary part of type real and kind same as of `x`."
-msgstr ""
+msgstr "返回值是类型为实数的虚数部分，种类与`x` 相同。"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:25
 msgid "**aimag(x)** returns the imaginary part of the input complex argument `x`."
-msgstr ""
+msgstr "**aimag（x）** 返回输入复参数 `x` 的虚部。"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:27
 #: ../../doc/src/intrinsics/numeric/cmplx.md:41
@@ -3354,25 +3383,25 @@ msgstr ""
 msgid ""
 "For `x` complex input value, the result is calculated using mathematical "
 "formula:"
-msgstr ""
+msgstr "对于 `x` 复数输入值，使用数学公式计算结果："
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:31
 #: ../../doc/src/intrinsics/numeric/cmplx.md:45
 #: ../../doc/src/intrinsics/numeric/conjg.md:31
 msgid "$i$ the imaginary part is the result."
-msgstr ""
+msgstr "$i$ 虚部是结果。"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:35
 msgid "Supported argument types are complex."
-msgstr ""
+msgstr "支持的参数类型很复杂。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:1
 msgid "aint(x, [kind]): Truncate to a Whole Number"
-msgstr ""
+msgstr "aint(x, [kind])：截断为整数"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:3
 msgid "Truncate to a whole number."
-msgstr ""
+msgstr "截断到一个整数。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:16
 #: ../../doc/src/intrinsics/numeric/anint.md:16
@@ -3381,36 +3410,37 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/erfc.md:16
 #: ../../doc/src/intrinsics/numeric/floor.md:16
 msgid "`x` the input value must be of type real."
-msgstr ""
+msgstr "`x` ，输入值必须是实数类型。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:18
 #: ../../doc/src/intrinsics/numeric/anint.md:18
 msgid "`kind` the optional input parameter initialises the kind of the result."
-msgstr ""
+msgstr "`kind` 可选的输入参数，初始化结果的种类。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:22
 #: ../../doc/src/intrinsics/numeric/anint.md:22
 msgid ""
 "The return value is of type integer(kind) if kind is passed as input "
 "parameter. If not, default kind real is returned."
-msgstr ""
+msgstr "如果 kind 作为输入参数传递，则返回值是 integer(kind) 类型。如果不是，"
+"则返回默认类型 real。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:25
 msgid ""
 "The return value is equal to or nearest largest whole number greater than"
 " or equal to `x` not exceeding its magnitude."
-msgstr ""
+msgstr "返回值等于或最接近大于或等于 `x` 且不超过其大小的最大整数。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:30
 msgid ""
 "**aint(x)** returns the nearest largest whole number greater than or "
 "equal to `x` not exceeding input value's magnitude."
-msgstr ""
+msgstr "**aint(x)** 返回大于或等于 `x` 且不超过输入值大小的最接近的最大整数。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:33
 #: ../../doc/src/intrinsics/numeric/anint.md:36
 msgid "The optional parameter `kind` specifies the kind of the result."
-msgstr ""
+msgstr "可选参数`kind` ，指定结果的种类。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:37
 #: ../../doc/src/intrinsics/numeric/anint.md:40
@@ -3420,38 +3450,38 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/floor.md:35
 #: ../../doc/src/intrinsics/numeric/gamma.md:40
 msgid "Supported argument types is real."
-msgstr ""
+msgstr "支持的参数类型是真实的。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:57
 #: ../../doc/src/intrinsics/numeric/floor.md:85
 msgid "[ceiling](ceiling.md), [mod](mod.md)."
-msgstr ""
+msgstr "[ceiling](ceiling.md), [mod](mod.md)."
 
 #: ../../doc/src/intrinsics/numeric/anint.md:1
 msgid "anint(x, [kind]): Round to Nearest Whole Number"
-msgstr ""
+msgstr "anint(x, [kind])：四舍五入到最近的整数"
 
 #: ../../doc/src/intrinsics/numeric/anint.md:3
 msgid "Round to nearest whole number."
-msgstr ""
+msgstr "四舍五入到最近的整数。"
 
 #: ../../doc/src/intrinsics/numeric/anint.md:25
 msgid "The return value is equal to rounded whole number."
-msgstr ""
+msgstr "返回值等于四舍五入的整数。"
 
 #: ../../doc/src/intrinsics/numeric/anint.md:29
 msgid "**anint(x)** calculates rounded value of input parameter `x`."
-msgstr ""
+msgstr "**anint(x)** 计算输入参数 `x` 的舍入值。"
 
 #: ../../doc/src/intrinsics/numeric/anint.md:31
 msgid ""
 "If `x` is less than or equal to 0 i.e., if `x` is negative or 0, "
 "`anint(x)` returns `aint(x - 0.5)`."
-msgstr ""
+msgstr "如果`x` 小于或等于0，即如果`x` 是负数或0，`anint(x)` 返回`aint(x - 0.5)` 。"
 
 #: ../../doc/src/intrinsics/numeric/anint.md:34
 msgid "If `x` is greater than 0, `anint(x)` returns `aint(x + 0.5)`."
-msgstr ""
+msgstr "如果`x` 大于0，`anint(x)` 返回`aint(x + 0.5)` 。"
 
 #: ../../doc/src/intrinsics/numeric/anint.md:60
 msgid "[aint](aint.md)."
@@ -4760,7 +4790,6 @@ msgid "Directory: `tests/intrinsic/nint`"
 msgstr ""
 
 #: ../../doc/src/progress.md
-#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/nint/t01_scalar_real.f90)"
 msgstr ""
 "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
