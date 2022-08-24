@@ -122,35 +122,50 @@ class WASMDecoder {
 
     void decode_imports_section(uint32_t offset) {
         // read imports section contents
+    std::cout << "CPP: I am here-2.4.3.8.1" << std::endl;
         uint32_t no_of_imports = read_u32(wasm_bytes, offset);
+    std::cout << "CPP: I am here-2.4.3.8.2" << std::endl;
         DEBUG("no_of_imports: " + std::to_string(no_of_imports));
+    std::cout << "CPP: I am here-2.4.3.8.3" << std::endl;
         imports.resize(al, no_of_imports);
+    std::cout << "CPP: I am here-2.4.3.8.4" << std::endl;
 
         for (uint32_t i = 0; i < no_of_imports; i++) {
+    std::cout << "CPP: I am here-2.4.3.8.5" << std::endl;
             uint32_t mod_name_size = read_u32(wasm_bytes, offset);
+    std::cout << "CPP: I am here-2.4.3.8.6" << std::endl;
             imports.p[i].mod_name.resize(
                 mod_name_size);  // do not pass al to this resize as it is
                                  // std::string.resize()
+    std::cout << "CPP: I am here-2.4.3.8.7" << std::endl;
             for (uint32_t j = 0; j < mod_name_size; j++) {
                 imports.p[i].mod_name[j] = read_b8(wasm_bytes, offset);
             }
+    std::cout << "CPP: I am here-2.4.3.8.8" << std::endl;
 
             uint32_t name_size = read_u32(wasm_bytes, offset);
+    std::cout << "CPP: I am here-2.4.3.8.9" << std::endl;
             imports.p[i].name.resize(
                 name_size);  // do not pass al to this resize as it is
                              // std::string.resize()
+    std::cout << "CPP: I am here-2.4.3.8.10" << std::endl;
             for (uint32_t j = 0; j < name_size; j++) {
                 imports.p[i].name[j] = read_b8(wasm_bytes, offset);
             }
+    std::cout << "CPP: I am here-2.4.3.8.11" << std::endl;
 
             imports.p[i].kind = read_b8(wasm_bytes, offset);
 
+    std::cout << "CPP: I am here-2.4.3.8.12" << std::endl;
             switch (imports.p[i].kind) {
+    std::cout << "CPP: I am here-2.4.3.8.13" << std::endl;
                 case 0x00: {
+    std::cout << "CPP: I am here-2.4.3.8.14" << std::endl;
                     imports.p[i].type_idx = read_u32(wasm_bytes, offset);
                     break;
                 }
                 case 0x02: {
+    std::cout << "CPP: I am here-2.4.3.8.15" << std::endl;
                     uint8_t byte = read_b8(wasm_bytes, offset);
                     if (byte == 0x00) {
                         imports.p[i].mem_page_size_limits.first =
@@ -173,6 +188,7 @@ class WASMDecoder {
                         "supported");
                 }
             }
+    std::cout << "CPP: I am here-2.4.3.8.16" << std::endl;
         }
     }
 
@@ -270,9 +286,11 @@ class WASMDecoder {
         }
     }
     void decode_wasm() {
+    std::cout << "CPP: I am here-2.4.3.1" << std::endl;
         // first 8 bytes are magic number and wasm version number
         uint32_t index = 0;
         if (!is_preamble_ok(index)) {
+    std::cout << "CPP: I am here-2.4.3.2" << std::endl;
             std::cerr << "Unexpected Preamble: ";
             for (size_t i = 0; i < PREAMBLE_SIZE; i++) {
                 fprintf(stderr, "0x%.02X, ", wasm_bytes[i]);
@@ -280,45 +298,65 @@ class WASMDecoder {
             throw CodeGenError(
                 "Expected: 0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00");
         }
+    std::cout << "CPP: I am here-2.4.3.3" << std::endl;
         index += PREAMBLE_SIZE;
+    std::cout << "CPP: I am here-2.4.3.4" << std::endl;
         while (index < wasm_bytes.size()) {
+    std::cout << "CPP: I am here-2.4.3.5" << std::endl;
             uint32_t section_id = read_u32(wasm_bytes, index);
             uint32_t section_size = read_u32(wasm_bytes, index);
             switch (section_id) {
                 case 1U:
+    std::cout << "CPP: I am here-2.4.3.6" << std::endl;
                     decode_type_section(index);
+    std::cout << "CPP: I am here-2.4.3.7" << std::endl;
                     // exit(0);
                     break;
                 case 2U:
+    std::cout << "CPP: I am here-2.4.3.8" << std::endl;
                     decode_imports_section(index);
+    std::cout << "CPP: I am here-2.4.3.9" << std::endl;
                     // exit(0);
                     break;
                 case 3U:
+    std::cout << "CPP: I am here-2.4.3.10" << std::endl;
                     decode_function_section(index);
+    std::cout << "CPP: I am here-2.4.3.11" << std::endl;
                     // exit(0);
                     break;
                 case 7U:
+    std::cout << "CPP: I am here-2.4.3.12" << std::endl;
                     decode_export_section(index);
+    std::cout << "CPP: I am here-2.4.3.13" << std::endl;
                     // exit(0);
                     break;
                 case 10U:
+    std::cout << "CPP: I am here-2.4.3.14" << std::endl;
                     decode_code_section(index);
+    std::cout << "CPP: I am here-2.4.3.15" << std::endl;
                     // exit(0)
                     break;
                 case 11U:
+    std::cout << "CPP: I am here-2.4.3.16" << std::endl;
                     decode_data_section(index);
+    std::cout << "CPP: I am here-2.4.3.17" << std::endl;
                     // exit(0)
                     break;
                 default:
+    std::cout << "CPP: I am here-2.4.3.18" << std::endl;
                     std::cout << "Unknown section id: " << section_id
                               << std::endl;
+    std::cout << "CPP: I am here-2.4.3.19" << std::endl;
                     break;
             }
+    std::cout << "CPP: I am here-2.4.3.20" << std::endl;
             index += section_size;
         }
+    std::cout << "CPP: I am here-2.4.3.6" << std::endl;
 
         LFORTRAN_ASSERT(index == wasm_bytes.size());
         LFORTRAN_ASSERT(type_indices.size() == codes.size());
+    std::cout << "CPP: I am here-2.4.3.7" << std::endl;
     }
 
     std::string get_wat() {
@@ -416,20 +454,29 @@ class WASMDecoder {
 
 Result<std::string> wasm_to_wat(Vec<uint8_t> &wasm_bytes, Allocator &al,
                                 diag::Diagnostics &diagnostics) {
+    std::cout << "CPP: I am here-2.4.1" << std::endl;
+
     wasm::WASMDecoder wasm_decoder(al, diagnostics);
+    std::cout << "CPP: I am here-2.4.1_0" << std::endl;
     wasm_decoder.wasm_bytes.from_pointer_n(wasm_bytes.data(),
                                            wasm_bytes.size());
 
+    std::cout << "CPP: I am here-2.4.2" << std::endl;
     std::string wat;
 
     try {
+    std::cout << "CPP: I am here-2.4.3" << std::endl;
         wasm_decoder.decode_wasm();
+    std::cout << "CPP: I am here-2.4.4" << std::endl;
     } catch (const CodeGenError &e) {
+    std::cout << "CPP: I am here-2.4.5" << std::endl;
         diagnostics.diagnostics.push_back(e.d);
         return Error();
     }
+    std::cout << "CPP: I am here-2.4.6" << std::endl;
 
     wat = wasm_decoder.get_wat();
+    std::cout << "CPP: I am here-2.4.7" << std::endl;
 
     return wat;
 }

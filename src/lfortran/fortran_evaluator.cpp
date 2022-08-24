@@ -379,16 +379,32 @@ Result<std::string> FortranEvaluator::get_wat(const std::string &code,
     LocationManager &lm, diag::Diagnostics &diagnostics)
 {
     // Src -> AST -> ASR -> WASM -> WAT
+    std::cout << "CPP: I am here-2.1" << std::endl;
+
     SymbolTable *old_symbol_table = symbol_table;
     symbol_table = nullptr;
+    std::cout << "CPP: I am here-2.2" << std::endl;
     Result<Vec<uint8_t>> wasm = get_wasm(code, lm, diagnostics);
+    std::cout << "CPP: I am here-2.3" << std::endl;
     symbol_table = old_symbol_table;
     if (wasm.ok) {
+    std::cout << "CPP: I am here-2.4" << std::endl;
             return wasm_to_wat(wasm.result, al, diagnostics);
     } else {
+    std::cout << "CPP: I am here-2.5" << std::endl;
+
         LFORTRAN_ASSERT(diagnostics.has_error())
         return wasm.error;
     }
+    std::cout << "CPP: I am here-2.6" << std::endl;
+
+}
+
+Result<std::string> FortranEvaluator::get_wat2(Vec<uint8_t> &code,
+        diag::Diagnostics &diagnostics)
+{
+    // WASM -> WAT
+    return wasm_to_wat(code, al, diagnostics);
 }
 
 Result<std::string> FortranEvaluator::get_cpp(const std::string &code,

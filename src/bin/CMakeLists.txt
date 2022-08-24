@@ -159,9 +159,9 @@ if (HAVE_BUILD_TO_WASM)
     # Notes:
     # STANDALONE_WASM is disabling support for exceptions, so it is currently omitted
     # In build_to_wasm.sh, we need CMAKE_CXX_FLAGS_DEBUG="-Wall -Wextra -fexceptions" flags for exception support
-    set(WASM_COMPILE_FLAGS "-g0 -fexceptions")
+    set(WASM_COMPILE_FLAGS "-g0 -fexceptions -s TOTAL_MEMORY=512MB")
     set(WASM_LINK_FLAGS
-      "-g0 -Oz -fexceptions --preload-file asset_dir -Wall -Wextra --no-entry -s ASSERTIONS -s ALLOW_MEMORY_GROWTH=1 -s WASM_BIGINT -s \"EXPORTED_RUNTIME_METHODS=['cwrap']\""
+      "-g0 -Oz -fexceptions -Wall -Wextra --no-entry -s ASSERTIONS -s TOTAL_MEMORY=512MB -s ALLOW_MEMORY_GROWTH=1 -s WASM_BIGINT -s \"EXPORTED_RUNTIME_METHODS=['cwrap']\""
     )
     set_target_properties(lfortran PROPERTIES COMPILE_FLAGS ${WASM_COMPILE_FLAGS})
     set_target_properties(lfortran PROPERTIES LINK_FLAGS ${WASM_LINK_FLAGS})

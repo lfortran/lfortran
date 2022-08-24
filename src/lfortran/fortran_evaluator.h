@@ -87,6 +87,8 @@ public:
         diag::Diagnostics &diagnostics);
     Result<std::string> get_wat(const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics);
+    Result<std::string> get_wat2(Vec<uint8_t> &code,
+        diag::Diagnostics &diagnostics);
     Result<std::string> get_cpp(const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics, int64_t default_lower_bound);
     Result<std::string> get_cpp2(ASR::TranslationUnit_t &asr,
