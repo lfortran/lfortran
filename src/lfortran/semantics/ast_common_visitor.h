@@ -2502,6 +2502,58 @@ public:
         return nullptr;
     }
 
+    void create_implicit_interface_function(const AST::FuncCallOrArray_t &x) {
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        Vec<ASR::call_arg_t> c_args;
+        visit_expr_list(x.m_args, x.n_args, c_args);
+
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, x.n_args);
+        std::string sym_name = to_lower(x.m_func);
+        for (size_t i=0; i<x.n_args; i++) {
+            std::string arg_name = sym_name + "_arg_" + std::to_string(i);
+            arg_name = to_lower(arg_name);
+            ASR::asr_t *arg_var = ASR::make_Variable_t(al, x.base.base.loc,
+                current_scope, s2c(al, arg_name), LFortran::ASRUtils::intent_unspecified, nullptr, nullptr,
+                ASR::storage_typeType::Default, ASRUtils::expr_type(c_args[i].m_value),
+                ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+                false);
+            current_scope->add_symbol(arg_name, ASR::down_cast<ASR::symbol_t>(arg_var));
+            args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                current_scope->get_symbol(arg_name))));
+        }
+        // currently hardcoding the return type to real-8
+        ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
+                                8, nullptr, 0));
+        std::string return_var_name = sym_name + "_return_var_name";
+        ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
+            current_scope, s2c(al, return_var_name), LFortran::ASRUtils::intent_return_var, nullptr, nullptr,
+            ASR::storage_typeType::Default, type,
+            ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+            false);
+        current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
+        ASR::asr_t *return_var_ref = ASR::make_Var_t(al, x.base.base.loc,
+            ASR::down_cast<ASR::symbol_t>(return_var));
+
+        tmp = ASR::make_Function_t(
+            al, x.base.base.loc,
+            /* a_symtab */ current_scope,
+            /* a_name */ s2c(al, sym_name),
+            /* a_args */ args.p,
+            /* n_args */ args.size(),
+            /* a_type_parameters */ nullptr,
+            /* n_type_parameters */ 0,
+            /* a_body */ nullptr,
+            /* n_body */ 0,
+            /* a_return_var */ ASRUtils::EXPR(return_var_ref),
+            ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface,
+            nullptr, false, false, false);
+        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        current_scope = parent_scope;
+    }
+
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         SymbolTable *scope = current_scope;
         std::string var_name = to_lower(x.m_func);
@@ -2529,6 +2581,14 @@ public:
             v = intrinsic_as_node(x, is_function);
             if( !is_function ) {
                 return;
+            }
+            if (compiler_options.implicit_interface && is_function && !v) {
+                // Function Call is not defined in this case.
+                // We need to create an interface and add the Function into
+                // the symbol table.
+                create_implicit_interface_function(x);
+                v = current_scope->resolve_symbol(var_name);
+                LFORTRAN_ASSERT(v!=nullptr);
             }
         }
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
@@ -2648,8 +2708,8 @@ public:
 
     ASR::symbol_t* resolve_intrinsic_function(const Location &loc, const std::string &remote_sym) {
         if (!intrinsic_procedures.is_intrinsic(remote_sym)) {
-            if(compiler_options.implicit_interface){
-                throw SemanticError("This is the place where we have to create an implicit interface, had put semantic error for reference", loc);
+            if (compiler_options.implicit_interface) {
+                return nullptr;
             }
             else{
                 throw SemanticError("Function '" + remote_sym + "' not found"
