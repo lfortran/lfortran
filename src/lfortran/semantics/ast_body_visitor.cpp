@@ -17,6 +17,7 @@
 #include <lfortran/parser/parser_stype.h>
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
+#include <libasr/pass/instantiate_template.h>
 
 namespace LFortran {
 
@@ -414,6 +415,35 @@ public:
         fill_args_for_rewind_inquire_flush(x, 3, args, 3, argname2idx, node_name);
         ASR::expr_t *unit = args[0], *iostat = args[1], *err = args[2];
         tmp = ASR::make_FileRewind_t(al, x.base.base.loc, x.m_label, unit, iostat, err);
+    }
+
+    void visit_Instantiate(const AST::Instantiate_t &x){
+        std::string template_name = std::string(x.m_name);
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 0);
+
+        // Check if the template exists
+        if(template_type_parameters.find(x.m_name) == template_type_parameters.end()){
+            throw SemanticError("Use of unspecified template", x.base.base.loc);
+        }
+
+        // Check if number of type parameters match
+        if(template_type_parameters[template_name].size() != x.n_types){
+            throw SemanticError("Number of template arguments don't match", x.base.base.loc);
+        }
+
+        std::map<std::string, ASR::ttype_t*> subs;
+        for(size_t i = 0; i < x.n_types; i++){
+            ASR::ttype_t* type = determine_type(x.base.base.loc, x.m_types[i], false, dims);
+            subs[ASR::down_cast2<ASR::TypeParameter_t>(template_type_parameters[template_name][i])->m_param] = type;
+        }
+
+        for(size_t i = 0; i < x.n_symbols; i++){
+            AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
+            ASR::symbol_t* s = resolve_symbol(x.base.base.loc, use_symbol->m_remote_sym);
+            pass_instantiate_generic_function(al, subs, current_scope, use_symbol->m_local_rename,
+                                                *ASR::down_cast<ASR::Function_t>(s));
+        }
     }
 
     void visit_Inquire(const AST::Inquire_t& x) {
@@ -847,9 +877,18 @@ public:
         current_scope = v->m_symtab;
         current_module = v;
 
+        for (size_t i=0; i<x.n_decl; i++) {
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Template){
+                visit_unit_decl2(*x.m_decl[i]);
+            }
+        }
+
+        // We have to visit unit_decl_2 because in the example, the Template is directly inside the module and 
+        // Template is a unit_decl_2
+
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
-        }
+        }       
 
         current_scope = old_scope;
         current_module = nullptr;
@@ -927,6 +966,10 @@ public:
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->get_symbol(subrout_name);
         }
+        for (size_t i=0; i<x.n_decl; i++) {
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
+                visit_unit_decl2(*x.m_decl[i]);
+        }
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
@@ -967,6 +1010,11 @@ public:
 
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
+        }
+
+        for (size_t i=0; i<x.n_decl; i++) {
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
+                visit_unit_decl2(*x.m_decl[i]);
         }
 
         current_scope = old_scope;
@@ -1611,17 +1659,28 @@ public:
         tmp = ASR::make_Nullify_t(al, x.base.base.loc, arg_vec.p, arg_vec.size());
     }
 
+    void visit_Template(const AST::Template_t &x){
+        is_template = true;
+        for (size_t i=0; i<x.n_contains; i++) {
+            this->visit_program_unit(*x.m_contains[i]);
+        }
+        is_template = false;
+    }
 };
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
-        CompilerOptions &compiler_options)
+        CompilerOptions &compiler_options,
+        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options);
     try {
+        b.is_body_visitor = true;
+        b.template_type_parameters = template_type_parameters;
         b.visit_TranslationUnit(ast);
+        b.is_body_visitor = false;
     } catch (const SemanticError &e) {
         Error error;
         diagnostics.diagnostics.push_back(e.d);

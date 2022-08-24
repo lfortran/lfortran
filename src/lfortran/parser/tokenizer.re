@@ -420,6 +420,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'inout' { KW(INOUT) }
             'in' whitespace 'out' { KW(IN_OUT) }
             'inquire' { KW(INQUIRE) }
+            'instantiate' { KW(INSTANTIATE) }
             'integer' { KW(INTEGER) }
             'intent' { KW(INTENT) }
             'interface' { KW(INTERFACE) }
@@ -488,6 +489,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'target' { KW(TARGET) }
             'team' { KW(TEAM) }
             'team_number' { KW(TEAM_NUMBER) }
+            'template' { KW(TEMPLATE) }
             'then' { KW(THEN) }
             'to' { KW(TO) }
             'type' { KW(TYPE) }
