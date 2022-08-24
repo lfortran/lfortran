@@ -300,6 +300,7 @@ struct FixedFormRecursiveDescent {
     std::vector<int> tokens;
     std::vector<Location> locations;
     bool abort_loop = false;
+    int do_levels = 0;
 
     FixedFormRecursiveDescent(diag::Diagnostics &diag,
         Allocator &m_a) : diag{diag}, m_a{m_a} {
@@ -313,7 +314,7 @@ struct FixedFormRecursiveDescent {
         Location loc;
         loc.first = loc_first;
         loc.last = loc_first;
-        auto next=cur; next_line(next);
+        // auto next=cur; next_line(next);
         //std::cout << "error line " << tostr(cur,next-1) << std::endl;
         throw LFortran::parser_local::TokenizerError(text, loc);
     }
@@ -599,6 +600,7 @@ struct FixedFormRecursiveDescent {
 
     bool lex_body_statement(unsigned char *&cur) {
         eat_label(cur);
+        // auto next = cur; next_line(next); std::cout << "lex_body: " << tostr(cur, next);
         // if (has_terminal(cur)) return false;     
         if (lex_declaration(cur)) {
             return true;
@@ -625,7 +627,7 @@ struct FixedFormRecursiveDescent {
         }
 
         /*
-         * explicitly DO NOT tokenize `CONTINUE`, `GO TO`
+         * explicitly DO NOT tokenize `CONTINUE`
          */
 
         if (next_is(cur, "call") && !contains(cur, nline, '=')) {
@@ -661,7 +663,30 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
+    void insert_enddo() {
+        // return an explicit "end do" token here
+        std::string l("enddo");
+        YYSTYPE y2;
+        y2.string.from_str(m_a, l);
+        stypes.push_back(y2);
+        tokens.push_back(yytokentype::KW_END_DO);
+        Location loc;
+        loc.first = t.cur - string_start;
+        loc.last = t.cur - string_start + l.size();
+        locations.push_back(loc);
+        // And a new line
+        l = "\n";
+        y2.string.from_str(m_a, l);
+        stypes.push_back(y2);
+        tokens.push_back(yytokentype::TK_NEWLINE);
+        loc.first = t.cur - string_start;
+        loc.last = t.cur - string_start + 1;
+        locations.push_back(loc);
+    }
+
     bool lex_do_terminal(unsigned char *&cur, int64_t do_label) {
+        // std::cout << "lex_do_terminal: do_levels " << do_levels << "\n";
+        // auto next = cur; next_line(next); std::cout << "lex_do_terminal: " << tostr(cur, next);
         if (*cur == '\0') {
             Location loc;
             loc.first = 1;
@@ -673,58 +698,30 @@ struct FixedFormRecursiveDescent {
         if (label != -1) {
             if (label == do_label) {
                 label_match = true;
+            } else {
+                label_match = false;
             }
         }
-        if (label_match) abort_loop = true;
-
         if (next_is(cur, "enddo")) {
-            tokenize_line("enddo", cur);
+            // tokenize_line("enddo", cur);
+            insert_enddo();
+            next_line(cur);
+            do_levels--;
             return true;
-        } else if (next_is(cur, "continue")) {
+        } else if (label_match && next_is(cur, "continue")) {
             // the usual terminal statement for do loops
             tokenize_line("continue", cur);
             //only append iff (tokens[tokens.size()-2] == yytokentype::TK_LABEL && tokens[tokens.size()-1 == yytokentype::KW_CONTINUE])
-
-            // return an explicit "end do" token here
-            std::string l("enddo");
-            YYSTYPE y2;
-            y2.string.from_str(m_a, l);
-            stypes.push_back(y2);
-            tokens.push_back(yytokentype::KW_END_DO);
-            Location loc;
-            loc.first = t.cur - string_start;
-            loc.last = t.cur - string_start + l.size();
-            locations.push_back(loc);
-            // And a new line
-            l = "\n";
-            y2.string.from_str(m_a, l);
-            stypes.push_back(y2);
-            tokens.push_back(yytokentype::TK_NEWLINE);
-            loc.first = t.cur - string_start;
-            loc.last = t.cur - string_start + 1;
-            locations.push_back(loc);
+            for (int i=0;i<do_levels;++i)
+                insert_enddo();
+            if (label_match && do_levels > 1) abort_loop = true;
+            do_levels--;
             return true;
         } else if (label_match) {
             lex_body_statement(cur);
-
-            // return an explicit "end do" token here
-            std::string l("enddo");
-            YYSTYPE y2;
-            y2.string.from_str(m_a, l);
-            stypes.push_back(y2);
-            tokens.push_back(yytokentype::KW_END_DO);
-            Location loc;
-            loc.first = t.cur - string_start;
-            loc.last = t.cur - string_start + l.size();
-            locations.push_back(loc);
-            // And a new line
-            l = "\n";
-            y2.string.from_str(m_a, l);
-            stypes.push_back(y2);
-            tokens.push_back(yytokentype::TK_NEWLINE);
-            loc.first = t.cur - string_start;
-            loc.last = t.cur - string_start + 1;
-            locations.push_back(loc);
+            // next = cur; next_line(next); std::cout << "label match: " << tostr(cur, next);
+            insert_enddo();
+            do_levels--;
             return true;
         } else {
             return false;
@@ -734,6 +731,7 @@ struct FixedFormRecursiveDescent {
 
     void lex_do(unsigned char *&cur) {
         auto end = cur; next_line(end);
+        do_levels++;
         YYSTYPE yy;
         std::string l{"do"};
         lines.push_back(l);
@@ -751,13 +749,18 @@ struct FixedFormRecursiveDescent {
         }
         tokenize_line("", cur); // tokenize rest of line where `do` starts
         while (!lex_do_terminal(cur, do_label)) {
-            if (abort_loop) {
-                abort_loop = false;
-                return;
-            }
             if (!lex_body_statement(cur)) {
+                // for (size_t i = 0; i< tokens.size();++i) {
+                //     std::cout << pickle(tokens[i], stypes[i])<< "\n";
+                // }
                 throw parser_local::TokenizerError("End of file inside a do loop 2", loc);
             };
+
+            if (abort_loop) {
+                do_levels--;
+                if (do_levels == 0) abort_loop = false;
+                break;
+            }
         }
     }
 
@@ -807,12 +810,16 @@ struct FixedFormRecursiveDescent {
     void lex_program(unsigned char *&cur, bool explicit_program) {
         if (explicit_program) tokenize_line("program", cur);
         while(lex_body_statement(cur));
+        // auto next = cur; next_line(next); std::cout << "lex_program: " << tostr(cur, next);
         eat_label(cur);
         if (next_is(cur, "endprogram")) {
             tokenize_line("endprogram", cur);
         } else if (next_is(cur, "end")) {
             tokenize_line("end", cur);
         } else {
+            // for (size_t i = 0; i< tokens.size();++i) {
+            //         std::cout << pickle(tokens[i], stypes[i])<< "\n";
+            //     }
             error(cur, "Expecting terminating symbol for program");
         }
     }
