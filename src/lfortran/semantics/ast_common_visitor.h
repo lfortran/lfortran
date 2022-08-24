@@ -2648,9 +2648,14 @@ public:
 
     ASR::symbol_t* resolve_intrinsic_function(const Location &loc, const std::string &remote_sym) {
         if (!intrinsic_procedures.is_intrinsic(remote_sym)) {
-            throw SemanticError("Function '" + remote_sym + "' not found"
-                " or not implemented yet (if it is intrinsic)",
-                loc);
+            if(compiler_options.implicit_interface){
+                throw SemanticError("This is the place where we have to create an implicit interface, had put semantic error for reference", loc);
+            }
+            else{
+                throw SemanticError("Function '" + remote_sym + "' not found"
+                    " or not implemented yet (if it is intrinsic)",
+                    loc);
+            }
         }
         std::string module_name = intrinsic_procedures.get_module(remote_sym, loc);
 
