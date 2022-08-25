@@ -2,11 +2,11 @@
     "basename": "ast-fixedform_doloop-d9fb32d",
     "cmd": "lfortran --fixed-form --show-ast --no-color {infile} -o {outfile}",
     "infile": "tests/fixedform_doloop.f",
-    "infile_hash": "a34035399c83c4d564356753fe2131af75551eeb021ae20defae5b01",
+    "infile_hash": "bfd5fbdf93e7063f71ab6aa6aa5b1ba62a5c49b82aaef0ecaaf14ab2",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-fixedform_doloop-d9fb32d.stdout",
-    "stdout_hash": "b65392fe6e26d951b4e09a950e849552c398e7b68db0a8a8d3d63619",
+    "stdout_hash": "9ed6fdf0408fff9b5db833a645227777504e98bd740bebb2ae40ac5c",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

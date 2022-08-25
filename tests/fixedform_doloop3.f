@@ -24,9 +24,9 @@ C
 5               xx = 5
                 e = 5
 4           end do
-            f = 6
+            kmn = 6
         end do
         g = 8
-1     F(I) = TWO
+1     kmn(I) = TWO
       h = 9
       END
