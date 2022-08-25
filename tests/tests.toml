@@ -2253,3 +2253,8 @@ asr = true
 filename = "fixed_form_external_simple_outer.f"
 ast = true
 asr = true
+
+[[test]]
+filename = "sole_intrinsic.f"
+ast = true
+asr = true
