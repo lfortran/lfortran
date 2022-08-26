@@ -750,6 +750,11 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "stop")) {
+            tokenize_line("stop", cur);
+            return true;
+        }
+
         return false;
     }
 

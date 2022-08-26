@@ -2263,3 +2263,8 @@ asr = true
 filename = "loop_test2.f"
 ast = true
 asr = true
+
+[[test]]
+filename = "continue_body_if_loop.f"
+ast = true
+asr = true
