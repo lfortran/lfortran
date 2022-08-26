@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-26 12:30+0000\n"
-"Last-Translator: Ys413 <2020172007@stu.mdjnu.edu.cn>\n"
+"PO-Revision-Date: 2022-08-27 14:18+0000\n"
+"Last-Translator: 左志华 <zuo.zhihua@qq.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "fortran-lang/lfortran-docs/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 4.14-dev\n"
+"X-Generator: Weblate 4.14.1-dev\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../../doc/src/ast_and_asr.ipynb:9
@@ -1662,7 +1662,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:328
 msgid "Ubuntu"
-msgstr "乌班图(Ubuntu)"
+msgstr "Ubuntu"
 
 #: ../../doc/src/installation.md:330
 msgid "In Ubuntu, `apt install binutils-dev`."
@@ -3355,7 +3355,7 @@ msgstr "支持的参数类型是实数和整数。"
 #: ../../doc/src/intrinsics/numeric/aimag.md:70
 #: ../../doc/src/intrinsics/numeric/mod.md:97
 msgid "[ceiling](ceiling.md), [floor](floor.md)."
-msgstr "[ceiling](ceiling.md), [floor](floor.md)."
+msgstr "[ceiling](ceiling.md)，[floor](floor.md)。"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:1
 msgid "aimag(x): Imaginary Part"
@@ -3485,47 +3485,47 @@ msgstr "如果`x` 大于0，`anint(x)` 返回`aint(x + 0.5)` 。"
 
 #: ../../doc/src/intrinsics/numeric/anint.md:60
 msgid "[aint](aint.md)."
-msgstr ""
+msgstr "[aint](aint.md)。"
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:1
 msgid "ceiling(x): Integer Ceiling"
-msgstr ""
+msgstr "ceiling(x)：进一取整"
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:3
 msgid "Integer ceiling function"
-msgstr ""
+msgstr "进一取整函数"
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:16
 msgid "The input value `x` may be of type real or integer."
-msgstr ""
+msgstr "输入值 `x` 可以是实数或整数类型。"
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:20
 msgid "The return value is of type integer and nearest greater integer."
-msgstr ""
+msgstr "返回值是整数类型和最接近它的更大整数。"
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:24
 msgid "**ceiling(x)** returns the least integer greater than or equal to `x`."
-msgstr ""
+msgstr "**ceiling(x)** 返回大于或等于 `x` 的最小整数。"
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:28
 msgid "Supported input parameter types are integer and real."
-msgstr ""
+msgstr "支持的输入参数类型是整数和实数。"
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:66
 msgid "[floor](floor.md), [mod](mod.md)."
-msgstr ""
+msgstr "[floor](floor.md)，[mod](mod.md)。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:1
 msgid "cmplx(x [, [, kind]]): Convert to Complex"
-msgstr ""
+msgstr "cmplx(x [, [, kind]])：转换为复数"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:3
 msgid "Conversion to complex type."
-msgstr ""
+msgstr "转换为复数类型。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:14
 msgid "`cmplx(x, y)` is one of the intrinsic present in ASR."
-msgstr ""
+msgstr "`cmplx(x, y)` 是 ASR 中的内置函数之一。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:18
 msgid ""
@@ -3535,49 +3535,53 @@ msgid ""
 "integer expression type for initialisation indicating the kind parameter "
 "of the result."
 msgstr ""
+"`x` 输入值必须是整数、实数或复数。 `y` 可选输入值必须是整数或实数类型。"
+"它应该只在 `x` 不复杂的情况下出现。 `kind` "
+"用于初始化的整数表达式类型的可选输入值，指示结果的种类参数。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:26
 msgid ""
 "The return value is of complex type, with a kind defined by input `kind` "
 "type specified. If the `kind` is not specified, the return value is of "
 "default `kind` `complex` type."
-msgstr ""
+msgstr "返回值是复数类型，类型由指定的输入`kind`类型定义。如果未指定 `kind`，"
+"则返回值为默认 `kind` `complex` 类型。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:32
 msgid ""
 "**cmplx(x, [, y [, kind]])** converts the input value to complex "
 "representation:"
-msgstr ""
+msgstr "**cmplx(x, [, y [, kind]])** 将输入值转换为复数表示："
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:34
 msgid ""
 "`x` to real component of complex number. if `y` is present, it is "
 "converted to the imaginary component."
-msgstr ""
+msgstr "`x` 为复数的实部。如果 `y` 存在，则将其转换为虚部。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:37
 msgid "If `y` is not present, the imaginary component is set to 0.0."
-msgstr ""
+msgstr "如果 `y` 不存在，则虚部设置为 0.0。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:39
 msgid "If `x` is complex then `y` must not be present."
-msgstr ""
+msgstr "如果 `x` 是复数，则 `y` 不能出现。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:49
 msgid "Supported argument types are integer, real, or complex."
-msgstr ""
+msgstr "支持的参数类型是整数、实数或复数。"
 
 #: ../../doc/src/intrinsics/numeric/conjg.md:1
 msgid "conjg(x): Complex Conjugate"
-msgstr ""
+msgstr "conjg(x)：复共轭"
 
 #: ../../doc/src/intrinsics/numeric/conjg.md:3
 msgid "Complex conjugate function."
-msgstr ""
+msgstr "复共轭函数。"
 
 #: ../../doc/src/intrinsics/numeric/conjg.md:17
 msgid "`x` the input value must be of type complex."
-msgstr ""
+msgstr "`x` 输入值必须是复数类型。"
 
 #: ../../doc/src/intrinsics/numeric/conjg.md:21
 msgid "The return value is of complex type."
@@ -4043,7 +4047,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md
 msgid "LLVM"
-msgstr ""
+msgstr "LLVM"
 
 #: ../../doc/src/progress.md
 msgid "BIN"
