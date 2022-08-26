@@ -2248,3 +2248,8 @@ asr = true
 filename = "sole_intrinsic.f"
 ast = true
 asr = true
+
+[[test]]
+filename = "fixed_form_simple_continue.f"
+ast = true
+asr = true

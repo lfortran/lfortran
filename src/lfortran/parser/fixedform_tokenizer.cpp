@@ -709,9 +709,11 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
-        /*
-         * explicitly DO NOT tokenize `CONTINUE`
-         */
+        // careful addition -- `IF` and `DO` terminals are `CONTINUE`, too
+        if (next_is(cur, "continue")) {
+            tokenize_line("continue", cur);
+            return true;
+        }
 
         if (next_is(cur, "call") && !contains(cur, nline, '=')) {
             tokenize_line("call", cur);
