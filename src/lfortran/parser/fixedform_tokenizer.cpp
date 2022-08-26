@@ -795,14 +795,15 @@ struct FixedFormRecursiveDescent {
             }
         }
         if (next_is(cur, "enddo")) {
+            // end one nesting of loop
             insert_enddo();
             next_line(cur);
             do_levels--;
             return true;
         } else if (label_match && next_is(cur, "continue") && all_labels_match(label)) {
+            // end entire loop nesting with single `CONTINUE`
             // the usual terminal statement for do loops
             tokenize_line("continue", cur);
-            //only append iff (tokens[tokens.size()-2] == yytokentype::TK_LABEL && tokens[tokens.size()-1 == yytokentype::KW_CONTINUE])
             for (int i=0;i<do_levels;++i)
                 insert_enddo();
             if (label_match && do_levels > 1) abort_loop = true;
@@ -810,8 +811,14 @@ struct FixedFormRecursiveDescent {
             do_labels.clear();
             return true;
         } else if (label_match) {
+            // end one nesting of loop 
             lex_body_statement(cur);
             insert_enddo();
+            if (next_is(cur, "continue")) {
+                tokenize_line("continue", cur);
+            } else {
+                tokenize_line("", cur);
+            }
             do_levels--;
             return true;
         } else {
@@ -842,6 +849,9 @@ struct FixedFormRecursiveDescent {
         tokenize_line("", cur); // tokenize rest of line where `do` starts
         while (!lex_do_terminal(cur, do_label)) {
             if (!lex_body_statement(cur)) {
+                for (size_t i = 0; i< tokens.size();++i) {
+                    std::cout << pickle(tokens[i], stypes[i])<< "\n";
+                }
                 throw parser_local::TokenizerError("End of file inside a do loop 2", loc);
             };
 

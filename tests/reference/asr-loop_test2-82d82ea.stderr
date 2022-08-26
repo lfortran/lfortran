@@ -1,0 +1,9 @@
+semantic error: Variable 'l1' is not declared
+  --> tests/loop_test2.f:9:7 - 16:5
+   |
+ 9 |          DO 140 L1 = 1,NQ
+   |          ^^^^^^^^^^^^^^^^...
+...
+   |
+16 |      140 CONTINUE
+   | ...^^^^^ 'l1' is undeclared
