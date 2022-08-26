@@ -683,140 +683,6 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
-    std::vector<std::string> tokenize_integer_list(unsigned char*& cur) {
-        if (*cur++ != '(') error(cur, "ICE: Cannot tokenize non-list");
-        std::vector<std::string> labels;
-        std::string label;
-        for(;;) {
-            if (*cur == ')') {
-                labels.push_back(label);
-                break;
-            } else if (*cur >= '0' && *cur <= '9') {
-                label += *cur;
-            } else if (*cur == ',') {
-                labels.push_back(label);
-                label = "";
-            } else {
-                error(cur, "ICE: Cannot tokenize non-integer list");
-            }
-            cur++;
-        }
-        return labels;
-    }
-
-    void insert_select_goto(const std::vector<std::string>& labels, const std::string& var, const Location& loc) {
-        /*
-          GOTO (LABEL1, ..., LABELN-1) VAR
-
-        transformed to
-
-          SELECT CASE (var)
-            CASE (1)
-              GOTO %labels[0]%
-            ...
-            CASE (N)
-              GOTO %labels[N-1]%
-          END SELECT
-        */
-       YYSTYPE y;
-       std::string l(""); 
-       y.string.from_str(m_a, l);
-       tokens.push_back(yytokentype::KW_SELECT_CASE);
-       tokens.push_back(yytokentype::TK_LPAREN);
-       tokens.push_back(yytokentype::TK_NAME);
-       tokens.push_back(yytokentype::TK_RPAREN);
-       tokens.push_back(yytokentype::TK_NEWLINE);
-       locations.push_back(loc);
-       locations.push_back(loc);
-       locations.push_back(loc);
-       locations.push_back(loc);
-       locations.push_back(loc);
-
-       stypes.push_back(y);
-       stypes.push_back(y);
-       y.string.from_str(m_a, var);
-       stypes.push_back(y);
-       y.string.from_str(m_a, "");
-       stypes.push_back(y);
-       stypes.push_back(y);
-       for (size_t target = 0; target < labels.size(); ++target) {
-        tokens.push_back(yytokentype::KW_CASE);
-        tokens.push_back(yytokentype::TK_LPAREN);
-        tokens.push_back(yytokentype::TK_INTEGER);
-        tokens.push_back(yytokentype::TK_RPAREN);
-        tokens.push_back(yytokentype::TK_NEWLINE);
-        locations.push_back(loc);
-        locations.push_back(loc);
-        locations.push_back(loc);
-        locations.push_back(loc);
-        locations.push_back(loc);
-
-        stypes.push_back(y);
-        stypes.push_back(y);
-
-        YYSTYPE yy;
-        std::string cond = std::to_string(target+1);
-        unsigned char *cur = (unsigned char*)&cond[0];
-        unsigned char *cur2 = (unsigned char*)&cond[1];
-        lex_int_large(m_a, cur, cur2,
-            yy.int_suffix.int_n,
-            yy.int_suffix.int_kind);
-        stypes.push_back(yy);
-
-        stypes.push_back(y);
-        stypes.push_back(y);
-
-        tokens.push_back(yytokentype::KW_GOTO);
-        tokens.push_back(yytokentype::TK_INTEGER);
-        tokens.push_back(yytokentype::TK_NEWLINE);
-        locations.push_back(loc);
-        locations.push_back(loc);
-        locations.push_back(loc);
-
-        stypes.push_back(y);
-        cur = (unsigned char*)&(labels[target])[0];
-        cur2 = (unsigned char*)&(labels[target])[labels[target].size()];
-        lex_int_large(m_a, cur, cur2,
-            yy.int_suffix.int_n,
-            yy.int_suffix.int_kind);
-        stypes.push_back(yy);
-
-        stypes.push_back(y);
-       }
-       tokens.push_back(yytokentype::KW_END_SELECT);
-       tokens.push_back(yytokentype::TK_NEWLINE);
-       locations.push_back(loc);
-       locations.push_back(loc);
-
-       stypes.push_back(y);
-       stypes.push_back(y);
-
-
-       std::cout << "tokens.size: " << tokens.size() << "\n";
-       std::cout << "stypes.size: " << stypes.size() << "\n";
-       std::cout << "locations.size: " << locations.size() << "\n";
-    }
-
-    void lex_goto_select(unsigned char *&cur) {
-        auto cpy = cur;
-        next_line(cur);
-        std::string l("goto");
-        Location loc;
-        loc.first = cur - string_start;
-        loc.last = cur - string_start + l.size();
-        if (!next_is(cpy, l)) {
-            parser_local::TokenizerError("GOTO tokenizer error", loc);
-        }
-        cpy += l.size();
-        auto goto_targets = tokenize_integer_list(cpy);
-        std::string var;
-        for (;;) {
-            if (*cpy == '\n' || *cpy == '\0') break;
-            var += *cpy++;
-        }
-        insert_select_goto(goto_targets, var, loc);
-    }
-
     bool lex_body_statement(unsigned char *&cur) {
         eat_label(cur);
         if (lex_declaration(cur)) {
@@ -842,12 +708,12 @@ struct FixedFormRecursiveDescent {
         // `IF (M .EQ. 1) THEN;  GOTO X; ELSE IF (M .EQ. 2) GOTO Z; IF (M .EQ. 3) GOTO Y; ENDIF`
         if (next_is(cur, "goto(")) {
             // lex_goto_select(cur);
-            tokenize_line("goto", cur);
+            tokenize_line("", cur);
             return true;
         }
 
         if (next_is(cur, "goto")) {
-            tokenize_line("", cur);
+            tokenize_line("goto", cur);
             return true;
         }
 
