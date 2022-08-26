@@ -41,7 +41,7 @@ interface min
 end interface
 
 interface max
-    module procedure imax, imax8, imax16, imax64, smax, dmax, imax_6args
+    module procedure imax, imax8, imax16, imax64, smax, dmax, imax_6args, dmax_3args
 end interface
 
 interface huge
@@ -421,6 +421,12 @@ if (x > y) then
 else
     r = y
 end if
+end function
+
+elemental real(dp) functional dmax(x,y,z) result(r)
+real(dp), intent(in) :: x,y
+r=dmax(x,y)
+r=dmax(r,z)
 end function
 
 ! huge -------------------------------------------------------------------------
