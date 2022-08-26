@@ -849,9 +849,6 @@ struct FixedFormRecursiveDescent {
         tokenize_line("", cur); // tokenize rest of line where `do` starts
         while (!lex_do_terminal(cur, do_label)) {
             if (!lex_body_statement(cur)) {
-                for (size_t i = 0; i< tokens.size();++i) {
-                    std::cout << pickle(tokens[i], stypes[i])<< "\n";
-                }
                 throw parser_local::TokenizerError("End of file inside a do loop 2", loc);
             };
 
