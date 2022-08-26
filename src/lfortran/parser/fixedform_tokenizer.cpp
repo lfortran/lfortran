@@ -812,13 +812,12 @@ struct FixedFormRecursiveDescent {
             return true;
         } else if (label_match) {
             // end one nesting of loop 
-            lex_body_statement(cur);
-            insert_enddo();
             if (next_is(cur, "continue")) {
                 tokenize_line("continue", cur);
             } else {
-                tokenize_line("", cur);
+                lex_body_statement(cur);
             }
+            insert_enddo();
             do_levels--;
             return true;
         } else {
