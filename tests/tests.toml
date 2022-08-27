@@ -2248,3 +2248,8 @@ asr = true
 filename = "sole_intrinsic.f"
 ast = true
 asr = true
+
+[[test]]
+filename = "max1.f90"
+ast = true
+asr = true
