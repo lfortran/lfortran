@@ -1,0 +1,6 @@
+syntax error: Token '!=32) error stop
+' (of type 'comment') is unexpected here
+ --> tests/max3.f90:7:5
+  |
+7 | if(s!=32) error stop
+  |     ^^^^^^^^^^^^^^^^^ 

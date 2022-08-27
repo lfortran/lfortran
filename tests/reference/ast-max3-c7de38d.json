@@ -1,0 +1,13 @@
+{
+    "basename": "ast-max3-c7de38d",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/max3.f90",
+    "infile_hash": "6d466fbe31efa60b0b0b36604aab922b561738cbd2291d64747319a5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "ast-max3-c7de38d.stderr",
+    "stderr_hash": "f157e7948710bfd4e40d0b8947631283f1f35c80e38187f881c71183",
+    "returncode": 2
+}

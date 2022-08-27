@@ -1,0 +1,5 @@
+semantic error: Arguments do not match for any generic procedure, max
+ --> tests/max1.f90:3:3
+  |
+3 | s=max(abs(zero),abs(one),abs(two))
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
