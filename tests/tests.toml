@@ -2253,3 +2253,13 @@ asr = true
 filename = "max1.f90"
 ast = true
 asr = true
+
+[[test]]
+filename = "max2.f90"
+ast = true
+asr = true
+
+[[test]]
+filename = "max3.f90"
+ast = true
+asr = true
