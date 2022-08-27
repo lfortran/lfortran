@@ -424,9 +424,9 @@ end if
 end function
 
 elemental real(dp) function dmax_3args(x,y,z) result(r)
-real(dp), intent(in) :: x,y,z
-r=dmax(x,y)
-r=dmax(r,z)
+    real(dp), intent(in) :: x, y, z
+    r = dmax(x, y)
+    r = dmax(r, z)
 end function
 
 ! huge -------------------------------------------------------------------------
