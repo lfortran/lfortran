@@ -217,6 +217,10 @@ filename = "warnings/dim_assgn_test.f90"
 asr = true
 
 [[test]]
+filename = "parameter1.f90"
+asr = true
+
+[[test]]
 filename = "preprocessor1.f90"
 asr_preprocess = true
 
