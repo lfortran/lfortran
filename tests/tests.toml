@@ -2248,3 +2248,7 @@ asr = true
 filename = "sole_intrinsic.f"
 ast = true
 asr = true
+
+[[test]]
+filename = "parameter1.f90"
+asr = true
