@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-27 14:18+0000\n"
+"PO-Revision-Date: 2022-08-28 06:41+0000\n"
 "Last-Translator: 左志华 <zuo.zhihua@qq.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "fortran-lang/lfortran-docs/zh_Hans/>\n"
@@ -3585,261 +3585,267 @@ msgstr "`x` 输入值必须是复数类型。"
 
 #: ../../doc/src/intrinsics/numeric/conjg.md:21
 msgid "The return value is of complex type."
-msgstr ""
+msgstr "返回值是复数类型。"
 
 #: ../../doc/src/intrinsics/numeric/conjg.md:25
 msgid "**conjg(x)** converts the input value `x`  to its conjugate."
-msgstr ""
+msgstr "**conjg(x)** 将输入值 `x` 转换为其复数共轭。"
 
 #: ../../doc/src/intrinsics/numeric/conjg.md:29
 msgid "$x + iy$ converted to $x - iy$"
-msgstr ""
+msgstr "$x + iy$ 转换为 $x - iy$"
 
 #: ../../doc/src/intrinsics/numeric/conjg.md:35
 msgid "Supported argument types is complex."
-msgstr ""
+msgstr "支持的参数类型是复数。"
 
 #: ../../doc/src/intrinsics/numeric/digits.md:1
 msgid "digits(x): Significant Binary Digits"
-msgstr ""
+msgstr "digits(x)：有效二进制数字"
 
 #: ../../doc/src/intrinsics/numeric/digits.md:3
 msgid "Significant binary digits."
-msgstr ""
+msgstr "有效的二进制数字。"
 
 #: ../../doc/src/intrinsics/numeric/digits.md:15
 msgid "`x` the input value must be of type real or integer."
-msgstr ""
+msgstr "`x` 输入值必须是实数或整数类型。"
 
 #: ../../doc/src/intrinsics/numeric/digits.md:23
 msgid ""
 "**digits(x)** returns the number of significant binary digits of the "
 "internal mopdel representation of `x`."
-msgstr ""
+msgstr "**digits(x)** 返回 `x` 的内部模型表示的有效二进制位数。"
 
 #: ../../doc/src/intrinsics/numeric/dim.md:1
 msgid "dim(x, y): Positive Difference or 0"
-msgstr ""
+msgstr "dim(x, y)：正差或 0"
 
 #: ../../doc/src/intrinsics/numeric/dim.md:3
 msgid "Positive difference or 0."
-msgstr ""
+msgstr "正差或 0。"
 
 #: ../../doc/src/intrinsics/numeric/dim.md:15
 msgid ""
 "`x` the input value must be of type real or integer. `y` the input value "
 "must of of the same type and kind as of `x`."
-msgstr ""
+msgstr "`x` 输入值必须是实数或整数类型。 `y` 输入值的类型和种类必须与 `x` 相同。"
 
 #: ../../doc/src/intrinsics/numeric/dim.md:20
 msgid "The return value is of type integer or real."
-msgstr ""
+msgstr "返回值是整数或实数类型。"
 
 #: ../../doc/src/intrinsics/numeric/dim.md:24
 msgid ""
 "**dim(x)** computes the difference $x - y$, if the result is positive, "
 "otherwise returns 0."
-msgstr ""
+msgstr "**dim(x)** 计算 $x - y$ 的差值，如果结果为正，否则返回 0。"
 
 #: ../../doc/src/intrinsics/numeric/epsilon.md:1
 msgid "epsilon(x): Epsilon"
-msgstr ""
+msgstr "epsilon(x)：ε 小量"
 
 #: ../../doc/src/intrinsics/numeric/epsilon.md:3
 msgid "Epsilon function."
-msgstr ""
+msgstr "Epsilon 函数。"
 
 #: ../../doc/src/intrinsics/numeric/epsilon.md:20
 msgid "The return value is of same type as of the input argument."
-msgstr ""
+msgstr "返回值与输入参数的类型相同。"
 
 #: ../../doc/src/intrinsics/numeric/epsilon.md:24
 msgid ""
 "**epsilon(x)** computes the smallest number $\\epsilon$ of the same kind "
 "as `x` following:"
-msgstr ""
+msgstr "**epsilon(x)** 计算与 `x` 相同类型的最小数 $\\epsilon$，如下所示："
 
 #: ../../doc/src/intrinsics/numeric/epsilon.md:27
 msgid "$1 + \\epsilon > 1$"
-msgstr ""
+msgstr "$1 + \\epsilon > 1$"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:1
 msgid "erf(x): Error"
-msgstr ""
+msgstr "erf(x): 误差函数"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:3
 msgid "Error function."
-msgstr ""
+msgstr "误差函数"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:20
 msgid ""
 "The return value is of type real and of the same kind as of the input "
 "parameter `x`."
-msgstr ""
+msgstr "返回值是 real 类型，与输入参数 `x` 的类型相同。"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:25
 #: ../../doc/src/intrinsics/numeric/erfc.md:25
 msgid ""
 "**erf(x)** computes the error function of `x`. The result lies in the "
 "range:"
-msgstr ""
+msgstr "**erf(x)** 计算 `x` 的误差函数。结果位于以下范围内："
 
 #: ../../doc/src/intrinsics/numeric/erf.md:27
 msgid "$-1 \\leq erf (x) \\leq 1$"
-msgstr ""
+msgstr "$-1 \\leq erf (x) \\leq 1$"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:31
 msgid "$\\frac{2}{\\sqrt\\pi}\\int_0^xe^{-t^2}dt$"
-msgstr ""
+msgstr "$\\frac{2}{\\sqrt\\pi}\\int_0^xe^{-t^2}dt$"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:69
 msgid "[erfc](erfc.md)."
-msgstr ""
+msgstr "[erfc](erfc.md)."
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:1
 msgid "erfc(x): Complementary Error"
-msgstr ""
+msgstr "erfc(x)：互补误差"
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:3
 msgid "Complementary error function."
-msgstr ""
+msgstr "互补误差函数。"
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:20
 msgid ""
 "The return value is of type real and of the same kind as of the input "
 "parameter `x`. `erfc(x)` returns $1 - erf(x)$."
-msgstr ""
+msgstr "返回值是 real 类型，与输入参数 `x` 的类型相同。 `erfc(x)` 返回 $1 - erf(x)$。"
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:27
 msgid "$0 \\leq erf (x) \\leq 2$"
-msgstr ""
+msgstr "$0 \\leq erf (x) \\leq 2$"
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:31
 msgid "$\\frac{2}{\\sqrt\\pi}\\int_{x}^{\\infty}e^{-t^2}dt$"
-msgstr ""
+msgstr "$\\frac{2}{\\sqrt\\pi}\\int_{x}^{\\infty}e^{-t^2}dt$"
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:33
 msgid ""
 "It is used in instances when the large loss of relative accuracy occurs "
 "if `erf(x)` is called for large `x` and the result is subtracted from 1."
-msgstr ""
+msgstr "它用于在相对精度损失较大的情况下，如果为较大的 `x` 调用 `erf(x)` 并且从 1 "
+"中减去结果。"
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:72
 msgid "[erf](erf.md)."
-msgstr ""
+msgstr "[erf](erf.md)."
 
 #: ../../doc/src/intrinsics/numeric/exp.md:1
 msgid "exp(x): Exponential"
-msgstr ""
+msgstr "exp(x)：指数函数"
 
 #: ../../doc/src/intrinsics/numeric/exp.md:3
 msgid "Exponential function."
-msgstr ""
+msgstr "指数函数"
 
 #: ../../doc/src/intrinsics/numeric/exp.md:16
 msgid "`x` the input value must be of type real or complex."
-msgstr ""
+msgstr "`x` 输入值必须是实数或复数类型。"
 
 #: ../../doc/src/intrinsics/numeric/exp.md:20
 msgid "The return value is of same type as of the input argument, `x`."
-msgstr ""
+msgstr "返回值与输入参数 `x` 的类型相同。"
 
 #: ../../doc/src/intrinsics/numeric/exp.md:24
 msgid "**exp(x)** computes the base $e$ exponential of `x`, i.e., $e^x$."
-msgstr ""
+msgstr "**exp(x)** 计算 `x` 的基本 $e$ 指数，即 $e^x$。"
 
 #: ../../doc/src/intrinsics/numeric/exp.md:26
 msgid ""
 "If `x` is of type complex, its imaginary part is considered as a value in"
 " radians."
-msgstr ""
+msgstr "如果 `x` 是复数类型，它的虚部被认为是弧度值。"
 
 #: ../../doc/src/intrinsics/numeric/exp.md:31
 msgid "Supported argument types is real and complex."
-msgstr ""
+msgstr "支持的参数类型是实数或复数。"
 
 #: ../../doc/src/intrinsics/numeric/floor.md:1
 msgid "floor(x, kind): Integer Floor"
-msgstr ""
+msgstr "floor(x, kind)：去一取整"
 
 #: ../../doc/src/intrinsics/numeric/floor.md:3
 msgid "Integer floor function."
-msgstr ""
+msgstr "去一取整函数。"
 
 #: ../../doc/src/intrinsics/numeric/floor.md:18
 msgid ""
 "`kind` the optional input parameter must be a scalar integer constant "
 "expression."
-msgstr ""
+msgstr "`kind` 可选输入参数必须是一个标量整数常量表达式。"
 
 #: ../../doc/src/intrinsics/numeric/floor.md:22
 msgid ""
 "The return value is of type integer(kind) if kind is passed as input "
 "parameter. If not, default kind integer is returned."
-msgstr ""
+msgstr "如果 kind 作为输入参数传递，则返回值是 integer(kind) "
+"类型。如果不是，则返回默认类型整数。"
 
 #: ../../doc/src/intrinsics/numeric/floor.md:25
 msgid ""
 "The return value is equal to or nearest greatest integer less than or "
 "equal to `x`."
-msgstr ""
+msgstr "返回值等于或最接近小于或等于 `x` 的最大整数。"
 
 #: ../../doc/src/intrinsics/numeric/floor.md:30
 msgid ""
 "**floor(x)** returns the greatest integer less than or equal to x. It "
 "returns an integer value unless spefically specified using second "
 "optional paramter."
-msgstr ""
+msgstr "**floor(x)** 返回小于或等于 x "
+"的最大整数。它返回一个整数值，除非使用第二个可选参数特别指定。"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:1
 msgid "gamma(x): Gamma"
-msgstr ""
+msgstr "gamma(x)：伽马函数"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:3
 msgid "Gamma function."
-msgstr ""
+msgstr "伽马函数。"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:16
 msgid ""
 "`x` the input value must be of type real. It should not be zero or a "
 "negative integer."
-msgstr ""
+msgstr "`x` 输入值必须是实数类型。它不应为零或负整数。"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:21
 msgid "The return value is of same type and kind as of `x`."
-msgstr ""
+msgstr "返回值与 `x` 的类型和种类相同。"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:25
 msgid ""
 "**gamma(x)** computes $\\gamma(x)$. For positive, integer value of `x`, "
 "the Gamma function simplifies to factorial function:"
-msgstr ""
+msgstr "**gamma(x)** 计算 $\\gamma(x)$。对于 `x` 的正整数值，Gamma "
+"函数简化为阶乘函数："
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:28
 msgid "$\\gamma(x) = (x-1)!$"
-msgstr ""
+msgstr "$\\gamma(x) = (x-1)!$"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:30
 msgid "In general, if $x > 0$:"
-msgstr ""
+msgstr "一般来说，如果 $x > 0$："
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:32
 msgid "$\\gamma(x) = \\int_{0}^{\\infty} e^{-t} dt$"
-msgstr ""
+msgstr "$\\gamma(x) = \\int_{0}^{\\infty} e^{-t} dt$"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:34
 msgid "and if $-n-1 < x < -n$ where n is an integer >= 0:"
-msgstr ""
+msgstr "如果 $-n-1 < x < -n$ 其中 n 是整数 >= 0："
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:36
 msgid ""
 "$\\gamma(x) = \\int_{0}^{\\infty}(e ^{-t} - \\sum\\limits_{k=0}^n "
 "\\frac{(-t)^k}{k!} dt)$"
 msgstr ""
+"$\\gamma(x) = \\int_{0}^{\\infty}(e ^{-t} - \\sum\\limits_{k=0}^n \\frac"
+"{(-t)^k}{k!} dt)$"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:76
 msgid "[epsilon](epsilon.md)"
-msgstr ""
+msgstr "[epsilon](epsilon.md)"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:1
 msgid "mod(x, y): Modulus"
