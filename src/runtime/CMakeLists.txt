@@ -16,7 +16,7 @@ project(lfortran_unif_runtime C Fortran)
   # set(CMAKE_Fortran_COMPILER_ID_RUN TRUE)
   # set(CMAKE_Fortran_COMPILER_FORCED TRUE)
   # set(CMAKE_Fortran_COMPILER_WORKS TRUE)
-  #  set(CMAKE_Fortran_COMPILER ${CMAKE_CURRENT_BINARY_DIR}/../bin/lfortran)
+  set(CMAKE_Fortran_COMPILER ${CMAKE_CURRENT_BINARY_DIR}/../bin/lfortran)
 # endif()
 
 # lfortran needs this to find the .mod files created during the build
