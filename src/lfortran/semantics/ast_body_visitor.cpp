@@ -1557,7 +1557,47 @@ public:
             if (AST::is_a<AST::Num_t>(*x.m_goto_label)) {
                 int goto_label = AST::down_cast<AST::Num_t>(x.m_goto_label)->m_n;
                 tmp = ASR::make_GoTo_t(al, x.base.base.loc, goto_label);
-            } else {
+
+            } else if (AST::is_a<AST::Name_t>(*x.m_goto_label)) {
+                auto name = AST::down_cast<AST::Name_t>(x.m_goto_label);
+                auto sym_name = std::string(name->m_id);
+                auto sym = current_scope->resolve_symbol(sym_name);
+                if (sym == nullptr) {
+                    throw SemanticError("Cannot do `GOTO select` for undeclared variable",
+                        x.base.base.loc);
+                }
+                if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                    throw SemanticError("Symbol needs to be a variable",
+                        x.base.base.loc);
+                }
+                // n_labels GOTO
+                Vec<ASR::case_stmt_t*> a_body_vec;
+                a_body_vec.reserve(al, x.n_labels);
+
+                // 1 label SELECT
+                Vec<ASR::stmt_t*> def_body;
+                def_body.reserve(al, 1);
+
+                for (size_t i = 0; i < x.n_labels; ++i) {
+                    if (!AST::is_a<AST::Num_t>(*x.m_labels[i])) {
+                        throw SemanticError("Can only `GOTO` integer labels",
+                            x.base.base.loc);
+                    } else {
+                        auto l = AST::down_cast<AST::Num_t>(x.m_labels[i]); // l->m_n gets the target -> if l->m_n == (i+1) ...
+                        Vec<ASR::stmt_t*> body;
+                        body.reserve(al, 1);
+                        body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n)));
+                        Vec<ASR::expr_t*> comparator_one;
+                        comparator_one.reserve(al, 1);
+                        ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+                        comparator_one.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i+1, int32_type)));
+                        a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
+                    }
+                }
+                ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
+                tmp = ASR::make_Select_t(al, x.base.base.loc, target_var, a_body_vec.p,
+                           a_body_vec.size(), def_body.p, def_body.size());
+            } else {           
                 throw SemanticError("A goto label must be an integer",
                     x.base.base.loc);
             }
