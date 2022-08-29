@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-28 06:41+0000\n"
+"PO-Revision-Date: 2022-08-29 23:56+0000\n"
 "Last-Translator: 左志华 <zuo.zhihua@qq.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "fortran-lang/lfortran-docs/zh_Hans/>\n"
@@ -3849,63 +3849,63 @@ msgstr "[epsilon](epsilon.md)"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:1
 msgid "mod(x, y): Modulus"
-msgstr ""
+msgstr "mod(x, y)：模数"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:3
 msgid "Modulus or remainder function."
-msgstr ""
+msgstr "模数或余数函数。"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:17
 msgid "`x` the input value, can be integer or real."
-msgstr ""
+msgstr "`x` 输入值，可以是整数或实数。"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:19
 msgid ""
 "`y` second input parameter should be same type and kind as `x` and not "
 "equal to 0."
-msgstr ""
+msgstr "`y` 第二个输入参数的类型和种类应与 `x` 相同且不等于 0。"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:24
 msgid ""
 "The return value is of type and kind same as of `x`. The result is "
 "calculated using mathematical modulo or remainder as:"
-msgstr ""
+msgstr "返回值的类型和种类与 `x` 相同。结果使用数学模或余数计算为："
 
 #: ../../doc/src/intrinsics/numeric/mod.md:27
 msgid "`x - INT (x / y) * y`."
-msgstr ""
+msgstr "`x - INT (x / y) * y`."
 
 #: ../../doc/src/intrinsics/numeric/mod.md:29
 msgid "If `y` is 0, the result is undefined like `any integer value / 0`."
-msgstr ""
+msgstr "如果 `y` 为 0，则结果未定义，如 `any integer value / 0`。"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:33
 msgid ""
 "**mod(x, y)** calculates and returns modulo or remainder when `x` is "
 "divided by `y`. The result is calculated using"
-msgstr ""
+msgstr "**mod(x, y)** 当 `x` 除以 `y` 时计算并返回模数或余数。结果计算使用"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:36
 msgid "`x - INT(x / y) * y`"
-msgstr ""
+msgstr "`x - INT(x / y) * y`"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:38
 msgid ""
 "i.e., result is remainder when first argument is mathematically divided "
 "by second argument."
-msgstr ""
+msgstr "即，当第一个参数在数学上除以第二个参数时，结果是余数。"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:41
 msgid "The return value should be less than `y`."
-msgstr ""
+msgstr "返回值应该小于`y`。"
 
 #: ../../doc/src/language.md:1
 msgid "Fortran Language"
-msgstr ""
+msgstr "Fortran 语言"
 
 #: ../../doc/src/language.md:3
 msgid "Background and Motivation"
-msgstr ""
+msgstr "背景和动机"
 
 #: ../../doc/src/language.md:5
 msgid ""
@@ -3917,35 +3917,39 @@ msgid ""
 "may or may not be well optimized or maintained, at present or down the "
 "road."
 msgstr ""
+"Fortran 的设计从一开始就自然而简单地将数学转换为以最高速度编译和运行的代码。"
+"并且专门针对此类基本计算任务，它在语言本身中包含广泛的关键功能，在所有平台上"
+"都是标准的，不需要目前或未来可能会或可能不会得到很好优化或维护的外部库路。"
 
 #: ../../doc/src/language.md:12
 msgid "Some highlights:"
-msgstr ""
+msgstr "一些亮点："
 
 #: ../../doc/src/language.md:14
 msgid ""
 "Multidimensional arrays which can be allocated and indexed as the "
 "math/science dictates (not restricted to start at 0 or 1) and can be "
 "sliced as desired (as, e.g., in MATLAB);"
-msgstr ""
+msgstr "多维数组，可以根据数学/科学的要求进行分配和索引（不限于从 0 或 1 "
+"开始），并且可以根据需要进行切片（例如，在 MATLAB 中）；"
 
 #: ../../doc/src/language.md:17
 msgid ""
 "Operators which operate naturally upon the aforementioned "
 "arrays/matrices, as they do scalars;"
-msgstr ""
+msgstr "像对标量一样自然地对上述数组/矩阵进行操作的运算符；"
 
 #: ../../doc/src/language.md:19
 msgid "Complex numbers;"
-msgstr ""
+msgstr "复数；"
 
 #: ../../doc/src/language.md:20
 msgid "Special functions;"
-msgstr ""
+msgstr "特殊函数；"
 
 #: ../../doc/src/language.md:21
 msgid "Structures and pointers for more general data representation."
-msgstr ""
+msgstr "用于更通用数据表示的结构和指针。"
 
 #: ../../doc/src/language.md:23
 msgid ""
@@ -3957,26 +3961,34 @@ msgid ""
 " as well as highly optimized executables, directly from natural, readable"
 " code without need of extensive optimization heroics by the developer."
 msgstr ""
+"因为基本内容包含在语言本身中，所以阅读和编写都很简单，无需从大量的外部类中进"
+"行选择或破译来做同样的事情。由于这些要素是自包含的，编译器可以直接从自然、可"
+"读的代码中提供详细的编译时（例如，参数不匹配）和运行时（例如，内存访问）检查"
+"，以及高度优化的可执行文件。开发人员的广泛优化英雄。"
 
 #: ../../doc/src/language.md:31
 msgid "See our blog posts for more information:"
-msgstr ""
+msgstr "有关更多信息，请参阅我们的博客文章："
 
 #: ../../doc/src/language.md:33
 msgid ""
 "[Why We Created LFortran](https://lfortran.org/blog/2019/04/why-we-"
 "created-lfortran/)"
 msgstr ""
+"[我们为什么创建 LFortran](https://lfortran.org/blog/2019/04/"
+"why-we-created-lfortran/)"
 
 #: ../../doc/src/language.md:34
 msgid ""
 "[Why to Use Fortran For New Projects](https://lfortran.org/blog/2019/05"
 "/why-to-use-fortran-for-new-projects/)"
 msgstr ""
+"[为什么在新项目中使用 Fortran](https://lfortran.org/blog/2019/05/"
+"why-to-use-fortran-for-new-projects/)"
 
 #: ../../doc/src/language.md:36
 msgid "How to Learn Fortran"
-msgstr ""
+msgstr "如何学习 Fortran"
 
 #: ../../doc/src/language.md:38
 msgid ""
@@ -3987,6 +3999,10 @@ msgid ""
 "side comparison with Python/NumPy, links to other online Fortran "
 "resources and books, and an FAQ."
 msgstr ""
+"Fortran 学习起来相对较快，因为它比 C/C++ "
+"简单得多，也更小（实际上，包括所有需要的库）。如果你有兴趣了解更多信息，"
+"请参阅我们的网页 [fortran90.org]，其中包含编写代码的推荐做法、与 Python/"
+"NumPy 的并排比较、其他在线 Fortran 资源和书籍的链接以及常见问题解答。"
 
 #: ../../doc/src/progress.md:3
 msgid ""
@@ -3994,32 +4010,35 @@ msgid ""
 "each feature we list a short description, the filename with the test and "
 "current status for each parts of the compiler:"
 msgstr ""
+"此页面记录了 LFortran 支持的 Fortran 功能。对于每个特性，我们列出了一个简短的"
+"描述，以及编译器每个部分的测试和当前状态的文件名："
 
 #: ../../doc/src/progress.md:7
 msgid "AST: The code can be parsed to AST (`lfortran --show-ast test.f90`)"
-msgstr ""
+msgstr "AST：代码可以解析为 AST (`lfortran --show-ast test.f90`)"
 
 #: ../../doc/src/progress.md:8
 msgid "ASR: The code can be transformed to ASR (`lfortran --show-asr test.f90`)"
-msgstr ""
+msgstr "ASR：代码可以转换为 ASR (`lfortran --show-asr test.f90`)"
 
 #: ../../doc/src/progress.md:9
 msgid "LLVM: LFortran can generate LLVM IR (`lfortran --show-llvm test.f90`)"
-msgstr ""
+msgstr "LLVM：LFortran 可以生成 LLVM IR (`lfortran --show-llvm test.f90`)"
 
 #: ../../doc/src/progress.md:10
 msgid "BIN: The LLVM IR can compile to a binary"
-msgstr ""
+msgstr "BIN：LLVM IR 可以编译为二进制文件"
 
 #: ../../doc/src/progress.md:11
 msgid "RUN: The binary runs without errors"
-msgstr ""
+msgstr "RUN：二进制运行没有错误"
 
 #: ../../doc/src/progress.md:13
 msgid ""
 "If all are green it means the feature fully works and you can use it in "
 "your codes. Otherwise you can see what the status is of each feature."
-msgstr ""
+msgstr "如果全部为绿色，则表示该功能完全有效，你可以在代码中使用它。否则，你可以查看"
+"每个功能的状态。"
 
 #: ../../doc/src/progress.md:16
 msgid ""
