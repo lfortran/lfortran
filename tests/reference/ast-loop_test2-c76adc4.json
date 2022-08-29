@@ -2,11 +2,11 @@
     "basename": "ast-loop_test2-c76adc4",
     "cmd": "lfortran --fixed-form --show-ast --no-color {infile} -o {outfile}",
     "infile": "tests/loop_test2.f",
-    "infile_hash": "800f4e8ee2865e732235a58657bdd9e9dc28bf18f3dfa08c99b5d61c",
+    "infile_hash": "5b02cea73577663e3bb9327b5fddf12b575369117817950c1f6f88c3",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-loop_test2-c76adc4.stdout",
-    "stdout_hash": "fde0f0b5c1d5e7378c90ee354a6982e062f4708c7669f4886b392c3f",
+    "stdout_hash": "5f59a25d9720073323dfbe851acf529f81d55e43e6a41162f7324dba",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

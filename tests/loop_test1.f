@@ -1,6 +1,7 @@
       program main 
       integer KP
       kp =10
+      integer i,j
       DO 330 I=1,KP
          DO 320 J=I+1,KP
             IF (0.GT.1) THEN
