@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-27 14:18+0000\n"
+"PO-Revision-Date: 2022-08-29 23:56+0000\n"
 "Last-Translator: Asdrubal Lozada-Blanco <aslozada@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/es/>\n"
@@ -2831,7 +2831,7 @@ msgstr "Ajusta a izquierda una cadena."
 #: ../../doc/src/intrinsics/character/adjustl.md:16
 #: ../../doc/src/intrinsics/character/adjustr.md:16
 msgid "`string`: the input value must be of character type."
-msgstr ""
+msgstr "`string`: el valor de entrada debe ser de tipo carácter."
 
 #: ../../doc/src/intrinsics/character/adjustl.md:20
 msgid ""
@@ -2839,25 +2839,30 @@ msgid ""
 "value `string`, with leading spaces removed and same number of spaces "
 "appended."
 msgstr ""
+"El valor devuelto es de tipo carácter y del mismo tipo que el valor de "
+"entrada `string`, con los espacios iniciales eliminados y el mismo número de "
+"espacios añadidos."
 
 #: ../../doc/src/intrinsics/character/adjustl.md:25
 msgid ""
 "**adjustl(string)** adjusts input string by removing any leading spaces "
 "and appending same number of spaces."
 msgstr ""
+"**adjustl(cadena)** ajusta la cadena de entrada eliminando cualquier espacio "
+"inicial y agregando la misma cantidad de espacios."
 
 #: ../../doc/src/intrinsics/character/adjustl.md:30
 #: ../../doc/src/intrinsics/character/adjustr.md:31
 msgid "Supported argument type is character."
-msgstr ""
+msgstr "El tipo de argumento admitido es el carácter."
 
 #: ../../doc/src/intrinsics/character/adjustr.md:1
 msgid "adjustr(string): Right Adjust String"
-msgstr ""
+msgstr "adjustr(cadena): Cadena ajustada a la derecha"
 
 #: ../../doc/src/intrinsics/character/adjustr.md:3
 msgid "Right adjust a string."
-msgstr ""
+msgstr "Ajuste a la derecha una cadena."
 
 #: ../../doc/src/intrinsics/character/adjustr.md:20
 msgid ""
@@ -2865,44 +2870,54 @@ msgid ""
 "value `string`, with trailing spaces removed and same number of spaces "
 "added at the start."
 msgstr ""
+"El valor devuelto es de tipo carácter y del mismo tipo que el valor de "
+"entrada `string`, con los espacios finales eliminados y el mismo número de "
+"espacios agregados al principio."
 
 #: ../../doc/src/intrinsics/character/adjustr.md:26
 msgid ""
 "**adjustr(string)** adjusts input string by removing any trailing spaces "
 "and adding same number of spaces at the start of the input string."
 msgstr ""
+"**adjustr(cadena)** ajusta la cadena de entrada eliminando los espacios "
+"finales y agregando la misma cantidad de espacios al comienzo de la cadena "
+"de entrada."
 
 #: ../../doc/src/intrinsics/character/adjustr.md:65
 msgid "[adjustl](adjustl.md)."
-msgstr ""
+msgstr "[adjustl](adjustl.md)."
 
 #: ../../doc/src/intrinsics/character/char.md:1
 msgid "char(x, [, kind]): Integer to Character"
-msgstr ""
+msgstr "char(x, [, kind]): Transforma entero en carácter"
 
 #: ../../doc/src/intrinsics/character/char.md:3
 msgid "Integer to character conversion."
-msgstr ""
+msgstr "Conversión de entero a carácter."
 
 #: ../../doc/src/intrinsics/character/char.md:16
 msgid "`x`: the input value of integer type."
-msgstr ""
+msgstr "`x`: el valor de entrada de tipo entero."
 
 #: ../../doc/src/intrinsics/character/char.md:18
 msgid ""
 "`kind`: an optional input value of type integer constant expression for "
 "initialization. This indicates the kind parameter of the result."
 msgstr ""
+"`kind`: un valor de entrada opcional de expresión constante de tipo entero "
+"para la inicialización. Esto indica el tipo de parámetro del resultado."
 
 #: ../../doc/src/intrinsics/character/char.md:30
 msgid ""
 "**char(x)** returns the character represented by the ASCII character set "
 "at `x` position."
 msgstr ""
+"**char(x)** devuelve el carácter representado por el conjunto de caracteres "
+"ASCII en la posición `x`."
 
 #: ../../doc/src/intrinsics/character/char.md:71
 msgid "[achar](achar.md), [iachar](iachar.md), [ichar](ichar.md)"
-msgstr ""
+msgstr "[achar](achar.md), [iachar](iachar.md), [ichar](ichar.md)"
 
 #: ../../doc/src/intrinsics/character/len_trim.md:1
 msgid "len_trim(string): Length Ignoring Trailing Blanks"
