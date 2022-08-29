@@ -889,7 +889,8 @@ public:
                                         ::AttrPrivate) {
                                     assgnd_access[sym] = ASR::accessType::Private;
                                 } else if (sa->m_attr == AST::simple_attributeType
-                                        ::AttrPublic) {
+                                        ::AttrPublic || sa->m_attr == AST::simple_attributeType
+                                                ::AttrParameter) {
                                     assgnd_access[sym] = ASR::accessType::Public;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrOptional) {

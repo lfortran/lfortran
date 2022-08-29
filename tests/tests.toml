@@ -2250,6 +2250,7 @@ ast = true
 asr = true
 
 [[test]]
+
 filename = "loop_test1.f"
 ast = true
 asr = true
@@ -2259,3 +2260,6 @@ filename = "loop_test2.f"
 ast = true
 asr = true
 
+[[test]]
+filename = "parameter1.f90"
+asr = true
