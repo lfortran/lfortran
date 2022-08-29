@@ -1,9 +1,0 @@
-semantic error: Variable 'i' is not declared
-  --> tests/loop_test1.f:4:7 - 13:12
-   |
- 4 |          DO 330 I=1,KP
-   |          ^^^^^^^^^^^^^...
-...
-   |
-13 |          end program
-   | ...^^^^^^^^^^^^ 'i' is undeclared
