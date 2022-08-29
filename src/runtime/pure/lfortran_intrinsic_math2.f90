@@ -45,7 +45,7 @@ interface max
 end interface
 
 interface huge
-    module procedure i8huge, i16huge, i32huge, i64huge, sphuge, dphuge
+    module procedure i32huge, i64huge, sphuge, dphuge
 end interface
 
 contains
@@ -431,27 +431,15 @@ end function
 
 ! huge -------------------------------------------------------------------------
 
-elemental integer(i8) function i8huge(x) result(r)
-integer(i8), intent(in) :: x
-r = 127
-! r = 2**7 - 1
-end function
-
-elemental integer(i16) function i16huge(x) result(r)
-integer(i16), intent(in) :: x
-r = 32767
-! r = 2**15 - 1
-end function
-
 elemental integer(i32) function i32huge(x) result(r)
 integer(i32), intent(in) :: x
-r = 2147483647
+r = 2147483647_i32
 ! r = 2**31 - 1
 end function
 
 elemental integer(i64) function i64huge(x) result(r)
 integer(i64), intent(in) :: x
-r = 9223372036854775807
+r = 9223372036854775807_i64
 ! r = 2**63 - 1
 end function
 
