@@ -890,7 +890,8 @@ public:
                                     assgnd_access[sym] = ASR::accessType::Private;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrPublic || sa->m_attr == AST::simple_attributeType
-                                                ::AttrParameter) {
+                                                ::AttrParameter || sa->m_attr == AST::simple_attributeType
+                                                        ::AttrExternal) {
                                     assgnd_access[sym] = ASR::accessType::Public;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrOptional) {
@@ -2502,7 +2503,8 @@ public:
         return nullptr;
     }
 
-    void create_implicit_interface_function(const AST::FuncCallOrArray_t &x) {
+    template <class Call>
+    void create_implicit_interface_function(const Call &x, std::string func_name, bool add_return) {
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
@@ -2511,7 +2513,7 @@ public:
 
         Vec<ASR::expr_t*> args;
         args.reserve(al, x.n_args);
-        std::string sym_name = to_lower(x.m_func);
+        std::string sym_name = to_lower(func_name);
         for (size_t i=0; i<x.n_args; i++) {
             std::string arg_name = sym_name + "_arg_" + std::to_string(i);
             arg_name = to_lower(arg_name);
@@ -2527,15 +2529,18 @@ public:
         // currently hardcoding the return type to real-8
         ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
                                 8, nullptr, 0));
-        std::string return_var_name = sym_name + "_return_var_name";
-        ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
-            current_scope, s2c(al, return_var_name), LFortran::ASRUtils::intent_return_var, nullptr, nullptr,
-            ASR::storage_typeType::Default, type,
-            ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
-            false);
-        current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
-        ASR::asr_t *return_var_ref = ASR::make_Var_t(al, x.base.base.loc,
-            ASR::down_cast<ASR::symbol_t>(return_var));
+        ASR::expr_t *to_return = nullptr;
+        if (add_return) {
+            std::string return_var_name = sym_name + "_return_var_name";
+            ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
+                current_scope, s2c(al, return_var_name), LFortran::ASRUtils::intent_return_var, nullptr, nullptr,
+                ASR::storage_typeType::Default, type,
+                ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+                false);
+            current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
+            to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                ASR::down_cast<ASR::symbol_t>(return_var)));
+        }
 
         tmp = ASR::make_Function_t(
             al, x.base.base.loc,
@@ -2547,7 +2552,7 @@ public:
             /* n_type_parameters */ 0,
             /* a_body */ nullptr,
             /* n_body */ 0,
-            /* a_return_var */ ASRUtils::EXPR(return_var_ref),
+            /* a_return_var */ to_return,
             ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
@@ -2586,7 +2591,7 @@ public:
                 // Function Call is not defined in this case.
                 // We need to create an interface and add the Function into
                 // the symbol table.
-                create_implicit_interface_function(x);
+                create_implicit_interface_function(x, var_name, true);
                 v = current_scope->resolve_symbol(var_name);
                 LFORTRAN_ASSERT(v!=nullptr);
             }
