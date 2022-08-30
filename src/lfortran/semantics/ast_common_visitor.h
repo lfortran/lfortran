@@ -963,9 +963,9 @@ public:
                                         throw SemanticError("Type mismatch during data initialization",
                                             x.base.base.loc);
                                     }
-                                    ASR::expr_t* value_value = ASRUtils::expr_value(value);
-                                    if (value_value) {
-                                        body.push_back(al, value_value);
+                                    ASR::expr_t* expression_value = ASRUtils::expr_value(value);
+                                    if (expression_value) {
+                                        body.push_back(al, expression_value);
                                     } else {
                                         throw SemanticError("The value in data must be a constant",
                                             x.base.base.loc);
@@ -1006,9 +1006,16 @@ public:
                         // The `visit_expr` ensures it resolves as an expression
                         // which must be a `Var_t` pointing to a `Variable_t`,
                         // so no checks are needed:
+                        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                                                ASRUtils::expr_type(value), ASRUtils::expr_type(object));
+                        ASR::expr_t* expression_value = ASRUtils::expr_value(value);
+                        if (!expression_value) {
+                            throw SemanticError("The value in data must be a constant",
+                                x.base.base.loc);
+                        }
                         ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
                         ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
-                        v2->m_value = value;
+                        v2->m_value = expression_value;
                     }
                 } else {
                     throw SemanticError("Attribute declaration not supported",
