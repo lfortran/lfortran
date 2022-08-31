@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-29 23:56+0000\n"
+"PO-Revision-Date: 2022-09-01 06:50+0000\n"
 "Last-Translator: 左志华 <zuo.zhihua@qq.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "fortran-lang/lfortran-docs/zh_Hans/>\n"
@@ -4049,26 +4049,30 @@ msgid ""
 "Our goal is to have a comprehensive Fortran testsuite that can be used to"
 " test any Fortran compiler."
 msgstr ""
+"此页面是使用 [Compiler Tester](https://gitlab.com/lfortran/compiler_tester) "
+"存储库自动生成的，该存储库包含所有 Fortran 测试和脚本，用于运行 LFortran "
+"以生成下表。我们正在寻找贡献者来贡献更多的测试。我们的目标是拥有一个全面的 "
+"Fortran 测试套件，可用于测试任何 Fortran 编译器。"
 
 #: ../../doc/src/progress.md:23
 msgid "Testing the LFortran compiler version:"
-msgstr ""
+msgstr "测试 LFortran 编译器版本："
 
 #: ../../doc/src/progress.md:32
 msgid "Topics"
-msgstr ""
+msgstr "话题"
 
 #: ../../doc/src/progress.md:34
 msgid "Full programs that compute something interesting"
-msgstr ""
+msgstr "计算有趣事物的完整程序"
 
 #: ../../doc/src/progress.md:36
 msgid "Basic Numerics"
-msgstr ""
+msgstr "基本数值"
 
 #: ../../doc/src/progress.md:38
 msgid "Directory: `tests/programs/numerics`"
-msgstr ""
+msgstr "路径：`tests/programs/numerics`"
 
 #: ../../doc/src/progress.md
 msgid "LLVM"
@@ -4076,123 +4080,139 @@ msgstr "LLVM"
 
 #: ../../doc/src/progress.md
 msgid "BIN"
-msgstr ""
+msgstr "BIN"
 
 #: ../../doc/src/progress.md
 msgid "RUN"
-msgstr ""
+msgstr "RUN"
 
 #: ../../doc/src/progress.md
 msgid "Filename"
-msgstr ""
+msgstr "文件名"
 
 #: ../../doc/src/progress.md
 msgid "`Pure Fortran sin(x) implementation`"
-msgstr ""
+msgstr "`纯 Fortran sin(x) 实现`"
 
 #: ../../doc/src/progress.md
 msgid "✅"
-msgstr ""
+msgstr "✅"
 
 #: ../../doc/src/progress.md
 msgid "[t01_sin_implementation.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/programs/numerics/t01_sin_implementation.f90)"
 msgstr ""
+"[t01_sin_implementation.f90](https://gitlab.com/lfortran/compiler_tester/-/"
+"blob/master/tests/programs/numerics/t01_sin_implementation.f90)"
 
 #: ../../doc/src/progress.md:45
 msgid "Modules"
-msgstr ""
+msgstr "模块"
 
 #: ../../doc/src/progress.md:47
 msgid "Basic Usage"
-msgstr ""
+msgstr "基本用法"
 
 #: ../../doc/src/progress.md:49
 msgid "Directory: `tests/modules/basic`"
-msgstr ""
+msgstr "路径：`tests/modules/basic`"
 
 #: ../../doc/src/progress.md
 msgid "`Basic modules`"
-msgstr ""
+msgstr "`基本模块`"
 
 #: ../../doc/src/progress.md
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/basic/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"modules/basic/t01.f90)"
 
 #: ../../doc/src/progress.md:56
 msgid "Module Functions and Subroutines"
-msgstr ""
+msgstr "模块函数和子程序"
 
 #: ../../doc/src/progress.md:58
 msgid "Directory: `tests/modules/procedures`"
-msgstr ""
+msgstr "路径：`tests/modules/procedures`"
 
 #: ../../doc/src/progress.md
 msgid "`Module functions`"
-msgstr ""
+msgstr "`模块函数`"
 
 #: ../../doc/src/progress.md
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/procedures/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"modules/procedures/t01.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`Module subroutines`"
-msgstr ""
+msgstr "`模块子程序`"
 
 #: ../../doc/src/progress.md
 msgid "[t02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/procedures/t02.f90)"
 msgstr ""
+"[t02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"modules/procedures/t02.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`Nested subroutines`"
-msgstr ""
+msgstr "`嵌套子程序`"
 
 #: ../../doc/src/progress.md
 msgid "[t03.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/procedures/t03.f90)"
 msgstr ""
+"[t03.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"modules/procedures/t03.f90)"
 
 #: ../../doc/src/progress.md:67
 msgid "Expressions"
-msgstr ""
+msgstr "表达式"
 
 #: ../../doc/src/progress.md:69
 msgid "Arithmetic Operations"
-msgstr ""
+msgstr "算术运算"
 
 #: ../../doc/src/progress.md:71
 msgid "Directory: `tests/expressions/arit`"
-msgstr ""
+msgstr "路径：`tests/expressions/arit`"
 
 #: ../../doc/src/progress.md
 msgid "`+,-,*,/,**`"
-msgstr ""
+msgstr "`+,-,*,/,**`"
 
 #: ../../doc/src/progress.md
 msgid "[basic_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/arit/basic_operations.f90)"
 msgstr ""
+"[basic_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/expressions/arit/basic_operations.f90)"
 
 #: ../../doc/src/progress.md:78
 msgid "Integers"
-msgstr ""
+msgstr "整型"
 
 #: ../../doc/src/progress.md:80
 msgid "Directory: `tests/expressions/integers`"
-msgstr ""
+msgstr "路径：`tests/expressions/integers`"
 
 #: ../../doc/src/progress.md
 msgid "`integers`"
-msgstr ""
+msgstr "`整型`"
 
 #: ../../doc/src/progress.md
 msgid "[integer_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/integers/integer_kind.f90)"
 msgstr ""
+"[integer_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/expressions/integers/integer_kind.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`relational operations`"
-msgstr ""
+msgstr "`关系运算`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_rel_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/integers/t01_rel_operations.f90)"
 msgstr ""
+"[t01_rel_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/expressions/integers/t01_rel_operations.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`logical operations`"
@@ -4212,11 +4232,13 @@ msgstr ""
 
 #: ../../doc/src/progress.md
 msgid "`single/double reals`"
-msgstr ""
+msgstr "`单/双精度实数`"
 
 #: ../../doc/src/progress.md
 msgid "[real_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/reals/real_kind.f90)"
 msgstr ""
+"[real_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/expressions/reals/real_kind.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`defined operator`"
@@ -4224,7 +4246,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md
 msgid "❌"
-msgstr ""
+msgstr "❌"
 
 #: ../../doc/src/progress.md
 msgid "[t01_def_op.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/reals/t01_def_op.f90)"
@@ -4269,6 +4291,8 @@ msgstr ""
 #: ../../doc/src/progress.md
 msgid "[t02_concat_operation.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/character/t02_concat_operation.f90)"
 msgstr ""
+"[t02_concat_operation.f90](https://gitlab.com/lfortran/compiler_tester/-/"
+"blob/master/tests/expressions/character/t02_concat_operation.f90)"
 
 #: ../../doc/src/progress.md:118
 msgid "Derived Types"
@@ -4276,15 +4300,17 @@ msgstr ""
 
 #: ../../doc/src/progress.md:120
 msgid "Directory: `tests/expressions/derived_type`"
-msgstr ""
+msgstr "路径：`tests/expressions/derived_type`"
 
 #: ../../doc/src/progress.md
 msgid "`basic derived types`"
-msgstr ""
+msgstr "`基本派生类型`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_derived_type.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/derived_type/t01_derived_type.f90)"
 msgstr ""
+"[t01_derived_type.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/expressions/derived_type/t01_derived_type.f90)"
 
 #: ../../doc/src/progress.md:127
 msgid "Statements"
@@ -4296,7 +4322,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md:131
 msgid "Directory: `tests/statements/allocate`"
-msgstr ""
+msgstr "路径：`tests/statements/allocate`"
 
 #: ../../doc/src/progress.md
 msgid "`allocate statement`"
@@ -4312,7 +4338,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md:140
 msgid "Directory: `tests/statements/block`"
-msgstr ""
+msgstr "路径：`tests/statements/block`"
 
 #: ../../doc/src/progress.md
 msgid "`block statement`"
@@ -4328,7 +4354,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md:149
 msgid "Directory: `tests/statements/goto`"
-msgstr ""
+msgstr "路径：`tests/statements/goto`"
 
 #: ../../doc/src/progress.md
 msgid "`computed go-to statement`"
@@ -4352,311 +4378,387 @@ msgstr ""
 
 #: ../../doc/src/progress.md:159
 msgid "Directory: `tests/statements/if`"
-msgstr ""
+msgstr "路径：`tests/statements/if`"
 
 #: ../../doc/src/progress.md
 msgid "`Test .false.`"
-msgstr ""
+msgstr "`Test .false.`"
 
 #: ../../doc/src/progress.md
 msgid "[if_01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_01.f90)"
 msgstr ""
+"[if_01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/if/if_01.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`single line if statement`"
-msgstr ""
+msgstr "`单行 if 语句`"
 
 #: ../../doc/src/progress.md
 msgid "[if_02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_02.f90)"
 msgstr ""
+"[if_02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/if/if_02.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`multi line if statement`"
-msgstr ""
+msgstr "`多行 if 语句`"
 
 #: ../../doc/src/progress.md
 msgid "[if_03.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_03.f90)"
 msgstr ""
+"[if_03.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/if/if_03.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`nested if statements`"
-msgstr ""
+msgstr "`嵌套的 if 语句`"
 
 #: ../../doc/src/progress.md
 msgid "[if_04.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_04.f90)"
 msgstr ""
+"[if_04.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/if/if_04.f90)"
 
 #: ../../doc/src/progress.md:169
 msgid "While Statement"
-msgstr ""
+msgstr "While 语句"
 
 #: ../../doc/src/progress.md:171
 msgid "Directory: `tests/statements/while`"
-msgstr ""
+msgstr "路径：`tests/statements/while`"
 
 #: ../../doc/src/progress.md
 msgid "`Simple while loops`"
-msgstr ""
+msgstr "`简单的 while 循环`"
 
 #: ../../doc/src/progress.md
 msgid "[while_01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/while/while_01.f90)"
 msgstr ""
+"[while_01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/statements/while/while_01.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`exit / cycle in while loops`"
-msgstr ""
+msgstr "`从 while 循环退出/跳过`"
 
 #: ../../doc/src/progress.md
 msgid "[while_02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/while/while_02.f90)"
 msgstr ""
+"[while_02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/statements/while/while_02.f90)"
 
 #: ../../doc/src/progress.md:179
 msgid "Print Statement"
-msgstr ""
+msgstr "Print 声明"
 
 #: ../../doc/src/progress.md:181
 msgid "Directory: `tests/statements/print`"
-msgstr ""
+msgstr "路径：`tests/statements/print`"
 
 #: ../../doc/src/progress.md
 msgid "`Basic print`"
-msgstr ""
+msgstr "`基本 Print`"
 
 #: ../../doc/src/progress.md
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/print/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/print/t01.f90)"
 
 #: ../../doc/src/progress.md:188
 msgid "Open, Read, Write, Close Statement"
-msgstr ""
+msgstr "Open、Read、Write、Close语句"
 
 #: ../../doc/src/progress.md:190
 msgid "Directory: `tests/statements/file_io`"
-msgstr ""
+msgstr "路径：`tests/statements/file_io`"
 
 #: ../../doc/src/progress.md
 msgid "`open/read/write/close`"
-msgstr ""
+msgstr "`open/read/write/close`"
 
 #: ../../doc/src/progress.md
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/file_io/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/file_io/t01.f90)"
 
 #: ../../doc/src/progress.md:197
 msgid "Intrinsic Functions"
-msgstr ""
+msgstr "内置函数"
 
 #: ../../doc/src/progress.md:199
 msgid "abs"
-msgstr ""
+msgstr "abs"
 
 #: ../../doc/src/progress.md:201
 msgid "Directory: `tests/intrinsic/abs`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/abs`"
 
 #: ../../doc/src/progress.md
 msgid "`scalar single/double real`"
-msgstr ""
+msgstr "`scalar single/double real`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/abs/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/abs/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`scalar single/double complex`"
-msgstr ""
+msgstr "`scalar single/double complex`"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/abs/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/abs/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`array 1D single/double real`"
-msgstr ""
+msgstr "`array 1D single/double real`"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/abs/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/abs/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:210
 msgid "exp"
-msgstr ""
+msgstr "exp"
 
 #: ../../doc/src/progress.md:212
 msgid "Directory: `tests/intrinsic/exp`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/exp`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/exp/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/exp/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/exp/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/exp/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/exp/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/exp/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:221
 msgid "log"
-msgstr ""
+msgstr "log"
 
 #: ../../doc/src/progress.md:223
 msgid "Directory: `tests/intrinsic/log`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/log`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/log/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/log/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/log/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/log/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/log/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/log/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:232
 msgid "sqrt"
-msgstr ""
+msgstr "sqrt"
 
 #: ../../doc/src/progress.md:234
 msgid "Directory: `tests/intrinsic/sqrt`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/sqrt`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sqrt/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sqrt/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sqrt/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sqrt/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sqrt/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sqrt/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:243
 msgid "sin"
-msgstr ""
+msgstr "sin"
 
 #: ../../doc/src/progress.md:245
 msgid "Directory: `tests/intrinsic/sin`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/sin`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sin/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sin/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sin/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sin/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sin/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sin/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:254
 msgid "cos"
-msgstr ""
+msgstr "cos"
 
 #: ../../doc/src/progress.md:256
 msgid "Directory: `tests/intrinsic/cos`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/cos`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cos/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cos/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cos/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cos/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cos/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cos/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:265
 msgid "tan"
-msgstr ""
+msgstr "tan"
 
 #: ../../doc/src/progress.md:267
 msgid "Directory: `tests/intrinsic/tan`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/tan`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tan/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tan/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tan/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tan/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tan/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tan/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:276
 msgid "sinh"
-msgstr ""
+msgstr "sinh"
 
 #: ../../doc/src/progress.md:278
 msgid "Directory: `tests/intrinsic/sinh`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/sinh`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sinh/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sinh/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sinh/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sinh/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sinh/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sinh/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:287
 msgid "cosh"
-msgstr ""
+msgstr "cosh"
 
 #: ../../doc/src/progress.md:289
 msgid "Directory: `tests/intrinsic/cosh`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/cosh`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cosh/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cosh/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cosh/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cosh/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cosh/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cosh/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:298
 msgid "tanh"
-msgstr ""
+msgstr "tanh"
 
 #: ../../doc/src/progress.md:300
 msgid "Directory: `tests/intrinsic/tanh`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/tanh`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tanh/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tanh/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tanh/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tanh/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tanh/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tanh/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:309
 msgid "asin"
@@ -4664,19 +4766,25 @@ msgstr "asin"
 
 #: ../../doc/src/progress.md:311
 msgid "Directory: `tests/intrinsic/asin`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/asin`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/asin/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/asin/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/asin/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/asin/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/asin/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/asin/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:320
 msgid "acos"
@@ -4684,139 +4792,171 @@ msgstr "acos"
 
 #: ../../doc/src/progress.md:322
 msgid "Directory: `tests/intrinsic/acos`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/acos`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/acos/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/acos/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/acos/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/acos/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/acos/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/acos/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:331
 msgid "atan"
-msgstr ""
+msgstr "atan"
 
 #: ../../doc/src/progress.md:333
 msgid "Directory: `tests/intrinsic/atan`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/atan`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/atan/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/atan/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/atan/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/atan/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/atan/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/atan/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:342
 msgid "modulo"
-msgstr ""
+msgstr "modulo"
 
 #: ../../doc/src/progress.md:344
 msgid "Directory: `tests/intrinsic/modulo`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/modulo`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/modulo/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/modulo/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/modulo/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/modulo/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:352
 msgid "mod"
-msgstr ""
+msgstr "mod"
 
 #: ../../doc/src/progress.md:354
 msgid "Directory: `tests/intrinsic/mod`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/mod`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/mod/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/mod/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/mod/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/mod/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:362
 msgid "min"
-msgstr ""
+msgstr "min"
 
 #: ../../doc/src/progress.md:364
 msgid "Directory: `tests/intrinsic/min`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/min`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/min/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/min/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:371
 msgid "max"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/min/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:373
 msgid "Directory: `tests/intrinsic/max`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/max`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/max/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/max/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:380
 msgid "int"
-msgstr ""
+msgstr "int"
 
 #: ../../doc/src/progress.md:382
 msgid "Directory: `tests/intrinsic/int`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/int`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/int/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/int/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:389
 msgid "real"
-msgstr ""
+msgstr "real"
 
 #: ../../doc/src/progress.md:391
 msgid "Directory: `tests/intrinsic/real`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/real`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/real/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/real/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:398
 msgid "floor"
-msgstr ""
+msgstr "floor"
 
 #: ../../doc/src/progress.md:400
 msgid "Directory: `tests/intrinsic/floor`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/floor`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/floor/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/floor/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:407
 msgid "nint"
-msgstr ""
+msgstr "nint"
 
 #: ../../doc/src/progress.md:409
 msgid "Directory: `tests/intrinsic/nint`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/nint`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/nint/t01_scalar_real.f90)"
