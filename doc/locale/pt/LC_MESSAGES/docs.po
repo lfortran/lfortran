@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-27 14:18+0000\n"
+"PO-Revision-Date: 2022-09-01 08:03+0000\n"
 "Last-Translator: Ian Giestas Pauli <iangiestaspauli@gmail.com>\n"
 "Language-Team: Portuguese <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/pt/>\n"
@@ -357,11 +357,11 @@ msgstr ""
 
 #: ../../doc/src/contributing.md:183
 msgid "The section is tested with `lfortran --show-asr examples/expr2.f90`"
-msgstr ""
+msgstr "A seção é testada com `lfortran --show-asr examples/expr2.f90`"
 
 #: ../../doc/src/contributing.md:184
 msgid "Implement the New Token in LLVM"
-msgstr ""
+msgstr "Implemente o Novo Token no LLVM"
 
 #: ../../doc/src/contributing.md:186
 msgid ""
@@ -369,22 +369,27 @@ msgid ""
 " operator. We first add the two numbers then divide by two. :fontawesome-"
 "solid-code:*src/lfortran/codegen/asr_to_llvm.cpp*"
 msgstr ""
+"Para implementá-lo no LLVM estendemos a tradução da BinOp (operação binária) "
+"para o novo operador. Primeiro adicionamos os dois números e depois "
+"dividimos por dois. :fontawesome-solid-code:*src/lfortran/codegen/asr_to_llvm"
+".cpp*"
 
 #: ../../doc/src/contributing.md:217
 msgid "The section is tested with `lfortran --show-llvm examples/expr2.f90`"
-msgstr ""
+msgstr "Esta seção é testada usando `lfortran --show-llvm examples/expr2.f90`"
 
 #: ../../doc/src/contributing.md:219
 msgid "Now when LLVM works, we can test the final executable by:"
 msgstr ""
+"Agora que o LLVM funciona, podemos finalmente testar o executável usando:"
 
 #: ../../doc/src/contributing.md:224
 msgid "And it should print 6."
-msgstr ""
+msgstr "O que deve mostrar na tela 6."
 
 #: ../../doc/src/contributing.md:226
 msgid "It also works interactively:"
-msgstr ""
+msgstr "Também funciona interativamente:"
 
 #: ../../doc/src/contributing.md:242
 msgid "Reach Out"
@@ -2261,7 +2266,7 @@ msgstr ""
 
 #: ../../doc/src/intrinsics/bit/btest.md:3
 msgid "Bit test."
-msgstr ""
+msgstr "Teste de bit."
 
 #: ../../doc/src/intrinsics/bit/btest.md:16
 msgid ""
@@ -3870,7 +3875,7 @@ msgstr "Tópicos"
 
 #: ../../doc/src/progress.md:34
 msgid "Full programs that compute something interesting"
-msgstr ""
+msgstr "Programas completos em que fazemos cálculo de algo interessante"
 
 #: ../../doc/src/progress.md:36
 msgid "Basic Numerics"
@@ -3878,7 +3883,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md:38
 msgid "Directory: `tests/programs/numerics`"
-msgstr ""
+msgstr "Diretório: `tests/programs/numerics`"
 
 #: ../../doc/src/progress.md
 msgid "LLVM"
@@ -3900,7 +3905,7 @@ msgstr "Nome do arquivo"
 
 #: ../../doc/src/progress.md
 msgid "`Pure Fortran sin(x) implementation`"
-msgstr ""
+msgstr "`Implementação em Fortran puro de sin(x)`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -3920,11 +3925,11 @@ msgstr "Módulos"
 
 #: ../../doc/src/progress.md:47
 msgid "Basic Usage"
-msgstr ""
+msgstr "Utilização básica"
 
 #: ../../doc/src/progress.md:49
 msgid "Directory: `tests/modules/basic`"
-msgstr ""
+msgstr "Diretório: `tests/modules/basic`"
 
 #: ../../doc/src/progress.md
 msgid "`Basic modules`"
@@ -3939,7 +3944,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md:56
 msgid "Module Functions and Subroutines"
-msgstr ""
+msgstr "Sub-rotinas e Funções dos Módulos"
 
 #: ../../doc/src/progress.md:58
 msgid "Directory: `tests/modules/procedures`"
@@ -4241,7 +4246,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md
 msgid "`single line if statement`"
-msgstr ""
+msgstr "`comando if na mesma linha`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4252,7 +4257,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md
 msgid "`multi line if statement`"
-msgstr ""
+msgstr "`comando if ao longo de várias linhas`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4293,7 +4298,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md
 msgid "`exit / cycle in while loops`"
-msgstr ""
+msgstr "`exit / cycle em laços while`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
