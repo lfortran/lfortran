@@ -9,7 +9,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
 "PO-Revision-Date: 2022-09-01 06:50+0000\n"
-"Last-Translator: 左志华 <zuo.zhihua@qq.com>\n"
+"Last-Translator: Ys413 <2020172007@stu.mdjnu.edu.cn>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "fortran-lang/lfortran-docs/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -4216,19 +4216,21 @@ msgstr ""
 
 #: ../../doc/src/progress.md
 msgid "`logical operations`"
-msgstr ""
+msgstr "`逻辑运算`"
 
 #: ../../doc/src/progress.md
 msgid "[t02_logical_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/integers/t02_logical_operations.f90)"
 msgstr ""
+"[t02_logical_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/"
+"blob/master/tests/expressions/integers/t02_logical_operations.f90)"
 
 #: ../../doc/src/progress.md:89
 msgid "Real Numbers"
-msgstr ""
+msgstr "实数"
 
 #: ../../doc/src/progress.md:91
 msgid "Directory: `tests/expressions/reals`"
-msgstr ""
+msgstr "目录：`tests/expressions/reals`"
 
 #: ../../doc/src/progress.md
 msgid "`single/double reals`"
@@ -4242,7 +4244,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md
 msgid "`defined operator`"
-msgstr ""
+msgstr "`定义的运算符`"
 
 #: ../../doc/src/progress.md
 msgid "❌"
@@ -4251,42 +4253,48 @@ msgstr "❌"
 #: ../../doc/src/progress.md
 msgid "[t01_def_op.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/reals/t01_def_op.f90)"
 msgstr ""
+"[t01_def_op.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/expressions/reals/t01_def_op.f90)"
 
 #: ../../doc/src/progress.md:99
 msgid "Complex Numbers"
-msgstr ""
+msgstr "复数"
 
 #: ../../doc/src/progress.md:101
 msgid "Directory: `tests/expressions/complex`"
-msgstr ""
+msgstr "目录：`tests/expressions/complex`"
 
 #: ../../doc/src/progress.md
 msgid "`single/double complex`"
-msgstr ""
+msgstr "`单/双复数`"
 
 #: ../../doc/src/progress.md
 msgid "[complex_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/complex/complex_kind.f90)"
 msgstr ""
+"[complex_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/expressions/complex/complex_kind.f90)"
 
 #: ../../doc/src/progress.md:108
 msgid "Strings"
-msgstr ""
+msgstr "字符串"
 
 #: ../../doc/src/progress.md:110
 msgid "Directory: `tests/expressions/character`"
-msgstr ""
+msgstr "目录：`tests/expressions/character`"
 
 #: ../../doc/src/progress.md
 msgid "`character`"
-msgstr ""
+msgstr "`字符`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_character.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/character/t01_character.f90)"
 msgstr ""
+"[t01_character.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/expressions/character/t01_character.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`string concatenation`"
-msgstr ""
+msgstr "`字符串连接`"
 
 #: ../../doc/src/progress.md
 msgid "[t02_concat_operation.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/character/t02_concat_operation.f90)"
@@ -4296,7 +4304,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md:118
 msgid "Derived Types"
-msgstr ""
+msgstr "派生类型"
 
 #: ../../doc/src/progress.md:120
 msgid "Directory: `tests/expressions/derived_type`"
@@ -4314,11 +4322,11 @@ msgstr ""
 
 #: ../../doc/src/progress.md:127
 msgid "Statements"
-msgstr ""
+msgstr "声明"
 
 #: ../../doc/src/progress.md:129
 msgid "Allocate Statement"
-msgstr ""
+msgstr "分配语句"
 
 #: ../../doc/src/progress.md:131
 msgid "Directory: `tests/statements/allocate`"
@@ -4326,15 +4334,17 @@ msgstr "路径：`tests/statements/allocate`"
 
 #: ../../doc/src/progress.md
 msgid "`allocate statement`"
-msgstr ""
+msgstr "`分配语句`"
 
 #: ../../doc/src/progress.md
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/allocate/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/allocate/t01.f90)"
 
 #: ../../doc/src/progress.md:138
 msgid "Block Statement"
-msgstr ""
+msgstr "块语句"
 
 #: ../../doc/src/progress.md:140
 msgid "Directory: `tests/statements/block`"
@@ -4342,15 +4352,17 @@ msgstr "路径：`tests/statements/block`"
 
 #: ../../doc/src/progress.md
 msgid "`block statement`"
-msgstr ""
+msgstr "`块语句`"
 
 #: ../../doc/src/progress.md
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/block/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/block/t01.f90)"
 
 #: ../../doc/src/progress.md:147
 msgid "Goto Statement"
-msgstr ""
+msgstr "转到语句"
 
 #: ../../doc/src/progress.md:149
 msgid "Directory: `tests/statements/goto`"
@@ -4358,23 +4370,27 @@ msgstr "路径：`tests/statements/goto`"
 
 #: ../../doc/src/progress.md
 msgid "`computed go-to statement`"
-msgstr ""
+msgstr "`计算的首选语句`"
 
 #: ../../doc/src/progress.md
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/goto/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/goto/t01.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`go-to statement`"
-msgstr ""
+msgstr "`首选声明`"
 
 #: ../../doc/src/progress.md
 msgid "[t02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/goto/t02.f90)"
 msgstr ""
+"[t02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/goto/t02.f90)"
 
 #: ../../doc/src/progress.md:157
 msgid "If Statement"
-msgstr ""
+msgstr "如果语句"
 
 #: ../../doc/src/progress.md:159
 msgid "Directory: `tests/statements/if`"
