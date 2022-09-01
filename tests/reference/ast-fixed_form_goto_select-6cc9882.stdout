@@ -1,0 +1,1 @@
+(TranslationUnit [(Program main () [] [] [(Declaration (AttrType TypeInteger [] () None) [] [(k [] [] () None ())] ()) (Declaration (AttrType TypeInteger [] () None) [] [(m [] [] () None ()) (n [] [] () None ())] ())] [(= 0 k 1 ()) (Print 100 () [(String "hello")] ()) (= 200 k (+ k 1) ()) (= 0 m 1 ()) (= 0 n 2 ()) (GoTo 0 () m [200 100] ()) (GoTo 0 () n [100 200] ())] [])])

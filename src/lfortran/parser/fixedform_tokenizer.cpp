@@ -704,7 +704,10 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
-        if (next_is(cur, "goto")) {
+        // `GOTO (X,Z,Y) M` translates to (roughly)
+        // `IF (M .EQ. 1) THEN;  GOTO X; ELSE IF (M .EQ. 2) GOTO Z; IF (M .EQ. 3) GOTO Y; ENDIF`
+        if (next_is(cur, "goto(")) {
+            // lex_goto_select(cur);
             tokenize_line("", cur);
             return true;
         }
@@ -712,6 +715,11 @@ struct FixedFormRecursiveDescent {
         // careful addition -- `IF` and `DO` terminals are `CONTINUE`, too
         if (next_is(cur, "continue")) {
             tokenize_line("continue", cur);
+            return true;
+        }
+
+        if (next_is(cur, "goto")) {
+            tokenize_line("goto", cur);
             return true;
         }
 

@@ -1,6 +1,10 @@
       program main 
       integer KP
       kp =10
+<<<<<<< HEAD
+=======
+      integer i,j
+>>>>>>> gh-main/main
       DO 330 I=1,KP
          DO 320 J=I+1,KP
             IF (0.GT.1) THEN

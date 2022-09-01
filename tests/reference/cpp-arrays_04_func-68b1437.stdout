@@ -1,3 +1,5 @@
+fname sum
+fname abs
 #include <iostream>
 #include <string>
 #include <vector>

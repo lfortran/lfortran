@@ -1,3 +1,5 @@
+fname apply
+fname add_z
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 

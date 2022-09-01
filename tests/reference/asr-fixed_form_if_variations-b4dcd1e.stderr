@@ -1,0 +1,9 @@
+syntax error: Newline is unexpected here
+  --> tests/fixed_form_if_variations.f:20:29 - 21:7
+   |
+20 |              if (0<1) call f(2)
+   |                                ...
+...
+   |
+21 |          end program
+   | ...^^^^^^^ 

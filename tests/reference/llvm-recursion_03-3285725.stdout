@@ -1,3 +1,7 @@
+fname solver_caller
+fname solver
+fname sub1
+fname getx
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 

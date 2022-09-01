@@ -1,3 +1,6 @@
+fname greater_than_inverse
+fname less_than_inverse
+fname less_than_overload_use
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 

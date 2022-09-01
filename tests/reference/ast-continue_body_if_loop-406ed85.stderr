@@ -1,0 +1,5 @@
+tokenizer error: Expecting terminating symbol for program
+ --> tests/continue_body_if_loop.f:9:8
+  |
+9 |        STOP 
+  |        ^ 

@@ -1,3 +1,5 @@
+fname sum
+fname abs
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
