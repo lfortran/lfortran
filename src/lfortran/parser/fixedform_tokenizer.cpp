@@ -803,14 +803,15 @@ struct FixedFormRecursiveDescent {
             }
         }
         if (next_is(cur, "enddo")) {
+            // end one nesting of loop
             insert_enddo();
             next_line(cur);
             do_levels--;
             return true;
         } else if (label_match && next_is(cur, "continue") && all_labels_match(label)) {
+            // end entire loop nesting with single `CONTINUE`
             // the usual terminal statement for do loops
             tokenize_line("continue", cur);
-            //only append iff (tokens[tokens.size()-2] == yytokentype::TK_LABEL && tokens[tokens.size()-1 == yytokentype::KW_CONTINUE])
             for (int i=0;i<do_levels;++i)
                 insert_enddo();
             if (label_match && do_levels > 1) abort_loop = true;
@@ -818,7 +819,12 @@ struct FixedFormRecursiveDescent {
             do_labels.clear();
             return true;
         } else if (label_match) {
-            lex_body_statement(cur);
+            // end one nesting of loop 
+            if (next_is(cur, "continue")) {
+                tokenize_line("continue", cur);
+            } else {
+                lex_body_statement(cur);
+            }
             insert_enddo();
             do_levels--;
             return true;
