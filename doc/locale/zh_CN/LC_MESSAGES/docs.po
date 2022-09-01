@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-09-01 06:50+0000\n"
-"Last-Translator: Ys413 <2020172007@stu.mdjnu.edu.cn>\n"
+"PO-Revision-Date: 2022-09-01 08:03+0000\n"
+"Last-Translator: 左志华 <zuo.zhihua@qq.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "fortran-lang/lfortran-docs/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -102,8 +102,8 @@ msgid ""
 " do, it is not complicated. We will help you with any technical issues "
 "and help improve your contribution so that it can be merged."
 msgstr ""
-"我们欢迎任何人的贡献，即使您是开源新手。起初为编译器做贡献可能听起来令人生畏"
-"，但可以尝试去做，这并不复杂。我们将帮助您解决任何技术问题并帮助改进您的贡献"
+"我们欢迎任何人的贡献，即使你是开源新手。起初为编译器做贡献可能听起来令人生畏"
+"，但可以尝试去做，这并不复杂。我们将帮助你解决任何技术问题并帮助改进你的贡献"
 "，以便将其合并。"
 
 #: ../../doc/src/contributing.md:8
@@ -112,11 +112,11 @@ msgstr "基本设置"
 
 #: ../../doc/src/contributing.md:10
 msgid "To contribute, make sure your set up:"
-msgstr "要做出贡献，请确保您的设置："
+msgstr "要做出贡献，请确保你的设置："
 
 #: ../../doc/src/contributing.md:12
 msgid "Your username + email"
-msgstr "您的用户名 + 电子邮件"
+msgstr "你的用户名 + 电子邮件"
 
 #: ../../doc/src/contributing.md:13
 msgid "Your `~/.gitconfig`"
@@ -124,7 +124,7 @@ msgstr "你的 `~/.gitconfig`"
 
 #: ../../doc/src/contributing.md:14
 msgid "Your shell prompt to display the current branch name"
-msgstr "您的 shell 提示显示当前分支名称"
+msgstr "你的 shell 提示显示当前分支名称"
 
 #: ../../doc/src/contributing.md:16
 msgid "Fork LFortran"
@@ -141,14 +141,14 @@ msgid ""
 "Step 2. Set up your [SSH key](https://docs.github.com/en/authentication"
 "/connecting-to-github-with-ssh) with GitHub"
 msgstr ""
-"步骤 2. 使用 GitHub 设置您的 [SSH 密钥](https://docs.github.com/en/"
+"步骤 2. 使用 GitHub 设置你的 [SSH 密钥](https://docs.github.com/en/"
 "authentication/connecting-to-github-with-ssh)"
 
 #: ../../doc/src/contributing.md:22
 msgid ""
 "Step 3. Clone the project repository from GitHub and set up your remote "
 "repository"
-msgstr "步骤 3. 从 GitHub 克隆项目存储库并设置您的远程存储库"
+msgstr "步骤 3. 从 GitHub 克隆项目存储库并设置你的远程存储库"
 
 #: ../../doc/src/contributing.md:29
 msgid ""
@@ -162,14 +162,14 @@ msgid ""
 ":fontawesome-solid-edit: `YOUR_GITHUB_ID` is your user ID on GitHub and "
 "should be part of your account path."
 msgstr ""
-":fontawesome-solid-edit: `YOUR_GITHUB_ID` 是您在 GitHub 上的用户 "
-"ID，应该是您帐户路径的一部分。"
+":fontawesome-solid-edit: `YOUR_GITHUB_ID` 是你在 GitHub 上的用户 "
+"ID，应该是你帐户路径的一部分。"
 
 #: ../../doc/src/contributing.md:33
 msgid ""
 "You can use `git remote -v` to check if the new remote is set up "
 "correctly."
-msgstr "您可以使用 `git remote -v` 检查新远程地址是否设置正确。"
+msgstr "你可以使用 `git remote -v` 检查新远程地址是否设置正确。"
 
 #: ../../doc/src/contributing.md:35
 msgid "Send a New Merge Request"
@@ -196,7 +196,7 @@ msgstr "[这里](https://chris.beams.io/posts/git-commit/) "
 
 #: ../../doc/src/contributing.md:53
 msgid "Step 4. Check to ensure that your changes look good"
-msgstr "第 4 步：检查以确保您的更改看起来不错"
+msgstr "第 4 步：检查以确保你的更改看起来不错"
 
 #: ../../doc/src/contributing.md:58
 msgid "Step 5. Send the merge request"
@@ -211,7 +211,7 @@ msgid ""
 " the \"Create\" button. Yay you are now all set."
 msgstr ""
 "该命令会将新分支 `fix1` 推送到您之前创建的远程存储库 `REMOTE_NAME` 中。此外，"
-"它还将显示一个链接，您可以单击该链接以打开新的合并请求。单击链接后，写下标题"
+"它还将显示一个链接，你可以单击该链接以打开新的合并请求。单击链接后，写下标题"
 "和简明描述，然后单击 `创建` 按钮。是的，你现在一切就绪。"
 
 #: ../../doc/src/contributing.md:66
@@ -368,7 +368,7 @@ msgid ""
 "[mailinglist](https://groups.io/g/lfortran) or a "
 "[chat](https://lfortran.zulipchat.com/)."
 msgstr ""
-"如果您有任何问题或需要帮助，请通过我们的 [mailinglist](https://groups.io/g/"
+"如果你有任何问题或需要帮助，请通过我们的 [mailinglist](https://groups.io/g/"
 "lfortran) 或 [chat](https://lfortran.zulipchat.com/) 提问。"
 
 #: ../../doc/src/contributing.md:248
@@ -378,7 +378,7 @@ msgid ""
 "by its terms. See "
 "[CODE_OF_CONDUCT.md](https://github.com/lfortran/lfortran/blob/main/CODE_OF_CONDUCT.md)."
 msgstr ""
-"请注意，该项目的所有参与者都应遵守我们的行为准则。参与本项目即表示您同意遵守"
+"请注意，该项目的所有参与者都应遵守我们的行为准则。参与本项目即表示你同意遵守"
 "其条款。请参阅 [CODE_OF_CONDUCT.md](https://github.com/lfortran/lfortran/"
 "blob/main/CODE_OF_CONDUCT.md)。"
 
@@ -389,8 +389,8 @@ msgid ""
 "[license](https://github.com/lfortran/lfortran/blob/main/LICENSE) unless "
 "explicitly noted otherwise."
 msgstr ""
-"通过提交 PR，您同意根据 LFortran 的 BSD [许可](https://github.com/lfortran/"
-"lfortran/blob/main/LICENSE) 许可您的贡献，除非另有明确说明。"
+"通过提交 PR，你同意根据 LFortran 的 BSD [许可](https://github.com/lfortran/"
+"lfortran/blob/main/LICENSE) 许可你的贡献，除非另有明确说明。"
 
 #: ../../doc/src/design.md:1
 msgid "LFortran Design"
@@ -628,7 +628,7 @@ msgstr ""
 "变量，如果这是一个接口，则需要指定在哪里可以找到实现，否则为body 提供了语句，"
 "这些节点与 AST 中的几乎相同，除了每个变量只是对符号表中的符号的引用（因此通过"
 "构造一个不能有未定义的变量）。每个节点（例如 Function 或 "
-"Module）的符号表也引用其父节点（例如，函数引用模块，模块引用全局范围）。"
+"Module）的符号表也引用其父节点（例如，函数引用模块，模块引用全局作用域）。"
 
 #: ../../doc/src/design.md:102
 msgid ""
@@ -692,9 +692,9 @@ msgid ""
 "statements, declarations, use statements and expressions. We define "
 "_global scope_ as a collection of the following items:"
 msgstr ""
-"我们通过引入_全局范围_来扩展 Fortran 语言，它不仅是_程序单元_列表（如 F2008 "
-"中），还可以包括语句、声明、使用语句和表达式。我们将_全局范围_定义为以下项目"
-"的集合："
+"我们通过引入_全局作用域_来扩展 Fortran 语言，它不仅是_程序单元_列表（如 "
+"F2008 中），还可以包括语句、声明、使用语句和表达式。我们将_全局作用域_定义为"
+"以下项目的集合："
 
 #: ../../doc/src/design.md:134
 msgid "use statement"
@@ -723,7 +723,7 @@ msgid ""
 msgstr ""
 "此外，如果变量没有在赋值语句中定义（例如`x = "
 "5+3`），则从右侧推断变量的类型（例如，`x` in `x = 5+3 ` 将是 `integer` 类型，"
-"而 `y = 5._dp` 中的 `y` 将是 `real(dp)` 类型）。此规则仅适用于 _全局范围_ "
+"而 `y = 5._dp` 中的 `y` 将是 `real(dp)` 类型）。此规则仅适用于 _全局作用域_ "
 "的顶层。类型必须在主程序、模块、函数和子程序中完全指定，就像在 F2008 中一样。"
 
 #: ../../doc/src/design.md:146
@@ -733,14 +733,14 @@ msgid ""
 "functions, subroutines, statements and expressions at the top level of "
 "_global scope_ use and operate on this symbol table."
 msgstr ""
-"_全局范围_ 有自己的符号表。主程序和模块/子模块看不到此符号表中的任何符号。但"
-"是_全局范围_顶层的函数、子例程、语句和表达式使用和操作这个符号表。"
+"_全局作用域_ 有自己的符号表。主程序和模块/子模块看不到此符号表中的任何符号。"
+"但是_全局作用域_顶层的函数、子例程、语句和表达式使用和操作这个符号表。"
 
 #: ../../doc/src/design.md:151
 msgid ""
 "The _global scope_ has the following symbols predefined in the symbol "
 "table:"
-msgstr "_全局范围_ 在符号表中预定义了以下符号："
+msgstr "_全局作用域_ 在符号表中预定义了以下符号："
 
 #: ../../doc/src/design.md:153
 msgid ""
@@ -918,7 +918,7 @@ msgstr "开发者指南"
 
 #: ../../doc/src/index.md:156
 msgid "LFortran Intrinsics"
-msgstr "LFortran 内在函数"
+msgstr "LFortran 内置函数"
 
 #: ../../doc/src/index.md:1
 msgid "LFortran Documentation"
@@ -1204,7 +1204,7 @@ msgstr "安装"
 
 #: ../../doc/src/installation.md:3
 msgid "All the instructions below work on Linux, macOS and Windows."
-msgstr "以下所有说明都适用于 Linux、macOS 和 Windows。"
+msgstr "以下所有说明适用于 Linux、macOS 和 Windows。"
 
 #: ../../doc/src/installation.md:5
 msgid "Binaries"
@@ -1219,7 +1219,7 @@ msgid ""
 "environment (you can choose any name, here we chose `lf`) and activate "
 "it:"
 msgstr ""
-"安装 LFortran 的推荐方法是使用 Conda。例如，按照您的平台的说明安装 "
+"安装 LFortran 的推荐方法是使用 Conda。例如，按照你的平台的说明安装 "
 "[Miniconda](https://conda.io/en/latest/miniconda.html)，安装 "
 "Conda。然后创建一个新环境（你可以选择任何名称，这里我们选择了`lf`）并激活它："
 
@@ -1248,7 +1248,7 @@ msgstr "你可以通过执行以下命令来创建基于 Fortran 的 Jupyter 笔
 
 #: ../../doc/src/installation.md:32
 msgid "and selecting `New->Fortran`."
-msgstr "并选择`New->Fortran`。"
+msgstr "并选择 `New->Fortran`。"
 
 #: ../../doc/src/installation.md:35
 msgid "Build From a Source Tarball"
@@ -1320,7 +1320,7 @@ msgstr "生成构建所需的文件（此步骤取决于 `re2c`、`bison` 和 `p
 msgid ""
 "Now the process is the same as installing from the source tarball. For "
 "example to build in Debug mode:"
-msgstr "现在的过程与从源tarball安装相同。例如在Debug模式下构建:"
+msgstr "现在的过程与从源 tarball 安装相同。例如在 Debug 模式下构建:"
 
 #: ../../doc/src/installation.md:92
 msgid "Run tests:"
@@ -1332,7 +1332,7 @@ msgstr "运行交互式提示符:"
 
 #: ../../doc/src/installation.md:102
 msgid "Build from Git on Windows with Visual Studio"
-msgstr "在Windows上使用Visual Studio从Git构建"
+msgstr "在 Windows 上使用 Visual Studio 从 Git 构建"
 
 #: ../../doc/src/installation.md:104
 msgid ""
@@ -1340,8 +1340,8 @@ msgid ""
 "download the Community version for free from: "
 "https://visualstudio.microsoft.com/downloads/."
 msgstr ""
-"安装Visual Studio (MSVC)，例如2022版本，可以从: https://visualstudio."
-"microsoft.com/downloads/ 免费下载社区版本。"
+"安装 Visual Studio (MSVC)，例如 2022 "
+"版本，可以免费下载社区版本：https://visualstudio.microsoft.com/downloads/ 。"
 
 #: ../../doc/src/installation.md:107
 msgid ""
@@ -1357,11 +1357,11 @@ msgstr "从桌面上启动 Miniforge Prompt。"
 
 #: ../../doc/src/installation.md:111
 msgid "In the shell, initialize the MSVC compiler using:"
-msgstr "在shell中，用以下方法初始化MSVC编译器:"
+msgstr "在 shell 中，用以下方法初始化 MSVC 编译器:"
 
 #: ../../doc/src/installation.md:117
 msgid "You can optionally test that MSVC works by:"
-msgstr "你可以选择通过以下方式测试MSVC是否工作:"
+msgstr "你可以选择通过以下方式测试 MSVC 是否工作:"
 
 #: ../../doc/src/installation.md:122
 msgid "Both commands must print help (several pages)."
@@ -1369,11 +1369,11 @@ msgstr "这两个命令都必须打印帮助信息（若干页）。"
 
 #: ../../doc/src/installation.md:124
 msgid "Now you can download and build LFortran:"
-msgstr "现在你可以下载并建立LFortran:"
+msgstr "现在你可以下载并建立 LFortran："
 
 #: ../../doc/src/installation.md:134
 msgid "If everything compiled, then you can use LFortran as follows:"
-msgstr "如果一切都编译好了，那么你就可以使用LFortran，如下所示:"
+msgstr "如果一切都编译好了，那么你就可以使用 LFortran，如下所示:"
 
 #: ../../doc/src/installation.md:140
 msgid "And so on."
@@ -1385,8 +1385,8 @@ msgid ""
 "is only available when the MSVC bat script above is ran. If you forget to"
 " activate it, LFortran's linking will fail."
 msgstr ""
-"注意：LFortran目前使用MSVC的链接器程序（`link`），只有在运行上面的MSVC "
-"bat脚本时才能使用。如果你忘记激活它，LFortran的链接就会失败。"
+"注意：LFortran 目前使用 MSVC 的链接器程序（`link`），只有在运行上面的 MSVC "
+"bat 脚本时才能使用。如果你忘记激活它，LFortran 的链接就会失败。"
 
 #: ../../doc/src/installation.md:146
 msgid ""
@@ -1396,30 +1396,30 @@ msgid ""
 "`vim`.  For this reason the Conda build `environment_win.yml` contains "
 "everything needed, including `git`."
 msgstr ""
-"注意：miniforge shell似乎在运行某个版本的`git-bash`（尽管它是`cmd.exe`），它"
-"有一些类似unix的文件系统挂载在`/usr`，有几个命令可用，如`ls`、`which`、`git`"
-"、`vim`。 由于这个原因，Conda构建的`environment_win."
-"yml`包含了所有需要的东西，包括`git`。"
+"注意：miniforge shell 似乎在运行某个版本的 `git-bash`（尽管它是`cmd.exe`），"
+"它有一些类似 unix 的文件系统挂载在 "
+"`/usr`，有几个命令可用，如`ls`、`which`、`git`、`vim`。 由于这个原因，Conda "
+"构建的 `environment_win.yml` 包含了所有需要的东西，包括 `git`。"
 
 #: ../../doc/src/installation.md:152
 msgid "Build from Git on Windows with WSL"
-msgstr "用WSL在Windows上从Git构建"
+msgstr "用 WSL 在 Windows上 从 Git 构建"
 
 #: ../../doc/src/installation.md:153
 msgid "In windows search \"turn windows features on or off\"."
-msgstr "在windows中搜索 \"打开或关闭windows功能\"。"
+msgstr "在 Windows 中搜索“打开或关闭 Windows 功能”。"
 
 #: ../../doc/src/installation.md:154
 msgid "Tick Windows subsystem for Linux."
-msgstr "标记Linux的Windows子系统。"
+msgstr "标记适用于Linux 的 Windows 子系统。"
 
 #: ../../doc/src/installation.md:155
 msgid "Press OK and restart computer."
-msgstr "按 \"确定 \"并重新启动计算机。"
+msgstr "按“确定”并重新启动计算机。"
 
 #: ../../doc/src/installation.md:156
 msgid "Go to Microsoft store and download Ubuntu 20.04, and launch it."
-msgstr "到微软商店下载Ubuntu 20.04，并启动它。"
+msgstr "到微软商店下载 Ubuntu 20.04，并启动它。"
 
 #: ../../doc/src/installation.md:157
 msgid "Run the following commands."
@@ -1435,11 +1435,11 @@ msgstr "然后转到文件底部，粘贴以下内容"
 
 #: ../../doc/src/installation.md:172
 msgid "Then press ctrl + O (save), Enter (confirm), ctrl + X (exit)"
-msgstr "然后按ctrl + O（保存），Enter（确认），ctrl + X（退出）"
+msgstr "然后按 ctrl + O（保存），Enter（确认），ctrl + X（退出）"
 
 #: ../../doc/src/installation.md:173
 msgid "After that restart Ubuntu"
-msgstr "之后，重新启动Ubuntu"
+msgstr "之后，重新启动 Ubuntu"
 
 #: ../../doc/src/installation.md:174
 msgid "Run the following"
@@ -1447,13 +1447,14 @@ msgstr "运行以下内容"
 
 #: ../../doc/src/installation.md:179
 msgid "Restart Ubuntu again"
-msgstr "再次重启Ubuntu"
+msgstr "再次重启 Ubuntu"
 
 #: ../../doc/src/installation.md:187
 msgid ""
 "You can change the directory to a Windows location using `cd /mnt/[drive "
 "letter]/[windows location]`."
-msgstr "你可以使用 `cd /mnt/[drive letter]/[windows location]`将目录改为Windows位置。"
+msgstr "你可以使用 `cd /mnt/[drive letter]/[windows location]`将路径改为 Windows "
+"位置。"
 
 #: ../../doc/src/installation.md:188
 msgid "e.g. `cd mnt/c/Users/name/source/repos/`"
@@ -1461,7 +1462,7 @@ msgstr "例如：`cd mnt/c/Users/name/source/repos/`"
 
 #: ../../doc/src/installation.md:190
 msgid "Now clone the LFortran git repository"
-msgstr "现在克隆LFortran的git仓库"
+msgstr "现在克隆 LFortran 的 git 仓库"
 
 #: ../../doc/src/installation.md:196
 msgid "Run the following commands"
@@ -1469,7 +1470,7 @@ msgstr "运行以下命令"
 
 #: ../../doc/src/installation.md:204
 msgid "If everything compiles, you can use LFortran as follows"
-msgstr "如果一切都能编译，你可以使用LFortran，如下所示"
+msgstr "如果一切都能编译，你可以使用 LFortran，如下所示"
 
 #: ../../doc/src/installation.md:210
 msgid "Run an interactive prompt"
@@ -1481,35 +1482,36 @@ msgstr "运行测试"
 
 #: ../../doc/src/installation.md:221
 msgid "Enabling the Jupyter Kernel"
-msgstr "启用Jupyter内核"
+msgstr "启用 Jupyter 内核"
 
 #: ../../doc/src/installation.md:223
 msgid "To install the Jupyter kernel, install the following Conda packages also:"
-msgstr "要安装Jupyter内核，还要安装以下Conda软件包:"
+msgstr "要安装 Jupyter 内核，还要安装以下 Conda 软件包:"
 
 #: ../../doc/src/installation.md:227
 msgid ""
 "and enable the kernel by `-DWITH_XEUS=yes` and install into "
 "`$CONDA_PREFIX`. For example:"
-msgstr "并通过`-DWITH_XEUS=yes`启用内核，然后安装到`$CONDA_PREFIX`。比如说:"
+msgstr "并通过 `-DWITH_XEUS=yes` 启用内核，然后安装到 `$CONDA_PREFIX`。比如："
 
 #: ../../doc/src/installation.md:239
 msgid ""
 "To use it, install Jupyter (`conda install jupyter`) and test that the "
 "LFortran kernel was found:"
-msgstr "要使用它，请安装Jupyter（`conda install jupyter`）并测试是否找到LFortran内核:"
+msgstr "要使用它，请安装 Jupyter（`conda install jupyter`）并测试是否找到 LFortran "
+"内核:"
 
 #: ../../doc/src/installation.md:244
 msgid "Then launch a Jupyter notebook as follows:"
-msgstr "然后启动Jupyter notebook，如下所示:"
+msgstr "然后启动 Jupyter notebook，如下所示:"
 
 #: ../../doc/src/installation.md:248
 msgid "Click `New->Fortran`. To launch a terminal jupyter LFortran console:"
-msgstr "单击`新的- > Fortran`。启动jupyter LFortran终端控制台:"
+msgstr "单击 `New - > Fortran`。启动 jupyter LFortran 终端控制台："
 
 #: ../../doc/src/installation.md:254
 msgid "Build From Git with Nix"
-msgstr "使用Nix从Git构建"
+msgstr "使用 Nix 从 Git 构建"
 
 #: ../../doc/src/installation.md:256
 msgid ""
@@ -1518,8 +1520,9 @@ msgid ""
 "the development environment. If you want, you can report bugs in a `nix-"
 "shell` environment to make it easier for others to reproduce."
 msgstr ""
-"确保精确环境和依赖关系的方法之一是使用`nix`。这将确保系统的依赖性不会干扰到开"
-"发环境。如果你愿意，你可以在`nix-shell`环境下报告bug，以方便别人复制。"
+"确保精确环境和依赖关系的方法之一是使用 "
+"`nix`。这将确保系统的依赖性不会干扰到开发环境。如果你愿意，你可以在 `nix-"
+"shell` 环境下报告 bug，以方便别人复制。"
 
 #: ../../doc/src/installation.md:258
 msgid "With Root"
@@ -1530,8 +1533,8 @@ msgid ""
 "We start by getting `nix`. The following multi-user installation will "
 "work on any machine with a Linux distribution, MacOS or Windows (via "
 "WSL):"
-msgstr "我们从获得`nix`开始。下面的多用户安装将在任何装有Linux发行版、MacOS或Windows"
-"（通过WSL）的机器上工作:"
+msgstr "我们从获得 `nix` 开始。下面的多用户安装将在任何装有 Linux 发行版、MacOS 或 "
+"Windows（通过 WSL）的机器上工作："
 
 #: ../../doc/src/installation.md:264
 msgid "Without Root"
@@ -1565,17 +1568,17 @@ msgstr "现在进入开发环境:"
 msgid ""
 "The `--pure` flag ensures no system dependencies are used in the "
 "environment."
-msgstr "`--pure`标志确保在环境中不使用系统依赖。"
+msgstr "`--pure` 标志确保在环境中不使用系统依赖。"
 
 #: ../../doc/src/installation.md:286
 msgid "The build steps are the same as with the `ci`:"
-msgstr "构建步骤与 `ci `相同:"
+msgstr "构建步骤与 `ci ` 相同:"
 
 #: ../../doc/src/installation.md:292
 msgid ""
 "To change the compilation environment from `gcc` (default) to `clang` we "
 "can use `--argstr`:"
-msgstr "要把编译环境从`gcc`（默认）改为`clang`，我们可以使用`--argstr`:"
+msgstr "要把编译环境从 `gcc`（默认）改为 `clang`，我们可以使用 `--argstr`："
 
 #: ../../doc/src/installation.md:297
 msgid "Note About Dependencies"
@@ -1597,22 +1600,23 @@ msgid ""
 " and contains some autogenerated files: the parser, the AST and ASR "
 "nodes, which is generated by an ASDL translator (requires Python)."
 msgstr ""
-"这个tarball是由我们的CI（持续集成）自动生成的，包含一些自动生成的文件：解析器"
-"、AST和ASR节点，由ASDL翻译器生成（需要Python）。"
+"这个 tarball 是由我们的 "
+"CI（持续集成）自动生成的，包含一些自动生成的文件：解析器、AST 和 ASR 节点，"
+"由 ASDL 翻译器生成（需要 Python）。"
 
 #: ../../doc/src/installation.md:307
 msgid "The instructions from git are to be used when developing LFortran itself."
-msgstr "在开发LFortran本身时要使用来自git的指令。"
+msgstr "在开发 LFortran 本身时要使用来自 git 的指令。"
 
 #: ../../doc/src/installation.md:309
 msgid "Note for users who do not use Conda"
-msgstr "不使用Conda的用户注意"
+msgstr "不使用 Conda 的用户注意"
 
 #: ../../doc/src/installation.md:311
 msgid ""
 "Following are the dependencies necessary for installing this repository "
 "in development mode,"
-msgstr "以下是在开发模式下安装此版本库的必要依赖,"
+msgstr "以下是在开发模式下安装此版本库的必要依赖，"
 
 #: ../../doc/src/installation.md:314
 msgid "[Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)"
@@ -1638,8 +1642,8 @@ msgid ""
 "dependency to build the dynamic libraries (the ones ending with `.so`)."
 msgstr ""
 "[binutils - 2.31.90](ftp://sourceware.org/pub/binutils/snapshots/binutils-2."
-"31.90.tar.xz) - 确保你应该启用与此依赖关系相关的必要选项来构建动态库（以`."
-"so`结尾的库）。"
+"31.90.tar.xz) —— 确保你应该启用与此依赖关系相关的必要选项来构建动态库（以 `."
+"so` 结尾的库）。"
 
 #: ../../doc/src/installation.md:319
 msgid "Stacktraces"
@@ -1656,9 +1660,9 @@ msgid ""
 "instructions below."
 msgstr ""
 "LFortran 可以在出现未处理的异常时打印堆栈跟踪，也可以在任何编译器错误时使用 "
-"`--show-stacktrace` 选项。这对开发编译器本身很有帮助，可以看到LFortran中的问"
-"题所在。默认情况下，堆栈跟踪支持是关闭的，要启用它，需要在每个平台上按照下面"
-"的说明安装先决条件后，用`-DWITH_STACKTRACE=yes` cmake选项编译LFortran。"
+"`--show-stacktrace` 选项。这对开发编译器本身很有帮助，可以看到 LFortran 中的"
+"问题所在。默认情况下，堆栈跟踪支持是关闭的，要启用它，需要在每个平台上按照下"
+"面的说明安装先决条件后，用`-DWITH_STACKTRACE=yes` cmake 选项编译 LFortran。"
 
 #: ../../doc/src/installation.md:328
 msgid "Ubuntu"
@@ -1666,7 +1670,7 @@ msgstr "Ubuntu"
 
 #: ../../doc/src/installation.md:330
 msgid "In Ubuntu, `apt install binutils-dev`."
-msgstr "在Ubuntu系统, `apt install binutils-dev`."
+msgstr "在 Ubuntu 系统，`apt install binutils-dev`。"
 
 #: ../../doc/src/installation.md:332
 msgid "macOS"
@@ -1680,23 +1684,24 @@ msgid ""
 "store the debug information, see `src/bin/CMakeLists.txt` for more "
 "details). If it does not work, please report a bug."
 msgstr ""
-"如果你在macOS上使用默认的Clang编译器，那么堆栈跟踪应该正好在基于Intel和M1的ma"
-"cOS上工作（CMake构建系统自动调用`dsymtuil`工具和我们的Python脚本来存储调试信"
-"息，更多细节见`src/bin/CMakeLists.txt`）。如果不能工作，请报告一个错误。"
+"如果你在 macOS 上使用默认的 Clang 编译器，那么堆栈跟踪应该正好在基于 Intel "
+"和 M1 的 macOS 上工作（CMake 构建系统自动调用 `dsymtuil` 工具和我们的 Python "
+"脚本来存储调试信息，更多细节见 `src/bin/CMakeLists."
+"txt`）。如果不能工作，请报告一个错误。"
 
 #: ../../doc/src/installation.md:340
 msgid ""
 "If you do not like the default way, an alternative is to use bintutils. "
 "For that, first install [Spack](https://spack.io/), then:"
-msgstr "如果你不喜欢默认的方式，另一个选择是使用bintutils。为此，首先安装[Spack](http"
-"s://spack.io/)，然后:"
+msgstr "如果你不喜欢默认的方式，另一个选择是使用bintutils。为此，首先安装 "
+"[Spack](https://spack.io/)，然后："
 
 #: ../../doc/src/installation.md:347
 msgid ""
 "The last command will show a full path to the installed `binutils` "
 "package. Add this path to your shell config file, e.g.:"
-msgstr "最后一条命令将显示已安装的`binutils`软件包的完整路径。把这个路径添加到你的she"
-"ll配置文件中，例如:"
+msgstr "最后一条命令将显示已安装的 `binutils` 软件包的完整路径。把这个路径添加到你的 "
+"shell 配置文件中，例如："
 
 #: ../../doc/src/installation.md:352
 msgid ""
@@ -1705,17 +1710,17 @@ msgid ""
 " option. The `$CONDA_PREFIX` is there if you install some other "
 "dependencies (such as `llvm`) using Conda, otherwise you can remove it."
 msgstr ""
-"并使用`-DCMAKE_PREFIX_PATH=\"$CMAKE_PREFIX_PATH_LFORTRAN;$CONDA_PREFIX\"` cma"
-"ke选项编译LFortran。`$CONDA_PREFIX`是在你使用Conda安装了一些其他的依赖项（如`"
-"llvm`）的情况下出现的，否则你可以把它删除。"
+"并使用 `-DCMAKE_PREFIX_PATH=\"$CMAKE_PREFIX_PATH_LFORTRAN;$CONDA_PREFIX\"` "
+"cmake 选项编译 LFortran。`$CONDA_PREFIX` 是在你使用 Conda "
+"安装了一些其他的依赖项（如 `llvm`）的情况下出现的，否则你可以把它删除。"
 
 #: ../../doc/src/intrinsics/array.md:1
 msgid "Array Intrinsic Functions"
-msgstr "数组内在函数"
+msgstr "数组内置函数"
 
 #: ../../doc/src/intrinsics/array/allocated.md:1
 msgid "allocated(x): Status Check"
-msgstr "已分配（x）：状态检查"
+msgstr "allocated(x)：状态检查"
 
 #: ../../doc/src/intrinsics/array/allocated.md:3
 msgid "Logical status of an allocatable integer."
@@ -1813,7 +1818,7 @@ msgstr "声明"
 #: ../../doc/src/intrinsics/numeric/gamma.md:7
 #: ../../doc/src/intrinsics/numeric/mod.md:7
 msgid "Syntax"
-msgstr "句法"
+msgstr "语法"
 
 #: ../../doc/src/intrinsics/array/allocated.md:14
 #: ../../doc/src/intrinsics/array/cshift.md:14
@@ -1862,7 +1867,7 @@ msgstr "句法"
 #: ../../doc/src/intrinsics/numeric/gamma.md:14
 #: ../../doc/src/intrinsics/numeric/mod.md:15
 msgid "Arguments"
-msgstr "论据"
+msgstr "参数"
 
 #: ../../doc/src/intrinsics/array/allocated.md:16
 msgid "`x` is an integer input parameter."
@@ -2145,7 +2150,7 @@ msgstr "也可以看看"
 
 #: ../../doc/src/intrinsics/array/cshift.md:1
 msgid "cshift(A, shift [, dim]): Circular Shift"
-msgstr "cshift(A, shift [, dim]): 循环移位"
+msgstr "cshift(A, shift [, dim])：循环移位"
 
 #: ../../doc/src/intrinsics/array/cshift.md:3
 msgid "Circular shift elements of an array."
@@ -2203,7 +2208,7 @@ msgstr "支持的参数类型是 `A` 的数组和 `shift` 和 `dim` 的整数。
 
 #: ../../doc/src/intrinsics/array/size.md:1
 msgid "size(x): Size of Array"
-msgstr "size(x): 数组大小"
+msgstr "size(x)：数组大小"
 
 #: ../../doc/src/intrinsics/array/size.md:3
 msgid "Returns the size of an array `x`."
@@ -2399,7 +2404,7 @@ msgstr "`blt(x, y)` 计算一个整数输入值是否按位小于另一个。"
 
 #: ../../doc/src/intrinsics/bit/blt.md:68
 msgid "[bge](bge.md), [ble](ble.md), [bgt](bgt.md)."
-msgstr "[bge](bge.md), [ble](ble.md), [bgt](bgt.md)."
+msgstr "[bge](bge.md), [ble](ble.md)，[bgt](bgt.md)。"
 
 #: ../../doc/src/intrinsics/bit/btest.md:1
 msgid "btest(x, pos): Bit Test at Position"
@@ -2438,7 +2443,7 @@ msgstr "如果 `pos` 小于 0 或大于 `bit_size()`，则 `btest(x, pos)` "
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:1
 msgid "shiftl(x, shift): Shift Left"
-msgstr "shiftl(x, shift): 左移"
+msgstr "shiftl(x, shift)：左移"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:3
 msgid "Logical shift left function."
@@ -2482,11 +2487,11 @@ msgstr "无符号整数值`x`和无符号整数值`shift`中支持的类型（7�
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:82
 msgid "[shiftr](shiftr.md)."
-msgstr "[shiftr](shiftr.md)."
+msgstr "[shiftr](shiftr.md)。"
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:1
 msgid "shiftr(x, shift): Shift Right"
-msgstr "shiftr(x, shift): 右移"
+msgstr "shiftr(x, shift)：右移"
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:3
 msgid "Logical shift right function."
@@ -2505,11 +2510,11 @@ msgstr ""
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:82
 msgid "[shiftl](shiftl.md)."
-msgstr "[shiftl](shiftl.md)."
+msgstr "[shiftl](shiftl.md)。"
 
 #: ../../doc/src/intrinsics/character.md:1
 msgid "Character Intrinsic Functions"
-msgstr "字符内在函数"
+msgstr "字符内置函数"
 
 #: ../../doc/src/intrinsics/character/achar.md:1
 msgid "achar(x, kind): To Character in ASCII set."
@@ -2629,7 +2634,7 @@ msgstr "**adjustr(string)** "
 
 #: ../../doc/src/intrinsics/character/adjustr.md:65
 msgid "[adjustl](adjustl.md)."
-msgstr "[adjustl](adjustl.md)."
+msgstr "[adjustl](adjustl.md)。"
 
 #: ../../doc/src/intrinsics/character/char.md:1
 msgid "char(x, [, kind]): Integer to Character"
@@ -2657,7 +2662,7 @@ msgstr "**char(x)** 返回由 ASCII 字符集在 `x` 位置表示的字符。"
 
 #: ../../doc/src/intrinsics/character/char.md:71
 msgid "[achar](achar.md), [iachar](iachar.md), [ichar](ichar.md)"
-msgstr "[achar](achar.md), [iachar](iachar.md), [ichar](ichar.md)"
+msgstr "[achar](achar.md)，[iachar](iachar.md)，[ichar](ichar.md)"
 
 #: ../../doc/src/intrinsics/character/len_trim.md:1
 msgid "len_trim(string): Length Ignoring Trailing Blanks"
@@ -2736,7 +2741,7 @@ msgstr "[len_trim](len_trim.md)."
 
 #: ../../doc/src/intrinsics/kind-type.md:1
 msgid "Kind Type Intrinsic Functions"
-msgstr "种类类型内在函数"
+msgstr "种类类型内置函数"
 
 #: ../../doc/src/intrinsics/kind-type/kind.md:1
 msgid "kind(x): Kind of an Entity"
@@ -2777,7 +2782,7 @@ msgstr "无。"
 
 #: ../../doc/src/intrinsics/mathematical.md:1
 msgid "Mathematical Intrinsic Functions"
-msgstr "数学内在函数"
+msgstr "数学内置函数"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:1
 msgid "acos(x): Trigonometric Arc Cosine"
@@ -2827,7 +2832,7 @@ msgstr "支持的参数类型 float、double、complex float、complex double。
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:84
 msgid "[asin](asin.md), [atan](atan.md)."
-msgstr "[asin](asin.md), [atan](atan.md)."
+msgstr "[asin](asin.md)，[atan](atan.md)。"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:1
 msgid "acosh(x): Inverse Hyperbolic Cosine"
@@ -2884,7 +2889,7 @@ msgstr "对于复数 $x = x + iy$，以及域 $-\\infty < z <= 1$ 中的实数�
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:88
 msgid "[asinh](asinh.md), [atanh](atanh.md)."
-msgstr "[asinh](asinh.md), [atanh](atanh.md)."
+msgstr "[asinh](asinh.md)，[atanh](atanh.md)。"
 
 #: ../../doc/src/intrinsics/mathematical/asin.md:1
 msgid "asin(x): Trigonometric Arcsine"
@@ -2963,7 +2968,7 @@ msgstr "[asin](asin.md), [acos](acos.md)."
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:1
 msgid "atan2(y, x): ArcTangent"
-msgstr "atan2(y, x): 反正切"
+msgstr "atan2(y, x)：反正切"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:3
 msgid "Arctangent function or inverse tangent function."
@@ -3044,7 +3049,7 @@ msgstr "如果 `y` 为负实零，则结果为 $\\frac{-\\pi}{2}$。"
 #: ../../doc/src/intrinsics/mathematical/atan2.md:55
 #: ../../doc/src/intrinsics/mathematical/fraction.md:32
 msgid "Supported argument type is real."
-msgstr "支持的参数类型是真实的。"
+msgstr "支持的参数类型是实数。"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:1
 msgid "atanh(x): Inverse Hyperbolic Tangent"
@@ -3070,7 +3075,7 @@ msgstr "$\\frac{-\\pi}{2} <= aimag (atanh(x)) <= \\frac{\\pi}{2}$"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:35
 msgid "If the result is real, it lies in the range"
-msgstr "如果结果是真实的，它位于范围内"
+msgstr "如果结果是实数，它位于范围内"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:37
 msgid "$-1.0 < atanh(x) < 1.0$"
@@ -3090,7 +3095,7 @@ msgstr "模型表示的小数部分。"
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:15
 msgid "`x` the input value, must be real."
-msgstr "`x` 输入值，必须是真实的。"
+msgstr "`x` 输入值，必须是实数。"
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:19
 msgid ""
@@ -3116,7 +3121,7 @@ msgstr "$x * {radix(x)}^{(-exponent(x))}$"
 
 #: ../../doc/src/intrinsics/misc.md:1
 msgid "Miscellaneous Intrinsic Functions"
-msgstr "其他内在函数"
+msgstr "其他内置函数"
 
 #: ../../doc/src/intrinsics/misc/command_argument_count.md:1
 msgid "command_argument_count(): Number of Command Line Arguments"
@@ -3178,7 +3183,7 @@ msgstr "`cpu_time(time)` 的绝对值是没有意义的，只有后续调用这�
 #: ../../doc/src/intrinsics/misc/cpu_time.md:35
 #: ../../doc/src/intrinsics/misc/date_and_time.md:55
 msgid "Supported input parameter types is real with `intent(out)`."
-msgstr "支持的输入参数类型在 `intent(out)` 中是真实的。"
+msgstr "支持的输入参数类型为 `intent(out)` 和实数。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:1
 msgid "date_and_time([date, time, zone, values]): Date and Time"
@@ -3272,7 +3277,7 @@ msgstr "不可用或错误的日期和时间参数返回空白。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:92
 msgid "[cpu_time](cpu_time.md)."
-msgstr "[cpu_time](cpu_time.md)."
+msgstr "[cpu_time](cpu_time.md)。"
 
 #: ../../doc/src/intrinsics/misc/new_line.md:1
 msgid "new_line(x): New Line Character"
@@ -3306,7 +3311,7 @@ msgstr "支持的输入参数类型是字符。"
 
 #: ../../doc/src/intrinsics/numeric.md:1
 msgid "Numeric Intrinsic Functions"
-msgstr "数值内在函数"
+msgstr "数值内置函数"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:1
 msgid "abs(x): Absolute Value"
@@ -3359,7 +3364,7 @@ msgstr "[ceiling](ceiling.md)，[floor](floor.md)。"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:1
 msgid "aimag(x): Imaginary Part"
-msgstr "目标: 第一部分"
+msgstr "aimag(x)：虚部"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:3
 msgid "Imaginary part of complex number."
@@ -3440,7 +3445,7 @@ msgstr "**aint(x)** 返回大于或等于 `x` 且不超过输入值大小的最�
 #: ../../doc/src/intrinsics/numeric/aint.md:33
 #: ../../doc/src/intrinsics/numeric/anint.md:36
 msgid "The optional parameter `kind` specifies the kind of the result."
-msgstr "可选参数`kind` ，指定结果的种类。"
+msgstr "可选参数 `kind` ，指定结果的种类。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:37
 #: ../../doc/src/intrinsics/numeric/anint.md:40
@@ -3450,7 +3455,7 @@ msgstr "可选参数`kind` ，指定结果的种类。"
 #: ../../doc/src/intrinsics/numeric/floor.md:35
 #: ../../doc/src/intrinsics/numeric/gamma.md:40
 msgid "Supported argument types is real."
-msgstr "支持的参数类型是真实的。"
+msgstr "支持的参数类型是实数。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:57
 #: ../../doc/src/intrinsics/numeric/floor.md:85
@@ -3536,7 +3541,7 @@ msgid ""
 "of the result."
 msgstr ""
 "`x` 输入值必须是整数、实数或复数。 `y` 可选输入值必须是整数或实数类型。"
-"它应该只在 `x` 不复杂的情况下出现。 `kind` "
+"它应该只在 `x` 不是复数的情况下出现。 `kind` "
 "用于初始化的整数表达式类型的可选输入值，指示结果的种类参数。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:26
@@ -3665,11 +3670,11 @@ msgstr "$1 + \\epsilon > 1$"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:1
 msgid "erf(x): Error"
-msgstr "erf(x): 误差函数"
+msgstr "erf(x)：误差函数"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:3
 msgid "Error function."
-msgstr "误差函数"
+msgstr "误差函数。"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:20
 msgid ""
@@ -3735,7 +3740,7 @@ msgstr "exp(x)：指数函数"
 
 #: ../../doc/src/intrinsics/numeric/exp.md:3
 msgid "Exponential function."
-msgstr "指数函数"
+msgstr "指数函数。"
 
 #: ../../doc/src/intrinsics/numeric/exp.md:16
 msgid "`x` the input value must be of type real or complex."
@@ -4230,7 +4235,7 @@ msgstr "实数"
 
 #: ../../doc/src/progress.md:91
 msgid "Directory: `tests/expressions/reals`"
-msgstr "目录：`tests/expressions/reals`"
+msgstr "路径：`tests/expressions/reals`"
 
 #: ../../doc/src/progress.md
 msgid "`single/double reals`"
@@ -4262,7 +4267,7 @@ msgstr "复数"
 
 #: ../../doc/src/progress.md:101
 msgid "Directory: `tests/expressions/complex`"
-msgstr "目录：`tests/expressions/complex`"
+msgstr "路径：`tests/expressions/complex`"
 
 #: ../../doc/src/progress.md
 msgid "`single/double complex`"
@@ -4280,7 +4285,7 @@ msgstr "字符串"
 
 #: ../../doc/src/progress.md:110
 msgid "Directory: `tests/expressions/character`"
-msgstr "目录：`tests/expressions/character`"
+msgstr "路径：`tests/expressions/character`"
 
 #: ../../doc/src/progress.md
 msgid "`character`"
@@ -4910,9 +4915,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md:371
 msgid "max"
-msgstr ""
-"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
-"master/tests/intrinsic/min/t01_scalar_real.f90)"
+msgstr "max"
 
 #: ../../doc/src/progress.md:373
 msgid "Directory: `tests/intrinsic/max`"
