@@ -1,9 +1,3 @@
-fname sqr
-fname add_floats
-fname get_pi
-fname get_pi_64
-fname get_neg_f32
-fname computeCircleArea
 (module
     (type (;0;) (func (param i32) (result)))
     (type (;1;) (func (param i64) (result)))

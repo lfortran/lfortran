@@ -1,9 +1,3 @@
-fname a
-fname b
-fname c
-fname d
-fname e
-fname f
 #include <iostream>
 #include <string>
 #include <vector>

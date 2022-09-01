@@ -1,5 +1,3 @@
-fname func1
-fname func2
 
 #include <stdlib.h>
 #include <stdbool.h>

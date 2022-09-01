@@ -2,12 +2,12 @@
     "basename": "asr-loop_test1-716ccb0",
     "cmd": "lfortran --fixed-form --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/loop_test1.f",
-    "infile_hash": "f43bdfadffef14934343fab6719fe5b78acc2f77520a8a25e4ac0b9c",
+    "infile_hash": "28554b460ef639d9409b03e295744cb64644d54463dc6b6635b48119",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
-    "stderr": "asr-loop_test1-716ccb0.stderr",
-    "stderr_hash": "54750ebea2b3fcb97d030aa4eb558a8db5b8cbe789fe772bacf9acc6",
-    "returncode": 2
+    "stdout": "asr-loop_test1-716ccb0.stdout",
+    "stdout_hash": "f82496dd80a07b822f56ba095b1d2e7d6bfdbc6c390b60d5802c2dcc",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
 }

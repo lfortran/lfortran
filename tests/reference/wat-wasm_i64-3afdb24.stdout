@@ -1,6 +1,3 @@
-fname a_sqr_i64
-fname add_i64
-fname test_i64
 (module
     (type (;0;) (func (param i32) (result)))
     (type (;1;) (func (param i64) (result)))

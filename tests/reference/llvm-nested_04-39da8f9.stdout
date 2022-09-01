@@ -1,5 +1,3 @@
-fname b
-fname c
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 

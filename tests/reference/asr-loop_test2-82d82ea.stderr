@@ -1,5 +1,0 @@
-tokenizer error: Expecting terminating symbol for subroutine
- --> tests/loop_test2.f:9:1
-  |
-9 | <<<<<<< HEAD
-  | ^ 

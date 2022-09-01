@@ -1,4 +1,3 @@
-fname mysum
 #include <iostream>
 #include <string>
 #include <vector>

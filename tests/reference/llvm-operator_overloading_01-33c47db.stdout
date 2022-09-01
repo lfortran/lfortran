@@ -1,5 +1,3 @@
-fname logical_and
-fname bin_add
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 

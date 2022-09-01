@@ -6,12 +6,8 @@ c -> correct as we do not define lower/upper bounds for arrays here
       integer nq, m
       real wrk5, v
       
-<<<<<<< HEAD
-=======
       integer l1,j,l2
       integer indx
-
->>>>>>> gh-main/main
       DO 140 L1 = 1,NQ
          DO 110 J = 1,M
             WRK5(J) = V(INDX,J,L1)

@@ -1,5 +1,3 @@
-fname sfloor
-fname imodulo
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
