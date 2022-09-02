@@ -1,0 +1,13 @@
+{
+    "basename": "asr-complex3-0f7fd17",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/complex3.f90",
+    "infile_hash": "20198736c5bf61a696242863884b7f69105f016e9de2bfcc59e007e5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-complex3-0f7fd17.stdout",
+    "stdout_hash": "481552d9d9aa68284f0ed3b3cf651c5ef59295c8dca81cf156576e3c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
