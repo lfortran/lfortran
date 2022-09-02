@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-09-01 08:03+0000\n"
+"PO-Revision-Date: 2022-09-03 06:16+0000\n"
 "Last-Translator: Ian Giestas Pauli <iangiestaspauli@gmail.com>\n"
 "Language-Team: Portuguese <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/pt/>\n"
@@ -527,56 +527,70 @@ msgid ""
 "machine code directly. In other words, one can use LFortran to easily "
 "convert between the three equivalent representations:"
 msgstr ""
+"O LFortran está estruturado em forma de uma biblioteca, podendo ser usado "
+"para obter uma AST, ou usar o analisador semântico para obter uma ASR, "
+"podendo usá-las em uma aplicação. Também é possível gerar uma ASR "
+"diretamente (Ex: a partir do SymPy) e depois convertê-la a uma AST, para em "
+"seguida montar um código em Fortran, ou usar o LFortran para compilá-la em "
+"código de máquina diretamente. Em outras palavras, é fácil usar o LFortran "
+"para converter facilmente entre às três representações equivalentes:"
 
 #: ../../doc/src/design.md:42
 msgid "Fortran source code"
-msgstr ""
+msgstr "Código-fonte em Fortran"
 
 #: ../../doc/src/design.md:43 ../../doc/src/developer_tutorial.ipynb:23
 msgid "Abstract Syntax Tree (AST)"
-msgstr ""
+msgstr "Árvore de Sintaxe Abstrata (AST)"
 
 #: ../../doc/src/design.md:44 ../../doc/src/developer_tutorial.ipynb:159
 msgid "Abstract Semantic Representation (ASR)"
-msgstr ""
+msgstr "Representação Semântica Abstrata (ASR)"
 
 #: ../../doc/src/design.md:46
 msgid "They are all equivalent in the following sense:"
-msgstr ""
+msgstr "São todos equivalentes, no seguinte sentido:"
 
 #: ../../doc/src/design.md:48
 msgid "Any ASR can always be converted to an equivalent AST"
-msgstr ""
+msgstr "Qualquer ASR pode ser convertida em uma AST equivalente"
 
 #: ../../doc/src/design.md:49
 msgid "Any AST can always be converted to an equivalent Fortran source code"
 msgstr ""
+"Qualquer AST pode sempre ser convertida em um código Fortran equivalente"
 
 #: ../../doc/src/design.md:50
 msgid ""
 "Any Fortran source code can always be either converted to an equivalent "
 "AST or one gets a syntax error"
 msgstr ""
+"Qualquer código-fonte em Fortran pode ser sempre convertido em uma AST "
+"equivalente ou é emitido um erro de sintaxe"
 
 #: ../../doc/src/design.md:52
 msgid ""
 "Any AST can always be either converted to an equivalent ASR or one gets a"
 " semantic error"
 msgstr ""
+"Qualquer AST pode ser sempre convertida em uma ASR equivalente ou é emitido "
+"um erro de semântica"
 
 #: ../../doc/src/design.md:55
 msgid ""
 "So when a conversion can be done, they are equivalent, and the conversion"
 " can always be done unless the code is invalid."
 msgstr ""
+"Então, quando a conversão pode ser realizada, são equivalentes, e esta pode "
+"sempre ser realizada, exceto no caso em que o código é invalido."
 
 #: ../../doc/src/design.md:58
 msgid "ASR Design Details"
-msgstr ""
+msgstr "Detalhes do design da ASR"
 
 #: ../../doc/src/design.md:60
 msgid "The ASR is designed to have the following features:"
-msgstr ""
+msgstr "A ASR foi imaginada para ter os seguintes recursos:"
 
 #: ../../doc/src/design.md:62
 msgid ""
@@ -584,12 +598,17 @@ msgid ""
 " not lose any semantic information). ASR can be converted to AST, and AST"
 " to Fortran source code which is functionally equivalent to the original."
 msgstr ""
+"A ASR sempre é equivalente semanticamente ao código original Fortran (não "
+"perde nenhuma informação). A ASR pode ser convertida em uma AST, e a AST em "
+"código-fonte cuja funcionalidade é idêntica a original."
 
 #: ../../doc/src/design.md:66
 msgid ""
 "ASR is as simple as possible: it does not contain any information that "
 "could not be inferred from ASR."
 msgstr ""
+"A ASR é a mais simples possível: não contém nenhuma informação que não pode "
+"ser inferida de uma ASR."
 
 #: ../../doc/src/design.md:69
 msgid ""
@@ -618,6 +637,9 @@ msgid ""
 "multiline/single line if statement distinction, case sensitivity of "
 "keywords."
 msgstr ""
+"Informação perdida ao construir a ASR a partir do código-fonte: espaços em "
+"branco, distinção entre os comandos if na mesma linha e if ao longo de "
+"várias linhas, além das letras maiúsculas e minúsculas em palavras-chave."
 
 #: ../../doc/src/design.md:87
 msgid ""
@@ -628,6 +650,11 @@ msgid ""
 "order), as ASR only represents the aggregated type information in the "
 "symbol table."
 msgstr ""
+"Informação perdida quando transformando uma AST em ASR: sintaxe detalhada de "
+"como as variáveis foram definidas e a ordem dos atributos de tipo (se a "
+"dimensão de um array está usando o atributo `dimension` ou uma expressão "
+"parentesada, ou ainda quantas variáveis existiam na linha, ou sua ordem), já "
+"que a ASR apenas representa as informações de tipo em uma tabela de símbolos."
 
 #: ../../doc/src/design.md:90
 msgid ""
@@ -676,11 +703,11 @@ msgstr "Programa principal"
 
 #: ../../doc/src/design.md:117 ../../doc/src/design.md:132
 msgid "module or submodule"
-msgstr ""
+msgstr "módulo ou submódulo"
 
 #: ../../doc/src/design.md:118 ../../doc/src/design.md:133
 msgid "function or subroutine"
-msgstr ""
+msgstr "função ou sub-rotina"
 
 #: ../../doc/src/design.md:120
 msgid ""
@@ -886,7 +913,7 @@ msgstr "Começando"
 
 #: ../../doc/src/index.md:141 ../../doc/src/progress.md:1
 msgid "LFortran Development Status"
-msgstr ""
+msgstr "Progresso no Desenvolvimento do LFortran"
 
 #: ../../doc/src/index.md:147
 msgid "Developer's Guide"
@@ -1155,7 +1182,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:32
 msgid "and selecting `New->Fortran`."
-msgstr ""
+msgstr "E selecionando `New->Fortran`."
 
 #: ../../doc/src/installation.md:35
 msgid "Build From a Source Tarball"
@@ -1274,7 +1301,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:140
 msgid "And so on."
-msgstr ""
+msgstr "E assim por diante."
 
 #: ../../doc/src/installation.md:142
 msgid ""
@@ -1334,11 +1361,11 @@ msgstr ""
 
 #: ../../doc/src/installation.md:174
 msgid "Run the following"
-msgstr ""
+msgstr "Execute o seguinte"
 
 #: ../../doc/src/installation.md:179
 msgid "Restart Ubuntu again"
-msgstr ""
+msgstr "Reinicie novamente o Ubuntu"
 
 #: ../../doc/src/installation.md:187
 msgid ""
@@ -1348,7 +1375,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:188
 msgid "e.g. `cd mnt/c/Users/name/source/repos/`"
-msgstr ""
+msgstr "Ex: `cd mnt/c/Users/name/source/repos/`"
 
 #: ../../doc/src/installation.md:190
 msgid "Now clone the LFortran git repository"
@@ -1464,7 +1491,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:297
 msgid "Note About Dependencies"
-msgstr ""
+msgstr "Nota Sobre Dependências"
 
 #: ../../doc/src/installation.md:299
 msgid ""
@@ -1495,18 +1522,23 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/installation.md:314
+#, fuzzy
 msgid "[Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)"
-msgstr ""
+msgstr "[Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)"
 
 #: ../../doc/src/installation.md:315
+#, fuzzy
 msgid ""
 "[LLVM - 11.0.1](https://github.com/llvm/llvm-"
 "project/releases/download/llvmorg-11.0.1/llvm-11.0.1.src.tar.xz)"
 msgstr ""
+"[LLVM - 11.0.1](https://github.com/llvm/llvm-project/releases/download/"
+"llvmorg-11.0.1/llvm-11.0.1.src.tar.xz)"
 
 #: ../../doc/src/installation.md:316
+#, fuzzy
 msgid "[re2c - 2.0.3](https://re2c.org/install/install.html)"
-msgstr ""
+msgstr "[re2c - 2.0.3](https://re2c.org/install/install.html)"
 
 #: ../../doc/src/installation.md:317
 msgid ""
@@ -1575,11 +1607,11 @@ msgstr ""
 
 #: ../../doc/src/intrinsics/array.md:1
 msgid "Array Intrinsic Functions"
-msgstr ""
+msgstr "Funções Intrínsecas em Arrays"
 
 #: ../../doc/src/intrinsics/array/allocated.md:1
 msgid "allocated(x): Status Check"
-msgstr ""
+msgstr "allocated(x): Checagem de Condição"
 
 #: ../../doc/src/intrinsics/array/allocated.md:3
 msgid "Logical status of an allocatable integer."
@@ -2099,7 +2131,7 @@ msgstr "[shape](), [reshape]()."
 
 #: ../../doc/src/intrinsics/bit.md:1
 msgid "Bit Intrinsic Functions"
-msgstr ""
+msgstr "Funções Intrínsecas de Bits"
 
 #: ../../doc/src/intrinsics/bit/bge.md:1
 msgid "bge(x, y): Bitwise Greater or Equal"
@@ -2176,8 +2208,9 @@ msgid "**Result:**"
 msgstr "**Resultado:**"
 
 #: ../../doc/src/intrinsics/bit/bge.md:70
+#, fuzzy
 msgid "[bgt](bgt.md), [ble](ble.md), [blt](blt.md)."
-msgstr ""
+msgstr "[bgt](bgt.md), [ble](ble.md), [blt](blt.md)."
 
 #: ../../doc/src/intrinsics/bit/bgt.md:1
 msgid "bgt(x, y): Bitwise Greater Than"
@@ -2185,7 +2218,7 @@ msgstr ""
 
 #: ../../doc/src/intrinsics/bit/bgt.md:3
 msgid "Bitwise greater than."
-msgstr ""
+msgstr "Maior que bit-a-bit."
 
 #: ../../doc/src/intrinsics/bit/bgt.md:24
 msgid ""
@@ -2194,12 +2227,13 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/intrinsics/bit/bgt.md:68
+#, fuzzy
 msgid "[bge](bge.md), [ble](ble.md), [blt](blt.md)."
-msgstr ""
+msgstr "[bge](bge.md), [ble](ble.md), [blt](blt.md)."
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:1
 msgid "bit_size(x): Bit Size"
-msgstr ""
+msgstr "bit_size(x): Tamanho em Bits"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:3
 msgid "Bit size."
@@ -2239,8 +2273,9 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/intrinsics/bit/ble.md:70
+#, fuzzy
 msgid "[bgt](bgt.md), [bge](bge.md), [blt](blt.md)."
-msgstr ""
+msgstr "[bgt](bgt.md), [bge](bge.md), [blt](blt.md)."
 
 #: ../../doc/src/intrinsics/bit/blt.md:1
 msgid "blt(x, y): Bitwise Less Than"
@@ -2248,7 +2283,7 @@ msgstr ""
 
 #: ../../doc/src/intrinsics/bit/blt.md:3
 msgid "Bitwise less than."
-msgstr ""
+msgstr "Menor que bit-a-bit."
 
 #: ../../doc/src/intrinsics/bit/blt.md:24
 msgid ""
@@ -2257,8 +2292,9 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/intrinsics/bit/blt.md:68
+#, fuzzy
 msgid "[bge](bge.md), [ble](ble.md), [bgt](bgt.md)."
-msgstr ""
+msgstr "[bge](bge.md), [ble](ble.md), [bgt](bgt.md)."
 
 #: ../../doc/src/intrinsics/bit/btest.md:1
 msgid "btest(x, pos): Bit Test at Position"
@@ -2359,7 +2395,7 @@ msgstr "[shiftl](shiftl.md)."
 
 #: ../../doc/src/intrinsics/character.md:1
 msgid "Character Intrinsic Functions"
-msgstr ""
+msgstr "Funções Intrínsecas para Caracteres"
 
 #: ../../doc/src/intrinsics/character/achar.md:1
 msgid "achar(x, kind): To Character in ASCII set."
@@ -2503,8 +2539,9 @@ msgid ""
 msgstr ""
 
 #: ../../doc/src/intrinsics/character/char.md:71
+#, fuzzy
 msgid "[achar](achar.md), [iachar](iachar.md), [ichar](ichar.md)"
-msgstr ""
+msgstr "[achar](achar.md), [iachar](iachar.md), [ichar](ichar.md)"
 
 #: ../../doc/src/intrinsics/character/len_trim.md:1
 msgid "len_trim(string): Length Ignoring Trailing Blanks"
@@ -4094,7 +4131,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md
 msgid "`single/double complex`"
-msgstr ""
+msgstr "`número complexo de precisão simples/dupla`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4109,7 +4146,7 @@ msgstr "Cadeia de Caracteres"
 
 #: ../../doc/src/progress.md:110
 msgid "Directory: `tests/expressions/character`"
-msgstr ""
+msgstr "Diretório: `tests/expressions/character`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4125,7 +4162,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md
 msgid "`string concatenation`"
-msgstr ""
+msgstr "`concatenação de cadeias de caracteres`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4140,7 +4177,7 @@ msgstr "Tipos Derivados"
 
 #: ../../doc/src/progress.md:120
 msgid "Directory: `tests/expressions/derived_type`"
-msgstr ""
+msgstr "Diretório: `tests/expressions/derived_type`"
 
 #: ../../doc/src/progress.md
 msgid "`basic derived types`"
@@ -4159,15 +4196,15 @@ msgstr "Comandos"
 
 #: ../../doc/src/progress.md:129
 msgid "Allocate Statement"
-msgstr ""
+msgstr "Comando Allocate"
 
 #: ../../doc/src/progress.md:131
 msgid "Directory: `tests/statements/allocate`"
-msgstr ""
+msgstr "Diretório: `tests/statements/allocate`"
 
 #: ../../doc/src/progress.md
 msgid "`allocate statement`"
-msgstr ""
+msgstr "`comando allocate`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4178,15 +4215,15 @@ msgstr ""
 
 #: ../../doc/src/progress.md:138
 msgid "Block Statement"
-msgstr ""
+msgstr "Comando Block"
 
 #: ../../doc/src/progress.md:140
 msgid "Directory: `tests/statements/block`"
-msgstr ""
+msgstr "Diretório: `tests/statements/block`"
 
 #: ../../doc/src/progress.md
 msgid "`block statement`"
-msgstr ""
+msgstr "`comando block`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4197,11 +4234,11 @@ msgstr ""
 
 #: ../../doc/src/progress.md:147
 msgid "Goto Statement"
-msgstr ""
+msgstr "Comando Goto"
 
 #: ../../doc/src/progress.md:149
 msgid "Directory: `tests/statements/goto`"
-msgstr ""
+msgstr "Diretório: `tests/statements/goto`"
 
 #: ../../doc/src/progress.md
 msgid "`computed go-to statement`"
@@ -4216,7 +4253,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md
 msgid "`go-to statement`"
-msgstr ""
+msgstr "`comando go-to`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4227,15 +4264,15 @@ msgstr ""
 
 #: ../../doc/src/progress.md:157
 msgid "If Statement"
-msgstr ""
+msgstr "Comando if"
 
 #: ../../doc/src/progress.md:159
 msgid "Directory: `tests/statements/if`"
-msgstr ""
+msgstr "Diretório: `tests/statements/if`"
 
 #: ../../doc/src/progress.md
 msgid "`Test .false.`"
-msgstr ""
+msgstr "`Teste .false.`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4279,11 +4316,11 @@ msgstr ""
 
 #: ../../doc/src/progress.md:169
 msgid "While Statement"
-msgstr ""
+msgstr "Comando While"
 
 #: ../../doc/src/progress.md:171
 msgid "Directory: `tests/statements/while`"
-msgstr ""
+msgstr "Diretório: `tests/statements/while`"
 
 #: ../../doc/src/progress.md
 msgid "`Simple while loops`"
@@ -4309,15 +4346,15 @@ msgstr ""
 
 #: ../../doc/src/progress.md:179
 msgid "Print Statement"
-msgstr ""
+msgstr "Comando Print"
 
 #: ../../doc/src/progress.md:181
 msgid "Directory: `tests/statements/print`"
-msgstr ""
+msgstr "Diretório: `tests/statements/print`"
 
 #: ../../doc/src/progress.md
 msgid "`Basic print`"
-msgstr ""
+msgstr "`print básico`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4332,7 +4369,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md:190
 msgid "Directory: `tests/statements/file_io`"
-msgstr ""
+msgstr "Diretório: `tests/statements/file_io`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4348,7 +4385,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md:197
 msgid "Intrinsic Functions"
-msgstr ""
+msgstr "Funções Intrínsecas"
 
 #: ../../doc/src/progress.md:199
 msgid "abs"
@@ -4356,7 +4393,7 @@ msgstr "abs"
 
 #: ../../doc/src/progress.md:201
 msgid "Directory: `tests/intrinsic/abs`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/abs`"
 
 #: ../../doc/src/progress.md
 msgid "`scalar single/double real`"
@@ -4397,7 +4434,7 @@ msgstr "exp"
 
 #: ../../doc/src/progress.md:212
 msgid "Directory: `tests/intrinsic/exp`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/exp`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4426,7 +4463,7 @@ msgstr "log"
 
 #: ../../doc/src/progress.md:223
 msgid "Directory: `tests/intrinsic/log`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/log`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4455,7 +4492,7 @@ msgstr "sqrt"
 
 #: ../../doc/src/progress.md:234
 msgid "Directory: `tests/intrinsic/sqrt`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/sqrt`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4484,7 +4521,7 @@ msgstr "sin"
 
 #: ../../doc/src/progress.md:245
 msgid "Directory: `tests/intrinsic/sin`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/sin`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4513,7 +4550,7 @@ msgstr "cos"
 
 #: ../../doc/src/progress.md:256
 msgid "Directory: `tests/intrinsic/cos`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/cos`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4542,7 +4579,7 @@ msgstr "tan"
 
 #: ../../doc/src/progress.md:267
 msgid "Directory: `tests/intrinsic/tan`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/tan`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4571,7 +4608,7 @@ msgstr "sinh"
 
 #: ../../doc/src/progress.md:278
 msgid "Directory: `tests/intrinsic/sinh`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/sinh`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4600,7 +4637,7 @@ msgstr "cosh"
 
 #: ../../doc/src/progress.md:289
 msgid "Directory: `tests/intrinsic/cosh`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/cosh`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4629,7 +4666,7 @@ msgstr "tanh"
 
 #: ../../doc/src/progress.md:300
 msgid "Directory: `tests/intrinsic/tanh`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/tanh`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4658,7 +4695,7 @@ msgstr "asin"
 
 #: ../../doc/src/progress.md:311
 msgid "Directory: `tests/intrinsic/asin`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/asin`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4687,7 +4724,7 @@ msgstr "acos"
 
 #: ../../doc/src/progress.md:322
 msgid "Directory: `tests/intrinsic/acos`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/acos`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4716,7 +4753,7 @@ msgstr "atan"
 
 #: ../../doc/src/progress.md:333
 msgid "Directory: `tests/intrinsic/atan`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/atan`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4745,7 +4782,7 @@ msgstr "modulo"
 
 #: ../../doc/src/progress.md:344
 msgid "Directory: `tests/intrinsic/modulo`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/modulo`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4767,7 +4804,7 @@ msgstr "mod"
 
 #: ../../doc/src/progress.md:354
 msgid "Directory: `tests/intrinsic/mod`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/mod`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4789,7 +4826,7 @@ msgstr "min"
 
 #: ../../doc/src/progress.md:364
 msgid "Directory: `tests/intrinsic/min`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/min`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4804,7 +4841,7 @@ msgstr "max"
 
 #: ../../doc/src/progress.md:373
 msgid "Directory: `tests/intrinsic/max`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/max`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4819,7 +4856,7 @@ msgstr "int"
 
 #: ../../doc/src/progress.md:382
 msgid "Directory: `tests/intrinsic/int`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/int`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4834,7 +4871,7 @@ msgstr "real"
 
 #: ../../doc/src/progress.md:391
 msgid "Directory: `tests/intrinsic/real`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/real`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4849,7 +4886,7 @@ msgstr "floor"
 
 #: ../../doc/src/progress.md:400
 msgid "Directory: `tests/intrinsic/floor`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/floor`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
@@ -4864,7 +4901,7 @@ msgstr "nint"
 
 #: ../../doc/src/progress.md:409
 msgid "Directory: `tests/intrinsic/nint`"
-msgstr ""
+msgstr "Diretório: `tests/intrinsic/nint`"
 
 #: ../../doc/src/progress.md
 #, fuzzy
