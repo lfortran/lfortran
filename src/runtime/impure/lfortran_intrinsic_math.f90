@@ -118,7 +118,7 @@ interface sign
 end interface
 
 interface conjg
-    module procedure conjgz32, conjgz64
+    module procedure conjgz16, conjgz32, conjgz64
 end interface
 
 interface dot_product
@@ -1228,6 +1228,11 @@ if ((x >= 0 .and. y >= 0) .or. (x <= 0 .and. y <= 0)) then
 else
     r = -x
 end if
+end function
+
+function conjgz16(x) result(r)
+complex(16) :: x
+complex(16) :: r
 end function
 
 function conjgz32(x) result(r)
