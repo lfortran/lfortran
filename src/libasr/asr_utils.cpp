@@ -632,7 +632,7 @@ bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
             case (ASR::ttypeType::Complex) : {
                 ASR::Complex_t *a2 = ASR::down_cast<ASR::Complex_t>(&a);
                 ASR::Complex_t *b2 = ASR::down_cast<ASR::Complex_t>(&b);
-                if (a2->m_kind == b2->m_kind) {
+                if (a2->m_kind == b2->m_kind || a2->n_dims == b2->n_dims) {
                     return true;
                 } else {
                     return false;
