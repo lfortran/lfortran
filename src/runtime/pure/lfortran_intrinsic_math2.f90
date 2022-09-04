@@ -37,11 +37,11 @@ interface merge
 end interface
 
 interface min
-    module procedure imin, imin8, imin16, imin64, smin, dmin, imin_6args
+    module procedure imin, imin8, imin16, imin64, smin, dmin, dmin1, imin_6args
 end interface
 
 interface max
-    module procedure imax, imax8, imax16, imax64, smax, dmax, imax_6args, dmax_3args
+    module procedure imax, imax8, imax16, imax64, smax, dmax, dmax1, imax_6args, dmax_3args
 end interface
 
 interface huge
@@ -315,6 +315,15 @@ else
 end if
 end function
 
+elemental real(dp) function dmin1(x, y) result(r)
+real(dp), intent(in) :: x, y
+if (x < y) then
+    r = x
+else
+    r = y
+end if
+end function
+
 elemental integer function imin_6args(a, b, c, d, e, f) result(r)
 integer, intent(in) :: a, b, c, d, e, f
 integer :: args(6)
@@ -415,6 +424,15 @@ end if
 end function
 
 elemental real(dp) function dmax(x, y) result(r)
+real(dp), intent(in) :: x, y
+if (x > y) then
+    r = x
+else
+    r = y
+end if
+end function
+
+elemental real(dp) function dmax1(x, y) result(r)
 real(dp), intent(in) :: x, y
 if (x > y) then
     r = x
