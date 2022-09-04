@@ -1,0 +1,5 @@
+code generation error: asr_to_llvm: module failed verification. Error:
+Call parameter type does not match function signature!
+  %z = alloca %complex_8, align 8
+ %complex_4*  %10 = call %complex_4 @__module_lfortran_intrinsic_math_ctan(%complex_8* %z)
+

@@ -2271,3 +2271,7 @@ asr = true
 [[test]]
 filename = "variable01.f90"
 asr_implicit_interface = true
+
+[[test]]
+filename = "allow_implicit_interface_01.f90"
+asr_implicit_interface = true
