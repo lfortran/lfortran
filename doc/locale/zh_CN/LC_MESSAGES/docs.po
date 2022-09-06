@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-22 11:19+0000\n"
-"Last-Translator: St Maxwell <st_maxwell@outlook.com>\n"
+"PO-Revision-Date: 2022-09-01 08:03+0000\n"
+"Last-Translator: 左志华 <zuo.zhihua@qq.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "fortran-lang/lfortran-docs/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 4.14-dev\n"
+"X-Generator: Weblate 4.14.1-dev\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../../doc/src/ast_and_asr.ipynb:9
@@ -75,7 +75,6 @@ msgid ""
 msgstr "AST 必须代表所有的 ``use`` 语句和 ``interface`` 块，并保持语义一致。"
 
 #: ../../doc/src/ast_and_asr.ipynb:162
-#, fuzzy
 msgid ""
 "ASR, on the other hand, keeps track of the ``c_desc1_int32``, "
 "``c_desc1_t`` and ``f2b_c_wrapper`` in the symbol table and it knows they"
@@ -103,8 +102,8 @@ msgid ""
 " do, it is not complicated. We will help you with any technical issues "
 "and help improve your contribution so that it can be merged."
 msgstr ""
-"我们欢迎任何人的贡献，即使您是开源新手。起初为编译器做贡献可能听起来令人生畏"
-"，但可以尝试去做，这并不复杂。我们将帮助您解决任何技术问题并帮助改进您的贡献"
+"我们欢迎任何人的贡献，即使你是开源新手。起初为编译器做贡献可能听起来令人生畏"
+"，但可以尝试去做，这并不复杂。我们将帮助你解决任何技术问题并帮助改进你的贡献"
 "，以便将其合并。"
 
 #: ../../doc/src/contributing.md:8
@@ -113,11 +112,11 @@ msgstr "基本设置"
 
 #: ../../doc/src/contributing.md:10
 msgid "To contribute, make sure your set up:"
-msgstr "要做出贡献，请确保您的设置："
+msgstr "要做出贡献，请确保你的设置："
 
 #: ../../doc/src/contributing.md:12
 msgid "Your username + email"
-msgstr "您的用户名 + 电子邮件"
+msgstr "你的用户名 + 电子邮件"
 
 #: ../../doc/src/contributing.md:13
 msgid "Your `~/.gitconfig`"
@@ -125,7 +124,7 @@ msgstr "你的 `~/.gitconfig`"
 
 #: ../../doc/src/contributing.md:14
 msgid "Your shell prompt to display the current branch name"
-msgstr "您的 shell 提示显示当前分支名称"
+msgstr "你的 shell 提示显示当前分支名称"
 
 #: ../../doc/src/contributing.md:16
 msgid "Fork LFortran"
@@ -142,14 +141,14 @@ msgid ""
 "Step 2. Set up your [SSH key](https://docs.github.com/en/authentication"
 "/connecting-to-github-with-ssh) with GitHub"
 msgstr ""
-"步骤 2. 使用 GitHub 设置您的 [SSH 密钥](https://docs.github.com/en/"
+"步骤 2. 使用 GitHub 设置你的 [SSH 密钥](https://docs.github.com/en/"
 "authentication/connecting-to-github-with-ssh)"
 
 #: ../../doc/src/contributing.md:22
 msgid ""
 "Step 3. Clone the project repository from GitHub and set up your remote "
 "repository"
-msgstr "步骤 3. 从 GitHub 克隆项目存储库并设置您的远程存储库"
+msgstr "步骤 3. 从 GitHub 克隆项目存储库并设置你的远程存储库"
 
 #: ../../doc/src/contributing.md:29
 msgid ""
@@ -163,14 +162,14 @@ msgid ""
 ":fontawesome-solid-edit: `YOUR_GITHUB_ID` is your user ID on GitHub and "
 "should be part of your account path."
 msgstr ""
-":fontawesome-solid-edit: `YOUR_GITHUB_ID` 是您在 GitHub 上的用户 "
-"ID，应该是您帐户路径的一部分。"
+":fontawesome-solid-edit: `YOUR_GITHUB_ID` 是你在 GitHub 上的用户 "
+"ID，应该是你帐户路径的一部分。"
 
 #: ../../doc/src/contributing.md:33
 msgid ""
 "You can use `git remote -v` to check if the new remote is set up "
 "correctly."
-msgstr "您可以使用 `git remote -v` 检查新远程地址是否设置正确。"
+msgstr "你可以使用 `git remote -v` 检查新远程地址是否设置正确。"
 
 #: ../../doc/src/contributing.md:35
 msgid "Send a New Merge Request"
@@ -197,7 +196,7 @@ msgstr "[这里](https://chris.beams.io/posts/git-commit/) "
 
 #: ../../doc/src/contributing.md:53
 msgid "Step 4. Check to ensure that your changes look good"
-msgstr "第 4 步：检查以确保您的更改看起来不错"
+msgstr "第 4 步：检查以确保你的更改看起来不错"
 
 #: ../../doc/src/contributing.md:58
 msgid "Step 5. Send the merge request"
@@ -212,7 +211,7 @@ msgid ""
 " the \"Create\" button. Yay you are now all set."
 msgstr ""
 "该命令会将新分支 `fix1` 推送到您之前创建的远程存储库 `REMOTE_NAME` 中。此外，"
-"它还将显示一个链接，您可以单击该链接以打开新的合并请求。单击链接后，写下标题"
+"它还将显示一个链接，你可以单击该链接以打开新的合并请求。单击链接后，写下标题"
 "和简明描述，然后单击 `创建` 按钮。是的，你现在一切就绪。"
 
 #: ../../doc/src/contributing.md:66
@@ -369,7 +368,7 @@ msgid ""
 "[mailinglist](https://groups.io/g/lfortran) or a "
 "[chat](https://lfortran.zulipchat.com/)."
 msgstr ""
-"如果您有任何问题或需要帮助，请通过我们的 [mailinglist](https://groups.io/g/"
+"如果你有任何问题或需要帮助，请通过我们的 [mailinglist](https://groups.io/g/"
 "lfortran) 或 [chat](https://lfortran.zulipchat.com/) 提问。"
 
 #: ../../doc/src/contributing.md:248
@@ -379,7 +378,7 @@ msgid ""
 "by its terms. See "
 "[CODE_OF_CONDUCT.md](https://github.com/lfortran/lfortran/blob/main/CODE_OF_CONDUCT.md)."
 msgstr ""
-"请注意，该项目的所有参与者都应遵守我们的行为准则。参与本项目即表示您同意遵守"
+"请注意，该项目的所有参与者都应遵守我们的行为准则。参与本项目即表示你同意遵守"
 "其条款。请参阅 [CODE_OF_CONDUCT.md](https://github.com/lfortran/lfortran/"
 "blob/main/CODE_OF_CONDUCT.md)。"
 
@@ -390,8 +389,8 @@ msgid ""
 "[license](https://github.com/lfortran/lfortran/blob/main/LICENSE) unless "
 "explicitly noted otherwise."
 msgstr ""
-"通过提交 PR，您同意根据 LFortran 的 BSD [许可](https://github.com/lfortran/"
-"lfortran/blob/main/LICENSE) 许可您的贡献，除非另有明确说明。"
+"通过提交 PR，你同意根据 LFortran 的 BSD [许可](https://github.com/lfortran/"
+"lfortran/blob/main/LICENSE) 许可你的贡献，除非另有明确说明。"
 
 #: ../../doc/src/design.md:1
 msgid "LFortran Design"
@@ -629,7 +628,7 @@ msgstr ""
 "变量，如果这是一个接口，则需要指定在哪里可以找到实现，否则为body 提供了语句，"
 "这些节点与 AST 中的几乎相同，除了每个变量只是对符号表中的符号的引用（因此通过"
 "构造一个不能有未定义的变量）。每个节点（例如 Function 或 "
-"Module）的符号表也引用其父节点（例如，函数引用模块，模块引用全局范围）。"
+"Module）的符号表也引用其父节点（例如，函数引用模块，模块引用全局作用域）。"
 
 #: ../../doc/src/design.md:102
 msgid ""
@@ -693,9 +692,9 @@ msgid ""
 "statements, declarations, use statements and expressions. We define "
 "_global scope_ as a collection of the following items:"
 msgstr ""
-"我们通过引入_全局范围_来扩展 Fortran 语言，它不仅是_程序单元_列表（如 F2008 "
-"中），还可以包括语句、声明、使用语句和表达式。我们将_全局范围_定义为以下项目"
-"的集合："
+"我们通过引入_全局作用域_来扩展 Fortran 语言，它不仅是_程序单元_列表（如 "
+"F2008 中），还可以包括语句、声明、使用语句和表达式。我们将_全局作用域_定义为"
+"以下项目的集合："
 
 #: ../../doc/src/design.md:134
 msgid "use statement"
@@ -724,7 +723,7 @@ msgid ""
 msgstr ""
 "此外，如果变量没有在赋值语句中定义（例如`x = "
 "5+3`），则从右侧推断变量的类型（例如，`x` in `x = 5+3 ` 将是 `integer` 类型，"
-"而 `y = 5._dp` 中的 `y` 将是 `real(dp)` 类型）。此规则仅适用于 _全局范围_ "
+"而 `y = 5._dp` 中的 `y` 将是 `real(dp)` 类型）。此规则仅适用于 _全局作用域_ "
 "的顶层。类型必须在主程序、模块、函数和子程序中完全指定，就像在 F2008 中一样。"
 
 #: ../../doc/src/design.md:146
@@ -734,14 +733,14 @@ msgid ""
 "functions, subroutines, statements and expressions at the top level of "
 "_global scope_ use and operate on this symbol table."
 msgstr ""
-"_全局范围_ 有自己的符号表。主程序和模块/子模块看不到此符号表中的任何符号。但"
-"是_全局范围_顶层的函数、子例程、语句和表达式使用和操作这个符号表。"
+"_全局作用域_ 有自己的符号表。主程序和模块/子模块看不到此符号表中的任何符号。"
+"但是_全局作用域_顶层的函数、子例程、语句和表达式使用和操作这个符号表。"
 
 #: ../../doc/src/design.md:151
 msgid ""
 "The _global scope_ has the following symbols predefined in the symbol "
 "table:"
-msgstr "_全局范围_ 在符号表中预定义了以下符号："
+msgstr "_全局作用域_ 在符号表中预定义了以下符号："
 
 #: ../../doc/src/design.md:153
 msgid ""
@@ -919,7 +918,7 @@ msgstr "开发者指南"
 
 #: ../../doc/src/index.md:156
 msgid "LFortran Intrinsics"
-msgstr "LFortran 内在函数"
+msgstr "LFortran 内置函数"
 
 #: ../../doc/src/index.md:1
 msgid "LFortran Documentation"
@@ -948,10 +947,10 @@ msgid ""
 "[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gl/lfortran%2Fweb"
 "%2Flfortran-binder/master?filepath=Demo.ipynb)"
 msgstr ""
-"网站：[https://lfortran.org/](https://lfortran.org/) "
-"主存储库：[https://github.com/lfortran/lfortran](https://github.com/lfortran/"
-"lfortran) 使用 Binder 在线尝试：[![Binder](https://mybinder.org/badge_logo."
-"svg)](https://mybinder.org/v2/gl/lfortran%2Fweb%2Flfortran-binder/"
+"网站：[https://lfortran.org/](https://lfortran.org/"
+")；主存储库：[https://github.com/lfortran/lfortran](https://github.com/"
+"lfortran/lfortran)；使用 Binder 在线尝试：[![Binder](https://mybinder.org/"
+"badge_logo.svg)](https://mybinder.org/v2/gl/lfortran%2Fweb%2Flfortran-binder/"
 "master?filepath=Demo.ipynb)"
 
 #: ../../doc/src/index.md:9
@@ -969,9 +968,9 @@ msgid ""
 "[Development Status](progress.md) section for more information on "
 "features being supported and being worked on."
 msgstr ""
-"LFortran 正在开发中，有些功能现在可以使用，有些功能正在实现中。您还可以查看 ["
+"LFortran 正在开发中，有些功能现在可以使用，有些功能正在实现中。你还可以查看 ["
 "Development Status](progress.md) "
-"部分，了解有关受支持和正在开发的功能的更多信息。"
+"部分，了解有关被支持和正在开发的功能的更多信息。"
 
 #: ../../doc/src/index.md:21
 msgid "Works today"
@@ -988,11 +987,11 @@ msgid ""
 "%2Flfortran-binder/master?filepath=Demo.ipynb)   example notebook).   Or "
 "it can be used from the command-line in an interactive prompt (REPL)."
 msgstr ""
-"**交互式，Jupyter 支持** LFortran 可以从 Jupyter 用作 Fortran 内核，允许 "
+"**交互式，Jupyter 支持**：LFortran 可以在 Jupyter 中用作 Fortran 内核，允许 "
 "Python/Julia 风格的快速原型设计和探索性工作流程（参见示例笔记： "
-"[静态(https://nbviewer.jupyter.org/gist/certik/"
-"f1d28a486510810d824869ab0c491b1c) 或  [交互](https://mybinder.org/v2/gl/"
-"lfortran%2Fweb%2Flfortran-binder/master?filepath=Demo.ipynb)。或者，"
+"[静态](https://nbviewer.jupyter.org/gist/certik/"
+"f1d28a486510810d824869ab0c491b1c) 或 [交互](https://mybinder.org/v2/gl/"
+"lfortran%2Fweb%2Flfortran-binder/master?filepath=Demo.ipynb)）。或者，"
 "它可以在交互式提示 (REPL) 中的命令行中使用。"
 
 #: ../../doc/src/index.md:32
@@ -1004,7 +1003,7 @@ msgid ""
 "build tools on top. See the [Design](design.md)   and [Developer "
 "Tutorial](developer_tutorial.md) documents for more details."
 msgstr ""
-"**简洁、模块化设计，可用作库** LFortran 围绕两个独立模块 AST 和 ASR "
+"**简洁、模块化设计，可用作库**：LFortran 围绕两个独立模块 AST 和 ASR "
 "构建，这两个模块都是独立的（完全独立于 LFortran 的其余部分），鼓励用户将它们"
 "独立用于其他应用程序并在上面构建工具。有关详细信息，请参阅 [Design](design."
 "md) 和 [Developer Tutorial](developer_tutorial.md) 文档。"
@@ -1016,21 +1015,21 @@ msgid ""
 "with any Fortran compiler and linked with the   original GFortran "
 "compiled module."
 msgstr ""
-"**与 GFortran 的互操作** LFortran 可以将 GFortran 模块文件解析为 ASR "
-"并生成一个 Fortran 包装器，该包装器可以用任何 Fortran 编译器编译并与原始 "
+"**与 GFortran 的互操作**：LFortran 可以将 GFortran 模块文件解析为 ASR "
+"并生成一个 Fortran 包装器，该包装器可以用任何 Fortran 编译器编译并与原 "
 "GFortran 编译模块链接。"
 
 #: ../../doc/src/index.md:44
 msgid ""
 "**Create executables**   It can create executables just like other "
 "Fortran compilers."
-msgstr "**创建可执行文件** 它可以像其他 Fortran 编译器一样创建可执行文件。"
+msgstr "**创建可执行文件**：它可以像其他 Fortran 编译器一样创建可执行文件。"
 
 #: ../../doc/src/index.md:47
 msgid ""
 "**Runs on Linux, Mac and Windows**   All three platforms are regularly "
 "tested by our CI."
-msgstr "**在 Linux、Mac 和 Windows 上运行** 所有三个平台都由我们的 CI 定期测试。"
+msgstr "**在 Linux、Mac 和 Windows 上运行**：所有三个平台都由我们的 CI 定期测试。"
 
 #: ../../doc/src/index.md:51
 msgid "Planned"
@@ -1040,7 +1039,7 @@ msgstr "计划"
 msgid ""
 "These features are under development, there is a link to the "
 "corresponding issue so that you can track the progress by following it."
-msgstr "已计划这些功能正在开发中，有对应 issue 的链接，方便大家关注跟踪进度。"
+msgstr "已计划这些功能正在开发中，有对应议题的链接，方便大家关注跟踪进度。"
 
 #: ../../doc/src/index.md:56
 msgid ""
@@ -1053,12 +1052,12 @@ msgid ""
 " planned,   see [#56](https://gitlab.com/lfortran/lfortran/issues/56)), "
 "which allows to   use LFortran with production codes today."
 msgstr ""
-"**与其他语言（以及其他 Fortran 编译器）的原生互操作** 只需使用 `use` "
+"**与其他语言（以及其他 Fortran 编译器）的原生互操作**：只需使用 `use` "
 "语句即可自动调用其他语言（如 C 或 Python）编写的代码，参见 "
 "[#44](https://gitlab.com/lfortran/lfortran/issues/44)。它理解其他 Fortran "
 "编译器模块文件（可以`use`它们）及其 ABI 以正确链接（支持 "
-"GFortran，计划使用其他编译器，请参阅 [#56](https://gitlab.com/lfortran/"
-"lfortran/问题/56))，它允许今天将 LFortran 与生产代码一起使用。"
+"GFortran，计划使用其它编译器，请参阅 [#56](https://gitlab.com/lfortran/"
+"lfortran/问题/56)），它允许将 LFortran 与如今的生产代码一起使用。"
 
 #: ../../doc/src/index.md:65
 msgid ""
@@ -1067,7 +1066,7 @@ msgid ""
 "constructs (such as `do concurrent`)   to run on multi-core CPUs and "
 "GPUs, see   [#57](https://gitlab.com/lfortran/lfortran/issues/57)."
 msgstr ""
-"**现代硬件支持**感谢 LLVM，LFortran 的目标是在现代硬件上运行，并利用原生 "
+"**现代硬件支持**：得益于 LLVM，LFortran 的目标是在现代硬件上运行，并利用原生 "
 "Fortran 语言结构（例如 `do concurrent`）在多核 CPU 和 GPU 上运行，请参阅 [# "
 "57](https://gitlab.com/lfortran/lfortran/issues/57)。"
 
@@ -1078,7 +1077,7 @@ msgid ""
 "latest Fortran 2018 standard, see   "
 "[#58](https://gitlab.com/lfortran/lfortran/issues/58)."
 msgstr ""
-"**完整的 Fortran 2018 支持** 目前只实现了 Fortran 的一个子集，"
+"**完整的 Fortran 2018 支持**：目前只实现了 Fortran 的一个子集，"
 "但目标是完整实现最新的 Fortran 2018 标准，请参阅 [#58](https://gitlab.com/"
 "lfortran/lfortran/issue/58)。"
 
@@ -1088,7 +1087,7 @@ msgid ""
 "tracker](https://gitlab.com/lfortran/lfortran/issues) that you want us to"
 " prioritize (feel free to create new ones if we are missing anything)."
 msgstr ""
-"请在我们的 [问题跟踪器](https://gitlab.com/lfortran/lfortran/issues) 中对您希"
+"请在我们的 [议题跟踪器](https://gitlab.com/lfortran/lfortran/issues) 中对你希"
 "望我们优先考虑的问题进行投票（如果我们遗漏任何内容，请随时创建新问题）。"
 
 #: ../../doc/src/index.md:81
@@ -1157,14 +1156,15 @@ msgid ""
 "([#12](https://gitlab.com/lfortran/lfortran/issues/12)),  and other ideas"
 " ([#29](https://gitlab.com/lfortran/lfortran/issues/29))."
 msgstr ""
-"c) 实现所有其他很酷的功能：用于 C 和 Python 的 `use` 模块和自动包装器 "
-"([#44](https://gitlab.com/lfortran/lfortran/issues/44))，现代硬件支持 ([# "
-"57](https://gitlab.com/lfortran/lfortran/issues/57))，生成较旧的 Fortran "
-"标准 ([#72](https://gitlab.com/lfortran/lfortran/issues/72)) , Fortran "
-"doctest 功能 ([#73](https://gitlab.com/lfortran/lfortran/issues/73)), SymPy "
-"集成 ([#71](https://gitlab.com/lfortran/lfortran/issues/71))、IDE 的语言服务 "
-"([#12](https://gitlab.com/lfortran/lfortran/issues/12)) 和其他想法 "
-"([#29](https://gitlab.com/lfortran/lfortran/issues/29))。"
+"c) 实现所有其他很酷的功能：用于 C 和 Python 的 `use` "
+"模块和自动包装器（[#44](https://gitlab.com/lfortran/lfortran/issues/"
+"44)）、现代硬件支持（[# 57](https://gitlab.com/lfortran/lfortran/issues/"
+"57)）、生成较旧的 Fortran 标准（[#72](https://gitlab.com/lfortran/lfortran/"
+"issues/72)）、Fortran doctest 功能（[#73](https://gitlab.com/lfortran/"
+"lfortran/issues/73)）, SymPy 集成（[#71](https://gitlab.com/lfortran/"
+"lfortran/issues/71)）、IDE 的语言服务（[#12](https://gitlab.com/lfortran/"
+"lfortran/issues/12)）和其他想法（[#29](https://gitlab.com/lfortran/lfortran/"
+"issues/29)）。"
 
 #: ../../doc/src/index.md:118
 msgid "The step 1. is an internal refactoring that will not take long."
@@ -1184,10 +1184,10 @@ msgid ""
 "of summer 2019, hopefully sooner."
 msgstr ""
 "第 2 步将允许 LFortran 立即与生产代码交互使用（生产代码将使用 GFortran "
-"编译，然后“使用”LFortran 中的任何模块，并且可以交互调用函数/子例程，"
-"模块本身可以使用任何GFortran 支持的功能，但 API 必须适合 LFortran 理解的子集 "
-"--- 对于大量应用程序，带有数组参数的简单函数/子例程就足够了）。这将使 "
-"LFortran 可供第一批用户使用，并且在 LFortran 支持给定功能之前，"
+"编译，然后“使用” LFortran 中的任何模块，并且可以交互调用函数/子例程，"
+"模块本身可以使用任何 GFortran 支持的功能，但 API 必须适合 LFortran "
+"理解的子集 —— 对于大量应用程序，带有数组参数的简单函数/子例程就足够了）。"
+"这将使 LFortran 可供第一批用户使用，并且在 LFortran 支持给定功能之前，"
 "始终可以临时使用 GFortran。我们预计在 2019 年夏末完成第 2 步，希望能更快。"
 
 #: ../../doc/src/index.md:130
@@ -1204,7 +1204,7 @@ msgstr "安装"
 
 #: ../../doc/src/installation.md:3
 msgid "All the instructions below work on Linux, macOS and Windows."
-msgstr "以下所有说明都适用于 Linux、macOS 和 Windows。"
+msgstr "以下所有说明适用于 Linux、macOS 和 Windows。"
 
 #: ../../doc/src/installation.md:5
 msgid "Binaries"
@@ -1219,7 +1219,7 @@ msgid ""
 "environment (you can choose any name, here we chose `lf`) and activate "
 "it:"
 msgstr ""
-"安装 LFortran 的推荐方法是使用 Conda。例如，按照您的平台的说明安装 "
+"安装 LFortran 的推荐方法是使用 Conda。例如，按照你的平台的说明安装 "
 "[Miniconda](https://conda.io/en/latest/miniconda.html)，安装 "
 "Conda。然后创建一个新环境（你可以选择任何名称，这里我们选择了`lf`）并激活它："
 
@@ -1248,7 +1248,7 @@ msgstr "你可以通过执行以下命令来创建基于 Fortran 的 Jupyter 笔
 
 #: ../../doc/src/installation.md:32
 msgid "and selecting `New->Fortran`."
-msgstr "并选择`New->Fortran`。"
+msgstr "并选择 `New->Fortran`。"
 
 #: ../../doc/src/installation.md:35
 msgid "Build From a Source Tarball"
@@ -1314,15 +1314,13 @@ msgstr "克隆 LFortran git 存储库："
 msgid ""
 "Generate files that are needed for the build (this step depends on "
 "`re2c`, `bison` and `python`):"
-msgstr ""
-"Generate files that are needed for the build (this step depends on `re2c`, "
-"`bison` and `python`):"
+msgstr "生成构建所需的文件（此步骤取决于 `re2c`、`bison` 和 `python`）："
 
 #: ../../doc/src/installation.md:86
 msgid ""
 "Now the process is the same as installing from the source tarball. For "
 "example to build in Debug mode:"
-msgstr "现在的过程与从源tarball安装相同。例如在Debug模式下构建:"
+msgstr "现在的过程与从源 tarball 安装相同。例如在 Debug 模式下构建:"
 
 #: ../../doc/src/installation.md:92
 msgid "Run tests:"
@@ -1334,7 +1332,7 @@ msgstr "运行交互式提示符:"
 
 #: ../../doc/src/installation.md:102
 msgid "Build from Git on Windows with Visual Studio"
-msgstr "在Windows上使用Visual Studio从Git构建"
+msgstr "在 Windows 上使用 Visual Studio 从 Git 构建"
 
 #: ../../doc/src/installation.md:104
 msgid ""
@@ -1342,8 +1340,8 @@ msgid ""
 "download the Community version for free from: "
 "https://visualstudio.microsoft.com/downloads/."
 msgstr ""
-"安装Visual Studio (MSVC)，例如2022版本，可以从: https://visualstudio."
-"microsoft.com/downloads/ 免费下载社区版本。"
+"安装 Visual Studio (MSVC)，例如 2022 "
+"版本，可以免费下载社区版本：https://visualstudio.microsoft.com/downloads/ 。"
 
 #: ../../doc/src/installation.md:107
 msgid ""
@@ -1354,17 +1352,16 @@ msgstr ""
 "miniforge。"
 
 #: ../../doc/src/installation.md:109
-#, fuzzy
 msgid "Launch the Miniforge Prompt from the Desktop."
 msgstr "从桌面上启动 Miniforge Prompt。"
 
 #: ../../doc/src/installation.md:111
 msgid "In the shell, initialize the MSVC compiler using:"
-msgstr "在shell中，用以下方法初始化MSVC编译器:"
+msgstr "在 shell 中，用以下方法初始化 MSVC 编译器:"
 
 #: ../../doc/src/installation.md:117
 msgid "You can optionally test that MSVC works by:"
-msgstr "你可以选择通过以下方式测试MSVC是否工作:"
+msgstr "你可以选择通过以下方式测试 MSVC 是否工作:"
 
 #: ../../doc/src/installation.md:122
 msgid "Both commands must print help (several pages)."
@@ -1372,11 +1369,11 @@ msgstr "这两个命令都必须打印帮助信息（若干页）。"
 
 #: ../../doc/src/installation.md:124
 msgid "Now you can download and build LFortran:"
-msgstr "现在你可以下载并建立LFortran:"
+msgstr "现在你可以下载并建立 LFortran："
 
 #: ../../doc/src/installation.md:134
 msgid "If everything compiled, then you can use LFortran as follows:"
-msgstr "如果一切都编译好了，那么你就可以使用LFortran，如下所示:"
+msgstr "如果一切都编译好了，那么你就可以使用 LFortran，如下所示:"
 
 #: ../../doc/src/installation.md:140
 msgid "And so on."
@@ -1388,8 +1385,8 @@ msgid ""
 "is only available when the MSVC bat script above is ran. If you forget to"
 " activate it, LFortran's linking will fail."
 msgstr ""
-"注意：LFortran目前使用MSVC的链接器程序（`link`），只有在运行上面的MSVC "
-"bat脚本时才能使用。如果你忘记激活它，LFortran的链接就会失败。"
+"注意：LFortran 目前使用 MSVC 的链接器程序（`link`），只有在运行上面的 MSVC "
+"bat 脚本时才能使用。如果你忘记激活它，LFortran 的链接就会失败。"
 
 #: ../../doc/src/installation.md:146
 msgid ""
@@ -1399,30 +1396,30 @@ msgid ""
 "`vim`.  For this reason the Conda build `environment_win.yml` contains "
 "everything needed, including `git`."
 msgstr ""
-"注意：miniforge shell似乎在运行某个版本的`git-bash`（尽管它是`cmd.exe`），它"
-"有一些类似unix的文件系统挂载在`/usr`，有几个命令可用，如`ls`、`which`、`git`"
-"、`vim`。 由于这个原因，Conda构建的`environment_win."
-"yml`包含了所有需要的东西，包括`git`。"
+"注意：miniforge shell 似乎在运行某个版本的 `git-bash`（尽管它是`cmd.exe`），"
+"它有一些类似 unix 的文件系统挂载在 "
+"`/usr`，有几个命令可用，如`ls`、`which`、`git`、`vim`。 由于这个原因，Conda "
+"构建的 `environment_win.yml` 包含了所有需要的东西，包括 `git`。"
 
 #: ../../doc/src/installation.md:152
 msgid "Build from Git on Windows with WSL"
-msgstr "用WSL在Windows上从Git构建"
+msgstr "用 WSL 在 Windows上 从 Git 构建"
 
 #: ../../doc/src/installation.md:153
 msgid "In windows search \"turn windows features on or off\"."
-msgstr "在windows中搜索 \"打开或关闭windows功能\"。"
+msgstr "在 Windows 中搜索“打开或关闭 Windows 功能”。"
 
 #: ../../doc/src/installation.md:154
 msgid "Tick Windows subsystem for Linux."
-msgstr "标记Linux的Windows子系统。"
+msgstr "标记适用于Linux 的 Windows 子系统。"
 
 #: ../../doc/src/installation.md:155
 msgid "Press OK and restart computer."
-msgstr "按 \"确定 \"并重新启动计算机。"
+msgstr "按“确定”并重新启动计算机。"
 
 #: ../../doc/src/installation.md:156
 msgid "Go to Microsoft store and download Ubuntu 20.04, and launch it."
-msgstr "到微软商店下载Ubuntu 20.04，并启动它。"
+msgstr "到微软商店下载 Ubuntu 20.04，并启动它。"
 
 #: ../../doc/src/installation.md:157
 msgid "Run the following commands."
@@ -1438,11 +1435,11 @@ msgstr "然后转到文件底部，粘贴以下内容"
 
 #: ../../doc/src/installation.md:172
 msgid "Then press ctrl + O (save), Enter (confirm), ctrl + X (exit)"
-msgstr "然后按ctrl + O（保存），Enter（确认），ctrl + X（退出）"
+msgstr "然后按 ctrl + O（保存），Enter（确认），ctrl + X（退出）"
 
 #: ../../doc/src/installation.md:173
 msgid "After that restart Ubuntu"
-msgstr "之后，重新启动Ubuntu"
+msgstr "之后，重新启动 Ubuntu"
 
 #: ../../doc/src/installation.md:174
 msgid "Run the following"
@@ -1450,13 +1447,14 @@ msgstr "运行以下内容"
 
 #: ../../doc/src/installation.md:179
 msgid "Restart Ubuntu again"
-msgstr "再次重启Ubuntu"
+msgstr "再次重启 Ubuntu"
 
 #: ../../doc/src/installation.md:187
 msgid ""
 "You can change the directory to a Windows location using `cd /mnt/[drive "
 "letter]/[windows location]`."
-msgstr "你可以使用 `cd /mnt/[drive letter]/[windows location]`将目录改为Windows位置。"
+msgstr "你可以使用 `cd /mnt/[drive letter]/[windows location]`将路径改为 Windows "
+"位置。"
 
 #: ../../doc/src/installation.md:188
 msgid "e.g. `cd mnt/c/Users/name/source/repos/`"
@@ -1464,7 +1462,7 @@ msgstr "例如：`cd mnt/c/Users/name/source/repos/`"
 
 #: ../../doc/src/installation.md:190
 msgid "Now clone the LFortran git repository"
-msgstr "现在克隆LFortran的git仓库"
+msgstr "现在克隆 LFortran 的 git 仓库"
 
 #: ../../doc/src/installation.md:196
 msgid "Run the following commands"
@@ -1472,7 +1470,7 @@ msgstr "运行以下命令"
 
 #: ../../doc/src/installation.md:204
 msgid "If everything compiles, you can use LFortran as follows"
-msgstr "如果一切都能编译，你可以使用LFortran，如下所示"
+msgstr "如果一切都能编译，你可以使用 LFortran，如下所示"
 
 #: ../../doc/src/installation.md:210
 msgid "Run an interactive prompt"
@@ -1484,35 +1482,36 @@ msgstr "运行测试"
 
 #: ../../doc/src/installation.md:221
 msgid "Enabling the Jupyter Kernel"
-msgstr "启用Jupyter内核"
+msgstr "启用 Jupyter 内核"
 
 #: ../../doc/src/installation.md:223
 msgid "To install the Jupyter kernel, install the following Conda packages also:"
-msgstr "要安装Jupyter内核，还要安装以下Conda软件包:"
+msgstr "要安装 Jupyter 内核，还要安装以下 Conda 软件包:"
 
 #: ../../doc/src/installation.md:227
 msgid ""
 "and enable the kernel by `-DWITH_XEUS=yes` and install into "
 "`$CONDA_PREFIX`. For example:"
-msgstr "并通过`-DWITH_XEUS=yes`启用内核，然后安装到`$CONDA_PREFIX`。比如说:"
+msgstr "并通过 `-DWITH_XEUS=yes` 启用内核，然后安装到 `$CONDA_PREFIX`。比如："
 
 #: ../../doc/src/installation.md:239
 msgid ""
 "To use it, install Jupyter (`conda install jupyter`) and test that the "
 "LFortran kernel was found:"
-msgstr "要使用它，请安装Jupyter（`conda install jupyter`）并测试是否找到LFortran内核:"
+msgstr "要使用它，请安装 Jupyter（`conda install jupyter`）并测试是否找到 LFortran "
+"内核:"
 
 #: ../../doc/src/installation.md:244
 msgid "Then launch a Jupyter notebook as follows:"
-msgstr "然后启动Jupyter notebook，如下所示:"
+msgstr "然后启动 Jupyter notebook，如下所示:"
 
 #: ../../doc/src/installation.md:248
 msgid "Click `New->Fortran`. To launch a terminal jupyter LFortran console:"
-msgstr "单击`新的- > Fortran`。启动jupyter LFortran终端控制台:"
+msgstr "单击 `New - > Fortran`。启动 jupyter LFortran 终端控制台："
 
 #: ../../doc/src/installation.md:254
 msgid "Build From Git with Nix"
-msgstr "使用Nix从Git构建"
+msgstr "使用 Nix 从 Git 构建"
 
 #: ../../doc/src/installation.md:256
 msgid ""
@@ -1521,8 +1520,9 @@ msgid ""
 "the development environment. If you want, you can report bugs in a `nix-"
 "shell` environment to make it easier for others to reproduce."
 msgstr ""
-"确保精确环境和依赖关系的方法之一是使用`nix`。这将确保系统的依赖性不会干扰到开"
-"发环境。如果你愿意，你可以在`nix-shell`环境下报告bug，以方便别人复制。"
+"确保精确环境和依赖关系的方法之一是使用 "
+"`nix`。这将确保系统的依赖性不会干扰到开发环境。如果你愿意，你可以在 `nix-"
+"shell` 环境下报告 bug，以方便别人复制。"
 
 #: ../../doc/src/installation.md:258
 msgid "With Root"
@@ -1533,8 +1533,8 @@ msgid ""
 "We start by getting `nix`. The following multi-user installation will "
 "work on any machine with a Linux distribution, MacOS or Windows (via "
 "WSL):"
-msgstr "我们从获得`nix`开始。下面的多用户安装将在任何装有Linux发行版、MacOS或Windows"
-"（通过WSL）的机器上工作:"
+msgstr "我们从获得 `nix` 开始。下面的多用户安装将在任何装有 Linux 发行版、MacOS 或 "
+"Windows（通过 WSL）的机器上工作："
 
 #: ../../doc/src/installation.md:264
 msgid "Without Root"
@@ -1546,8 +1546,8 @@ msgid ""
 "on Linux distributions we can use [nix-"
 "portable](https://github.com/DavHau/nix-portable)."
 msgstr ""
-"如果你想不给`nix`提供机器的root权限，在Linux发行版上，我们可以使用[nix-"
-"portable] (https://github.com/DavHau/nix-portable)。"
+"如果你想不给`nix`提供机器的root权限，在Linux发行版上，我们可以使用 [nix-"
+"portable](https://github.com/DavHau/nix-portable).。"
 
 #: ../../doc/src/installation.md:270
 msgid ""
@@ -1568,17 +1568,17 @@ msgstr "现在进入开发环境:"
 msgid ""
 "The `--pure` flag ensures no system dependencies are used in the "
 "environment."
-msgstr "`--pure`标志确保在环境中不使用系统依赖。"
+msgstr "`--pure` 标志确保在环境中不使用系统依赖。"
 
 #: ../../doc/src/installation.md:286
 msgid "The build steps are the same as with the `ci`:"
-msgstr "构建步骤与 `ci `相同:"
+msgstr "构建步骤与 `ci ` 相同:"
 
 #: ../../doc/src/installation.md:292
 msgid ""
 "To change the compilation environment from `gcc` (default) to `clang` we "
 "can use `--argstr`:"
-msgstr "要把编译环境从`gcc`（默认）改为`clang`，我们可以使用`--argstr`:"
+msgstr "要把编译环境从 `gcc`（默认）改为 `clang`，我们可以使用 `--argstr`："
 
 #: ../../doc/src/installation.md:297
 msgid "Note About Dependencies"
@@ -1590,8 +1590,9 @@ msgid ""
 "[https://lfortran.org/download/](https://lfortran.org/download/), which "
 "only depends on LLVM, CMake and a C++ compiler."
 msgstr ""
-"我们鼓励终端用户（和发行版）使用来自 [https://lfortran.org/download/] "
-"(https://lfortran.org/download/)的tarball，它只依赖于LLVM、CMake和C++编译器。"
+"我们鼓励终端用户（和发行版）使用来自 [https://lfortran.org/download/"
+"](https://lfortran.org/download/"
+")的tarball，它只依赖于LLVM、CMake和C++编译器。"
 
 #: ../../doc/src/installation.md:303
 msgid ""
@@ -1599,31 +1600,29 @@ msgid ""
 " and contains some autogenerated files: the parser, the AST and ASR "
 "nodes, which is generated by an ASDL translator (requires Python)."
 msgstr ""
-"这个tarball是由我们的CI（持续集成）自动生成的，包含一些自动生成的文件：解析器"
-"、AST和ASR节点，由ASDL翻译器生成（需要Python）。"
+"这个 tarball 是由我们的 "
+"CI（持续集成）自动生成的，包含一些自动生成的文件：解析器、AST 和 ASR 节点，"
+"由 ASDL 翻译器生成（需要 Python）。"
 
 #: ../../doc/src/installation.md:307
 msgid "The instructions from git are to be used when developing LFortran itself."
-msgstr "在开发LFortran本身时要使用来自git的指令。"
+msgstr "在开发 LFortran 本身时要使用来自 git 的指令。"
 
 #: ../../doc/src/installation.md:309
 msgid "Note for users who do not use Conda"
-msgstr "不使用Conda的用户注意"
+msgstr "不使用 Conda 的用户注意"
 
 #: ../../doc/src/installation.md:311
-#, fuzzy
 msgid ""
 "Following are the dependencies necessary for installing this repository "
 "in development mode,"
-msgstr "以下是在开发模式下安装此版本库的必要依赖,"
+msgstr "以下是在开发模式下安装此版本库的必要依赖，"
 
 #: ../../doc/src/installation.md:314
-#, fuzzy
 msgid "[Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)"
 msgstr "[Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)"
 
 #: ../../doc/src/installation.md:315
-#, fuzzy
 msgid ""
 "[LLVM - 11.0.1](https://github.com/llvm/llvm-"
 "project/releases/download/llvmorg-11.0.1/llvm-11.0.1.src.tar.xz)"
@@ -1632,7 +1631,6 @@ msgstr ""
 "llvmorg-11.0.1/llvm-11.0.1.src.tar.xz)"
 
 #: ../../doc/src/installation.md:316
-#, fuzzy
 msgid "[re2c - 2.0.3](https://re2c.org/install/install.html)"
 msgstr "[re2c - 2.0.3](https://re2c.org/install/install.html)"
 
@@ -1644,8 +1642,8 @@ msgid ""
 "dependency to build the dynamic libraries (the ones ending with `.so`)."
 msgstr ""
 "[binutils - 2.31.90](ftp://sourceware.org/pub/binutils/snapshots/binutils-2."
-"31.90.tar.xz) - 确保你应该启用与此依赖关系相关的必要选项来构建动态库（以`."
-"so`结尾的库）。"
+"31.90.tar.xz) —— 确保你应该启用与此依赖关系相关的必要选项来构建动态库（以 `."
+"so` 结尾的库）。"
 
 #: ../../doc/src/installation.md:319
 msgid "Stacktraces"
@@ -1662,21 +1660,19 @@ msgid ""
 "instructions below."
 msgstr ""
 "LFortran 可以在出现未处理的异常时打印堆栈跟踪，也可以在任何编译器错误时使用 "
-"`--show-stacktrace` 选项。这对开发编译器本身很有帮助，可以看到LFortran中的问"
-"题所在。默认情况下，堆栈跟踪支持是关闭的，要启用它，需要在每个平台上按照下面"
-"的说明安装先决条件后，用`-DWITH_STACKTRACE=yes` cmake选项编译LFortran。"
+"`--show-stacktrace` 选项。这对开发编译器本身很有帮助，可以看到 LFortran 中的"
+"问题所在。默认情况下，堆栈跟踪支持是关闭的，要启用它，需要在每个平台上按照下"
+"面的说明安装先决条件后，用`-DWITH_STACKTRACE=yes` cmake 选项编译 LFortran。"
 
 #: ../../doc/src/installation.md:328
-#, fuzzy
 msgid "Ubuntu"
 msgstr "Ubuntu"
 
 #: ../../doc/src/installation.md:330
 msgid "In Ubuntu, `apt install binutils-dev`."
-msgstr "在Ubuntu系统, `apt install binutils-dev`."
+msgstr "在 Ubuntu 系统，`apt install binutils-dev`。"
 
 #: ../../doc/src/installation.md:332
-#, fuzzy
 msgid "macOS"
 msgstr "macOS"
 
@@ -1688,23 +1684,24 @@ msgid ""
 "store the debug information, see `src/bin/CMakeLists.txt` for more "
 "details). If it does not work, please report a bug."
 msgstr ""
-"如果你在macOS上使用默认的Clang编译器，那么堆栈跟踪应该正好在基于Intel和M1的ma"
-"cOS上工作（CMake构建系统自动调用`dsymtuil`工具和我们的Python脚本来存储调试信"
-"息，更多细节见`src/bin/CMakeLists.txt`）。如果不能工作，请报告一个错误。"
+"如果你在 macOS 上使用默认的 Clang 编译器，那么堆栈跟踪应该正好在基于 Intel "
+"和 M1 的 macOS 上工作（CMake 构建系统自动调用 `dsymtuil` 工具和我们的 Python "
+"脚本来存储调试信息，更多细节见 `src/bin/CMakeLists."
+"txt`）。如果不能工作，请报告一个错误。"
 
 #: ../../doc/src/installation.md:340
 msgid ""
 "If you do not like the default way, an alternative is to use bintutils. "
 "For that, first install [Spack](https://spack.io/), then:"
-msgstr "如果你不喜欢默认的方式，另一个选择是使用bintutils。为此，首先安装[Spack](http"
-"s://spack.io/)，然后:"
+msgstr "如果你不喜欢默认的方式，另一个选择是使用bintutils。为此，首先安装 "
+"[Spack](https://spack.io/)，然后："
 
 #: ../../doc/src/installation.md:347
 msgid ""
 "The last command will show a full path to the installed `binutils` "
 "package. Add this path to your shell config file, e.g.:"
-msgstr "最后一条命令将显示已安装的`binutils`软件包的完整路径。把这个路径添加到你的she"
-"ll配置文件中，例如:"
+msgstr "最后一条命令将显示已安装的 `binutils` 软件包的完整路径。把这个路径添加到你的 "
+"shell 配置文件中，例如："
 
 #: ../../doc/src/installation.md:352
 msgid ""
@@ -1713,17 +1710,17 @@ msgid ""
 " option. The `$CONDA_PREFIX` is there if you install some other "
 "dependencies (such as `llvm`) using Conda, otherwise you can remove it."
 msgstr ""
-"并使用`-DCMAKE_PREFIX_PATH=\"$CMAKE_PREFIX_PATH_LFORTRAN;$CONDA_PREFIX\"` cma"
-"ke选项编译LFortran。`$CONDA_PREFIX`是在你使用Conda安装了一些其他的依赖项（如`"
-"llvm`）的情况下出现的，否则你可以把它删除。"
+"并使用 `-DCMAKE_PREFIX_PATH=\"$CMAKE_PREFIX_PATH_LFORTRAN;$CONDA_PREFIX\"` "
+"cmake 选项编译 LFortran。`$CONDA_PREFIX` 是在你使用 Conda "
+"安装了一些其他的依赖项（如 `llvm`）的情况下出现的，否则你可以把它删除。"
 
 #: ../../doc/src/intrinsics/array.md:1
 msgid "Array Intrinsic Functions"
-msgstr "数组内在函数"
+msgstr "数组内置函数"
 
 #: ../../doc/src/intrinsics/array/allocated.md:1
 msgid "allocated(x): Status Check"
-msgstr "已分配（x）：状态检查"
+msgstr "allocated(x)：状态检查"
 
 #: ../../doc/src/intrinsics/array/allocated.md:3
 msgid "Logical status of an allocatable integer."
@@ -1821,7 +1818,7 @@ msgstr "声明"
 #: ../../doc/src/intrinsics/numeric/gamma.md:7
 #: ../../doc/src/intrinsics/numeric/mod.md:7
 msgid "Syntax"
-msgstr "句法"
+msgstr "语法"
 
 #: ../../doc/src/intrinsics/array/allocated.md:14
 #: ../../doc/src/intrinsics/array/cshift.md:14
@@ -1870,7 +1867,7 @@ msgstr "句法"
 #: ../../doc/src/intrinsics/numeric/gamma.md:14
 #: ../../doc/src/intrinsics/numeric/mod.md:15
 msgid "Arguments"
-msgstr "论据"
+msgstr "参数"
 
 #: ../../doc/src/intrinsics/array/allocated.md:16
 msgid "`x` is an integer input parameter."
@@ -2030,14 +2027,14 @@ msgstr "`allocated(x)` 检查整数输入参数的分配状态。 "
 #: ../../doc/src/intrinsics/numeric/gamma.md:38
 #: ../../doc/src/intrinsics/numeric/mod.md:43
 msgid "Types"
-msgstr ""
+msgstr "类型"
 
 #: ../../doc/src/intrinsics/array/allocated.md:31
 #: ../../doc/src/intrinsics/array/size.md:35
 #: ../../doc/src/intrinsics/character/achar.md:39
 #: ../../doc/src/intrinsics/character/char.md:40
 msgid "Supported argument type is integer."
-msgstr ""
+msgstr "支持的参数类型是整型。"
 
 #: ../../doc/src/intrinsics/array/allocated.md:46
 #: ../../doc/src/intrinsics/array/cshift.md:43
@@ -2086,7 +2083,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:58
 #: ../../doc/src/intrinsics/numeric/mod.md:80
 msgid "Examples"
-msgstr ""
+msgstr "示例"
 
 #: ../../doc/src/intrinsics/array/allocated.md:59
 #: ../../doc/src/intrinsics/array/cshift.md:55
@@ -2100,7 +2097,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/mathematical/atanh.md:77
 #: ../../doc/src/intrinsics/mathematical/fraction.md:44
 msgid "**Result**:"
-msgstr ""
+msgstr "**结果**："
 
 #: ../../doc/src/intrinsics/array/allocated.md:65
 #: ../../doc/src/intrinsics/array/cshift.md:62
@@ -2153,32 +2150,32 @@ msgstr "也可以看看"
 
 #: ../../doc/src/intrinsics/array/cshift.md:1
 msgid "cshift(A, shift [, dim]): Circular Shift"
-msgstr ""
+msgstr "cshift(A, shift [, dim])：循环移位"
 
 #: ../../doc/src/intrinsics/array/cshift.md:3
 msgid "Circular shift elements of an array."
-msgstr ""
+msgstr "数组元素的循环移位。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:16
 #: ../../doc/src/intrinsics/array/size.md:16
 msgid "`A` the input array of any type or rank."
-msgstr ""
+msgstr "`A` 为任何类型或维度的输入数组。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:18
 msgid "`shift` the input value of integer type."
-msgstr ""
+msgstr "`shift` 为整型类型的输入值。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:20
 msgid ""
 "`dim` optional dimension, if present, `cshift` returns the result of this"
 " dimension."
-msgstr ""
+msgstr "`dim` 可选维度，如果存在，`cshift` 返回此维度的结果。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:24
 msgid ""
 "The return value is of input array type and rank as the `A` array input "
 "argument."
-msgstr ""
+msgstr "返回值与数组输入参数 `A` 的类型与维度相同。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:28
 msgid ""
@@ -2186,47 +2183,50 @@ msgid ""
 " array along the dimension of `dim`. Default value of `dim` is 1, used "
 "when `dim` is not passed."
 msgstr ""
+"**cshift(A, shift [, dim])** 沿 `dim` 的维度对 `A` 数组的元素执行循环移位。"
+"当 `dim` 未传递时使用，`dim` 的默认值为 1。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:32
 msgid ""
 "If the rank of array is 1, then all elements of array are shifted by "
 "`shift` places. If rank is greater than one, then all complexte rank one "
 "sections of array along the given dimension are shifted."
-msgstr ""
+msgstr "如果数组的维度数为 1，则数组的所有元素都会移动 `shift` 位。如果维度数大于 "
+"1，则沿给定维度的数组元素都被移动。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:36
 msgid ""
 "Elements shifted out one end of each rank one section are shifted back in"
 " the other end."
-msgstr ""
+msgstr "元素从每一列的一端移出，在另一端移回。"
 
 #: ../../doc/src/intrinsics/array/cshift.md:41
 msgid ""
 "Supported argument type is array for `A` and integer for `shift` and "
 "`dim`."
-msgstr ""
+msgstr "支持的参数类型是 `A` 的数组和 `shift` 和 `dim` 的整数。"
 
 #: ../../doc/src/intrinsics/array/size.md:1
 msgid "size(x): Size of Array"
-msgstr ""
+msgstr "size(x)：数组大小"
 
 #: ../../doc/src/intrinsics/array/size.md:3
 msgid "Returns the size of an array `x`."
-msgstr ""
+msgstr "返回数组 `x` 的大小。"
 
 #: ../../doc/src/intrinsics/array/size.md:18
 msgid ""
 "`dim` optional dimension, if present, `size` returns the size of this "
 "dimension."
-msgstr ""
+msgstr "`dim` 可选维度，如果存在，`size` 返回此维度的大小。"
 
 #: ../../doc/src/intrinsics/array/size.md:20
 msgid "`kind` optional the kind of the return value."
-msgstr ""
+msgstr "`kind` 可选返回值的种类。"
 
 #: ../../doc/src/intrinsics/array/size.md:24
 msgid "`n` the size of an array (integer)."
-msgstr ""
+msgstr "`n` 数组的大小（整型）。"
 
 #: ../../doc/src/intrinsics/array/size.md:28
 msgid ""
@@ -2235,42 +2235,45 @@ msgid ""
 " which case it only returns the size of this particular dimension. The "
 "`kind` argument can be used to specify the integer kind of the result."
 msgstr ""
+"`size` 内部函数返回数组的大小。它返回所有维度的乘积，除非指定了 `dim` "
+"参数，在这种情况下，它只返回这个特定维度的大小。 `kind` "
+"参数可用于指定结果的整数类型。"
 
 #: ../../doc/src/intrinsics/array/size.md:57
 msgid "[shape](), [reshape]()."
-msgstr ""
+msgstr "[shape]()，[reshape]()。"
 
 #: ../../doc/src/intrinsics/bit.md:1
 msgid "Bit Intrinsic Functions"
-msgstr ""
+msgstr "位操作内置函数"
 
 #: ../../doc/src/intrinsics/bit/bge.md:1
 msgid "bge(x, y): Bitwise Greater or Equal"
-msgstr ""
+msgstr "bge(x, y)：按位大于或等于"
 
 #: ../../doc/src/intrinsics/bit/bge.md:3
 msgid "Bitwise greater than or equal to."
-msgstr ""
+msgstr "按位大于或等于。"
 
 #: ../../doc/src/intrinsics/bit/bge.md:16
 #: ../../doc/src/intrinsics/bit/bgt.md:16
 #: ../../doc/src/intrinsics/bit/ble.md:16
 #: ../../doc/src/intrinsics/bit/blt.md:16
 msgid "`x` and `y` are integer input values. Both input values are of same kind."
-msgstr ""
+msgstr "`x` 和 `y` 是整数输入值。两个输入值是同一类型的。"
 
 #: ../../doc/src/intrinsics/bit/bge.md:20
 #: ../../doc/src/intrinsics/bit/bgt.md:20
 #: ../../doc/src/intrinsics/bit/ble.md:20
 #: ../../doc/src/intrinsics/bit/blt.md:20
 msgid "The return value is of type logical and of the default kind."
-msgstr ""
+msgstr "返回值是逻辑类型和默认类型。"
 
 #: ../../doc/src/intrinsics/bit/bge.md:24
 msgid ""
 "`bge(x, y)` calculates if two integer input values is bitwise greater "
 "than or equal to another."
-msgstr ""
+msgstr "`bge(x, y)` 计算两个整数输入值是否按位大于或等于另一个。"
 
 #: ../../doc/src/intrinsics/bit/bge.md:29
 #: ../../doc/src/intrinsics/bit/bgt.md:29
@@ -2278,7 +2281,7 @@ msgstr ""
 #: ../../doc/src/intrinsics/bit/blt.md:29
 #: ../../doc/src/intrinsics/bit/btest.md:34
 msgid "Supported input types is integer of 32 bit and 64 bit size."
-msgstr ""
+msgstr "支持的输入类型是 32 位和 64 位大小的整数。"
 
 #: ../../doc/src/intrinsics/bit/bge.md:60
 #: ../../doc/src/intrinsics/bit/bgt.md:59
@@ -2316,110 +2319,111 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/gamma.md:67
 #: ../../doc/src/intrinsics/numeric/mod.md:89
 msgid "**Result:**"
-msgstr ""
+msgstr "**结果：**"
 
 #: ../../doc/src/intrinsics/bit/bge.md:70
 msgid "[bgt](bgt.md), [ble](ble.md), [blt](blt.md)."
-msgstr ""
+msgstr "[bgt](bgt.md)，[ble](ble.md)，[blt](blt.md)。"
 
 #: ../../doc/src/intrinsics/bit/bgt.md:1
 msgid "bgt(x, y): Bitwise Greater Than"
-msgstr ""
+msgstr "bgt(x, y)：按位大于"
 
 #: ../../doc/src/intrinsics/bit/bgt.md:3
 msgid "Bitwise greater than."
-msgstr ""
+msgstr "按位大于。"
 
 #: ../../doc/src/intrinsics/bit/bgt.md:24
 msgid ""
 "`bgt(x, y)` calculates if one integer input values is bitwise greater "
 "than the other."
-msgstr ""
+msgstr "`bgt(x, y)` 计算一个整数输入值是否按位大于另一个。"
 
 #: ../../doc/src/intrinsics/bit/bgt.md:68
 msgid "[bge](bge.md), [ble](ble.md), [blt](blt.md)."
-msgstr ""
+msgstr "[bge](bge.md)，[ble](ble.md)，[blt](blt.md)。"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:1
 msgid "bit_size(x): Bit Size"
-msgstr ""
+msgstr "bit_size(x): 位大小"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:3
 msgid "Bit size."
-msgstr ""
+msgstr "位大小。"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:16
 msgid "`x` is integer input value."
-msgstr ""
+msgstr "`x` 是整数输入值。"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:20
 #: ../../doc/src/intrinsics/numeric/digits.md:19
 msgid "The return value is of type integer."
-msgstr ""
+msgstr "返回值是整数类型。"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:24
 msgid ""
 "`bit_size(x)` calculates the number of bits including sign bit of binary "
 "representation of `x`."
-msgstr ""
+msgstr "`bit_size(x)` 计算 `x` 的二进制表示的包括符号位在内的位数。"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:29
 msgid "Supported input types is integer."
-msgstr ""
+msgstr "支持的输入类型是整数。"
 
 #: ../../doc/src/intrinsics/bit/ble.md:1
 msgid "bge(x, y): Bitwise Less or Equal"
-msgstr ""
+msgstr "bge(x, y)：按位小于或等于"
 
 #: ../../doc/src/intrinsics/bit/ble.md:3
 msgid "Bitwise less than or equal to."
-msgstr ""
+msgstr "按位小于或等于。"
 
 #: ../../doc/src/intrinsics/bit/ble.md:24
 msgid ""
 "`ble(x, y)` calculates if one integer input values is bitwise less than "
 "or equal to other."
-msgstr ""
+msgstr "`ble(x, y)` 计算一个整数输入值是否按位小于或等于另一个。"
 
 #: ../../doc/src/intrinsics/bit/ble.md:70
 msgid "[bgt](bgt.md), [bge](bge.md), [blt](blt.md)."
-msgstr ""
+msgstr "[bgt](bgt.md), [bge](bge.md), [blt](blt.md)."
 
 #: ../../doc/src/intrinsics/bit/blt.md:1
 msgid "blt(x, y): Bitwise Less Than"
-msgstr ""
+msgstr "blt(x, y)：按位小于"
 
 #: ../../doc/src/intrinsics/bit/blt.md:3
 msgid "Bitwise less than."
-msgstr ""
+msgstr "按位小于。"
 
 #: ../../doc/src/intrinsics/bit/blt.md:24
 msgid ""
 "`blt(x, y)` calculates if one integer input values is bitwise less than "
 "the other."
-msgstr ""
+msgstr "`blt(x, y)` 计算一个整数输入值是否按位小于另一个。"
 
 #: ../../doc/src/intrinsics/bit/blt.md:68
 msgid "[bge](bge.md), [ble](ble.md), [bgt](bgt.md)."
-msgstr ""
+msgstr "[bge](bge.md), [ble](ble.md)，[bgt](bgt.md)。"
 
 #: ../../doc/src/intrinsics/bit/btest.md:1
 msgid "btest(x, pos): Bit Test at Position"
-msgstr ""
+msgstr "btest(x, pos)：位置位测试"
 
 #: ../../doc/src/intrinsics/bit/btest.md:3
 msgid "Bit test."
-msgstr ""
+msgstr "位测试。"
 
 #: ../../doc/src/intrinsics/bit/btest.md:16
 msgid ""
 "`x` and `pos` are integer input values. Both input values are of same "
 "kind. `pos` represents position in `x`."
-msgstr ""
+msgstr "`x` 和 `pos` 是整数输入值。 两个输入值是同一种类型。 `pos` 表示在 `x` "
+"中的位置。"
 
 #: ../../doc/src/intrinsics/bit/btest.md:21
 msgid "The return value is of type logical."
-msgstr ""
+msgstr "返回值是逻辑类型。"
 
 #: ../../doc/src/intrinsics/bit/btest.md:25
 msgid ""
@@ -2427,37 +2431,40 @@ msgid ""
 "set. The counting of the bits starts at 0, at least significant bit (LSB)"
 " i.e., the rightmost bit in `x`."
 msgstr ""
+"`btest(x, pos)` 计算输入整数值 `x` 中的 `pos` 位是否已设置。 位的计数从 0 "
+"开始，至少是有效位 (LSB)，即“x”中的最右边位。"
 
 #: ../../doc/src/intrinsics/bit/btest.md:29
 msgid ""
 "If `pos` less than 0 or greater than `bit_size()`, `btest(x, pos)` errors"
 " with not allowed message."
-msgstr ""
+msgstr "如果 `pos` 小于 0 或大于 `bit_size()`，则 `btest(x, pos)` "
+"错误并显示不允许的消息。"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:1
 msgid "shiftl(x, shift): Shift Left"
-msgstr ""
+msgstr "shiftl(x, shift)：左移"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:3
 msgid "Logical shift left function."
-msgstr ""
+msgstr "逻辑左移函数。"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:16
 #: ../../doc/src/intrinsics/bit/shiftr.md:16
 msgid "`x` is an integer input value."
-msgstr ""
+msgstr "`x` 是一个整数输入值。"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:18
 #: ../../doc/src/intrinsics/bit/shiftr.md:18
 msgid ""
 "`shift` an unsigned integer value less than or equal to the bit size of "
 "`x`. The possible values are 7, 31, and 63."
-msgstr ""
+msgstr "`shift` 一个小于或等于 `x` 位大小的无符号整数值。 可能的值为 7、31 和 63。"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:23
 #: ../../doc/src/intrinsics/bit/shiftr.md:23
 msgid "The return value is of type integer and of the same kind as `x`."
-msgstr ""
+msgstr "返回值是整数类型，与 `x` 类型相同。"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:27
 msgid ""
@@ -2466,25 +2473,29 @@ msgid ""
 "MSB(**M**ost **S**ignificant **B**it). Bits shifted from the left end "
 "i.e., MSB bits are lost. Zeroes are appended to the opposite right end."
 msgstr ""
+"**shiftl(x, shift)** 逻辑上将“x”左移“shift”位数。 `shiftl` 从 LSB(**L**east "
+"**S**significant **B**it) 转换为 MSB(**M**ost **S**significant **B**it)。 "
+"从左端移位的位，即 MSB 位丢失。 零被附加到相反的右端。"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:34
 #: ../../doc/src/intrinsics/bit/shiftr.md:34
 msgid ""
 "Supported types in unsigned integer value `x` and unsigned integer value "
 "`shift` from (7, 31, 63) less than or equal to bit size of `x`."
-msgstr ""
+msgstr "无符号整数值`x`和无符号整数值`shift`中支持的类型（7、31、63）小于或等于`x`的"
+"位大小。"
 
 #: ../../doc/src/intrinsics/bit/shiftl.md:82
 msgid "[shiftr](shiftr.md)."
-msgstr ""
+msgstr "[shiftr](shiftr.md)。"
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:1
 msgid "shiftr(x, shift): Shift Right"
-msgstr ""
+msgstr "shiftr(x, shift)：右移"
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:3
 msgid "Logical shift right function."
-msgstr ""
+msgstr "逻辑右移功能。"
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:27
 msgid ""
@@ -2493,28 +2504,31 @@ msgid ""
 "LSB(**L**east **S**ignificant **B**it). Bits shifted from the right end "
 "i.e., LSB bits are lost. Zeroes are appended to the opposite left end."
 msgstr ""
+"**shiftr(x, shift)** 将“x”逻辑右移“shift”位数。 `shiftr` 从 MSB(**M**ost "
+"**S**significant **B**it) 转换为 LSB(**L**east **S**significant **B**it)。 "
+"从右端移位的位，即 LSB 位丢失。 零被附加到相对的左端。"
 
 #: ../../doc/src/intrinsics/bit/shiftr.md:82
 msgid "[shiftl](shiftl.md)."
-msgstr ""
+msgstr "[shiftl](shiftl.md)。"
 
 #: ../../doc/src/intrinsics/character.md:1
 msgid "Character Intrinsic Functions"
-msgstr ""
+msgstr "字符内置函数"
 
 #: ../../doc/src/intrinsics/character/achar.md:1
 msgid "achar(x, kind): To Character in ASCII set."
-msgstr ""
+msgstr "achar(x, kind): ASCII 集中的字符。"
 
 #: ../../doc/src/intrinsics/character/achar.md:3
 msgid "Character represented by in the ASCII character set."
-msgstr ""
+msgstr "ASCII 字符集中由 表示的字符。"
 
 #: ../../doc/src/intrinsics/character/achar.md:16
 msgid ""
 "`x`: the input value of integer type. `kind`: an optional input value of "
 "type integer constant expression for initialization."
-msgstr ""
+msgstr "`x`：整数类型的输入值。 `kind`：用于初始化的整数常量表达式类型的可选输入值。"
 
 #: ../../doc/src/intrinsics/character/achar.md:20
 #: ../../doc/src/intrinsics/character/adjustl.md:18
@@ -2522,25 +2536,25 @@ msgstr ""
 #: ../../doc/src/intrinsics/character/char.md:21
 #: ../../doc/src/intrinsics/character/len_trim.md:18
 msgid "Return value"
-msgstr ""
+msgstr "返回值"
 
 #: ../../doc/src/intrinsics/character/achar.md:22
 #: ../../doc/src/intrinsics/character/char.md:23
 msgid "The return value is of type character of length 1."
-msgstr ""
+msgstr "返回值是长度为 1 的字符类型。"
 
 #: ../../doc/src/intrinsics/character/achar.md:24
 #: ../../doc/src/intrinsics/character/char.md:25
 msgid ""
 "The return value is of kind `kind` if optional input value is passed, "
 "otherwise the kind is default kind."
-msgstr ""
+msgstr "如果传入可选输入值，则返回值为 kind `kind`，否则为默认 kind。"
 
 #: ../../doc/src/intrinsics/character/achar.md:29
 msgid ""
 "**achar(x, kind)** returns the character represented by the ASCII "
 "character set at `x` position."
-msgstr ""
+msgstr "**achar(x, kind)** 返回由 ASCII 字符集在 `x` 位置表示的字符。"
 
 #: ../../doc/src/intrinsics/character/achar.md:32
 #: ../../doc/src/intrinsics/character/char.md:33
@@ -2548,160 +2562,165 @@ msgid ""
 "If `x` is outside the ASCII character set integer value, i.e., if `x` is "
 "not represented in the ASCII character set, the return value is "
 "undefined."
-msgstr ""
+msgstr "如果 `x` 在 ASCII 字符集整数值之外，即，如果 `x` 没有在 ASCII "
+"字符集中表示，则返回值未定义。"
 
 #: ../../doc/src/intrinsics/character/achar.md:35
 #: ../../doc/src/intrinsics/character/char.md:36
 msgid "It is a runtime builtin function."
-msgstr ""
+msgstr "它是一个运行时内置函数。"
 
 #: ../../doc/src/intrinsics/character/achar.md:71
 #: ../../doc/src/intrinsics/character/adjustl.md:64
 #: ../../doc/src/intrinsics/character/len_trim.md:65
 msgid "[lge](lge.md)."
-msgstr ""
+msgstr "[lge](lge.md)."
 
 #: ../../doc/src/intrinsics/character/adjustl.md:1
 msgid "adjustl(string): Left Adjust String"
-msgstr ""
+msgstr "adjustl(string): 左调整字符串"
 
 #: ../../doc/src/intrinsics/character/adjustl.md:3
 msgid "Left adjust a string."
-msgstr ""
+msgstr "左调整一个字符串。"
 
 #: ../../doc/src/intrinsics/character/adjustl.md:16
 #: ../../doc/src/intrinsics/character/adjustr.md:16
 msgid "`string`: the input value must be of character type."
-msgstr ""
+msgstr "`string`：输入值必须是字符类型。"
 
 #: ../../doc/src/intrinsics/character/adjustl.md:20
 msgid ""
 "The return value is of type character and of the same kind as of input "
 "value `string`, with leading spaces removed and same number of spaces "
 "appended."
-msgstr ""
+msgstr "返回值是字符类型，与输入值`string`的类型相同，删除了前导空格并附加了相同数量"
+"的空格。"
 
 #: ../../doc/src/intrinsics/character/adjustl.md:25
 msgid ""
 "**adjustl(string)** adjusts input string by removing any leading spaces "
 "and appending same number of spaces."
-msgstr ""
+msgstr "**adjustl(string)** "
+"通过删除任何前导空格并附加相同数量的空格来调整输入字符串。"
 
 #: ../../doc/src/intrinsics/character/adjustl.md:30
 #: ../../doc/src/intrinsics/character/adjustr.md:31
 msgid "Supported argument type is character."
-msgstr ""
+msgstr "支持的参数类型是字符。"
 
 #: ../../doc/src/intrinsics/character/adjustr.md:1
 msgid "adjustr(string): Right Adjust String"
-msgstr ""
+msgstr "调整器（字符串）：右调整字符串"
 
 #: ../../doc/src/intrinsics/character/adjustr.md:3
 msgid "Right adjust a string."
-msgstr ""
+msgstr "右调整一个字符串。"
 
 #: ../../doc/src/intrinsics/character/adjustr.md:20
 msgid ""
 "The return value is of type character and of the same kind as of input "
 "value `string`, with trailing spaces removed and same number of spaces "
 "added at the start."
-msgstr ""
+msgstr "返回值是字符类型，与输入值`string`的类型相同，删除了尾随空格并在开头添加了相"
+"同数量的空格。"
 
 #: ../../doc/src/intrinsics/character/adjustr.md:26
 msgid ""
 "**adjustr(string)** adjusts input string by removing any trailing spaces "
 "and adding same number of spaces at the start of the input string."
-msgstr ""
+msgstr "**adjustr(string)** "
+"通过删除任何尾随空格并在输入字符串的开头添加相同数量的空格来调整输入字符串。"
 
 #: ../../doc/src/intrinsics/character/adjustr.md:65
 msgid "[adjustl](adjustl.md)."
-msgstr ""
+msgstr "[adjustl](adjustl.md)。"
 
 #: ../../doc/src/intrinsics/character/char.md:1
 msgid "char(x, [, kind]): Integer to Character"
-msgstr ""
+msgstr "char(x, [, kind])：整数到字符"
 
 #: ../../doc/src/intrinsics/character/char.md:3
 msgid "Integer to character conversion."
-msgstr ""
+msgstr "整数到字符的转换。"
 
 #: ../../doc/src/intrinsics/character/char.md:16
 msgid "`x`: the input value of integer type."
-msgstr ""
+msgstr "`x`：整数类型的输入值。"
 
 #: ../../doc/src/intrinsics/character/char.md:18
 msgid ""
 "`kind`: an optional input value of type integer constant expression for "
 "initialization. This indicates the kind parameter of the result."
-msgstr ""
+msgstr "`kind`：用于初始化的整数常量表达式类型的可选输入值。 这表示结果的种类参数。"
 
 #: ../../doc/src/intrinsics/character/char.md:30
 msgid ""
 "**char(x)** returns the character represented by the ASCII character set "
 "at `x` position."
-msgstr ""
+msgstr "**char(x)** 返回由 ASCII 字符集在 `x` 位置表示的字符。"
 
 #: ../../doc/src/intrinsics/character/char.md:71
 msgid "[achar](achar.md), [iachar](iachar.md), [ichar](ichar.md)"
-msgstr ""
+msgstr "[achar](achar.md)，[iachar](iachar.md)，[ichar](ichar.md)"
 
 #: ../../doc/src/intrinsics/character/len_trim.md:1
 msgid "len_trim(string): Length Ignoring Trailing Blanks"
-msgstr ""
+msgstr "len_trim(string): 忽略尾随空格的长度"
 
 #: ../../doc/src/intrinsics/character/len_trim.md:3
 msgid "Length of a character string ignoring trailing blank character(s)."
-msgstr ""
+msgstr "忽略尾随空白字符的字符串长度。"
 
 #: ../../doc/src/intrinsics/character/len_trim.md:16
 msgid "`string` the input value of character type."
-msgstr ""
+msgstr "`string` 字符类型的输入值。"
 
 #: ../../doc/src/intrinsics/character/len_trim.md:20
 msgid "The return value is of type unsigned integer."
-msgstr ""
+msgstr "返回值是无符号整数类型。"
 
 #: ../../doc/src/intrinsics/character/len_trim.md:24
 msgid ""
 "**len_trim(string)** returns the length of the character argument without"
 " including trailing blank character(s)."
-msgstr ""
+msgstr "**len_trim(string)** 返回字符参数的长度，不包括尾随空白字符。"
 
 #: ../../doc/src/intrinsics/character/len_trim.md:29
 msgid "Supported argument type is character scalar."
-msgstr ""
+msgstr "支持的参数类型是字符标量。"
 
 #: ../../doc/src/intrinsics/character/lge.md:1
 msgid "lge(x, y): Lexically Greater or Equal"
-msgstr ""
+msgstr "lge(x, y)：词法上大于或等于"
 
 #: ../../doc/src/intrinsics/character/lge.md:3
 msgid "Lexically greater than or equal."
-msgstr ""
+msgstr "词法上大于或等于。"
 
 #: ../../doc/src/intrinsics/character/lge.md:17
 msgid "`x` input value of type character."
-msgstr ""
+msgstr "`x` 类型字符的输入值。"
 
 #: ../../doc/src/intrinsics/character/lge.md:19
 msgid "`y` input value of type character."
-msgstr ""
+msgstr "`y` 类型字符的输入值。"
 
 #: ../../doc/src/intrinsics/character/lge.md:21
 msgid "`x` and `y` can be seen as string A and string B."
-msgstr ""
+msgstr "`x` 和 `y` 可以看作是字符串 A 和字符串 B。"
 
 #: ../../doc/src/intrinsics/character/lge.md:25
 msgid "The return value is of logical `true` or `false` type."
-msgstr ""
+msgstr "返回值是逻辑 `true` 或 `false` 类型。"
 
 #: ../../doc/src/intrinsics/character/lge.md:27
 msgid "`True` if `x` string is lexically greater than or equal to `y`."
-msgstr ""
+msgstr "如果 `x` 字符串在词法上大于或等于 `y`，则为 `True`。"
 
 #: ../../doc/src/intrinsics/character/lge.md:29
 msgid "`False` if they are not."
-msgstr ""
+msgstr "如果不是，则为`False`。"
 
 #: ../../doc/src/intrinsics/character/lge.md:33
 msgid ""
@@ -2709,46 +2728,49 @@ msgid ""
 " equal to input string `y`. The two strings in comparison are interpreted"
 " as containing ASCII character codes."
 msgstr ""
+"**lge(x, y)** 确定输入字符串 `x` 在词法上是否大于或等于输入字符串 `y`。 "
+"比较的两个字符串被解释为包含 ASCII 字符代码。"
 
 #: ../../doc/src/intrinsics/character/lge.md:39
 msgid "Argument types should be of type character literal."
-msgstr ""
+msgstr "参数类型应该是字符文字类型。"
 
 #: ../../doc/src/intrinsics/character/lge.md:81
 msgid "[len_trim](len_trim.md)."
-msgstr ""
+msgstr "[len_trim](len_trim.md)."
 
 #: ../../doc/src/intrinsics/kind-type.md:1
 msgid "Kind Type Intrinsic Functions"
-msgstr ""
+msgstr "种类类型内置函数"
 
 #: ../../doc/src/intrinsics/kind-type/kind.md:1
 msgid "kind(x): Kind of an Entity"
-msgstr ""
+msgstr "kind(x)：实体的种类"
 
 #: ../../doc/src/intrinsics/kind-type/kind.md:3
 msgid "Kind of an entity."
-msgstr ""
+msgstr "一种实体。"
 
 #: ../../doc/src/intrinsics/kind-type/kind.md:16
 msgid ""
 "`x` the input value, can be logical, integer, real, complex, or "
 "character. It may be a scalar or array valued i.e., any intrinsic type."
-msgstr ""
+msgstr "`x` 输入值，可以是逻辑、整数、实数、复数或字符。 "
+"它可以是标量或数组值，即任何内在类型。"
 
 #: ../../doc/src/intrinsics/kind-type/kind.md:21
 msgid "The return value is of integer type and of default integer kind."
-msgstr ""
+msgstr "返回值是整数类型和默认整数类型。"
 
 #: ../../doc/src/intrinsics/kind-type/kind.md:25
 msgid "**kind(x)** returns the kind parameter of the input argument `x`."
-msgstr ""
+msgstr "**kind(x)** 返回输入参数 `x` 的种类参数。"
 
 #: ../../doc/src/intrinsics/kind-type/kind.md:29
 msgid ""
 "Supported argument types are logical, integer, real, complex, or "
 "character."
-msgstr ""
+msgstr "支持的参数类型是逻辑、整数、实数、复数或字符。"
 
 #: ../../doc/src/intrinsics/kind-type/kind.md:81
 #: ../../doc/src/intrinsics/misc/command_argument_count.md:16
@@ -2760,21 +2782,21 @@ msgstr "无。"
 
 #: ../../doc/src/intrinsics/mathematical.md:1
 msgid "Mathematical Intrinsic Functions"
-msgstr ""
+msgstr "数学内置函数"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:1
 msgid "acos(x): Trigonometric Arc Cosine"
-msgstr ""
+msgstr "acos(x)：三角反余弦"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:3
 msgid "Trigonometric arc cosine (inverse cosine) function."
-msgstr ""
+msgstr "三角反余弦（反余弦）函数。"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:16
 #: ../../doc/src/intrinsics/mathematical/asin.md:16
 #: ../../doc/src/intrinsics/mathematical/atan.md:16
 msgid "`x` the input value, can be real or complex; less than or equal to 1."
-msgstr ""
+msgstr "`x` 输入值，可以是实数或复数； 小于或等于 1。"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:20
 #: ../../doc/src/intrinsics/mathematical/acosh.md:21
@@ -2785,18 +2807,19 @@ msgstr ""
 msgid ""
 "The returned value has the kind of the input value and TYPE may be real "
 "or complex."
-msgstr ""
+msgstr "返回值具有输入值的种类，TYPE 可能是实数或复数。"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:25
 msgid "**acos(x)** computes the arcsine of the argument **x**."
-msgstr ""
+msgstr "**acos(x)** 计算参数 **x** 的反正弦值。"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:27
 msgid ""
 "The arc cosine is the inverse function of the cosine function. It is "
 "commonly used in trigonometry to find the angle when the lengths of the "
 "hypotenuse and the base side  of a right triangle are known."
-msgstr ""
+msgstr "反余弦是余弦函数的反函数。 "
+"当已知直角三角形的斜边和底边的长度时，它通常用于三角学中以找到角度。"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:33
 #: ../../doc/src/intrinsics/mathematical/acosh.md:45
@@ -2805,19 +2828,19 @@ msgstr ""
 #: ../../doc/src/intrinsics/mathematical/atan.md:33
 #: ../../doc/src/intrinsics/mathematical/atanh.md:41
 msgid "Supported argument types float, double, complex float, complex double."
-msgstr ""
+msgstr "支持的参数类型 float、double、complex float、complex double。"
 
 #: ../../doc/src/intrinsics/mathematical/acos.md:84
 msgid "[asin](asin.md), [atan](atan.md)."
-msgstr ""
+msgstr "[asin](asin.md)，[atan](atan.md)。"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:1
 msgid "acosh(x): Inverse Hyperbolic Cosine"
-msgstr ""
+msgstr "acosh(x)：反双曲余弦"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:3
 msgid "Inverse hyperbolic cosine function."
-msgstr ""
+msgstr "反双曲余弦函数。"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:16
 #: ../../doc/src/intrinsics/mathematical/asinh.md:16
@@ -2825,108 +2848,110 @@ msgstr ""
 msgid ""
 "`x` the input value, can be real with value greater than or equal to 1 or"
 " of type complex."
-msgstr ""
+msgstr "`x` 输入值，可以是大于或等于 1 的实数，也可以是复数类型。"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:26
 msgid "**acosh(x)** computes the inverse hyperbolic cosine function of **x**."
-msgstr ""
+msgstr "**acosh(x)** 计算 **x** 的反双曲余弦函数。"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:28
 #: ../../doc/src/intrinsics/mathematical/asinh.md:28
 #: ../../doc/src/intrinsics/mathematical/atanh.md:28
 msgid "The result type and kind are the same as input value `x`."
-msgstr ""
+msgstr "结果类型和种类与输入值`x`相同。"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:30
 msgid ""
 "If the result is complex, the real part is non-negative, and the "
 "imaginary part is expressed in radians and lients in the range"
-msgstr ""
+msgstr "如果结果为复数，则实部为非负数，虚部以弧度和范围内的 lients 表示"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:33
 msgid "$-\\pi <= img (acosh(x)) <= \\pi$"
-msgstr ""
+msgstr "$-\\pi <= img (acosh(x)) <= \\pi$"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:35
 msgid ""
 "For real values $x$ in the domain $x > 1$, the inverse hyperbolic cosine "
 "satisifies:"
-msgstr ""
+msgstr "对于域 $x > 1$ 中的实数值 $x$，反双曲余弦满足："
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:38
 msgid "$cosh^{-1}(x) = \\log(x + \\sqrt{(x^2 - 1)})$"
-msgstr ""
+msgstr "$cosh^{-1}(x) = \\log(x + \\sqrt{(x^2 - 1)})$"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:40
 msgid ""
 "For complex numbers $x = x + iy$, as well as real values in the domain "
 "$-\\infty < z <= 1$, the call $acosh(z)$ returns complex results."
-msgstr ""
+msgstr "对于复数 $x = x + iy$，以及域 $-\\infty < z <= 1$ 中的实数值，调用 $acosh(z)$"
+" 返回复数结果。"
 
 #: ../../doc/src/intrinsics/mathematical/acosh.md:88
 msgid "[asinh](asinh.md), [atanh](atanh.md)."
-msgstr ""
+msgstr "[asinh](asinh.md)，[atanh](atanh.md)。"
 
 #: ../../doc/src/intrinsics/mathematical/asin.md:1
 msgid "asin(x): Trigonometric Arcsine"
-msgstr ""
+msgstr "asin(x)：三角反正弦"
 
 #: ../../doc/src/intrinsics/mathematical/asin.md:3
 msgid "Trigonometric arcsine function."
-msgstr ""
+msgstr "三角反正弦函数。"
 
 #: ../../doc/src/intrinsics/mathematical/asin.md:25
 msgid "**asin(x)** computes the arcsine of the argument **x**."
-msgstr ""
+msgstr "**asin(x)** 计算参数 **x** 的反正弦值。"
 
 #: ../../doc/src/intrinsics/mathematical/asin.md:27
 msgid ""
 "The arcsine is the inverse function of the sine function. It is commonly "
 "used in trigonometry to find the angle when the lengths of the hypotenuse"
 " and the opposite side of a right triangle are known."
-msgstr ""
+msgstr "反正弦是正弦函数的反函数。 "
+"当已知直角三角形的斜边和对边的长度时，它通常用于三角学中以找到角度。"
 
 #: ../../doc/src/intrinsics/mathematical/asin.md:84
 msgid "[acos](acos.md), [atan](atan.md)."
-msgstr ""
+msgstr "[acos](acos.md), [atan](atan.md)."
 
 #: ../../doc/src/intrinsics/mathematical/asinh.md:1
 msgid "asinh(x): Inverse Hyperbolic Arcsine"
-msgstr ""
+msgstr "asinh(x)：反双曲反正弦"
 
 #: ../../doc/src/intrinsics/mathematical/asinh.md:3
 msgid "Inverse hyperbolic arcsine function."
-msgstr ""
+msgstr "反双曲反正弦函数。"
 
 #: ../../doc/src/intrinsics/mathematical/asinh.md:26
 msgid "**asinh(x)** computes the inverse hyperbolic arcsine function of **x**."
-msgstr ""
+msgstr "**asinh(x)** 计算 **x** 的反双曲反正弦函数。"
 
 #: ../../doc/src/intrinsics/mathematical/asinh.md:30
 msgid ""
 "If the result is complex, the real part is non-negative, and the "
 "imaginary part is expressed in radians and lies in the range"
-msgstr ""
+msgstr "如果结果为复数，则实部为非负数，虚部以弧度表示，位于范围内"
 
 #: ../../doc/src/intrinsics/mathematical/asinh.md:33
 msgid "$\\frac{-\\pi}{2} <= aimag (asinh(x)) <= \\frac{\\pi}{2}$"
-msgstr ""
+msgstr "$\\frac{-\\pi}{2} <= aimag (asinh(x)) <= \\frac{\\pi}{2}$"
 
 #: ../../doc/src/intrinsics/mathematical/asinh.md:80
 msgid "[acosh](acosh.md), [atanh](atanh.md)."
-msgstr ""
+msgstr "[acosh](acosh.md), [atanh](atanh.md)."
 
 #: ../../doc/src/intrinsics/mathematical/atan.md:1
 msgid "atan(x): Trigonometric ArcTangent"
-msgstr ""
+msgstr "atan(x)：三角函数 ArcTangent"
 
 #: ../../doc/src/intrinsics/mathematical/atan.md:3
 msgid "Trigonometric arctangent (inverse arctangent) function."
-msgstr ""
+msgstr "三角反正切（反正切）函数。"
 
 #: ../../doc/src/intrinsics/mathematical/atan.md:25
 msgid "**atan(x)** computes the arctangent of the argument **x**."
-msgstr ""
+msgstr "**atan(x)** 计算参数 **x** 的反正切。"
 
 #: ../../doc/src/intrinsics/mathematical/atan.md:27
 msgid ""
@@ -2934,40 +2959,42 @@ msgid ""
 " commonly used in trigonometry to find the angle when the lengths of the "
 "opposite side of a right triangle and base are known, i.e., perpendicular"
 " and base length."
-msgstr ""
+msgstr "反正切是反正切函数的反函数。 当直角三角形的对边和底边的长度已知时，即垂直和底"
+"边长度，它通常用于三角学中找到角度。"
 
 #: ../../doc/src/intrinsics/mathematical/atan.md:84
 msgid "[asin](asin.md), [acos](acos.md)."
-msgstr ""
+msgstr "[asin](asin.md), [acos](acos.md)."
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:1
 msgid "atan2(y, x): ArcTangent"
-msgstr ""
+msgstr "atan2(y, x)：反正切"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:3
 msgid "Arctangent function or inverse tangent function."
-msgstr ""
+msgstr "反正切函数或反正切函数。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:15
 msgid "`y` the input value is the imaginary part of the complex expression"
-msgstr ""
+msgstr "`y` 输入值是复数表达式的虚部"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:17
 #: ../../doc/src/intrinsics/numeric/aimag.md:29
 #: ../../doc/src/intrinsics/numeric/cmplx.md:43
 msgid "$x + iy$"
-msgstr ""
+msgstr "$x + iy$"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:19
 msgid "`x` the input value, must be real part of the complex expression."
-msgstr ""
+msgstr "`x` 输入值，必须是复数表达式的实部。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:23
 msgid ""
 "The returned value has the kind and TYPE as of the input value `y`. The "
 "principal value of the argument function of the complex expression $x + "
 "iy$ is returned."
-msgstr ""
+msgstr "返回值具有与输入值 `y` 相同的种类和类型。 返回复杂表达式 $x + iy$ "
+"的参数函数的主值。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:29
 msgid ""
@@ -2976,157 +3003,159 @@ msgid ""
 " into polar coordinates and allows to determine the angle in the correct "
 "quadrant."
 msgstr ""
+"**atan2(y, x)** 计算复数表达式 $x + iy$ 的参数函数的主值。 "
+"这用于从笛卡尔坐标转换为极坐标，并允许确定正确象限中的角度。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:33
 msgid "It is also represented as:"
-msgstr ""
+msgstr "它也表示为："
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:35
 msgid "$tan^{-1}(\\frac{y}{x})$"
-msgstr ""
+msgstr "$tan^{-1}(\\frac{y}{x})$"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:37
 msgid "If `x` is nonzero, the result lies in the range:"
-msgstr ""
+msgstr "如果 `x` 不为零，则结果位于以下范围内："
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:39
 msgid "$-\\pi <= atan(x) <= \\pi$"
-msgstr ""
+msgstr "$-\\pi <= atan(x) <= \\pi$"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:41
 msgid "The sign is positive if `y` is positive."
-msgstr ""
+msgstr "如果`y`为正，则符号为正。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:43
 msgid "If `y` is zero and `x` is strictly positive, then the result is 0."
-msgstr ""
+msgstr "如果 `y` 为零且 `x` 严格为正，则结果为 0。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:45
 msgid "If `x` is negative and `y` is positive zero, then the result is $\\pi$."
-msgstr ""
+msgstr "如果 `x` 为负数且 `y` 为正零，则结果为 $\\pi$。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:47
 msgid "If `x` is negative and `y` is negative zero, then the result is $-\\pi$."
-msgstr ""
+msgstr "如果 `x` 为负且 `y` 为负零，则结果为 $-\\pi$。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:49
 msgid "If `x` is zero, then the magnitude of the result is $\\frac{\\pi}{2}$."
-msgstr ""
+msgstr "如果 `x` 为零，则结果的大小为 $\\frac{\\pi}{2}$。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:51
 msgid "If `y` is negative real zero, the result is $\\frac{-\\pi}{2}$."
-msgstr ""
+msgstr "如果 `y` 为负实零，则结果为 $\\frac{-\\pi}{2}$。"
 
 #: ../../doc/src/intrinsics/mathematical/atan2.md:55
 #: ../../doc/src/intrinsics/mathematical/fraction.md:32
 msgid "Supported argument type is real."
-msgstr ""
+msgstr "支持的参数类型是实数。"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:1
 msgid "atanh(x): Inverse Hyperbolic Tangent"
-msgstr ""
+msgstr "atanh(x)：反双曲正切"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:3
 msgid "Inverse hyperbolic tangent function."
-msgstr ""
+msgstr "反双曲正切函数。"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:26
 msgid "**atanh(x)** computes the inverse hyperbolic tangent function of **x**."
-msgstr ""
+msgstr "**atanh(x)** 计算 **x** 的反双曲正切函数。"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:30
 msgid ""
 "If the result is complex, the imaginary part is expressed in radians and "
 "lies in the range"
-msgstr ""
+msgstr "如果结果为复数，则虚部以弧度表示，位于范围内"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:33
 msgid "$\\frac{-\\pi}{2} <= aimag (atanh(x)) <= \\frac{\\pi}{2}$"
-msgstr ""
+msgstr "$\\frac{-\\pi}{2} <= aimag (atanh(x)) <= \\frac{\\pi}{2}$"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:35
 msgid "If the result is real, it lies in the range"
-msgstr ""
+msgstr "如果结果是实数，它位于范围内"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:37
 msgid "$-1.0 < atanh(x) < 1.0$"
-msgstr ""
+msgstr "$-1.0 < atanh(x) < 1.0$"
 
 #: ../../doc/src/intrinsics/mathematical/atanh.md:84
 msgid "[asinh](asinh.md), [acosh](acosh.md)."
-msgstr ""
+msgstr "[asinh](asinh.md)，[acosh](acosh.md)。"
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:1
 msgid "fraction(x): Fractional Part in Model Representation"
-msgstr ""
+msgstr "fraction(x)：模型表示中的小数部分"
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:3
 msgid "Fractional part of the model representation."
-msgstr ""
+msgstr "模型表示的小数部分。"
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:15
 msgid "`x` the input value, must be real."
-msgstr ""
+msgstr "`x` 输入值，必须是实数。"
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:19
 msgid ""
 "The returned value has the kind of the input value. The fractional part "
 "of the model representation of the input value is returned."
-msgstr ""
+msgstr "返回值具有输入值的种类。 返回输入值的模型表示的小数部分。"
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:24
 msgid ""
 "**fraction(x)** computes the fractional part of the model representation "
 "of **x**."
-msgstr ""
+msgstr "**fraction(x)** 计算 **x** 的模型表示的小数部分。"
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:26
 #: ../../doc/src/intrinsics/numeric/erf.md:29
 #: ../../doc/src/intrinsics/numeric/erfc.md:29
 msgid "It is calculated using:"
-msgstr ""
+msgstr "它是使用以下方法计算的："
 
 #: ../../doc/src/intrinsics/mathematical/fraction.md:28
 msgid "$x * {radix(x)}^{(-exponent(x))}$"
-msgstr ""
+msgstr "$x * {radix(x)}^{(-exponent(x))}$"
 
 #: ../../doc/src/intrinsics/misc.md:1
 msgid "Miscellaneous Intrinsic Functions"
-msgstr ""
+msgstr "其他内置函数"
 
 #: ../../doc/src/intrinsics/misc/command_argument_count.md:1
 msgid "command_argument_count(): Number of Command Line Arguments"
-msgstr ""
+msgstr "command_argument_count()：命令行参数的数量"
 
 #: ../../doc/src/intrinsics/misc/command_argument_count.md:3
 msgid "Get number of command line arguments."
-msgstr ""
+msgstr "获取命令行参数的数量。"
 
 #: ../../doc/src/intrinsics/misc/command_argument_count.md:20
 msgid "The return value is of integer type and of default kind."
-msgstr ""
+msgstr "返回值是整数类型和默认类型。"
 
 #: ../../doc/src/intrinsics/misc/command_argument_count.md:24
 msgid ""
 "**command_argument_count()** returns the number of arguments passed on "
 "the command line when the named program was invoked."
-msgstr ""
+msgstr "**command_argument_count()** 返回调用指定程序时在命令行上传递的参数数量。"
 
 #: ../../doc/src/intrinsics/misc/command_argument_count.md:29
 msgid "Any."
-msgstr ""
+msgstr "任意。"
 
 #: ../../doc/src/intrinsics/misc/cpu_time.md:1
 msgid "cpu_time(x): CPU Elapsed Time"
-msgstr ""
+msgstr "cpu_time(x)：CPU 运行时间"
 
 #: ../../doc/src/intrinsics/misc/cpu_time.md:3
 msgid "CPU elapsed time in seconds."
-msgstr ""
+msgstr "CPU 运行时间（以秒为单位）。"
 
 #: ../../doc/src/intrinsics/misc/cpu_time.md:16
 msgid "`x` the input value should be of type real with `intent(out)`."
-msgstr ""
+msgstr "`x` 输入值应该是带有 `intent(out)` 的实数类型。"
 
 #: ../../doc/src/intrinsics/misc/cpu_time.md:24
 msgid ""
@@ -3135,42 +3164,50 @@ msgid ""
 "microsecond resolution. If no time source is available, TIME is set to "
 "-1.0."
 msgstr ""
+"**cpu_time(time)** 返回一个实数值，以秒为单位表示经过的 CPU 时间。 "
+"如果齿源可用，时间将以微秒分辨率报告。 如果没有可用的时间源，则将 TIME "
+"设置为 -1.0。"
 
 #: ../../doc/src/intrinsics/misc/cpu_time.md:28
 msgid "This is useful for testing segments of code to determine computation time."
-msgstr ""
+msgstr "这对于测试代码段以确定计算时间很有用。"
 
 #: ../../doc/src/intrinsics/misc/cpu_time.md:30
 msgid ""
 "For `cpu_time(time)` the absolute value is meaningless, only differences "
 "between subsequent calls to this subroutine, as shown in the example "
 "below, should be used."
-msgstr ""
+msgstr "`cpu_time(time)` 的绝对值是没有意义的，只有后续调用这个子程序之间的差异，如下"
+"例所示，应该被使用。"
 
 #: ../../doc/src/intrinsics/misc/cpu_time.md:35
 #: ../../doc/src/intrinsics/misc/date_and_time.md:55
 msgid "Supported input parameter types is real with `intent(out)`."
-msgstr ""
+msgstr "支持的输入参数类型为 `intent(out)` 和实数。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:1
 msgid "date_and_time([date, time, zone, values]): Date and Time"
-msgstr ""
+msgstr "date_and_time([date, time, zone, values])：日期和时间"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:3
 msgid "Date and time subroutine."
-msgstr ""
+msgstr "日期和时间子程序。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:16
 msgid ""
 "`date` the input value of character type, which has length 8 or larger. "
 "It is of default kind. It is `intent(out)` and has form `ccyymmdd`."
 msgstr ""
+"`date` 字符类型的输入值，长度为 8 或更大。 它是默认类型。 它是 `intent(out)` "
+"并且具有 `ccyymmdd` 的形式。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:19
 msgid ""
 "`time` the input value of character type, which has length 10 or larger. "
 "It is of default kind. It is `intent(out)` and has form `hhmmss.sss`."
 msgstr ""
+"`time` 字符类型的输入值，长度为 10 或更大。 它是默认类型。 它是 `intent(out)`"
+" 并且具有 `hhmmss.sss` 的形式。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:22
 msgid ""
@@ -3179,167 +3216,171 @@ msgid ""
 "representing the difference with respect to Coordinates Universal Time "
 "(UTC). Unavailable time and date parameters return blanks."
 msgstr ""
+"`zone` 字符类型的输入值，长度为 5 或更大。 它是默认类型。 它是 `intent(out)` "
+"并且来自 `(+-)hhmm`，表示相对于坐标世界时 (UTC) 的差异。 "
+"不可用的时间和日期参数返回空白。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:27
 msgid ""
 "`values` the input value of integer type, 8 bits. It is `intent(out)`. It"
 " provides the following:"
-msgstr ""
+msgstr "`values`整数类型的输入值，8位。 它是`intent(out)`。 它提供以下内容："
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:30
 msgid "`value(1)`: The year."
-msgstr ""
+msgstr "`value(1)`：年份。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:31
 msgid "`value(2)`: The month."
-msgstr ""
+msgstr "`value(2)`：月份。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:32
 msgid "`value(3)`: The day of the month."
-msgstr ""
+msgstr "`value(3)`：一个月中的哪一天。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:33
 msgid "`value(4)`: Time difference with UTC in minutes."
-msgstr ""
+msgstr "`value(4)`：与 UTC 的时差，以分钟为单位。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:34
 msgid "`value(5)`: The hour of the day."
-msgstr ""
+msgstr "`value(5)`：一天中的小时。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:35
 msgid "`value(6)`: The minutes of the hour."
-msgstr ""
+msgstr "`value(6)`：小时的分钟数。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:36
 msgid "`value(7)`: The seconds of the minutes."
-msgstr ""
+msgstr "`value(7)`：分钟的秒数。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:37
 msgid "`value(8)`: The milliseconds of the second."
-msgstr ""
+msgstr "`value(8)`：秒的毫秒数。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:45
 msgid ""
 "**date_and_time([date, time, zone, values])** reports the corresponding "
 "date and time information from the real time system clock."
-msgstr ""
+msgstr "**date_and_time([date, time, zone, values])** "
+"从实时系统时钟报告相应的日期和时间信息。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:48
 msgid ""
 "`date`, `time`, `zone`, `values` represents date, time, zone, and values"
 "  as decribed in arguments above."
-msgstr ""
+msgstr "`date`、`time`、`zone`、`values` 表示日期、时间、区域和值，如上述参数中所述。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:51
 msgid "Unavailable or errorneous date and time parameters return blanks."
-msgstr ""
+msgstr "不可用或错误的日期和时间参数返回空白。"
 
 #: ../../doc/src/intrinsics/misc/date_and_time.md:92
 msgid "[cpu_time](cpu_time.md)."
-msgstr ""
+msgstr "[cpu_time](cpu_time.md)。"
 
 #: ../../doc/src/intrinsics/misc/new_line.md:1
 msgid "new_line(x): New Line Character"
-msgstr ""
+msgstr "new_line(x)：换行符"
 
 #: ../../doc/src/intrinsics/misc/new_line.md:3
 msgid "New line character."
-msgstr ""
+msgstr "换行符。"
 
 #: ../../doc/src/intrinsics/misc/new_line.md:16
 msgid ""
 "The input parameter `x` must be of type character. It can be a scalar or "
 "an array."
-msgstr ""
+msgstr "输入参数 `x` 必须是字符类型。 它可以是标量或数组。"
 
 #: ../../doc/src/intrinsics/misc/new_line.md:21
 msgid ""
 "The return value is a character of length one with the new line character"
 " appended of the same kind as of `x`."
-msgstr ""
+msgstr "返回值是一个长度为 1 的字符，并附加了与 `x` 相同类型的换行符。"
 
 #: ../../doc/src/intrinsics/misc/new_line.md:26
 msgid ""
 "**new_line(x)** returns the new line character. The return value is the "
 "ASCII newline character."
-msgstr ""
+msgstr "**new_line(x)** 返回换行符。 返回值是 ASCII 换行符。"
 
 #: ../../doc/src/intrinsics/misc/new_line.md:31
 msgid "Supported input parameter types is character."
-msgstr ""
+msgstr "支持的输入参数类型是字符。"
 
 #: ../../doc/src/intrinsics/numeric.md:1
 msgid "Numeric Intrinsic Functions"
-msgstr ""
+msgstr "数值内置函数"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:1
 msgid "abs(x): Absolute Value"
-msgstr ""
+msgstr "abs(x)：绝对值"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:3
 msgid "Absolute value."
-msgstr ""
+msgstr "绝对值。"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:17
 msgid "`x` the input value, can be integer, real, or complex."
-msgstr ""
+msgstr "`x` 输入值，可以是整数、实数或复数。"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:21
 msgid ""
 "The return value is of type and kind same as of `x`. For complex input "
 "value, return value is real."
-msgstr ""
+msgstr "返回值的类型和种类与 `x` 相同。 对于复数输入值，返回值是实数。"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:26
 msgid ""
 "**abs(x)** calculates and returns absolute value of `x`. Result is "
 "calculated using mathematical formula:"
-msgstr ""
+msgstr "**abs(x)** 计算并返回 `x` 的绝对值。 结果使用数学公式计算："
 
 #: ../../doc/src/intrinsics/numeric/abs.md:29
 msgid "$|x|$"
-msgstr ""
+msgstr "$|x|$"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:31
 msgid "If `x` is complex, the result is calculated using mathematical formula:"
-msgstr ""
+msgstr "如果 `x` 是复数，则使用数学公式计算结果："
 
 #: ../../doc/src/intrinsics/numeric/abs.md:33
 msgid "$\\sqrt{(x^2 + y^2)}$"
-msgstr ""
+msgstr "$\\sqrt{(x^2 + y^2)}$"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:37
 #: ../../doc/src/intrinsics/numeric/digits.md:28
 #: ../../doc/src/intrinsics/numeric/dim.md:29
 #: ../../doc/src/intrinsics/numeric/mod.md:45
 msgid "Supported argument types are real and integer."
-msgstr ""
+msgstr "支持的参数类型是实数和整数。"
 
 #: ../../doc/src/intrinsics/numeric/abs.md:98
 #: ../../doc/src/intrinsics/numeric/aimag.md:70
 #: ../../doc/src/intrinsics/numeric/mod.md:97
 msgid "[ceiling](ceiling.md), [floor](floor.md)."
-msgstr ""
+msgstr "[ceiling](ceiling.md)，[floor](floor.md)。"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:1
 msgid "aimag(x): Imaginary Part"
-msgstr ""
+msgstr "aimag(x)：虚部"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:3
 msgid "Imaginary part of complex number."
-msgstr ""
+msgstr "复数的虚部。"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:17
 msgid "`x` the input value must be of complex type."
-msgstr ""
+msgstr "`x` ，输入值必须是复合类型。"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:21
 msgid "The return value is imaginary part of type real and kind same as of `x`."
-msgstr ""
+msgstr "返回值是类型为实数的虚数部分，种类与`x` 相同。"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:25
 msgid "**aimag(x)** returns the imaginary part of the input complex argument `x`."
-msgstr ""
+msgstr "**aimag（x）** 返回输入复参数 `x` 的虚部。"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:27
 #: ../../doc/src/intrinsics/numeric/cmplx.md:41
@@ -3347,25 +3388,25 @@ msgstr ""
 msgid ""
 "For `x` complex input value, the result is calculated using mathematical "
 "formula:"
-msgstr ""
+msgstr "对于 `x` 复数输入值，使用数学公式计算结果："
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:31
 #: ../../doc/src/intrinsics/numeric/cmplx.md:45
 #: ../../doc/src/intrinsics/numeric/conjg.md:31
 msgid "$i$ the imaginary part is the result."
-msgstr ""
+msgstr "$i$ 虚部是结果。"
 
 #: ../../doc/src/intrinsics/numeric/aimag.md:35
 msgid "Supported argument types are complex."
-msgstr ""
+msgstr "支持的参数类型很复杂。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:1
 msgid "aint(x, [kind]): Truncate to a Whole Number"
-msgstr ""
+msgstr "aint(x, [kind])：截断为整数"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:3
 msgid "Truncate to a whole number."
-msgstr ""
+msgstr "截断到一个整数。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:16
 #: ../../doc/src/intrinsics/numeric/anint.md:16
@@ -3374,36 +3415,37 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/erfc.md:16
 #: ../../doc/src/intrinsics/numeric/floor.md:16
 msgid "`x` the input value must be of type real."
-msgstr ""
+msgstr "`x` ，输入值必须是实数类型。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:18
 #: ../../doc/src/intrinsics/numeric/anint.md:18
 msgid "`kind` the optional input parameter initialises the kind of the result."
-msgstr ""
+msgstr "`kind` 可选的输入参数，初始化结果的种类。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:22
 #: ../../doc/src/intrinsics/numeric/anint.md:22
 msgid ""
 "The return value is of type integer(kind) if kind is passed as input "
 "parameter. If not, default kind real is returned."
-msgstr ""
+msgstr "如果 kind 作为输入参数传递，则返回值是 integer(kind) 类型。如果不是，"
+"则返回默认类型 real。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:25
 msgid ""
 "The return value is equal to or nearest largest whole number greater than"
 " or equal to `x` not exceeding its magnitude."
-msgstr ""
+msgstr "返回值等于或最接近大于或等于 `x` 且不超过其大小的最大整数。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:30
 msgid ""
 "**aint(x)** returns the nearest largest whole number greater than or "
 "equal to `x` not exceeding input value's magnitude."
-msgstr ""
+msgstr "**aint(x)** 返回大于或等于 `x` 且不超过输入值大小的最接近的最大整数。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:33
 #: ../../doc/src/intrinsics/numeric/anint.md:36
 msgid "The optional parameter `kind` specifies the kind of the result."
-msgstr ""
+msgstr "可选参数 `kind` ，指定结果的种类。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:37
 #: ../../doc/src/intrinsics/numeric/anint.md:40
@@ -3413,82 +3455,82 @@ msgstr ""
 #: ../../doc/src/intrinsics/numeric/floor.md:35
 #: ../../doc/src/intrinsics/numeric/gamma.md:40
 msgid "Supported argument types is real."
-msgstr ""
+msgstr "支持的参数类型是实数。"
 
 #: ../../doc/src/intrinsics/numeric/aint.md:57
 #: ../../doc/src/intrinsics/numeric/floor.md:85
 msgid "[ceiling](ceiling.md), [mod](mod.md)."
-msgstr ""
+msgstr "[ceiling](ceiling.md), [mod](mod.md)."
 
 #: ../../doc/src/intrinsics/numeric/anint.md:1
 msgid "anint(x, [kind]): Round to Nearest Whole Number"
-msgstr ""
+msgstr "anint(x, [kind])：四舍五入到最近的整数"
 
 #: ../../doc/src/intrinsics/numeric/anint.md:3
 msgid "Round to nearest whole number."
-msgstr ""
+msgstr "四舍五入到最近的整数。"
 
 #: ../../doc/src/intrinsics/numeric/anint.md:25
 msgid "The return value is equal to rounded whole number."
-msgstr ""
+msgstr "返回值等于四舍五入的整数。"
 
 #: ../../doc/src/intrinsics/numeric/anint.md:29
 msgid "**anint(x)** calculates rounded value of input parameter `x`."
-msgstr ""
+msgstr "**anint(x)** 计算输入参数 `x` 的舍入值。"
 
 #: ../../doc/src/intrinsics/numeric/anint.md:31
 msgid ""
 "If `x` is less than or equal to 0 i.e., if `x` is negative or 0, "
 "`anint(x)` returns `aint(x - 0.5)`."
-msgstr ""
+msgstr "如果`x` 小于或等于0，即如果`x` 是负数或0，`anint(x)` 返回`aint(x - 0.5)` 。"
 
 #: ../../doc/src/intrinsics/numeric/anint.md:34
 msgid "If `x` is greater than 0, `anint(x)` returns `aint(x + 0.5)`."
-msgstr ""
+msgstr "如果`x` 大于0，`anint(x)` 返回`aint(x + 0.5)` 。"
 
 #: ../../doc/src/intrinsics/numeric/anint.md:60
 msgid "[aint](aint.md)."
-msgstr ""
+msgstr "[aint](aint.md)。"
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:1
 msgid "ceiling(x): Integer Ceiling"
-msgstr ""
+msgstr "ceiling(x)：进一取整"
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:3
 msgid "Integer ceiling function"
-msgstr ""
+msgstr "进一取整函数"
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:16
 msgid "The input value `x` may be of type real or integer."
-msgstr ""
+msgstr "输入值 `x` 可以是实数或整数类型。"
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:20
 msgid "The return value is of type integer and nearest greater integer."
-msgstr ""
+msgstr "返回值是整数类型和最接近它的更大整数。"
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:24
 msgid "**ceiling(x)** returns the least integer greater than or equal to `x`."
-msgstr ""
+msgstr "**ceiling(x)** 返回大于或等于 `x` 的最小整数。"
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:28
 msgid "Supported input parameter types are integer and real."
-msgstr ""
+msgstr "支持的输入参数类型是整数和实数。"
 
 #: ../../doc/src/intrinsics/numeric/ceiling.md:66
 msgid "[floor](floor.md), [mod](mod.md)."
-msgstr ""
+msgstr "[floor](floor.md)，[mod](mod.md)。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:1
 msgid "cmplx(x [, [, kind]]): Convert to Complex"
-msgstr ""
+msgstr "cmplx(x [, [, kind]])：转换为复数"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:3
 msgid "Conversion to complex type."
-msgstr ""
+msgstr "转换为复数类型。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:14
 msgid "`cmplx(x, y)` is one of the intrinsic present in ASR."
-msgstr ""
+msgstr "`cmplx(x, y)` 是 ASR 中的内置函数之一。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:18
 msgid ""
@@ -3498,367 +3540,377 @@ msgid ""
 "integer expression type for initialisation indicating the kind parameter "
 "of the result."
 msgstr ""
+"`x` 输入值必须是整数、实数或复数。 `y` 可选输入值必须是整数或实数类型。"
+"它应该只在 `x` 不是复数的情况下出现。 `kind` "
+"用于初始化的整数表达式类型的可选输入值，指示结果的种类参数。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:26
 msgid ""
 "The return value is of complex type, with a kind defined by input `kind` "
 "type specified. If the `kind` is not specified, the return value is of "
 "default `kind` `complex` type."
-msgstr ""
+msgstr "返回值是复数类型，类型由指定的输入`kind`类型定义。如果未指定 `kind`，"
+"则返回值为默认 `kind` `complex` 类型。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:32
 msgid ""
 "**cmplx(x, [, y [, kind]])** converts the input value to complex "
 "representation:"
-msgstr ""
+msgstr "**cmplx(x, [, y [, kind]])** 将输入值转换为复数表示："
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:34
 msgid ""
 "`x` to real component of complex number. if `y` is present, it is "
 "converted to the imaginary component."
-msgstr ""
+msgstr "`x` 为复数的实部。如果 `y` 存在，则将其转换为虚部。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:37
 msgid "If `y` is not present, the imaginary component is set to 0.0."
-msgstr ""
+msgstr "如果 `y` 不存在，则虚部设置为 0.0。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:39
 msgid "If `x` is complex then `y` must not be present."
-msgstr ""
+msgstr "如果 `x` 是复数，则 `y` 不能出现。"
 
 #: ../../doc/src/intrinsics/numeric/cmplx.md:49
 msgid "Supported argument types are integer, real, or complex."
-msgstr ""
+msgstr "支持的参数类型是整数、实数或复数。"
 
 #: ../../doc/src/intrinsics/numeric/conjg.md:1
 msgid "conjg(x): Complex Conjugate"
-msgstr ""
+msgstr "conjg(x)：复共轭"
 
 #: ../../doc/src/intrinsics/numeric/conjg.md:3
 msgid "Complex conjugate function."
-msgstr ""
+msgstr "复共轭函数。"
 
 #: ../../doc/src/intrinsics/numeric/conjg.md:17
 msgid "`x` the input value must be of type complex."
-msgstr ""
+msgstr "`x` 输入值必须是复数类型。"
 
 #: ../../doc/src/intrinsics/numeric/conjg.md:21
 msgid "The return value is of complex type."
-msgstr ""
+msgstr "返回值是复数类型。"
 
 #: ../../doc/src/intrinsics/numeric/conjg.md:25
 msgid "**conjg(x)** converts the input value `x`  to its conjugate."
-msgstr ""
+msgstr "**conjg(x)** 将输入值 `x` 转换为其复数共轭。"
 
 #: ../../doc/src/intrinsics/numeric/conjg.md:29
 msgid "$x + iy$ converted to $x - iy$"
-msgstr ""
+msgstr "$x + iy$ 转换为 $x - iy$"
 
 #: ../../doc/src/intrinsics/numeric/conjg.md:35
 msgid "Supported argument types is complex."
-msgstr ""
+msgstr "支持的参数类型是复数。"
 
 #: ../../doc/src/intrinsics/numeric/digits.md:1
 msgid "digits(x): Significant Binary Digits"
-msgstr ""
+msgstr "digits(x)：有效二进制数字"
 
 #: ../../doc/src/intrinsics/numeric/digits.md:3
 msgid "Significant binary digits."
-msgstr ""
+msgstr "有效的二进制数字。"
 
 #: ../../doc/src/intrinsics/numeric/digits.md:15
 msgid "`x` the input value must be of type real or integer."
-msgstr ""
+msgstr "`x` 输入值必须是实数或整数类型。"
 
 #: ../../doc/src/intrinsics/numeric/digits.md:23
 msgid ""
 "**digits(x)** returns the number of significant binary digits of the "
 "internal mopdel representation of `x`."
-msgstr ""
+msgstr "**digits(x)** 返回 `x` 的内部模型表示的有效二进制位数。"
 
 #: ../../doc/src/intrinsics/numeric/dim.md:1
 msgid "dim(x, y): Positive Difference or 0"
-msgstr ""
+msgstr "dim(x, y)：正差或 0"
 
 #: ../../doc/src/intrinsics/numeric/dim.md:3
 msgid "Positive difference or 0."
-msgstr ""
+msgstr "正差或 0。"
 
 #: ../../doc/src/intrinsics/numeric/dim.md:15
 msgid ""
 "`x` the input value must be of type real or integer. `y` the input value "
 "must of of the same type and kind as of `x`."
-msgstr ""
+msgstr "`x` 输入值必须是实数或整数类型。 `y` 输入值的类型和种类必须与 `x` 相同。"
 
 #: ../../doc/src/intrinsics/numeric/dim.md:20
 msgid "The return value is of type integer or real."
-msgstr ""
+msgstr "返回值是整数或实数类型。"
 
 #: ../../doc/src/intrinsics/numeric/dim.md:24
 msgid ""
 "**dim(x)** computes the difference $x - y$, if the result is positive, "
 "otherwise returns 0."
-msgstr ""
+msgstr "**dim(x)** 计算 $x - y$ 的差值，如果结果为正，否则返回 0。"
 
 #: ../../doc/src/intrinsics/numeric/epsilon.md:1
 msgid "epsilon(x): Epsilon"
-msgstr ""
+msgstr "epsilon(x)：ε 小量"
 
 #: ../../doc/src/intrinsics/numeric/epsilon.md:3
 msgid "Epsilon function."
-msgstr ""
+msgstr "Epsilon 函数。"
 
 #: ../../doc/src/intrinsics/numeric/epsilon.md:20
 msgid "The return value is of same type as of the input argument."
-msgstr ""
+msgstr "返回值与输入参数的类型相同。"
 
 #: ../../doc/src/intrinsics/numeric/epsilon.md:24
 msgid ""
 "**epsilon(x)** computes the smallest number $\\epsilon$ of the same kind "
 "as `x` following:"
-msgstr ""
+msgstr "**epsilon(x)** 计算与 `x` 相同类型的最小数 $\\epsilon$，如下所示："
 
 #: ../../doc/src/intrinsics/numeric/epsilon.md:27
 msgid "$1 + \\epsilon > 1$"
-msgstr ""
+msgstr "$1 + \\epsilon > 1$"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:1
 msgid "erf(x): Error"
-msgstr ""
+msgstr "erf(x)：误差函数"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:3
 msgid "Error function."
-msgstr ""
+msgstr "误差函数。"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:20
 msgid ""
 "The return value is of type real and of the same kind as of the input "
 "parameter `x`."
-msgstr ""
+msgstr "返回值是 real 类型，与输入参数 `x` 的类型相同。"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:25
 #: ../../doc/src/intrinsics/numeric/erfc.md:25
 msgid ""
 "**erf(x)** computes the error function of `x`. The result lies in the "
 "range:"
-msgstr ""
+msgstr "**erf(x)** 计算 `x` 的误差函数。结果位于以下范围内："
 
 #: ../../doc/src/intrinsics/numeric/erf.md:27
 msgid "$-1 \\leq erf (x) \\leq 1$"
-msgstr ""
+msgstr "$-1 \\leq erf (x) \\leq 1$"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:31
 msgid "$\\frac{2}{\\sqrt\\pi}\\int_0^xe^{-t^2}dt$"
-msgstr ""
+msgstr "$\\frac{2}{\\sqrt\\pi}\\int_0^xe^{-t^2}dt$"
 
 #: ../../doc/src/intrinsics/numeric/erf.md:69
 msgid "[erfc](erfc.md)."
-msgstr ""
+msgstr "[erfc](erfc.md)."
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:1
 msgid "erfc(x): Complementary Error"
-msgstr ""
+msgstr "erfc(x)：互补误差"
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:3
 msgid "Complementary error function."
-msgstr ""
+msgstr "互补误差函数。"
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:20
 msgid ""
 "The return value is of type real and of the same kind as of the input "
 "parameter `x`. `erfc(x)` returns $1 - erf(x)$."
-msgstr ""
+msgstr "返回值是 real 类型，与输入参数 `x` 的类型相同。 `erfc(x)` 返回 $1 - erf(x)$。"
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:27
 msgid "$0 \\leq erf (x) \\leq 2$"
-msgstr ""
+msgstr "$0 \\leq erf (x) \\leq 2$"
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:31
 msgid "$\\frac{2}{\\sqrt\\pi}\\int_{x}^{\\infty}e^{-t^2}dt$"
-msgstr ""
+msgstr "$\\frac{2}{\\sqrt\\pi}\\int_{x}^{\\infty}e^{-t^2}dt$"
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:33
 msgid ""
 "It is used in instances when the large loss of relative accuracy occurs "
 "if `erf(x)` is called for large `x` and the result is subtracted from 1."
-msgstr ""
+msgstr "它用于在相对精度损失较大的情况下，如果为较大的 `x` 调用 `erf(x)` 并且从 1 "
+"中减去结果。"
 
 #: ../../doc/src/intrinsics/numeric/erfc.md:72
 msgid "[erf](erf.md)."
-msgstr ""
+msgstr "[erf](erf.md)."
 
 #: ../../doc/src/intrinsics/numeric/exp.md:1
 msgid "exp(x): Exponential"
-msgstr ""
+msgstr "exp(x)：指数函数"
 
 #: ../../doc/src/intrinsics/numeric/exp.md:3
 msgid "Exponential function."
-msgstr ""
+msgstr "指数函数。"
 
 #: ../../doc/src/intrinsics/numeric/exp.md:16
 msgid "`x` the input value must be of type real or complex."
-msgstr ""
+msgstr "`x` 输入值必须是实数或复数类型。"
 
 #: ../../doc/src/intrinsics/numeric/exp.md:20
 msgid "The return value is of same type as of the input argument, `x`."
-msgstr ""
+msgstr "返回值与输入参数 `x` 的类型相同。"
 
 #: ../../doc/src/intrinsics/numeric/exp.md:24
 msgid "**exp(x)** computes the base $e$ exponential of `x`, i.e., $e^x$."
-msgstr ""
+msgstr "**exp(x)** 计算 `x` 的基本 $e$ 指数，即 $e^x$。"
 
 #: ../../doc/src/intrinsics/numeric/exp.md:26
 msgid ""
 "If `x` is of type complex, its imaginary part is considered as a value in"
 " radians."
-msgstr ""
+msgstr "如果 `x` 是复数类型，它的虚部被认为是弧度值。"
 
 #: ../../doc/src/intrinsics/numeric/exp.md:31
 msgid "Supported argument types is real and complex."
-msgstr ""
+msgstr "支持的参数类型是实数或复数。"
 
 #: ../../doc/src/intrinsics/numeric/floor.md:1
 msgid "floor(x, kind): Integer Floor"
-msgstr ""
+msgstr "floor(x, kind)：去一取整"
 
 #: ../../doc/src/intrinsics/numeric/floor.md:3
 msgid "Integer floor function."
-msgstr ""
+msgstr "去一取整函数。"
 
 #: ../../doc/src/intrinsics/numeric/floor.md:18
 msgid ""
 "`kind` the optional input parameter must be a scalar integer constant "
 "expression."
-msgstr ""
+msgstr "`kind` 可选输入参数必须是一个标量整数常量表达式。"
 
 #: ../../doc/src/intrinsics/numeric/floor.md:22
 msgid ""
 "The return value is of type integer(kind) if kind is passed as input "
 "parameter. If not, default kind integer is returned."
-msgstr ""
+msgstr "如果 kind 作为输入参数传递，则返回值是 integer(kind) "
+"类型。如果不是，则返回默认类型整数。"
 
 #: ../../doc/src/intrinsics/numeric/floor.md:25
 msgid ""
 "The return value is equal to or nearest greatest integer less than or "
 "equal to `x`."
-msgstr ""
+msgstr "返回值等于或最接近小于或等于 `x` 的最大整数。"
 
 #: ../../doc/src/intrinsics/numeric/floor.md:30
 msgid ""
 "**floor(x)** returns the greatest integer less than or equal to x. It "
 "returns an integer value unless spefically specified using second "
 "optional paramter."
-msgstr ""
+msgstr "**floor(x)** 返回小于或等于 x "
+"的最大整数。它返回一个整数值，除非使用第二个可选参数特别指定。"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:1
 msgid "gamma(x): Gamma"
-msgstr ""
+msgstr "gamma(x)：伽马函数"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:3
 msgid "Gamma function."
-msgstr ""
+msgstr "伽马函数。"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:16
 msgid ""
 "`x` the input value must be of type real. It should not be zero or a "
 "negative integer."
-msgstr ""
+msgstr "`x` 输入值必须是实数类型。它不应为零或负整数。"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:21
 msgid "The return value is of same type and kind as of `x`."
-msgstr ""
+msgstr "返回值与 `x` 的类型和种类相同。"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:25
 msgid ""
 "**gamma(x)** computes $\\gamma(x)$. For positive, integer value of `x`, "
 "the Gamma function simplifies to factorial function:"
-msgstr ""
+msgstr "**gamma(x)** 计算 $\\gamma(x)$。对于 `x` 的正整数值，Gamma "
+"函数简化为阶乘函数："
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:28
 msgid "$\\gamma(x) = (x-1)!$"
-msgstr ""
+msgstr "$\\gamma(x) = (x-1)!$"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:30
 msgid "In general, if $x > 0$:"
-msgstr ""
+msgstr "一般来说，如果 $x > 0$："
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:32
 msgid "$\\gamma(x) = \\int_{0}^{\\infty} e^{-t} dt$"
-msgstr ""
+msgstr "$\\gamma(x) = \\int_{0}^{\\infty} e^{-t} dt$"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:34
 msgid "and if $-n-1 < x < -n$ where n is an integer >= 0:"
-msgstr ""
+msgstr "如果 $-n-1 < x < -n$ 其中 n 是整数 >= 0："
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:36
 msgid ""
 "$\\gamma(x) = \\int_{0}^{\\infty}(e ^{-t} - \\sum\\limits_{k=0}^n "
 "\\frac{(-t)^k}{k!} dt)$"
 msgstr ""
+"$\\gamma(x) = \\int_{0}^{\\infty}(e ^{-t} - \\sum\\limits_{k=0}^n \\frac"
+"{(-t)^k}{k!} dt)$"
 
 #: ../../doc/src/intrinsics/numeric/gamma.md:76
 msgid "[epsilon](epsilon.md)"
-msgstr ""
+msgstr "[epsilon](epsilon.md)"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:1
 msgid "mod(x, y): Modulus"
-msgstr ""
+msgstr "mod(x, y)：模数"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:3
 msgid "Modulus or remainder function."
-msgstr ""
+msgstr "模数或余数函数。"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:17
 msgid "`x` the input value, can be integer or real."
-msgstr ""
+msgstr "`x` 输入值，可以是整数或实数。"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:19
 msgid ""
 "`y` second input parameter should be same type and kind as `x` and not "
 "equal to 0."
-msgstr ""
+msgstr "`y` 第二个输入参数的类型和种类应与 `x` 相同且不等于 0。"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:24
 msgid ""
 "The return value is of type and kind same as of `x`. The result is "
 "calculated using mathematical modulo or remainder as:"
-msgstr ""
+msgstr "返回值的类型和种类与 `x` 相同。结果使用数学模或余数计算为："
 
 #: ../../doc/src/intrinsics/numeric/mod.md:27
 msgid "`x - INT (x / y) * y`."
-msgstr ""
+msgstr "`x - INT (x / y) * y`."
 
 #: ../../doc/src/intrinsics/numeric/mod.md:29
 msgid "If `y` is 0, the result is undefined like `any integer value / 0`."
-msgstr ""
+msgstr "如果 `y` 为 0，则结果未定义，如 `any integer value / 0`。"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:33
 msgid ""
 "**mod(x, y)** calculates and returns modulo or remainder when `x` is "
 "divided by `y`. The result is calculated using"
-msgstr ""
+msgstr "**mod(x, y)** 当 `x` 除以 `y` 时计算并返回模数或余数。结果计算使用"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:36
 msgid "`x - INT(x / y) * y`"
-msgstr ""
+msgstr "`x - INT(x / y) * y`"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:38
 msgid ""
 "i.e., result is remainder when first argument is mathematically divided "
 "by second argument."
-msgstr ""
+msgstr "即，当第一个参数在数学上除以第二个参数时，结果是余数。"
 
 #: ../../doc/src/intrinsics/numeric/mod.md:41
 msgid "The return value should be less than `y`."
-msgstr ""
+msgstr "返回值应该小于`y`。"
 
 #: ../../doc/src/language.md:1
 msgid "Fortran Language"
-msgstr ""
+msgstr "Fortran 语言"
 
 #: ../../doc/src/language.md:3
 msgid "Background and Motivation"
-msgstr ""
+msgstr "背景和动机"
 
 #: ../../doc/src/language.md:5
 msgid ""
@@ -3870,35 +3922,39 @@ msgid ""
 "may or may not be well optimized or maintained, at present or down the "
 "road."
 msgstr ""
+"Fortran 的设计从一开始就自然而简单地将数学转换为以最高速度编译和运行的代码。"
+"并且专门针对此类基本计算任务，它在语言本身中包含广泛的关键功能，在所有平台上"
+"都是标准的，不需要目前或未来可能会或可能不会得到很好优化或维护的外部库路。"
 
 #: ../../doc/src/language.md:12
 msgid "Some highlights:"
-msgstr ""
+msgstr "一些亮点："
 
 #: ../../doc/src/language.md:14
 msgid ""
 "Multidimensional arrays which can be allocated and indexed as the "
 "math/science dictates (not restricted to start at 0 or 1) and can be "
 "sliced as desired (as, e.g., in MATLAB);"
-msgstr ""
+msgstr "多维数组，可以根据数学/科学的要求进行分配和索引（不限于从 0 或 1 "
+"开始），并且可以根据需要进行切片（例如，在 MATLAB 中）；"
 
 #: ../../doc/src/language.md:17
 msgid ""
 "Operators which operate naturally upon the aforementioned "
 "arrays/matrices, as they do scalars;"
-msgstr ""
+msgstr "像对标量一样自然地对上述数组/矩阵进行操作的运算符；"
 
 #: ../../doc/src/language.md:19
 msgid "Complex numbers;"
-msgstr ""
+msgstr "复数；"
 
 #: ../../doc/src/language.md:20
 msgid "Special functions;"
-msgstr ""
+msgstr "特殊函数；"
 
 #: ../../doc/src/language.md:21
 msgid "Structures and pointers for more general data representation."
-msgstr ""
+msgstr "用于更通用数据表示的结构和指针。"
 
 #: ../../doc/src/language.md:23
 msgid ""
@@ -3910,26 +3966,34 @@ msgid ""
 " as well as highly optimized executables, directly from natural, readable"
 " code without need of extensive optimization heroics by the developer."
 msgstr ""
+"因为基本内容包含在语言本身中，所以阅读和编写都很简单，无需从大量的外部类中进"
+"行选择或破译来做同样的事情。由于这些要素是自包含的，编译器可以直接从自然、可"
+"读的代码中提供详细的编译时（例如，参数不匹配）和运行时（例如，内存访问）检查"
+"，以及高度优化的可执行文件。开发人员的广泛优化英雄。"
 
 #: ../../doc/src/language.md:31
 msgid "See our blog posts for more information:"
-msgstr ""
+msgstr "有关更多信息，请参阅我们的博客文章："
 
 #: ../../doc/src/language.md:33
 msgid ""
 "[Why We Created LFortran](https://lfortran.org/blog/2019/04/why-we-"
 "created-lfortran/)"
 msgstr ""
+"[我们为什么创建 LFortran](https://lfortran.org/blog/2019/04/"
+"why-we-created-lfortran/)"
 
 #: ../../doc/src/language.md:34
 msgid ""
 "[Why to Use Fortran For New Projects](https://lfortran.org/blog/2019/05"
 "/why-to-use-fortran-for-new-projects/)"
 msgstr ""
+"[为什么在新项目中使用 Fortran](https://lfortran.org/blog/2019/05/"
+"why-to-use-fortran-for-new-projects/)"
 
 #: ../../doc/src/language.md:36
 msgid "How to Learn Fortran"
-msgstr ""
+msgstr "如何学习 Fortran"
 
 #: ../../doc/src/language.md:38
 msgid ""
@@ -3940,6 +4004,10 @@ msgid ""
 "side comparison with Python/NumPy, links to other online Fortran "
 "resources and books, and an FAQ."
 msgstr ""
+"Fortran 学习起来相对较快，因为它比 C/C++ "
+"简单得多，也更小（实际上，包括所有需要的库）。如果你有兴趣了解更多信息，"
+"请参阅我们的网页 [fortran90.org]，其中包含编写代码的推荐做法、与 Python/"
+"NumPy 的并排比较、其他在线 Fortran 资源和书籍的链接以及常见问题解答。"
 
 #: ../../doc/src/progress.md:3
 msgid ""
@@ -3947,32 +4015,35 @@ msgid ""
 "each feature we list a short description, the filename with the test and "
 "current status for each parts of the compiler:"
 msgstr ""
+"此页面记录了 LFortran 支持的 Fortran 功能。对于每个特性，我们列出了一个简短的"
+"描述，以及编译器每个部分的测试和当前状态的文件名："
 
 #: ../../doc/src/progress.md:7
 msgid "AST: The code can be parsed to AST (`lfortran --show-ast test.f90`)"
-msgstr ""
+msgstr "AST：代码可以解析为 AST (`lfortran --show-ast test.f90`)"
 
 #: ../../doc/src/progress.md:8
 msgid "ASR: The code can be transformed to ASR (`lfortran --show-asr test.f90`)"
-msgstr ""
+msgstr "ASR：代码可以转换为 ASR (`lfortran --show-asr test.f90`)"
 
 #: ../../doc/src/progress.md:9
 msgid "LLVM: LFortran can generate LLVM IR (`lfortran --show-llvm test.f90`)"
-msgstr ""
+msgstr "LLVM：LFortran 可以生成 LLVM IR (`lfortran --show-llvm test.f90`)"
 
 #: ../../doc/src/progress.md:10
 msgid "BIN: The LLVM IR can compile to a binary"
-msgstr ""
+msgstr "BIN：LLVM IR 可以编译为二进制文件"
 
 #: ../../doc/src/progress.md:11
 msgid "RUN: The binary runs without errors"
-msgstr ""
+msgstr "RUN：二进制运行没有错误"
 
 #: ../../doc/src/progress.md:13
 msgid ""
 "If all are green it means the feature fully works and you can use it in "
 "your codes. Otherwise you can see what the status is of each feature."
-msgstr ""
+msgstr "如果全部为绿色，则表示该功能完全有效，你可以在代码中使用它。否则，你可以查看"
+"每个功能的状态。"
 
 #: ../../doc/src/progress.md:16
 msgid ""
@@ -3983,614 +4054,732 @@ msgid ""
 "Our goal is to have a comprehensive Fortran testsuite that can be used to"
 " test any Fortran compiler."
 msgstr ""
+"此页面是使用 [Compiler Tester](https://gitlab.com/lfortran/compiler_tester) "
+"存储库自动生成的，该存储库包含所有 Fortran 测试和脚本，用于运行 LFortran "
+"以生成下表。我们正在寻找贡献者来贡献更多的测试。我们的目标是拥有一个全面的 "
+"Fortran 测试套件，可用于测试任何 Fortran 编译器。"
 
 #: ../../doc/src/progress.md:23
 msgid "Testing the LFortran compiler version:"
-msgstr ""
+msgstr "测试 LFortran 编译器版本："
 
 #: ../../doc/src/progress.md:32
 msgid "Topics"
-msgstr ""
+msgstr "话题"
 
 #: ../../doc/src/progress.md:34
 msgid "Full programs that compute something interesting"
-msgstr ""
+msgstr "计算有趣事物的完整程序"
 
 #: ../../doc/src/progress.md:36
 msgid "Basic Numerics"
-msgstr ""
+msgstr "基本数值"
 
 #: ../../doc/src/progress.md:38
 msgid "Directory: `tests/programs/numerics`"
-msgstr ""
+msgstr "路径：`tests/programs/numerics`"
 
 #: ../../doc/src/progress.md
 msgid "LLVM"
-msgstr ""
+msgstr "LLVM"
 
 #: ../../doc/src/progress.md
 msgid "BIN"
-msgstr ""
+msgstr "BIN"
 
 #: ../../doc/src/progress.md
 msgid "RUN"
-msgstr ""
+msgstr "RUN"
 
 #: ../../doc/src/progress.md
 msgid "Filename"
-msgstr ""
+msgstr "文件名"
 
 #: ../../doc/src/progress.md
 msgid "`Pure Fortran sin(x) implementation`"
-msgstr ""
+msgstr "`纯 Fortran sin(x) 实现`"
 
 #: ../../doc/src/progress.md
 msgid "✅"
-msgstr ""
+msgstr "✅"
 
 #: ../../doc/src/progress.md
 msgid "[t01_sin_implementation.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/programs/numerics/t01_sin_implementation.f90)"
 msgstr ""
+"[t01_sin_implementation.f90](https://gitlab.com/lfortran/compiler_tester/-/"
+"blob/master/tests/programs/numerics/t01_sin_implementation.f90)"
 
 #: ../../doc/src/progress.md:45
 msgid "Modules"
-msgstr ""
+msgstr "模块"
 
 #: ../../doc/src/progress.md:47
 msgid "Basic Usage"
-msgstr ""
+msgstr "基本用法"
 
 #: ../../doc/src/progress.md:49
 msgid "Directory: `tests/modules/basic`"
-msgstr ""
+msgstr "路径：`tests/modules/basic`"
 
 #: ../../doc/src/progress.md
 msgid "`Basic modules`"
-msgstr ""
+msgstr "`基本模块`"
 
 #: ../../doc/src/progress.md
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/basic/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"modules/basic/t01.f90)"
 
 #: ../../doc/src/progress.md:56
 msgid "Module Functions and Subroutines"
-msgstr ""
+msgstr "模块函数和子程序"
 
 #: ../../doc/src/progress.md:58
 msgid "Directory: `tests/modules/procedures`"
-msgstr ""
+msgstr "路径：`tests/modules/procedures`"
 
 #: ../../doc/src/progress.md
 msgid "`Module functions`"
-msgstr ""
+msgstr "`模块函数`"
 
 #: ../../doc/src/progress.md
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/procedures/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"modules/procedures/t01.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`Module subroutines`"
-msgstr ""
+msgstr "`模块子程序`"
 
 #: ../../doc/src/progress.md
 msgid "[t02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/procedures/t02.f90)"
 msgstr ""
+"[t02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"modules/procedures/t02.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`Nested subroutines`"
-msgstr ""
+msgstr "`嵌套子程序`"
 
 #: ../../doc/src/progress.md
 msgid "[t03.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/modules/procedures/t03.f90)"
 msgstr ""
+"[t03.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"modules/procedures/t03.f90)"
 
 #: ../../doc/src/progress.md:67
 msgid "Expressions"
-msgstr ""
+msgstr "表达式"
 
 #: ../../doc/src/progress.md:69
 msgid "Arithmetic Operations"
-msgstr ""
+msgstr "算术运算"
 
 #: ../../doc/src/progress.md:71
 msgid "Directory: `tests/expressions/arit`"
-msgstr ""
+msgstr "路径：`tests/expressions/arit`"
 
 #: ../../doc/src/progress.md
 msgid "`+,-,*,/,**`"
-msgstr ""
+msgstr "`+,-,*,/,**`"
 
 #: ../../doc/src/progress.md
 msgid "[basic_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/arit/basic_operations.f90)"
 msgstr ""
+"[basic_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/expressions/arit/basic_operations.f90)"
 
 #: ../../doc/src/progress.md:78
 msgid "Integers"
-msgstr ""
+msgstr "整型"
 
 #: ../../doc/src/progress.md:80
 msgid "Directory: `tests/expressions/integers`"
-msgstr ""
+msgstr "路径：`tests/expressions/integers`"
 
 #: ../../doc/src/progress.md
 msgid "`integers`"
-msgstr ""
+msgstr "`整型`"
 
 #: ../../doc/src/progress.md
 msgid "[integer_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/integers/integer_kind.f90)"
 msgstr ""
+"[integer_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/expressions/integers/integer_kind.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`relational operations`"
-msgstr ""
+msgstr "`关系运算`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_rel_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/integers/t01_rel_operations.f90)"
 msgstr ""
+"[t01_rel_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/expressions/integers/t01_rel_operations.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`logical operations`"
-msgstr ""
+msgstr "`逻辑运算`"
 
 #: ../../doc/src/progress.md
 msgid "[t02_logical_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/integers/t02_logical_operations.f90)"
 msgstr ""
+"[t02_logical_operations.f90](https://gitlab.com/lfortran/compiler_tester/-/"
+"blob/master/tests/expressions/integers/t02_logical_operations.f90)"
 
 #: ../../doc/src/progress.md:89
 msgid "Real Numbers"
-msgstr ""
+msgstr "实数"
 
 #: ../../doc/src/progress.md:91
 msgid "Directory: `tests/expressions/reals`"
-msgstr ""
+msgstr "路径：`tests/expressions/reals`"
 
 #: ../../doc/src/progress.md
 msgid "`single/double reals`"
-msgstr ""
+msgstr "`单/双精度实数`"
 
 #: ../../doc/src/progress.md
 msgid "[real_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/reals/real_kind.f90)"
 msgstr ""
+"[real_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/expressions/reals/real_kind.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`defined operator`"
-msgstr ""
+msgstr "`定义的运算符`"
 
 #: ../../doc/src/progress.md
 msgid "❌"
-msgstr ""
+msgstr "❌"
 
 #: ../../doc/src/progress.md
 msgid "[t01_def_op.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/reals/t01_def_op.f90)"
 msgstr ""
+"[t01_def_op.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/expressions/reals/t01_def_op.f90)"
 
 #: ../../doc/src/progress.md:99
 msgid "Complex Numbers"
-msgstr ""
+msgstr "复数"
 
 #: ../../doc/src/progress.md:101
 msgid "Directory: `tests/expressions/complex`"
-msgstr ""
+msgstr "路径：`tests/expressions/complex`"
 
 #: ../../doc/src/progress.md
 msgid "`single/double complex`"
-msgstr ""
+msgstr "`单/双复数`"
 
 #: ../../doc/src/progress.md
 msgid "[complex_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/complex/complex_kind.f90)"
 msgstr ""
+"[complex_kind.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/expressions/complex/complex_kind.f90)"
 
 #: ../../doc/src/progress.md:108
 msgid "Strings"
-msgstr ""
+msgstr "字符串"
 
 #: ../../doc/src/progress.md:110
 msgid "Directory: `tests/expressions/character`"
-msgstr ""
+msgstr "路径：`tests/expressions/character`"
 
 #: ../../doc/src/progress.md
 msgid "`character`"
-msgstr ""
+msgstr "`字符`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_character.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/character/t01_character.f90)"
 msgstr ""
+"[t01_character.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/expressions/character/t01_character.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`string concatenation`"
-msgstr ""
+msgstr "`字符串连接`"
 
 #: ../../doc/src/progress.md
 msgid "[t02_concat_operation.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/character/t02_concat_operation.f90)"
 msgstr ""
+"[t02_concat_operation.f90](https://gitlab.com/lfortran/compiler_tester/-/"
+"blob/master/tests/expressions/character/t02_concat_operation.f90)"
 
 #: ../../doc/src/progress.md:118
 msgid "Derived Types"
-msgstr ""
+msgstr "派生类型"
 
 #: ../../doc/src/progress.md:120
 msgid "Directory: `tests/expressions/derived_type`"
-msgstr ""
+msgstr "路径：`tests/expressions/derived_type`"
 
 #: ../../doc/src/progress.md
 msgid "`basic derived types`"
-msgstr ""
+msgstr "`基本派生类型`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_derived_type.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/expressions/derived_type/t01_derived_type.f90)"
 msgstr ""
+"[t01_derived_type.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/expressions/derived_type/t01_derived_type.f90)"
 
 #: ../../doc/src/progress.md:127
 msgid "Statements"
-msgstr ""
+msgstr "声明"
 
 #: ../../doc/src/progress.md:129
 msgid "Allocate Statement"
-msgstr ""
+msgstr "分配语句"
 
 #: ../../doc/src/progress.md:131
 msgid "Directory: `tests/statements/allocate`"
-msgstr ""
+msgstr "路径：`tests/statements/allocate`"
 
 #: ../../doc/src/progress.md
 msgid "`allocate statement`"
-msgstr ""
+msgstr "`分配语句`"
 
 #: ../../doc/src/progress.md
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/allocate/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/allocate/t01.f90)"
 
 #: ../../doc/src/progress.md:138
 msgid "Block Statement"
-msgstr ""
+msgstr "块语句"
 
 #: ../../doc/src/progress.md:140
 msgid "Directory: `tests/statements/block`"
-msgstr ""
+msgstr "路径：`tests/statements/block`"
 
 #: ../../doc/src/progress.md
 msgid "`block statement`"
-msgstr ""
+msgstr "`块语句`"
 
 #: ../../doc/src/progress.md
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/block/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/block/t01.f90)"
 
 #: ../../doc/src/progress.md:147
 msgid "Goto Statement"
-msgstr ""
+msgstr "转到语句"
 
 #: ../../doc/src/progress.md:149
 msgid "Directory: `tests/statements/goto`"
-msgstr ""
+msgstr "路径：`tests/statements/goto`"
 
 #: ../../doc/src/progress.md
 msgid "`computed go-to statement`"
-msgstr ""
+msgstr "`计算的首选语句`"
 
 #: ../../doc/src/progress.md
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/goto/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/goto/t01.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`go-to statement`"
-msgstr ""
+msgstr "`首选声明`"
 
 #: ../../doc/src/progress.md
 msgid "[t02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/goto/t02.f90)"
 msgstr ""
+"[t02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/goto/t02.f90)"
 
 #: ../../doc/src/progress.md:157
 msgid "If Statement"
-msgstr ""
+msgstr "如果语句"
 
 #: ../../doc/src/progress.md:159
 msgid "Directory: `tests/statements/if`"
-msgstr ""
+msgstr "路径：`tests/statements/if`"
 
 #: ../../doc/src/progress.md
 msgid "`Test .false.`"
-msgstr ""
+msgstr "`Test .false.`"
 
 #: ../../doc/src/progress.md
 msgid "[if_01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_01.f90)"
 msgstr ""
+"[if_01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/if/if_01.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`single line if statement`"
-msgstr ""
+msgstr "`单行 if 语句`"
 
 #: ../../doc/src/progress.md
 msgid "[if_02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_02.f90)"
 msgstr ""
+"[if_02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/if/if_02.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`multi line if statement`"
-msgstr ""
+msgstr "`多行 if 语句`"
 
 #: ../../doc/src/progress.md
 msgid "[if_03.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_03.f90)"
 msgstr ""
+"[if_03.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/if/if_03.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`nested if statements`"
-msgstr ""
+msgstr "`嵌套的 if 语句`"
 
 #: ../../doc/src/progress.md
 msgid "[if_04.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/if/if_04.f90)"
 msgstr ""
+"[if_04.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/if/if_04.f90)"
 
 #: ../../doc/src/progress.md:169
 msgid "While Statement"
-msgstr ""
+msgstr "While 语句"
 
 #: ../../doc/src/progress.md:171
 msgid "Directory: `tests/statements/while`"
-msgstr ""
+msgstr "路径：`tests/statements/while`"
 
 #: ../../doc/src/progress.md
 msgid "`Simple while loops`"
-msgstr ""
+msgstr "`简单的 while 循环`"
 
 #: ../../doc/src/progress.md
 msgid "[while_01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/while/while_01.f90)"
 msgstr ""
+"[while_01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/statements/while/while_01.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`exit / cycle in while loops`"
-msgstr ""
+msgstr "`从 while 循环退出/跳过`"
 
 #: ../../doc/src/progress.md
 msgid "[while_02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/while/while_02.f90)"
 msgstr ""
+"[while_02.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/"
+"tests/statements/while/while_02.f90)"
 
 #: ../../doc/src/progress.md:179
 msgid "Print Statement"
-msgstr ""
+msgstr "Print 声明"
 
 #: ../../doc/src/progress.md:181
 msgid "Directory: `tests/statements/print`"
-msgstr ""
+msgstr "路径：`tests/statements/print`"
 
 #: ../../doc/src/progress.md
 msgid "`Basic print`"
-msgstr ""
+msgstr "`基本 Print`"
 
 #: ../../doc/src/progress.md
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/print/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/print/t01.f90)"
 
 #: ../../doc/src/progress.md:188
 msgid "Open, Read, Write, Close Statement"
-msgstr ""
+msgstr "Open、Read、Write、Close语句"
 
 #: ../../doc/src/progress.md:190
 msgid "Directory: `tests/statements/file_io`"
-msgstr ""
+msgstr "路径：`tests/statements/file_io`"
 
 #: ../../doc/src/progress.md
 msgid "`open/read/write/close`"
-msgstr ""
+msgstr "`open/read/write/close`"
 
 #: ../../doc/src/progress.md
 msgid "[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/statements/file_io/t01.f90)"
 msgstr ""
+"[t01.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/"
+"statements/file_io/t01.f90)"
 
 #: ../../doc/src/progress.md:197
 msgid "Intrinsic Functions"
-msgstr ""
+msgstr "内置函数"
 
 #: ../../doc/src/progress.md:199
 msgid "abs"
-msgstr ""
+msgstr "abs"
 
 #: ../../doc/src/progress.md:201
 msgid "Directory: `tests/intrinsic/abs`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/abs`"
 
 #: ../../doc/src/progress.md
 msgid "`scalar single/double real`"
-msgstr ""
+msgstr "`scalar single/double real`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/abs/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/abs/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`scalar single/double complex`"
-msgstr ""
+msgstr "`scalar single/double complex`"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/abs/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/abs/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "`array 1D single/double real`"
-msgstr ""
+msgstr "`array 1D single/double real`"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/abs/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/abs/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:210
 msgid "exp"
-msgstr ""
+msgstr "exp"
 
 #: ../../doc/src/progress.md:212
 msgid "Directory: `tests/intrinsic/exp`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/exp`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/exp/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/exp/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/exp/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/exp/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/exp/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/exp/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:221
 msgid "log"
-msgstr ""
+msgstr "log"
 
 #: ../../doc/src/progress.md:223
 msgid "Directory: `tests/intrinsic/log`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/log`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/log/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/log/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/log/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/log/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/log/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/log/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:232
 msgid "sqrt"
-msgstr ""
+msgstr "sqrt"
 
 #: ../../doc/src/progress.md:234
 msgid "Directory: `tests/intrinsic/sqrt`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/sqrt`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sqrt/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sqrt/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sqrt/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sqrt/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sqrt/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sqrt/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:243
 msgid "sin"
-msgstr ""
+msgstr "sin"
 
 #: ../../doc/src/progress.md:245
 msgid "Directory: `tests/intrinsic/sin`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/sin`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sin/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sin/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sin/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sin/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sin/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sin/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:254
 msgid "cos"
-msgstr ""
+msgstr "cos"
 
 #: ../../doc/src/progress.md:256
 msgid "Directory: `tests/intrinsic/cos`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/cos`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cos/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cos/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cos/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cos/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cos/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cos/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:265
 msgid "tan"
-msgstr ""
+msgstr "tan"
 
 #: ../../doc/src/progress.md:267
 msgid "Directory: `tests/intrinsic/tan`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/tan`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tan/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tan/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tan/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tan/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tan/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tan/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:276
 msgid "sinh"
-msgstr ""
+msgstr "sinh"
 
 #: ../../doc/src/progress.md:278
 msgid "Directory: `tests/intrinsic/sinh`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/sinh`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sinh/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sinh/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sinh/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sinh/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/sinh/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/sinh/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:287
 msgid "cosh"
-msgstr ""
+msgstr "cosh"
 
 #: ../../doc/src/progress.md:289
 msgid "Directory: `tests/intrinsic/cosh`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/cosh`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cosh/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cosh/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cosh/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cosh/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/cosh/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/cosh/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:298
 msgid "tanh"
-msgstr ""
+msgstr "tanh"
 
 #: ../../doc/src/progress.md:300
 msgid "Directory: `tests/intrinsic/tanh`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/tanh`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tanh/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tanh/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tanh/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tanh/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/tanh/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/tanh/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:309
 msgid "asin"
@@ -4598,19 +4787,25 @@ msgstr "asin"
 
 #: ../../doc/src/progress.md:311
 msgid "Directory: `tests/intrinsic/asin`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/asin`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/asin/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/asin/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/asin/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/asin/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/asin/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/asin/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:320
 msgid "acos"
@@ -4618,142 +4813,171 @@ msgstr "acos"
 
 #: ../../doc/src/progress.md:322
 msgid "Directory: `tests/intrinsic/acos`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/acos`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/acos/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/acos/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/acos/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/acos/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/acos/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/acos/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:331
 msgid "atan"
-msgstr ""
+msgstr "atan"
 
 #: ../../doc/src/progress.md:333
 msgid "Directory: `tests/intrinsic/atan`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/atan`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/atan/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/atan/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/atan/t02_scalar_complex.f90)"
 msgstr ""
+"[t02_scalar_complex.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/atan/t02_scalar_complex.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/atan/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/atan/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:342
 msgid "modulo"
-msgstr ""
+msgstr "modulo"
 
 #: ../../doc/src/progress.md:344
 msgid "Directory: `tests/intrinsic/modulo`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/modulo`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/modulo/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/modulo/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/modulo/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/modulo/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:352
 msgid "mod"
-msgstr ""
+msgstr "mod"
 
 #: ../../doc/src/progress.md:354
 msgid "Directory: `tests/intrinsic/mod`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/mod`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/mod/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/mod/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md
 msgid "[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/mod/t03_array1d_real.f90)"
 msgstr ""
+"[t03_array1d_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/mod/t03_array1d_real.f90)"
 
 #: ../../doc/src/progress.md:362
 msgid "min"
-msgstr ""
+msgstr "min"
 
 #: ../../doc/src/progress.md:364
 msgid "Directory: `tests/intrinsic/min`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/min`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/min/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/min/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:371
 msgid "max"
-msgstr ""
+msgstr "max"
 
 #: ../../doc/src/progress.md:373
 msgid "Directory: `tests/intrinsic/max`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/max`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/max/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/max/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:380
 msgid "int"
-msgstr ""
+msgstr "int"
 
 #: ../../doc/src/progress.md:382
 msgid "Directory: `tests/intrinsic/int`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/int`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/int/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/int/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:389
 msgid "real"
-msgstr ""
+msgstr "real"
 
 #: ../../doc/src/progress.md:391
 msgid "Directory: `tests/intrinsic/real`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/real`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/real/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/real/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:398
 msgid "floor"
-msgstr ""
+msgstr "floor"
 
 #: ../../doc/src/progress.md:400
 msgid "Directory: `tests/intrinsic/floor`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/floor`"
 
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/floor/t01_scalar_real.f90)"
 msgstr ""
+"[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
+"master/tests/intrinsic/floor/t01_scalar_real.f90)"
 
 #: ../../doc/src/progress.md:407
 msgid "nint"
-msgstr ""
+msgstr "nint"
 
 #: ../../doc/src/progress.md:409
 msgid "Directory: `tests/intrinsic/nint`"
-msgstr ""
+msgstr "路径：`tests/intrinsic/nint`"
 
 #: ../../doc/src/progress.md
-#, fuzzy
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/nint/t01_scalar_real.f90)"
 msgstr ""
 "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/"
