@@ -732,7 +732,7 @@ LFORTRAN_API int32_t _lpython_bit_length4(int32_t num)
 LFORTRAN_API int32_t _lpython_bit_length8(int64_t num)
 {
     int32_t res = 0;
-    num = abs(num);
+    num = llabs(num);
     for(; num; num >>= 1, res++);
     return res;
 }
@@ -858,6 +858,10 @@ LFORTRAN_API char* _lfortran_malloc(int size) {
 
 LFORTRAN_API int8_t* _lfortran_realloc(int8_t* ptr, int32_t size) {
     return (int8_t*) realloc(ptr, size);
+}
+
+LFORTRAN_API int8_t* _lfortran_calloc(int32_t count, int32_t size) {
+    return (int8_t*) calloc(count, size);
 }
 
 LFORTRAN_API void _lfortran_free(char* ptr) {
