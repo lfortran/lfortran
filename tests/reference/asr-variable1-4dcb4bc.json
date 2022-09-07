@@ -1,0 +1,13 @@
+{
+    "basename": "asr-variable1-4dcb4bc",
+    "cmd": "lfortran --show-asr --allow-implicit-interface --no-color {infile} -o {outfile}",
+    "infile": "tests/variable1.f90",
+    "infile_hash": "5b6d695576e5238912fcc34c5b3ca73acd415e72e7a349c1ed66c97b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-variable1-4dcb4bc.stdout",
+    "stdout_hash": "4504d9d65abec7ecc73ce950bfba2cedfeaea06dbc5a618f6da32532",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
