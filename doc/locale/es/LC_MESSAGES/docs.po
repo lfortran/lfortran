@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-09-01 08:03+0000\n"
-"Last-Translator: Asdrubal Lozada-Blanco <aslozada@gmail.com>\n"
+"PO-Revision-Date: 2022-09-07 21:02+0000\n"
+"Last-Translator: Emilio <emilio.castro.gonzalez@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/es/>\n"
 "Language: es\n"
@@ -1015,7 +1015,7 @@ msgstr ""
 
 #: ../../doc/src/index.md:134
 msgid "Getting started"
-msgstr "Iniciando"
+msgstr "Primeros pasos"
 
 #: ../../doc/src/index.md:141 ../../doc/src/progress.md:1
 msgid "LFortran Development Status"
