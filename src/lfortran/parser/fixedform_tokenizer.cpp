@@ -683,6 +683,39 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
+    void lex_implicit(unsigned char *&cur) {
+        if (!next_is(cur, "implicit")) {
+            Location loc;
+            loc.first = 1;
+            loc.last = 1;
+            throw parser_local::TokenizerError("Unable to tokenize `IMPLICIT`", loc);
+        }
+        YYSTYPE y;
+        std::string l("implicit"); 
+        y.string.from_str(m_a, l);
+        stypes.push_back(y);
+        tokens.push_back(yytokentype::KW_IMPLICIT);
+                
+        Location loc;
+        loc.first = cur - string_start;
+        loc.last = cur - string_start + l.size();
+        locations.push_back(loc);
+
+        cur += l.size();
+
+        if (next_is(cur, "doubleprecision(")) {
+            l = "double";
+            y.string.from_str(m_a, l);
+            stypes.push_back(y);
+            tokens.push_back(yytokentype::KW_DOUBLE);
+            loc.first = cur - string_start;
+            loc.last = cur - string_start + l.size();
+            locations.push_back(loc);
+            cur += l.size();
+        }
+        tokenize_line("", cur);
+    }
+
     bool lex_body_statement(unsigned char *&cur) {
         eat_label(cur);
         if (lex_declaration(cur)) {
@@ -746,13 +779,13 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
-        if (next_is(cur, "implicit")) {
-            tokenize_line("implicit", cur);
+        if (next_is(cur, "intrinsic")) {
+            tokenize_line("intrinsic", cur);
             return true;
         }
 
-        if (next_is(cur, "intrinsic")) {
-            tokenize_line("intrinsic", cur);
+        if (next_is(cur, "implicit")) {
+            lex_implicit(cur);
             return true;
         }
 
