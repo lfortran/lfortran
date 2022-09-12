@@ -2269,5 +2269,18 @@ filename = "parameter1.f90"
 asr = true
 
 [[test]]
-filename="variable1.f90"
-asr_implicit_interface=true
+filename = "variable1.f90"
+asr_implicit_interface = true
+
+
+[[test]]
+filename = "fixed_form_implicit_check.f"
+ast = true
+asr = true
+fixed_free_equal_asr = true
+
+[[test]]
+filename = "implicit_check.f90"
+ast = true
+asr = true
+fixed_free_equal_asr = true
