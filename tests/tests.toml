@@ -2277,3 +2277,7 @@ asr = true
 filename = "parameter1.f90"
 ast = true
 asr = true
+
+[[test]]
+filename="variable1.f90"
+asr_implicit_interface=true

@@ -850,7 +850,7 @@ loop.body11:                                      ; preds = %loop.head10
   %633 = load i32*, i32** %632, align 8
   %634 = getelementptr inbounds i32, i32* %633, i32 %628
   %635 = load i32, i32* %634, align 4
-  %636 = mul i32 %635, 2
+  %636 = mul i32 2, %635
   store i32 %636, i32* %619, align 4
   %637 = load i32, i32* %"1_v", align 4
   %638 = add i32 %637, 1
@@ -1012,7 +1012,7 @@ loop.body17:                                      ; preds = %loop.head16
   %767 = load i32*, i32** %766, align 8
   %768 = getelementptr inbounds i32, i32* %767, i32 %762
   %769 = load i32, i32* %768, align 4
-  %770 = mul i32 %769, 2
+  %770 = mul i32 2, %769
   store i32 %770, i32* %753, align 4
   %771 = load i32, i32* %"1_v", align 4
   %772 = add i32 %771, 1
@@ -1174,7 +1174,7 @@ loop.body23:                                      ; preds = %loop.head22
   %901 = load i32*, i32** %900, align 8
   %902 = getelementptr inbounds i32, i32* %901, i32 %896
   %903 = load i32, i32* %902, align 4
-  %904 = mul i32 %903, 2
+  %904 = mul i32 2, %903
   store i32 %904, i32* %887, align 4
   %905 = load i32, i32* %"1_v", align 4
   %906 = add i32 %905, 1
@@ -1336,7 +1336,7 @@ loop.body29:                                      ; preds = %loop.head28
   %1035 = load i32*, i32** %1034, align 8
   %1036 = getelementptr inbounds i32, i32* %1035, i32 %1030
   %1037 = load i32, i32* %1036, align 4
-  %1038 = mul i32 %1037, 2
+  %1038 = mul i32 2, %1037
   store i32 %1038, i32* %1021, align 4
   %1039 = load i32, i32* %"1_v", align 4
   %1040 = add i32 %1039, 1

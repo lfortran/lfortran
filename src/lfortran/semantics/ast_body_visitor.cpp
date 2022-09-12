@@ -1264,6 +1264,11 @@ public:
                 }
                 break;
             }
+            case (ASR::symbolType::Variable) : {
+                final_sym=original_sym;
+                original_sym = nullptr;
+                break;
+            }
             default : {
                 throw SemanticError("Symbol type not supported", x.base.base.loc);
             }
