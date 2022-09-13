@@ -1,5 +1,4 @@
 #include <limits>
-#include <regex>
 #include <utility>
 
 #include <lfortran/parser/parser_exception.h>
