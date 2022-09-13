@@ -686,10 +686,6 @@ struct FixedFormRecursiveDescent {
 
     bool is_function_call(unsigned char *&cur) {
         if (!next_is(cur, "call")) return false;
-        Location loc;
-        loc.first = cur - string_start;
-        loc.last = cur - string_start;
-
         auto cpy = cur;
         auto next = cpy; next_line(next);
         std::string cur_line{tostr(cpy, next)};
@@ -697,13 +693,12 @@ struct FixedFormRecursiveDescent {
         cpy += 4;
         // function needs to start with a letter
         if (*cpy <= 'a' || *cpy >= 'z') return false;
-        // throw LFortran::parser_local::TokenizerError("Function name needs to start with a letter", loc);
         while(*cpy++ != '(') {
             if (*cpy == '\n' || *cpy == '\0') 
                 return false;
         }
         int32_t nesting = 1;
-        while(*cpy != '\n') {
+        while(*cpy++ != '\n') {
             if (*cpy == '(') nesting++;
             if (*cpy == ')') nesting--;
         }

@@ -2279,3 +2279,7 @@ asr_implicit_interface = true
 [[test]]
 filename = "fixed_form_call2.f"
 asr_implicit_interface = true
+
+[[test]]
+filename = "fixed_form_call3.f"
+asr_implicit_interface = true
