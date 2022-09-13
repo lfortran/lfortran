@@ -2207,6 +2207,10 @@ filename = "implicit_typing2.f90"
 asr_implicit_typing = true
 
 [[test]]
+filename = "allow_implicit_interface.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "dimension_attr2.f90"
 asr_implicit_typing = true
 
@@ -2238,3 +2242,32 @@ ast = true
 [[test]]
 filename = "errors/arithmetic_if1.f90"
 asr = true
+
+[[test]]
+filename = "fixed_form_if_variations.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "sole_intrinsic.f"
+ast = true
+asr = true
+
+[[test]]
+
+filename = "loop_test1.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "loop_test2.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "parameter1.f90"
+asr = true
+
+[[test]]
+filename="variable1.f90"
+asr_implicit_interface=true

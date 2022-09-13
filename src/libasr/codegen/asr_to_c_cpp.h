@@ -225,11 +225,37 @@ R"(#include <stdio.h>
         indentation_level -= 2;
     }
 
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        LFORTRAN_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
+        ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        std::string decl, body;
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        std::string open_paranthesis = indent + "{\n";
+        std::string close_paranthesis = indent + "}\n";
+        indent += std::string(indentation_spaces, ' ');
+        indentation_level += 1;
+        for (auto &item : block->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                decl += indent + self().convert_variable_decl(*v) + ";\n";
+            }
+        }
+        for (size_t i=0; i<block->n_body; i++) {
+            self().visit_stmt(*block->m_body[i]);
+            body += src;
+        }
+        src = open_paranthesis + decl + body + close_paranthesis;
+        indentation_level -= 1;
+    }
+
     // Returns the declaration, no semi colon at the end
     std::string get_function_declaration(const ASR::Function_t &x) {
         template_for_Kokkos.clear();
         template_number = 0;
-        std::string sub;
+        std::string sub, inl;
+        if (x.m_inline) {
+            inl = "inline __attribute__((always_inline)) ";
+        }
         if (x.m_return_var) {
             ASR::Variable_t *return_var = LFortran::ASRUtils::EXPR2VAR(x.m_return_var);
             if (ASRUtils::is_integer(*return_var->m_type)) {
@@ -287,7 +313,7 @@ R"(#include <stdio.h>
         if (sym_name == "exit") {
             sym_name = "_xx_lcompilers_changed_exit_xx";
         }
-        std::string func = sub + sym_name + "(";
+        std::string func = inl + sub + sym_name + "(";
         for (size_t i=0; i<x.n_args; i++) {
             ASR::Variable_t *arg = LFortran::ASRUtils::EXPR2VAR(x.m_args[i]);
             LFORTRAN_ASSERT(LFortran::ASRUtils::is_arg_dummy(arg->m_intent));
@@ -556,11 +582,17 @@ R"(#include <stdio.h>
         self().visit_expr(*x.m_arg);
         switch (x.m_kind) {
             case (ASR::cast_kindType::IntegerToReal) : {
-                src = "(float)(" + src + ")";
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                switch (dest_kind) {
+                    case 4: src = "(float)(" + src + ")"; break;
+                    case 8: src = "(double)(" + src + ")"; break;
+                    default: throw CodeGenError("Cast IntegerToReal: Unsupported Kind " + std::to_string(dest_kind));
+                }
                 break;
             }
             case (ASR::cast_kindType::RealToInteger) : {
-                src = "(int)(" + src + ")";
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                src = "(int" + std::to_string(dest_kind * 8) + "_t)(" + src + ")";
                 break;
             }
             case (ASR::cast_kindType::RealToReal) : {
@@ -797,6 +829,11 @@ R"(#include <stdio.h>
             case (ASR::binopType::Sub) : { last_expr_precedence = 6; break; }
             case (ASR::binopType::Mul) : { last_expr_precedence = 5; break; }
             case (ASR::binopType::Div) : { last_expr_precedence = 5; break; }
+            case (ASR::binopType::BitAnd) : { last_expr_precedence = 11; break; }
+            case (ASR::binopType::BitOr) : { last_expr_precedence = 13; break; }
+            case (ASR::binopType::BitXor) : { last_expr_precedence = 12; break; }
+            case (ASR::binopType::BitLShift) : { last_expr_precedence = 7; break; }
+            case (ASR::binopType::BitRShift) : { last_expr_precedence = 7; break; }
             case (ASR::binopType::Pow) : {
                 src = "pow(" + left + ", " + right + ")";
                 if (is_c) {
@@ -806,7 +843,7 @@ R"(#include <stdio.h>
                 }
                 return;
             }
-            default: throw CodeGenError("BinOp: operator not implemented yet");
+            default: throw CodeGenError("BinOp: " + std::to_string(x.m_op) + " operator not implemented yet");
         }
         src = "";
         if (left_precedence == 3) {
