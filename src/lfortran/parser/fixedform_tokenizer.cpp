@@ -685,9 +685,29 @@ struct FixedFormRecursiveDescent {
     }
 
     bool is_function_call(unsigned char *&cur) {
-        auto next = cur; next_line(next);
-        std::string cur_line{tostr(cur, next)};
-        return std::regex_search(cur_line, std::regex("call[a-z0-9]+\\(([\\sa-z_,*+/:.'=0-9]+)\\)", std::regex::icase));
+        if (!next_is(cur, "call")) return false;
+        Location loc;
+        loc.first = cur - string_start;
+        loc.last = cur - string_start;
+
+        auto cpy = cur;
+        auto next = cpy; next_line(next);
+        std::string cur_line{tostr(cpy, next)};
+        // + std::string("call").size()
+        cpy += 4;
+        // function needs to start with a letter
+        if (*cpy <= 'a' || *cpy >= 'z') return false;
+        // throw LFortran::parser_local::TokenizerError("Function name needs to start with a letter", loc);
+        while(*cpy++ != '(') {
+            if (*cpy == '\n' || *cpy == '\0') 
+                return false;
+        }
+        int32_t nesting = 1;
+        while(*cpy != '\n') {
+            if (*cpy == '(') nesting++;
+            if (*cpy == ')') nesting--;
+        }
+        return nesting == 0;
     }
 
     bool lex_body_statement(unsigned char *&cur) {
@@ -706,7 +726,7 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
-        if (next_is(cur, "call") && is_function_call(cur)) {
+        if (is_function_call(cur)) {
             tokenize_line("call", cur);
             return true;
         }
