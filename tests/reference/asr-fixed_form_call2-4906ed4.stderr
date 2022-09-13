@@ -1,0 +1,5 @@
+semantic error: Function 'prinf' not found or not implemented yet (if it is intrinsic)
+ --> tests/fixed_form_call2.f:4:9
+  |
+4 |         call prinf('lw = *',1)
+  |         ^^^^^^^^^^^^^^^^^^^^^^ 
