@@ -1,4 +1,5 @@
 #include <limits>
+#include <regex>
 #include <utility>
 
 #include <lfortran/parser/parser_exception.h>
@@ -683,6 +684,12 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
+    bool is_function_call(unsigned char *&cur) {
+        auto next = cur; next_line(next);
+        std::string cur_line{tostr(cur, next)};
+        return std::regex_search(cur_line, std::regex("call[a-z0-9]+\\(([\\sa-z_,*+/:.'=0-9]+)\\)", std::regex::icase));
+    }
+
     bool lex_body_statement(unsigned char *&cur) {
         eat_label(cur);
         if (lex_declaration(cur)) {
@@ -698,6 +705,12 @@ struct FixedFormRecursiveDescent {
             lex_do(cur);
             return true;
         }
+
+        if (next_is(cur, "call") && is_function_call(cur)) {
+            tokenize_line("call", cur);
+            return true;
+        }
+
         // assignment
         if (contains(cur, nline, '=')) {
             tokenize_line("", cur);
@@ -720,11 +733,6 @@ struct FixedFormRecursiveDescent {
         /*
          * explicitly DO NOT tokenize `CONTINUE`
          */
-
-        if (next_is(cur, "call") && !contains(cur, nline, '=')) {
-            tokenize_line("call", cur);
-            return true;
-        }
 
         if (next_is(cur, "return")) {
             tokenize_line("return", cur);
