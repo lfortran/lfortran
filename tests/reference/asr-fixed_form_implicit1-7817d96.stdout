@@ -1,0 +1,1 @@
+(TranslationUnit (SymbolTable 1 {main: (Program (SymbolTable 2 {a: (Variable 2 a Local () () Default (Integer 4 []) Source Public Required .false.)}) main [] [(= (Var 2 a) (IntegerConstant 1 (Integer 4 [])) ()) (If (IntegerCompare (Var 2 a) LtE (IntegerConstant 1 (Integer 4 [])) (Logical 4 []) ()) [(Print () [(StringConstant "h" (Character 1 1 () []))] () ())] [])])}) [])

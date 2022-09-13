@@ -2272,7 +2272,6 @@ asr = true
 filename = "variable1.f90"
 asr_implicit_interface = true
 
-
 [[test]]
 filename = "fixed_form_implicit_check.f"
 ast = true
@@ -2284,3 +2283,13 @@ filename = "implicit_check.f90"
 ast = true
 asr = true
 fixed_free_equal_asr = true
+
+[[test]]
+filename = "fixed_form_implicit1.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "fixed_form_implicit2.f"
+ast = true
+asr = true
