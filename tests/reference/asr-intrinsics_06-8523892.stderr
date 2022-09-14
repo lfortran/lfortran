@@ -1,0 +1,5 @@
+semantic error: Function 'datan' not found or not implemented yet (if it is intrinsic)
+  --> tests/../integration_tests/intrinsics_06.f90:13:5
+   |
+13 | x = datan(1.5574077)
+   |     ^^^^^^^^^^^^^^^^ 
