@@ -1,5 +1,0 @@
-semantic error: Function 'dcos' not found or not implemented yet (if it is intrinsic)
- --> tests/../integration_tests/intrinsics_03.f90:8:6
-  |
-8 | r1 = dcos(a)
-  |      ^^^^^^^ 
