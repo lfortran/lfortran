@@ -2269,5 +2269,22 @@ filename = "parameter1.f90"
 asr = true
 
 [[test]]
-filename="variable1.f90"
+filename = "variable1.f90"
 asr_implicit_interface=true
+
+[[test]]
+filename = "fixed_form_goto_select.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "fixed_form_call1.f"
+asr_implicit_interface = true
+
+[[test]]
+filename = "fixed_form_call2.f"
+asr_implicit_interface = true
+
+[[test]]
+filename = "fixed_form_call3.f"
+asr_implicit_interface = true
