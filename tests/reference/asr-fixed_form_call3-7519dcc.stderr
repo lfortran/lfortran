@@ -1,5 +1,0 @@
-syntax error: Token 'FAILURE' (of type 'identifier') is unexpected here
- --> tests/fixed_form_call3.f:1:3
-  |
-1 | c FAILURE test 
-  |   ^^^^^^^ 
