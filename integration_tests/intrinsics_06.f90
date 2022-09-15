@@ -10,6 +10,9 @@ print *, x
 x = atan(1.5574077)
 print *, x
 
+x = datan(1.5574077)
+print *, x
+
 x = asinh(1.1752012)
 print *, x
 
