@@ -139,13 +139,22 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
             extra_args)
 
     if asr_implicit_interface:
-        run_test(
-            filename,
-            "asr",
-            "lfortran --show-asr --allow-implicit-interface --no-color {infile} -o {outfile}",
-            filename,
-            update_reference,
-            extra_args)
+        if filename.endswith(".f"):
+            run_test(
+                filename,
+                "asr",
+                "lfortran --fixed-form --allow-implicit-interface --show-asr --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                extra_args)
+        else:
+            run_test(
+                filename,
+                "asr",
+                "lfortran --show-asr --allow-implicit-interface --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                extra_args)
 
     if asr_preprocess:
         run_test(

@@ -683,6 +683,27 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
+    bool is_function_call(unsigned char *&cur) {
+        if (!next_is(cur, "call")) return false;
+        auto cpy = cur;
+        auto next = cpy; next_line(next);
+        std::string cur_line{tostr(cpy, next)};
+        // + std::string("call").size()
+        cpy += 4;
+        // function needs to start with a letter
+        if (*cpy <= 'a' || *cpy >= 'z') return false;
+        while(*cpy++ != '(') {
+            if (*cpy == '\n' || *cpy == '\0') 
+                return false;
+        }
+        int32_t nesting = 1;
+        while(*cpy++ != '\n') {
+            if (*cpy == '(') nesting++;
+            if (*cpy == ')') nesting--;
+        }
+        return nesting == 0;
+    }
+
     bool lex_body_statement(unsigned char *&cur) {
         eat_label(cur);
         if (lex_declaration(cur)) {
@@ -698,6 +719,12 @@ struct FixedFormRecursiveDescent {
             lex_do(cur);
             return true;
         }
+
+        if (is_function_call(cur)) {
+            tokenize_line("call", cur);
+            return true;
+        }
+
         // assignment
         if (contains(cur, nline, '=')) {
             tokenize_line("", cur);
@@ -720,11 +747,6 @@ struct FixedFormRecursiveDescent {
 
         if (next_is(cur, "goto")) {
             tokenize_line("goto", cur);
-            return true;
-        }
-
-        if (next_is(cur, "call") && !contains(cur, nline, '=')) {
-            tokenize_line("call", cur);
             return true;
         }
 
