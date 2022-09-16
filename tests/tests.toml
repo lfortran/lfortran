@@ -2254,7 +2254,11 @@ ast = true
 asr = true
 
 [[test]]
+filename = "fixed_form_simple_continue.f"
+ast = true
+asr = true
 
+[[test]]
 filename = "loop_test1.f"
 ast = true
 asr = true
@@ -2265,7 +2269,13 @@ ast = true
 asr = true
 
 [[test]]
+filename = "continue_body_if_loop.f"
+ast = true
+asr = true
+
+[[test]]
 filename = "parameter1.f90"
+ast = true
 asr = true
 
 [[test]]

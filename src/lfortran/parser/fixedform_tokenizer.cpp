@@ -772,14 +772,16 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        // careful addition -- `IF` and `DO` terminals are `CONTINUE`, too
+        if (next_is(cur, "continue")) {
+            tokenize_line("continue", cur);
+            return true;
+        }
+
         if (next_is(cur, "goto")) {
             tokenize_line("goto", cur);
             return true;
         }
-
-        /*
-         * explicitly DO NOT tokenize `CONTINUE`
-         */
 
         if (next_is(cur, "return")) {
             tokenize_line("return", cur);
@@ -808,6 +810,11 @@ struct FixedFormRecursiveDescent {
 
         if (next_is(cur, "implicit")) {
             lex_implicit(cur);
+            return true;
+        }
+
+        if (next_is(cur, "stop")) {
+            tokenize_line("stop", cur);
             return true;
         }
 
