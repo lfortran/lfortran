@@ -1,0 +1,1 @@
+(TranslationUnit [(Program main () [] [(Implicit (AttrType TypeComplex [] () None) [] [(LetterSpec () a) (LetterSpec () b) (LetterSpec () c)] ()) (Implicit (AttrType TypeCharacter [(() 4 Value)] () None) [] [(LetterSpec () k) (LetterSpec () l)] ())] [] [] [])])
