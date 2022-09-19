@@ -2,11 +2,11 @@
     "basename": "asr-fixed_form_if_variations-b4dcd1e",
     "cmd": "lfortran --fixed-form --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/fixed_form_if_variations.f",
-    "infile_hash": "8f15672107a6ce738849ac95c05abf87ef22c71914e2dfa402f9d633",
+    "infile_hash": "4a650d13a10da613323a06d614f3a9342a07afcae9d662a2584c8e52",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-fixed_form_if_variations-b4dcd1e.stdout",
-    "stdout_hash": "ee343915bbe4e3b3173e69070036bd38d49e1f8f71e11a187fca752f",
+    "stdout_hash": "46d517dffa4084d67bd661da8e241ff56d0b008d6668683bd9cc924a",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
