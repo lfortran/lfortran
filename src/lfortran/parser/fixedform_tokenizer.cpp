@@ -748,7 +748,7 @@ struct FixedFormRecursiveDescent {
             return true;
         }
         unsigned char *nline = cur; next_line(nline);
-        if (next_is(cur, "do") && contains(cur, nline, '=') && contains(cur, nline, '=')) {
+        if (is_do_loop(cur)) {
             lex_do(cur);
             return true;
         }
@@ -893,6 +893,49 @@ struct FixedFormRecursiveDescent {
         } else {
             return false;
         }
+    }
+
+    /*
+    If the line contains any of these forms, then it is a do loop:
+
+    do x = 1, 5
+    do x = 1, 5, 3
+    do 5 x = 1, 5, 3
+    do x = EXPR, EXPR
+    do x = EXPR, EXPR, EXPR
+    do 5 x = EXPR, EXPR, EXPR
+    do
+    */
+    bool is_do_loop(unsigned char *cur) {
+        if (try_next(cur, "do")) {
+            // do
+            try_integer(cur); // Optional: do 5
+            if (try_end_of_stmt(cur)) {
+                // do
+                // do 5
+                return true;
+            }
+            if (try_name(cur)) {
+                // do x
+                // do 5 x
+                if (try_next(cur, "=")) {
+                    // do x =
+                    // do 5 x =
+                    if (try_expr(cur)) {
+                        // do x = 1
+                        // do 5 x = 1
+                        if (try_next(cur, ",")) {
+                            // do x = 1,
+                            // do 5 x = 1,
+                            // It must be a do loop at this point, as
+                            // it cannot be an assignment "dox=1" or "do5x=1"
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
 
