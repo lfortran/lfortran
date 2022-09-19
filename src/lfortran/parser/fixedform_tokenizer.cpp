@@ -442,6 +442,10 @@ struct FixedFormRecursiveDescent {
         return (ch >= 'a' && ch <= 'z');
     }
 
+    bool is_arit_op(unsigned char ch) {
+        return (ch == '+' || ch == '-' || ch == '*' || ch == '/');
+    }
+
     /*
     ------------------------------------------------------------------------
     The try_*() functions return true/false if the pointer `cur` points to
@@ -497,9 +501,14 @@ struct FixedFormRecursiveDescent {
     // cur points to a Fortran expression
     bool try_expr(unsigned char *&cur) {
         // FIXME: for now we just do heuristics:
-        if (try_name(cur)) return true;
-        if (try_integer(cur)) return true;
-        return false;
+        unsigned char *old = cur;
+        while (is_digit(*cur) || is_char(*cur) ||
+            is_arit_op(*cur)) cur++;
+        if (cur > old) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
 
