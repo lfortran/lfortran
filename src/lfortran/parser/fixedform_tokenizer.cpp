@@ -337,6 +337,8 @@ struct FixedFormRecursiveDescent {
 
     bool is_integer(const std::string &s) const {
         return !s.empty() && std::all_of(s.begin(), s.end(), [](char c) {
+            // TODO: I think `c` can never be ' ', since we remove all
+            // space
             return ::isdigit(c) || c == ' ';
         });
     }
@@ -425,6 +427,90 @@ struct FixedFormRecursiveDescent {
         loc.first = tok-string_start;
         loc.last = cur-string_start-1;
     }
+
+    /*
+    ------------------------------------------------------------------------
+    The is_*() functions return true/false if the given character is
+    of a given type (digit, char)
+    */
+
+    bool is_digit(unsigned char ch) {
+        return (ch >= '0' && ch <= '9');
+    }
+
+    bool is_char(unsigned char ch) {
+        return (ch >= 'a' && ch <= 'z');
+    }
+
+    bool is_arit_op(unsigned char ch) {
+        return (ch == '+' || ch == '-' || ch == '*' || ch == '/');
+    }
+
+    /*
+    ------------------------------------------------------------------------
+    The try_*() functions return true/false if the pointer `cur` points to
+    a given type (integer, name, given keyword, etc.). If true, it also
+    advances the pointer. If false, the pointer is untouched.
+    */
+
+    // cur points to an integer: digit*
+    bool try_integer(unsigned char *&cur) {
+        unsigned char *old = cur;
+        while (is_digit(*cur)) cur++;
+        if (cur > old) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // cur points to an name: char (char|digit)*
+    bool try_name(unsigned char *&cur) {
+        unsigned char *old = cur;
+        if (is_char(*cur)) {
+            cur++;
+            while (is_char(*cur) || is_digit(*cur)) cur++;
+        }
+        if (cur > old) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // cur points exactly to "str"
+    bool try_next(unsigned char *&cur, const std::string &str) {
+        if (next_is(cur, str)) {
+            cur += str.size();
+            return true;
+        }
+        return false;
+    }
+
+    // cur points to an name: char (char|digit)*
+    bool try_end_of_stmt(unsigned char *&cur) {
+        if (try_next(cur, "\n")) return true;
+        if (try_next(cur, ";")) return true;
+        return false;
+    }
+
+    // ------------------------------------------------------------------
+    // The following try_*() functions behave exactly like the above ones,
+    // but they now parse Fortran syntax
+
+    // cur points to a Fortran expression
+    bool try_expr(unsigned char *&cur) {
+        // FIXME: for now we just do heuristics:
+        unsigned char *old = cur;
+        while (is_digit(*cur) || is_char(*cur) ||
+            is_arit_op(*cur)) cur++;
+        if (cur > old) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
 
     // Recursive descent parser with backtracking
     //
@@ -748,7 +834,7 @@ struct FixedFormRecursiveDescent {
             return true;
         }
         unsigned char *nline = cur; next_line(nline);
-        if (next_is(cur, "do") && contains(cur, nline, '=') && contains(cur, nline, '=')) {
+        if (is_do_loop(cur)) {
             lex_do(cur);
             return true;
         }
@@ -893,6 +979,49 @@ struct FixedFormRecursiveDescent {
         } else {
             return false;
         }
+    }
+
+    /*
+    If the line contains any of these forms, then it is a do loop:
+
+    do x = 1, 5
+    do x = 1, 5, 3
+    do 5 x = 1, 5, 3
+    do x = EXPR, EXPR
+    do x = EXPR, EXPR, EXPR
+    do 5 x = EXPR, EXPR, EXPR
+    do
+    */
+    bool is_do_loop(unsigned char *cur) {
+        if (try_next(cur, "do")) {
+            // do
+            try_integer(cur); // Optional: do 5
+            if (try_end_of_stmt(cur)) {
+                // do
+                // do 5
+                return true;
+            }
+            if (try_name(cur)) {
+                // do x
+                // do 5 x
+                if (try_next(cur, "=")) {
+                    // do x =
+                    // do 5 x =
+                    if (try_expr(cur)) {
+                        // do x = 1
+                        // do 5 x = 1
+                        if (try_next(cur, ",")) {
+                            // do x = 1,
+                            // do 5 x = 1,
+                            // It must be a do loop at this point, as
+                            // it cannot be an assignment "dox=1" or "do5x=1"
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
 
