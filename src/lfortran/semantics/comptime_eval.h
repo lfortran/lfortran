@@ -85,7 +85,9 @@ struct IntrinsicProcedures {
             {"min", {m_math2, &eval_min, true}},
             {"max", {m_math2, &eval_max, true}},
             {"min0", {m_math2, &eval_min0, true}},
+            {"dmin1", {m_math2, &eval_dmin1, true}},
             {"max0", {m_math2, &eval_max0, true}},
+            {"dmax1", {m_math2, &eval_dmax1, true}},
             {"merge", {m_math2, &not_implemented, false}},
             {"selected_int_kind", {m_kind, &eval_selected_int_kind, true}},
             {"selected_real_kind", {m_kind, &eval_selected_real_kind, true}},
@@ -107,6 +109,11 @@ struct IntrinsicProcedures {
             {"erfc", {m_math, &eval_erfc, true}},
             {"abs", {m_math, &eval_abs, true}},
             {"sqrt", {m_math, &eval_sqrt, true}},
+            {"dsqrt", {m_math, &eval_dsqrt, true}},
+            {"datan", {m_math, &eval_datan, true}},
+            {"dabs", {m_math2, &eval_dabs, true}},
+            {"dcos", {m_math, &eval_dcos, true}},
+            {"dsin", {m_math, &eval_dsin, true}},
             {"gamma", {m_math, &eval_gamma, true}},
             {"log_gamma", {m_math, &eval_log_gamma, true}},
             {"log10", {m_math, &eval_log10, true}},
@@ -525,6 +532,12 @@ TRIG2(log, slog)
 TRIG2(log, clog)
 TRIG2(log, zlog)
 
+TRIG2(sin, dsin)
+TRIG2(cos, dcos)
+TRIG2(atan, datan)
+TRIG2(sqrt, dsqrt)
+
+
     static ASR::expr_t *eval_erf(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         return eval_trig(al, loc, args, &erf, nullptr);
     }
@@ -613,6 +626,13 @@ TRIG2(log, zlog)
         true);
     }
 
+    static ASR::expr_t *eval_dmin1(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
+        return eval_2args_ri(al, loc, args,
+            &IntrinsicProcedures::lfortran_min,
+            &IntrinsicProcedures::lfortran_min_i,
+        true);
+    }
+
     static ASR::expr_t *eval_min0(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         return eval_2args_ri(al, loc, args,
             &IntrinsicProcedures::lfortran_min,
@@ -629,6 +649,13 @@ TRIG2(log, zlog)
     }
 
     static ASR::expr_t *eval_max(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
+        return eval_2args_ri(al, loc, args,
+            &IntrinsicProcedures::lfortran_max,
+            &IntrinsicProcedures::lfortran_max_i,
+            true);
+    }
+
+    static ASR::expr_t *eval_dmax1(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         return eval_2args_ri(al, loc, args,
             &IntrinsicProcedures::lfortran_max,
             &IntrinsicProcedures::lfortran_max_i,
@@ -667,6 +694,24 @@ TRIG2(log, zlog)
             return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, result, t));
         } else {
             throw SemanticError("Argument of the abs function must be Integer, Real or Complex", loc);
+        }
+    }
+
+    static ASR::expr_t *eval_dabs(Allocator &al, const Location &loc,
+            Vec<ASR::expr_t*> &args
+            ) {
+        LFORTRAN_ASSERT(ASRUtils::all_args_evaluated(args));
+        if (args.size() != 1) {
+            throw SemanticError("Intrinsic abs function accepts exactly 1 argument", loc);
+        }
+        ASR::expr_t* trig_arg = args[0];
+        ASR::ttype_t* t = LFortran::ASRUtils::expr_type(args[0]);
+        if (LFortran::ASR::is_a<LFortran::ASR::Real_t>(*t)) {
+            double rv = ASR::down_cast<ASR::RealConstant_t>(trig_arg)->m_r;
+            double val = std::abs(rv);
+            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, val, t));
+        } else {
+            throw SemanticError("Argument of the dabs function must be Real", loc);
         }
     }
 

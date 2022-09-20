@@ -2211,6 +2211,10 @@ filename = "implicit_typing2.f90"
 asr_implicit_typing = true
 
 [[test]]
+filename = "allow_implicit_interface.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "dimension_attr2.f90"
 asr_implicit_typing = true
 
@@ -2254,5 +2258,69 @@ ast = true
 asr = true
 
 [[test]]
+filename = "fixed_form_simple_continue.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "loop_test1.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "loop_test2.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "continue_body_if_loop.f"
+ast = true
+asr = true
+
+[[test]]
 filename = "parameter1.f90"
+ast = true
+asr = true
+
+[[test]]
+filename = "variable1.f90"
+asr_implicit_interface = true
+
+[[test]]
+filename = "fixed_form_implicit_check.f"
+ast = true
+asr = true
+fixed_free_equal_asr = true
+
+[[test]]
+filename = "implicit_check.f90"
+ast = true
+asr = true
+fixed_free_equal_asr = true
+
+[[test]]
+filename = "fixed_form_implicit1.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "fixed_form_implicit2.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "fixed_form_call1.f"
+asr_implicit_interface = true
+
+[[test]]
+filename = "fixed_form_call2.f"
+asr_implicit_interface = true
+
+[[test]]
+filename = "fixed_form_call3.f"
+asr_implicit_interface = true
+
+[[test]]
+filename = "fixed_form_goto_select.f"
+ast = true
 asr = true

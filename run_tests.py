@@ -23,6 +23,7 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
     ast_openmp = test.get("ast_openmp", False)
     asr = test.get("asr", False)
     asr_implicit_typing = test.get("asr_implicit_typing", False)
+    asr_implicit_interface = test.get("asr_implicit_interface", False)
     asr_preprocess = test.get("asr_preprocess", False)
     asr_indent = test.get("asr_indent", False)
     mod_to_asr = test.get("mod_to_asr", False)
@@ -136,6 +137,24 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
             filename,
             update_reference,
             extra_args)
+
+    if asr_implicit_interface:
+        if filename.endswith(".f"):
+            run_test(
+                filename,
+                "asr",
+                "lfortran --fixed-form --allow-implicit-interface --show-asr --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                extra_args)
+        else:
+            run_test(
+                filename,
+                "asr",
+                "lfortran --show-asr --allow-implicit-interface --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                extra_args)
 
     if asr_preprocess:
         run_test(
