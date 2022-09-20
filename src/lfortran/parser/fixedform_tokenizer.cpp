@@ -1075,7 +1075,7 @@ struct FixedFormRecursiveDescent {
         }
         if (next_is(cur, "continue")) {
             tokenize_line("continue", cur);
-            return false;
+            return true;
         }
         lex_body_statement(cur);
         return true;
