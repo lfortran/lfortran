@@ -2277,6 +2277,10 @@ ast = true
 asr = true
 
 [[test]]
+filename = "loop_test3.f"
+ast = true
+
+[[test]]
 filename = "continue_body_if_loop.f"
 ast = true
 asr = true

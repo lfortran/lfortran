@@ -990,10 +990,14 @@ struct FixedFormRecursiveDescent {
             next_line(cur);
             do_levels--;
             return true;
-        } else if (label_match && next_is(cur, "continue") && all_labels_match(label)) {
+        } else if (label_match && all_labels_match(label)) {
             // end entire loop nesting with single `CONTINUE`
             // the usual terminal statement for do loops
-            tokenize_line("continue", cur);
+            if (next_is(cur, "continue")) {
+                tokenize_line("continue", cur);
+            } else {
+                lex_body_statement(cur);
+            }
             for (int i=0;i<do_levels;++i)
                 insert_enddo();
             if (label_match && do_levels > 1) abort_loop = true;
@@ -1009,6 +1013,7 @@ struct FixedFormRecursiveDescent {
             }
             insert_enddo();
             do_levels--;
+            do_labels.pop_back();
             return true;
         } else {
             return false;
