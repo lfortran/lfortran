@@ -451,6 +451,11 @@ struct FixedFormRecursiveDescent {
     The try_*() functions return true/false if the pointer `cur` points to
     a given type (integer, name, given keyword, etc.). If true, it also
     advances the pointer. If false, the pointer is untouched.
+
+    The try_*() functions are probably the same as the lex_* functions.
+    I think lex_* functions that return a bool should be renamed to try_* to
+    make it obvious that they might fail. Lex would then always succeed or
+    return an error message.
     */
 
     // cur points to an integer: digit*
