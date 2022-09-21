@@ -844,7 +844,7 @@ struct FixedFormRecursiveDescent {
         // + std::string("call").size()
         cpy += 4;
         // function needs to start with a letter
-        if (*cpy <= 'a' || *cpy >= 'z') return false;
+        if (!is_char(*cpy)) return false;
         while(*cpy++ != '(') {
             if (*cpy == '\n' || *cpy == '\0') 
                 return false;
