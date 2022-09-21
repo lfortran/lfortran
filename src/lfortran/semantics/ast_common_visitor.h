@@ -1055,9 +1055,9 @@ public:
                 ASR::storage_typeType storage_type =
                         ASR::storage_typeType::Default;
                 bool is_pointer = false;
-                if (!lookup_table[current_scope->get_symbol(sym)] && current_scope->get_symbol(sym) !=
+                if ( current_scope->get_symbol(sym) !=
                         nullptr) {
-                    if (current_scope->parent != nullptr) {
+                    if (!lookup_table[current_scope->get_symbol(sym)] && current_scope->parent != nullptr) {
                         // re-declaring a global scope variable is allowed
                         // Otherwise raise an error
                         ASR::symbol_t *orig_decl = current_scope->get_symbol(sym);
@@ -1234,13 +1234,8 @@ public:
                     if(lookup_table[current_scope->get_symbol(sym)]){
                         ASR::symbol_t *implicit_declaration=current_scope->get_symbol(sym);
                         ASR::ttype_t *implicit_declaration_type=ASRUtils::symbol_type(implicit_declaration);
-                        std::cout<<"in here"<<'\n';
                         if(implicit_declaration_type!=ASRUtils::symbol_type(ASR::down_cast<ASR::symbol_t>(v))){
-                            //erase the implicit declaration from the symbol table
-                            //and add the explicit declaration
-                            std::cout<<"in here 2"<<'\n';
-                            current_scope->erase_symbol(sym);   
-                            current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
+                            //update the type of implicit declaration in the original scope
                         }
                     }
                     else{
