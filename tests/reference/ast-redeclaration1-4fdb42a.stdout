@@ -1,0 +1,1 @@
+(TranslationUnit [(Subroutine f [(s)] [] () () [] [] [] [(Declaration (AttrType TypeInteger [] () None) [] [(x [] [] () None ()) (y [] [] () None ()) (z [] [] () None ())] ()) (Declaration (AttrType TypeInteger [] () None) [] [(A [(1 s DimensionExpr)] [] () None ())] ()) (Declaration (AttrType TypeInteger [] () None) [] [(s [] [] () None ())] ())] [] [])])

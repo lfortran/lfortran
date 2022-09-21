@@ -1,0 +1,13 @@
+{
+    "basename": "asr-redeclaration1-5d2469f",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/redeclaration1.f90",
+    "infile_hash": "f2d9a59438ca5178512b157c82179166107afe386b068feddd44bdf9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-redeclaration1-5d2469f.stdout",
+    "stdout_hash": "812ea02ccca6bda227579b5fca70c33bae31bfaf28b4cad86660a849",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -5,9 +5,9 @@
     "infile_hash": "ac5c43ef61efaf9750763941c8ee309b88d00bdfc414901bcd6d4fbe",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
-    "stderr": "asr_preprocess-cpp1-515bcd9.stderr",
-    "stderr_hash": "4ad2be665b1c2eb37d4740ec8df289a5635a32c470fa121e66ab853d",
-    "returncode": 2
+    "stdout": "asr_preprocess-cpp1-515bcd9.stdout",
+    "stdout_hash": "a33ac01b93d9b52d8cbbffdf2457ce41c90a6b2ba582b181744dae30",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
 }
