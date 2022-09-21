@@ -1994,6 +1994,10 @@ filename = "fixedform_data.f"
 ast = true
 
 [[test]]
+filename = "../integration_tests/format_03.f"
+ast = true
+
+[[test]]
 filename = "comments1.f90"
 ast = true
 
