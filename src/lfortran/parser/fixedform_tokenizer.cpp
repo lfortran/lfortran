@@ -1018,12 +1018,7 @@ struct FixedFormRecursiveDescent {
     /*
     If the line contains any of these forms, then it is a do loop:
 
-    do x = 1, 5
-    do x = 1, 5, 3
-    do 5 x = 1, 5, 3
-    do x = EXPR, EXPR
-    do x = EXPR, EXPR, EXPR
-    do 5 x = EXPR, EXPR, EXPR
+    do [LABEL] [,] x = EXPR, EXPR [, EXPR]
     do
     */
     bool is_do_loop(unsigned char *cur) {
@@ -1035,9 +1030,16 @@ struct FixedFormRecursiveDescent {
                 // do 5
                 return true;
             }
+            try_next(cur, ","); // Optional comma
+            // do
+            // do 5
+            // do ,
+            // do 5,
             if (try_name(cur)) {
                 // do x
                 // do 5 x
+                // do , x
+                // do 5, x
                 if (try_next(cur, "=")) {
                     // do x =
                     // do 5 x =
