@@ -2271,3 +2271,8 @@ asr = true
 [[test]]
 filename="variable1.f90"
 asr_implicit_interface=true
+
+[[test]]
+filename = "redeclaration1.f90"
+asr = true
+ast = true
