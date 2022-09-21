@@ -928,6 +928,11 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "equivalence")) {
+            tokenize_line("equivalence", cur);
+            return true;
+        }
+
         if (next_is(cur, "implicit")) {
             lex_implicit(cur);
             return true;
