@@ -650,6 +650,7 @@ public:
 
     ASR::accessType dflt_access = ASR::Public;
     bool in_module = false;
+    std::map<ASR::symbol_t*, bool> lookup_table;
     std::map<SymbolTable*, std::map<AST::decl_attribute_t*, AST::simple_attributeType>> overloaded_ops;
     std::map<SymbolTable*, ASR::accessType> assgn;
     std::map<std::string, ASR::accessType> assgnd_access;
@@ -721,22 +722,33 @@ public:
             // If there is an active "implicit real" construct in the current
             // scope, we need to use it.
             // Otherwise:
-            if (compiler_options.implicit_typing) {
-                ASR::intentType intent;
-                if (std::find(current_procedure_args.begin(),
-                        current_procedure_args.end(), var_name) !=
-                        current_procedure_args.end()) {
-                    intent = LFortran::ASRUtils::intent_unspecified;
-                } else {
-                    intent = LFortran::ASRUtils::intent_local;
-                }
-                v = declare_implicit_variable(loc, var_name, intent);
+            // if (compiler_options.implicit_typing) {
+            //     ASR::intentType intent;
+            //     if (std::find(current_procedure_args.begin(),
+            //             current_procedure_args.end(), var_name) !=
+            //             current_procedure_args.end()) {
+            //         intent = LFortran::ASRUtils::intent_unspecified;
+            //     } else {
+            //         intent = LFortran::ASRUtils::intent_local;
+            //     }
+            //     v = declare_implicit_variable(loc, var_name, intent);
+            // } else {
+            //     diag.semantic_error_label("Variable '" + var_name
+            //         + "' is not declared", {loc},
+            //         "'" + var_name + "' is undeclared");
+            //     throw SemanticAbort();
+            // }
+            ASR::intentType intent;
+            if (std::find(current_procedure_args.begin(),
+                    current_procedure_args.end(), var_name) !=
+                    current_procedure_args.end()) {
+                intent = LFortran::ASRUtils::intent_unspecified;
             } else {
-                diag.semantic_error_label("Variable '" + var_name
-                    + "' is not declared", {loc},
-                    "'" + var_name + "' is undeclared");
-                throw SemanticAbort();
+                intent = LFortran::ASRUtils::intent_local;
             }
+            v = declare_implicit_variable(loc, var_name, intent);
+            lookup_table[v] = true;
+            
         }
         return ASR::make_Var_t(al, loc, v);
     }
@@ -1043,7 +1055,7 @@ public:
                 ASR::storage_typeType storage_type =
                         ASR::storage_typeType::Default;
                 bool is_pointer = false;
-                if (current_scope->get_symbol(sym) !=
+                if (!lookup_table[current_scope->get_symbol(sym)] && current_scope->get_symbol(sym) !=
                         nullptr) {
                     if (current_scope->parent != nullptr) {
                         // re-declaring a global scope variable is allowed
@@ -1219,7 +1231,22 @@ public:
                             s2c(al, to_lower(s.m_name)), s_intent, init_expr, value, storage_type, type,
                             current_procedure_abi_type, s_access, s_presence,
                             value_attr);
-                    current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
+                    if(lookup_table[current_scope->get_symbol(sym)]){
+                        ASR::symbol_t *implicit_declaration=current_scope->get_symbol(sym);
+                        ASR::ttype_t *implicit_declaration_type=ASRUtils::symbol_type(implicit_declaration);
+                        std::cout<<"in here"<<'\n';
+                        if(implicit_declaration_type!=ASRUtils::symbol_type(ASR::down_cast<ASR::symbol_t>(v))){
+                            //erase the implicit declaration from the symbol table
+                            //and add the explicit declaration
+                            std::cout<<"in here 2"<<'\n';
+                            current_scope->erase_symbol(sym);   
+                            current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
+                        }
+                    }
+                    else{
+                        current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
+                        
+                    }
                     if( is_derived_type ) {
                         data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
                     }
