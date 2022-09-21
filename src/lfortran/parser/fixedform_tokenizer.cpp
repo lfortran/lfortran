@@ -406,6 +406,20 @@ struct FixedFormRecursiveDescent {
         if (*cur == '\n') cur++;
     }
 
+    // Push the TK_NEWLINE, YYSTYPE and Location of the newline at `cur`.
+    // (Does not modify `cur`.)
+    void push_TK_NEWLINE(unsigned char *cur) {
+        LFORTRAN_ASSERT(*cur == '\n')
+        YYSTYPE yy;
+        yy.string.from_str(m_a, "\n");
+        stypes.push_back(yy);
+        tokens.push_back(yytokentype::TK_NEWLINE);
+        Location loc;
+        loc.first = t.cur - t.string_start;
+        loc.last = t.cur - t.string_start + 1;
+        locations.push_back(loc);
+    }
+
     bool contains(unsigned char *start, unsigned char *end, char ch) {
         unsigned char *cur = start;
         while (*cur != '\0' && cur < end) {
@@ -451,6 +465,11 @@ struct FixedFormRecursiveDescent {
     The try_*() functions return true/false if the pointer `cur` points to
     a given type (integer, name, given keyword, etc.). If true, it also
     advances the pointer. If false, the pointer is untouched.
+
+    The try_*() functions are probably the same as the lex_* functions.
+    I think lex_* functions that return a bool should be renamed to try_* to
+    make it obvious that they might fail. Lex would then always succeed or
+    return an error message.
     */
 
     // cur points to an integer: digit*
@@ -751,7 +770,22 @@ struct FixedFormRecursiveDescent {
     bool lex_io(unsigned char *&cur) {
         for(const auto &io_str: io_names) {
             if (next_is(cur, io_str)) {
-                tokenize_line(io_str, cur);
+                if (io_str == "format") {
+                    cur += io_str.size();
+                    unsigned char *start;
+                    Location loc;
+                    lex_format(cur, loc, start);
+                    locations.push_back(loc);
+                    YYSTYPE yylval;
+                    yylval.string.p = (char*) start;
+                    yylval.string.n = cur-start-1;
+                    stypes.push_back(yylval);
+                    tokens.push_back(TK_FORMAT);
+                    next_line(cur);
+                    push_TK_NEWLINE(cur-1);
+                } else {
+                    tokenize_line(io_str, cur);
+                }
                 return true;
             }
         }
