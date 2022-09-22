@@ -113,6 +113,18 @@ if (WITH_ZLIB)
     find_package(StaticZLIB REQUIRED)
 endif()
 
+# Julia
+set(WITH_JULIA no CACHE BOOL "Build with Julia support")
+if (WITH_JULIA)
+    find_package(Julia REQUIRED)
+    add_library(p::julia INTERFACE IMPORTED)
+    set_property(TARGET p::julia PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+            ${Julia_INCLUDE_DIRS})
+    set_property(TARGET p::julia PROPERTY INTERFACE_LINK_DIRECTORIES
+            ${Julia_LIBRARY_DIR})
+    set_property(TARGET p::julia PROPERTY INTERFACE_LINK_LIBRARIES
+            ${Julia_LIBRARY})
+endif()
 
 # LLVM
 set(WITH_LLVM no CACHE BOOL "Build with LLVM support")
@@ -303,6 +315,7 @@ message("HAVE_LFORTRAN_DEMANGLE: ${HAVE_LFORTRAN_DEMANGLE}")
 message("WITH_LLVM: ${WITH_LLVM}")
 message("WITH_XEUS: ${WITH_XEUS}")
 message("WITH_JSON: ${WITH_JSON}")
+message("WITH_JULIA: ${WITH_JULIA}")
 message("WITH_FMT: ${WITH_FMT}")
 message("WITH_LFORTRAN_BINARY_MODFILES: ${WITH_LFORTRAN_BINARY_MODFILES}")
 message("WITH_RUNTIME_LIBRARY: ${WITH_RUNTIME_LIBRARY}")
