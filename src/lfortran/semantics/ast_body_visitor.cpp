@@ -927,6 +927,9 @@ public:
             return nullptr;
         }
         ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
+        if (external_functions.find(subrout->m_name) != external_functions.end()) {
+            return nullptr;
+        }
         Vec<ASR::symbol_t*> del_syms;
         del_syms.reserve(al, 1);
         for( size_t i = 0; i < subrout_call->n_args; i++ ) {
@@ -1121,6 +1124,8 @@ public:
             v_expr = LFortran::ASRUtils::EXPR(v_var);
             original_sym = resolve_deriv_type_proc(x.base.base.loc, to_lower(x.m_name),
                 to_lower(x.m_member[0].m_name), scope);
+        } else if (external_functions[sub_name].first) {
+            original_sym = external_functions[sub_name].first;
         } else {
             original_sym = current_scope->resolve_symbol(sub_name);
         }

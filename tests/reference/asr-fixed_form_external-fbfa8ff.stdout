@@ -5,11 +5,11 @@
             f:
                 (Function 
                     (SymbolTable
-                        3
+                        4
                         {
                             a:
                                 (Variable 
-                                    3 
+                                    4 
                                     a 
                                     Unspecified 
                                     () 
@@ -24,11 +24,11 @@
                             
                         }) 
                     f 
-                    [(Var 3 a)] 
+                    [(Var 4 a)] 
                     [] 
                     [(Print 
                         () 
-                        [(Var 3 a)] 
+                        [(Var 4 a)] 
                         () 
                         ()
                     )] 

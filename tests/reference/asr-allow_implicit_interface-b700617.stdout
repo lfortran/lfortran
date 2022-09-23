@@ -2,6 +2,27 @@
     (SymbolTable
         1
         {
+            dgetrf:
+                (Function 
+                    (SymbolTable
+                        3
+                        {
+                            
+                        }) 
+                    dgetrf 
+                    [] 
+                    [] 
+                    [] 
+                    () 
+                    Source 
+                    Public 
+                    Interface 
+                    () 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false.
+                ), 
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding), 
             iso_fortran_env:
@@ -18,11 +39,11 @@
                             alnorm:
                                 (Function 
                                     (SymbolTable
-                                        225
+                                        226
                                         {
                                             alnorm_arg_0:
                                                 (Variable 
-                                                    225 
+                                                    226 
                                                     alnorm_arg_0 
                                                     Unspecified 
                                                     () 
@@ -36,7 +57,7 @@
                                                 ), 
                                             alnorm_arg_1:
                                                 (Variable 
-                                                    225 
+                                                    226 
                                                     alnorm_arg_1 
                                                     Unspecified 
                                                     () 
@@ -50,7 +71,7 @@
                                                 ), 
                                             alnorm_return_var_name:
                                                 (Variable 
-                                                    225 
+                                                    226 
                                                     alnorm_return_var_name 
                                                     ReturnVar 
                                                     () 
@@ -65,11 +86,11 @@
                                             
                                         }) 
                                     alnorm 
-                                    [(Var 225 alnorm_arg_0)
-                                    (Var 225 alnorm_arg_1)] 
+                                    [(Var 226 alnorm_arg_0)
+                                    (Var 226 alnorm_arg_1)] 
                                     [] 
                                     [] 
-                                    (Var 225 alnorm_return_var_name) 
+                                    (Var 226 alnorm_return_var_name) 
                                     Source 
                                     Public 
                                     Interface 
@@ -93,76 +114,11 @@
                                     Required 
                                     .false.
                                 ), 
-                            dgetrf:
-                                (Function 
-                                    (SymbolTable
-                                        226
-                                        {
-                                            dgetrf_arg_0:
-                                                (Variable 
-                                                    226 
-                                                    dgetrf_arg_0 
-                                                    Unspecified 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 8 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
-                                                    .false.
-                                                ), 
-                                            dgetrf_arg_1:
-                                                (Variable 
-                                                    226 
-                                                    dgetrf_arg_1 
-                                                    Unspecified 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 8 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
-                                                    .false.
-                                                ), 
-                                            dgetrf_arg_2:
-                                                (Variable 
-                                                    226 
-                                                    dgetrf_arg_2 
-                                                    Unspecified 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 8 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
-                                                    .false.
-                                                )
-                                            
-                                        }) 
-                                    dgetrf 
-                                    [(Var 226 dgetrf_arg_0)
-                                    (Var 226 dgetrf_arg_1)
-                                    (Var 226 dgetrf_arg_2)] 
-                                    [] 
-                                    [] 
-                                    () 
-                                    Source 
-                                    Public 
-                                    Interface 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false.
-                                ), 
                             exp:
                                 (ExternalSymbol 
                                     2 
                                     exp 
-                                    4 exp 
+                                    5 exp 
                                     lfortran_intrinsic_math 
                                     [] 
                                     exp 
@@ -172,7 +128,7 @@
                                 (ExternalSymbol 
                                     2 
                                     exp@dexp 
-                                    4 dexp 
+                                    5 dexp 
                                     lfortran_intrinsic_math 
                                     [] 
                                     dexp 
@@ -349,7 +305,7 @@
                         ()
                     )
                     (SubroutineCall 
-                        2 dgetrf 
+                        1 dgetrf 
                         () 
                         [((Var 2 x))
                         ((Var 2 y))

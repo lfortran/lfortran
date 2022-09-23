@@ -157,9 +157,6 @@
                                         () 
                                         ()
                                     )
-                                    (ImplicitDeallocate 
-                                        [4 x]
-                                    )
                                     (SubroutineCall 
                                         2 f 
                                         () 
@@ -265,9 +262,6 @@
                                         )] 
                                         () 
                                         ()
-                                    )
-                                    (ImplicitDeallocate 
-                                        [5 c]
                                     )
                                     (SubroutineCall 
                                         2 f 
@@ -401,9 +395,6 @@
                         ) 
                         (IntegerConstant 3 (Integer 4 [])) 
                         ()
-                    )
-                    (ImplicitDeallocate 
-                        [2 c]
                     )
                     (SubroutineCall 
                         2 h 

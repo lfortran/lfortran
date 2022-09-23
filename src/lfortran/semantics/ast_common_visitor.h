@@ -893,8 +893,7 @@ public:
                                     assgnd_access[sym] = ASR::accessType::Private;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrPublic || sa->m_attr == AST::simple_attributeType
-                                                ::AttrParameter || sa->m_attr == AST::simple_attributeType
-                                                        ::AttrExternal) {
+                                                ::AttrParameter) {
                                     assgnd_access[sym] = ASR::accessType::Public;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrOptional) {
@@ -906,9 +905,9 @@ public:
                                  // enable `EXTERNAL` attribute
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrExternal) {
+                                    assgnd_access[sym] = ASR::accessType::Public;
                                     auto fn_name = sym.data();
                                     auto v = current_scope->resolve_symbol(fn_name);
-
                                     if (v && external_functions[fn_name].second) throw SemanticError("External procedure already declared in same scope", s.loc);                                    
                                     auto pscope = current_scope;
                                     SymbolTable *parent_scope = current_scope->parent;
@@ -927,7 +926,7 @@ public:
                                         ASR::accessType::Public, ASR::deftypeType::Interface, nullptr,
                                         false, false, false, false);
                                     parent_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
-                                    external_functions[fn_name] = {ASR::down_cast<ASR::symbol_t>(tmp), false};
+                                    external_functions[fn_name] = std::make_pair(ASR::down_cast<ASR::symbol_t>(tmp), false);
                                     current_scope = pscope; 
                                 } else {
                                     throw SemanticError("Attribute declaration not "

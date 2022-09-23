@@ -8,6 +8,6 @@ c replicate this behavior
       program main
           external inner_scope
           integer b, c
-          call inner_scope(b, c) ! this should fail in compilation, not earlier          
+          call inner_scope(b, c) ! this should compile but NOT run on its own          
       end program
 

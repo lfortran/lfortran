@@ -1052,9 +1052,6 @@
                             )]
                         )]
                     )
-                    (ImplicitDeallocate 
-                        [2 c]
-                    )
                     (SubroutineCall 
                         2 sum 
                         () 
