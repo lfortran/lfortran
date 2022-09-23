@@ -374,7 +374,68 @@ public:
         return r;
     }
 
+    void populate_implicit_dictonary(const AST::Function_t &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary){
+        if(compiler_options.implicit_typing){
+            //if --implicit-typing flag is used
+
+            //then define i-n as integer and rest all as real
+
+            for(char ch='i'; ch<='n'; ch++){
+                implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+            }
+
+            for(char ch='o'; ch<='z'; ch++){
+                implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
+            }
+
+            for(char ch='a'; ch<='h'; ch++){
+                implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
+            }
+        }
+        else{
+            //if --implicit-typing flag is not used
+            //populate all characters as nullptr
+
+            for(char ch='a'; ch<='z'; ch++){
+                implicit_dictionary[std::string(1, ch)] = nullptr;
+            }
+        }
+    }
+
+    void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary){
+        std::cout << "Implicit Dictionary: " << std::endl;
+        for(auto it=implicit_dictionary.begin(); it!=implicit_dictionary.end(); it++){
+            std::cout << it->first << " " << it->second << std::endl;
+        }
+    }
+
     void visit_Function(const AST::Function_t &x) {
+        
+        std::map<std::string, ASR::ttype_t*> implicit_dictionary;
+
+        //populate the implicit_dictionary
+        populate_implicit_dictonary(x, implicit_dictionary);
+
+        //check n_implicit
+        if(x.n_implicit>0){
+            //iterate over all implicit statements
+            for(size_t i=0;i<x.n_implicit;i++){
+                //get the implicit statement
+
+                //check if the implicit statement is of type "none"
+                if(AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])){
+                    //if yes, clear the implicit dictionary i.e. set all characters to nullptr
+                    implicit_dictionary.clear();
+                }
+                else{
+                    //set the implicit dictionary according to the implicit statement
+                    AST::Implicit_t* implicit = AST::down_cast<AST::Implicit_t>(x.m_implicit[i]);
+
+                    //to be continued
+                }
+            }
+        }
+
         // Extract local (including dummy) variables first
         current_symbol = (int64_t) ASR::symbolType::Function;
         ASR::accessType s_access = dflt_access;
@@ -607,6 +668,10 @@ public:
         current_symbol = -1;
         current_procedure_used_type_parameter_indices.clear();
         is_current_procedure_templated = false;
+
+        //print implicit_dictionary
+
+        print_implicit_dictionary(implicit_dictionary);
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
