@@ -1545,6 +1545,9 @@ int main(int argc, char *argv[])
         compiler_options.use_colors = !arg_no_color;
 
         if (fmt) {
+            if (CLI::NonexistentPath(arg_fmt_file).empty())
+                throw LFortran::LCompilersException("File does not exist: " + arg_fmt_file);
+
             return format(arg_fmt_file, arg_fmt_inplace, !arg_fmt_no_color,
                 arg_fmt_indent, arg_fmt_indent_unit, compiler_options);
         }
@@ -1599,6 +1602,8 @@ int main(int argc, char *argv[])
         // TODO: for now we ignore the other filenames, only handle
         // the first:
         std::string arg_file = arg_files[0];
+        if (CLI::NonexistentPath(arg_file).empty())
+            throw LFortran::LCompilersException("File does not exist: " + arg_file);
 
         std::string outfile;
         std::string basename;
