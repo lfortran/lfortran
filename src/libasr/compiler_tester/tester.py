@@ -27,6 +27,7 @@ LIBASR_DIR = os.path.dirname(TESTER_DIR)
 SRC_DIR = os.path.dirname(LIBASR_DIR)
 ROOT_DIR = os.path.dirname(SRC_DIR)
 
+
 class RunException(Exception):
     pass
 
@@ -183,6 +184,7 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
         open(stderr_file, "wb").write(fixdir(r.stderr))
     else:
         stderr_file = None
+
     if infile:
         temp=unl_loop_del(open(infile, "rb").read())
         infile_hash = hashlib.sha224(temp).hexdigest()
@@ -195,7 +197,7 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     else:
         outfile_hash = None
     if stdout_file:
-        temp=unl_loop_del(open(stdout_file, "rb").read())
+        temp = unl_loop_del(open(stdout_file, "rb").read())
         stdout_hash = hashlib.sha224(temp).hexdigest()
         stdout_file = os.path.basename(stdout_file)
     else:
@@ -278,10 +280,8 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
     s = f"{testname} * {basename}"
     basename = bname(basename, cmd, infile)
     infile = os.path.join("tests", infile)
-
     jo = run(basename, cmd, os.path.join("tests", "output"), infile=infile,
              extra_args=extra_args)
-
     jr = os.path.join("tests", "reference", os.path.basename(jo))
     if not os.path.exists(jo):
         raise FileNotFoundError(
@@ -324,7 +324,6 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
         raise RunException(
             "Testing with reference output failed." +
             full_err_str)
-
     log.debug(s + " " + check())
 
 def tester_main(compiler, single_test):
@@ -348,7 +347,7 @@ def tester_main(compiler, single_test):
     verbose = args.verbose
     no_llvm = args.no_llvm
 
-    # So that the tests find the `lfortran` executable
+    # So that the tests find the `lcompiler` executable
     os.environ["PATH"] = os.path.join(SRC_DIR, "bin") \
         + os.pathsep + os.environ["PATH"]
     test_data = toml.load(open(os.path.join(ROOT_DIR, "tests", "tests.toml")))

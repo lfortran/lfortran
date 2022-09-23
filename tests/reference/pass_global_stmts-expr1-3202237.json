@@ -1,0 +1,13 @@
+{
+    "basename": "pass_global_stmts-expr1-3202237",
+    "cmd": "lfortran --pass=global_stmts --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/expr1.f90",
+    "infile_hash": "3c49cb3157ec3feaf0f97156e5c11dca0ffd6481c97bb1a5dffaa14f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_global_stmts-expr1-3202237.stdout",
+    "stdout_hash": "a06965d0413776c0d83c008b21ff423055fa8a181ace5b56f93b1ceb",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

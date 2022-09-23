@@ -130,11 +130,16 @@ void cont1(const std::string &s, size_t &pos, bool &ws_or_comment)
     pos++;
 }
 
+bool is_digit(unsigned char ch) {
+    return (ch >= '0' && ch <= '9');
+}
+
 enum LineType {
-    Comment, Statement, LabeledStatement, Continuation, EndOfFile
+    Comment, Statement, LabeledStatement, Continuation, EndOfFile,
+    ContinuationTab, StatementTab
 };
 
-// Determines the type of line
+// Determines the type of line in the fixed-form prescanner
 // `pos` points to the first character (column) of the line
 // The line ends with either `\n` or `\0`.
 LineType determine_line_type(const unsigned char *pos)
@@ -148,6 +153,20 @@ LineType determine_line_type(const unsigned char *pos)
         return LineType::Comment;
     } else if (*pos == '\0') {
         return LineType::EndOfFile;
+    } else if (*pos == '\t') {
+        pos++;
+        if (*pos == '\0') {
+            return LineType::EndOfFile;
+        } else {
+            if (is_digit(*pos)) {
+                // A continuation line after a tab
+                return LineType::ContinuationTab;
+            } else {
+                // A statement line after a tab
+                return LineType::StatementTab;
+            }
+
+        }
     } else {
         while (*pos == ' ') {
             pos++;
@@ -305,6 +324,14 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
+                case LineType::StatementTab : {
+                    // Copy from column 2
+                    pos += 1;
+                    lm.out_start.push_back(out.size());
+                    lm.in_start.push_back(pos);
+                    copy_rest_of_line(out, s, pos, lm);
+                    break;
+                }
                 case LineType::LabeledStatement : {
                     // Copy the label
                     copy_label(out, s, pos);
@@ -318,6 +345,15 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     // Append from column 7 to previous line
                     out = out.substr(0, out.size()-1); // Remove the last '\n'
                     pos += 6;
+                    lm.out_start.push_back(out.size());
+                    lm.in_start.push_back(pos);
+                    copy_rest_of_line(out, s, pos, lm);
+                    break;
+                }
+                case LineType::ContinuationTab : {
+                    // Append from column 3 to previous line
+                    out = out.substr(0, out.size()-1); // Remove the last '\n'
+                    pos += 2;
                     lm.out_start.push_back(out.size());
                     lm.in_start.push_back(pos);
                     copy_rest_of_line(out, s, pos, lm);

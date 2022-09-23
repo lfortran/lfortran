@@ -23,6 +23,7 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
     ast_openmp = test.get("ast_openmp", False)
     asr = test.get("asr", False)
     asr_implicit_typing = test.get("asr_implicit_typing", False)
+    asr_implicit_interface = test.get("asr_implicit_interface", False)
     asr_preprocess = test.get("asr_preprocess", False)
     asr_indent = test.get("asr_indent", False)
     mod_to_asr = test.get("mod_to_asr", False)
@@ -59,7 +60,7 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
             run_test(
                 filename,
                 "ast",
-                "lfortran --fixed-form --show-ast --no-color {infile} -o {outfile}",
+                "lfortran --indent --fixed-form --show-ast --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
                 extra_args)
@@ -68,7 +69,7 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
             run_test(
                 filename,
                 "ast",
-                "lfortran --show-ast --no-color {infile} -o {outfile}",
+                "lfortran --indent --show-ast --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
                 extra_args)
@@ -115,7 +116,7 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
             run_test(
                 filename,
                 "asr",
-                "lfortran --fixed-form --show-asr --no-color {infile} -o {outfile}",
+                "lfortran --indent --fixed-form --show-asr --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
                 extra_args)
@@ -123,7 +124,7 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
             run_test(
                 filename,
                 "asr",
-                "lfortran --show-asr --no-color {infile} -o {outfile}",
+                "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
                 extra_args)
@@ -132,16 +133,34 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
         run_test(
             filename,
             "asr",
-            "lfortran --show-asr --implicit-typing --no-color {infile} -o {outfile}",
+            "lfortran --indent --show-asr --implicit-typing --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
+
+    if asr_implicit_interface:
+        if filename.endswith(".f"):
+            run_test(
+                filename,
+                "asr",
+                "lfortran --indent --fixed-form --allow-implicit-interface --show-asr --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                extra_args)
+        else:
+            run_test(
+                filename,
+                "asr",
+                "lfortran --indent --show-asr --allow-implicit-interface --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                extra_args)
 
     if asr_preprocess:
         run_test(
             filename,
             "asr_preprocess",
-            "lfortran --cpp --show-asr --no-color {infile} -o {outfile}",
+            "lfortran --indent --cpp --show-asr --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
@@ -150,7 +169,7 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
         run_test(
             filename,
             "asr_indent",
-            "lfortran --show-asr --indent --no-color {infile} -o {outfile}",
+            "lfortran --indent --show-asr --indent --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
@@ -165,7 +184,7 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
 
     if pass_ is not None:
         cmd = "lfortran --pass=" + pass_ + \
-            " --show-asr --no-color {infile} -o {outfile}"
+            " --indent --show-asr --no-color {infile} -o {outfile}"
         run_test(filename, "pass_{}".format(pass_), cmd,
                  filename, update_reference, extra_args)
     if llvm:

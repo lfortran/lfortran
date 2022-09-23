@@ -1,0 +1,5 @@
+semantic error: Function 'inner_scope' not found or not implemented yet (if it is intrinsic)
+  --> tests/fixed_form_external_simple.f:11:11
+   |
+11 |           call inner_scope(b, c) ! this should fail in compilation, not earlier          
+   |           ^^^^^^^^^^^^^^^^^^^^^^ 

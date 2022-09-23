@@ -1,0 +1,13 @@
+{
+    "basename": "asr-bin_op_complex_dp-a1d005f",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/bin_op_complex_dp.f90",
+    "infile_hash": "9be1b396941b73e1466a46963ee3ade085440ce077b444ce7e2f6baf",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-bin_op_complex_dp-a1d005f.stdout",
+    "stdout_hash": "f9fb0ebf5ab35321602ccdc8ce33b56bed975ee0d1e63c6add42c278",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

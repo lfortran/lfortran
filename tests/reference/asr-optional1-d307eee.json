@@ -1,0 +1,13 @@
+{
+    "basename": "asr-optional1-d307eee",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/optional1.f90",
+    "infile_hash": "b703b762ac35be7e690936d507787f8757837c9b46e25ddaeb99640b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-optional1-d307eee.stdout",
+    "stdout_hash": "d0e3f73e62f0d1965bfaf16d152ef0ad30d3a8b26d7e768426f54eeb",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

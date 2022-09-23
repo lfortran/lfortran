@@ -883,12 +883,12 @@ public:
             }
         }
 
-        // We have to visit unit_decl_2 because in the example, the Template is directly inside the module and 
+        // We have to visit unit_decl_2 because in the example, the Template is directly inside the module and
         // Template is a unit_decl_2
 
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
-        }       
+        }
 
         current_scope = old_scope;
         current_module = nullptr;
@@ -1128,6 +1128,11 @@ public:
         }
         if (!original_sym) {
             original_sym = resolve_intrinsic_function(x.base.base.loc, sub_name);
+            if (!original_sym && compiler_options.implicit_interface) {
+                create_implicit_interface_function(x, sub_name, false);
+                original_sym = current_scope->resolve_symbol(sub_name);
+                LFORTRAN_ASSERT(original_sym!=nullptr);
+            }
         }
         ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(original_sym);
         if (ASR::is_a<ASR::Function_t>(*sym)) {
@@ -1296,6 +1301,11 @@ public:
                 }
                 break;
             }
+            case (ASR::symbolType::Variable) : {
+                final_sym=original_sym;
+                original_sym = nullptr;
+                break;
+            }
             default : {
                 throw SemanticError("Symbol type not supported", x.base.base.loc);
             }
@@ -1343,7 +1353,7 @@ public:
         if (!is_int && !is_real) {
             throw SemanticError("Arithmetic if (x) requires an integer or real for `x`", test_int->base.loc);
         }
-        ASR::expr_t *test_lt, *test_gt; 
+        ASR::expr_t *test_lt, *test_gt;
         int kind = ASRUtils::extract_kind_from_ttype_t(test_int_type);
         if (is_int) {
             ASR::ttype_t *type0 = ASRUtils::TYPE(
@@ -1594,7 +1604,47 @@ public:
             if (AST::is_a<AST::Num_t>(*x.m_goto_label)) {
                 int goto_label = AST::down_cast<AST::Num_t>(x.m_goto_label)->m_n;
                 tmp = ASR::make_GoTo_t(al, x.base.base.loc, goto_label);
-            } else {
+
+            } else if (AST::is_a<AST::Name_t>(*x.m_goto_label)) {
+                auto name = AST::down_cast<AST::Name_t>(x.m_goto_label);
+                auto sym_name = std::string(name->m_id);
+                auto sym = current_scope->resolve_symbol(sym_name);
+                if (sym == nullptr) {
+                    throw SemanticError("Cannot do `GOTO select` for undeclared variable",
+                        x.base.base.loc);
+                }
+                if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                    throw SemanticError("Symbol needs to be a variable",
+                        x.base.base.loc);
+                }
+                // n_labels GOTO
+                Vec<ASR::case_stmt_t*> a_body_vec;
+                a_body_vec.reserve(al, x.n_labels);
+
+                // 1 label SELECT
+                Vec<ASR::stmt_t*> def_body;
+                def_body.reserve(al, 1);
+
+                for (size_t i = 0; i < x.n_labels; ++i) {
+                    if (!AST::is_a<AST::Num_t>(*x.m_labels[i])) {
+                        throw SemanticError("Can only `GOTO` integer labels",
+                            x.base.base.loc);
+                    } else {
+                        auto l = AST::down_cast<AST::Num_t>(x.m_labels[i]); // l->m_n gets the target -> if l->m_n == (i+1) ...
+                        Vec<ASR::stmt_t*> body;
+                        body.reserve(al, 1);
+                        body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n)));
+                        Vec<ASR::expr_t*> comparator_one;
+                        comparator_one.reserve(al, 1);
+                        ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+                        comparator_one.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i+1, int32_type)));
+                        a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
+                    }
+                }
+                ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
+                tmp = ASR::make_Select_t(al, x.base.base.loc, target_var, a_body_vec.p,
+                           a_body_vec.size(), def_body.p, def_body.size());
+            } else {           
                 throw SemanticError("A goto label must be an integer",
                     x.base.base.loc);
             }

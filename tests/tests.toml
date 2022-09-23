@@ -1488,6 +1488,10 @@ filename = "../integration_tests/intrinsics_20.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/intrinsics_23.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/intrinsics_26.f90"
 asr = true
 
@@ -1990,6 +1994,10 @@ filename = "fixedform_data.f"
 ast = true
 
 [[test]]
+filename = "../integration_tests/format_03.f"
+ast = true
+
+[[test]]
 filename = "comments1.f90"
 ast = true
 
@@ -2207,6 +2215,10 @@ filename = "implicit_typing2.f90"
 asr_implicit_typing = true
 
 [[test]]
+filename = "allow_implicit_interface.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "dimension_attr2.f90"
 asr_implicit_typing = true
 
@@ -2255,6 +2267,87 @@ ast = true
 asr = true
 
 [[test]]
+filename = "fixed_form_if_variations.f"
+ast = true
+asr = true
+
+[[test]]
 filename = "sole_intrinsic.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "fixed_form_simple_continue.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "loop_test1.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "loop_test2.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "loop_test3.f"
+ast = true
+
+[[test]]
+filename = "loop_test4.f"
+ast = true
+
+[[test]]
+filename = "continue_body_if_loop.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "parameter1.f90"
+ast = true
+asr = true
+
+[[test]]
+filename = "variable1.f90"
+asr_implicit_interface = true
+
+[[test]]
+filename = "fixed_form_implicit_check.f"
+ast = true
+asr = true
+fixed_free_equal_asr = true
+
+[[test]]
+filename = "implicit_check.f90"
+ast = true
+asr = true
+fixed_free_equal_asr = true
+
+[[test]]
+filename = "fixed_form_implicit1.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "fixed_form_implicit2.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "fixed_form_call1.f"
+asr_implicit_interface = true
+
+[[test]]
+filename = "fixed_form_call2.f"
+asr_implicit_interface = true
+
+[[test]]
+filename = "fixed_form_call3.f"
+asr_implicit_interface = true
+
+[[test]]
+filename = "fixed_form_goto_select.f"
 ast = true
 asr = true

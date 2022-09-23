@@ -1,0 +1,13 @@
+{
+    "basename": "asr-program4-eba2b22",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/program4.f90",
+    "infile_hash": "16adb5a498028ea668b9d513bb2ef0fa0b12e15bef4e2b5e30aa2740",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-program4-eba2b22.stdout",
+    "stdout_hash": "b7fe854842255e70ddbe673eee6e43cab4dbbe9e61b352ab5b689da2",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

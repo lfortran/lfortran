@@ -1,0 +1,432 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding), 
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin), 
+            lfortran_intrinsic_math:
+                (IntrinsicModule lfortran_intrinsic_math), 
+            open_close_read_write:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            cos:
+                                (ExternalSymbol 
+                                    2 
+                                    cos 
+                                    4 cos 
+                                    lfortran_intrinsic_math 
+                                    [] 
+                                    cos 
+                                    Private
+                                ), 
+                            cos@scos:
+                                (ExternalSymbol 
+                                    2 
+                                    cos@scos 
+                                    4 scos 
+                                    lfortran_intrinsic_math 
+                                    [] 
+                                    scos 
+                                    Private
+                                ), 
+                            i:
+                                (Variable 
+                                    2 
+                                    i 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            msg:
+                                (Variable 
+                                    2 
+                                    msg 
+                                    Local 
+                                    (StringConstant 
+                                        "Some error occured" 
+                                        (Character 1 18 () [])
+                                    ) 
+                                    () 
+                                    Save 
+                                    (Character 1 20 () []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            p:
+                                (Variable 
+                                    2 
+                                    p 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 100 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            q:
+                                (Variable 
+                                    2 
+                                    q 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 100 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            sin:
+                                (ExternalSymbol 
+                                    2 
+                                    sin 
+                                    4 sin 
+                                    lfortran_intrinsic_math 
+                                    [] 
+                                    sin 
+                                    Private
+                                ), 
+                            sin@ssin:
+                                (ExternalSymbol 
+                                    2 
+                                    sin@ssin 
+                                    4 ssin 
+                                    lfortran_intrinsic_math 
+                                    [] 
+                                    ssin 
+                                    Private
+                                ), 
+                            u:
+                                (Variable 
+                                    2 
+                                    u 
+                                    Local 
+                                    (IntegerConstant 1 (Integer 4 [])) 
+                                    () 
+                                    Save 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            u_ptr:
+                                (Variable 
+                                    2 
+                                    u_ptr 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Pointer 
+                                        (Integer 4 [])
+                                    ) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            x:
+                                (Variable 
+                                    2 
+                                    x 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 100 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            y:
+                                (Variable 
+                                    2 
+                                    y 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 100 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    open_close_read_write 
+                    [] 
+                    [(=> 
+                        (Var 2 u_ptr) 
+                        (Var 2 u)
+                    )
+                    (DoLoop 
+                        ((Var 2 i) 
+                        (IntegerConstant 1 (Integer 4 [])) 
+                        (IntegerConstant 100 (Integer 4 [])) 
+                        ()) 
+                        [(= 
+                            (ArrayItem 
+                                (Var 2 x) 
+                                [(() 
+                                (Var 2 i) 
+                                ())] 
+                                (Real 4 []) 
+                                ()
+                            ) 
+                            (RealBinOp 
+                                (Cast 
+                                    (Var 2 i) 
+                                    IntegerToReal 
+                                    (Real 4 []) 
+                                    ()
+                                ) 
+                                Mul 
+                                (RealConstant 
+                                    0.100000 
+                                    (Real 4 [])
+                                ) 
+                                (Real 4 []) 
+                                ()
+                            ) 
+                            ()
+                        )
+                        (= 
+                            (ArrayItem 
+                                (Var 2 y) 
+                                [(() 
+                                (Var 2 i) 
+                                ())] 
+                                (Real 4 []) 
+                                ()
+                            ) 
+                            (RealBinOp 
+                                (FunctionCall 
+                                    2 sin@ssin 
+                                    2 sin 
+                                    [((ArrayItem 
+                                        (Var 2 x) 
+                                        [(() 
+                                        (Var 2 i) 
+                                        ())] 
+                                        (Real 4 []) 
+                                        ()
+                                    ))] 
+                                    (Real 4 []) 
+                                    () 
+                                    ()
+                                ) 
+                                Mul 
+                                (RealBinOp 
+                                    (Cast 
+                                        (IntegerConstant 1 (Integer 4 [])) 
+                                        IntegerToReal 
+                                        (Real 4 []) 
+                                        (RealConstant 
+                                            1.000000 
+                                            (Real 4 [])
+                                        )
+                                    ) 
+                                    Sub 
+                                    (FunctionCall 
+                                        2 cos@scos 
+                                        2 cos 
+                                        [((RealBinOp 
+                                            (ArrayItem 
+                                                (Var 2 x) 
+                                                [(() 
+                                                (Var 2 i) 
+                                                ())] 
+                                                (Real 4 []) 
+                                                ()
+                                            ) 
+                                            Div 
+                                            (RealConstant 
+                                                3.000000 
+                                                (Real 4 [])
+                                            ) 
+                                            (Real 4 []) 
+                                            ()
+                                        ))] 
+                                        (Real 4 []) 
+                                        () 
+                                        ()
+                                    ) 
+                                    (Real 4 []) 
+                                    ()
+                                ) 
+                                (Real 4 []) 
+                                ()
+                            ) 
+                            ()
+                        )]
+                    )
+                    (FileOpen 
+                        0 
+                        (Var 2 u_ptr) 
+                        (StringConstant 
+                            "data.dat" 
+                            (Character 1 8 () [])
+                        ) 
+                        (StringConstant 
+                            "replace" 
+                            (Character 1 7 () [])
+                        )
+                    )
+                    (DoLoop 
+                        ((Var 2 i) 
+                        (IntegerConstant 1 (Integer 4 [])) 
+                        (IntegerConstant 100 (Integer 4 [])) 
+                        ()) 
+                        [(FileWrite 
+                            0 
+                            (Var 2 u) 
+                            (StringConstant 
+                                "(10F8.2)" 
+                                (Character 1 8 () [])
+                            ) 
+                            () 
+                            () 
+                            () 
+                            [(ArrayItem 
+                                (Var 2 x) 
+                                [(() 
+                                (Var 2 i) 
+                                ())] 
+                                (Real 4 []) 
+                                ()
+                            )
+                            (ArrayItem 
+                                (Var 2 y) 
+                                [(() 
+                                (Var 2 i) 
+                                ())] 
+                                (Real 4 []) 
+                                ()
+                            )] 
+                            () 
+                            ()
+                        )]
+                    )
+                    (FileClose 
+                        0 
+                        (IntegerConstant 1 (Integer 4 [])) 
+                        (Var 2 u) 
+                        (Var 2 msg) 
+                        (IntegerConstant 999 (Integer 4 [])) 
+                        ()
+                    )
+                    (GoToTarget 
+                        999
+                    )
+                    (FileOpen 
+                        999 
+                        (IntegerConstant 2 (Integer 4 [])) 
+                        (StringConstant 
+                            "data.dat" 
+                            (Character 1 8 () [])
+                        ) 
+                        (StringConstant 
+                            "old" 
+                            (Character 1 3 () [])
+                        )
+                    )
+                    (DoLoop 
+                        ((Var 2 i) 
+                        (IntegerConstant 1 (Integer 4 [])) 
+                        (IntegerConstant 100 (Integer 4 [])) 
+                        ()) 
+                        [(FileRead 
+                            0 
+                            (IntegerConstant 2 (Integer 4 [])) 
+                            () 
+                            () 
+                            () 
+                            () 
+                            [(ArrayItem 
+                                (Var 2 p) 
+                                [(() 
+                                (Var 2 i) 
+                                ())] 
+                                (Real 4 []) 
+                                ()
+                            )
+                            (ArrayItem 
+                                (Var 2 q) 
+                                [(() 
+                                (Var 2 i) 
+                                ())] 
+                                (Real 4 []) 
+                                ()
+                            )]
+                        )]
+                    )
+                    (FileClose 
+                        0 
+                        (IntegerConstant 2 (Integer 4 [])) 
+                        () 
+                        () 
+                        () 
+                        ()
+                    )
+                    (DoLoop 
+                        ((Var 2 i) 
+                        (IntegerConstant 1 (Integer 4 [])) 
+                        (IntegerConstant 100 (Integer 4 [])) 
+                        ()) 
+                        [(FileWrite 
+                            0 
+                            () 
+                            () 
+                            () 
+                            () 
+                            () 
+                            [(ArrayItem 
+                                (Var 2 p) 
+                                [(() 
+                                (Var 2 i) 
+                                ())] 
+                                (Real 4 []) 
+                                ()
+                            )
+                            (ArrayItem 
+                                (Var 2 q) 
+                                [(() 
+                                (Var 2 i) 
+                                ())] 
+                                (Real 4 []) 
+                                ()
+                            )] 
+                            () 
+                            ()
+                        )]
+                    )]
+                )
+            
+        }) 
+    []
+)

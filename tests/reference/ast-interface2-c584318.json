@@ -1,0 +1,13 @@
+{
+    "basename": "ast-interface2-c584318",
+    "cmd": "lfortran --indent --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/interface2.f90",
+    "infile_hash": "708e539c3b559554e522379a3dd84fbbef89eb01ea66bf9ded4a5fcb",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-interface2-c584318.stdout",
+    "stdout_hash": "170966a742d2e7f49823e8b76b6989de8f8d1a0ff0b8636eae2bb4e7",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

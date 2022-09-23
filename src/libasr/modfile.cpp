@@ -64,6 +64,12 @@ std::string save_modfile(const ASR::TranslationUnit_t &m) {
     return asr_string;
 }
 
+std::string save_pycfile(const ASR::TranslationUnit_t &m) {
+    std::string asr_string;
+    save_asr(m, asr_string);
+    return asr_string;
+}
+
 inline void load_serialised_asr(const std::string &s, std::string& asr_binary) {
 #ifdef WITH_LFORTRAN_BINARY_MODFILES
     BinaryReader b(s);
@@ -86,6 +92,16 @@ ASR::TranslationUnit_t* load_modfile(Allocator &al, const std::string &s,
     std::string asr_binary;
     load_serialised_asr(s, asr_binary);
     ASR::asr_t *asr = deserialize_asr(al, asr_binary, load_symtab_id, symtab);
+
+    ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(asr);
+    return tu;
+}
+
+ASR::TranslationUnit_t* load_pycfile(Allocator &al, const std::string &s,
+        bool load_symtab_id) {
+    std::string asr_binary;
+    load_serialised_asr(s, asr_binary);
+    ASR::asr_t *asr = deserialize_asr(al, asr_binary, load_symtab_id);
 
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(asr);
     return tu;

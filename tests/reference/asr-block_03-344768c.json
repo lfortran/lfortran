@@ -1,0 +1,13 @@
+{
+    "basename": "asr-block_03-344768c",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/block_03.f90",
+    "infile_hash": "3271e019be3575ad1c8280a5b50d7fccb0534f39241680ad66e6bc50",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-block_03-344768c.stdout",
+    "stdout_hash": "1d266bd01413694a51ea5fa77b1ee937e878b86a7eacda5d040146bd",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
