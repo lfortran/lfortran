@@ -404,8 +404,12 @@ public:
 
     void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary){
         std::cout << "Implicit Dictionary: " << std::endl;
-        for(auto it=implicit_dictionary.begin(); it!=implicit_dictionary.end(); it++){
-            std::cout << it->first << " " << it->second << std::endl;
+        for(auto it: implicit_dictionary){
+            if (it.second) {
+                std::cout << it.first << " " << ASRUtils::type_to_str(it.second) << std::endl;
+            } else {
+                std::cout << it.first << " " << NULL << std::endl;
+            }
         }
     }
 
@@ -416,29 +420,29 @@ public:
         //populate the implicit_dictionary
         populate_implicit_dictonary(x, implicit_dictionary);
 
-        //check n_implicit
-        if(x.n_implicit>0){
-            //iterate over all implicit statements
-            for(size_t i=0;i<x.n_implicit;i++){
-                //get the implicit statement
+        //iterate over all implicit statements
+        for(size_t i=0;i<x.n_implicit;i++){
+            //get the implicit statement
 
-                //check if the implicit statement is of type "none"
-                if(AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])){
-                    //if yes, clear the implicit dictionary i.e. set all characters to nullptr
-                    implicit_dictionary.clear();
+            //check if the implicit statement is of type "none"
+            if(AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])){
+                //if yes, clear the implicit dictionary i.e. set all characters to nullptr
+                if (x.n_implicit != 1) {
+                    throw SemanticError("No other implicit statement is allowed when 'implicit none' is used", x.m_implicit[i]->base.loc);
                 }
-                else{
-                    //if no, then it is of type "implicit"
-                    AST::Implicit_t* implicit = AST::down_cast<AST::Implicit_t>(x.m_implicit[i]);
+                implicit_dictionary.clear();
+            }
+            else{
+                //if no, then it is of type "implicit"
+                AST::Implicit_t* implicit = AST::down_cast<AST::Implicit_t>(x.m_implicit[i]);
 
-                    //iterate over all implicit rules
-                    for(size_t j=0;j<implicit->n_specs;j++){
-                        std::cout<<j<<std::endl;
-                        //update the ttype_t* in the diciotnary for all characters in the range
-                        
-                    }
-
+                //iterate over all implicit rules
+                for(size_t j=0;j<implicit->n_specs;j++){
+                    std::cout<<j<<std::endl;
+                    //update the ttype_t* in the diciotnary for all characters in the range
+                    
                 }
+
             }
         }
 
