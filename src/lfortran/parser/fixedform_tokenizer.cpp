@@ -514,15 +514,88 @@ struct FixedFormRecursiveDescent {
     }
 
     // ------------------------------------------------------------------
-    // The following try_*() functions behave exactly like the above ones,
-    // but they now parse Fortran syntax
+    // The following try_*() and lex_*() functions behave exactly like the above
+    // ones, but they now parse Fortran syntax
+
+    // Parses ' and " strings
+    bool lex_string(unsigned char *&cur) {
+        unsigned char *delim = cur;
+        LFORTRAN_ASSERT(*delim == '"' || *delim == '\'')
+        cur++;
+        while (true) {
+            if (*cur == '\0') {
+                // String is not terminated
+                cur = delim;
+                return false;
+            }
+            if (*cur == *delim) {
+                cur++;
+                if (*cur == '\0') {
+                    // String is ended by delim
+                    return true;
+                }
+                if (*cur == *delim) {
+                    // Either '' or "", we continue
+                    cur++;
+                    continue;
+                }
+                // String is ended by delim
+                return true;
+            }
+            cur++;
+        }
+    }
 
     // cur points to a Fortran expression
-    bool try_expr(unsigned char *&cur) {
-        // FIXME: for now we just do heuristics:
+    bool try_expr(unsigned char *&cur, bool nested) {
+        // We do not try to parse all the details, we simply accept all
+        // characters that can appear in an expression and we correctly
+        // match parentheses and parse strings.
         unsigned char *old = cur;
-        while (is_digit(*cur) || is_char(*cur) ||
-            is_arit_op(*cur)) cur++;
+        while (true) {
+            if (   is_digit(*cur)
+                || is_char(*cur)
+                || is_arit_op(*cur)
+                || (*cur == '%')
+                || (*cur == '[')
+                || (*cur == ']')
+                    ) {
+                cur++;
+                continue;
+            }
+            if (nested) {
+                // Nested expressions can also contain [,:=], such as
+                // in "f(x, y=3)/4" or "A(:,:)"
+                if ((*cur == ',') || (*cur == '=') || (*cur == ':')) {
+                    cur++;
+                    continue;
+                }
+            }
+            if (*cur == '(') {
+                cur++;
+                if (*cur == ')') {
+                    cur++;
+                    continue;
+                }
+                if (!try_expr(cur, true)) {
+                    cur = old;
+                    return false;
+                }
+                if (*cur == ')') {
+                    cur++;
+                    continue;
+                } else {
+                    // Unmatched parenthesis
+                    cur = old;
+                    return false;
+                }
+            }
+            if (*cur == '"' || *cur == '\'') {
+                lex_string(cur);
+                continue;
+            }
+            break;
+        }
         if (cur > old) {
             return true;
         } else {
@@ -1035,7 +1108,7 @@ struct FixedFormRecursiveDescent {
                 if (try_next(cur, "=")) {
                     // do x =
                     // do 5 x =
-                    if (try_expr(cur)) {
+                    if (try_expr(cur, false)) {
                         // do x = 1
                         // do 5 x = 1
                         if (try_next(cur, ",")) {
