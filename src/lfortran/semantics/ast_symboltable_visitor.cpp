@@ -428,10 +428,16 @@ public:
                     implicit_dictionary.clear();
                 }
                 else{
-                    //set the implicit dictionary according to the implicit statement
+                    //if no, then it is of type "implicit"
                     AST::Implicit_t* implicit = AST::down_cast<AST::Implicit_t>(x.m_implicit[i]);
 
-                    //to be continued
+                    //iterate over all implicit rules
+                    for(size_t j=0;j<implicit->n_specs;j++){
+                        std::cout<<j<<std::endl;
+                        //update the ttype_t* in the diciotnary for all characters in the range
+                        
+                    }
+
                 }
             }
         }
