@@ -691,6 +691,10 @@ public:
         return sub;
     }
 
+    bool has_external_function(const std::string &fn_name) {
+        return external_functions.find(fn_name) != external_functions.end();
+    }
+
     ASR::symbol_t* declare_implicit_variable(const Location &loc,
             const std::string &var_name, ASR::intentType intent) {
         ASR::ttype_t *type;
@@ -916,8 +920,8 @@ public:
                                         al, s.loc,
                                         /* a_symtab */ current_scope,
                                         /* a_name */ s2c(al, sym),
-                                        /* a_args */ nullptr,
-                                        /* n_args */ 0,
+                                        /* a_args */ nullptr, // --
+                                        /* n_args */ 0,       // -- these two filled at a later point
                                         nullptr, 0,
                                         /* a_body */ nullptr,
                                         /* n_body */ 0,

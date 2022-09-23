@@ -927,7 +927,10 @@ public:
             return nullptr;
         }
         ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
-        if (external_functions.find(subrout->m_name) != external_functions.end()) {
+        std::cout << "fun name implicit dealloc " << subrout->m_name<<"\n";
+        std::cout << "subrout n_args " << subrout->n_args << "\n";
+        std::cout << "subrout call n_args " << subrout_call->n_args << "\n";
+        if (has_external_function(subrout->m_name)) {
             return nullptr;
         }
         Vec<ASR::symbol_t*> del_syms;
@@ -1124,8 +1127,13 @@ public:
             v_expr = LFortran::ASRUtils::EXPR(v_var);
             original_sym = resolve_deriv_type_proc(x.base.base.loc, to_lower(x.m_name),
                 to_lower(x.m_member[0].m_name), scope);
-        } else if (external_functions[sub_name].first) {
-            original_sym = external_functions[sub_name].first;
+        } else if (has_external_function(sub_name)) {
+            if(external_functions[sub_name].first != nullptr) {
+                original_sym = external_functions[sub_name].first;
+            } else {
+                throw SemanticError("External procedure error", x.base.base.loc);
+            }
+
         } else {
             original_sym = current_scope->resolve_symbol(sub_name);
         }
@@ -1156,7 +1164,7 @@ public:
         Vec<ASR::call_arg_t> args;
         visit_expr_list(x.m_args, x.n_args, args);
 
-        if (ASR::is_a<ASR::Function_t>(*sym)) {
+        if (ASR::is_a<ASR::Function_t>(*sym) && has_external_function(sub_name)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
             if (external_functions[sub_name].first != nullptr && !external_functions[sub_name].second) {
                 Vec<ASR::expr_t *> exprs;  exprs.reserve(al, x.n_args);

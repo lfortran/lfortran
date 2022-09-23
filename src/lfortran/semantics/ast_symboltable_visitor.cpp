@@ -325,8 +325,15 @@ public:
                 f2->m_abi == ASR::abiType::Interactive) {
                 // Previous declaration will be shadowed
                 parent_scope->erase_symbol(sym_name);
-            } else if (this->external_functions[sym_name].first != nullptr) {
-                // do not throw error?
+            } else if (has_external_function(sym_name)) {
+                // auto fn = ASR::down_cast<ASR::Function_t>(this->external_functions[sym_name].first);
+                // fn->m_args = args.p;
+                // fn->n_args = args.n;
+                // this->external_functions[sym_name].second = 1;
+                // tmp = (LFortran::ASR::asr_t*)fn;
+                // current_procedure_args.clear();
+                // current_procedure_abi_type = ASR::abiType::Source;
+                // return;
             } else {
                 throw SemanticError("Subroutine already defined", tmp->loc);
             }
@@ -1059,7 +1066,7 @@ public:
         }
         if (ASR::is_a<ASR::Function_t>(*t) &&
             ASR::down_cast<ASR::Function_t>(t)->m_return_var == nullptr) {
-            if (current_scope->get_symbol(local_sym) != nullptr && !(this->external_functions[local_sym].first != nullptr)) {
+            if (current_scope->get_symbol(local_sym) != nullptr && !has_external_function(local_sym)) {
                 throw SemanticError("Subroutine already defined",
                     loc);
             }
