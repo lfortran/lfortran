@@ -1,0 +1,13 @@
+{
+    "basename": "asr-generic_name_01-3bbd36d",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/generic_name_01.f90",
+    "infile_hash": "412cff197c97ec2ab225b22c480cea7fa3755e6a6f963ab8d08d2995",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-generic_name_01-3bbd36d.stdout",
+    "stdout_hash": "afc9bb8c3a6a1c98748880ded9d689154c774952479515bdc8830466",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

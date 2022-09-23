@@ -1,0 +1,28 @@
+(TranslationUnit 
+    [(Program 
+        main 
+        () 
+        [] 
+        [(Implicit 
+            (AttrType 
+                TypeDoublePrecision 
+                [] 
+                () 
+                None
+            ) 
+            [] 
+            [(LetterSpec 
+                a 
+                h
+            )
+            (LetterSpec 
+                o 
+                z
+            )] 
+            ()
+        )] 
+        [] 
+        [] 
+        []
+    )]
+)

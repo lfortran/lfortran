@@ -1,0 +1,13 @@
+{
+    "basename": "ast-parsing_01-032347e",
+    "cmd": "lfortran --indent --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/parsing_01.f90",
+    "infile_hash": "def9551071d9aa0cfd8163560e96b69ad76bc67a9830f2531e6752a5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-parsing_01-032347e.stdout",
+    "stdout_hash": "7c6604fdd5c6e09f9ec516f44be144013b532ddc3289bb3c8343a94d",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

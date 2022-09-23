@@ -1,0 +1,13 @@
+{
+    "basename": "ast-parameter1-07adeaa",
+    "cmd": "lfortran --indent --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/parameter1.f90",
+    "infile_hash": "89e627eefd928ded810c79f57685b062a029d924767fffd996a7552d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-parameter1-07adeaa.stdout",
+    "stdout_hash": "98fa3d648830f9d1d47dd07bc9a2e38182af3a6fc8706a4c36f16a30",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-string_04-ee516f3",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/string_04.f90",
+    "infile_hash": "1b092d9e71bbd1bc23e03b5570e3cdb8b87541e92970a9a2cd7719f5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-string_04-ee516f3.stdout",
+    "stdout_hash": "c1643314c5ff870ad88a89c421d7b7c8db5b7985b6eaf7ab32c82ce7",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,1 +1,0 @@
-(TranslationUnit [(Program main () [] [(Implicit (AttrType TypeDoublePrecision [] () None) [] [(LetterSpec A H) (LetterSpec O Z)] ())] [] [] [])])

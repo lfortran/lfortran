@@ -1,0 +1,13 @@
+{
+    "basename": "asr-array_01_pack-93faf6c",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/array_01_pack.f90",
+    "infile_hash": "97399486ccb7c58697540e47afe2d1e3acc6a2b2ec1902da2bc4691d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-array_01_pack-93faf6c.stdout",
+    "stdout_hash": "ce560450f001ef0285de832b3c6c1cd83160d424392a2ef42834660f",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

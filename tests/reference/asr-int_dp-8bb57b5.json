@@ -1,0 +1,13 @@
+{
+    "basename": "asr-int_dp-8bb57b5",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/int_dp.f90",
+    "infile_hash": "f59edf2644a27d68d7127283dbb961288e4041e2de16284795b100de",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-int_dp-8bb57b5.stdout",
+    "stdout_hash": "6827418527374a5f630daa6aedd0720ecafb21904c8d704e1655930c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

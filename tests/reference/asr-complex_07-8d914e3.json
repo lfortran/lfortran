@@ -1,0 +1,13 @@
+{
+    "basename": "asr-complex_07-8d914e3",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/complex_07.f90",
+    "infile_hash": "98ceed61d8a2eaf04519347bac51e261cf6167038a3238a7016f4f0e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-complex_07-8d914e3.stdout",
+    "stdout_hash": "be6d58b12e00f9b2094c7d131d57e3e5c2a25f30ac81fcf92858f59b",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
