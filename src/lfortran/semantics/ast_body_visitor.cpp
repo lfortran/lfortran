@@ -929,8 +929,6 @@ public:
         ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
         Vec<ASR::symbol_t*> del_syms;
         del_syms.reserve(al, 1);
-
-        if (!external_functions[subrout->m_name].second) return nullptr;
         for( size_t i = 0; i < subrout_call->n_args; i++ ) {
             if( subrout_call->m_args[i].m_value &&
                 subrout_call->m_args[i].m_value->type == ASR::exprType::Var ) {
