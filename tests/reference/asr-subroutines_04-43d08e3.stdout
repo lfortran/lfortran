@@ -1,0 +1,64 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            print_it:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            print_int:
+                                (Function 
+                                    (SymbolTable
+                                        3
+                                        {
+                                            a:
+                                                (Variable 
+                                                    3 
+                                                    a 
+                                                    Local 
+                                                    (IntegerConstant 5 (Integer 4 [])) 
+                                                    () 
+                                                    Save 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    print_int 
+                                    [] 
+                                    [] 
+                                    [(Print 
+                                        () 
+                                        [(Var 3 a)] 
+                                        () 
+                                        ()
+                                    )] 
+                                    () 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false.
+                                )
+                            
+                        }) 
+                    print_it 
+                    [] 
+                    [(SubroutineCall 
+                        2 print_int 
+                        () 
+                        [] 
+                        ()
+                    )]
+                )
+            
+        }) 
+    []
+)

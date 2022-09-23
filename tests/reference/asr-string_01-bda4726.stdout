@@ -1,1 +1,0 @@
-(TranslationUnit (SymbolTable 1 {print_01: (Program (SymbolTable 2 {my_name: (Variable 2 my_name Local (StringConstant "Dominic" (Character 1 7 () [])) () Save (Character 1 7 () []) Source Public Required .false.)}) print_01 [] [(Print () [(StringConstant "My name is " (Character 1 11 () [])) (Var 2 my_name)] () ())])}) [])

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-scopes1-ed74b6f",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/scopes1.f90",
+    "infile_hash": "48ffe7d9bb1021077b7bec62634ec2682cbfc211123626d338ba0c9e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-scopes1-ed74b6f.stdout",
+    "stdout_hash": "e39e221bf1394206a73182df6fd5702e8a3a5f24ea67fd416ec23a9a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

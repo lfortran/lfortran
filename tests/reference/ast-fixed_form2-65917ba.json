@@ -1,0 +1,13 @@
+{
+    "basename": "ast-fixed_form2-65917ba",
+    "cmd": "lfortran --indent --fixed-form --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/fixed_form2.f",
+    "infile_hash": "571cbfd198e5e5c217a11df963d0f4bda8786f94fc435927d45be679",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-fixed_form2-65917ba.stdout",
+    "stdout_hash": "59057b8caac5ff56f18d9d1c061be3b0bd6dbc11d1573f31aef3edf4",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
