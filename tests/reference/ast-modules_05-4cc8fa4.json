@@ -1,0 +1,13 @@
+{
+    "basename": "ast-modules_05-4cc8fa4",
+    "cmd": "lfortran --indent --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/modules_05.f90",
+    "infile_hash": "eaea53640868ce2121656fd7b87e06fe464e05c8e9a0cf731a7a1dd9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-modules_05-4cc8fa4.stdout",
+    "stdout_hash": "da2600bb59a6e5ba894ce946bdb7699008018f26645329552447b0c5",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

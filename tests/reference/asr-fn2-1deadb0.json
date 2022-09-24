@@ -1,0 +1,13 @@
+{
+    "basename": "asr-fn2-1deadb0",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/fn2.f90",
+    "infile_hash": "9f61561c47397aa03014fe07094ac838ada4865e513025e384edae00",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-fn2-1deadb0.stdout",
+    "stdout_hash": "cee0299d404605829bd938e53f04307ed895d0e4a18a4fc6022842fa",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,1 +1,0 @@
-(TranslationUnit [(Subroutine f [(a) (b) (c)] [] () () [] [] [] [] [(Print 0 () [a] ()) (GoTo 0 () 1 [] ()) (Return 0 () ()) (Print 1 () [b] ()) (Return 0 () ())] []) (Function g [(a) (b) (c)] [] () () () [] [] [] [] [(Print 0 () [a] ()) (GoTo 0 () 2 [] ()) (Return 0 () ()) (Print 2 () [b] ()) (Return 0 () ())] [])])

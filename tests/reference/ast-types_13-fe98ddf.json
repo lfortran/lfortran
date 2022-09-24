@@ -1,0 +1,13 @@
+{
+    "basename": "ast-types_13-fe98ddf",
+    "cmd": "lfortran --indent --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/types_13.f90",
+    "infile_hash": "0386b3b949293ae071687d72cec51980cbdce80908080fa69e19a807",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-types_13-fe98ddf.stdout",
+    "stdout_hash": "748bf838bece887848e5b1f45b50afdac2b289bed9e8dcf19aae285d",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
