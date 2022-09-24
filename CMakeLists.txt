@@ -116,14 +116,7 @@ endif()
 # Julia
 set(WITH_JULIA no CACHE BOOL "Build with Julia support")
 if (WITH_JULIA)
-    find_package(Julia REQUIRED)
-    add_library(p::julia INTERFACE IMPORTED)
-    set_property(TARGET p::julia PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-            ${Julia_INCLUDE_DIRS})
-    set_property(TARGET p::julia PROPERTY INTERFACE_LINK_DIRECTORIES
-            ${Julia_LIBRARY_DIR})
-    set_property(TARGET p::julia PROPERTY INTERFACE_LINK_LIBRARIES
-            ${Julia_LIBRARY})
+    set(HAVE_LFORTRAN_JULIA yes)
 endif()
 
 # LLVM

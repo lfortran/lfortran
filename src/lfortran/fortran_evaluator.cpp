@@ -5,6 +5,7 @@
 #include <libasr/codegen/asr_to_cpp.h>
 #include <libasr/codegen/asr_to_c.h>
 #include <libasr/codegen/asr_to_wasm.h>
+#include <libasr/codegen/asr_to_julia.h>
 #include <libasr/codegen/wasm_to_wat.h>
 #include <lfortran/ast_to_src.h>
 #include <libasr/exception.h>
@@ -439,6 +440,26 @@ Result<std::string> FortranEvaluator::get_c2(ASR::TranslationUnit_t &asr,
     return asr_to_c(al, asr, diagnostics, compiler_options.platform,
                     default_lower_bound);
 }
+
+#ifdef HAVE_LFORTRAN_JULIA
+
+Result<std::string> FortranEvaluator::get_julia(const std::string &code,
+    LocationManager &lm, diag::Diagnostics &diagnostics)
+{
+    // Src -> AST -> ASR -> Julia
+    SymbolTable *old_symbol_table = symbol_table;
+    symbol_table = nullptr;
+    Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
+    symbol_table = old_symbol_table;
+    if (asr.ok) {
+        return asr_to_julia(*asr.result, diagnostics);
+    } else {
+        LFORTRAN_ASSERT(diagnostics.has_error())
+        return asr.error;
+    }
+}
+
+#endif // HAVE_LFORTRAN_JULIA
 
 Result<std::string> FortranEvaluator::get_fmt(const std::string &code,
     LocationManager &lm, diag::Diagnostics &diagnostics)

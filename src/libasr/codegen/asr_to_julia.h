@@ -2,10 +2,14 @@
 #define LFORTRAN_ASR_TO_JULIA_H
 
 #include <libasr/asr.h>
-#include <julia.h>
+#include <libasr/asr_utils.h>
+#include <libasr/codegen/asr_to_c_cpp.h>
+// #include <julia.h>
 
-namespace LFortran {
-    jl_expr_t asr_to_julia(ASR::TranslationUnit_t &asr);
-} // namespace LFortran
+namespace LFortran
+{
+Result<std::string>
+asr_to_julia(ASR::TranslationUnit_t& asr, diag::Diagnostics& diag);
+}  // namespace LFortran
 
-#endif // LFORTRAN_ASR_TO_JULIA_H
+#endif  // LFORTRAN_ASR_TO_JULIA_H

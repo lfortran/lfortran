@@ -10,6 +10,9 @@
 /* Define if LLVM is enabled */
 #cmakedefine HAVE_LFORTRAN_LLVM
 
+/* Define if Julia is enabled */
+#cmakedefine HAVE_LFORTRAN_JULIA
+
 /* Define if RAPIDJSON is found */
 #cmakedefine HAVE_LFORTRAN_RAPIDJSON
 
