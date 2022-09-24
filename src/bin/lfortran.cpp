@@ -1706,11 +1706,14 @@ int main(int argc, char *argv[])
         if (show_c) {
             return emit_c(arg_file, compiler_options);
         }
-#ifdef HAVE_LFORTRAN_JULIA
         if (show_julia) {
+#ifdef HAVE_LFORTRAN_JULIA
             return emit_julia(arg_file, compiler_options);
-        }
+#else // HAVE_LFORTRAN_JULIA
+                std::cerr << "The --show-julia option requires the Julia backend to be enabled. Recompile with `WITH_JULIA=yes`." << std::endl;
+                return 1;
 #endif // HAVE_LFORTRAN_JULIA
+        }
         if (arg_S) {
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
