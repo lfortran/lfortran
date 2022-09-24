@@ -666,6 +666,7 @@ public:
     bool is_body_visitor = false;
     bool is_template = false;
     bool is_current_procedure_templated = false;
+    bool is_save_variable = false;
     std::map<std::string, std::vector<ASR::asr_t*>> template_type_parameters;
     std::vector<ASR::asr_t*> current_template_type_parameters;
     std::unordered_set<int> current_procedure_used_type_parameter_indices;
@@ -839,8 +840,7 @@ public:
                                 // Do nothing (all variables implicitly have the
                                 // save attribute in a module/main program)
                             } else {
-                                throw SemanticError("Save Attribute not "
-                                        "supported yet", x.base.base.loc);
+                                is_save_variable = true;
                             }
                         } else if (sa->m_attr == AST::simple_attributeType
                                 ::AttrSequence) {
@@ -1213,6 +1213,9 @@ public:
                     } else {
                         storage_type = ASR::storage_typeType::Save; // implicit save
                     }
+                }
+                if (is_save_variable) {
+                    storage_type = ASR::storage_typeType::Save;
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
                     ASR::asr_t *v = ASR::make_Variable_t(al, s.loc, current_scope,
