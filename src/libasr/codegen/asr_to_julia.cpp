@@ -4,6 +4,33 @@
 
 namespace LFortran
 {
+
+static inline std::string binop_to_str_julia(const ASR::binopType t) {
+    switch (t) {
+        case (ASR::binopType::Add): { return " + "; }
+        case (ASR::binopType::Sub): { return " - "; }
+        case (ASR::binopType::Mul): { return "*"; }
+        case (ASR::binopType::Div): { return "/"; }
+        case (ASR::binopType::Pow): { return "^"; }
+        case (ASR::binopType::BitAnd): { return "&"; }
+        case (ASR::binopType::BitOr): { return "|"; }
+        case (ASR::binopType::BitXor): { return "⊻"; }
+        case (ASR::binopType::BitLShift): { return "<<"; }
+        case (ASR::binopType::BitRShift): { return ">>"; }
+        default : throw LCompilersException("Cannot represent the binary operator as a string");
+    }
+}
+
+static inline std::string logicalbinop_to_str_julia(const ASR::logicalbinopType t) {
+    switch (t) {
+        case (ASR::logicalbinopType::And): { return " && "; }
+        case (ASR::logicalbinopType::Or): { return " || "; }
+        case (ASR::logicalbinopType::Eqv): { return " == "; }
+        case (ASR::logicalbinopType::NEqv): { return " ≠ "; }
+        default : throw LCompilersException("Cannot represent the boolean operator as a string");
+    }
+}
+
 class ASRToJuliaVisitor : public ASR::BaseVisitor<ASRToJuliaVisitor>
 {
 public:
@@ -24,6 +51,7 @@ public:
     {
     }
 
+    // TODO: implement full feature
     std::string convert_variable_decl(const ASR::Variable_t& v)
     {
         return v.m_name;
@@ -163,8 +191,10 @@ public:
         src = unit_src;
     }
 
+    // TODO:
     void visit_Module(const ASR::Module_t& x)
     {
+        std::string module = "module " + std::string(x.m_name) + "\n\n";
         if (startswith(x.m_name, "lfortran_intrinsic_")) {
             intrinsic_module = true;
         } else {
@@ -181,7 +211,8 @@ public:
                 contains += src;
             }
         }
-        src = contains;
+        module += contains + "end\n\n";
+        src = module;
         intrinsic_module = false;
     }
 
@@ -199,14 +230,12 @@ public:
 
         // Generate code for the main program
         indentation_level += 1;
-        std::string indent1(indentation_level * indentation_spaces, ' ');
-        indentation_level += 1;
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string decl;
         for (auto& item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
-                decl += this->convert_variable_decl(*v) + "\n";
+                decl += indent + "local " + this->convert_variable_decl(*v) + "\n";
             }
         }
 
@@ -216,7 +245,7 @@ public:
             body += src;
         }
 
-        src = contains + "function main()\n{\n" + decl + body + "end\n" + "main()\n";
+        src = contains + "function main()\n" + decl + body + "end\n\n" + "main()\n";
         indentation_level -= 2;
     }
 
@@ -384,7 +413,7 @@ public:
                 break;
             }
             case (ASR::binopType::Pow): {
-                src = "pow(" + left + ", " + right + ")";
+                src = left + ", " + right + ")";
                 src = "std::" + src;
                 return;
             }
@@ -402,7 +431,7 @@ public:
                 src += "(" + left + ")";
             }
         }
-        src += ASRUtils::binop_to_str_python(x.m_op);
+        src += binop_to_str_julia(x.m_op);
         if (right_precedence == 3) {
             src += "(" + right + ")";
         } else if (x.m_op == ASR::binopType::Sub) {
@@ -454,7 +483,7 @@ public:
         } else {
             src += "(" + left + ")";
         }
-        src += ASRUtils::logicalbinop_to_str_python(x.m_op);
+        src += logicalbinop_to_str_julia(x.m_op);
         if (right_precedence <= last_expr_precedence) {
             src += right;
         } else {
@@ -528,6 +557,55 @@ public:
         src = out;
     }
 
+    void visit_IfExp(const ASR::IfExp_t &x) {
+        // IfExp is like a ternary operator in Julia
+        // test ? body : orelse;
+        std::string out = "(";
+        this->visit_expr(*x.m_test);
+        out += src + ") ? (";
+        this->visit_expr(*x.m_body);
+        out += src + ") : (";
+        this->visit_expr(*x.m_orelse);
+        out += src + ")";
+        src = out;
+        last_expr_precedence = 16;
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
+            LFortran::ASRUtils::symbol_get_past_external(x.m_name));
+        // TODO: use a mapping with a hash(s) instead:
+        std::string sym_name = s->m_name;
+        if (sym_name == "exit") {
+            sym_name = "_xx_lcompilers_changed_exit_xx";
+        }
+        std::string out = indent + sym_name + "(";
+        for (size_t i=0; i<x.n_args; i++) {
+            if (ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                ASR::Variable_t *arg = LFortran::ASRUtils::EXPR2VAR(x.m_args[i].m_value);
+                std::string arg_name = arg->m_name;
+                if( ASRUtils::is_array(arg->m_type) &&
+                    ASRUtils::is_pointer(arg->m_type) ) {
+                    out += "&" + arg_name;
+                } else {
+                    out += arg_name;
+                }
+            } else {
+                this->visit_expr(*x.m_args[i].m_value);
+                if( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) &&
+                    ASR::is_a<ASR::Derived_t>(*ASRUtils::expr_type(x.m_args[i].m_value)) ) {
+                    out += "&" + src;
+                } else {
+                    out += src;
+                }
+            }
+            if (i < x.n_args-1) out += ", ";
+        }
+        out += ")\n";
+        src = out;
+    }
+
     void visit_IntegerConstant(const ASR::IntegerConstant_t& x)
     {
         src = std::to_string(x.m_n);
@@ -540,6 +618,78 @@ public:
         last_expr_precedence = 2;
     }
 
+    void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {
+        this->visit_expr(*x.m_re);
+        std::string re = src;
+        this->visit_expr(*x.m_im);
+        std::string im = src;
+        src = "ComplexF32(" + re + ", " + im + ")";
+        if (ASRUtils::extract_kind_from_ttype_t(x.m_type) == 8) {
+            src = "ComplexF64(" + re + ", " + im + ")";
+        }
+        last_expr_precedence = 2;
+    }
+
+    void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
+        std::string re = std::to_string(x.m_re);
+        std::string im = std::to_string(x.m_im);
+        src = "ComplexF32(" + re + ", " + im + ")";
+        if (ASRUtils::extract_kind_from_ttype_t(x.m_type) == 8) {
+            src = "ComplexF64(" + re + ", " + im + ")";
+        }
+        last_expr_precedence = 2;
+    }
+
+    void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
+        if (x.m_value == true) {
+            src = "true";
+        } else {
+            src = "false";
+        }
+        last_expr_precedence = 2;
+    }
+
+    void visit_SetConstant(const ASR::SetConstant_t &x) {
+        std::string out = "Set(";
+        for (size_t i=0; i<x.n_elements; i++) {
+            visit_expr(*x.m_elements[i]);
+            out += src;
+            if (i != x.n_elements - 1)
+                out += ", ";
+        }
+        out += ")";
+        src = out;
+        last_expr_precedence = 2;
+    }
+
+    void visit_DictConstant(const ASR::DictConstant_t &x) {
+        LFORTRAN_ASSERT(x.n_keys == x.n_values);
+        std::string out = "Dict(";
+        for(size_t i=0; i<x.n_keys; i++) {
+            visit_expr(*x.m_keys[i]);
+            out += src + " => ";
+            visit_expr(*x.m_values[i]);
+            if (i!=x.n_keys-1) out += ", ";
+        }
+        out += ")";
+        src = out;
+        last_expr_precedence = 2;
+    }
+
+    // void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
+    //     std::string indent(indentation_level * indentation_spaces, ' ');
+    //     from_std_vector_helper = indent + "Kokkos::View<float*> r;\n";
+    //     std::string out = "from_std_vector<float>({";
+    //     for (size_t i=0; i<x.n_args; i++) {
+    //         this->visit_expr(*x.m_args[i]);
+    //         out += src;
+    //         if (i < x.n_args-1) out += ", ";
+    //     }
+    //     out += "})";
+    //     from_std_vector_helper += indent + "r = " + out + ";\n";
+    //     src = "&r";
+    //     last_expr_precedence = 2;
+    // }
 
     void visit_StringConstant(const ASR::StringConstant_t& x)
     {
@@ -557,16 +707,6 @@ public:
             }
         }
         src += "\"";
-        last_expr_precedence = 2;
-    }
-
-    void visit_LogicalConstant(const ASR::LogicalConstant_t& x)
-    {
-        if (x.m_value == true) {
-            src = "true";
-        } else {
-            src = "false";
-        }
         last_expr_precedence = 2;
     }
 
@@ -608,12 +748,12 @@ public:
                 break;
             }
             case (ASR::cast_kindType::RealToReal): {
-                // In C++, we do not need to cast float to float explicitly:
+                // In Julia, we do not need to cast float to float explicitly:
                 // src = src;
                 break;
             }
             case (ASR::cast_kindType::IntegerToInteger): {
-                // In C++, we do not need to cast int <-> long long explicitly:
+                // In Julia, we do not need to cast int <-> long long explicitly:
                 // src = src;
                 break;
             }
@@ -722,6 +862,14 @@ public:
         }
     }
 
+    void visit_StringLen(const ASR::StringLen_t& x)
+    {
+        std::string out = "length(";
+        this->visit_expr(*x.m_arg);
+        out += src + ")";
+        src = out;
+    }
+
     void visit_Print(const ASR::Print_t& x)
     {
         std::string indent(indentation_level * indentation_spaces, ' ');
@@ -736,7 +884,7 @@ public:
             this->visit_expr(*x.m_values[i]);
             out += src;
             if (i + 1 != x.n_values) {
-                out += "," + sep + ",";
+                out += ", " + sep + ", ";
             }
         }
         if (x.m_end) {
