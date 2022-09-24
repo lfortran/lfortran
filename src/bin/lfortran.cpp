@@ -1701,9 +1701,11 @@ int main(int argc, char *argv[])
         if (show_c) {
             return emit_c(arg_file, compiler_options);
         }
+#ifdef HAVE_LFORTRAN_JULIA
         if (show_julia) {
             return emit_julia(arg_file, compiler_options);
         }
+#endif // HAVE_LFORTRAN_JULIA
         if (arg_S) {
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
