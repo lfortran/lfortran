@@ -322,6 +322,212 @@ public:
         from_std_vector_helper.clear();
     }
 
+    void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x)
+    {
+        handle_BinOp(x);
+    }
+
+    void visit_RealBinOp(const ASR::RealBinOp_t& x)
+    {
+        handle_BinOp(x);
+    }
+
+    void visit_ComplexBinOp(const ASR::ComplexBinOp_t& x)
+    {
+        handle_BinOp(x);
+    }
+
+    template <typename T>
+    void handle_BinOp(const T& x)
+    {
+        this->visit_expr(*x.m_left);
+        std::string left = std::move(src);
+        int left_precedence = last_expr_precedence;
+        this->visit_expr(*x.m_right);
+        std::string right = std::move(src);
+        int right_precedence = last_expr_precedence;
+        switch (x.m_op) {
+            case (ASR::binopType::Add): {
+                last_expr_precedence = 6;
+                break;
+            }
+            case (ASR::binopType::Sub): {
+                last_expr_precedence = 6;
+                break;
+            }
+            case (ASR::binopType::Mul): {
+                last_expr_precedence = 5;
+                break;
+            }
+            case (ASR::binopType::Div): {
+                last_expr_precedence = 5;
+                break;
+            }
+            case (ASR::binopType::BitAnd): {
+                last_expr_precedence = 11;
+                break;
+            }
+            case (ASR::binopType::BitOr): {
+                last_expr_precedence = 13;
+                break;
+            }
+            case (ASR::binopType::BitXor): {
+                last_expr_precedence = 12;
+                break;
+            }
+            case (ASR::binopType::BitLShift): {
+                last_expr_precedence = 7;
+                break;
+            }
+            case (ASR::binopType::BitRShift): {
+                last_expr_precedence = 7;
+                break;
+            }
+            case (ASR::binopType::Pow): {
+                src = "pow(" + left + ", " + right + ")";
+                src = "std::" + src;
+                return;
+            }
+            default:
+                throw CodeGenError("BinOp: " + std::to_string(x.m_op)
+                                   + " operator not implemented yet");
+        }
+        src = "";
+        if (left_precedence == 3) {
+            src += "(" + left + ")";
+        } else {
+            if (left_precedence <= last_expr_precedence) {
+                src += left;
+            } else {
+                src += "(" + left + ")";
+            }
+        }
+        src += ASRUtils::binop_to_str_python(x.m_op);
+        if (right_precedence == 3) {
+            src += "(" + right + ")";
+        } else if (x.m_op == ASR::binopType::Sub) {
+            if (right_precedence < last_expr_precedence) {
+                src += right;
+            } else {
+                src += "(" + right + ")";
+            }
+        } else {
+            if (right_precedence <= last_expr_precedence) {
+                src += right;
+            } else {
+                src += "(" + right + ")";
+            }
+        }
+    }
+
+    void visit_LogicalBinOp(const ASR::LogicalBinOp_t& x)
+    {
+        this->visit_expr(*x.m_left);
+        std::string left = std::move(src);
+        int left_precedence = last_expr_precedence;
+        this->visit_expr(*x.m_right);
+        std::string right = std::move(src);
+        int right_precedence = last_expr_precedence;
+        switch (x.m_op) {
+            case (ASR::logicalbinopType::And): {
+                last_expr_precedence = 14;
+                break;
+            }
+            case (ASR::logicalbinopType::Or): {
+                last_expr_precedence = 15;
+                break;
+            }
+            case (ASR::logicalbinopType::NEqv): {
+                last_expr_precedence = 10;
+                break;
+            }
+            case (ASR::logicalbinopType::Eqv): {
+                last_expr_precedence = 10;
+                break;
+            }
+            default:
+                throw CodeGenError("Unhandled switch case");
+        }
+
+        if (left_precedence <= last_expr_precedence) {
+            src += left;
+        } else {
+            src += "(" + left + ")";
+        }
+        src += ASRUtils::logicalbinop_to_str_python(x.m_op);
+        if (right_precedence <= last_expr_precedence) {
+            src += right;
+        } else {
+            src += "(" + right + ")";
+        }
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t& x)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        std::string out = indent + "for ";
+        ASR::Variable_t* loop_var = LFortran::ASRUtils::EXPR2VAR(x.m_head.m_v);
+        std::string lvname = loop_var->m_name;
+        ASR::expr_t* a = x.m_head.m_start;
+        ASR::expr_t* b = x.m_head.m_end;
+        ASR::expr_t* c = x.m_head.m_increment;
+        LFORTRAN_ASSERT(a);
+        LFORTRAN_ASSERT(b);
+        int increment;
+        if (!c) {
+            increment = 1;
+        } else {
+            if (c->type == ASR::exprType::IntegerConstant) {
+                increment = ASR::down_cast<ASR::IntegerConstant_t>(c)->m_n;
+            } else if (c->type == ASR::exprType::IntegerUnaryMinus) {
+                ASR::IntegerUnaryMinus_t* ium = ASR::down_cast<ASR::IntegerUnaryMinus_t>(c);
+                increment = -ASR::down_cast<ASR::IntegerConstant_t>(ium->m_arg)->m_n;
+            } else {
+                throw CodeGenError("Do loop increment type not supported");
+            }
+        }
+
+        out += lvname + " in ";
+        this->visit_expr(*a);
+        out += src + ":" + (increment == 1 ? "" : (std::to_string(increment) + ":"));
+        this->visit_expr(*b);
+        out += src + "\n";
+        indentation_level += 1;
+        for (size_t i = 0; i < x.n_body; i++) {
+            this->visit_stmt(*x.m_body[i]);
+            out += src;
+        }
+        out += indent + "end\n";
+        indentation_level -= 1;
+        src = out;
+    }
+
+    void visit_If(const ASR::If_t& x)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        std::string out = indent + "if ";
+        this->visit_expr(*x.m_test);
+        out += src + "\n";
+        indentation_level += 1;
+        for (size_t i = 0; i < x.n_body; i++) {
+            this->visit_stmt(*x.m_body[i]);
+            out += src;
+        }
+        out += indent;
+        if (x.n_orelse == 0) {
+            out += "end\n";
+        } else {
+            out += "else\n";
+            for (size_t i = 0; i < x.n_orelse; i++) {
+                this->visit_stmt(*x.m_orelse[i]);
+                out += src;
+            }
+            out += indent + "end\n";
+        }
+        indentation_level -= 1;
+        src = out;
+    }
+
     void visit_IntegerConstant(const ASR::IntegerConstant_t& x)
     {
         src = std::to_string(x.m_n);
@@ -439,6 +645,107 @@ public:
                                    x.base.base.loc);
         }
         last_expr_precedence = 2;
+    }
+
+    void visit_IntegerCompare(const ASR::IntegerCompare_t& x)
+    {
+        handle_Compare(x);
+    }
+
+    void visit_RealCompare(const ASR::RealCompare_t& x)
+    {
+        handle_Compare(x);
+    }
+
+    void visit_ComplexCompare(const ASR::ComplexCompare_t& x)
+    {
+        handle_Compare(x);
+    }
+
+    void visit_LogicalCompare(const ASR::LogicalCompare_t& x)
+    {
+        handle_Compare(x);
+    }
+
+    void visit_StringCompare(const ASR::StringCompare_t& x)
+    {
+        handle_Compare(x);
+    }
+
+    template <typename T>
+    void handle_Compare(const T& x)
+    {
+        this->visit_expr(*x.m_left);
+        std::string left = std::move(src);
+        int left_precedence = last_expr_precedence;
+        this->visit_expr(*x.m_right);
+        std::string right = std::move(src);
+        int right_precedence = last_expr_precedence;
+        switch (x.m_op) {
+            case (ASR::cmpopType::Eq): {
+                last_expr_precedence = 10;
+                break;
+            }
+            case (ASR::cmpopType::Gt): {
+                last_expr_precedence = 9;
+                break;
+            }
+            case (ASR::cmpopType::GtE): {
+                last_expr_precedence = 9;
+                break;
+            }
+            case (ASR::cmpopType::Lt): {
+                last_expr_precedence = 9;
+                break;
+            }
+            case (ASR::cmpopType::LtE): {
+                last_expr_precedence = 9;
+                break;
+            }
+            case (ASR::cmpopType::NotEq): {
+                last_expr_precedence = 10;
+                break;
+            }
+            default:
+                LFORTRAN_ASSERT(false);  // should never happen
+        }
+        if (left_precedence <= last_expr_precedence) {
+            src += left;
+        } else {
+            src += "(" + left + ")";
+        }
+        src += ASRUtils::cmpop_to_str(x.m_op);
+        if (right_precedence <= last_expr_precedence) {
+            src += right;
+        } else {
+            src += "(" + right + ")";
+        }
+    }
+
+    void visit_Print(const ASR::Print_t& x)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        std::string out = indent + "println(", sep;
+        if (x.m_separator) {
+            this->visit_expr(*x.m_separator);
+            sep = src;
+        } else {
+            sep = "\" \"";
+        }
+        for (size_t i = 0; i < x.n_values; i++) {
+            this->visit_expr(*x.m_values[i]);
+            out += src;
+            if (i + 1 != x.n_values) {
+                out += "," + sep + ",";
+            }
+        }
+        if (x.m_end) {
+            this->visit_expr(*x.m_end);
+            out += src;
+        }
+
+        out += ")\n";
+        src = out;
     }
 };
 
