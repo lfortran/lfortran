@@ -335,6 +335,15 @@ struct FixedFormRecursiveDescent {
         return next_str == str;
     }
 
+    bool next_is_eol(unsigned char *cur) {
+        if (*cur == '\n') {
+            return true;
+        } else if (*cur == '\r' && *(cur+1) == '\n') {
+            return true;
+        }
+        return false;
+    }
+
     bool is_integer(const std::string &s) const {
         return !s.empty() && std::all_of(s.begin(), s.end(), [](char c) {
             // TODO: I think `c` can never be ' ', since we remove all
@@ -458,6 +467,17 @@ struct FixedFormRecursiveDescent {
 
     bool is_arit_op(unsigned char ch) {
         return (ch == '+' || ch == '-' || ch == '*' || ch == '/');
+    }
+
+    // Two character relational operator
+    bool is_rel2_op(unsigned char *cur) {
+        if (*cur != '\0' && *(cur+1) != '\0') {
+            std::string op((char*)cur,2);
+            if (op == "<=" || op == ">=" || op == "==" || op == "/=") {
+                return true;
+            }
+        }
+        return false;
     }
 
     /*
