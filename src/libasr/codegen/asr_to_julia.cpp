@@ -636,7 +636,7 @@ public:
             }
             src = fn_name + "(" + args + ")";
         }
-        last_expr_precedence = 2;
+        last_expr_precedence = julia_prec::Base;
     }
 
     void visit_Assignment(const ASR::Assignment_t& x)
