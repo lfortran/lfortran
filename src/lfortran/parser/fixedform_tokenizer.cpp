@@ -1189,7 +1189,6 @@ struct FixedFormRecursiveDescent {
             };
 
             if (abort_loop) {
-                do_levels--;
                 if (do_levels == 0) abort_loop = false;
                 break;
             }
