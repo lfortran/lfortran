@@ -434,11 +434,8 @@ public:
             }else {
                 //if no, then it is of type "implicit"
                 AST::Implicit_t* implicit = AST::down_cast<AST::Implicit_t>(x.m_implicit[i]);
-
                 AST::decl_typeType ast_type=AST::down_cast<AST::AttrType_t>(implicit->m_type)->m_type;
-
                 ASR::ttype_t *type = nullptr;
-
                 //convert the ast_type to asr_type
                 switch (ast_type) {
                     case (AST::decl_typeType::TypeInteger) : {
@@ -714,9 +711,6 @@ public:
         current_symbol = -1;
         current_procedure_used_type_parameter_indices.clear();
         is_current_procedure_templated = false;
-
-        //print implicit_dictionary
-
         // print_implicit_dictionary(implicit_dictionary);
     }
 
