@@ -227,6 +227,7 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         current_module_dependencies.reserve(al, 4);
+        is_save_variable = false;
         for (size_t i=0; i<x.n_use; i++) {
             visit_unit_decl1(*x.m_use[i]);
         }
@@ -236,6 +237,16 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
         }
+        if (is_save_variable) {
+            for (auto &it: current_scope->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*it.second)) {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(it.second);
+                    v->m_storage = ASR::storage_typeType::Save;
+                }
+            }
+        }
+        is_save_variable = false;
+
         tmp = ASR::make_Program_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
@@ -264,6 +275,7 @@ public:
         }
         current_procedure_abi_type = ASR::abiType::Source;
         char *bindc_name=nullptr;
+        is_save_variable = false;
         extract_bind(x, current_procedure_abi_type, bindc_name);
 
         for (size_t i=0; i<x.n_decl; i++) {
@@ -272,6 +284,17 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
         }
+
+        if (is_save_variable) {
+            for (auto &it: current_scope->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*it.second)) {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(it.second);
+                    v->m_storage = ASR::storage_typeType::Save;
+                }
+            }
+        }
+        is_save_variable = false;
+
         Vec<ASR::expr_t*> args;
         args.reserve(al, x.n_args);
         for (size_t i=0; i<x.n_args; i++) {
@@ -334,7 +357,6 @@ public:
             sym_name = sym_name + "~genericprocedure";
         }
 
-
         tmp = ASR::make_Function_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
@@ -389,6 +411,7 @@ public:
         // Determine the ABI (Source or BindC for now)
         current_procedure_abi_type = ASR::abiType::Source;
         char *bindc_name=nullptr;
+        is_save_variable = false;
         extract_bind(x, current_procedure_abi_type, bindc_name);
 
         for (size_t i=0; i<x.n_use; i++) {
@@ -400,6 +423,17 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
         }
+
+        if (is_save_variable) {
+            for (auto &it: current_scope->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*it.second)) {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(it.second);
+                    v->m_storage = ASR::storage_typeType::Save;
+                }
+            }
+        }
+        is_save_variable = false;
+
         // Convert and check arguments
         Vec<ASR::expr_t*> args;
         args.reserve(al, x.n_args);
