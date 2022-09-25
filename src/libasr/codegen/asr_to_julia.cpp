@@ -16,16 +16,23 @@ convention, we need to revert the precedence table.
 */
 enum julia_prec {
     Base = 2,
-    Pow,
-    BitShift,
-    Mul,
-    Add,
-    Comp,
-    LogicalAnd,
-    LogicalOr,
-    Cond,
-    Assign,
+    Pow,         // ^
+    Unary,       // (-), !, ~
+    BitShift,    // <<, >>
+    Mul,         // *, /, &, |, ⊻
+    Add,         // +, -
+    Comp,        // ==, ≠, <, ≤, >, ≥
+    LogicalAnd,  // &&
+    LogicalOr,   // ||
+    Cond,        // ? :
+    Assign,      // =
 };
+
+static inline bool
+is_right_associated_julia(int prec)
+{
+    return prec == julia_prec::Pow || prec == julia_prec::Unary || prec >= julia_prec::LogicalAnd;
+}
 
 static inline std::string
 binop_to_str_julia(const ASR::binopType t)
@@ -486,7 +493,7 @@ public:
                                    + " operator not implemented yet");
         }
         src = "";
-        if (left_precedence == 3) {
+        if (is_right_associated_julia(left_precedence)) {
             src += "(" + left + ")";
         } else {
             if (left_precedence <= last_expr_precedence) {
@@ -496,7 +503,7 @@ public:
             }
         }
         src += binop_to_str_julia(x.m_op);
-        if (right_precedence == 3) {
+        if (is_right_associated_julia(right_precedence)) {
             src += "(" + right + ")";
         } else if (x.m_op == ASR::binopType::Sub) {
             if (right_precedence < last_expr_precedence) {
@@ -904,6 +911,53 @@ public:
             src += right;
         } else {
             src += "(" + right + ")";
+        }
+    }
+
+    void visit_IntegerBitNot(const ASR::IntegerBitNot_t& x)
+    {
+        this->visit_expr(*x.m_arg);
+        int expr_precedence = last_expr_precedence;
+        last_expr_precedence = julia_prec::Unary;
+        if (expr_precedence <= last_expr_precedence) {
+            src = "~" + src;
+        } else {
+            src = "~(" + src + ")";
+        }
+    }
+
+    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t& x)
+    {
+        handle_UnaryMinus(x);
+    }
+
+    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t& x)
+    {
+        handle_UnaryMinus(x);
+    }
+
+    template <typename T>
+    void handle_UnaryMinus(const T& x)
+    {
+        this->visit_expr(*x.m_arg);
+        int expr_precedence = last_expr_precedence;
+        last_expr_precedence = julia_prec::Unary;
+        if (expr_precedence <= last_expr_precedence) {
+            src = "-" + src;
+        } else {
+            src = "-(" + src + ")";
+        }
+    }
+
+    void visit_LogicalNot(const ASR::LogicalNot_t& x)
+    {
+        this->visit_expr(*x.m_arg);
+        int expr_precedence = last_expr_precedence;
+        last_expr_precedence = julia_prec::Unary;
+        if (expr_precedence <= last_expr_precedence) {
+            src = "!" + src;
+        } else {
+            src = "!(" + src + ")";
         }
     }
 
