@@ -2336,3 +2336,8 @@ asr_implicit_interface = true
 filename = "fixed_form_goto_select.f"
 ast = true
 asr = true
+
+[[test]]
+filename = "implicit2.f90"
+ast = true
+asr = true
