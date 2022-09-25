@@ -582,12 +582,20 @@ struct FixedFormRecursiveDescent {
         // match parentheses and parse strings.
         unsigned char *old = cur;
         while (true) {
+            if (is_rel2_op(cur)) {
+                cur += 2;
+                continue;
+            }
             if (   is_digit(*cur)
                 || is_char(*cur)
                 || is_arit_op(*cur)
                 || (*cur == '%')
                 || (*cur == '[')
                 || (*cur == ']')
+                || (*cur == '<')
+                || (*cur == '>')
+                || (*cur == '.')
+                || (*cur == '_')
                     ) {
                 cur++;
                 continue;
