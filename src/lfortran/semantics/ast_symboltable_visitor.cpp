@@ -717,7 +717,7 @@ public:
 
         //print implicit_dictionary
 
-        print_implicit_dictionary(implicit_dictionary);
+        // print_implicit_dictionary(implicit_dictionary);
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
