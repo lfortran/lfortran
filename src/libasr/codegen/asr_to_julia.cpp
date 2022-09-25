@@ -443,7 +443,7 @@ public:
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x)
     {
-        handle_BinOp(x);
+        handle_BinOp(x, true);
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t& x)
@@ -457,7 +457,7 @@ public:
     }
 
     template <typename T>
-    void handle_BinOp(const T& x)
+    void handle_BinOp(const T& x, bool is_integer_binop = false)
     {
         this->visit_expr(*x.m_left);
         std::string left = std::move(src);
@@ -465,6 +465,7 @@ public:
         this->visit_expr(*x.m_right);
         std::string right = std::move(src);
         int right_precedence = last_expr_precedence;
+        std::string op = binop_to_str_julia(x.m_op);
         switch (x.m_op) {
             case (ASR::binopType::Add):
             case (ASR::binopType::Sub): {
@@ -472,11 +473,16 @@ public:
                 break;
             }
             case (ASR::binopType::Mul):
-            case (ASR::binopType::Div):
             case (ASR::binopType::BitAnd):
             case (ASR::binopType::BitOr):
             case (ASR::binopType::BitXor): {
                 last_expr_precedence = julia_prec::Mul;
+                break;
+            }
+            case (ASR::binopType::Div): {
+                last_expr_precedence = julia_prec::Mul;
+                if (is_integer_binop)
+                    op = " ÷ ";
                 break;
             }
             case (ASR::binopType::BitLShift):
@@ -502,7 +508,7 @@ public:
                 src += "(" + left + ")";
             }
         }
-        src += binop_to_str_julia(x.m_op);
+        src += op;
         if (is_right_associated_julia(right_precedence)) {
             src += "(" + right + ")";
         } else if (x.m_op == ASR::binopType::Sub) {
