@@ -408,7 +408,7 @@ public:
             if (it.second) {
                 std::cout << it.first << " " << ASRUtils::type_to_str(it.second) << std::endl;
             } else {
-                std::cout << it.first << " " << NULL << std::endl;
+                std::cout << it.first << " " << "NULL" << std::endl;
             }
         }
     }
@@ -416,14 +416,11 @@ public:
     void visit_Function(const AST::Function_t &x) {
         
         std::map<std::string, ASR::ttype_t*> implicit_dictionary;
-
         //populate the implicit_dictionary
         populate_implicit_dictonary(x, implicit_dictionary);
-
         //iterate over all implicit statements
         for(size_t i=0;i<x.n_implicit;i++){
             //get the implicit statement
-
             //check if the implicit statement is of type "none"
             if(AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
                 //if yes, clear the implicit dictionary i.e. set all characters to nullptr
