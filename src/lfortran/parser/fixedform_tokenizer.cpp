@@ -490,6 +490,15 @@ struct FixedFormRecursiveDescent {
     I think lex_* functions that return a bool should be renamed to try_* to
     make it obvious that they might fail. Lex would then always succeed or
     return an error message.
+
+    The main difference with these and the rest of this file is that these
+    functions parse the code, but only communicate true/false (success/failure)
+    and move the cursor `cur`, but do not emit any tokens or other information.
+
+    They are used to probe the code to figure out what Fortran statement we
+    are dealing with. For example try_expr() will return true if it is
+    an expression and move the cursor, or false. If we want to return the
+    tokens, we later need to then take the span and turn it into tokens.
     */
 
     // cur points to an integer: digit*
