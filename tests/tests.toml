@@ -2285,6 +2285,10 @@ filename = "loop_test4.f"
 ast = true
 
 [[test]]
+filename = "loop_test5.f"
+ast = true
+
+[[test]]
 filename = "continue_body_if_loop.f"
 ast = true
 asr = true
