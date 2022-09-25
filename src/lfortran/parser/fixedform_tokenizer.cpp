@@ -335,6 +335,15 @@ struct FixedFormRecursiveDescent {
         return next_str == str;
     }
 
+    bool next_is_eol(unsigned char *cur) {
+        if (*cur == '\n') {
+            return true;
+        } else if (*cur == '\r' && *(cur+1) == '\n') {
+            return true;
+        }
+        return false;
+    }
+
     bool is_integer(const std::string &s) const {
         return !s.empty() && std::all_of(s.begin(), s.end(), [](char c) {
             // TODO: I think `c` can never be ' ', since we remove all
@@ -460,6 +469,17 @@ struct FixedFormRecursiveDescent {
         return (ch == '+' || ch == '-' || ch == '*' || ch == '/');
     }
 
+    // Two character relational operator
+    bool is_rel2_op(unsigned char *cur) {
+        if (*cur != '\0' && *(cur+1) != '\0') {
+            std::string op((char*)cur,2);
+            if (op == "<=" || op == ">=" || op == "==" || op == "/=") {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /*
     ------------------------------------------------------------------------
     The try_*() functions return true/false if the pointer `cur` points to
@@ -470,6 +490,15 @@ struct FixedFormRecursiveDescent {
     I think lex_* functions that return a bool should be renamed to try_* to
     make it obvious that they might fail. Lex would then always succeed or
     return an error message.
+
+    The main difference with these and the rest of this file is that these
+    functions parse the code, but only communicate true/false (success/failure)
+    and move the cursor `cur`, but do not emit any tokens or other information.
+
+    They are used to probe the code to figure out what Fortran statement we
+    are dealing with. For example try_expr() will return true if it is
+    an expression and move the cursor, or false. If we want to return the
+    tokens, we later need to then take the span and turn it into tokens.
     */
 
     // cur points to an integer: digit*
@@ -553,12 +582,20 @@ struct FixedFormRecursiveDescent {
         // match parentheses and parse strings.
         unsigned char *old = cur;
         while (true) {
+            if (is_rel2_op(cur)) {
+                cur += 2;
+                continue;
+            }
             if (   is_digit(*cur)
                 || is_char(*cur)
                 || is_arit_op(*cur)
                 || (*cur == '%')
                 || (*cur == '[')
                 || (*cur == ']')
+                || (*cur == '<')
+                || (*cur == '>')
+                || (*cur == '.')
+                || (*cur == '_')
                     ) {
                 cur++;
                 continue;
@@ -698,84 +735,26 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    // returns TRUE iff multiline-if
-    bool lex_if_statement(unsigned char *&cur) {
-        YYSTYPE y1;
-        int match_levels = 0;
-        std::string l("if"); 
-        y1.string.from_str(m_a, l);
-        stypes.push_back(y1);
-        tokens.push_back(yytokentype::KW_IF);
-                
+    /*
+     * The span [t.cur, end) is tokenized. The `t.cur` is inclusive, `end`
+     * is exclusive (points to the next character).
+     * The last token *must* end at the position end-1. If it does not,
+     * we raise an exception.
+     * The tokenizer ideally should be called consecutively, as it maintains
+     * an internal state as well for do loops and other things. If you
+     * need to adjust the starting point, you must make sure the internal
+     * state is not made inconsistent.
+     */
+    void tokenize_until(unsigned char *end) {
+        LFORTRAN_ASSERT(t.cur < end)
+        // TODO: Is this needed?
+        std::string line{tostr(t.cur, end)};
+        lines.push_back(line);
         Location loc;
-        loc.first = cur - string_start;
-        loc.last = cur - string_start + l.size();
-        locations.push_back(loc);
-
-        unsigned char *start = cur + l.size();
-        t.cur = start;
-        next_line(cur);
-
-        ptrdiff_t len = 1;
-        for(;;) {
+        ptrdiff_t len;
+        while (t.cur < end) {
             YYSTYPE y2;
-            if(*t.cur == '\n') {
-                push_TK_NEWLINE(t.string_start, t.cur);
-                break;
-            }
-            if (match_levels == 0 && tokens[tokens.size()-1] == yytokentype::TK_RPAREN && next_is(t.cur, "call")) {
-                YYSTYPE y3;
-                std::string l("call"); 
-                y3.string.from_str(m_a, l);
-                stypes.push_back(y3);
-                tokens.push_back(yytokentype::KW_CALL);
-                
-                Location loc_local;
-                // this needs to be checked
-                loc_local.first = t.tok+1 - t.string_start;
-                loc_local.last = t.cur+4 - t.string_start-1;
-                t.tok = t.cur;
-                t.cur += l.size();
-                locations.push_back(loc_local);
-                // set it back
-                match_levels = -1;
-                continue;
-            }
-
-
             auto token = t.lex(m_a, y2, loc, diag);
-            if (match_levels > -1 && token == yytokentype::TK_LPAREN) {
-                match_levels++;
-            }
-
-            if (match_levels > -1 && token == yytokentype::TK_RPAREN) {
-                match_levels--;
-            }
-            // we need to disentangle "goto999" as the tokenizer cannot do it
-            // on its own
-            if (next_is(t.tok, "goto") && token != yytokentype::KW_GOTO) {
-
-                std::string l("goto");
-                y2.string.from_str(m_a, l);
-                stypes.push_back(y2);
-                tokens.push_back(yytokentype::KW_GOTO);
-                Location loc;
-                loc.first = t.tok - string_start;
-                loc.last = t.tok - string_start + l.size();
-                locations.push_back(loc);
-
-                YYSTYPE y3;
-                lex_int_large(m_a, t.tok + 4,t.cur,
-                    y3.int_suffix.int_n,
-                    y3.int_suffix.int_kind);
-                tokens.push_back(yytokentype::TK_INTEGER);              
-                stypes.push_back(y3);
-                loc.first = t.tok+4 - t.string_start;
-                loc.last = t.cur - t.string_start-1;
-                locations.push_back(loc);
-                continue;
-            }
-
             len = t.cur - t.tok;
             tokens.push_back(token);
             if (token == yytokentype::TK_INTEGER) {
@@ -792,10 +771,63 @@ struct FixedFormRecursiveDescent {
             stypes.push_back(y2);
             locations.push_back(loc);
         }
-        // check if it's a single line if statement
-        // tokens = {..., "THEN", "newline"}
-        if (tokens[tokens.size()-2] == yytokentype::KW_THEN) return true;
-        return false;
+        LFORTRAN_ASSERT(t.cur == end)
+    }
+
+    // returns TRUE iff multiline-if
+    bool lex_if_statement(unsigned char *&cur) {
+        YYSTYPE y1;
+        std::string l("if");
+        y1.string.from_str(m_a, l);
+        stypes.push_back(y1);
+        tokens.push_back(yytokentype::KW_IF);
+
+        Location loc;
+        loc.first = cur - string_start;
+        loc.last = cur - string_start + l.size();
+        locations.push_back(loc);
+
+        unsigned char *start = cur + l.size();
+        t.cur = start;
+
+        LFORTRAN_ASSERT(*t.cur == '(')
+        tokenize_until(t.cur+1);
+        unsigned char *end = t.cur;
+        bool multiline = false;
+        if (try_expr(end, false)) {
+            if (*end == ')') {
+                end++;
+                if (next_is(end, "then")) {
+                    if (next_is_eol(end+4) || *(end+4) == '!') {
+                        multiline = true;
+                    }
+                }
+            } else {
+                loc.first = end - string_start;
+                loc.last = end - string_start;
+                throw parser_local::TokenizerError("Expected `)` here to end the condition expression of the if statement ", loc);
+            }
+        } else {
+            throw parser_local::TokenizerError("Expected expression after `if`", loc);
+        }
+        tokenize_until(end);
+        cur = end;
+        next_line(cur);
+        if (multiline) {
+            // Take care of "then\n"
+            tokenize_until(cur);
+        } else {
+            // Check for arithmetic if
+            if (is_digit(*end)) {
+                // Arithmetic if
+                tokenize_until(cur);
+            } else {
+                // Regular statement
+                // Tokenize the rest of the single line if statement
+                lex_body_statement(end);
+            }
+        }
+        return multiline;
     }
 
     bool lex_declaration(unsigned char *&cur) {
@@ -1004,6 +1036,11 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "assign")) {
+            tokenize_line("assign", cur);
+            return true;
+        }
+
         return false;
     }
 
@@ -1152,7 +1189,6 @@ struct FixedFormRecursiveDescent {
             };
 
             if (abort_loop) {
-                do_levels--;
                 if (do_levels == 0) abort_loop = false;
                 break;
             }
