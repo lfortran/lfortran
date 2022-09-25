@@ -280,9 +280,33 @@ public:
                     sub = format_type(type_name, v.m_name, use_ref, init_default ? "0.0" : "");
                 }
             } else if (ASRUtils::is_logical(*v.m_type)) {
-                sub = format_type("Bool", v.m_name, use_ref, init_default ? "false" : "");
+                std::string type_name = "Bool";
+                ASR::Logical_t* t = ASR::down_cast<ASR::Logical_t>(v.m_type);
+                if (is_array) {
+                    generate_array_decl(sub,
+                                        std::string(v.m_name),
+                                        type_name,
+                                        dims,
+                                        t->m_dims,
+                                        t->n_dims,
+                                        init_default);
+                } else {
+                    sub = format_type(type_name, v.m_name, use_ref, init_default ? "false" : "");
+                }
             } else if (ASRUtils::is_character(*v.m_type)) {
-                sub = format_type("String", v.m_name, use_ref, init_default ? "\"\"" : "");
+                std::string type_name = "String";
+                ASR::Character_t* t = ASR::down_cast<ASR::Character_t>(v.m_type);
+                if (is_array) {
+                    generate_array_decl(sub,
+                                        std::string(v.m_name),
+                                        type_name,
+                                        dims,
+                                        t->m_dims,
+                                        t->n_dims,
+                                        init_default);
+                } else {
+                    sub = format_type(type_name, v.m_name, use_ref, init_default ? "\"\"" : "");
+                }
             } else if (ASR::is_a<ASR::Derived_t>(*v.m_type)) {
                 // TODO: handle this
                 ASR::Derived_t* t = ASR::down_cast<ASR::Derived_t>(v.m_type);
@@ -636,12 +660,19 @@ public:
         if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
             visit_Var(*ASR::down_cast<ASR::Var_t>(x.m_target));
             target = src;
+
+            // Use broadcast for array assignments
             if (ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
                 op = " .= ";
             }
         } else {
             visit_expr(*x.m_target);
             target = src;
+
+            // Use broadcast for array section assignments
+            if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
+                op = " .= ";
+            }
         }
         visit_expr(*x.m_value);
         std::string value = src;
