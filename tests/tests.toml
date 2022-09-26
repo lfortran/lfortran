@@ -2339,5 +2339,8 @@ asr = true
 
 [[test]]
 filename = "implicit2.f90"
-ast = true
+asr = true
+
+[[test]]
+filename = "errors/implicit3.f90"
 asr = true
