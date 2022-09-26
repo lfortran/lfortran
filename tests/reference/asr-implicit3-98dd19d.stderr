@@ -1,0 +1,5 @@
+semantic error: No other implicit statement is allowed when 'implicit none' is used
+ --> tests/errors/implicit3.f90:2:1
+  |
+2 | implicit None
+  | ^^^^^^^^^^^^^^ 
