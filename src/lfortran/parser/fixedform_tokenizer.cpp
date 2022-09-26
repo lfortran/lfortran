@@ -442,6 +442,17 @@ struct FixedFormRecursiveDescent {
         locations.push_back(loc);
     }
 
+    // Same as push_token(), but update `cur` and `t.cur`
+    // TODO: just use `token_type`, and advance `cur` accordingly and check
+    // that the string actually matches
+    // TODO: add push_token_no_advance() which does not modify cur
+    void push_token2(unsigned char *&cur, const std::string &token_str,
+            yytokentype token_type) {
+        push_token(cur, token_str, token_type);
+        cur += token_str.size();
+        t.cur = cur;
+    }
+
     bool contains(unsigned char *start, unsigned char *end, char ch) {
         unsigned char *cur = start;
         while (*cur != '\0' && cur < end) {
@@ -1314,6 +1325,20 @@ struct FixedFormRecursiveDescent {
         }
     }
 
+    void lex_block_data(unsigned char *&cur) {
+        push_token2(cur, "block", KW_BLOCK);
+        push_token2(cur, "data", KW_DATA);
+        tokenize_line("", cur);
+        while(lex_body_statement(cur));
+        if (next_is(cur, "endblockdata")) {
+            tokenize_line("endblockdata", cur);
+        } else if (next_is(cur, "end")) {
+            tokenize_line("end", cur);
+        } else {
+            error(cur, "Expecting terminating symbol for block data");
+        }
+    }
+
     bool is_declaration(unsigned char *&cur, std::string declaration_type /*function, subroutine, program*/, const std::vector<std::string>& keywords) {
         unsigned char *cpy = cur;
         unsigned char *nextline = cur; next_line(nextline);
@@ -1402,11 +1427,8 @@ struct FixedFormRecursiveDescent {
             lex_subroutine(cur);
         } else if (is_declaration(cur, "function", function_keywords)) {
             lex_function(cur);
-        /* TODO
-        }  else if (is_declaration(cur, "blockdata", blockdata_keywords)) {
+        } else if (next_is(cur, "blockdata")) {
             lex_block_data(cur);
-        } 
-        */
         } else if (is_implicit_program(cur)) {
             std::string prog{"program"};
             std::string name{"implicit_program_lfortran"};
