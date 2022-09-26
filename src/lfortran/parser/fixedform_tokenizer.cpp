@@ -956,18 +956,32 @@ struct FixedFormRecursiveDescent {
     bool is_function_call(unsigned char *cur) {
         if (try_next(cur, "call")) {
             if (try_name(cur)) {
-                if (*cur == '\n' || *cur == ';') {
-                    return true;
-                } else if (*cur == '(') {
-                    // TODO: skip strings
+                // Skip optional parentheses (skips strings, nested
+                // parentheses etc.)
+                if (*cur == '(') {
                     cur++;
-                    int32_t nesting = 1;
-                    while(*cur != '\n') {
-                        if (*cur == '(') nesting++;
-                        if (*cur == ')') nesting--;
+                    if (*cur == ')') {
+                        cur++;
+                    } else {
+                        // By setting `true` we ensure all arguments are parsed
+                        // (separated by commas)
+                        if (!try_expr(cur, true)) {
+                            // If the expression failed to parse, then it
+                            // is not a properly formed function call
+                            return false;
+                        };
+                        if (*cur != ')') {
+                            // Missing right parenthesis
+                            return false;
+                        }
                         cur++;
                     }
-                    return nesting == 0;
+                }
+                // If we are at the end of the statement, then this must
+                // be a function call. Otherwise it's something else,
+                // such as assignment (=, or =>).
+                if (*cur == '\n' || *cur == ';') {
+                    return true;
                 }
             }
         }
