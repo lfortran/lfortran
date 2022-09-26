@@ -605,8 +605,6 @@ int emit_c(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-#ifdef HAVE_LFORTRAN_JULIA
-
 int emit_julia(const std::string &infile, CompilerOptions &compiler_options) 
 {
     std::string input = read_file(infile);
@@ -625,9 +623,6 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
         return 1;
     }
 }
-
-#endif // HAVE_LFORTRAN_JULIA
-
 
 int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
 {
@@ -1707,12 +1702,7 @@ int main(int argc, char *argv[])
             return emit_c(arg_file, compiler_options);
         }
         if (show_julia) {
-#ifdef HAVE_LFORTRAN_JULIA
             return emit_julia(arg_file, compiler_options);
-#else // HAVE_LFORTRAN_JULIA
-                std::cerr << "The --show-julia option requires the Julia backend to be enabled. Recompile with `WITH_JULIA=yes`." << std::endl;
-                return 1;
-#endif // HAVE_LFORTRAN_JULIA
         }
         if (arg_S) {
             if (backend == Backend::llvm) {

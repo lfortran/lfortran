@@ -441,8 +441,6 @@ Result<std::string> FortranEvaluator::get_c2(ASR::TranslationUnit_t &asr,
                     default_lower_bound);
 }
 
-#ifdef HAVE_LFORTRAN_JULIA
-
 Result<std::string> FortranEvaluator::get_julia(const std::string &code,
     LocationManager &lm, diag::Diagnostics &diagnostics)
 {
@@ -458,8 +456,6 @@ Result<std::string> FortranEvaluator::get_julia(const std::string &code,
         return asr.error;
     }
 }
-
-#endif // HAVE_LFORTRAN_JULIA
 
 Result<std::string> FortranEvaluator::get_fmt(const std::string &code,
     LocationManager &lm, diag::Diagnostics &diagnostics)

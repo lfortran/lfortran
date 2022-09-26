@@ -113,12 +113,6 @@ if (WITH_ZLIB)
     find_package(StaticZLIB REQUIRED)
 endif()
 
-# Julia
-set(WITH_JULIA no CACHE BOOL "Build with Julia support")
-if (WITH_JULIA)
-    set(HAVE_LFORTRAN_JULIA yes)
-endif()
-
 # LLVM
 set(WITH_LLVM no CACHE BOOL "Build with LLVM support")
 set(WITH_TARGET_AARCH64 no CACHE BOOL "Enable target AARCH64")
@@ -308,7 +302,6 @@ message("HAVE_LFORTRAN_DEMANGLE: ${HAVE_LFORTRAN_DEMANGLE}")
 message("WITH_LLVM: ${WITH_LLVM}")
 message("WITH_XEUS: ${WITH_XEUS}")
 message("WITH_JSON: ${WITH_JSON}")
-message("WITH_JULIA: ${WITH_JULIA}")
 message("WITH_FMT: ${WITH_FMT}")
 message("WITH_LFORTRAN_BINARY_MODFILES: ${WITH_LFORTRAN_BINARY_MODFILES}")
 message("WITH_RUNTIME_LIBRARY: ${WITH_RUNTIME_LIBRARY}")
