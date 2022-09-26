@@ -1,5 +1,10 @@
       program call1
+      integer callf
       call f()
-      call f
-      call f_s()
+      callf
+      callf = 5
+      callf_s(3,2)
+      callf_s(3,2) = 5
+      callf_s(3,2,f("("))
+      callf_s(3,2,f("(")) = 5
       end program
