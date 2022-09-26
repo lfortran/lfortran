@@ -2302,6 +2302,10 @@ filename = "fixed_form/call1.f"
 ast = true
 
 [[test]]
+filename = "fixed_form/assign1.f"
+ast = true
+
+[[test]]
 filename = "parameter1.f90"
 ast = true
 asr = true
