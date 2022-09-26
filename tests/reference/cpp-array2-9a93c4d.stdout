@@ -43,43 +43,43 @@ struct i32_3_1
 };
 
 
-struct f32_23_2
+struct f32_2_3_2
 {
     Kokkos::View<float*>* data;
     dimension_descriptor dims[2];
     bool is_allocated;
 
-    f32_23_2(Kokkos::View<float*>* data_): data{data_} {};
+    f32_2_3_2(Kokkos::View<float*>* data_): data{data_} {};
 };
 
 
-struct i32_34_2
+struct i32_3_4_2
 {
     Kokkos::View<int32_t*>* data;
     dimension_descriptor dims[2];
     bool is_allocated;
 
-    i32_34_2(Kokkos::View<int32_t*>* data_): data{data_} {};
+    i32_3_4_2(Kokkos::View<int32_t*>* data_): data{data_} {};
 };
 
 
-struct f32_234_3
+struct f32_2_3_4_3
 {
     Kokkos::View<float*>* data;
     dimension_descriptor dims[3];
     bool is_allocated;
 
-    f32_234_3(Kokkos::View<float*>* data_): data{data_} {};
+    f32_2_3_4_3(Kokkos::View<float*>* data_): data{data_} {};
 };
 
 
-struct i32_343_3
+struct i32_3_4_3_3
 {
     Kokkos::View<int32_t*>* data;
     dimension_descriptor dims[3];
     bool is_allocated;
 
-    i32_343_3(Kokkos::View<int32_t*>* data_): data{data_} {};
+    i32_3_4_3_3(Kokkos::View<int32_t*>* data_): data{data_} {};
 };
 
 // Forward declarations
@@ -107,23 +107,23 @@ void main2() {
     c->dims[0].length = 3;
     Kokkos::View<bool[2]>& d;
     Kokkos::View<float*> e_data("e_data", 6);
-    f32_23_2 e_value(&e_data);
-    f32_23_2* e = &e_value;
+    f32_2_3_2 e_value(&e_data);
+    f32_2_3_2* e = &e_value;
     e->dims[0].lower_bound = 1;
     e->dims[0].length = 2;
     e->dims[1].lower_bound = 1;
     e->dims[1].length = 3;
     Kokkos::View<int32_t*> f_data("f_data", 12);
-    i32_34_2 f_value(&f_data);
-    i32_34_2* f = &f_value;
+    i32_3_4_2 f_value(&f_data);
+    i32_3_4_2* f = &f_value;
     f->dims[0].lower_bound = 1;
     f->dims[0].length = 3;
     f->dims[1].lower_bound = 1;
     f->dims[1].length = 4;
     Kokkos::View<bool[5][2]>& g;
     Kokkos::View<float*> h_data("h_data", 24);
-    f32_234_3 h_value(&h_data);
-    f32_234_3* h = &h_value;
+    f32_2_3_4_3 h_value(&h_data);
+    f32_2_3_4_3* h = &h_value;
     h->dims[0].lower_bound = 1;
     h->dims[0].length = 2;
     h->dims[1].lower_bound = 1;
@@ -131,8 +131,8 @@ void main2() {
     h->dims[2].lower_bound = 1;
     h->dims[2].length = 4;
     Kokkos::View<int32_t*> i_data("i_data", 36);
-    i32_343_3 i_value(&i_data);
-    i32_343_3* i = &i_value;
+    i32_3_4_3_3 i_value(&i_data);
+    i32_3_4_3_3* i = &i_value;
     i->dims[0].lower_bound = 1;
     i->dims[0].length = 3;
     i->dims[1].lower_bound = 1;

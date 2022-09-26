@@ -380,6 +380,13 @@ struct FixedFormRecursiveDescent {
         return -1;
     }
 
+    void undo_label(unsigned char *&cur) {
+        cur -= 6;
+        tokens.pop_back();
+        stypes.pop_back();
+        locations.pop_back();
+    }
+
     int64_t eat_label_inline(unsigned char *&cur) {
         // consume label if it is available
         auto start = cur;
@@ -417,15 +424,21 @@ struct FixedFormRecursiveDescent {
 
     // Push the TK_NEWLINE, YYSTYPE and Location of the newline at `cur`.
     // (Does not modify `cur`.)
-    void push_TK_NEWLINE(unsigned char *start, unsigned char *cur) {
-        //LFORTRAN_ASSERT(*cur == '\n')
+    void push_TK_NEWLINE(unsigned char */*start*/, unsigned char *cur) {
+        push_token(cur, "\n", TK_NEWLINE);
+    }
+
+    // Push the token_type, YYSTYPE and Location of the token_str at `cur`.
+    // (Does not modify `cur`.)
+    void push_token(unsigned char *cur, const std::string &token_str,
+            yytokentype token_type) {
         YYSTYPE yy;
-        yy.string.from_str(m_a, "\n");
+        yy.string.from_str(m_a, token_str);
         stypes.push_back(yy);
-        tokens.push_back(yytokentype::TK_NEWLINE);
+        tokens.push_back(token_type);
         Location loc;
-        loc.first = cur - start;
-        loc.last = cur - start + 1;
+        loc.first = cur - string_start;
+        loc.last = cur - string_start + token_str.size();
         locations.push_back(loc);
     }
 
@@ -938,20 +951,23 @@ struct FixedFormRecursiveDescent {
         cpy += 4;
         // function needs to start with a letter
         if (!is_char(*cpy)) return false;
-        while(*cpy++ != '(') {
+        while(*cpy != '(') {
             if (*cpy == '\n' || *cpy == '\0') 
                 return false;
+            cpy++;
         }
+        cpy++;
         int32_t nesting = 1;
-        while(*cpy++ != '\n') {
+        while(*cpy != '\n') {
             if (*cpy == '(') nesting++;
             if (*cpy == ')') nesting--;
+            cpy++;
         }
         return nesting == 0;
     }
 
     bool lex_body_statement(unsigned char *&cur) {
-        eat_label(cur);
+        int64_t l = eat_label(cur);
         if (lex_declaration(cur)) {
             return true;
         }
@@ -1037,11 +1053,41 @@ struct FixedFormRecursiveDescent {
         }
 
         if (next_is(cur, "assign")) {
-            tokenize_line("assign", cur);
+            lex_assign(cur);
             return true;
         }
 
+        if (l != -1) {
+            // Undo the label, as it will be handled later
+            undo_label(cur);
+        }
+
         return false;
+    }
+
+    void lex_assign(unsigned char *&cur) {
+        push_token(cur, "assign", KW_ASSIGN);
+        cur += 6;
+        t.cur = cur;
+        if (try_integer(cur)) {
+            tokenize_until(cur);
+            if (next_is(cur, "to")) {
+                push_token(cur, "to", KW_TO);
+                cur += 2;
+                t.cur = cur;
+                tokenize_line("", cur);
+            } else {
+                Location loc;
+                loc.first = cur-string_start;
+                loc.last = cur-string_start;
+                throw parser_local::TokenizerError("Expected 'to' here", loc);
+            }
+        } else {
+            Location loc;
+            loc.first = cur-string_start;
+            loc.last = cur-string_start;
+            throw parser_local::TokenizerError("Expected integer after `assign`", loc);
+        }
     }
 
     void insert_enddo() {
@@ -1224,10 +1270,18 @@ struct FixedFormRecursiveDescent {
 
     void lex_subroutine(unsigned char *&cur) {
         while(lex_body_statement(cur));
-        eat_label(cur);
+        int64_t l = eat_label(cur);
         if (next_is(cur, "endsubroutine")) {
+            if (l != -1) {
+                push_token(cur, "continue", KW_CONTINUE);
+                push_token(cur, "\n", TK_NEWLINE);
+            }
             tokenize_line("endsubroutine", cur);
         } else if (next_is(cur, "end")) {
+            if (l != -1) {
+                push_token(cur, "continue", KW_CONTINUE);
+                push_token(cur, "\n", TK_NEWLINE);
+            }
             tokenize_line("end", cur);
         } else {
             error(cur, "Expecting terminating symbol for subroutine");
