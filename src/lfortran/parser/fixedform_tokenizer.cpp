@@ -100,6 +100,7 @@ std::map<std::string, int> identifiers_map = {
     {"dowhile", KW_DOWHILE},
     {"double", KW_DOUBLE},
     {"doubleprecision", KW_DOUBLE_PRECISION},
+    {"doublecomplex", KW_DOUBLE_COMPLEX},
     {"elemental", KW_ELEMENTAL},
     {"else", KW_ELSE},
     {"elseif", KW_ELSEIF},
@@ -263,6 +264,7 @@ std::vector<std::string> declarators{
             "real",
             "complex",
             "doubleprecision",
+            "doublecomplex",
             "external",
             "dimension",
             "character",
@@ -1429,7 +1431,7 @@ struct FixedFormRecursiveDescent {
         std::vector<std::string> function_keywords{"recursive", "pure",
             "elemental",
             "real", "character", "complex", "integer", "logical",
-            "doubleprecision"};
+            "doubleprecision", "doublecomplex"};
 
         if (next_is(cur, "include")) tokenize_line("include", cur);
         if (is_program(cur)) {
