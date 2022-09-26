@@ -536,12 +536,12 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    // cur points to an name: char (char|digit)*
+    // cur points to an name: char|_ (char|digit|_)*
     bool try_name(unsigned char *&cur) {
         unsigned char *old = cur;
-        if (is_char(*cur)) {
+        if (is_char(*cur) || (*cur == '_')) {
             cur++;
-            while (is_char(*cur) || is_digit(*cur)) cur++;
+            while (is_char(*cur) || is_digit(*cur) || (*cur == '_')) cur++;
         }
         if (cur > old) {
             return true;
@@ -953,28 +953,39 @@ struct FixedFormRecursiveDescent {
         tokenize_line("", cur);
     }
 
-    bool is_function_call(unsigned char *&cur) {
-        if (!next_is(cur, "call")) return false;
-        auto cpy = cur;
-        auto next = cpy; next_line(next);
-        std::string cur_line{tostr(cpy, next)};
-        // + std::string("call").size()
-        cpy += 4;
-        // function needs to start with a letter
-        if (!is_char(*cpy)) return false;
-        while(*cpy != '(') {
-            if (*cpy == '\n' || *cpy == '\0') 
-                return false;
-            cpy++;
+    bool is_function_call(unsigned char *cur) {
+        if (try_next(cur, "call")) {
+            if (try_name(cur)) {
+                // Skip optional parentheses (skips strings, nested
+                // parentheses etc.)
+                if (*cur == '(') {
+                    cur++;
+                    if (*cur == ')') {
+                        cur++;
+                    } else {
+                        // By setting `true` we ensure all arguments are parsed
+                        // (separated by commas)
+                        if (!try_expr(cur, true)) {
+                            // If the expression failed to parse, then it
+                            // is not a properly formed function call
+                            return false;
+                        };
+                        if (*cur != ')') {
+                            // Missing right parenthesis
+                            return false;
+                        }
+                        cur++;
+                    }
+                }
+                // If we are at the end of the statement, then this must
+                // be a function call. Otherwise it's something else,
+                // such as assignment (=, or =>).
+                if (*cur == '\n' || *cur == ';') {
+                    return true;
+                }
+            }
         }
-        cpy++;
-        int32_t nesting = 1;
-        while(*cpy != '\n') {
-            if (*cpy == '(') nesting++;
-            if (*cpy == ')') nesting--;
-            cpy++;
-        }
-        return nesting == 0;
+        return false;
     }
 
     bool lex_body_statement(unsigned char *&cur) {
