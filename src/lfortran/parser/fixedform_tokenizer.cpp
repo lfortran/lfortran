@@ -1053,7 +1053,7 @@ struct FixedFormRecursiveDescent {
         }
 
         if (next_is(cur, "assign")) {
-            tokenize_line("assign", cur);
+            lex_assign(cur);
             return true;
         }
 
@@ -1063,6 +1063,31 @@ struct FixedFormRecursiveDescent {
         }
 
         return false;
+    }
+
+    void lex_assign(unsigned char *&cur) {
+        push_token(cur, "assign", KW_ASSIGN);
+        cur += 6;
+        t.cur = cur;
+        if (try_integer(cur)) {
+            tokenize_until(cur);
+            if (next_is(cur, "to")) {
+                push_token(cur, "to", KW_TO);
+                cur += 2;
+                t.cur = cur;
+                tokenize_line("", cur);
+            } else {
+                Location loc;
+                loc.first = cur-string_start;
+                loc.last = cur-string_start;
+                throw parser_local::TokenizerError("Expected 'to' here", loc);
+            }
+        } else {
+            Location loc;
+            loc.first = cur-string_start;
+            loc.last = cur-string_start;
+            throw parser_local::TokenizerError("Expected integer after `assign`", loc);
+        }
     }
 
     void insert_enddo() {
