@@ -375,28 +375,27 @@ public:
     }
 
     void populate_implicit_dictonary(const AST::Function_t &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary){
-        if(compiler_options.implicit_typing){
+        if (compiler_options.implicit_typing) {
             //if --implicit-typing flag is used
 
             //then define i-n as integer and rest all as real
 
-            for(char ch='i'; ch<='n'; ch++){
+            for (char ch='i'; ch<='n'; ch++) {
                 implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
             }
 
-            for(char ch='o'; ch<='z'; ch++){
-                implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
+            for (char ch='o'; ch<='z'; ch++) {
+                implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
             }
 
-            for(char ch='a'; ch<='h'; ch++){
-                implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
+            for (char ch='a'; ch<='h'; ch++) {
+                implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
             }
-        }
-        else{
+        } else {
             //if --implicit-typing flag is not used
             //populate all characters as nullptr
 
-            for(char ch='a'; ch<='z'; ch++){
+            for (char ch='a'; ch<='z'; ch++) {
                 implicit_dictionary[std::string(1, ch)] = nullptr;
             }
         }
@@ -404,8 +403,8 @@ public:
 
     void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary){
         std::cout << "Implicit Dictionary: " << std::endl;
-        for(auto it: implicit_dictionary){
-            if (it.second) {
+        for( auto it: implicit_dictionary ) {
+            if ( it.second ) {
                 std::cout << it.first << " " << ASRUtils::type_to_str(it.second) << std::endl;
             } else {
                 std::cout << it.first << " " << "NULL" << std::endl;
@@ -419,16 +418,18 @@ public:
         //populate the implicit_dictionary
         populate_implicit_dictonary(x, implicit_dictionary);
         //iterate over all implicit statements
-        for(size_t i=0;i<x.n_implicit;i++){
+        for (size_t i=0;i<x.n_implicit;i++) {
             //get the implicit statement
             //check if the implicit statement is of type "none"
-            if(AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+            if ( AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i]) ) {
                 //if yes, clear the implicit dictionary i.e. set all characters to nullptr
                 if (x.n_implicit != 1) {
                     throw SemanticError("No other implicit statement is allowed when 'implicit none' is used", x.m_implicit[i]->base.loc);
                 }
-                implicit_dictionary.clear();
-            }else {
+                for ( auto it: implicit_dictionary) {
+                    it.second = nullptr;
+                }
+            } else {
                 //if no, then it is of type "implicit"
                 AST::Implicit_t* implicit = AST::down_cast<AST::Implicit_t>(x.m_implicit[i]);
                 AST::decl_typeType ast_type=AST::down_cast<AST::AttrType_t>(implicit->m_type)->m_type;
@@ -444,11 +445,11 @@ public:
                         break;
                     }
                     case (AST::decl_typeType::TypeDoublePrecision) : {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
                         break;
                     }
                     case (AST::decl_typeType::TypeComplex) : {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 8, nullptr, 0));
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 4, nullptr, 0));
                         break;
                     }
                     case (AST::decl_typeType::TypeLogical) : {
@@ -460,12 +461,12 @@ public:
                                 x.base.base.loc);
                 }
                 //iterate over all implicit rules
-                for(size_t j=0;j<implicit->n_specs;j++){
+                for (size_t j=0;j<implicit->n_specs;j++) {
                     //cast x.m_specs[j] to AST::LetterSpec_t
                     AST::LetterSpec_t* letter_spec = AST::down_cast<AST::LetterSpec_t>(implicit->m_specs[j]);
                     char *start=letter_spec->m_start;
                     char *end=letter_spec->m_end;
-                    if(!start){
+                    if (!start) {
                         implicit_dictionary[std::string(1, *end)] = type;
                     } else{
                         for(char ch=*start; ch<=*end; ch++){
