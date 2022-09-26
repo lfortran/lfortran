@@ -180,6 +180,43 @@ public:
         return fmt;
     }
 
+    std::string format_binop(const std::string& left,
+                             const std::string& op,
+                             const std::string& right,
+                             int left_precedence,
+                             int right_precedence,
+                             bool is_sub = false)
+    {
+        std::string out;
+        if (is_right_associated_julia(left_precedence)) {
+            out += "(" + left + ")";
+        } else {
+            if (left_precedence <= last_expr_precedence) {
+                out += left;
+            } else {
+                out += "(" + left + ")";
+            }
+        }
+        out += op;
+        if (is_right_associated_julia(right_precedence)) {
+            out += "(" + right + ")";
+        } else if (is_sub) {
+            if (right_precedence < last_expr_precedence) {
+                out += right;
+            } else {
+                out += "(" + right + ")";
+            }
+        } else {
+            if (right_precedence <= last_expr_precedence) {
+                out += right;
+            } else {
+                out += "(" + right + ")";
+            }
+        }
+
+        return out;
+    }
+
     std::string get_primitive_type_name(ASR::Variable_t* farg)
     {
         std::string type_name;
@@ -822,32 +859,8 @@ public:
                 throw CodeGenError("BinOp: " + std::to_string(x.m_op)
                                    + " operator not implemented yet");
         }
-        src = "";
-        if (is_right_associated_julia(left_precedence)) {
-            src += "(" + left + ")";
-        } else {
-            if (left_precedence <= last_expr_precedence) {
-                src += left;
-            } else {
-                src += "(" + left + ")";
-            }
-        }
-        src += op;
-        if (is_right_associated_julia(right_precedence)) {
-            src += "(" + right + ")";
-        } else if (x.m_op == ASR::binopType::Sub) {
-            if (right_precedence < last_expr_precedence) {
-                src += right;
-            } else {
-                src += "(" + right + ")";
-            }
-        } else {
-            if (right_precedence <= last_expr_precedence) {
-                src += right;
-            } else {
-                src += "(" + right + ")";
-            }
-        }
+        src = format_binop(
+            left, op, right, left_precedence, right_precedence, x.m_op == ASR::binopType::Sub);
     }
 
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t& x)
@@ -1613,6 +1626,18 @@ public:
         out += "]";
         last_expr_precedence = julia_prec::Base;
         src = out;
+    }
+
+    void visit_ArrayMatMul(const ASR::ArrayMatMul_t& x)
+    {
+        visit_expr(*x.m_matrix_a);
+        std::string left = std::move(src);
+        int left_precedence = last_expr_precedence;
+        visit_expr(*x.m_matrix_b);
+        std::string right = std::move(src);
+        int right_precedence = last_expr_precedence;
+        last_expr_precedence = julia_prec::Mul;
+        src = format_binop(left, "*", right, left_precedence, right_precedence);
     }
 
     void visit_TupleLen(const ASR::TupleLen_t& x)
