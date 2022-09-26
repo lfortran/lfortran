@@ -1,0 +1,25 @@
+(TranslationUnit 
+    [(Subroutine 
+        f 
+        [] 
+        [] 
+        () 
+        () 
+        [] 
+        [] 
+        [] 
+        [] 
+        [(GoTo 
+            0 
+            () 
+            1 
+            [] 
+            ()
+        )
+        (Continue 
+            1 
+            ()
+        )] 
+        []
+    )]
+)
