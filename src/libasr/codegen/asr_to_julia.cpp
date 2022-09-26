@@ -1284,7 +1284,7 @@ public:
                 if (x.m_args[i].m_left) {
                     visit_expr(*x.m_args[i].m_left);
                 } else {
-                    src = "1";
+                    src = "begin";
                 }
                 out += src + ":";
                 if (x.m_args[i].m_right) {
