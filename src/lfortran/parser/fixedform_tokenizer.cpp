@@ -536,12 +536,12 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    // cur points to an name: char (char|digit)*
+    // cur points to an name: char|_ (char|digit|_)*
     bool try_name(unsigned char *&cur) {
         unsigned char *old = cur;
-        if (is_char(*cur)) {
+        if (is_char(*cur) || (*cur == '_')) {
             cur++;
-            while (is_char(*cur) || is_digit(*cur)) cur++;
+            while (is_char(*cur) || is_digit(*cur) || (*cur == '_')) cur++;
         }
         if (cur > old) {
             return true;
