@@ -159,13 +159,6 @@ public:
         return fmt;
     }
 
-
-    std::string remove_characters(std::string s, char c)
-    {
-        s.erase(remove(s.begin(), s.end(), c), s.end());
-        return s;
-    }
-
     void generate_array_decl(std::string& sub,
                              std::string v_m_name,
                              std::string& type_name,
@@ -202,10 +195,10 @@ public:
     std::string convert_variable_decl(const ASR::Variable_t& v, bool is_argument = false)
     {
         std::string sub;
-        bool use_ref = (v.m_intent == LFortran::ASRUtils::intent_out ||
-
-                        v.m_intent == LFortran::ASRUtils::intent_inout);
         bool is_array = ASRUtils::is_array(v.m_type);
+        bool use_ref = (v.m_intent == LFortran::ASRUtils::intent_out
+                        || v.m_intent == LFortran::ASRUtils::intent_inout)
+                       && !is_array;
         std::string dims;
         if (ASRUtils::is_pointer(v.m_type)) {
             ASR::ttype_t* t2 = ASR::down_cast<ASR::Pointer_t>(v.m_type)->m_type;
@@ -231,7 +224,6 @@ public:
                 throw Abort();
             }
         } else {
-            use_ref = use_ref && !is_array;
             bool init_default = !is_argument && !v.m_symbolic_value;
             if (ASRUtils::is_integer(*v.m_type)) {
                 ASR::Integer_t* t = ASR::down_cast<ASR::Integer_t>(v.m_type);
@@ -644,6 +636,14 @@ public:
         } else {
             std::string args;
             for (size_t i = 0; i < x.n_args; i++) {
+                ASR::Variable_t* farg = ASRUtils::EXPR2VAR(fn->m_args[i]);
+                bool is_ref = (farg->m_intent == ASR::intentType::Out
+                               || farg->m_intent == ASR::intentType::InOut)
+                              && !ASRUtils::is_array(farg->m_type);
+                if (is_ref) {
+                    throw CodeGenError(
+                        "intent(out) and intent(inout) are currently disallowed in functions");
+                }
                 visit_expr(*x.m_args[i].m_value);
                 args += src;
                 if (i < x.n_args - 1)
@@ -919,30 +919,36 @@ public:
         if (sym_name == "exit") {
             sym_name = "_xx_lcompilers_changed_exit_xx";
         }
-        std::string out = indent + sym_name + "(";
+        std::string out = indent + sym_name + "(", pre, post;
         for (size_t i = 0; i < x.n_args; i++) {
+            ASR::Variable_t* sarg = ASRUtils::EXPR2VAR(s->m_args[i]);
+            bool use_ref = (sarg->m_intent == ASR::intentType::Out
+                            || sarg->m_intent == ASR::intentType::InOut)
+                           && !ASRUtils::is_array(sarg->m_type);
+
             if (ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
-                ASR::Variable_t* arg = LFortran::ASRUtils::EXPR2VAR(x.m_args[i].m_value);
+                ASR::Variable_t* arg = ASRUtils::EXPR2VAR(x.m_args[i].m_value);
                 std::string arg_name = arg->m_name;
-                if (ASRUtils::is_array(arg->m_type) && ASRUtils::is_pointer(arg->m_type)) {
-                    out += "&" + arg_name;
+                bool is_ref = (arg->m_intent == ASR::intentType::Out
+                               || arg->m_intent == ASR::intentType::InOut)
+                              && !ASRUtils::is_array(arg->m_type);
+                if (use_ref && !is_ref) {
+                    std::string arg_ref = "__" + arg_name + "_ref__";
+                    pre += indent + arg_ref + "= Ref(" + arg_name + ")\n";
+                    out += arg_ref;
+                    post += indent + arg_name + " = " + arg_ref + "[]\n";
                 } else {
                     out += arg_name;
                 }
             } else {
                 visit_expr(*x.m_args[i].m_value);
-                if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)
-                    && ASR::is_a<ASR::Derived_t>(*ASRUtils::expr_type(x.m_args[i].m_value))) {
-                    out += "&" + src;
-                } else {
-                    out += src;
-                }
+                out += src;
             }
             if (i < x.n_args - 1)
                 out += ", ";
         }
         out += ")\n";
-        src = out;
+        src = pre + out + post;
     }
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t& x)
@@ -1066,8 +1072,9 @@ public:
             src = std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name);
             bool use_ref = (sv->m_intent == LFortran::ASRUtils::intent_out ||
 
-                            sv->m_intent == LFortran::ASRUtils::intent_inout);
-            if (use_ref && !ASRUtils::is_array(sv->m_type)) {
+                            sv->m_intent == LFortran::ASRUtils::intent_inout)
+                           && !ASRUtils::is_array(sv->m_type);
+            if (use_ref) {
                 src += "[]";
             }
         }
