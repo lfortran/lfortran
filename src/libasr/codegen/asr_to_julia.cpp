@@ -827,9 +827,14 @@ public:
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string out, _dims;
         for (size_t i = 0; i < x.n_args; i++) {
-            out += indent;
             const ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
                 ASRUtils::symbol_get_past_external(x.m_args[i].m_a));
+
+            // Skip pointer allocation
+            if (!ASRUtils::is_array(v->m_type))
+                continue;
+
+            out += indent;
             ASR::dimension_t* dims = x.m_args[i].m_dims;
             size_t n_dims = x.m_args[i].n_dims;
 
