@@ -951,14 +951,17 @@ struct FixedFormRecursiveDescent {
         cpy += 4;
         // function needs to start with a letter
         if (!is_char(*cpy)) return false;
-        while(*cpy++ != '(') {
+        while(*cpy != '(') {
             if (*cpy == '\n' || *cpy == '\0') 
                 return false;
+            cpy++;
         }
+        cpy++;
         int32_t nesting = 1;
-        while(*cpy++ != '\n') {
+        while(*cpy != '\n') {
             if (*cpy == '(') nesting++;
             if (*cpy == ')') nesting--;
+            cpy++;
         }
         return nesting == 0;
     }
