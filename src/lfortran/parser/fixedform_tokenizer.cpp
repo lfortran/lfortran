@@ -956,7 +956,7 @@ struct FixedFormRecursiveDescent {
     bool is_function_call(unsigned char *cur) {
         if (try_next(cur, "call")) {
             if (try_name(cur)) {
-                if (*cur == '\n') {
+                if (*cur == '\n' || *cur == ';') {
                     return true;
                 } else if (*cur == '(') {
                     // TODO: skip strings
