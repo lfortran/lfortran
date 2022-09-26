@@ -1233,6 +1233,20 @@ public:
         last_expr_precedence = julia_prec::Base;
     }
 
+    void visit_TupleConstant(const ASR::TupleConstant_t& x)
+    {
+        std::string out = "(";
+        for (size_t i = 0; i < x.n_elements; i++) {
+            visit_expr(*x.m_elements[i]);
+            out += src;
+            if (i != x.n_elements - 1)
+                out += ", ";
+        }
+        out += ")";
+        src = out;
+        last_expr_precedence = julia_prec::Base;
+    }
+
     void visit_SetConstant(const ASR::SetConstant_t& x)
     {
         std::string out = "Set(";
@@ -1451,6 +1465,11 @@ public:
         handle_UnaryMinus(x);
     }
 
+    void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t& x)
+    {
+        handle_UnaryMinus(x);
+    }
+
     template <typename T>
     void handle_UnaryMinus(const T& x)
     {
@@ -1476,37 +1495,60 @@ public:
         }
     }
 
-    void visit_StringLen(const ASR::StringLen_t& x)
+    void visit_ComplexRe(const ASR::ComplexRe_t& x)
     {
-        std::string out = "length(";
         visit_expr(*x.m_arg);
-        out += src + ")";
-        src = out;
+        src = "real(" + src + ")";
     }
 
-    void visit_Print(const ASR::Print_t& x)
+    void visit_ComplexIm(const ASR::ComplexIm_t& x)
     {
-        std::string indent(indentation_level * indentation_spaces, ' ');
-        std::string out = indent + "println(", sep;
-        if (x.m_separator) {
-            visit_expr(*x.m_separator);
-            sep = src;
-        } else {
-            sep = "\" \"";
+        visit_expr(*x.m_arg);
+        src = "imag(" + src + ")";
+    }
+
+    void visit_StringItem(const ASR::StringItem_t& x)
+    {
+        this->visit_expr(*x.m_idx);
+        std::string idx = std::move(src);
+        this->visit_expr(*x.m_arg);
+        std::string str = std::move(src);
+        src = str + "[" + idx + "]";
+    }
+
+    void visit_StringLen(const ASR::StringLen_t& x)
+    {
+        visit_expr(*x.m_arg);
+        src = "length(" + src + ")";
+    }
+
+    void visit_StringSection(const ASR::StringSection_t& x)
+    {
+        visit_expr(*x.m_arg);
+        std::string out = src;
+        out += "[";
+        if (!x.m_start && !x.m_end) {
+            out += ":";
         }
-        for (size_t i = 0; i < x.n_values; i++) {
-            visit_expr(*x.m_values[i]);
+        if (x.m_start) {
+            visit_expr(*x.m_start);
             out += src;
-            if (i + 1 != x.n_values) {
-                out += ", " + sep + ", ";
-            }
+        } else {
+            out += "begin";
+        }
+        out += ":";
+        if (x.m_step) {
+            visit_expr(*x.m_step);
+            out += src + ":";
         }
         if (x.m_end) {
             visit_expr(*x.m_end);
             out += src;
+        } else {
+            out += "end";
         }
-
-        out += ")\n";
+        out += "]";
+        last_expr_precedence = julia_prec::Base;
         src = out;
     }
 
@@ -1553,6 +1595,10 @@ public:
                     src = "begin";
                 }
                 out += src + ":";
+                if (x.m_args[i].m_step) {
+                    visit_expr(*x.m_args[i].m_step);
+                    out += src + ":";
+                }
                 if (x.m_args[i].m_right) {
                     visit_expr(*x.m_args[i].m_right);
                 } else {
@@ -1566,6 +1612,61 @@ public:
         }
         out += "]";
         last_expr_precedence = julia_prec::Base;
+        src = out;
+    }
+
+    void visit_TupleLen(const ASR::TupleLen_t& x)
+    {
+        visit_expr(*x.m_arg);
+        src = "length(" + src + ")";
+    }
+
+    void visit_SetLen(const ASR::SetLen_t& x)
+    {
+        visit_expr(*x.m_arg);
+        src = "length(" + src + ")";
+    }
+
+    void visit_DictItem(const ASR::DictItem_t& x)
+    {
+        visit_expr(*x.m_a);
+        std::string out = src;
+        out += "[";
+        visit_expr(*x.m_key);
+        out += src + "]";
+        last_expr_precedence = julia_prec::Base;
+        src = out;
+    }
+
+    void visit_DictLen(const ASR::DictLen_t& x)
+    {
+        visit_expr(*x.m_arg);
+        src = "length(" + src + ")";
+    }
+
+    void visit_Print(const ASR::Print_t& x)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        std::string out = indent + "println(", sep;
+        if (x.m_separator) {
+            visit_expr(*x.m_separator);
+            sep = src;
+        } else {
+            sep = "\" \"";
+        }
+        for (size_t i = 0; i < x.n_values; i++) {
+            visit_expr(*x.m_values[i]);
+            out += src;
+            if (i + 1 != x.n_values) {
+                out += ", " + sep + ", ";
+            }
+        }
+        if (x.m_end) {
+            visit_expr(*x.m_end);
+            out += src;
+        }
+
+        out += ")\n";
         src = out;
     }
 };
