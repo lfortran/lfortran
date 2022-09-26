@@ -17,6 +17,7 @@ configure_file(config.h.in config.h)
 set(SRC
     codegen/asr_to_cpp.cpp
     codegen/asr_to_c.cpp
+    codegen/asr_to_julia.cpp
     codegen/asr_to_py.cpp
     codegen/x86_assembler.cpp
     codegen/asr_to_x86.cpp
@@ -78,10 +79,6 @@ if (WITH_LLVM)
         set_source_files_properties(codegen/llvm_utils.cpp PROPERTIES
             COMPILE_FLAGS -Wno-deprecated-declarations)
     endif()
-endif()
-if (WITH_JULIA)
-    set(SRC ${SRC}
-            codegen/asr_to_julia.cpp)
 endif()
 add_library(asr ${SRC})
 target_include_directories(asr BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
