@@ -165,12 +165,15 @@ public:
                              std::string& dims,
                              ASR::dimension_t* m_dims,
                              int n_dims,
-                             bool init_default = false)
+                             bool init_default = false,
+                             bool is_allocate = false)
     {
         if (!init_default) {
             sub += v_m_name + "::Array{" + type_name + ", " + std::to_string(n_dims) + "}";
         } else {
             sub += v_m_name + " = Array{" + type_name + ", " + std::to_string(n_dims) + "}(undef, ";
+            if (is_allocate)
+                return;
         }
         for (int i = 0; i < n_dims; i++) {
             if (m_dims[i].m_length) {
@@ -224,7 +227,8 @@ public:
                 throw Abort();
             }
         } else {
-            bool init_default = !is_argument && !v.m_symbolic_value;
+            bool init_default = !is_argument && !v.m_symbolic_value
+                                && v.m_storage != ASR::storage_typeType::Allocatable;
             if (ASRUtils::is_integer(*v.m_type)) {
                 ASR::Integer_t* t = ASR::down_cast<ASR::Integer_t>(v.m_type);
                 std::string type_name = "Int" + std::to_string(t->m_kind * 8);
@@ -817,6 +821,99 @@ public:
             src += "(" + right + ")";
         }
     }
+
+    void visit_Allocate(const ASR::Allocate_t& x)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        std::string out, _dims;
+        for (size_t i = 0; i < x.n_args; i++) {
+            out += indent;
+            const ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(x.m_args[i].m_a));
+            ASR::dimension_t* dims = x.m_args[i].m_dims;
+            size_t n_dims = x.m_args[i].n_dims;
+
+            if (ASRUtils::is_integer(*v->m_type)) {
+                ASR::Integer_t* t = ASR::down_cast<ASR::Integer_t>(v->m_type);
+                std::string type_name = "Int" + std::to_string(t->m_kind * 8);
+                generate_array_decl(
+                    out, std::string(v->m_name), type_name, _dims, nullptr, n_dims, true, true);
+            } else if (ASRUtils::is_real(*v->m_type)) {
+                ASR::Real_t* t = ASR::down_cast<ASR::Real_t>(v->m_type);
+                std::string type_name = "Float32";
+                if (t->m_kind == 8)
+                    type_name = "Float64";
+                generate_array_decl(
+                    out, std::string(v->m_name), type_name, _dims, nullptr, n_dims, true, true);
+            } else if (ASRUtils::is_complex(*v->m_type)) {
+                ASR::Complex_t* t = ASR::down_cast<ASR::Complex_t>(v->m_type);
+                std::string type_name = "ComplexF32";
+                if (t->m_kind == 8)
+                    type_name = "ComplexF64";
+                generate_array_decl(
+                    out, std::string(v->m_name), type_name, _dims, nullptr, n_dims, true, true);
+            } else if (ASRUtils::is_logical(*v->m_type)) {
+                std::string type_name = "Bool";
+                generate_array_decl(
+                    out, std::string(v->m_name), type_name, _dims, nullptr, n_dims, true, true);
+            } else if (ASRUtils::is_character(*v->m_type)) {
+                std::string type_name = "String";
+                generate_array_decl(
+                    out, std::string(v->m_name), type_name, _dims, nullptr, n_dims, true, true);
+            } else if (ASR::is_a<ASR::Derived_t>(*v->m_type)) {
+                ASR::Derived_t* t = ASR::down_cast<ASR::Derived_t>(v->m_type);
+                std::string der_type_name = ASRUtils::symbol_name(t->m_derived_type);
+                std::string type_name = std::string("struct ") + der_type_name;
+                generate_array_decl(
+                    out, std::string(v->m_name), type_name, _dims, nullptr, n_dims, true, true);
+            } else {
+                diag.codegen_error_label("Type number '" + std::to_string(v->m_type->type)
+                                             + "' not supported",
+                                         { v->base.base.loc },
+                                         "");
+                throw Abort();
+            }
+
+
+            for (size_t j = 0; j < n_dims; j++) {
+                if (dims[j].m_length) {
+                    visit_expr(*dims[j].m_length);
+                    out += src;
+                }
+                if (j < n_dims - 1)
+                    out += ", ";
+            }
+            out += ")\n";
+        }
+        src = out;
+    }
+
+    void visit_Assert(const ASR::Assert_t& x)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        std::string out = indent;
+        out += "@assert (";
+        this->visit_expr(*x.m_test);
+        out += src + ")";
+        if (x.m_msg) {
+            out += " ";
+            this->visit_expr(*x.m_msg);
+            out += src;
+        }
+        src = out;
+    }
+
+    // We do not need to manually deallocate in Julia.
+    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t& /* x */)
+    {
+        src.clear();
+    }
+
+    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& /* x */)
+    {
+        src.clear();
+    }
+
 
     void visit_Return(const ASR::Return_t& /* x */)
     {
