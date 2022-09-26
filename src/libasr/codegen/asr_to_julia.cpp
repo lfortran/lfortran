@@ -954,6 +954,32 @@ public:
         src = indent + "@label label_" + std::to_string(x.m_id) + "\n";
     }
 
+    void visit_Stop(const ASR::Stop_t& x)
+    {
+        if (x.m_code) {
+            this->visit_expr(*x.m_code);
+        } else {
+            src = "0";
+        }
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        src = indent + "exit(" + src + ")\n";
+    }
+
+    void visit_ErrorStop(const ASR::ErrorStop_t& /* x */)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        src = indent + "println(Base.stderr, \"ERROR STOP\")\n";
+        src += indent + "exit(1);\n";
+    }
+
+    void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t& /*x*/)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        std::string out = indent + " /* FIXME: implied do loop */ ";
+        src = out;
+        last_expr_precedence = 2;
+    }
+
     void visit_DoLoop(const ASR::DoLoop_t& x)
     {
         std::string indent(indentation_level * indentation_spaces, ' ');
