@@ -637,15 +637,28 @@ public:
             std::string args;
             for (size_t i = 0; i < x.n_args; i++) {
                 ASR::Variable_t* farg = ASRUtils::EXPR2VAR(fn->m_args[i]);
-                bool is_ref = (farg->m_intent == ASR::intentType::Out
-                               || farg->m_intent == ASR::intentType::InOut)
-                              && !ASRUtils::is_array(farg->m_type);
-                if (is_ref) {
-                    throw CodeGenError(
-                        "intent(out) and intent(inout) are currently disallowed in functions");
+                bool use_ref = (farg->m_intent == ASR::intentType::Out
+                                || farg->m_intent == ASR::intentType::InOut)
+                               && !ASRUtils::is_array(farg->m_type);
+
+                if (ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                    ASR::Variable_t* arg = ASRUtils::EXPR2VAR(x.m_args[i].m_value);
+                    std::string arg_name = arg->m_name;
+                    bool is_ref = (arg->m_intent == ASR::intentType::Out
+                                   || arg->m_intent == ASR::intentType::InOut)
+                                  && !ASRUtils::is_array(arg->m_type);
+                    if (use_ref && !is_ref) {
+                        throw CodeGenError(
+                            "intent(out) and intent(inout) cannot be used in functions unless the variables passed in are intent(out) or intent(inout) in the outer scope");
+                    } else if (!use_ref && is_ref) {
+                        args += arg_name + "[]";
+                    } else {
+                        args += arg_name;
+                    }
+                } else {
+                    visit_expr(*x.m_args[i].m_value);
+                    args += src;
                 }
-                visit_expr(*x.m_args[i].m_value);
-                args += src;
                 if (i < x.n_args - 1)
                     args += ", ";
             }
