@@ -805,6 +805,17 @@ public:
         }
     }
 
+    void visit_Return(const ASR::Return_t& /* x */)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        if (current_function && current_function->m_return_var) {
+            src = indent + "return "
+                  + LFortran::ASRUtils::EXPR2VAR(current_function->m_return_var)->m_name + "\n";
+        } else {
+            src = indent + "return\n";
+        }
+    }
+
     void visit_DoLoop(const ASR::DoLoop_t& x)
     {
         std::string indent(indentation_level * indentation_spaces, ' ');
