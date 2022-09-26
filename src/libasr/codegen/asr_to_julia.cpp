@@ -937,6 +937,8 @@ public:
                     pre += indent + arg_ref + "= Ref(" + arg_name + ")\n";
                     out += arg_ref;
                     post += indent + arg_name + " = " + arg_ref + "[]\n";
+                } else if (!use_ref && is_ref) {
+                    out += arg_name + "[]";
                 } else {
                     out += arg_name;
                 }
