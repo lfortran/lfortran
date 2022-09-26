@@ -135,6 +135,7 @@ public:
 
     SymbolTable* global_scope;
     std::map<uint64_t, SymbolInfo> sym_info;
+    std::map<std::string, std::set<std::string>> dependencies;
 
     ASRToJuliaVisitor(diag::Diagnostics& diag)
         : diag{ diag }
@@ -157,6 +158,46 @@ public:
             fmt += " = " + default_value;
 
         return fmt;
+    }
+
+    std::string format_dependencies()
+    {
+        std::string fmt;
+        if (dependencies.empty())
+            return fmt;
+
+        for (auto& p : dependencies) {
+            fmt += "using Main." + p.first + ": ";
+            for (auto it = p.second.begin(); it != p.second.end(); it++) {
+                fmt += *it;
+                if (std::next(it) != p.second.end())
+                    fmt += ", ";
+            }
+            fmt += "\n";
+        }
+        fmt += "\n";
+
+        return fmt;
+    }
+
+    std::string get_primitive_type_name(ASR::Variable_t* farg)
+    {
+        std::string type_name;
+        if (ASRUtils::is_integer(*farg->m_type)) {
+            ASR::Integer_t* t = ASR::down_cast<ASR::Integer_t>(farg->m_type);
+            type_name = "Int" + std::to_string(t->m_kind * 8);
+        } else if (ASRUtils::is_real(*farg->m_type)) {
+            ASR::Real_t* t = ASR::down_cast<ASR::Real_t>(farg->m_type);
+            type_name = "Float32";
+            if (t->m_kind == 8)
+                type_name = "Float64";
+        } else if (ASRUtils::is_complex(*farg->m_type)) {
+            ASR::Complex_t* t = ASR::down_cast<ASR::Complex_t>(farg->m_type);
+            type_name = "ComplexF32";
+            if (t->m_kind == 8)
+                type_name = "ComplexF64";
+        }
+        return type_name;
     }
 
     void generate_array_decl(std::string& sub,
@@ -478,6 +519,7 @@ public:
 
     void visit_Module(const ASR::Module_t& x)
     {
+        dependencies.clear();
         std::string module = "module " + std::string(x.m_name) + "\n\n";
         if (startswith(x.m_name, "lfortran_intrinsic_")) {
             intrinsic_module = true;
@@ -495,13 +537,16 @@ public:
                 contains += src;
             }
         }
-        module += contains + "end\n\n";
+
+        module += format_dependencies() + contains + "end\n\n";
         src = module;
         intrinsic_module = false;
     }
 
     void visit_Program(const ASR::Program_t& x)
     {
+        dependencies.clear();
+
         // Generate code for nested subroutines and functions first:
         std::string contains;
         for (auto& item : x.m_symtab->get_scope()) {
@@ -529,7 +574,8 @@ public:
             body += src;
         }
 
-        src = contains + "function main()\n" + decl + body + "end\n\n" + "main()\n";
+        src = format_dependencies() + contains + "function main()\n" + decl + body + "end\n\n"
+              + "main()\n";
         indentation_level -= 2;
     }
 
@@ -606,11 +652,18 @@ public:
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x)
     {
+        // Add dependencies
+        if (x.m_name->type == ASR::symbolType::ExternalSymbol) {
+            ASR::ExternalSymbol_t* e = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
+            dependencies[std::string(e->m_module_name)].insert(std::string(e->m_name));
+        }
+
         ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
             LFortran::ASRUtils::symbol_get_past_external(x.m_name));
         std::string fn_name = fn->m_name;
         if (sym_info[get_hash((ASR::asr_t*) fn)].intrinsic_function) {
             if (fn_name == "size") {
+                // TODO: implement this properly
                 LFORTRAN_ASSERT(x.n_args > 0);
                 visit_expr(*x.m_args[0].m_value);
                 std::string var_name = src;
@@ -627,6 +680,11 @@ public:
                 }
                 src = var_name + ".extent(" + args + ")";
             } else if (fn_name == "int") {
+                // TODO: implement this properly
+                // - Keep integers as they are
+                // - Convert real to integer (|A| < 1 => 0, |A| >= 1 => largest integer whose
+                // absolute value <= |A| with sign of A)
+                // - Take the real part of a complex number
                 LFORTRAN_ASSERT(x.n_args > 0);
                 visit_expr(*x.m_args[0].m_value);
                 src = "Int32(" + src + ")";
@@ -645,6 +703,15 @@ public:
                                 || farg->m_intent == ASR::intentType::InOut)
                                && !ASRUtils::is_array(farg->m_type);
 
+                std::string type_name, prefix, suffix;
+                if (!use_ref) {
+                    type_name = get_primitive_type_name(farg);
+                    if (!type_name.empty()) {
+                        prefix = type_name + "(";
+                        suffix = ")";
+                    }
+                }
+
                 if (ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
                     ASR::Variable_t* arg = ASRUtils::EXPR2VAR(x.m_args[i].m_value);
                     std::string arg_name = arg->m_name;
@@ -661,7 +728,7 @@ public:
                     }
                 } else {
                     visit_expr(*x.m_args[i].m_value);
-                    args += src;
+                    args += prefix + src + suffix;
                 }
                 if (i < x.n_args - 1)
                     args += ", ";
@@ -1063,6 +1130,12 @@ public:
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x)
     {
+        // Add dependencies
+        if (x.m_name->type == ASR::symbolType::ExternalSymbol) {
+            ASR::ExternalSymbol_t* e = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
+            dependencies[std::string(e->m_module_name)].insert(std::string(e->m_name));
+        }
+
         std::string indent(indentation_level * indentation_spaces, ' ');
         ASR::Function_t* s = ASR::down_cast<ASR::Function_t>(
             LFortran::ASRUtils::symbol_get_past_external(x.m_name));
@@ -1077,6 +1150,15 @@ public:
             bool use_ref = (sarg->m_intent == ASR::intentType::Out
                             || sarg->m_intent == ASR::intentType::InOut)
                            && !ASRUtils::is_array(sarg->m_type);
+
+            std::string type_name, prefix, suffix;
+            if (!use_ref) {
+                type_name = get_primitive_type_name(sarg);
+                if (!type_name.empty()) {
+                    prefix = type_name + "(";
+                    suffix = ")";
+                }
+            }
 
             if (ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
                 ASR::Variable_t* arg = ASRUtils::EXPR2VAR(x.m_args[i].m_value);
@@ -1096,7 +1178,7 @@ public:
                 }
             } else {
                 visit_expr(*x.m_args[i].m_value);
-                out += src;
+                out += prefix + src + suffix;
             }
             if (i < x.n_args - 1)
                 out += ", ";
