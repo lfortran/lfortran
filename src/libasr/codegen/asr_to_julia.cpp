@@ -816,6 +816,18 @@ public:
         }
     }
 
+    void visit_GoTo(const ASR::GoTo_t& x)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        src = indent + "@goto label_" + std::to_string(x.m_target_id) + "\n";
+    }
+
+    void visit_GoToTarget(const ASR::GoToTarget_t& x)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        src = indent + "@label label_" + std::to_string(x.m_id) + "\n";
+    }
+
     void visit_DoLoop(const ASR::DoLoop_t& x)
     {
         std::string indent(indentation_level * indentation_spaces, ' ');
