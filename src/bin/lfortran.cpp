@@ -1649,7 +1649,7 @@ int main(int argc, char *argv[])
             outfile = basename + ".wat";
         } else if (show_julia) {
             outfile = basename + ".jl";
-        }else {
+        } else {
             outfile = "a.out";
         }
 
