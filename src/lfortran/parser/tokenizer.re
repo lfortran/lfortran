@@ -293,6 +293,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'dowhile' { KW(DOWHILE) }
             'double' { KW(DOUBLE) }
             'doubleprecision' { KW(DOUBLE_PRECISION) }
+            'doublecomplex' { KW(DOUBLE_COMPLEX) }
             'elemental' { KW(ELEMENTAL) }
             'else' { KW(ELSE) }
             'elseif' { KW(ELSEIF) }
