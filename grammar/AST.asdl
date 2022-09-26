@@ -319,6 +319,7 @@ decl_type
     | TypeCharacter
     | TypeComplex
     | TypeDoublePrecision
+    | TypeDoubleComplex
     | TypeInteger
     | TypeLogical
     | TypeProcedure
