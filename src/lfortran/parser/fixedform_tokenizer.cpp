@@ -953,28 +953,25 @@ struct FixedFormRecursiveDescent {
         tokenize_line("", cur);
     }
 
-    bool is_function_call(unsigned char *&cur) {
-        if (!next_is(cur, "call")) return false;
-        auto cpy = cur;
-        auto next = cpy; next_line(next);
-        std::string cur_line{tostr(cpy, next)};
-        // + std::string("call").size()
-        cpy += 4;
-        // function needs to start with a letter
-        if (!is_char(*cpy)) return false;
-        while(*cpy != '(') {
-            if (*cpy == '\n' || *cpy == '\0') 
-                return false;
-            cpy++;
+    bool is_function_call(unsigned char *cur) {
+        if (try_next(cur, "call")) {
+            if (try_name(cur)) {
+                if (*cur == '\n') {
+                    return true;
+                } else if (*cur == '(') {
+                    // TODO: skip strings
+                    cur++;
+                    int32_t nesting = 1;
+                    while(*cur != '\n') {
+                        if (*cur == '(') nesting++;
+                        if (*cur == ')') nesting--;
+                        cur++;
+                    }
+                    return nesting == 0;
+                }
+            }
         }
-        cpy++;
-        int32_t nesting = 1;
-        while(*cpy != '\n') {
-            if (*cpy == '(') nesting++;
-            if (*cpy == ')') nesting--;
-            cpy++;
-        }
-        return nesting == 0;
+        return false;
     }
 
     bool lex_body_statement(unsigned char *&cur) {
