@@ -1283,11 +1283,7 @@ struct FixedFormRecursiveDescent {
         // tokenize all keywords
         for(auto iter = kw_found.begin(); iter != kw_found.end(); ++iter) {
             if (*iter == "real*8") {
-                push_token_advance(cur, "real");
-                push_token_advance(cur, "*");
-                cur += 1;
-                t.cur += 1;
-                push_integer_no_advance(cur, 8);
+                tokenize_until(cur+(*iter).size());
             } else {
                 push_token_advance(cur, *iter);
             }
