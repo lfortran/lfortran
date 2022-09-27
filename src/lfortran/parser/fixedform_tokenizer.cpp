@@ -828,7 +828,6 @@ struct FixedFormRecursiveDescent {
     }
 
     void lex_implicit(unsigned char *&cur) {
-        LFORTRAN_ASSERT(next_is(cur, "implicit"))
         push_token_advance(cur, "implicit");
         if (next_is(cur, "doubleprecision(")) {
             push_token_advance(cur, "double");
