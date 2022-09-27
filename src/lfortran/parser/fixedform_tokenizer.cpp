@@ -1210,17 +1210,9 @@ struct FixedFormRecursiveDescent {
     void lex_do(unsigned char *&cur) {
         auto end = cur; next_line(end);
         do_levels++;
-        YYSTYPE yy;
-        std::string l{"do"};
-        lines.push_back(l);
-        yy.string.from_str(m_a, l);
-        stypes.push_back(yy);
-        tokens.push_back(identifiers_map[l]);
-        Location loc;
-        loc.first = cur - string_start;
-        loc.last = cur - string_start + l.size();
-        locations.push_back(loc);
-        cur += l.size();
+        Location loc; loc.first = cur-string_start; loc.last = cur-string_start;
+        std::string l = "do";
+        push_token2(cur, l, identifiers_map[l]);
         int64_t do_label = eat_label_inline(cur);
         if (do_label != -1) {
             do_labels.push_back(do_label);
