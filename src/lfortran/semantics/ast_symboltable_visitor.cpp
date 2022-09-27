@@ -374,7 +374,7 @@ public:
         return r;
     }
 
-    void populate_implicit_dictonary(const AST::Function_t &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary){
+    void populate_implicit_dictionary(const AST::Function_t &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         if (compiler_options.implicit_typing) {
             //if --implicit-typing flag is used
 
@@ -416,7 +416,7 @@ public:
         
         std::map<std::string, ASR::ttype_t*> implicit_dictionary;
         //populate the implicit_dictionary
-        populate_implicit_dictonary(x, implicit_dictionary);
+        populate_implicit_dictionary(x, implicit_dictionary);
         //iterate over all implicit statements
         for (size_t i=0;i<x.n_implicit;i++) {
             //get the implicit statement
@@ -445,7 +445,7 @@ public:
                         break;
                     }
                     case (AST::decl_typeType::TypeDoublePrecision) : {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
                         break;
                     }
                     case (AST::decl_typeType::TypeComplex) : {
@@ -468,7 +468,7 @@ public:
                     char *end=letter_spec->m_end;
                     if (!start) {
                         implicit_dictionary[std::string(1, *end)] = type;
-                    } else{
+                    } else {
                         for(char ch=*start; ch<=*end; ch++){
                             implicit_dictionary[std::string(1, ch)] = type;
                         }
