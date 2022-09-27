@@ -364,7 +364,7 @@ def tester_main(compiler, single_test):
     if specific_test:
         # some fuzzy comparison to get all seemingly fitting tests tested
         specific = [test for test in test_data["test"]
-                    if specific_test in test["filename"]]
+                    if specific_test in test["filename"] or specific_test in test]
         # no concurrent execution
         for test in specific:
             single_test(test,

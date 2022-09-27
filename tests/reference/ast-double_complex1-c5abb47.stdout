@@ -1,0 +1,32 @@
+(TranslationUnit 
+    [(Program 
+        test_double_complex 
+        () 
+        [] 
+        [] 
+        [(Declaration 
+            (AttrType 
+                TypeDoubleComplex 
+                [] 
+                () 
+                None
+            ) 
+            [] 
+            [(y 
+            [] 
+            [] 
+            () 
+            None 
+            ())
+            (zwork 
+            [] 
+            [] 
+            () 
+            None 
+            ())] 
+            ()
+        )] 
+        [] 
+        []
+    )]
+)
