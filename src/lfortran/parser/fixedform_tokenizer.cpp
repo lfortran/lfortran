@@ -857,16 +857,7 @@ struct FixedFormRecursiveDescent {
     bool lex_declarator(unsigned char *&cur) {
         for(const auto& declarator : declarators) {
             if(next_is(cur, declarator)) {
-                tokens.push_back(identifiers_map[declarator]);
-                YYSTYPE y;
-                std::string decl(declarator);
-                y.string.from_str(m_a, decl);
-                stypes.push_back(y);
-                Location loc;
-                loc.first = t.cur - string_start;
-                loc.last = t.cur - string_start + declarator.size();
-                locations.push_back(loc);
-                cur += declarator.size();
+                push_token2(cur, declarator, identifiers_map[declarator]);
                 return true;
             }
         }
