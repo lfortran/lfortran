@@ -1002,13 +1002,6 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    void insert_enddo() {
-        // return an explicit "end do" token here
-        push_token_no_advance(t.cur, "end_do");
-        // And a new line
-        push_token_no_advance(t.cur, "\n");
-    }
-
     bool all_labels_match(int64_t label) {
         return std::all_of(do_labels.begin(), do_labels.end(), [&label](const auto & x){
                 return x == label; 
@@ -1033,7 +1026,8 @@ struct FixedFormRecursiveDescent {
         }
         if (next_is(cur, "enddo")) {
             // end one nesting of loop
-            insert_enddo();
+            push_token_no_advance(cur, "end_do");
+            push_token_no_advance(cur, "\n");
             next_line(cur);
             do_levels--;
             return true;
@@ -1046,8 +1040,10 @@ struct FixedFormRecursiveDescent {
             } else {
                 lex_body_statement(cur);
             }
-            for (int i=0;i<do_levels;++i)
-                insert_enddo();
+            for (int i=0;i<do_levels;++i) {
+                push_token_no_advance(cur, "end_do");
+                push_token_no_advance(cur, "\n");
+            }
             if (label_match && do_levels > 1) abort_loop = true;
             do_levels = 0;
             do_labels.clear();
@@ -1060,7 +1056,8 @@ struct FixedFormRecursiveDescent {
             } else {
                 lex_body_statement(cur);
             }
-            insert_enddo();
+            push_token_no_advance(cur, "end_do");
+            push_token_no_advance(cur, "\n");
             do_levels--;
             do_labels.pop_back();
             return true;
