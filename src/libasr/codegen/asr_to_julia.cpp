@@ -125,6 +125,7 @@ cmpop_to_str_julia(const ASR::cmpopType t)
 class ASRToJuliaVisitor : public ASR::BaseVisitor<ASRToJuliaVisitor>
 {
 public:
+    Allocator& al;
     diag::Diagnostics& diag;
     std::string src;
     int indentation_level;
@@ -137,8 +138,9 @@ public:
     std::map<uint64_t, SymbolInfo> sym_info;
     std::map<std::string, std::set<std::string>> dependencies;
 
-    ASRToJuliaVisitor(diag::Diagnostics& diag)
-        : diag{ diag }
+    ASRToJuliaVisitor(Allocator& al, diag::Diagnostics& diag)
+        : al{ al }
+        , diag{ diag }
     {
     }
 
@@ -386,16 +388,15 @@ public:
                 ASR::Derived_t* t = ASR::down_cast<ASR::Derived_t>(v.m_type);
                 std::string der_type_name = ASRUtils::symbol_name(t->m_derived_type);
                 if (is_array) {
-                    std::string type_name = std::string("struct ") + der_type_name;
                     generate_array_decl(sub,
                                         std::string(v.m_name),
-                                        type_name,
+                                        der_type_name,
                                         dims,
                                         t->m_dims,
                                         t->n_dims,
                                         init_default);
                 } else {
-                    sub = format_type("struct", v.m_name, use_ref);
+                    sub = format_type(der_type_name, v.m_name, use_ref);
                 }
             } else {
                 diag.codegen_error_label("Type number '" + std::to_string(v.m_type->type)
@@ -410,7 +411,7 @@ public:
             if (v.m_symbolic_value) {
                 visit_expr(*v.m_symbolic_value);
                 std::string init = src;
-                if (is_array) {
+                if (is_array && !ASR::is_a<ASR::ArrayConstant_t>(*v.m_symbolic_value)) {
                     sub += " = fill(" + init + ", " + dims + ")";
                 } else {
                     sub += " = " + init;
@@ -679,7 +680,7 @@ public:
             if (decl.size() > 0 || body.size() > 0) {
                 sub += "\n" + decl + body + "end\n";
             } else {
-                sub += "end\n";
+                sub += " end\n";
             }
             indentation_level -= 1;
         }
@@ -948,9 +949,8 @@ public:
             } else if (ASR::is_a<ASR::Derived_t>(*v->m_type)) {
                 ASR::Derived_t* t = ASR::down_cast<ASR::Derived_t>(v->m_type);
                 std::string der_type_name = ASRUtils::symbol_name(t->m_derived_type);
-                std::string type_name = std::string("struct ") + der_type_name;
                 generate_array_decl(
-                    out, std::string(v->m_name), type_name, _dims, nullptr, n_dims, true, true);
+                    out, std::string(v->m_name), der_type_name, _dims, nullptr, n_dims, true, true);
             } else {
                 diag.codegen_error_label("Type number '" + std::to_string(v->m_type->type)
                                              + "' not supported",
@@ -1060,10 +1060,14 @@ public:
         last_expr_precedence = 2;
     }
 
-    void visit_DoLoop(const ASR::DoLoop_t& x)
+    void visit_DoLoop(const ASR::DoLoop_t& x, bool concurrent = false)
     {
         std::string indent(indentation_level * indentation_spaces, ' ');
-        std::string out = indent + "for ";
+        std::string out = indent;
+        if (concurrent) {
+            out += "Threads.@threads ";
+        }
+        out += "for ";
         ASR::Variable_t* loop_var = LFortran::ASRUtils::EXPR2VAR(x.m_head.m_v);
         std::string lvname = loop_var->m_name;
         ASR::expr_t* a = x.m_head.m_start;
@@ -1098,6 +1102,12 @@ public:
         out += indent + "end\n";
         indentation_level -= 1;
         src = out;
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t& x)
+    {
+        const ASR::DoLoop_t do_loop = ASR::DoLoop_t{ x.base, x.m_head, x.m_body, x.n_body };
+        visit_DoLoop(do_loop, true);
     }
 
     void visit_If(const ASR::If_t& x)
@@ -1344,18 +1354,28 @@ public:
         last_expr_precedence = julia_prec::Base;
     }
 
+    void visit_DerivedRef(const ASR::DerivedRef_t& x)
+    {
+        std::string der_expr, member;
+        this->visit_expr(*x.m_v);
+        der_expr = std::move(src);
+        member = ASRUtils::symbol_name(x.m_m);
+        src = der_expr + "." + member;
+    }
+
     void visit_Cast(const ASR::Cast_t& x)
     {
         visit_expr(*x.m_arg);
+        std::string broadcast = ASRUtils::is_array(x.m_type) ? "." : "";
         switch (x.m_kind) {
             case (ASR::cast_kindType::IntegerToReal): {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 switch (dest_kind) {
                     case 4:
-                        src = "Float32(" + src + ")";
+                        src = "Float32" + broadcast + "(" + src + ")";
                         break;
                     case 8:
-                        src = "Float64(" + src + ")";
+                        src = "Float64" + broadcast + "(" + src + ")";
                         break;
                     default:
                         throw CodeGenError("Cast IntegerToReal: Unsupported Kind "
@@ -1365,7 +1385,7 @@ public:
             }
             case (ASR::cast_kindType::RealToInteger): {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                src = "Int" + std::to_string(dest_kind * 8) + "(" + src + ")";
+                src = "Int" + std::to_string(dest_kind * 8) + broadcast + "(" + src + ")";
                 break;
             }
             case (ASR::cast_kindType::RealToReal): {
@@ -1382,23 +1402,23 @@ public:
                 break;
             }
             case (ASR::cast_kindType::IntegerToComplex): {
-                src = "complex(" + src + ")";
+                src = "complex" + broadcast + "(" + src + ")";
                 break;
             }
             case (ASR::cast_kindType::ComplexToReal): {
-                src = "real(" + src + ")";
+                src = "real" + broadcast + "(" + src + ")";
                 break;
             }
             case (ASR::cast_kindType::RealToComplex): {
-                src = "complex(" + src + ")";
+                src = "complex" + broadcast + "(" + src + ")";
                 break;
             }
             case (ASR::cast_kindType::LogicalToInteger): {
-                src = "Int32(" + src + ")";
+                src = "Int32" + broadcast + "(" + src + ")";
                 break;
             }
             case (ASR::cast_kindType::IntegerToLogical): {
-                src = "Bool(" + src + ")";
+                src = "Bool" + broadcast + "(" + src + ")";
                 break;
             }
             default:
@@ -1565,6 +1585,19 @@ public:
         src = out;
     }
 
+    void visit_ArraySize(const ASR::ArraySize_t& x)
+    {
+        this->visit_expr(*x.m_v);
+        std::string var_name = src;
+        std::string args = "";
+        if (x.m_dim == nullptr) {
+            src = "length(" + var_name + ")";
+        } else {
+            this->visit_expr(*x.m_dim);
+            src = "size(" + var_name + ")[" + src + "]";
+        }
+    }
+
     void visit_ArrayItem(const ASR::ArrayItem_t& x)
     {
         visit_expr(*x.m_v);
@@ -1694,12 +1727,28 @@ public:
         out += ")\n";
         src = out;
     }
+
+    // TODO: implement real file write
+    void visit_FileWrite(const ASR::FileWrite_t& /* x */)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        std::string out = indent + "// FIXME: File Write\n";
+        src = out;
+    }
+
+    // TODO: implement real file read
+    void visit_FileRead(const ASR::FileRead_t& /* x */)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        std::string out = indent + "// FIXME: File Read\n";
+        src = out;
+    }
 };
 
 Result<std::string>
-asr_to_julia(ASR::TranslationUnit_t& asr, diag::Diagnostics& diag)
+asr_to_julia(Allocator& al, ASR::TranslationUnit_t& asr, diag::Diagnostics& diag)
 {
-    ASRToJuliaVisitor v(diag);
+    ASRToJuliaVisitor v(al, diag);
     try {
         v.visit_asr((ASR::asr_t&) asr);
     } catch (const CodeGenError& e) {

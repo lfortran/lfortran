@@ -9,7 +9,7 @@
 namespace LFortran
 {
 Result<std::string>
-asr_to_julia(ASR::TranslationUnit_t& asr, diag::Diagnostics& diag);
+asr_to_julia(Allocator& al, ASR::TranslationUnit_t& asr, diag::Diagnostics& diag);
 }  // namespace LFortran
 
 #endif  // LFORTRAN_ASR_TO_JULIA_H

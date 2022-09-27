@@ -450,7 +450,7 @@ Result<std::string> FortranEvaluator::get_julia(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (asr.ok) {
-        return asr_to_julia(*asr.result, diagnostics);
+        return asr_to_julia(al, *asr.result, diagnostics);
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
         return asr.error;
