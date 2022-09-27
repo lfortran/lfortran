@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 import sys
 import os
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 sys.path.append(os.path.join(ROOT_DIR, "src", "libasr"))
 
+from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 
 def single_test(test, verbose, no_llvm, update_reference,
                 specific_backends=None, excluded_backends=None):
