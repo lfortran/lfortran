@@ -9,13 +9,9 @@ sys.path.append(os.path.join(ROOT_DIR, "src", "libasr"))
 from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 
 
-def single_test(test, verbose, no_llvm, update_reference, specific_backend = ""):
-    def need_backend(backend, default=False):
-        exist = test.get(backend, default)
-        specified = specific_backend == "" or specific_backend == backend
-        if specified and exist:
-            return True
-        return default
+def single_test(test, verbose, no_llvm, update_reference, specific_backends = None):
+    def need_backend(backend):
+        return test.get(backend, False) and (specific_backends == None or backend in specific_backends)
     
     filename = test["filename"]
     show_verbose = "" if not verbose else "-v"
@@ -40,7 +36,7 @@ def single_test(test, verbose, no_llvm, update_reference, specific_backend = "")
     obj = need_backend("obj")
     x86 = need_backend("x86")
     bin_ = need_backend("bin")
-    pass_ = need_backend("pass", None)
+    pass_ = test.get("pass", None)
     optimization_passes = ["flip_sign", "div_to_mul", "fma", "sign_from_value",
                            "inline_function_calls", "loop_unroll",
                            "dead_code_removal"]

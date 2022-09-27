@@ -2,9 +2,11 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 import hashlib
+import itertools
 import json
 import logging
 import os
+import re
 import pathlib
 import pprint
 import shutil
@@ -333,9 +335,11 @@ def tester_main(compiler, single_test):
     parser.add_argument("-l", "--list", action="store_true",
                         help="list all tests")
     parser.add_argument("-t", metavar="TEST",
-                        help="Run a specific test")
+                        action='append', nargs='*',
+                        help="Run specific tests")
     parser.add_argument("-b", "--backend", metavar="BACKEND",
-                        help="Run a specific backend")
+                        action='append', nargs='*',
+                        help="Run specific backends")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase test verbosity")
     parser.add_argument("--no-llvm", action="store_true",
@@ -345,8 +349,8 @@ def tester_main(compiler, single_test):
     args = parser.parse_args()
     update_reference = args.update
     list_tests = args.list
-    specific_test = args.t
-    specific_backend = args.backend
+    specific_tests = list(itertools.chain.from_iterable(args.t)) if args.t else None
+    specific_backends = list(itertools.chain.from_iterable(args.backend)) if args.backend else None
     verbose = args.verbose
     no_llvm = args.no_llvm
 
@@ -355,15 +359,15 @@ def tester_main(compiler, single_test):
         + os.pathsep + os.environ["PATH"]
     test_data = toml.load(open(os.path.join(ROOT_DIR, "tests", "tests.toml")))
     filtered_tests = test_data["test"]
-    if specific_test:
-        filtered_tests = [test for test in filtered_tests if specific_test in test["filename"]]
-    if specific_backend:
-        filtered_tests = [test for test in filtered_tests if specific_backend in test]
+    if specific_tests:
+        filtered_tests = [test for test in filtered_tests if any(re.match(t, test["filename"]) for t in specific_tests)]
+    if specific_backends:
+        filtered_tests = [test for test in filtered_tests if any(b in test for b in specific_backends)]
     if args.sequential:
         for test in filtered_tests:
             single_test(test,
                         update_reference=update_reference,
-                        specific_backend=specific_backend,
+                        specific_backends=specific_backends,
                         verbose=verbose,
                         no_llvm=no_llvm)
     # run in parallel
@@ -371,7 +375,7 @@ def tester_main(compiler, single_test):
         single_tester_partial_args = partial(
             single_test,
             update_reference=update_reference,
-            specific_backend=specific_backend,
+            specific_backends=specific_backends,
             verbose=verbose,
             no_llvm=no_llvm)
         with ThreadPoolExecutor() as ex:
