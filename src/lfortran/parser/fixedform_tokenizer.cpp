@@ -1148,7 +1148,7 @@ struct FixedFormRecursiveDescent {
     }
 
     bool if_advance_or_terminate(unsigned char *&cur) {
-        eat_label(cur);
+        int64_t l = eat_label(cur);
         if (next_is(cur, "elseif")) {
             push_token_advance(cur, "elseif");
             tokenize_line(cur);
@@ -1161,6 +1161,10 @@ struct FixedFormRecursiveDescent {
         }
         // TODO: check for other if terminals
         if (next_is(cur, "endif")) {
+            if (l != -1) {
+                push_token_no_advance(cur, "continue");
+                push_token_no_advance(cur, "\n");
+            }
             push_token_advance(cur, "endif");
             tokenize_line(cur);
             return false;
@@ -1181,18 +1185,14 @@ struct FixedFormRecursiveDescent {
     void lex_subroutine(unsigned char *&cur) {
         while(lex_body_statement(cur));
         int64_t l = eat_label(cur);
+        if (l != -1) {
+            push_token_no_advance(cur, "continue");
+            push_token_no_advance(cur, "\n");
+        }
         if (next_is(cur, "endsubroutine")) {
-            if (l != -1) {
-                push_token_no_advance(cur, "continue");
-                push_token_no_advance(cur, "\n");
-            }
             push_token_advance(cur, "endsubroutine");
             tokenize_line(cur);
         } else if (next_is(cur, "end")) {
-            if (l != -1) {
-                push_token_no_advance(cur, "continue");
-                push_token_no_advance(cur, "\n");
-            }
             push_token_advance(cur, "end");
             tokenize_line(cur);
         } else {
@@ -1220,8 +1220,11 @@ struct FixedFormRecursiveDescent {
 
     void lex_function(unsigned char *&cur) {
         while(lex_body_statement(cur));
-        eat_label(cur);
-
+        int64_t l = eat_label(cur);
+        if (l != -1) {
+            push_token_no_advance(cur, "continue");
+            push_token_no_advance(cur, "\n");
+        }
         if (next_is(cur, "endfunction")) {
             push_token_advance(cur, "endfunction");
             tokenize_line(cur);
