@@ -438,19 +438,13 @@ struct FixedFormRecursiveDescent {
         locations.push_back(loc);
     }
 
-    // Same as push_token_no_advance(), but update `cur` and `t.cur`
-    // TODO: just use `token_type`, and advance `cur` accordingly and check
-    // that the string actually matches
-    void push_token2(unsigned char *&cur, const std::string &token_str,
-            yytokentype token_type) {
-        push_token_no_advance(cur, token_str, token_type);
+    // Same as push_token_no_advance(), but update `cur` and `t.cur`.
+    // token_type is automatically determined
+    void push_token3(unsigned char *&cur, const std::string &token_str) {
+        LFORTRAN_ASSERT(next_is(cur, token_str))
+        push_token_no_advance(cur, token_str, identifiers_map[token_str]);
         cur += token_str.size();
         t.cur = cur;
-    }
-
-    // Same as push_token2(), but token_type is automatically determined
-    void push_token3(unsigned char *&cur, const std::string &token_str) {
-        push_token2(cur, token_str, identifiers_map[token_str]);
     }
 
     bool contains(unsigned char *start, unsigned char *end, char ch) {
@@ -984,7 +978,7 @@ struct FixedFormRecursiveDescent {
     }
 
     void lex_assign(unsigned char *&cur) {
-        push_token2(cur, "assign", KW_ASSIGN);
+        push_token3(cur, "assign");
         if (try_integer(cur)) {
             tokenize_until(cur);
             if (next_is(cur, "to")) {
@@ -1227,8 +1221,8 @@ struct FixedFormRecursiveDescent {
     }
 
     void lex_block_data(unsigned char *&cur) {
-        push_token2(cur, "block", KW_BLOCK);
-        push_token2(cur, "data", KW_DATA);
+        push_token3(cur, "block");
+        push_token3(cur, "data");
         tokenize_line(cur);
         while(lex_body_statement(cur));
         if (next_is(cur, "endblockdata")) {
