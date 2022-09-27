@@ -427,12 +427,12 @@ struct FixedFormRecursiveDescent {
     // Push the TK_NEWLINE, YYSTYPE and Location of the newline at `cur`.
     // (Does not modify `cur`.)
     void push_TK_NEWLINE(unsigned char */*start*/, unsigned char *cur) {
-        push_token(cur, "\n", TK_NEWLINE);
+        push_token_no_advance(cur, "\n", TK_NEWLINE);
     }
 
     // Push the token_type, YYSTYPE and Location of the token_str at `cur`.
     // (Does not modify `cur`.)
-    void push_token(unsigned char *cur, const std::string &token_str,
+    void push_token_no_advance(unsigned char *cur, const std::string &token_str,
             yytokentype token_type) {
         YYSTYPE yy;
         yy.string.from_str(m_a, token_str);
@@ -444,13 +444,12 @@ struct FixedFormRecursiveDescent {
         locations.push_back(loc);
     }
 
-    // Same as push_token(), but update `cur` and `t.cur`
+    // Same as push_token_no_advance(), but update `cur` and `t.cur`
     // TODO: just use `token_type`, and advance `cur` accordingly and check
     // that the string actually matches
-    // TODO: add push_token_no_advance() which does not modify cur
     void push_token2(unsigned char *&cur, const std::string &token_str,
             yytokentype token_type) {
-        push_token(cur, token_str, token_type);
+        push_token_no_advance(cur, token_str, token_type);
         cur += token_str.size();
         t.cur = cur;
     }
@@ -1090,15 +1089,11 @@ struct FixedFormRecursiveDescent {
     }
 
     void lex_assign(unsigned char *&cur) {
-        push_token(cur, "assign", KW_ASSIGN);
-        cur += 6;
-        t.cur = cur;
+        push_token2(cur, "assign", KW_ASSIGN);
         if (try_integer(cur)) {
             tokenize_until(cur);
             if (next_is(cur, "to")) {
-                push_token(cur, "to", KW_TO);
-                cur += 2;
-                t.cur = cur;
+                push_token2(cur, "to", KW_TO);
                 tokenize_line("", cur);
             } else {
                 Location loc;
@@ -1297,14 +1292,14 @@ struct FixedFormRecursiveDescent {
         int64_t l = eat_label(cur);
         if (next_is(cur, "endsubroutine")) {
             if (l != -1) {
-                push_token(cur, "continue", KW_CONTINUE);
-                push_token(cur, "\n", TK_NEWLINE);
+                push_token_no_advance(cur, "continue", KW_CONTINUE);
+                push_token_no_advance(cur, "\n", TK_NEWLINE);
             }
             tokenize_line("endsubroutine", cur);
         } else if (next_is(cur, "end")) {
             if (l != -1) {
-                push_token(cur, "continue", KW_CONTINUE);
-                push_token(cur, "\n", TK_NEWLINE);
+                push_token_no_advance(cur, "continue", KW_CONTINUE);
+                push_token_no_advance(cur, "\n", TK_NEWLINE);
             }
             tokenize_line("end", cur);
         } else {
