@@ -415,6 +415,8 @@ public:
     void visit_Function(const AST::Function_t &x) {
         // TODO: The most common (modern) path is explicit typing, so in this
         // path things should be as fast as possible. Currently they are slow.
+        // TODO: this needs to be moved to Common Visitor, and it needs to be
+        // made availabe when visiting the body, not the symbol table.
         std::map<std::string, ASR::ttype_t*> implicit_dictionary;
         //populate the implicit_dictionary
         populate_implicit_dictionary(x, implicit_dictionary);
