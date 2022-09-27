@@ -1351,16 +1351,7 @@ struct FixedFormRecursiveDescent {
      
         // tokenize all keywords
         for(auto iter = kw_found.begin(); iter != kw_found.end(); ++iter) {
-            tokens.push_back(identifiers_map[*iter]);
-            YYSTYPE y;
-            std::string decl(*iter);
-            y.string.from_str(m_a, decl);
-            stypes.push_back(y);
-            Location loc;
-            // TODO: refine the location here
-            loc.first = cur - string_start;
-            loc.last = cur - string_start + decl.size();
-            locations.push_back(loc);
+            push_token_no_advance(cur, *iter, identifiers_map[*iter]);
         }
 
         cur = cpy;
