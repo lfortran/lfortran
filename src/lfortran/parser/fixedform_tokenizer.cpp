@@ -27,7 +27,7 @@ std::map<std::string, yytokentype> identifiers_map = {
     {"boz_constant", TK_BOZ_CONSTANT},
     {"plus", TK_PLUS},
     {"minus", TK_MINUS},
-    {"star", TK_STAR},
+    {"*", TK_STAR},
     {"slash", TK_SLASH},
     {"colon", TK_COLON},
     {"semicolon", TK_SEMICOLON},
@@ -440,6 +440,19 @@ struct FixedFormRecursiveDescent {
     // token_type automatically determined
     void push_token_no_advance(unsigned char *cur, const std::string &token_str) {
         push_token_no_advance_token(cur, token_str, identifiers_map[token_str]);
+    }
+
+    void push_integer_no_advance(unsigned char *cur, int32_t n) {
+        YYSTYPE yy;
+        yy.int_suffix.int_n.from_smallint(n);
+        yy.int_suffix.int_kind.p = nullptr;
+        yy.int_suffix.int_kind.n = 0;
+        stypes.push_back(yy);
+        tokens.push_back(TK_INTEGER);
+        Location loc;
+        loc.first = cur - string_start;
+        loc.last = cur - string_start;
+        locations.push_back(loc);
     }
 
     // Same as push_token_no_advance(), but update `cur` and `t.cur`.
@@ -1269,7 +1282,15 @@ struct FixedFormRecursiveDescent {
      
         // tokenize all keywords
         for(auto iter = kw_found.begin(); iter != kw_found.end(); ++iter) {
-            push_token_advance(cur, *iter);
+            if (*iter == "real*8") {
+                push_token_advance(cur, "real");
+                push_token_advance(cur, "*");
+                cur += 1;
+                t.cur += 1;
+                push_integer_no_advance(cur, 8);
+            } else {
+                push_token_advance(cur, *iter);
+            }
         }
 
         cur = cpy;
@@ -1306,7 +1327,7 @@ struct FixedFormRecursiveDescent {
             "elemental"};
         std::vector<std::string> function_keywords{"recursive", "pure",
             "elemental",
-            "real", "character", "complex", "integer", "logical",
+            "real*8", "real", "character", "complex", "integer", "logical",
             "doubleprecision", "doublecomplex"};
 
         if (next_is(cur, "include")) {
