@@ -413,7 +413,6 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
-        
         std::map<std::string, ASR::ttype_t*> implicit_dictionary;
         //populate the implicit_dictionary
         populate_implicit_dictionary(x, implicit_dictionary);
