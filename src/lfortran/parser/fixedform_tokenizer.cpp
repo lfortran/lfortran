@@ -684,63 +684,10 @@ struct FixedFormRecursiveDescent {
      * Then the rest of the line is tokenized, including the new line.
      */
     void tokenize_line(unsigned char *&cur) {
-        unsigned char *start = cur;
-        // move the cur pointer to the next line after
+        t.cur = cur;
         next_line(cur);
-        LFORTRAN_ASSERT(start < cur)
-        std::string line{tostr(start, cur)};
-        lines.push_back(line);
-        t.cur = start;
-        Location loc;
-        ptrdiff_t len = 1;
-        for(;;) {
-            YYSTYPE y2;
-            if(*t.cur == '\n') {
-                push_TK_NEWLINE(t.cur);
-                break;
-            }
-            auto token = t.lex(m_a, y2, loc, diag);
-            // we need to disentangle "goto999" as the tokenizer cannot do it
-            // on its own
-            if (next_is(t.tok, "goto") && token != yytokentype::KW_GOTO) {
-
-                std::string l("goto");
-                y2.string.from_str(m_a, l);
-                stypes.push_back(y2);
-                tokens.push_back(yytokentype::KW_GOTO);
-                Location loc;
-                loc.first = t.tok - string_start;
-                loc.last = t.tok - string_start + l.size();
-                locations.push_back(loc);
-
-                YYSTYPE y3;
-                lex_int_large(m_a, t.tok + 4,t.cur,
-                    y3.int_suffix.int_n,
-                    y3.int_suffix.int_kind);
-                tokens.push_back(yytokentype::TK_INTEGER);
-                stypes.push_back(y3);
-                loc.first = t.tok+4 - t.string_start;
-                loc.last = t.cur - t.string_start-1;
-                locations.push_back(loc);
-                continue;
-            }
-
-            len = t.cur - t.tok;
-            tokens.push_back(token);
-            if (token == yytokentype::TK_INTEGER) {
-                lex_int_large(m_a, t.tok, t.cur,
-                    y2.int_suffix.int_n,
-                    y2.int_suffix.int_kind);
-            } else if (token == yytokentype::TK_STRING) {
-                std::string tk{tostr(t.tok+1, t.tok + len-1)};
-                y2.string.from_str(m_a, tk);
-            } else {
-                std::string tk{tostr(t.tok, t.tok + len)};
-                y2.string.from_str(m_a, tk);
-            }
-            stypes.push_back(y2);
-            locations.push_back(loc);
-        }
+        tokenize_until(cur);
+        LFORTRAN_ASSERT(*(t.cur-1) == '\n')
     }
 
     /*
@@ -779,6 +726,7 @@ struct FixedFormRecursiveDescent {
             stypes.push_back(y2);
             locations.push_back(loc);
         }
+        // Check that the last token ends exactly on `end`:
         LFORTRAN_ASSERT(t.cur == end)
     }
 
@@ -987,6 +935,7 @@ struct FixedFormRecursiveDescent {
         }
 
         // assignment
+        // TODO: this is fragile
         if (contains(cur, nline, '=')) {
             tokenize_line(cur);
             return true;
