@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 
+from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 import sys
 import os
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 sys.path.append(os.path.join(ROOT_DIR, "src", "libasr"))
 
-from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 
-
-def single_test(test, verbose, no_llvm, update_reference, specific_backends = None, excluded_backends = None):
+def single_test(test, verbose, no_llvm, update_reference,
+                specific_backends=None, excluded_backends=None):
     def is_included(backend):
         return test.get(backend, False) \
-            and (specific_backends == None or backend in specific_backends) \
-            and (excluded_backends == None or backend not in excluded_backends)
-    
+            and (specific_backends is None or backend in specific_backends) \
+            and (excluded_backends is None or backend not in excluded_backends)
+
     filename = test["filename"]
     show_verbose = "" if not verbose else "-v"
     tokens = is_included("tokens")
@@ -222,7 +222,7 @@ def single_test(test, verbose, no_llvm, update_reference, specific_backends = No
     if c:
         run_test(filename, "c", "lfortran --no-color --show-c {infile}",
                  filename, update_reference, extra_args)
-        
+
     if julia:
         run_test(filename, "julia", "lfortran --no-color --show-julia {infile}",
                  filename, update_reference, extra_args)
@@ -243,7 +243,6 @@ def single_test(test, verbose, no_llvm, update_reference, specific_backends = No
     if bin_:
         run_test(filename, "bin", "lfortran --no-color {infile} -o {outfile}",
                  filename, update_reference, extra_args)
-
 
 
 if __name__ == "__main__":
