@@ -1,0 +1,13 @@
+{
+    "basename": "ast-real8_1-6df3885",
+    "cmd": "lfortran --indent --fixed-form --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/fixed_form/real8_1.f",
+    "infile_hash": "be9ee08ef54c70bc74135fbbf926577a888f76aac13a389a473443e0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-real8_1-6df3885.stdout",
+    "stdout_hash": "dc7f308b196a1045fc29b344f970de3ab51b85c9b5705bf713713f2a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
