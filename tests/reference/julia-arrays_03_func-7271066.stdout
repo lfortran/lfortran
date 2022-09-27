@@ -1,0 +1,26 @@
+function mysum(a::Array{Int32, 1})::Int32
+    local i::Int32 = 0
+    local r::Int32 = 0
+    r = 0
+    for i ∈ 1:length(a)
+        r = r + a[i]
+    end
+    return r
+end
+
+function main()
+    local i::Int32 = 0
+    local s::Int32 = 0
+    local x = Array{Int32, 1}(undef, 10)
+    for i ∈ 1:length(x)
+        x[i] = i
+    end
+    s = mysum(x)
+    println(s)
+    if s ≠ 55
+        println(Base.stderr, "ERROR STOP")
+        exit(1);
+    end
+end
+
+main()

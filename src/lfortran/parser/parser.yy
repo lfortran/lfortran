@@ -4,8 +4,8 @@
 %param {LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    205 // shift/reduce conflicts
-%expect-rr 171 // reduce/reduce conflicts
+%expect    206 // shift/reduce conflicts
+%expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -171,6 +171,7 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %token <string> KW_DOWHILE
 %token <string> KW_DOUBLE
 %token <string> KW_DOUBLE_PRECISION
+%token <string> KW_DOUBLE_COMPLEX
 %token <string> KW_ELEMENTAL
 %token <string> KW_ELSE
 %token <string> KW_ELSEIF
@@ -1371,6 +1372,8 @@ var_type
     | KW_LOGICAL "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Logical, $3, @$); }
     | KW_DOUBLE KW_PRECISION { $$ = ATTR_TYPE(DoublePrecision, @$); }
     | KW_DOUBLE_PRECISION { $$ = ATTR_TYPE(DoublePrecision, @$); }
+    | KW_DOUBLE KW_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
+    | KW_DOUBLE_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
     | KW_TYPE "(" id ")" { $$ = ATTR_TYPE_NAME(Type, $3, @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
     | KW_PROCEDURE "(" id ")" { $$ = ATTR_TYPE_NAME(Procedure, $3, @$); }
@@ -2337,6 +2340,7 @@ id
     | KW_DOWHILE { $$ = SYMBOL($1, @$); }
     | KW_DOUBLE { $$ = SYMBOL($1, @$); }
     | KW_DOUBLE_PRECISION { $$ = SYMBOL($1, @$); }
+    | KW_DOUBLE_COMPLEX { $$ = SYMBOL($1, @$); }
     | KW_ELEMENTAL { $$ = SYMBOL($1, @$); }
     | KW_ELSE { $$ = SYMBOL($1, @$); }
     | KW_ELSEIF { $$ = SYMBOL($1, @$); }
