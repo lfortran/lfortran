@@ -1,9 +1,5 @@
 syntax error: Newline is unexpected here
- --> tests/errors/fixed_form_3.f:4:21 - 5:7
+ --> tests/errors/fixed_form_3.f:4:21
   |
-4 |    500   print *, sin(y
-  |                        ...
-...
-  |
-5 |          print *, "OK"
-  | ...^^^^^^^ 
+4 | 500   print *, sin(y
+  |                     ^ 
