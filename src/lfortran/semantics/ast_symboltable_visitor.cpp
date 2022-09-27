@@ -401,7 +401,7 @@ public:
         }
     }
 
-    void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary){
+    void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         std::cout << "Implicit Dictionary: " << std::endl;
         for( auto it: implicit_dictionary ) {
             if ( it.second ) {
