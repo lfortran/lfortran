@@ -673,7 +673,7 @@ struct FixedFormRecursiveDescent {
 
 
     /*
-     * Then the rest of the line is tokenized, including the new line.
+     * Tokenize the rest of the line, including the new line.
      */
     void tokenize_line(unsigned char *&cur) {
         t.cur = cur;
