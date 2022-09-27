@@ -1,38 +1,3 @@
-r 10
-p 7
-x Float64(0)
-x Float64(0)
-x 0
-x 0
-x 0
-x 0
-x Float32(0)
-x 0
-y 0
-x 0
-y 0
-x 0
-y 0
-x 0
-y 0
-x 0
-y 0
-x 0
-y 0
-x 0
-y 0
-x 0
-y 0
-x Float32(0)
-y Float32(0)
-x Float32(0)
-y Float32(0)
-x Float64(0)
-y Float64(0)
-x Float64(0)
-y Float64(0)
-x Float32(0)
-dabs(Float64(b -   6.00000000000000000e+00))   9.99999999999999980e-13
 module lfortran_intrinsic_builtin
 
 function achar(i::Int32, kind::Int32)::String
