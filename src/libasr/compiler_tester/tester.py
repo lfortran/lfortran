@@ -334,14 +334,20 @@ def tester_main(compiler, single_test):
                         help="update all reference results")
     parser.add_argument("-l", "--list", action="store_true",
                         help="list all tests")
-    parser.add_argument("-t", metavar="TEST",
-                        action='append', nargs='*',
+    parser.add_argument("-t", "--test",
+                        action="append", nargs="*",
                         help="Run specific tests")
-    parser.add_argument("-b", "--backend", metavar="BACKEND",
-                        action='append', nargs='*',
+    parser.add_argument("-b", "--backend",
+                        action="append", nargs="*",
                         help="Run specific backends")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase test verbosity")
+    parser.add_argument("--exclude-test", metavar="TEST",
+                        action="append", nargs="*",
+                        help="Exclude specific tests"),
+    parser.add_argument("--exclude-backend", metavar="BACKEND",
+                        action="append", nargs="*",
+                        help="Exclude specific backends, only works when -b is not specified"),
     parser.add_argument("--no-llvm", action="store_true",
                         help="Skip LLVM tests")
     parser.add_argument("-s", "--sequential", action="store_true",
@@ -349,8 +355,10 @@ def tester_main(compiler, single_test):
     args = parser.parse_args()
     update_reference = args.update
     list_tests = args.list
-    specific_tests = list(itertools.chain.from_iterable(args.t)) if args.t else None
-    specific_backends = list(itertools.chain.from_iterable(args.backend)) if args.backend else None
+    specific_tests = list(itertools.chain.from_iterable(args.test)) if args.test else None
+    specific_backends = set(itertools.chain.from_iterable(args.backend)) if args.backend else None
+    excluded_tests = list(itertools.chain.from_iterable(args.exclude_test)) if args.exclude_test else None
+    excluded_backends = set(itertools.chain.from_iterable(args.exclude_backend)) if args.exclude_backend and specific_backends == None else None
     verbose = args.verbose
     no_llvm = args.no_llvm
 
@@ -361,13 +369,18 @@ def tester_main(compiler, single_test):
     filtered_tests = test_data["test"]
     if specific_tests:
         filtered_tests = [test for test in filtered_tests if any(re.match(t, test["filename"]) for t in specific_tests)]
+    if excluded_tests:
+        filtered_tests = [test for test in filtered_tests if not any(re.match(t, test["filename"]) for t in excluded_tests)]
     if specific_backends:
         filtered_tests = [test for test in filtered_tests if any(b in test for b in specific_backends)]
+    if excluded_backends:
+        filtered_tests = [test for test in filtered_tests if any(b not in excluded_backends and b != "filename" for b in test)]
     if args.sequential:
         for test in filtered_tests:
             single_test(test,
                         update_reference=update_reference,
                         specific_backends=specific_backends,
+                        excluded_backends=excluded_backends,
                         verbose=verbose,
                         no_llvm=no_llvm)
     # run in parallel
@@ -376,12 +389,11 @@ def tester_main(compiler, single_test):
             single_test,
             update_reference=update_reference,
             specific_backends=specific_backends,
+            excluded_backends=excluded_backends,
             verbose=verbose,
             no_llvm=no_llvm)
         with ThreadPoolExecutor() as ex:
-            futures = ex.map(
-                single_tester_partial_args, [
-                    test for test in filtered_tests])
+            futures = ex.map(single_tester_partial_args, filtered_tests)
             for f in futures:
                 if not f:
                     ex.shutdown(wait=False)

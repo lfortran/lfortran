@@ -9,33 +9,35 @@ sys.path.append(os.path.join(ROOT_DIR, "src", "libasr"))
 from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 
 
-def single_test(test, verbose, no_llvm, update_reference, specific_backends = None):
-    def need_backend(backend):
-        return test.get(backend, False) and (specific_backends == None or backend in specific_backends)
+def single_test(test, verbose, no_llvm, update_reference, specific_backends = None, excluded_backends = None):
+    def is_included(backend):
+        return test.get(backend, False) \
+            and (specific_backends == None or backend in specific_backends) \
+            and (excluded_backends == None or backend not in excluded_backends)
     
     filename = test["filename"]
     show_verbose = "" if not verbose else "-v"
-    tokens = need_backend("tokens")
-    ast = need_backend("ast")
-    ast_indent = need_backend("ast_indent")
-    ast_f90 = need_backend("ast_f90")
-    ast_cpp = need_backend("ast_cpp")
-    ast_cpp_hip = need_backend("ast_cpp_hip")
-    ast_openmp = need_backend("ast_openmp")
-    asr = need_backend("asr")
-    asr_implicit_typing = need_backend("asr_implicit_typing")
-    asr_implicit_interface = need_backend("ast_implicit_interface")
-    asr_preprocess = need_backend("ast_preprocess")
-    asr_indent = need_backend("asr_indent")
-    mod_to_asr = need_backend("mod_to_asr")
-    llvm = need_backend("llvm")
-    cpp = need_backend("cpp")
-    c = need_backend("c")
-    julia = need_backend("julia")
-    wat = need_backend("wat")
-    obj = need_backend("obj")
-    x86 = need_backend("x86")
-    bin_ = need_backend("bin")
+    tokens = is_included("tokens")
+    ast = is_included("ast")
+    ast_indent = is_included("ast_indent")
+    ast_f90 = is_included("ast_f90")
+    ast_cpp = is_included("ast_cpp")
+    ast_cpp_hip = is_included("ast_cpp_hip")
+    ast_openmp = is_included("ast_openmp")
+    asr = is_included("asr")
+    asr_implicit_typing = is_included("asr_implicit_typing")
+    asr_implicit_interface = is_included("ast_implicit_interface")
+    asr_preprocess = is_included("ast_preprocess")
+    asr_indent = is_included("asr_indent")
+    mod_to_asr = is_included("mod_to_asr")
+    llvm = is_included("llvm")
+    cpp = is_included("cpp")
+    c = is_included("c")
+    julia = is_included("julia")
+    wat = is_included("wat")
+    obj = is_included("obj")
+    x86 = is_included("x86")
+    bin_ = is_included("bin")
     pass_ = test.get("pass", None)
     optimization_passes = ["flip_sign", "div_to_mul", "fma", "sign_from_value",
                            "inline_function_calls", "loop_unroll",
