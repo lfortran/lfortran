@@ -11,7 +11,7 @@ from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 
 def single_test(test, specific_test, verbose, no_llvm, update_reference):
     filename = test["filename"]
-    if specific_test and specific_test not in filename:
+    if specific_test and specific_test not in filename and specific_test not in test:
         return
     show_verbose = "" if not verbose else "-v"
     tokens = test.get("tokens", False)

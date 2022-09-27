@@ -1,0 +1,13 @@
+{
+    "basename": "julia-arrays_04_func-2fc0cbe",
+    "cmd": "lfortran --no-color --show-julia {infile}",
+    "infile": "tests/../integration_tests/arrays_04_func.f90",
+    "infile_hash": "50eb699e803e7dace8da286ee49cdb7381ebe3141bff17ca374f1f02",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "julia-arrays_04_func-2fc0cbe.stdout",
+    "stdout_hash": "f8e3e276e2f3202cc87e603dc16473f5a7e2b10bff876aab9888d5c1",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
