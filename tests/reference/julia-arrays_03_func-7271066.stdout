@@ -1,4 +1,3 @@
-s 55
 function mysum(a::Array{Int32, 1})::Int32
     local i::Int32 = 0
     local r::Int32 = 0

@@ -1,4 +1,3 @@
-a[i] b[i]
 function copy_from_to(a::Array{Int32, 1}, b::Array{Int32, 1})
     local i::Int32 = 0
     for i ∈ 1:length(a)

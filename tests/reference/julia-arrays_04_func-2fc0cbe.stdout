@@ -1,5 +1,3 @@
-a Float32(0)
-abs(Float32(b - Float32(6)))   1.00000000000000008e-05
 function abs(a::Float32)::Float32
     local r::Float32 = 0.0
     println("abs")

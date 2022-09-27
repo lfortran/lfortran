@@ -5,9 +5,9 @@
     "infile_hash": "b5b3a6833fd727f5cce92c3c4886c4e20117f33710a1ec8b1016d8f6",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "julia-arrays_02-849d7b0.stdout",
-    "stdout_hash": "3aa74d0b3b1b28b04ee0ca10959616593f542e04d50810dd8300842d",
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "julia-arrays_02-849d7b0.stderr",
+    "stderr_hash": "9d5785568ebe03fc568ac5d5628daa9587528b6fc59c747b56c8f66a",
+    "returncode": 1
 }
