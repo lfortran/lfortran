@@ -424,12 +424,6 @@ struct FixedFormRecursiveDescent {
         if (*cur == '\n') cur++;
     }
 
-    // Push the TK_NEWLINE, YYSTYPE and Location of the newline at `cur`.
-    // (Does not modify `cur`.)
-    void push_TK_NEWLINE(unsigned char *cur) {
-        push_token_no_advance(cur, "\n", TK_NEWLINE);
-    }
-
     // Push the token_type, YYSTYPE and Location of the token_str at `cur`.
     // (Does not modify `cur`.)
     void push_token_no_advance(unsigned char *cur, const std::string &token_str,
@@ -732,20 +726,7 @@ struct FixedFormRecursiveDescent {
 
     // returns TRUE iff multiline-if
     bool lex_if_statement(unsigned char *&cur) {
-        YYSTYPE y1;
-        std::string l("if");
-        y1.string.from_str(m_a, l);
-        stypes.push_back(y1);
-        tokens.push_back(yytokentype::KW_IF);
-
-        Location loc;
-        loc.first = cur - string_start;
-        loc.last = cur - string_start + l.size();
-        locations.push_back(loc);
-
-        unsigned char *start = cur + l.size();
-        t.cur = start;
-
+        push_token3(cur, "if");
         LFORTRAN_ASSERT(*t.cur == '(')
         tokenize_until(t.cur+1);
         unsigned char *end = t.cur;
@@ -759,11 +740,15 @@ struct FixedFormRecursiveDescent {
                     }
                 }
             } else {
+                Location loc;
                 loc.first = end - string_start;
                 loc.last = end - string_start;
                 throw parser_local::TokenizerError("Expected `)` here to end the condition expression of the if statement ", loc);
             }
         } else {
+            Location loc;
+            loc.first = cur - string_start;
+            loc.last = cur - string_start;
             throw parser_local::TokenizerError("Expected expression after `if`", loc);
         }
         tokenize_until(end);
@@ -822,7 +807,7 @@ struct FixedFormRecursiveDescent {
                     stypes.push_back(yylval);
                     tokens.push_back(TK_FORMAT);
                     next_line(cur);
-                    push_TK_NEWLINE(cur-1);
+                    push_token_no_advance(cur-1, "\n", TK_NEWLINE);
                 } else {
                     push_token3(cur, io_str);
                     tokenize_line(cur);
@@ -1023,7 +1008,7 @@ struct FixedFormRecursiveDescent {
         // return an explicit "end do" token here
         push_token_no_advance(t.cur, "enddo", KW_END_DO);
         // And a new line
-        push_TK_NEWLINE(t.cur);
+        push_token_no_advance(t.cur, "\n", TK_NEWLINE);
     }
 
     bool all_labels_match(int64_t label) {
@@ -1136,8 +1121,7 @@ struct FixedFormRecursiveDescent {
         auto end = cur; next_line(end);
         do_levels++;
         Location loc; loc.first = cur-string_start; loc.last = cur-string_start;
-        std::string l = "do";
-        push_token3(cur, l);
+        push_token3(cur, "do");
         int64_t do_label = eat_label_inline(cur);
         if (do_label != -1) {
             do_labels.push_back(do_label);
@@ -1344,24 +1328,10 @@ struct FixedFormRecursiveDescent {
         } else if (next_is(cur, "blockdata")) {
             lex_block_data(cur);
         } else if (is_implicit_program(cur)) {
-            std::string prog{"program"};
-            std::string name{"implicit_program_lfortran"};
             // add implicit global program at the line `cur` is currently at
-            YYSTYPE y;
-            y.string.from_str(m_a, prog);
-            stypes.push_back(y);
-            tokens.push_back(yytokentype::KW_PROGRAM);
-            Location loc;
-            loc.first = cur - string_start;
-            loc.last = cur - string_start + prog.size();
-            locations.push_back(loc);
-            y.string.from_str(m_a, name);
-            stypes.push_back(y);
-            tokens.push_back(yytokentype::TK_NAME);
-            loc.first = cur - string_start + prog.size();
-            loc.last = cur - string_start + prog.size() + name.size();
-            locations.push_back(loc);
-            push_TK_NEWLINE(cur + prog.size() + name.size());
+            push_token_no_advance(cur, "program", KW_PROGRAM);
+            push_token_no_advance(cur, "implicit_program_lfortran", TK_NAME);
+            push_token_no_advance(cur, "\n", TK_NEWLINE);
             lex_program(cur, false);
         } else {
             error(cur, "ICE: Cannot recognize global scope entity");
@@ -1378,14 +1348,7 @@ struct FixedFormRecursiveDescent {
             lex_global_scope_item(cur);
             next = cur;
         }
-        YYSTYPE y2;
-        y2.string.from_str(m_a, "EOF");
-        stypes.push_back(y2);
-        tokens.push_back(yytokentype::END_OF_FILE);
-        Location loc;
-        loc.first = cur - string_start;
-        loc.last = cur - string_start + 1;
-        locations.push_back(loc);
+        push_token_no_advance(cur, "EOF", END_OF_FILE);
     }
 
 };
