@@ -483,6 +483,79 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
     return output;
 }
 
+std::string CPreprocessor::preprocess_include(const std::string &input, LocationManager &lm) const {
+    LFORTRAN_ASSERT(input[input.size()] == '\0');
+    unsigned char *string_start=(unsigned char*)(&input[0]);
+    unsigned char *cur = string_start;
+    std::string output;
+    lm.preprocessor = true;
+    get_newlines(input, lm.in_newlines0);
+    lm.out_start0.push_back(0);
+    lm.in_start0.push_back(0);
+    std::vector<IfDef> ifdef_stack;
+    bool branch_enabled = true;
+    for (;;) {
+        unsigned char *tok = cur;
+        unsigned char *mar;
+        unsigned char *t1, *t2;
+        /*!stags:re2c format = 'unsigned char *@@;\n'; */
+        /*!re2c
+            re2c:define:YYCURSOR = cur;
+            re2c:define:YYMARKER = mar;
+            re2c:yyfill:enable = 0;
+            re2c:flags:tags = 1;
+            re2c:define:YYCTYPE = "unsigned char";
+
+            * {
+                if (!branch_enabled) continue;
+                output.append(token(tok, cur));
+                continue;
+            }
+            end {
+                break;
+            }
+            "include" whitespace '"' @t1 [^"\x00]* @t2 '"' [^\n\x00]* newline {
+                if (!branch_enabled) continue;
+                std::string filename = token(t1, t2);
+                // Construct a filename relative to the current file
+                // TODO: make this multiplatform
+                std::string base_dir = lm.in_filename;
+                std::string::size_type n = base_dir.rfind("/");
+                if (n != std::string::npos) {
+                    base_dir = base_dir.substr(0, n);
+                    filename = base_dir + "/" + filename;
+                }
+                std::string include;
+                if (!read_file(filename, include)) {
+                    throw LCompilersException("C preprocessor: include file '" + filename + "' cannot be opened");
+                }
+
+                LocationManager lm_tmp = lm; // Make a copy
+                include = preprocess_include(include, lm_tmp);
+
+                // Prepare the start of the interval
+                interval_end_type_0(lm, output.size(), tok-string_start);
+
+                // Include
+                output.append(include);
+
+                // Prepare the end of the interval
+                interval_end(lm, output.size(), cur-string_start,
+                    token(tok, cur).size()-1, 1);
+                continue;
+            }
+        */
+    }
+    lm.out_start0.push_back(output.size());
+    lm.in_start0.push_back(input.size());
+    // The just created interval ID:
+    size_t N = lm.out_start0.size()-2;
+    lm.in_size0.push_back(lm.out_start0[N+1]-lm.out_start0[N]);
+    lm.interval_type0.push_back(0);
+
+    return output;
+}
+
 std::string CPreprocessor::function_like_macro_expansion(
             std::vector<std::string> &def_args,
             std::string &expansion,

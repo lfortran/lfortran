@@ -183,6 +183,11 @@ Result<AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
         tmp = cpp.run(code_orig, lm, cpp.macro_definitions);
         code = &tmp;
     }
+    if (compiler_options.preprocess_include) {
+        CPreprocessor cpp(compiler_options);
+        tmp = cpp.preprocess_include(code_orig, lm);
+        code = &tmp;
+    }
     if (compiler_options.prescan || compiler_options.fixed_form) {
         tmp = fix_continuation(*code, lm, compiler_options.fixed_form);
         code = &tmp;
