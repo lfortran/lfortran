@@ -426,7 +426,7 @@ struct FixedFormRecursiveDescent {
 
     // Push the TK_NEWLINE, YYSTYPE and Location of the newline at `cur`.
     // (Does not modify `cur`.)
-    void push_TK_NEWLINE(unsigned char */*start*/, unsigned char *cur) {
+    void push_TK_NEWLINE(unsigned char *cur) {
         push_token_no_advance(cur, "\n", TK_NEWLINE);
     }
 
@@ -713,7 +713,7 @@ struct FixedFormRecursiveDescent {
         for(;;) {
             YYSTYPE y2;
             if(*t.cur == '\n') {
-                push_TK_NEWLINE(t.string_start, t.cur);
+                push_TK_NEWLINE(t.cur);
                 break;
             }
             auto token = t.lex(m_a, y2, loc, diag);
@@ -900,7 +900,7 @@ struct FixedFormRecursiveDescent {
                     stypes.push_back(yylval);
                     tokens.push_back(TK_FORMAT);
                     next_line(cur);
-                    push_TK_NEWLINE(t.string_start, cur-1);
+                    push_TK_NEWLINE(cur-1);
                 } else {
                     tokenize_line(io_str, cur);
                 }
@@ -1121,7 +1121,7 @@ struct FixedFormRecursiveDescent {
         loc.last = t.cur - string_start + l.size();
         locations.push_back(loc);
         // And a new line
-        push_TK_NEWLINE(string_start, t.cur);
+        push_TK_NEWLINE(t.cur);
     }
 
     bool all_labels_match(int64_t label) {
@@ -1455,7 +1455,7 @@ struct FixedFormRecursiveDescent {
             loc.first = cur - string_start + prog.size();
             loc.last = cur - string_start + prog.size() + name.size();
             locations.push_back(loc);
-            push_TK_NEWLINE(string_start, cur + prog.size() + name.size());
+            push_TK_NEWLINE(cur + prog.size() + name.size());
             lex_program(cur, false);
         } else {
             error(cur, "ICE: Cannot recognize global scope entity");
