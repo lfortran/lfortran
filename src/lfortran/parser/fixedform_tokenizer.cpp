@@ -845,34 +845,10 @@ struct FixedFormRecursiveDescent {
     }
 
     void lex_implicit(unsigned char *&cur) {
-        if (!next_is(cur, "implicit")) {
-            Location loc;
-            loc.first = 1;
-            loc.last = 1;
-            throw parser_local::TokenizerError("Unable to tokenize `IMPLICIT`", loc);
-        }
-        YYSTYPE y;
-        std::string l("implicit"); 
-        y.string.from_str(m_a, l);
-        stypes.push_back(y);
-        tokens.push_back(yytokentype::KW_IMPLICIT);
-                
-        Location loc;
-        loc.first = cur - string_start;
-        loc.last = cur - string_start + l.size();
-        locations.push_back(loc);
-
-        cur += l.size();
-
+        LFORTRAN_ASSERT(next_is(cur, "implicit"))
+        push_token3(cur, "implicit");
         if (next_is(cur, "doubleprecision(")) {
-            l = "double";
-            y.string.from_str(m_a, l);
-            stypes.push_back(y);
-            tokens.push_back(yytokentype::KW_DOUBLE);
-            loc.first = cur - string_start;
-            loc.last = cur - string_start + l.size();
-            locations.push_back(loc);
-            cur += l.size();
+            push_token3(cur, "double");
         }
         tokenize_line(cur);
     }
