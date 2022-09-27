@@ -1021,15 +1021,7 @@ struct FixedFormRecursiveDescent {
 
     void insert_enddo() {
         // return an explicit "end do" token here
-        std::string l("enddo");
-        YYSTYPE y2;
-        y2.string.from_str(m_a, l);
-        stypes.push_back(y2);
-        tokens.push_back(yytokentype::KW_END_DO);
-        Location loc;
-        loc.first = t.cur - string_start;
-        loc.last = t.cur - string_start + l.size();
-        locations.push_back(loc);
+        push_token_no_advance(t.cur, "enddo", KW_END_DO);
         // And a new line
         push_TK_NEWLINE(t.cur);
     }
