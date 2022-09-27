@@ -1351,7 +1351,7 @@ struct FixedFormRecursiveDescent {
      
         // tokenize all keywords
         for(auto iter = kw_found.begin(); iter != kw_found.end(); ++iter) {
-            push_token_no_advance(cur, *iter, identifiers_map[*iter]);
+            push_token2(cur, *iter, identifiers_map[*iter]);
         }
 
         cur = cpy;
