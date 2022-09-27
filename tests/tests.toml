@@ -2333,6 +2333,10 @@ filename = "fixed_form/double_complex1.f"
 ast = true
 
 [[test]]
+filename = "fixed_form/real8_1.f"
+ast = true
+
+[[test]]
 filename = "parameter1.f90"
 ast = true
 asr = true
