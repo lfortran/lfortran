@@ -9,33 +9,38 @@ sys.path.append(os.path.join(ROOT_DIR, "src", "libasr"))
 from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 
 
-def single_test(test, specific_test, verbose, no_llvm, update_reference):
+def single_test(test, verbose, no_llvm, update_reference, specific_backend = ""):
+    def need_backend(backend, default=False):
+        exist = test.get(backend, default)
+        specified = specific_backend == "" or specific_backend == backend
+        if specified and exist:
+            return True
+        return default
+    
     filename = test["filename"]
-    if specific_test and specific_test not in filename and specific_test not in test:
-        return
     show_verbose = "" if not verbose else "-v"
-    tokens = test.get("tokens", False)
-    ast = test.get("ast", False)
-    ast_indent = test.get("ast_indent", False)
-    ast_f90 = test.get("ast_f90", False)
-    ast_cpp = test.get("ast_cpp", False)
-    ast_cpp_hip = test.get("ast_cpp_hip", False)
-    ast_openmp = test.get("ast_openmp", False)
-    asr = test.get("asr", False)
-    asr_implicit_typing = test.get("asr_implicit_typing", False)
-    asr_implicit_interface = test.get("asr_implicit_interface", False)
-    asr_preprocess = test.get("asr_preprocess", False)
-    asr_indent = test.get("asr_indent", False)
-    mod_to_asr = test.get("mod_to_asr", False)
-    llvm = test.get("llvm", False)
-    cpp = test.get("cpp", False)
-    c = test.get("c", False)
-    julia = test.get("julia", False)
-    wat = test.get("wat", False)
-    obj = test.get("obj", False)
-    x86 = test.get("x86", False)
-    bin_ = test.get("bin", False)
-    pass_ = test.get("pass", None)
+    tokens = need_backend("tokens")
+    ast = need_backend("ast")
+    ast_indent = need_backend("ast_indent")
+    ast_f90 = need_backend("ast_f90")
+    ast_cpp = need_backend("ast_cpp")
+    ast_cpp_hip = need_backend("ast_cpp_hip")
+    ast_openmp = need_backend("ast_openmp")
+    asr = need_backend("asr")
+    asr_implicit_typing = need_backend("asr_implicit_typing")
+    asr_implicit_interface = need_backend("ast_implicit_interface")
+    asr_preprocess = need_backend("ast_preprocess")
+    asr_indent = need_backend("asr_indent")
+    mod_to_asr = need_backend("mod_to_asr")
+    llvm = need_backend("llvm")
+    cpp = need_backend("cpp")
+    c = need_backend("c")
+    julia = need_backend("julia")
+    wat = need_backend("wat")
+    obj = need_backend("obj")
+    x86 = need_backend("x86")
+    bin_ = need_backend("bin")
+    pass_ = need_backend("pass", None)
     optimization_passes = ["flip_sign", "div_to_mul", "fma", "sign_from_value",
                            "inline_function_calls", "loop_unroll",
                            "dead_code_removal"]

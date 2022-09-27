@@ -334,6 +334,8 @@ def tester_main(compiler, single_test):
                         help="list all tests")
     parser.add_argument("-t", metavar="TEST",
                         help="Run a specific test")
+    parser.add_argument("-b", "--backend", metavar="BACKEND",
+                        help="Run a specific backend")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase test verbosity")
     parser.add_argument("--no-llvm", action="store_true",
@@ -344,6 +346,7 @@ def tester_main(compiler, single_test):
     update_reference = args.update
     list_tests = args.list
     specific_test = args.t
+    specific_backend = args.backend
     verbose = args.verbose
     no_llvm = args.no_llvm
 
@@ -351,22 +354,16 @@ def tester_main(compiler, single_test):
     os.environ["PATH"] = os.path.join(SRC_DIR, "bin") \
         + os.pathsep + os.environ["PATH"]
     test_data = toml.load(open(os.path.join(ROOT_DIR, "tests", "tests.toml")))
+    filtered_tests = test_data["test"]
     if specific_test:
-        # some fuzzy comparison to get all seemingly fitting tests tested
-        specific = [test for test in test_data["test"]
-                    if specific_test in test["filename"] or specific_test in test]
-        # no concurrent execution
-        for test in specific:
+        filtered_tests = [test for test in filtered_tests if specific_test in test["filename"]]
+    if specific_backend:
+        filtered_tests = [test for test in filtered_tests if specific_backend in test]
+    if args.sequential:
+        for test in filtered_tests:
             single_test(test,
                         update_reference=update_reference,
-                        specific_test=specific_test,
-                        verbose=verbose,
-                        no_llvm=no_llvm)
-    elif args.sequential:
-        for test in test_data["test"]:
-            single_test(test,
-                        update_reference=update_reference,
-                        specific_test=specific_test,
+                        specific_backend=specific_backend,
                         verbose=verbose,
                         no_llvm=no_llvm)
     # run in parallel
@@ -374,13 +371,13 @@ def tester_main(compiler, single_test):
         single_tester_partial_args = partial(
             single_test,
             update_reference=update_reference,
-            specific_test=specific_test,
+            specific_backend=specific_backend,
             verbose=verbose,
             no_llvm=no_llvm)
         with ThreadPoolExecutor() as ex:
             futures = ex.map(
                 single_tester_partial_args, [
-                    test for test in test_data["test"]])
+                    test for test in filtered_tests])
             for f in futures:
                 if not f:
                     ex.shutdown(wait=False)
