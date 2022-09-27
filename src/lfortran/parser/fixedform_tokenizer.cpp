@@ -17,8 +17,7 @@ namespace LFortran
 {
 
 std::map<std::string, yytokentype> identifiers_map = {
-    {"end of file", END_OF_FILE},
-    {"newline", TK_NEWLINE},
+    {"EOF", END_OF_FILE},
     {"\n", TK_NEWLINE},
     {"name", TK_NAME},
     {"def_op", TK_DEF_OP},
@@ -426,7 +425,7 @@ struct FixedFormRecursiveDescent {
 
     // Push the token_type, YYSTYPE and Location of the token_str at `cur`.
     // (Does not modify `cur`.)
-    void push_token_no_advance(unsigned char *cur, const std::string &token_str,
+    void push_token_no_advance_token(unsigned char *cur, const std::string &token_str,
             yytokentype token_type) {
         YYSTYPE yy;
         yy.string.from_str(m_a, token_str);
@@ -438,11 +437,16 @@ struct FixedFormRecursiveDescent {
         locations.push_back(loc);
     }
 
+    // token_type automatically determined
+    void push_token_no_advance(unsigned char *cur, const std::string &token_str) {
+        push_token_no_advance_token(cur, token_str, identifiers_map[token_str]);
+    }
+
     // Same as push_token_no_advance(), but update `cur` and `t.cur`.
     // token_type is automatically determined
     void push_token3(unsigned char *&cur, const std::string &token_str) {
         LFORTRAN_ASSERT(next_is(cur, token_str))
-        push_token_no_advance(cur, token_str, identifiers_map[token_str]);
+        push_token_no_advance(cur, token_str);
         cur += token_str.size();
         t.cur = cur;
     }
@@ -801,7 +805,7 @@ struct FixedFormRecursiveDescent {
                     stypes.push_back(yylval);
                     tokens.push_back(TK_FORMAT);
                     next_line(cur);
-                    push_token_no_advance(cur-1, "\n", TK_NEWLINE);
+                    push_token_no_advance(cur-1, "\n");
                 } else {
                     push_token3(cur, io_str);
                     tokenize_line(cur);
@@ -1000,9 +1004,9 @@ struct FixedFormRecursiveDescent {
 
     void insert_enddo() {
         // return an explicit "end do" token here
-        push_token_no_advance(t.cur, "enddo", KW_END_DO);
+        push_token_no_advance(t.cur, "end_do");
         // And a new line
-        push_token_no_advance(t.cur, "\n", TK_NEWLINE);
+        push_token_no_advance(t.cur, "\n");
     }
 
     bool all_labels_match(int64_t label) {
@@ -1170,15 +1174,15 @@ struct FixedFormRecursiveDescent {
         int64_t l = eat_label(cur);
         if (next_is(cur, "endsubroutine")) {
             if (l != -1) {
-                push_token_no_advance(cur, "continue", KW_CONTINUE);
-                push_token_no_advance(cur, "\n", TK_NEWLINE);
+                push_token_no_advance(cur, "continue");
+                push_token_no_advance(cur, "\n");
             }
             push_token3(cur, "endsubroutine");
             tokenize_line(cur);
         } else if (next_is(cur, "end")) {
             if (l != -1) {
-                push_token_no_advance(cur, "continue", KW_CONTINUE);
-                push_token_no_advance(cur, "\n", TK_NEWLINE);
+                push_token_no_advance(cur, "continue");
+                push_token_no_advance(cur, "\n");
             }
             push_token3(cur, "end");
             tokenize_line(cur);
@@ -1323,9 +1327,9 @@ struct FixedFormRecursiveDescent {
             lex_block_data(cur);
         } else if (is_implicit_program(cur)) {
             // add implicit global program at the line `cur` is currently at
-            push_token_no_advance(cur, "program", KW_PROGRAM);
-            push_token_no_advance(cur, "implicit_program_lfortran", TK_NAME);
-            push_token_no_advance(cur, "\n", TK_NEWLINE);
+            push_token_no_advance(cur, "program");
+            push_token_no_advance_token(cur, "implicit_program_lfortran", TK_NAME);
+            push_token_no_advance(cur, "\n");
             lex_program(cur, false);
         } else {
             error(cur, "ICE: Cannot recognize global scope entity");
@@ -1342,7 +1346,7 @@ struct FixedFormRecursiveDescent {
             lex_global_scope_item(cur);
             next = cur;
         }
-        push_token_no_advance(cur, "EOF", END_OF_FILE);
+        push_token_no_advance(cur, "EOF");
     }
 
 };
