@@ -16,7 +16,7 @@ int position = 0;
 namespace LFortran
 {
 
-std::map<std::string, int> identifiers_map = {
+std::map<std::string, yytokentype> identifiers_map = {
     {"end of file", END_OF_FILE},
     {"newline", TK_NEWLINE},
     {"\n", TK_NEWLINE},
@@ -681,22 +681,14 @@ struct FixedFormRecursiveDescent {
      * Then the rest of the line is tokenized, including the new line.
      */
     void tokenize_line(const std::string &chop, unsigned char *&cur) {
-        YYSTYPE y1;
         if (chop != "") {
-            std::string l(chop); 
-            y1.string.from_str(m_a, l);
-            stypes.push_back(y1);
             if (chop == "enddo") {
-                tokens.push_back(KW_END_DO);
+                push_token2(cur, chop, KW_END_DO);
             } else {
-                tokens.push_back(identifiers_map[chop]);
+                push_token2(cur, chop, identifiers_map[chop]);
             }
-            Location loc;
-            loc.first = cur - string_start;
-            loc.last = cur - string_start + chop.size();
-            locations.push_back(loc);
         }
-        unsigned char *start = cur + chop.size();
+        unsigned char *start = cur;
         // move the cur pointer to the next line after
         next_line(cur);
         if (start >= cur) {
