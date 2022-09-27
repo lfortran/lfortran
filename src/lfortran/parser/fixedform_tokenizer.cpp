@@ -682,11 +682,7 @@ struct FixedFormRecursiveDescent {
      */
     void tokenize_line(const std::string &chop, unsigned char *&cur) {
         if (chop != "") {
-            if (chop == "enddo") {
-                push_token2(cur, chop, KW_END_DO);
-            } else {
-                push_token2(cur, chop, identifiers_map[chop]);
-            }
+            push_token2(cur, chop, identifiers_map[chop]);
         }
         unsigned char *start = cur;
         // move the cur pointer to the next line after
