@@ -417,7 +417,6 @@ public:
         // path things should be as fast as possible. Currently they are slow.
         // TODO: this needs to be moved to Common Visitor, and it needs to be
         // made availabe when visiting the body, not the symbol table.
-        std::map<std::string, ASR::ttype_t*> implicit_dictionary;
         //populate the implicit_dictionary
         populate_implicit_dictionary(x, implicit_dictionary);
         //iterate over all implicit statements
@@ -715,6 +714,7 @@ public:
         current_procedure_used_type_parameter_indices.clear();
         is_current_procedure_templated = false;
         // print_implicit_dictionary(implicit_dictionary);
+        implicit_dictionary.clear();
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {

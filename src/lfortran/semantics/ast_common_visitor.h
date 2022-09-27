@@ -669,6 +669,7 @@ public:
     std::map<std::string, std::vector<ASR::asr_t*>> template_type_parameters;
     std::vector<ASR::asr_t*> current_template_type_parameters;
     std::unordered_set<int> current_procedure_used_type_parameter_indices;
+    std::map<std::string, ASR::ttype_t*> implicit_dictionary;
 
     Vec<char*> data_member_names;
 
@@ -730,8 +731,9 @@ public:
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
         if (!v) {
-            if (implicit_dictionary.find(var_name[0]) != implicit_dictionary.end()) {
-                ASR::ttype_t *t = implicit_dictionary[var_name[0]];
+            std::string first_letter = std::string(1,var_name[0]);
+            if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()) {
+                ASR::ttype_t *t = implicit_dictionary[first_letter];
                 if (t == nullptr) {
                     diag.semantic_error_label("Variable '" + var_name
                         + "' is not declared", {loc},
