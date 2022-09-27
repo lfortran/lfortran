@@ -426,8 +426,10 @@ public:
                 if (x.n_implicit != 1) {
                     throw SemanticError("No other implicit statement is allowed when 'implicit none' is used", x.m_implicit[i]->base.loc);
                 }
-                for ( auto it: implicit_dictionary) {
-                    it.second = nullptr;
+                if (compiler_options.implicit_typing) {
+                    for ( auto it: implicit_dictionary) {
+                        it.second = nullptr;
+                    }
                 }
             } else {
                 //if no, then it is of type "implicit"
