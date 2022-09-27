@@ -100,6 +100,7 @@ std::map<std::string, int> identifiers_map = {
     {"dowhile", KW_DOWHILE},
     {"double", KW_DOUBLE},
     {"doubleprecision", KW_DOUBLE_PRECISION},
+    {"doublecomplex", KW_DOUBLE_COMPLEX},
     {"elemental", KW_ELEMENTAL},
     {"else", KW_ELSE},
     {"elseif", KW_ELSEIF},
@@ -263,6 +264,7 @@ std::vector<std::string> declarators{
             "real",
             "complex",
             "doubleprecision",
+            "doublecomplex",
             "external",
             "dimension",
             "character",
@@ -442,6 +444,17 @@ struct FixedFormRecursiveDescent {
         locations.push_back(loc);
     }
 
+    // Same as push_token(), but update `cur` and `t.cur`
+    // TODO: just use `token_type`, and advance `cur` accordingly and check
+    // that the string actually matches
+    // TODO: add push_token_no_advance() which does not modify cur
+    void push_token2(unsigned char *&cur, const std::string &token_str,
+            yytokentype token_type) {
+        push_token(cur, token_str, token_type);
+        cur += token_str.size();
+        t.cur = cur;
+    }
+
     bool contains(unsigned char *start, unsigned char *end, char ch) {
         unsigned char *cur = start;
         while (*cur != '\0' && cur < end) {
@@ -525,12 +538,12 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    // cur points to an name: char (char|digit)*
+    // cur points to an name: char|_ (char|digit|_)*
     bool try_name(unsigned char *&cur) {
         unsigned char *old = cur;
-        if (is_char(*cur)) {
+        if (is_char(*cur) || (*cur == '_')) {
             cur++;
-            while (is_char(*cur) || is_digit(*cur)) cur++;
+            while (is_char(*cur) || is_digit(*cur) || (*cur == '_')) cur++;
         }
         if (cur > old) {
             return true;
@@ -942,28 +955,39 @@ struct FixedFormRecursiveDescent {
         tokenize_line("", cur);
     }
 
-    bool is_function_call(unsigned char *&cur) {
-        if (!next_is(cur, "call")) return false;
-        auto cpy = cur;
-        auto next = cpy; next_line(next);
-        std::string cur_line{tostr(cpy, next)};
-        // + std::string("call").size()
-        cpy += 4;
-        // function needs to start with a letter
-        if (!is_char(*cpy)) return false;
-        while(*cpy != '(') {
-            if (*cpy == '\n' || *cpy == '\0') 
-                return false;
-            cpy++;
+    bool is_function_call(unsigned char *cur) {
+        if (try_next(cur, "call")) {
+            if (try_name(cur)) {
+                // Skip optional parentheses (skips strings, nested
+                // parentheses etc.)
+                if (*cur == '(') {
+                    cur++;
+                    if (*cur == ')') {
+                        cur++;
+                    } else {
+                        // By setting `true` we ensure all arguments are parsed
+                        // (separated by commas)
+                        if (!try_expr(cur, true)) {
+                            // If the expression failed to parse, then it
+                            // is not a properly formed function call
+                            return false;
+                        };
+                        if (*cur != ')') {
+                            // Missing right parenthesis
+                            return false;
+                        }
+                        cur++;
+                    }
+                }
+                // If we are at the end of the statement, then this must
+                // be a function call. Otherwise it's something else,
+                // such as assignment (=, or =>).
+                if (*cur == '\n' || *cur == ';') {
+                    return true;
+                }
+            }
         }
-        cpy++;
-        int32_t nesting = 1;
-        while(*cpy != '\n') {
-            if (*cpy == '(') nesting++;
-            if (*cpy == ')') nesting--;
-            cpy++;
-        }
-        return nesting == 0;
+        return false;
     }
 
     bool lex_body_statement(unsigned char *&cur) {
@@ -1314,6 +1338,20 @@ struct FixedFormRecursiveDescent {
         }
     }
 
+    void lex_block_data(unsigned char *&cur) {
+        push_token2(cur, "block", KW_BLOCK);
+        push_token2(cur, "data", KW_DATA);
+        tokenize_line("", cur);
+        while(lex_body_statement(cur));
+        if (next_is(cur, "endblockdata")) {
+            tokenize_line("endblockdata", cur);
+        } else if (next_is(cur, "end")) {
+            tokenize_line("end", cur);
+        } else {
+            error(cur, "Expecting terminating symbol for block data");
+        }
+    }
+
     bool is_declaration(unsigned char *&cur, std::string declaration_type /*function, subroutine, program*/, const std::vector<std::string>& keywords) {
         unsigned char *cpy = cur;
         unsigned char *nextline = cur; next_line(nextline);
@@ -1393,7 +1431,7 @@ struct FixedFormRecursiveDescent {
         std::vector<std::string> function_keywords{"recursive", "pure",
             "elemental",
             "real", "character", "complex", "integer", "logical",
-            "doubleprecision"};
+            "doubleprecision", "doublecomplex"};
 
         if (next_is(cur, "include")) tokenize_line("include", cur);
         if (is_program(cur)) {
@@ -1402,11 +1440,8 @@ struct FixedFormRecursiveDescent {
             lex_subroutine(cur);
         } else if (is_declaration(cur, "function", function_keywords)) {
             lex_function(cur);
-        /* TODO
-        }  else if (is_declaration(cur, "blockdata", blockdata_keywords)) {
+        } else if (next_is(cur, "blockdata")) {
             lex_block_data(cur);
-        } 
-        */
         } else if (is_implicit_program(cur)) {
             std::string prog{"program"};
             std::string name{"implicit_program_lfortran"};
