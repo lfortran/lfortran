@@ -3271,6 +3271,24 @@ public:
         s = r;
     }
 
+    void visit_Include(const Include_t& x)
+    {
+        std::string r = indent;
+        r += print_label(x);
+        r += syn(gr::Keyword);
+        r += "include";
+        r += syn();
+        r += " '";
+        r += x.m_filename;
+        r += "'";
+        if (x.m_trivia) {
+            r += print_trivia_after(*x.m_trivia);
+        } else {
+            r.append("\n");
+        }
+        s = r;
+    }
+
     template <typename Node>
     std::string print_label(const Node &x) {
         if (x.m_label == 0) {
