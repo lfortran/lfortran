@@ -10,6 +10,7 @@ tokens = true
 ast_indent = true
 asr_indent = true
 ast = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/template_add.f90"
@@ -19,6 +20,7 @@ asr = true
 [[test]]
 filename = "subroutine2.f90"
 ast = true
+julia = true
 
 [[test]]
 filename = "subroutine3.f90"
@@ -26,11 +28,13 @@ ast = true
 asr = true
 llvm = true
 obj = true
+julia = true
 
 [[test]]
 filename = "subroutine3b.f90"
 ast = true
 asr = true
+julia = true
 
 [[test]]
 filename = "do1.f90"
@@ -67,6 +71,7 @@ ast_f90 = true
 ast_openmp = true
 asr = true
 cpp = true
+julia = true
 
 [[test]]
 filename = "do_concurrent_reduce.f90"
@@ -90,17 +95,20 @@ filename = "subroutine5.f90"
 ast = true
 asr = true
 cpp = true
+julia = true
 
 [[test]]
 filename = "subroutine6.f90"
 ast = true
 ast_openmp = true
 cpp = true
+julia = true
 
 [[test]]
 filename = "subroutine7.f90"
 ast = true
 asr = true
+julia = true
 
 [[test]]
 filename = "errors/array_size_01.f90"
@@ -581,6 +589,7 @@ filename = "array1.f90"
 ast = true
 asr = true
 cpp = true
+julia = true
 
 [[test]]
 filename = "array2.f90"
@@ -588,6 +597,7 @@ ast = true
 asr = true
 llvm = true
 cpp = true
+julia = true
 
 [[test]]
 filename = "array2_derived.f90"
@@ -600,6 +610,7 @@ tokens = true
 ast = true
 asr = true
 cpp = true
+julia = true
 
 [[test]]
 filename = "array4.f90"
@@ -634,19 +645,23 @@ filename = "../integration_tests/arrays_01.f90"
 cpp = true
 asr = true
 llvm = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_05.f90"
 asr = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_01_size.f90"
 asr = true
 llvm = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_02_size.f90"
 asr = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/matrix_01_transpose.f90"
@@ -734,18 +749,21 @@ asr = true
 filename = "../integration_tests/arrays_02.f90"
 ast = true
 ast_f90 = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_03_func.f90"
 asr = true
 llvm = true
 cpp = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_04_func.f90"
 asr = true
 llvm = true
 cpp = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_06.f90"
@@ -761,6 +779,7 @@ llvm = true
 filename = "../integration_tests/arrays_08_func.f90"
 asr = true
 llvm = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_09.f90"

@@ -11,7 +11,7 @@ from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 
 def single_test(test, specific_test, verbose, no_llvm, update_reference):
     filename = test["filename"]
-    if specific_test and specific_test not in filename:
+    if specific_test and specific_test not in filename and specific_test not in test:
         return
     show_verbose = "" if not verbose else "-v"
     tokens = test.get("tokens", False)
@@ -30,6 +30,7 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
     llvm = test.get("llvm", False)
     cpp = test.get("cpp", False)
     c = test.get("c", False)
+    julia = test.get("julia", False)
     wat = test.get("wat", False)
     obj = test.get("obj", False)
     x86 = test.get("x86", False)
@@ -217,6 +218,10 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
 
     if c:
         run_test(filename, "c", "lfortran --no-color --show-c {infile}",
+                 filename, update_reference, extra_args)
+        
+    if julia:
+        run_test(filename, "julia", "lfortran --no-color --show-julia {infile}",
                  filename, update_reference, extra_args)
 
     if wat:
