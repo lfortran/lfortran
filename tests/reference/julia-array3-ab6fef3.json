@@ -1,0 +1,13 @@
+{
+    "basename": "julia-array3-ab6fef3",
+    "cmd": "lfortran --no-color --show-julia {infile}",
+    "infile": "tests/array3.f90",
+    "infile_hash": "047ac01d7e3df52429d6889258f37213048937dae8611af6cbd9ecae",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "julia-array3-ab6fef3.stdout",
+    "stdout_hash": "7689e1b3e35d32f4b8240ae111d3f2c71c6e3207a3b05f001d733bd7",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
