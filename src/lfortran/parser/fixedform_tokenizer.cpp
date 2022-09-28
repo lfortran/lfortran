@@ -1176,9 +1176,13 @@ struct FixedFormRecursiveDescent {
     }
 
     // Return true if enddo and advance;
-    bool try_enddo_regular(unsigned char *&cur) {
+    bool try_enddo_regular(unsigned char *&cur, int64_t continue_label) {
         if (next_is(cur, "enddo")) {
             // TODO: parse things correctly to distinguish enddo = 5;
+            if (continue_label != -1) {
+                push_token_no_advance(cur, "continue");
+                push_token_no_advance(cur, "\n");
+            }
             push_token_no_advance(cur, "end_do");
             push_token_no_advance(cur, "\n");
             next_line(cur);
@@ -1190,9 +1194,9 @@ struct FixedFormRecursiveDescent {
 
     void lex_do_regular(unsigned char *&cur) {
         while (true) {
-            eat_label(cur);
+            int64_t l = eat_label(cur);
 
-            if (try_enddo_regular(cur)) {
+            if (try_enddo_regular(cur, l)) {
                 return;
             }
             if (!lex_body_statement(cur)) {
