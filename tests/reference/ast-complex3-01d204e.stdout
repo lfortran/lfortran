@@ -8,7 +8,7 @@
             (AttrType 
                 TypeComplex 
                 [(() 
-                16 
+                8 
                 Value)] 
                 () 
                 None
@@ -44,7 +44,7 @@
             (AttrType 
                 TypeComplex 
                 [(() 
-                8 
+                4 
                 Value)] 
                 () 
                 None
