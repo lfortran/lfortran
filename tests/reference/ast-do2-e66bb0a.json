@@ -1,0 +1,13 @@
+{
+    "basename": "ast-do2-e66bb0a",
+    "cmd": "lfortran --indent --fixed-form --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/fixed_form/do2.f",
+    "infile_hash": "d4c2d829e785c2e19fbfb8c497f168a7bf83425c23f0758b30832800",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-do2-e66bb0a.stdout",
+    "stdout_hash": "35a50a892eae433fedff13c1afb95d94fe0d06e8690201bd2cb22060",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
