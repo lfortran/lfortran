@@ -617,7 +617,7 @@ class SymbolTableVisitor : public CommonVisitor<SymbolTableVisitor> {
         /* a_args */ args.p,
         /* n_args */ args.size(),
         /* a_type_parameters */
-            is_current_procedure_templated ? params.p : nullptr,
+        is_current_procedure_templated ? params.p : nullptr,
         /* n_type_parameters */ params.size(),
         /* a_body */ nullptr,
         /* n_body */ 0,
