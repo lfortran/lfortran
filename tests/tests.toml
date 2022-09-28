@@ -469,6 +469,10 @@ wat = true
 julia = true
 
 [[test]]
+filename = "../integration_tests/data_02.f90"
+ast = true
+
+[[test]]
 filename = "../integration_tests/doloop_02.f90"
 asr = true
 llvm = true

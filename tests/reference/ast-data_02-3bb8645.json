@@ -1,0 +1,13 @@
+{
+    "basename": "ast-data_02-3bb8645",
+    "cmd": "lfortran --indent --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/data_02.f90",
+    "infile_hash": "64c402dcb73aca8760e7059320fc541f9ff427be60bd8e9626cbee36",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-data_02-3bb8645.stdout",
+    "stdout_hash": "8c4c4392350b3ef5c4b6b96beb1955294c0835963e38b6fc93f514f5",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

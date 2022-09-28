@@ -1704,27 +1704,27 @@ if_statement_single
     ;
 
 if_block
-    : KW_IF "(" expr ")" KW_THEN id_opt sep statements {
-            $$ = IF1($3, TRIVIA_AFTER($7, @$), $8, @$); }
-    | KW_IF "(" expr ")" KW_THEN id_opt sep statements
-        KW_ELSE id_opt sep statements {
-            $$ = IF2($3, TRIVIA($7, $11, @$), $8, $12, @$); }
-    | KW_IF "(" expr ")" KW_THEN id_opt sep statements KW_ELSE if_block {
-            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $10, @$); }
-    | KW_IF "(" expr ")" KW_THEN id_opt sep statements elseif_block {
-            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $9, @$); }
+    : KW_IF "(" expr ")" KW_THEN id_opt sep decl_statements {
+            $$ = IF1($3, TRIVIA_AFTER($7, @$), SPLIT_STMT(p.m_a, $8), @$); }
+    | KW_IF "(" expr ")" KW_THEN id_opt sep decl_statements
+        KW_ELSE id_opt sep decl_statements {
+            $$ = IF2($3, TRIVIA($7, $11, @$), SPLIT_STMT(p.m_a, $8), SPLIT_STMT(p.m_a, $12), @$); }
+    | KW_IF "(" expr ")" KW_THEN id_opt sep decl_statements KW_ELSE if_block {
+            $$ = IF3($3, TRIVIA_AFTER($7, @$), SPLIT_STMT(p.m_a, $8), $10, @$); }
+    | KW_IF "(" expr ")" KW_THEN id_opt sep decl_statements elseif_block {
+            $$ = IF3($3, TRIVIA_AFTER($7, @$), SPLIT_STMT(p.m_a, $8), $9, @$); }
     ;
 
 elseif_block
-    : KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements {
-            $$ = IF1($3, TRIVIA_AFTER($7, @$), $8, @$); }
-    | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements
-        KW_ELSE id_opt sep statements {
-            $$ = IF2($3, TRIVIA($7, $11, @$), $8, $12, @$); }
-    | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements KW_ELSE if_block {
-            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $10, @$); }
-    | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements elseif_block {
-            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $9, @$); }
+    : KW_ELSEIF "(" expr ")" KW_THEN id_opt sep decl_statements {
+            $$ = IF1($3, TRIVIA_AFTER($7, @$), SPLIT_STMT(p.m_a, $8), @$); }
+    | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep decl_statements
+        KW_ELSE id_opt sep decl_statements {
+            $$ = IF2($3, TRIVIA($7, $11, @$), SPLIT_STMT(p.m_a, $8), SPLIT_STMT(p.m_a, $12), @$); }
+    | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep decl_statements KW_ELSE if_block {
+            $$ = IF3($3, TRIVIA_AFTER($7, @$), SPLIT_STMT(p.m_a, $8), $10, @$); }
+    | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep decl_statements elseif_block {
+            $$ = IF3($3, TRIVIA_AFTER($7, @$), SPLIT_STMT(p.m_a, $8), $9, @$); }
     ;
 
 where_statement
