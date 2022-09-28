@@ -362,6 +362,7 @@ wat = true
 [[test]]
 filename = "../integration_tests/if_05.f90"
 wat = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/abs_01.f90"
@@ -465,18 +466,21 @@ asr = true
 llvm = true
 pass = "do_loops"
 wat = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/doloop_02.f90"
 asr = true
 llvm = true
 wat = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/doloop_03.f90"
 asr = true
 llvm = true
 wat = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/doloop_04.f90"
@@ -487,26 +491,31 @@ asr = true
 [[test]]
 filename = "../integration_tests/doloop_05.f90"
 ast_f90 = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/subroutines_01.f90"
 asr = true
 llvm = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/subroutines_02.f90"
 asr = true
 llvm = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/subroutines_03.f90"
 ast = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/subroutines_04.f90"
 ast = true
 asr = true
 llvm = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/subroutines_05.f90"
@@ -1142,6 +1151,7 @@ ast = true
 ast_f90 = true
 asr = true
 llvm = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/case_02.f90"
@@ -1149,6 +1159,7 @@ ast = true
 ast_f90 = true
 asr = true
 llvm = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/case_03.f90"
@@ -1156,6 +1167,7 @@ ast = true
 ast_f90 = true
 asr = true
 llvm = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/case_04.f90"
@@ -1167,11 +1179,13 @@ filename = "../integration_tests/case_05.f90"
 ast = true
 ast_f90 = true
 asr = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/case_06.f90"
 asr = true
 pass = "dead_code_removal"
+julia = true
 
 [[test]]
 filename = "../integration_tests/program_02.f90"
@@ -1566,6 +1580,10 @@ asr = true
 filename = "../integration_tests/intrinsics_39.f90"
 asr = true
 
+[[test]]
+filename = "../integration_tests/intrinsics_46.f90"
+asr = true
+
 # floor (body)
 [[test]]
 filename = "../integration_tests/floor_01.f90"
@@ -1709,14 +1727,17 @@ filename = "../integration_tests/expr_05.f90"
 ast = true
 cpp = true
 ast_f90 = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/expr_06.f90"
 asr = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/expr_07.f90"
 asr = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/expr_08.f90"
@@ -1725,16 +1746,19 @@ wat = true
 [[test]]
 filename = "../integration_tests/expr_09.f90"
 wat = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/modules_11.f90"
 ast = true
 asr = true
 llvm = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/modules_12.f90"
 asr = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/modules_15b.f90"
@@ -1744,6 +1768,7 @@ asr = true
 filename = "../integration_tests/goto_01.f90"
 ast = true
 ast_f90 = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/goto_02.f90"

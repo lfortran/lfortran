@@ -1,0 +1,44 @@
+function main()
+    local i::Int32 = 0
+    local j::Int32 = 0
+    j = 0
+    for i ∈ 1:10
+        j = j + i
+        if i == 3
+        end
+        if i == 2
+            break
+        end
+    end
+    if j ≠ 3
+        println(Base.stderr, "ERROR STOP")
+        exit(1);
+    end
+    println(j)
+    j = 0
+    for i ∈ 1:10
+        if i == 2
+            break
+        end
+        j = j + i
+    end
+    if j ≠ 1
+        println(Base.stderr, "ERROR STOP")
+        exit(1);
+    end
+    println(j)
+    j = 0
+    for i ∈ 1:10
+        if i == 2
+            continue
+        end
+        j = j + i
+    end
+    if j ≠ 53
+        println(Base.stderr, "ERROR STOP")
+        exit(1);
+    end
+    println(j)
+end
+
+main()
