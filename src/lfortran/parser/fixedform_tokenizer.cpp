@@ -300,9 +300,7 @@ struct FixedFormRecursiveDescent {
     std::vector<YYSTYPE> stypes;
     std::vector<int> tokens;
     std::vector<Location> locations;
-    // we need to keep state when descending a loop nesting
-    bool abort_loop = false;
-    int64_t do_levels = 0;
+    // Stack of do labels
     std::vector<int64_t> do_labels;
 
     FixedFormRecursiveDescent(diag::Diagnostics &diag,
@@ -1020,61 +1018,91 @@ struct FixedFormRecursiveDescent {
                 });
     }
 
+    // Return how many last labels match
+    int64_t last_labels_match(int64_t label) {
+        for (size_t n=0; n < do_labels.size(); n++) {
+            if (do_labels[do_labels.size()-n-1] != label) {
+                return n;
+            }
+        }
+        return do_labels.size();
+    }
+
+    // Returns true if this is "end do" or equivalent, otherwise false
+    // It will always consume the label.
+    // If true, it will consume the whole line. Otherwise it leaves it.
     bool lex_do_terminal(unsigned char *&cur, int64_t do_label) {
+        LFORTRAN_ASSERT(do_label != -1)
         if (*cur == '\0') {
             Location loc;
             loc.first = 1;
             loc.last = 1;
-            throw parser_local::TokenizerError("End of file inside a do loop", loc);
+            throw parser_local::TokenizerError("End of file encountered in labeled do loop (loop is not terminated)", loc);
         }
         int64_t label = eat_label(cur);
-        bool label_match = false;
-        if (label != -1) {
-            if (label == do_label) {
-                label_match = true;
-            } else {
-                label_match = false;
-            }
+        if (label != do_label) {
+            // Labels do not match, this is not the end of our do loop
+            return false;
         }
         if (next_is(cur, "enddo")) {
             // end one nesting of loop
+            // TODO: add continue label
             push_token_no_advance(cur, "end_do");
             push_token_no_advance(cur, "\n");
             next_line(cur);
-            do_levels--;
+            LFORTRAN_ASSERT(label_last(do_label))
+            do_labels.pop_back();
             return true;
-        } else if (label_match && all_labels_match(label)) {
+        } else if (all_labels_match(label)) {
             // end entire loop nesting with single `CONTINUE`
             // the usual terminal statement for do loops
             if (next_is(cur, "continue")) {
                 push_token_advance(cur, "continue");
                 tokenize_line(cur);
             } else {
+                // TODO: add a continue label
                 lex_body_statement(cur);
             }
-            for (int i=0;i<do_levels;++i) {
+            size_t n_match = do_labels.size();
+            for (size_t i=0; i<n_match; i++) {
                 push_token_no_advance(cur, "end_do");
                 push_token_no_advance(cur, "\n");
+                LFORTRAN_ASSERT(label_last(do_label))
+                do_labels.pop_back();
             }
-            if (label_match && do_levels > 1) abort_loop = true;
-            do_levels = 0;
-            do_labels.clear();
             return true;
-        } else if (label_match) {
+        } else if (last_labels_match(label) > 1) {
+            int64_t n_match = last_labels_match(label);
+            // end entire loop nesting with single `CONTINUE`
+            // the usual terminal statement for do loops
+            if (next_is(cur, "continue")) {
+                push_token_advance(cur, "continue");
+                tokenize_line(cur);
+            } else {
+                // TODO: add a continue label
+                lex_body_statement(cur);
+            }
+            for (int i=0;i<n_match;++i) {
+                push_token_no_advance(cur, "end_do");
+                push_token_no_advance(cur, "\n");
+                LFORTRAN_ASSERT(label_last(do_label))
+                do_labels.pop_back();
+            }
+            return true;
+        } else {
             // end one nesting of loop 
             if (next_is(cur, "continue")) {
                 push_token_advance(cur, "continue");
                 tokenize_line(cur);
             } else {
+                // TODO: add a continue label
                 lex_body_statement(cur);
             }
             push_token_no_advance(cur, "end_do");
             push_token_no_advance(cur, "\n");
-            do_levels--;
+            LFORTRAN_ASSERT(label_last(do_label))
             do_labels.pop_back();
             return true;
-        } else {
-            return false;
         }
     }
 
@@ -1123,25 +1151,75 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
+    bool label_last(int64_t label) {
+        if (do_labels.size() > 0) {
+            if (do_labels[do_labels.size()-1] == label) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     void lex_do(unsigned char *&cur) {
         auto end = cur; next_line(end);
-        do_levels++;
-        Location loc; loc.first = cur-string_start; loc.last = cur-string_start;
         push_token_advance(cur, "do");
         int64_t do_label = eat_label_inline(cur);
-        if (do_label != -1) {
-            do_labels.push_back(do_label);
-            cur--; // un-advance as eat_label_inline moves 1 char too far when making checks
-        }
+        if (do_label != -1) cur--; // un-advance as eat_label_inline moves 1 char too far when making checks
+        // If do_label == -1, it is a regular do loop
+        // Otherwise it is a labeled do loop, and do_label is the label
         tokenize_line(cur); // tokenize rest of line where `do` starts
+        if (do_label == -1) {
+            lex_do_regular(cur);
+        } else {
+            lex_do_label(cur, do_label);
+        }
+    }
+
+    // Return true if enddo and advance;
+    bool try_enddo_regular(unsigned char *&cur) {
+        if (next_is(cur, "enddo")) {
+            // TODO: parse things correctly to distinguish enddo = 5;
+            push_token_no_advance(cur, "end_do");
+            push_token_no_advance(cur, "\n");
+            next_line(cur);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    void lex_do_regular(unsigned char *&cur) {
+        while (true) {
+            eat_label(cur);
+
+            if (try_enddo_regular(cur)) {
+                return;
+            }
+            if (!lex_body_statement(cur)) {
+                Location loc;
+                loc.first = cur-string_start;
+                loc.last = cur-string_start;
+                throw parser_local::TokenizerError("Expected an executable statement inside a do loop", loc);
+            };
+        }
+    }
+
+    void lex_do_label(unsigned char *&cur, int64_t do_label) {
+        LFORTRAN_ASSERT(do_label != -1)
+        // For labeled do loops we keep the labels in the do_labels stack
+        do_labels.push_back(do_label);
+
         while (!lex_do_terminal(cur, do_label)) {
             if (!lex_body_statement(cur)) {
-                throw parser_local::TokenizerError("End of file inside a do loop 2", loc);
+                Location loc;
+                loc.first = cur-string_start;
+                loc.last = cur-string_start;
+                throw parser_local::TokenizerError("Expected an executable statement inside a labeled do loop", loc);
             };
-
-            if (abort_loop) {
-                if (do_levels == 0) abort_loop = false;
+            if (!label_last(do_label)) {
+                // The lex_body_statement() above was a labeled loop that ended
+                // with the same label continue line as this loop, so we need to
+                // end this loop as well.
                 break;
             }
         }

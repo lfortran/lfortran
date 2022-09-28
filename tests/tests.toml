@@ -2337,6 +2337,10 @@ filename = "fixed_form/real8_1.f"
 ast = true
 
 [[test]]
+filename = "fixed_form/do1.f"
+ast = true
+
+[[test]]
 filename = "parameter1.f90"
 ast = true
 asr = true
