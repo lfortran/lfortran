@@ -1056,7 +1056,7 @@ implicit_statement
     | KW_IMPLICIT KW_COMPLEX "(" letter_spec_list ")" sep {
             $$ = IMPLICIT(ATTR_TYPE(Complex, @$), $4, TRIVIA_AFTER($6, @$), @$); }
     | KW_IMPLICIT KW_COMPLEX "*" TK_INTEGER "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE_INT(Complex, $4, @$), $6, TRIVIA_AFTER($8, @$), @$); }
+            $$ = IMPLICIT(ATTR_TYPE_INT(Complex, DIV2($4), @$), $6, TRIVIA_AFTER($8, @$), @$); }
     | KW_IMPLICIT KW_COMPLEX "(" TK_INTEGER ")" "(" letter_spec_list ")" sep {
             $$ = IMPLICIT(ATTR_TYPE_INT(Complex, $4, @$), $7, TRIVIA_AFTER($9, @$), @$); }
     | KW_IMPLICIT KW_COMPLEX "(" letter_spec_list ")"
@@ -1366,7 +1366,7 @@ var_type
     | KW_REAL "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Real, $3, @$); }
     | KW_COMPLEX { $$ = ATTR_TYPE(Complex, @$); }
     | KW_COMPLEX "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Complex, $3, @$); }
-    | KW_COMPLEX "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Complex, $3, @$); }
+    | KW_COMPLEX "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Complex, DIV2($3), @$); }
     | KW_LOGICAL { $$ = ATTR_TYPE(Logical, @$); }
     | KW_LOGICAL "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Logical, $3, @$); }
     | KW_LOGICAL "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Logical, $3, @$); }
