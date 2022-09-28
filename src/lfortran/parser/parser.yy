@@ -482,6 +482,7 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %type <vec_ast> event_post_stat_list
 %type <ast> sync_stat
 %type <ast> format_statement
+%type <ast> data_statement
 %type <ast> form_team_statement
 %type <ast> decl_statement
 %type <vec_ast> statements
@@ -1188,8 +1189,6 @@ var_decl
         LLOC(@$, @5); $$ = VAR_DECL_NAMELIST($3, $5, TRIVIA_AFTER($6, @$), @$);}
     | KW_COMMON common_block_list sep {
         LLOC(@$, @2); $$ = VAR_DECL_COMMON($2, TRIVIA_AFTER($3, @$), @$); }
-    | KW_DATA data_set_list sep {
-        LLOC(@$, @2); $$ = VAR_DECL_DATA($2, TRIVIA_AFTER($3, @$), @$); }
     | KW_EQUIVALENCE equivalence_set_list sep {
         LLOC(@$, @2); $$ = VAR_DECL_EQUIVALENCE($2, TRIVIA_AFTER($3, @$), @$);}
     ;
@@ -1506,6 +1505,7 @@ single_line_statement
     | flush_statement
     | forall_statement_single
     | format_statement
+    | data_statement
     | form_team_statement
     | goto_statement
     | if_statement_single
@@ -1923,6 +1923,10 @@ forall_statement_single
 
 format_statement
     : TK_FORMAT { $$ = FORMAT($1, @$); }
+    ;
+
+data_statement
+    : KW_DATA data_set_list { $$ = DATASTMT($2, @$); }
     ;
 
 form_team_statement

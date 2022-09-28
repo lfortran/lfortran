@@ -333,6 +333,8 @@ decl_attribute_t** ATTRCOMMON(Allocator &al,
 #define VAR_DECL_DATA(x, trivia, l) make_Declaration_t(p.m_a, l, \
         nullptr, VEC_CAST(x, decl_attribute), x.size(), \
         nullptr, 0, trivia_cast(trivia))
+#define DATASTMT(x, l) make_DataStmt_t(p.m_a, l, \
+        0, VEC_CAST(x, decl_attribute), x.size(), nullptr)
 #define DATA(objects, values, l) make_AttrData_t(p.m_a, l, \
         EXPRS(objects), objects.size(), \
         EXPRS(values), values.size())
