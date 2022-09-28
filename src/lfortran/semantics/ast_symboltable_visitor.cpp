@@ -514,8 +514,9 @@ public:
             std::string arg_s = to_lower(arg);
             if (current_scope->get_symbol(arg_s) == nullptr) {
                 if (compiler_options.implicit_typing) {
-                    declare_implicit_variable(x.base.base.loc, arg_s,
-                        ASRUtils::intent_unspecified);
+                    ASR::ttype_t *t = implicit_dictionary[std::string(1, arg_s[0])];
+                    declare_implicit_variable2(x.base.base.loc, arg_s,
+                        ASRUtils::intent_unspecified, t);
                 } else {
                     throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
                 }
