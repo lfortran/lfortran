@@ -36,6 +36,7 @@
 #include <libasr/pass/unused_functions.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
 
+#include <iostream>
 #include <map>
 #include <vector>
 
