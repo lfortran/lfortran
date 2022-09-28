@@ -379,10 +379,10 @@ def tester_main(compiler, single_test):
     filtered_tests = test_data["test"]
     if specific_tests:
         filtered_tests = [test for test in filtered_tests if any(
-            re.match(t, test["filename"]) for t in specific_tests)]
+            re.match(".*" + t + ".*", test["filename"]) for t in specific_tests)]
     if excluded_tests:
         filtered_tests = [test for test in filtered_tests if not any(
-            re.match(t, test["filename"]) for t in excluded_tests)]
+            re.match(".*" + t + ".*", test["filename"]) for t in excluded_tests)]
     if specific_backends:
         filtered_tests = [
             test for test in filtered_tests if any(
