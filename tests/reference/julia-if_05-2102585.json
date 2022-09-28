@@ -2,7 +2,7 @@
     "basename": "julia-if_05-2102585",
     "cmd": "lfortran --no-color --show-julia {infile}",
     "infile": "tests/../integration_tests/if_05.f90",
-    "infile_hash": "e17354307d88b9239319cbfd5ce6b117fd24e4aa2998deee3d8fe695",
+    "infile_hash": "a23794a4d3bf5a0ad5284c97ba63aeba2c8f0db06e5ba5a14d871f4b",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "julia-if_05-2102585.stdout",
