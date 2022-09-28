@@ -401,7 +401,7 @@ public:
         }
     }
 
-    void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary){
+    void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         std::cout << "Implicit Dictionary: " << std::endl;
         for( auto it: implicit_dictionary ) {
             if ( it.second ) {
@@ -413,8 +413,10 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
-        
-        std::map<std::string, ASR::ttype_t*> implicit_dictionary;
+        // TODO: The most common (modern) path is explicit typing, so in this
+        // path things should be as fast as possible. Currently they are slow.
+        // TODO: this needs to be moved to Common Visitor, and it needs to be
+        // made availabe when visiting the body, not the symbol table.
         //populate the implicit_dictionary
         populate_implicit_dictionary(x, implicit_dictionary);
         //iterate over all implicit statements
@@ -426,8 +428,10 @@ public:
                 if (x.n_implicit != 1) {
                     throw SemanticError("No other implicit statement is allowed when 'implicit none' is used", x.m_implicit[i]->base.loc);
                 }
-                for ( auto it: implicit_dictionary) {
-                    it.second = nullptr;
+                if (compiler_options.implicit_typing) {
+                    for ( auto it: implicit_dictionary) {
+                        it.second = nullptr;
+                    }
                 }
             } else {
                 //if no, then it is of type "implicit"
@@ -710,6 +714,7 @@ public:
         current_procedure_used_type_parameter_indices.clear();
         is_current_procedure_templated = false;
         // print_implicit_dictionary(implicit_dictionary);
+        implicit_dictionary.clear();
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
