@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
-import sys
+from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 import os
+import sys
+from typing import Dict
+
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 sys.path.append(os.path.join(ROOT_DIR, "src", "libasr"))
 
-from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 
-def single_test(test, verbose, no_llvm, update_reference,
-                specific_backends=None, excluded_backends=None):
+def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool,
+                specific_backends=None, excluded_backends=None) -> None:
     def is_included(backend):
         return test.get(backend, False) \
             and (specific_backends is None or backend in specific_backends) \
@@ -26,8 +28,8 @@ def single_test(test, verbose, no_llvm, update_reference,
     ast_openmp = is_included("ast_openmp")
     asr = is_included("asr")
     asr_implicit_typing = is_included("asr_implicit_typing")
-    asr_implicit_interface = is_included("ast_implicit_interface")
-    asr_preprocess = is_included("ast_preprocess")
+    asr_implicit_interface = is_included("asr_implicit_interface")
+    asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
     mod_to_asr = is_included("mod_to_asr")
     llvm = is_included("llvm")
@@ -143,6 +145,7 @@ def single_test(test, verbose, no_llvm, update_reference,
             extra_args)
 
     if asr_implicit_interface:
+        print("getting here")
         if filename.endswith(".f"):
             run_test(
                 filename,
