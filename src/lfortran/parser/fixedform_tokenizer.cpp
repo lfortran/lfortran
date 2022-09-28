@@ -1236,7 +1236,7 @@ struct FixedFormRecursiveDescent {
             tokenize_line(cur);
             return true;
         }
-        if (next_is(cur, "else")) {
+        if (next_is(cur, "else") && next_is_eol(cur+4)) {
             push_token_advance(cur, "else");
             tokenize_line(cur);
             return true;

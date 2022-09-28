@@ -2378,6 +2378,10 @@ filename = "fixed_form/data1.f"
 ast = true
 
 [[test]]
+filename = "fixed_form/else1.f"
+ast = true
+
+[[test]]
 filename = "parameter1.f90"
 ast = true
 asr = true
