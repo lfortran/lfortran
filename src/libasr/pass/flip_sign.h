@@ -6,9 +6,9 @@
 
 namespace LFortran {
 
-    void pass_replace_flip_sign(Allocator &al, ASR::TranslationUnit_t &unit,
-                                const LCompilers::PassOptions& pass_options);
+void pass_replace_flip_sign(Allocator &al, ASR::TranslationUnit_t &unit,
+                            const LCompilers::PassOptions &pass_options);
 
-} // namespace LFortran
+}  // namespace LFortran
 
-#endif // LIBASR_PASS_FLIP_SIGN_H
+#endif  // LIBASR_PASS_FLIP_SIGN_H

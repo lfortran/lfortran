@@ -12,5 +12,4 @@ int32_t __mod1_MOD_f4(int32_t *a, int32_t *b);
 int32_t __mod1_MOD_f5b(descriptor<2, int32_t> *a);
 }
 
-#endif // MOD2_H
-
+#endif  // MOD2_H

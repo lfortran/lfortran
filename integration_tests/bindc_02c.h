@@ -10,4 +10,4 @@ void callback1b(int n, float *A);
 void callback2(int *n, float *A);
 void callback2b(int *n, float *A);
 
-#endif // BINDC_02C
+#endif  // BINDC_02C

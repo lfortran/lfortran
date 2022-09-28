@@ -12,7 +12,7 @@ namespace LFortran {
  *     printout to avoid showing users implementation functions in the
  *     stacktrace.
  */
-std::string get_stacktrace(int impl_stacktrace_depth=0);
+std::string get_stacktrace(int impl_stacktrace_depth = 0);
 
 // Prints the current stacktrace to stdout.
 void show_stacktrace();
@@ -23,21 +23,20 @@ void print_stack_on_segfault();
 // Path to the binary executable
 extern std::string binary_executable_path;
 
-struct StacktraceItem
-{
+struct StacktraceItem {
   // Always found
   uintptr_t pc;
 
   // The following two are either both found, or not found
-  uintptr_t local_pc=0; // 0 if not found
-  std::string binary_filename; // "" if not found
+  uintptr_t local_pc = 0;       // 0 if not found
+  std::string binary_filename;  // "" if not found
 
   // This can be found or not
-  std::string function_name; // "" if not found
+  std::string function_name;  // "" if not found
 
   // The following two are either both found, or not found
-  std::string source_filename; // "" if not found
-  int line_number=-1; // -1 if not found
+  std::string source_filename;  // "" if not found
+  int line_number = -1;         // -1 if not found
 };
 
 // Returns the stacktrace, fills in the `pc` member
@@ -52,17 +51,16 @@ void get_local_info(std::vector<StacktraceItem> &d);
 
 // Converts the information stored in `d` into a string
 std::string stacktrace2str(const std::vector<LFortran::StacktraceItem> &d,
-    int skip);
+                           int skip);
 
 // Returns line number information from address
 void address_to_line_number(const std::vector<std::string> &filenames,
-          const std::vector<uint64_t> &addresses,
-          uintptr_t address,
-          std::string &filename,
-          int &line_number);
+                            const std::vector<uint64_t> &addresses,
+                            uintptr_t address, std::string &filename,
+                            int &line_number);
 
 std::string error_stacktrace(const std::vector<StacktraceItem> &stacktrace);
 
-} // namespace LFortran
+}  // namespace LFortran
 
-#endif // LFORTRAN_STACKTRACE_H
+#endif  // LFORTRAN_STACKTRACE_H

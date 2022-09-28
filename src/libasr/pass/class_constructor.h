@@ -6,9 +6,10 @@
 
 namespace LFortran {
 
-    void pass_replace_class_constructor(Allocator &al, ASR::TranslationUnit_t &unit,
-                                        const LCompilers::PassOptions& pass_options);
+void pass_replace_class_constructor(
+    Allocator &al, ASR::TranslationUnit_t &unit,
+    const LCompilers::PassOptions &pass_options);
 
-} // namespace LFortran
+}  // namespace LFortran
 
-#endif // LFORTRAN_PASS_CLASS_CONSTRUCTOR_H
+#endif  // LFORTRAN_PASS_CLASS_CONSTRUCTOR_H

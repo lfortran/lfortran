@@ -21,21 +21,21 @@ program types_15
     z_big_des = z_big_src
 
     print *, n_des, n_big_des, z_des, z_big_des
-    
+
     n_des = n_big_src
     n_big_des = z_src
     z_des = z_big_src
     z_big_des = n_src
 
     print *, n_des, n_big_des, z_des, z_big_des
-    
+
     n_des = z_src
     n_big_des = z_big_src
     z_des = n_src
     z_big_des = n_big_src
 
     print *, n_des, n_big_des, z_des, z_big_des
-    
+
     n_des = z_big_src
     n_big_des = n_src
     z_des = n_big_src

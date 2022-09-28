@@ -6,9 +6,9 @@
 
 namespace LFortran {
 
-    void pass_replace_sign_from_value(Allocator &al, ASR::TranslationUnit_t &unit,
-                                      const LCompilers::PassOptions& pass_options);
+void pass_replace_sign_from_value(Allocator &al, ASR::TranslationUnit_t &unit,
+                                  const LCompilers::PassOptions &pass_options);
 
-} // namespace LFortran
+}  // namespace LFortran
 
-#endif // LIBASR_PASS_SIGN_FROM_VALUE_H
+#endif  // LIBASR_PASS_SIGN_FROM_VALUE_H

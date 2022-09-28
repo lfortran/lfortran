@@ -6,7 +6,7 @@ module submodule
 
    type :: type
       type(type), allocatable :: types(:)
-   end type 
+   end type
 
    interface
       module subroutine function(integer,real)

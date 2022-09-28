@@ -6,9 +6,9 @@
 
 namespace LFortran {
 
-    void pass_replace_print_arr(Allocator &al, ASR::TranslationUnit_t &unit,
-                                const LCompilers::PassOptions& pass_options);
+void pass_replace_print_arr(Allocator &al, ASR::TranslationUnit_t &unit,
+                            const LCompilers::PassOptions &pass_options);
 
-} // namespace LFortran
+}  // namespace LFortran
 
-#endif // LFORTRAN_PASS_PRINT_ARR_H
+#endif  // LFORTRAN_PASS_PRINT_ARR_H

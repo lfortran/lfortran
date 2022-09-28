@@ -7,7 +7,7 @@ program array_bound_1
 
     print *, lbound(a, 1), lbound(a, 2), lbound(a, 3)
     print *, ubound(a, 1), ubound(a, 2), ubound(a, 3)
-    
+
     print *, lbound(b, 1), lbound(b, 2), lbound(b, 3), lbound(b, 4)
     print *, ubound(b, 1), ubound(b, 2), ubound(b, 3), ubound(b, 4)
 

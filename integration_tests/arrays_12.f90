@@ -24,5 +24,5 @@ program arrays_12
 
     ! test spread intrinsic
     print *, spread(C, 2, 2)
-end program 
+end program
 

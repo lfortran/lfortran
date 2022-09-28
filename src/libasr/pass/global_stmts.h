@@ -6,9 +6,10 @@
 
 namespace LFortran {
 
-    void pass_wrap_global_stmts_into_function(Allocator &al, ASR::TranslationUnit_t &unit,
-                                              const LCompilers::PassOptions& pass_options);
+void pass_wrap_global_stmts_into_function(
+    Allocator &al, ASR::TranslationUnit_t &unit,
+    const LCompilers::PassOptions &pass_options);
 
-} // namespace LFortran
+}  // namespace LFortran
 
-#endif // LFORTRAN_PASS_GLOBAL_STMTS_H
+#endif  // LFORTRAN_PASS_GLOBAL_STMTS_H

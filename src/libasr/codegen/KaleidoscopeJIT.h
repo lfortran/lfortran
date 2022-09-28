@@ -12,7 +12,13 @@
 
 #ifndef LLVM_EXECUTIONENGINE_ORC_KALEIDOSCOPEJIT_H
 #define LLVM_EXECUTIONENGINE_ORC_KALEIDOSCOPEJIT_H
+#include <algorithm>
 #include <cinttypes>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
@@ -28,17 +34,12 @@
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
-#include <algorithm>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
 
 namespace llvm {
 namespace orc {
 
 class KaleidoscopeJIT {
-public:
+ public:
   using ObjLayerT = LegacyRTDyldObjectLinkingLayer;
   using CompileLayerT = LegacyIRCompileLayer<ObjLayerT, SimpleCompiler>;
 
@@ -49,7 +50,8 @@ public:
               return findMangledSymbol(std::string(Name));
             },
             [](Error Err) { cantFail(std::move(Err), "lookupFlags failed"); })),
-        TM(TM), DL(TM->createDataLayout()),
+        TM(TM),
+        DL(TM->createDataLayout()),
         ObjectLayer(ES,
                     [this](VModuleKey) {
                       return ObjLayerT::Resources{
@@ -77,7 +79,7 @@ public:
     return findMangledSymbol(mangle(Name));
   }
 
-private:
+ private:
   std::string mangle(const std::string &Name) {
     std::string MangledName;
     {
@@ -134,7 +136,7 @@ private:
   std::vector<VModuleKey> ModuleKeys;
 };
 
-} // end namespace orc
-} // end namespace llvm
+}  // end namespace orc
+}  // end namespace llvm
 
-#endif // LLVM_EXECUTIONENGINE_ORC_KALEIDOSCOPEJIT_H
+#endif  // LLVM_EXECUTIONENGINE_ORC_KALEIDOSCOPEJIT_H

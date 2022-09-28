@@ -30,5 +30,5 @@ program associate_02
     p3 = 2*p3
     print *, p3
     print *, t3
-    
+
 end program

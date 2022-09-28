@@ -6,9 +6,9 @@
 
 namespace LFortran {
 
-    void pass_loop_unroll(Allocator &al, ASR::TranslationUnit_t &unit,
-                          const LCompilers::PassOptions& pass_options);
+void pass_loop_unroll(Allocator &al, ASR::TranslationUnit_t &unit,
+                      const LCompilers::PassOptions &pass_options);
 
-} // namespace LFortran
+}  // namespace LFortran
 
-#endif // LIBASR_PASS_LOOP_UNROLL_H
+#endif  // LIBASR_PASS_LOOP_UNROLL_H

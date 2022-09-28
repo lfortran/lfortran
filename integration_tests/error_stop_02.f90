@@ -2,7 +2,7 @@ program error_stop_02
     implicit none
 
     integer :: x
-    
+
     x = 5
     print *, x
 
@@ -13,5 +13,5 @@ program error_stop_02
 
     x = x + 2
     print *, x
-    
+
 end program

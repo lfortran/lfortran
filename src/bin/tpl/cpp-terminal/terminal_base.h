@@ -12,16 +12,16 @@
 #include <stdexcept>
 
 #ifdef _WIN32
-#    ifndef NOMINMAX
-#    define NOMINMAX
-#    endif // NOMINMAX
-#    include <conio.h>
-#    define _WINSOCKAPI_
-#    include <windows.h>
-#    include <io.h>
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif  // NOMINMAX
+#include <conio.h>
+#define _WINSOCKAPI_
+#include <io.h>
+#include <windows.h>
 #else
-#    include <sys/ioctl.h>
-#    include <termios.h>
+#include <sys/ioctl.h>
+#include <termios.h>
 #undef B0
 #undef B50
 #undef B75
@@ -41,8 +41,8 @@
 #undef B38400
 #undef B57600
 #undef B115200
-#    include <unistd.h>
-#    include <errno.h>
+#include <errno.h>
+#include <unistd.h>
 #endif
 
 namespace Term {
@@ -53,213 +53,203 @@ namespace Term {
  * something goes wrong.
  */
 class BaseTerminal {
-private:
+ private:
 #ifdef _WIN32
-    HANDLE hout;
-    DWORD dwOriginalOutMode;
-    bool out_console;
-    UINT out_code_page;
+  HANDLE hout;
+  DWORD dwOriginalOutMode;
+  bool out_console;
+  UINT out_code_page;
 
-    HANDLE hin;
-    DWORD dwOriginalInMode;
-    UINT in_code_page;
+  HANDLE hin;
+  DWORD dwOriginalInMode;
+  UINT in_code_page;
 #else
-    struct termios orig_termios;
+  struct termios orig_termios;
 #endif
-    bool keyboard_enabled;
+  bool keyboard_enabled;
 
-public:
+ public:
 #ifdef _WIN32
-    BaseTerminal(bool enable_keyboard=false, bool /*disable_ctrl_c*/ = true)
-        : keyboard_enabled{enable_keyboard}
-    {
-        // Silently disable raw mode for non-tty
-        if (keyboard_enabled) keyboard_enabled = is_stdin_a_tty();
-        out_console = is_stdout_a_tty();
-        if (out_console) {
-            hout = GetStdHandle(STD_OUTPUT_HANDLE);
-            out_code_page = GetConsoleOutputCP();
-            SetConsoleOutputCP(65001);
-            if (hout == INVALID_HANDLE_VALUE) {
-                throw std::runtime_error("GetStdHandle(STD_OUTPUT_HANDLE) failed");
-            }
-            if (!GetConsoleMode(hout, &dwOriginalOutMode)) {
-                throw std::runtime_error("GetConsoleMode() failed");
-            }
-            DWORD flags = dwOriginalOutMode;
-            flags |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-            flags |= DISABLE_NEWLINE_AUTO_RETURN;
-            if (!SetConsoleMode(hout, flags)) {
-                throw std::runtime_error("SetConsoleMode() failed");
-            }
-        }
-
-        if (keyboard_enabled) {
-            hin = GetStdHandle(STD_INPUT_HANDLE);
-            in_code_page = GetConsoleCP();
-            SetConsoleCP(65001);
-            if (hin == INVALID_HANDLE_VALUE) {
-                throw std::runtime_error(
-                        "GetStdHandle(STD_INPUT_HANDLE) failed");
-            }
-            if (!GetConsoleMode(hin, &dwOriginalInMode)) {
-                throw std::runtime_error("GetConsoleMode() failed");
-            }
-            DWORD flags = dwOriginalInMode;
-            flags |= ENABLE_VIRTUAL_TERMINAL_INPUT;
-            flags &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
-            if (!SetConsoleMode(hin, flags)) {
-                throw std::runtime_error("SetConsoleMode() failed");
-            }
-        }
-#else
-    BaseTerminal(bool enable_keyboard=false, bool disable_ctrl_c=true)
-        : keyboard_enabled{enable_keyboard}
-    {
-        // Silently disable raw mode for non-tty
-        if (keyboard_enabled) keyboard_enabled = is_stdin_a_tty();
-        if (keyboard_enabled) {
-            if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
-                throw std::runtime_error("tcgetattr() failed");
-            }
-
-            // Put terminal in raw mode
-            struct termios raw = orig_termios;
-            raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-            // This disables output post-processing, requiring explicit \r\n. We
-            // keep it enabled, so that in C++, one can still just use std::endl
-            // for EOL instead of "\r\n".
-            //raw.c_oflag &= ~(OPOST);
-            raw.c_cflag |= (CS8);
-            raw.c_lflag &= ~(ECHO | ICANON | IEXTEN);
-            if (disable_ctrl_c) {
-                raw.c_lflag &= ~(ISIG);
-            }
-            raw.c_cc[VMIN] = 0;
-            raw.c_cc[VTIME] = 0;
-
-            if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
-                throw std::runtime_error("tcsetattr() failed");
-            }
-        }
-#endif
+  BaseTerminal(bool enable_keyboard = false, bool /*disable_ctrl_c*/ = true)
+      : keyboard_enabled{enable_keyboard} {
+    // Silently disable raw mode for non-tty
+    if (keyboard_enabled) keyboard_enabled = is_stdin_a_tty();
+    out_console = is_stdout_a_tty();
+    if (out_console) {
+      hout = GetStdHandle(STD_OUTPUT_HANDLE);
+      out_code_page = GetConsoleOutputCP();
+      SetConsoleOutputCP(65001);
+      if (hout == INVALID_HANDLE_VALUE) {
+        throw std::runtime_error("GetStdHandle(STD_OUTPUT_HANDLE) failed");
+      }
+      if (!GetConsoleMode(hout, &dwOriginalOutMode)) {
+        throw std::runtime_error("GetConsoleMode() failed");
+      }
+      DWORD flags = dwOriginalOutMode;
+      flags |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+      flags |= DISABLE_NEWLINE_AUTO_RETURN;
+      if (!SetConsoleMode(hout, flags)) {
+        throw std::runtime_error("SetConsoleMode() failed");
+      }
     }
 
-    virtual ~BaseTerminal() noexcept(false)
-    {
-#ifdef _WIN32
-        if (out_console) {
-            SetConsoleOutputCP(out_code_page);
-            if (!SetConsoleMode(hout, dwOriginalOutMode)) {
-                throw std::runtime_error(
-                        "SetConsoleMode() failed in destructor");
-            }
-        }
-
-        if (keyboard_enabled) {
-            SetConsoleCP(in_code_page);
-            if (!SetConsoleMode(hin, dwOriginalInMode)) {
-                throw std::runtime_error(
-                        "SetConsoleMode() failed in destructor");
-            }
-        }
+    if (keyboard_enabled) {
+      hin = GetStdHandle(STD_INPUT_HANDLE);
+      in_code_page = GetConsoleCP();
+      SetConsoleCP(65001);
+      if (hin == INVALID_HANDLE_VALUE) {
+        throw std::runtime_error("GetStdHandle(STD_INPUT_HANDLE) failed");
+      }
+      if (!GetConsoleMode(hin, &dwOriginalInMode)) {
+        throw std::runtime_error("GetConsoleMode() failed");
+      }
+      DWORD flags = dwOriginalInMode;
+      flags |= ENABLE_VIRTUAL_TERMINAL_INPUT;
+      flags &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+      if (!SetConsoleMode(hin, flags)) {
+        throw std::runtime_error("SetConsoleMode() failed");
+      }
+    }
 #else
-        if (keyboard_enabled) {
-            if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
-                throw std::runtime_error("tcsetattr() failed in destructor");
-            }
-        }
+  BaseTerminal(bool enable_keyboard = false, bool disable_ctrl_c = true)
+      : keyboard_enabled{enable_keyboard} {
+    // Silently disable raw mode for non-tty
+    if (keyboard_enabled) keyboard_enabled = is_stdin_a_tty();
+    if (keyboard_enabled) {
+      if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
+        throw std::runtime_error("tcgetattr() failed");
+      }
+
+      // Put terminal in raw mode
+      struct termios raw = orig_termios;
+      raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+      // This disables output post-processing, requiring explicit \r\n. We
+      // keep it enabled, so that in C++, one can still just use std::endl
+      // for EOL instead of "\r\n".
+      // raw.c_oflag &= ~(OPOST);
+      raw.c_cflag |= (CS8);
+      raw.c_lflag &= ~(ECHO | ICANON | IEXTEN);
+      if (disable_ctrl_c) {
+        raw.c_lflag &= ~(ISIG);
+      }
+      raw.c_cc[VMIN] = 0;
+      raw.c_cc[VTIME] = 0;
+
+      if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
+        throw std::runtime_error("tcsetattr() failed");
+      }
+    }
 #endif
+  }
+
+  virtual ~BaseTerminal() noexcept(false) {
+#ifdef _WIN32
+    if (out_console) {
+      SetConsoleOutputCP(out_code_page);
+      if (!SetConsoleMode(hout, dwOriginalOutMode)) {
+        throw std::runtime_error("SetConsoleMode() failed in destructor");
+      }
     }
 
-    // Returns true if a character is read, otherwise immediately returns false
-    bool read_raw(char* s) const
-    {
-        if (!keyboard_enabled) {
-            int c = getchar();
-            if (c >= 0) {
-                *s = c;
-            } else if (c == EOF) {
-                // In non-raw (blocking) mode this happens when the input file
-                // ends. In such a case, return the End of Transmission (EOT)
-                // character (Ctrl-D)
-                *s = 0x04;
-            } else {
-                throw std::runtime_error("getchar() failed");
-            }
-            return true;
-        }
-#ifdef _WIN32
-        char buf[1];
-        DWORD nread;
-        if (_kbhit()) {
-            if (!ReadFile(hin, buf, 1, &nread, nullptr)) {
-                throw std::runtime_error("ReadFile() failed");
-            }
-            if (nread == 1) {
-                *s = buf[0];
-                return true;
-            } else {
-                throw std::runtime_error("kbhit() and ReadFile() inconsistent");
-            }
-        } else {
-            return false;
-        }
-#else
-        int nread = read(STDIN_FILENO, s, 1);
-        if (nread == -1 && errno != EAGAIN) {
-            throw std::runtime_error("read() failed");
-        }
-        return (nread == 1);
-#endif
+    if (keyboard_enabled) {
+      SetConsoleCP(in_code_page);
+      if (!SetConsoleMode(hin, dwOriginalInMode)) {
+        throw std::runtime_error("SetConsoleMode() failed in destructor");
+      }
     }
+#else
+    if (keyboard_enabled) {
+      if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
+        throw std::runtime_error("tcsetattr() failed in destructor");
+      }
+    }
+#endif
+  }
 
-    bool get_term_size(int& rows, int& cols) const
-    {
-#ifdef _WIN32
-        CONSOLE_SCREEN_BUFFER_INFO inf;
-        if (GetConsoleScreenBufferInfo(hout, &inf)) {
-            cols = inf.srWindow.Right - inf.srWindow.Left + 1;
-            rows = inf.srWindow.Bottom - inf.srWindow.Top + 1;
-            return true;
-        } else {
-            // This happens when we are not connected to a terminal
-            return false;
-        }
-#else
-        struct winsize ws;
-        if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
-            // This happens when we are not connected to a terminal
-            return false;
-        } else {
-            cols = ws.ws_col;
-            rows = ws.ws_row;
-            return true;
-        }
-#endif
+  // Returns true if a character is read, otherwise immediately returns false
+  bool read_raw(char* s) const {
+    if (!keyboard_enabled) {
+      int c = getchar();
+      if (c >= 0) {
+        *s = c;
+      } else if (c == EOF) {
+        // In non-raw (blocking) mode this happens when the input file
+        // ends. In such a case, return the End of Transmission (EOT)
+        // character (Ctrl-D)
+        *s = 0x04;
+      } else {
+        throw std::runtime_error("getchar() failed");
+      }
+      return true;
     }
+#ifdef _WIN32
+    char buf[1];
+    DWORD nread;
+    if (_kbhit()) {
+      if (!ReadFile(hin, buf, 1, &nread, nullptr)) {
+        throw std::runtime_error("ReadFile() failed");
+      }
+      if (nread == 1) {
+        *s = buf[0];
+        return true;
+      } else {
+        throw std::runtime_error("kbhit() and ReadFile() inconsistent");
+      }
+    } else {
+      return false;
+    }
+#else
+    int nread = read(STDIN_FILENO, s, 1);
+    if (nread == -1 && errno != EAGAIN) {
+      throw std::runtime_error("read() failed");
+    }
+    return (nread == 1);
+#endif
+  }
 
-    // Returns true if the standard input is attached to a terminal
-    bool is_stdin_a_tty() const
-    {
+  bool get_term_size(int& rows, int& cols) const {
 #ifdef _WIN32
-        return _isatty(_fileno(stdin));
-#else
-        return isatty(STDIN_FILENO);
-#endif
+    CONSOLE_SCREEN_BUFFER_INFO inf;
+    if (GetConsoleScreenBufferInfo(hout, &inf)) {
+      cols = inf.srWindow.Right - inf.srWindow.Left + 1;
+      rows = inf.srWindow.Bottom - inf.srWindow.Top + 1;
+      return true;
+    } else {
+      // This happens when we are not connected to a terminal
+      return false;
     }
+#else
+    struct winsize ws;
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
+      // This happens when we are not connected to a terminal
+      return false;
+    } else {
+      cols = ws.ws_col;
+      rows = ws.ws_row;
+      return true;
+    }
+#endif
+  }
 
-    // Returns true if the standard output is attached to a terminal
-    bool is_stdout_a_tty() const
-    {
+  // Returns true if the standard input is attached to a terminal
+  bool is_stdin_a_tty() const {
 #ifdef _WIN32
-        return _isatty(_fileno(stdout));
+    return _isatty(_fileno(stdin));
 #else
-        return isatty(STDOUT_FILENO);
+    return isatty(STDIN_FILENO);
 #endif
-    }
+  }
+
+  // Returns true if the standard output is attached to a terminal
+  bool is_stdout_a_tty() const {
+#ifdef _WIN32
+    return _isatty(_fileno(stdout));
+#else
+    return isatty(STDOUT_FILENO);
+#endif
+  }
 };
 
-} // namespace Term
+}  // namespace Term
 
-#endif // TERMINAL_BASE_H
+#endif  // TERMINAL_BASE_H

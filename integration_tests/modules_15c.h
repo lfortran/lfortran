@@ -1,8 +1,8 @@
 #ifndef MODULES_15C
 #define MODULES_15C
 
-#include <stdint.h>
 #include <complex.h>
+#include <stdint.h>
 
 #if _WIN32
 typedef _Fcomplex float_complex_t;
@@ -11,7 +11,6 @@ typedef _Dcomplex double_complex_t;
 typedef float _Complex float_complex_t;
 typedef double _Complex double_complex_t;
 #endif
-
 
 int f_int_float(int *a, float *b);
 int f_int_double(int *a, double *b);
@@ -26,8 +25,6 @@ int f_int_double_value(int a, double b);
 int f_int_intarray(int n, int *b);
 float f_int_floatarray(int n, float *b);
 double f_int_doublearray(int n, double *b);
-
-
 
 void sub_int_float(int *a, float *b, int *r);
 void sub_int_double(int *a, double *b, int *r);
@@ -61,5 +58,4 @@ float fortran_f32_value(float i);
 double fortran_f64(double *i);
 double fortran_f64_value(double i);
 
-
-#endif // MODULES_15C
+#endif  // MODULES_15C

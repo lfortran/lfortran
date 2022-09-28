@@ -40,4 +40,4 @@ c = b(3)
 print *, c
 c = b(4)
 print *, c
-end program 
+end program

@@ -15,7 +15,7 @@ program intrinsics_38
     if (space_at_end /= '   gfortran') error stop
     if (space_in_between /= '      g for tran') error stop
     if (spaces_with_symbols /= '      # gfor* t $ ran &') error stop
-    
+
     print *, empty
     print *, all_spaces
     print *, simple

@@ -11,7 +11,7 @@ contains
        type(bitset_type), intent(in) :: self
 
        bits = self % num_bits
-       
+
        return
     end function bits
 end module

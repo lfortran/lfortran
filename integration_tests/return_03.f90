@@ -9,7 +9,7 @@ program main
         if (i .GT. 5) then
             out_var = i
             print *, "early return"
-            return  
+            return
         end if
         print *, "normal return"
         out_var = i

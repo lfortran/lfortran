@@ -4,4 +4,4 @@
 void ret_ptr_c(void **p);
 void print_ptr_c(int n, void *p);
 
-#endif // BINDC_01C
+#endif  // BINDC_01C

@@ -1,20 +1,20 @@
-module module_11  
-implicit none 
+module module_11
+implicit none
 integer :: i = 1
 integer :: j = 2
 
-contains      
+contains
 
-   subroutine access_internally()          
+   subroutine access_internally()
       print*, "i = ", i
-   end subroutine access_internally 
-   
+   end subroutine access_internally
+
 end module module_11
 
 program access_externally
 use module_11
 implicit none
    print*, "j = ", j
-   call access_internally() 
-   
+   call access_internally()
+
 end program access_externally

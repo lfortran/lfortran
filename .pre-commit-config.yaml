@@ -6,6 +6,7 @@ repos:
     -   id: trailing-whitespace
         exclude: ".md"
     -   id: end-of-file-fixer
+        exclude: ".f"
     -   id: fix-encoding-pragma
         args: [--remove]
     -   id: check-yaml
@@ -21,5 +22,5 @@ repos:
     rev: v13.0.1
     hooks:
     -   id: clang-format
-        args: [--style=file, -i]
+        args: [--style=google, -i]
         exclude: ".json"

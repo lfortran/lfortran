@@ -2,7 +2,7 @@ program intrinsics_44
    implicit none
    integer, dimension(5):: a = [1, 2, 3, 4, 5]
    integer, dimension(3,3) :: b = reshape( [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ], [ 3, 3 ])
-   
+
    print '(5i3)', a
    a = cshift(a, shift = 2)
    print '(5i3)', a

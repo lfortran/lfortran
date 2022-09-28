@@ -6,7 +6,7 @@ contains
     print *,'Dr. '
   end subroutine
 
-  subroutine print_fortran() 
+  subroutine print_fortran()
     print *,'Fortran'
   end subroutine
 

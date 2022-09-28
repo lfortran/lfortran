@@ -9,5 +9,5 @@ program string_15
     if (lle(s1, s2) .neqv. .true.) error stop
     if (llt(s1, s2) .neqv. .true.) error stop
 
-    print *, s1, s2    
+    print *, s1, s2
 end program

@@ -8,25 +8,20 @@ namespace LFortran {
 // This exception is only used internally in the lfortran/semantics/ directory
 // and in lfortran/asr_utils.h/cpp. Nowhere else.
 
-class SemanticError
-{
-public:
-    diag::Diagnostic d;
-public:
-    SemanticError(const std::string &msg, const Location &loc)
-        : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::Semantic, {
-            diag::Label("", {loc})
-        })}
-    { }
+class SemanticError {
+ public:
+  diag::Diagnostic d;
 
-    SemanticError(const diag::Diagnostic &d) : d{d} { }
+ public:
+  SemanticError(const std::string &msg, const Location &loc)
+      : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::Semantic,
+                           {diag::Label("", {loc})})} {}
+
+  SemanticError(const diag::Diagnostic &d) : d{d} {}
 };
 
-class SemanticAbort
-{
-};
+class SemanticAbort {};
 
-}
-
+}  // namespace LFortran
 
 #endif

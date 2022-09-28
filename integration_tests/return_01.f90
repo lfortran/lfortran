@@ -1,6 +1,6 @@
 program main
     integer main_out
-    main_out = main1()    
+    main_out = main1()
     print *, "main1 called"
     contains
     integer function main1()
@@ -8,7 +8,7 @@ program main
         if (i .GT. 5) then
             main1 = i
             print *, "early return"
-            return  
+            return
         end if
         print *, "normal return"
         main1 = i

@@ -4,9 +4,9 @@ program wasm_if
     logical :: x, y
     x = .true.
     y = .false.
-    
-    if ( x ) print *, "x: Single Line If" 
-    if ( y ) print *, "y: Single Line If" 
+
+    if ( x ) print *, "x: Single Line If"
+    if ( y ) print *, "y: Single Line If"
 
     if ( x ) then
         print *, "x: Multi Line If-Else: x is True"
@@ -18,9 +18,9 @@ program wasm_if
         print *, "y: Multi Line If-Else: y is True"
     else
         print *, "y: Multi Line If-Else: y is False"
-    end if 
+    end if
 
-    
+
     ! if else-if else ladder
     if ( x ) then
         print *, "x: If part"
@@ -35,7 +35,7 @@ program wasm_if
     else
         print *, "Else part"
     end if
-    
+
     if(y) then
         print *, "y: If part"
     else if(y) then

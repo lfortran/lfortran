@@ -6,9 +6,9 @@
 
 namespace LFortran {
 
-    void pass_replace_div_to_mul(Allocator &al, ASR::TranslationUnit_t &unit,
-                                 const LCompilers::PassOptions& pass_options);
+void pass_replace_div_to_mul(Allocator &al, ASR::TranslationUnit_t &unit,
+                             const LCompilers::PassOptions &pass_options);
 
-} // namespace LFortran
+}  // namespace LFortran
 
-#endif // LIBASR_PASS_DIV_TO_MUL_H
+#endif  // LIBASR_PASS_DIV_TO_MUL_H

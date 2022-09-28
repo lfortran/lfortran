@@ -7,43 +7,37 @@ namespace LFortran {
 
 namespace parser_local {
 
-    // Local exceptions that are used to terminate the parser.
-    // It is not propagated outside.
-    // This file is included in parser.tab.cc (via semantics.h)
-    // And in parser.cpp. Nowhere else.
+// Local exceptions that are used to terminate the parser.
+// It is not propagated outside.
+// This file is included in parser.tab.cc (via semantics.h)
+// And in parser.cpp. Nowhere else.
 
-    class TokenizerError
-    {
-    public:
-        diag::Diagnostic d;
-    public:
-        TokenizerError(const std::string &msg, const Location &loc)
-            : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::Tokenizer, {
-                diag::Label("", {loc})
-            })}
-        { }
+class TokenizerError {
+ public:
+  diag::Diagnostic d;
 
-        TokenizerError(const diag::Diagnostic &d) : d{d} { }
-    };
+ public:
+  TokenizerError(const std::string &msg, const Location &loc)
+      : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::Tokenizer,
+                           {diag::Label("", {loc})})} {}
 
-    class ParserError
-    {
-    public:
-        LFortran::diag::Diagnostic d;
-    public:
-        ParserError(const std::string &msg, const LFortran::Location &loc)
-            : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::Parser, {
-                    diag::Label("", {loc})
-                })}
-        { }
+  TokenizerError(const diag::Diagnostic &d) : d{d} {}
+};
 
-        ParserError(const std::string &msg)
-            : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::Parser)}
-        { }
-    };
+class ParserError {
+ public:
+  LFortran::diag::Diagnostic d;
 
-}
-}
+ public:
+  ParserError(const std::string &msg, const LFortran::Location &loc)
+      : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::Parser,
+                           {diag::Label("", {loc})})} {}
 
+  ParserError(const std::string &msg)
+      : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::Parser)} {}
+};
+
+}  // namespace parser_local
+}  // namespace LFortran
 
 #endif

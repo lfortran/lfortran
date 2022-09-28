@@ -19,7 +19,7 @@ contains
 
     subroutine final_logger( self )
                 type(logger_type), intent(in) :: self
-        
+
                 integer        :: iostat
                 character(256) :: message
                 integer        :: unit

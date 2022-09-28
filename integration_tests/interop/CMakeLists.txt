@@ -46,5 +46,3 @@ else ()
     message("C compiler flags      : ${CMAKE_C_FLAGS_RELEASE}")
 endif ()
 message("Installation prefix: ${CMAKE_INSTALL_PREFIX}")
-
-

@@ -6,9 +6,9 @@
 
 namespace LFortran {
 
-    void pass_dead_code_removal(Allocator &al, ASR::TranslationUnit_t &unit,
-                                const LCompilers::PassOptions& pass_options);
+void pass_dead_code_removal(Allocator &al, ASR::TranslationUnit_t &unit,
+                            const LCompilers::PassOptions &pass_options);
 
-} // namespace LFortran
+}  // namespace LFortran
 
 #endif

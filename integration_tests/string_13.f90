@@ -8,7 +8,7 @@ program string_13
     if (ia0 /= 48) error stop
     if (ia5 /= 53) error stop
     if (ia9 /= 57) error stop
-    
+
     print *, ia0, ia5, ia9
 
 end program

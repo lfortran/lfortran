@@ -31,16 +31,16 @@ Make sure to run this script from the root of the documenation repository.
 
 template = """
 <!DOCTYPE HTML>
- 
+
 <meta charset="UTF-8">
 <meta http-equiv="refresh" content="1; url={0}">
- 
+
 <script>
   window.location.href = "{0}"
 </script>
- 
+
 <title>Page Redirection</title>
- 
+
 If you are not redirected automatically, follow the <a href='{0}'>link</a>.
 """
 

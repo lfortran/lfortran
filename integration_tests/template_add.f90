@@ -40,10 +40,10 @@ contains
 
 end module
 
-program use_template_module     
-use add_m      
-implicit none     
-   
+program use_template_module
+use add_m
+implicit none
+
     call test_template()
-   
+
 end program use_template_module

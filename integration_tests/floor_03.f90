@@ -8,7 +8,7 @@ program floor_03
   y1 = -3.3 ! -4
   y2 = -3.5 ! -4
   y3 = -3.7 ! -4
-    
+
   if(floor(x1) /= 3 .or. floor(x2) /= 3 .or. floor(x3) /= 3) error stop
   if(floor(y1) /= -4 .or. floor(y2) /= -4 .or. floor(y3) /= -4) error stop
 

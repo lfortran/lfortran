@@ -1,51 +1,51 @@
 #ifndef LFORTRAN_WASM_UTILS_H
 #define LFORTRAN_WASM_UTILS_H
 
-#include <iostream>
-#include <unordered_map>
-
 #include <libasr/alloc.h>
 #include <libasr/containers.h>
+
+#include <iostream>
+#include <unordered_map>
 
 namespace LFortran {
 
 namespace wasm {
 
 struct FuncType {
-    Vec<uint8_t> param_types;
-    Vec<uint8_t> result_types;
+  Vec<uint8_t> param_types;
+  Vec<uint8_t> result_types;
 };
 
 struct Export {
-    std::string name;
-    uint8_t kind;
-    uint32_t index;
+  std::string name;
+  uint8_t kind;
+  uint32_t index;
 };
 
 struct Local {
-    uint32_t count;
-    uint8_t type;
+  uint32_t count;
+  uint8_t type;
 };
 
 struct Code {
-    int size;
-    Vec<Local> locals;
-    uint32_t insts_start_index;
+  int size;
+  Vec<Local> locals;
+  uint32_t insts_start_index;
 };
 
 struct Import {
-    std::string mod_name;
-    std::string name;
-    uint8_t kind;
-    union {
-        uint32_t type_idx;
-        std::pair<uint32_t, uint32_t> mem_page_size_limits;
-    };
+  std::string mod_name;
+  std::string name;
+  uint8_t kind;
+  union {
+    uint32_t type_idx;
+    std::pair<uint32_t, uint32_t> mem_page_size_limits;
+  };
 };
 
 struct Data {
-    std::string insts;
-    std::string text;
+  std::string insts;
+  std::string text;
 };
 
 uint32_t decode_leb128_u32(Vec<uint8_t> &code, uint32_t &offset);

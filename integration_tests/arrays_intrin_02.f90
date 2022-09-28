@@ -10,7 +10,7 @@ program arrays_intrin_02
   if (.not. any(l1)) error stop
   if (.not. any(l2)) error stop
   if (any(l3)) error stop
-  m1 = 1 
+  m1 = 1
   m2 = 1
   m2(1,2) = 2
   m2(2,2) = 2
