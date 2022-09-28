@@ -145,7 +145,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
             extra_args)
 
     if asr_implicit_interface:
-        print("getting here")
         if filename.endswith(".f"):
             run_test(
                 filename,
