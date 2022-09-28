@@ -2423,7 +2423,18 @@ public:
         int64_t kind_value = handle_kind(kind);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
                                 kind_value, nullptr, 0));
-        return ASR::make_Ichar_t(al, x.base.base.loc, arg, type, nullptr);
+        ASR::expr_t* ichar_value = nullptr;
+        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+        if( arg_value ) {
+            std::string arg_str;
+            bool is_const_value = ASRUtils::is_value_constant(arg_value, arg_str);
+            if( is_const_value ) {
+                int64_t ascii_code = arg_str[0];
+                ichar_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                ascii_code, type));
+            }
+        }
+        return ASR::make_Ichar_t(al, x.base.base.loc, arg, type, ichar_value);
     }
 
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
