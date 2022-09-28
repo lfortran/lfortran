@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 import os
 import sys
 from typing import Dict
 
-
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 sys.path.append(os.path.join(ROOT_DIR, "src", "libasr"))
+
+from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 
 
 def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool,
