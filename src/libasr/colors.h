@@ -1,6 +1,8 @@
 #ifndef LFORTRAN_COLORS_H
 #define LFORTRAN_COLORS_H
 
+#include <string>
+
 namespace LFortran {
 
 enum class style {

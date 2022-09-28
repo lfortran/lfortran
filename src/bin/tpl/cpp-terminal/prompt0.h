@@ -1,6 +1,7 @@
 #ifndef TERMINAL_PROMPT0_H
 #define TERMINAL_PROMPT0_H
 
+#include <functional>
 #include <vector>
 
 #include "terminal.h"

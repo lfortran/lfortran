@@ -2,7 +2,7 @@
     "basename": "ast-parsing_02-8515171",
     "cmd": "lfortran --indent --show-ast --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/parsing_02.f90",
-    "infile_hash": "9a96b68a8a27fa5a0c4ed1a2afdf6ab322548ac762635d32e202c870",
+    "infile_hash": "895f3a7920b35f849a7aff25bfa76d2d6f0001c60b5560034f0c2bda",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-parsing_02-8515171.stdout",

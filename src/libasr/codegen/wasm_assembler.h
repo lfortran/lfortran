@@ -2,6 +2,7 @@
 #include <libasr/containers.h>
 
 #include <cassert>
+#include <fstream>
 
 namespace LFortran {
 namespace wasm {
@@ -834,13 +835,13 @@ function main() {
 main();
 )";
   filename += ".js";
-  std::ofstream out(filename);
+  std::ofstream out{filename};
   out << js_glue;
   out.close();
 }
 
 void save_bin(Vec<uint8_t> &code, std::string filename) {
-  std::ofstream out(filename);
+  std::ofstream out{filename};
   out.write((const char *)code.p, code.size());
   out.close();
   save_js_glue(filename);

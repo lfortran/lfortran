@@ -2,7 +2,7 @@
     "basename": "llvm-array_bound_1-6741f43",
     "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
     "infile": "tests/../integration_tests/array_bound_1.f90",
-    "infile_hash": "38d2c1d99ad714fdaa387541310a78f8d3c4d7e19e93ed67a2dcf677",
+    "infile_hash": "6580ad3d5cdaf53cbf868e733a2c251a75a2bad3755c615d9a0a2e2e",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-array_bound_1-6741f43.stdout",

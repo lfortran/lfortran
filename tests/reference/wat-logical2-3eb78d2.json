@@ -2,7 +2,7 @@
     "basename": "wat-logical2-3eb78d2",
     "cmd": "lfortran --no-color --show-wat {infile}",
     "infile": "tests/../integration_tests/logical2.f90",
-    "infile_hash": "7efb2fb2352ed7c8d81b56547300d3653a2f796950815393a0fae0ab",
+    "infile_hash": "7c3c3c27912875728019f3ab51aa8e4da4ed4514b72341628ddc5bad",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "wat-logical2-3eb78d2.stdout",

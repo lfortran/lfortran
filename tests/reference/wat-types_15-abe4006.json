@@ -2,7 +2,7 @@
     "basename": "wat-types_15-abe4006",
     "cmd": "lfortran --no-color --show-wat {infile}",
     "infile": "tests/../integration_tests/types_15.f90",
-    "infile_hash": "f21a7fe2af97a1bb6a0750efddbb764348cdbf7a6c1c1b3354c96cf0",
+    "infile_hash": "cb67e49c4723efb5f3c91e1e359788d9d272f7f4cca5902532b95e54",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "wat-types_15-abe4006.stdout",

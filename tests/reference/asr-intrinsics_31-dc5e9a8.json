@@ -2,7 +2,7 @@
     "basename": "asr-intrinsics_31-dc5e9a8",
     "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/intrinsics_31.f90",
-    "infile_hash": "f9db5457e09683e2b0afde876cbd0ddf85412c67117277ba413679af",
+    "infile_hash": "464bc5042e25857bdfb51d68b49a6b87367ba68531f4885b3f336f81",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-intrinsics_31-dc5e9a8.stdout",

@@ -2,6 +2,7 @@
 #define LFORTRAN_PARSER_LOCATION_H
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace LFortran {

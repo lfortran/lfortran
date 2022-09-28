@@ -1,11 +1,12 @@
 #include <iostream>
-#include <string>
-#include <vector>
+#include <lfortran_intrinsics.h>
+
+#include <Kokkos_Core.hpp>
 #include <cassert>
 #include <cmath>
 #include <complex>
-#include <Kokkos_Core.hpp>
-#include <lfortran_intrinsics.h>
+#include <string>
+#include <vector>
 
 template <typename T>
 Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
