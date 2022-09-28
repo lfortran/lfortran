@@ -1496,7 +1496,7 @@ int main(int argc, char *argv[])
         app.add_flag("--print-targets", print_targets, "Print the registered targets");
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
         app.add_flag("--allow-implicit-interface", compiler_options.implicit_interface, "Allow implicit interface");
-        app.add_flag("--preprocess-include", compiler_options.preprocess_include, "Preprocess Fortran includes");
+
 
         if( compiler_options.fast ) {
             lfortran_pass_manager.use_optimization_passes();

@@ -177,17 +177,17 @@ Result<AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
     // Src -> AST
     const std::string *code=&code_orig;
     std::string tmp;
+
+    CPreprocessor cpp(compiler_options);
     if (compiler_options.c_preprocessor) {
         // Preprocessor
-        CPreprocessor cpp(compiler_options);
         tmp = cpp.run(code_orig, lm, cpp.macro_definitions);
         code = &tmp;
     }
-    if (compiler_options.preprocess_include) {
-        CPreprocessor cpp(compiler_options);
-        tmp = cpp.preprocess_include(code_orig, lm);
-        code = &tmp;
-    }
+
+    tmp = cpp.preprocess_include(code_orig, lm);
+    code = &tmp;
+
     if (compiler_options.prescan || compiler_options.fixed_form) {
         tmp = fix_continuation(*code, lm, compiler_options.fixed_form);
         code = &tmp;
