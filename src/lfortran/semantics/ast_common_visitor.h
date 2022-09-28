@@ -2450,7 +2450,7 @@ public:
             } else if( var_name == "ichar" ) {
                 tmp = create_Ichar(x);
             }  else {
-                LFortranException("create_" + var_name + " not implemented yet.");
+                LCompilersException("create_" + var_name + " not implemented yet.");
             }
             return nullptr;
         }
