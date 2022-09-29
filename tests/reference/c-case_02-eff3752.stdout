@@ -1,0 +1,93 @@
+#include <inttypes.h>
+
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <lfortran_intrinsics.h>
+
+#define ASSERT(cond)                                                           \
+    {                                                                          \
+        if (!(cond)) {                                                         \
+            printf("%s%s", "ASSERT failed: ", __FILE__);                       \
+            printf("%s%s", "\nfunction ", __func__);                           \
+            printf("%s%d%s", "(), line number ", __LINE__, " at \n");          \
+            printf("%s%s", #cond, "\n");                                       \
+            exit(1);                                                           \
+        }                                                                      \
+    }
+#define ASSERT_MSG(cond, msg)                                                  \
+    {                                                                          \
+        if (!(cond)) {                                                         \
+            printf("%s%s", "ASSERT failed: ", __FILE__);                       \
+            printf("%s%s", "\nfunction ", __func__);                           \
+            printf("%s%d%s", "(), line number ", __LINE__, " at \n");          \
+            printf("%s%s", #cond, "\n");                                       \
+            printf("%s", "ERROR MESSAGE:\n");                                  \
+            printf("%s%s", msg, "\n");                                         \
+            exit(1);                                                           \
+        }                                                                      \
+    }
+
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, length;
+};
+// Forward declarations
+
+// Implementations
+int main(int argc, char* argv[])
+{
+    int32_t marks;
+    marks = 81;
+    if (91 <= marks && marks <= 100) {
+        printf("%s\n", "Excellent!");
+    } else if (81 <= marks && marks <= 90) {
+        printf("%s\n", "Very good!");
+    } else if (71 <= marks && marks <= 80) {
+        printf("%s\n", "Well done!");
+    } else if (61 <= marks && marks <= 70) {
+        printf("%s\n", "Not bad!");
+    } else if (41 <= marks && marks <= 60) {
+        printf("%s\n", "You passed!");
+    } else if (marks <= 40) {
+        printf("%s\n", "Better try again!");
+    } else {
+        printf("%s\n", "Invalid marks");
+    }
+    printf("%s%s%d\n", "Your marks are ", " ", marks);
+    if (91 <= marks && marks <= 100) {
+        printf("%s\n", "Excellent!");
+    } else if (81 <= marks && marks <= 90) {
+        printf("%s\n", "Very good!");
+    } else if (71 <= marks && marks <= 80) {
+        printf("%s\n", "Well done!");
+    } else if (61 <= marks && marks <= 70) {
+        printf("%s\n", "Not bad!");
+    } else if (41 <= marks && marks <= 60) {
+        printf("%s\n", "You passed!");
+    } else if (marks <= 40) {
+        printf("%s\n", "Better try again!");
+    } else {
+        printf("%s\n", "Invalid marks");
+    }
+    printf("%s%s%d\n", "Your marks are ", " ", marks);
+    if (91 <= marks && marks <= 100) {
+        printf("%s\n", "Excellent!");
+    } else if (81 <= marks && marks <= 90) {
+        printf("%s\n", "Very good!");
+    } else if (71 <= marks && marks <= 80) {
+        printf("%s\n", "Well done!");
+    } else if (61 <= marks && marks <= 70) {
+        printf("%s\n", "Not bad!");
+    } else if (41 <= marks && marks <= 60) {
+        printf("%s\n", "You passed!");
+    } else if (marks <= 40) {
+        printf("%s\n", "Better try again!");
+    } else {
+        printf("%s\n", "Invalid marks");
+    }
+    printf("%s%s%d\n", "Your marks are ", " ", marks);
+    return 0;
+}
