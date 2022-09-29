@@ -1,0 +1,13 @@
+{
+    "basename": "rust-cond_02-e0aabf5",
+    "cmd": "lfortran --no-color --show-rust {infile}",
+    "infile": "tests/../integration_tests/cond_02.f90",
+    "infile_hash": "fc70f7e7943dfe505736cca5b8ff39a034a4a1a7f441d9bdf0a82662",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "rust-cond_02-e0aabf5.stdout",
+    "stdout_hash": "5c3266fc264ba2afab47486596134ad954dfd9d1c7cc9f498a6c6840",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -6,6 +6,7 @@
 #include <libasr/codegen/asr_to_c.h>
 #include <libasr/codegen/asr_to_wasm.h>
 #include <libasr/codegen/asr_to_julia.h>
+#include <libasr/codegen/asr_to_rust.h>
 #include <libasr/codegen/wasm_to_wat.h>
 #include <lfortran/ast_to_src.h>
 #include <libasr/exception.h>
@@ -451,6 +452,22 @@ Result<std::string> FortranEvaluator::get_julia(const std::string &code,
     symbol_table = old_symbol_table;
     if (asr.ok) {
         return asr_to_julia(al, *asr.result, diagnostics);
+    } else {
+        LFORTRAN_ASSERT(diagnostics.has_error())
+        return asr.error;
+    }
+}
+
+Result<std::string> FortranEvaluator::get_rust(const std::string &code,
+    LocationManager &lm, diag::Diagnostics &diagnostics)
+{
+    // Src -> AST -> ASR -> Rust
+    SymbolTable *old_symbol_table = symbol_table;
+    symbol_table = nullptr;
+    Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
+    symbol_table = old_symbol_table;
+    if (asr.ok) {
+        return asr_to_rust(al, *asr.result, diagnostics);
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
         return asr.error;

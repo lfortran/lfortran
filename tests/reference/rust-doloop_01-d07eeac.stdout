@@ -1,0 +1,107 @@
+use num::complex::Complex;
+use num::traits::Pow;
+use ndarray::{array, Array1, Array2, Array3, Array4, Array5, Array6};
+
+fn main() {
+    let mut i: i32 = 0;
+    let mut j: i32 = 0;
+    j = 0;
+    for i in 1..(10 + 1) {
+        j = j + i;
+    }
+    if j != 55 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    println!("{}", j);
+    j = 0;
+    for i in (1..(10 + 1)).rev() {
+        j = j + i;
+    }
+    if j != 55 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    println!("{}", j);
+    j = 0;
+    for i in (1..(9 + 1)).step_by(2) {
+        j = j + i;
+    }
+    if j != 25 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    println!("{}", j);
+    j = 0;
+    for i in (1..(9 + 1)).step_by(2).rev() {
+        j = j + i;
+    }
+    if j != 25 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    println!("{}", j);
+    j = 0;
+    for i in (1..(10 + 1)).step_by(2) {
+        j = j + i;
+    }
+    if j != 25 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    println!("{}", j);
+    j = 0;
+    for i in (1..(10 + 1)).step_by(3) {
+        j = j + i;
+    }
+    if j != 22 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    println!("{}", j);
+    j = 0;
+    for i in (1..(10 + 1)).step_by(3).rev() {
+        j = j + i;
+    }
+    if j != 22 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    println!("{}", j);
+    j = 0;
+    for i in 1..(1 + 1) {
+        j = j + i;
+    }
+    if j != 1 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    println!("{}", j);
+    j = 0;
+    for i in (1..(1 + 1)).rev() {
+        j = j + i;
+    }
+    if j != 1 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    println!("{}", j);
+    j = 0;
+    for i in 1..(0 + 1) {
+        j = j + i;
+    }
+    if j != 0 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    println!("{}", j);
+    j = 0;
+    for i in (1..(0 + 1)).rev() {
+        j = j + i;
+    }
+    if j != 0 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    println!("{}", j);
+}

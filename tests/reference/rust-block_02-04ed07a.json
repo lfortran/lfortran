@@ -1,0 +1,13 @@
+{
+    "basename": "rust-block_02-04ed07a",
+    "cmd": "lfortran --no-color --show-rust {infile}",
+    "infile": "tests/../integration_tests/block_02.f90",
+    "infile_hash": "454b633240fa00d44de1b5374429d3d7edc1c37ccd92b8b93394d639",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "rust-block_02-04ed07a.stdout",
+    "stdout_hash": "7e463833d7f93fa6ee688d65dbf8fafad3f94e4c0e1f349b1c5f5764",
+    "stderr": "rust-block_02-04ed07a.stderr",
+    "stderr_hash": "60488b7fcd202fd28a9fb7045091257667eed65fe1dec8040b9c2871",
+    "returncode": 0
+}

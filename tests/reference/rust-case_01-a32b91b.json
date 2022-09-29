@@ -1,0 +1,13 @@
+{
+    "basename": "rust-case_01-a32b91b",
+    "cmd": "lfortran --no-color --show-rust {infile}",
+    "infile": "tests/../integration_tests/case_01.f90",
+    "infile_hash": "50b2ffd2a03a6c41a881d9c5cd2e1a0941707b9200f12c16f1bd48ea",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "rust-case_01-a32b91b.stdout",
+    "stdout_hash": "63dd9a05f5cc652b2b5be329b973e96423affb55bca57c51c61e03bf",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

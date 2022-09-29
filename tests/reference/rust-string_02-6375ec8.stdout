@@ -1,0 +1,16 @@
+use num::complex::Complex;
+use num::traits::Pow;
+use ndarray::{array, Array1, Array2, Array3, Array4, Array5, Array6};
+
+fn main() {
+    let mut firstname: String = String::new();
+    let mut greetings: String = String::new();
+    let mut surname: String = String::new();
+    let mut title: String = String::new();
+    title = "Mr. ".to_string();
+    firstname = "Rowan ".to_string();
+    surname = "Atkinson".to_string();
+    greetings = "A big hello from Mr. Bean".to_string();
+    println!("{} {} {} {}", "Here is ".to_string(), title, firstname, surname);
+    println!("{}", greetings);
+}

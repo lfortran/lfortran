@@ -2,15 +2,15 @@ cmake_minimum_required(VERSION 3.10)
 
 project(libasr)
 
-if (NOT CMAKE_CXX_STANDARD)
+if(NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 17
         CACHE STRING "C++ standard" FORCE)
-endif ()
+endif()
 
-if (NOT LFORTRAN_VERSION)
+if(NOT LFORTRAN_VERSION)
     set(LFORTRAN_VERSION "0.1-git"
         CACHE STRING "LFortran version" FORCE)
-endif ()
+endif()
 
 configure_file(config.h.in config.h)
 
@@ -18,6 +18,7 @@ set(SRC
     codegen/asr_to_cpp.cpp
     codegen/asr_to_c.cpp
     codegen/asr_to_julia.cpp
+    codegen/asr_to_rust.cpp
     codegen/asr_to_py.cpp
     codegen/x86_assembler.cpp
     codegen/asr_to_x86.cpp
@@ -60,7 +61,8 @@ set(SRC
     serialization.cpp
     utils2.cpp
 )
-if (WITH_LLVM)
+
+if(WITH_LLVM)
     set(SRC ${SRC}
         codegen/evaluator.cpp
         codegen/asr_to_llvm.cpp
@@ -68,8 +70,9 @@ if (WITH_LLVM)
         codegen/llvm_utils.cpp
         pass/nested_vars.cpp
     )
+
     # We use deprecated API in LLVM, so we disable the warning until we upgrade
-    if (NOT MSVC)
+    if(NOT MSVC)
         set_source_files_properties(codegen/evaluator.cpp PROPERTIES
             COMPILE_FLAGS -Wno-deprecated-declarations)
         set_source_files_properties(codegen/asr_to_llvm.cpp PROPERTIES
@@ -80,18 +83,23 @@ if (WITH_LLVM)
             COMPILE_FLAGS -Wno-deprecated-declarations)
     endif()
 endif()
+
 add_library(asr ${SRC})
 target_include_directories(asr BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
 target_include_directories(asr BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
-if (WITH_BFD)
+
+if(WITH_BFD)
     target_link_libraries(asr p::bfd)
 endif()
-if (WITH_LINK)
+
+if(WITH_LINK)
     target_link_libraries(asr p::link)
 endif()
-if (WITH_EXECINFO)
+
+if(WITH_EXECINFO)
     target_link_libraries(asr p::execinfo)
 endif()
-if (WITH_LLVM)
+
+if(WITH_LLVM)
     target_link_libraries(asr p::llvm)
 endif()

@@ -1,0 +1,61 @@
+use num::complex::Complex;
+use num::traits::Pow;
+use ndarray::{array, Array1, Array2, Array3, Array4, Array5, Array6};
+
+pub fn f(a: i32, b: &mut i32) {
+    *b = a + 1;
+}
+
+fn main() {
+    let mut i: i32 = 0;
+    let mut j: i32 = 0;
+    i = 1;
+    j = 1;
+    if j != 1 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    f(i, &mut j);
+    println!("{} {}", i, j);
+    if i != 1 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    if j != 2 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    j = 1;
+    if j != 1 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    f(3 as i32, &mut j);
+    println!("{}", j);
+    if j != 4 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    j = 1;
+    if j != 1 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    f((1 + 2) as i32, &mut j);
+    println!("{}", j);
+    if j != 4 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    j = 1;
+    if j != 1 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    f((i + 2) as i32, &mut j);
+    println!("{}", j);
+    if j != 4 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+}

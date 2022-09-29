@@ -1,0 +1,22 @@
+use num::complex::Complex;
+use num::traits::Pow;
+use ndarray::{array, Array1, Array2, Array3, Array4, Array5, Array6};
+
+fn main() {
+    let mut i: i32 = 0;
+    i = 4;
+    if i == 1 {
+        println!("{}", "1".to_string());
+    } else if i == 2 {
+        println!("{}", "2".to_string());
+    } else if i == 3 {
+        println!("{}", "3".to_string());
+    } else if i == 4 {
+        println!("{}", "4".to_string());
+    }
+    if i == 1 {
+        println!("{}", "1".to_string());
+    } else if i == 2 || i == 3 || i == 4 {
+        println!("{}", "2,3,4".to_string());
+    }
+}

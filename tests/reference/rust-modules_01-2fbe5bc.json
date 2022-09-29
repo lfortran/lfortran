@@ -1,0 +1,13 @@
+{
+    "basename": "rust-modules_01-2fbe5bc",
+    "cmd": "lfortran --no-color --show-rust {infile}",
+    "infile": "tests/../integration_tests/modules_01.f90",
+    "infile_hash": "17c761eb72726e0dde59f2b21f98f2402d783613834e927c49047534",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "rust-modules_01-2fbe5bc.stdout",
+    "stdout_hash": "fbcfa1bd43feaa4d552942310c801ba3dfca464be11f00a7ae1303cf",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

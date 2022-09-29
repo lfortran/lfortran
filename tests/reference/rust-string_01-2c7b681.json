@@ -1,0 +1,13 @@
+{
+    "basename": "rust-string_01-2c7b681",
+    "cmd": "lfortran --no-color --show-rust {infile}",
+    "infile": "tests/../integration_tests/string_01.f90",
+    "infile_hash": "e7d4974d8a9b9704bf0c02d7943d916b40c591de3c9e89d30de28d7d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "rust-string_01-2c7b681.stdout",
+    "stdout_hash": "81804245b4cb52787d920fde7fcd601574dea2eb069262b73635c473",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

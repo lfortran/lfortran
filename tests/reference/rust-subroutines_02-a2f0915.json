@@ -1,0 +1,13 @@
+{
+    "basename": "rust-subroutines_02-a2f0915",
+    "cmd": "lfortran --no-color --show-rust {infile}",
+    "infile": "tests/../integration_tests/subroutines_02.f90",
+    "infile_hash": "0da20d4528bff96e6ec7497805bf54f1744384b5ab8de197c3e75432",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "rust-subroutines_02-a2f0915.stdout",
+    "stdout_hash": "c270d27df9a980c6d7621cbdb29bbe4b47bcd270d5d8722abf57eca5",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

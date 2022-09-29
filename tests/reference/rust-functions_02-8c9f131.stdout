@@ -1,0 +1,32 @@
+use num::complex::Complex;
+use num::traits::Pow;
+use ndarray::{array, Array1, Array2, Array3, Array4, Array5, Array6};
+
+pub fn myabs(a: f32) -> f32 {
+    let mut c: f32 = 0.0;
+    if a >= 0 as f32 {
+        c = a;
+    } else {
+        c = -a;
+    }
+    return c;
+}
+
+pub fn mysum(a: i32, b: f32) -> f32 {
+    let mut c: f32 = 0.0;
+    c = a as f32 + b;
+    return c;
+}
+
+fn main() {
+    let mut f: f32 = 0.0;
+    let mut g: f32 = 0.0;
+    let mut i: i32 = 0;
+    i = 1;
+    f =   3.50000000000000000e+00;
+    g = mysum(i, f);
+    if myabs((g -   4.50000000000000000e+00) as f32) >   1.00000000000000008e-05 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+}

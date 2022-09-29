@@ -1,0 +1,80 @@
+use num::complex::Complex;
+use num::traits::Pow;
+use ndarray::{array, Array1, Array2, Array3, Array4, Array5, Array6};
+
+fn main() {
+    let mut a = Array1::<i32>::default(3);
+    let mut b = Array1::<i32>::default(4);
+    let mut i: i32 = 0;
+    let mut size_a: i32 = 0;
+    let mut size_b: i32 = 0;
+    size_a = a.len() as i32;
+    size_b = b.shape()[(1 - 1) as usize] as i32;
+    if size_a != 3 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    if size_b != 4 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    for i in 1..(size_a + 1) {
+        a[(i - 1) as usize] = i + 10;
+    }
+    if a[(1 - 1) as usize] != 11 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    if a[(2 - 1) as usize] != 12 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    if a[(3 - 1) as usize] != 13 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    for i in 11..(10 + size_b + 1) {
+        b[(i - 10 - 1) as usize] = i;
+    }
+    if b[(1 - 1) as usize] != 11 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    if b[(2 - 1) as usize] != 12 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    if b[(3 - 1) as usize] != 13 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    if b[(4 - 1) as usize] != 14 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    for i in 1..(size_a + 1) {
+        b[(i - 1) as usize] = a[(i - 1) as usize] - 10;
+    }
+    if b[(1 - 1) as usize] != 1 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    if b[(2 - 1) as usize] != 2 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    if b[(3 - 1) as usize] != 3 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    b[(4 - 1) as usize] = b[(1 - 1) as usize] + b[(2 - 1) as usize] + b[(3 - 1) as usize] + a[(1 - 1) as usize];
+    if b[(4 - 1) as usize] != 17 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    b[(4 - 1) as usize] = a[(1 - 1) as usize];
+    if b[(4 - 1) as usize] != 11 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+}

@@ -1,0 +1,21 @@
+use num::complex::Complex;
+use num::traits::Pow;
+use ndarray::{array, Array1, Array2, Array3, Array4, Array5, Array6};
+
+fn main() {
+    let mut a: f32 = 0.0;
+    a =   3.00000000000000000e+00;
+    let mut b: f32 = 0.0;
+    b =   4.00000000000000000e+00;
+    let mut i_: Complex<f32> = Complex::<f32>::new(0.0_f32, 0.0_f32);
+    i_ = Complex::<f32>::new(0 as f32, 1 as f32);
+    let mut w: Complex<f32> = Complex::<f32>::new(0.0_f32, 0.0_f32);
+    w = Complex::<f32>::new(a + b, 0.0) + i_ * Complex::<f32>::new(a - b, 0.0);
+    let mut x: Complex<f32> = Complex::<f32>::new(0.0_f32, 0.0_f32);
+    x = Complex::<f32>::new(  1.00000000000000000e+00 as f32, -  3.00000000000000000e+00 as f32);
+    let mut y: Complex<f32> = Complex::<f32>::new(0.0_f32, 0.0_f32);
+    y = Complex::<f32>::new(a as f32, b as f32);
+    let mut z: Complex<f32> = Complex::<f32>::new(0.0_f32, 0.0_f32);
+    z = Complex::<f32>::new(a, 0.0) + i_ * Complex::<f32>::new(b, 0.0);
+    println!("{} {} {} {}", x, y, z, w);
+}

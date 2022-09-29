@@ -1,0 +1,56 @@
+use num::complex::Complex;
+use num::traits::Pow;
+use ndarray::{array, Array1, Array2, Array3, Array4, Array5, Array6};
+
+fn main() {
+    let mut i: i32 = 0;
+    let mut j: i32 = 0;
+    i = 0;
+    j = 0;
+    while i < 10 {
+        i = i + 1;
+        j = j + i;
+    }
+    if j != 55 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    if i != 10 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    i = 0;
+    j = 0;
+    while i < 10 {
+        i = i + 1;
+        if i == 2 {
+            break
+        }
+        j = j + i;
+    }
+    if j != 1 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    if i != 2 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    i = 0;
+    j = 0;
+    while i < 10 {
+        i = i + 1;
+        if i == 2 {
+            continue
+        }
+        j = j + i;
+    }
+    if j != 53 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    if i != 10 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+}

@@ -1,0 +1,13 @@
+{
+    "basename": "rust-arrays_02_size-4f226e8",
+    "cmd": "lfortran --no-color --show-rust {infile}",
+    "infile": "tests/../integration_tests/arrays_02_size.f90",
+    "infile_hash": "38abe88ea3a7e82aa0d9dd390578cda301e16cccabaefeaab3650c5f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "rust-arrays_02_size-4f226e8.stdout",
+    "stdout_hash": "85a45b9ecb4bd80edc9d7edcbf2b01a20fa5fce1e7993fd29bb61da9",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

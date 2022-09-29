@@ -1,0 +1,13 @@
+use num::complex::Complex;
+use num::traits::Pow;
+use ndarray::{array, Array1, Array2, Array3, Array4, Array5, Array6};
+
+fn main() {
+    let mut i: i32 = 0;
+    let mut numbers = Array1::<f32>::default(5);
+    numbers = array![  1.50000000000000000e+00,   3.20000000000000018e+00,   4.50000000000000000e+00,   9.00000000000000022e-01,   7.20000000000000018e+00];
+    for i in 1..(5 + 1) {
+        numbers[(i - 1) as usize] = i as f32 *   2.00000000000000000e+00;
+    }
+    numbers = array![  1.50000000000000000e+00,   3.20000000000000018e+00,   4.50000000000000000e+00,   9.00000000000000022e-01,   7.20000000000000018e+00];
+}
