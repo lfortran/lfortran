@@ -1,15 +1,15 @@
+global a::Int32 = 1
+global ap::Int32 = 1
+global b::Int32 = 2
+global bp::Int32 = 2
+global c::Float32 =   1.00000000000000000e+00
+global cp::Float32 =   1.00000000000000000e+00
+global d::Float32 =   2.00000000000000000e+00
+global dp::Float32 =   2.00000000000000000e+00
+global grade_fixed::String = "B"
+global marks::Int32 = 0
+global marks_fixed::Int32 = 94
 function main()
-    local a::Int32 = 1
-    local ap::Int32 = 1
-    local b::Int32 = 2
-    local bp::Int32 = 2
-    local c::Float32 =   1.00000000000000000e+00
-    local cp::Float32 =   1.00000000000000000e+00
-    local d::Float32 =   2.00000000000000000e+00
-    local dp::Float32 =   2.00000000000000000e+00
-    local grade_fixed::String = "B"
-    local marks::Int32 = 0
-    local marks_fixed::Int32 = 94
     if grade_fixed == "A"
         println("Excellent!")
     elseif grade_fixed == "B"

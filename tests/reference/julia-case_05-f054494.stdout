@@ -1,5 +1,5 @@
+global grade::String = "B"
 function main()
-    local grade::String = "B"
     if grade == "A"
         println("Excellent!")
     elseif grade == "B"

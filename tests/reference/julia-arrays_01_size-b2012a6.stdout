@@ -1,9 +1,9 @@
+global a = Array{Int32, 1}(undef, 3)
+global b = Array{Int32, 1}(undef, 4)
+global i::Int32 = 0
+global size_a::Int32 = 0
+global size_b::Int32 = 0
 function main()
-    local a = Array{Int32, 1}(undef, 3)
-    local b = Array{Int32, 1}(undef, 4)
-    local i::Int32 = 0
-    local size_a::Int32 = 0
-    local size_b::Int32 = 0
     size_a = length(a)
     size_b = size(b)[1]
     if size_a ≠ 3

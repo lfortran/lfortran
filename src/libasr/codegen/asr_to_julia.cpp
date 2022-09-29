@@ -602,7 +602,7 @@ public:
         for (auto& item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
-                decl += indent + "local " + this->convert_variable_decl(*v) + "\n";
+                decl += "global " + this->convert_variable_decl(*v) + "\n";
             }
         }
 
@@ -612,7 +612,7 @@ public:
             body += src;
         }
 
-        src = format_dependencies() + contains + "function main()\n" + decl + body + "end\n\n"
+        src = format_dependencies() + contains + decl + "function main()\n" + body + "end\n\n"
               + "main()\n";
         indentation_level -= 2;
     }

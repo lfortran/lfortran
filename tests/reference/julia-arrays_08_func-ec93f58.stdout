@@ -15,11 +15,11 @@ function verify(a::Array{Int32, 1}, b::Array{Int32, 1})::Bool
     return r
 end
 
+global i::Int32 = 0
+global r::Bool = false
+global x = Array{Int32, 1}(undef, 10)
+global y = Array{Int32, 1}(undef, 10)
 function main()
-    local i::Int32 = 0
-    local r::Bool = false
-    local x = Array{Int32, 1}(undef, 10)
-    local y = Array{Int32, 1}(undef, 10)
     for i ∈ 1:length(x)
         x[i] = i
     end

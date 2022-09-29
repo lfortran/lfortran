@@ -20,9 +20,9 @@ function sum(a::Array{Float32, 1})::Float32
     return r
 end
 
+global a = Array{Float32, 1}(undef, 3)
+global b::Float32 = 0.0
 function main()
-    local a = Array{Float32, 1}(undef, 3)
-    local b::Float32 = 0.0
     a[1] = Float32(3)
     a[2] = Float32(2)
     a[3] = Float32(1)

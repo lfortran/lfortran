@@ -1,6 +1,6 @@
+global i::Int32 = 0
+global j::Int32 = 0
 function main()
-    local i::Int32 = 0
-    local j::Int32 = 0
     @label label_1
     j = 0
     @label label_2

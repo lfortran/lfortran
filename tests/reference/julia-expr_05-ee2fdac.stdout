@@ -1,9 +1,9 @@
+global a::Int32 = 0
+global b::Int32 = 0
+global c::Int32 = 0
+global l::Bool = false
+global x::Int32 = 0
 function main()
-    local a::Int32 = 0
-    local b::Int32 = 0
-    local c::Int32 = 0
-    local l::Bool = false
-    local x::Int32 = 0
     a = 3
     b = 4
     c = 5

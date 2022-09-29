@@ -1,5 +1,5 @@
+global marks::Int32 = 0
 function main()
-    local marks::Int32 = 0
     marks = 81
     if 91 ≤ marks ≤ 100
         println("Excellent!")

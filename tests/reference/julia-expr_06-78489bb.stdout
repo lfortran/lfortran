@@ -1,5 +1,5 @@
+global x::Int32 = 3 + 6
 function main()
-    local x::Int32 = 3 + 6
     println(x)
 end
 

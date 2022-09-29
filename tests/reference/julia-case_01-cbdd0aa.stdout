@@ -1,5 +1,5 @@
+global i::Int32 = 0
 function main()
-    local i::Int32 = 0
     i = 4
     if i == 1
         println("1")

@@ -1,8 +1,8 @@
+global a::Int32 = 0
+global b::Int32 = 0
+global i::Int32 = 0
+global j::Int32 = 0
 function main()
-    local a::Int32 = 0
-    local b::Int32 = 0
-    local i::Int32 = 0
-    local j::Int32 = 0
     j = 0
     a = 1
     b = 10

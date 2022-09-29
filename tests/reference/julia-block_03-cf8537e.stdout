@@ -8,8 +8,8 @@ function square(b::Int32)
     println(result)
 end
 
+global a::Int32 = 0
 function main()
-    local a::Int32 = 0
     a = 10
     @label label_1
     let

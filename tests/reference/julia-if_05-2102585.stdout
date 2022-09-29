@@ -1,6 +1,6 @@
+global x::Bool = false
+global y::Bool = false
 function main()
-    local x::Bool = false
-    local y::Bool = false
     x = true
     y = false
     if x
