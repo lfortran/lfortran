@@ -29,8 +29,8 @@ public:
     bool from_block;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
-            CompilerOptions &compiler_options)
-         : CommonVisitor(al, nullptr, diagnostics, compiler_options),
+            CompilerOptions &compiler_options, std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> &external_functions)
+         : CommonVisitor(al, nullptr, diagnostics, compiler_options, external_functions),
            asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -1743,9 +1743,11 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
-        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters)
+        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters,
+        std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> &external_functions
+        )
 {
-    BodyVisitor b(al, unit, diagnostics, compiler_options);
+    BodyVisitor b(al, unit, diagnostics, compiler_options, external_functions);
     try {
         b.is_body_visitor = true;
         b.template_type_parameters = template_type_parameters;

@@ -23,14 +23,18 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         diag::Diagnostics &diagnostics,
         SymbolTable *symbol_table,
         CompilerOptions &compiler_options,
-        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters);
+        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters,
+        std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> &external_functions
+        );
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
-        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters);
+        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters,
+        std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> &external_functions
+        );
 
 Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics,
@@ -38,9 +42,10 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     CompilerOptions &compiler_options)
 {
     std::map<std::string, std::vector<ASR::asr_t*>> template_type_parameters;
+    std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> external_functions;
     ASR::asr_t *unit;
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,
-        compiler_options, template_type_parameters);
+        compiler_options, template_type_parameters, external_functions);
     if (res.ok) {
         unit = res.result;
     } else {
@@ -50,7 +55,8 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     LFORTRAN_ASSERT(asr_verify(*tu));
 
     if (!symtab_only) {
-        auto res = body_visitor(al, ast, diagnostics, unit, compiler_options, template_type_parameters);
+        auto res = body_visitor(al, ast, diagnostics, unit, compiler_options, template_type_parameters,
+            external_functions);
         if (res.ok) {
             tu = res.result;
         } else {

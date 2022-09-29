@@ -89,8 +89,10 @@ public:
     };
 
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
-        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options)
-      : CommonVisitor(al, symbol_table, diagnostics, compiler_options) {}
+        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
+        std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> &external_functions
+        )
+      : CommonVisitor(al, symbol_table, diagnostics, compiler_options, external_functions) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -1333,9 +1335,12 @@ public:
 Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
         SymbolTable *symbol_table, CompilerOptions &compiler_options,
-        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters)
+        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters,
+        std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> &external_functions
+        )
 {
-    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options);
+    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options,
+        external_functions);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticError &e) {

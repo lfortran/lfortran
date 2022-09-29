@@ -672,14 +672,15 @@ public:
     std::vector<ASR::asr_t*> current_template_type_parameters;
     std::unordered_set<int> current_procedure_used_type_parameter_indices;
     // maps procedure name to a pair (ASR function node pointer, arguments initialized)
-    std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> external_functions;
+    std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> &external_functions;
 
     Vec<char*> data_member_names;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
-            diag::Diagnostics &diagnostics, CompilerOptions &compiler_options)
+            diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
+            std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> &external_functions)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
-          current_scope{symbol_table} {
+          current_scope{symbol_table}, external_functions{external_functions} {
         current_module_dependencies.reserve(al, 4);
     }
 
