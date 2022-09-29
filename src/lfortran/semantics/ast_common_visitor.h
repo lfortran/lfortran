@@ -1,6 +1,7 @@
 #ifndef LFORTRAN_SEMANTICS_AST_COMMON_VISITOR_H
 #define LFORTRAN_SEMANTICS_AST_COMMON_VISITOR_H
 
+#include <libasr/assert.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <lfortran/ast.h>
@@ -2663,6 +2664,28 @@ public:
                             tmp = create_Floor(x, p, v);
                             return;
                         }
+                    }
+                } else if (var_name == "not") {
+                    Vec<ASR::call_arg_t> args;
+                    visit_expr_list(x.m_args, x.n_args, args);
+                    LFORTRAN_ASSERT(args.size() == 1);
+                    ASR::expr_t* operand = args[0].m_value;
+                    ASR::expr_t* value = nullptr;
+                    ASR::ttype_t* operand_type = ASRUtils::expr_type(operand);
+                    if (LFortran::ASRUtils::is_integer(*operand_type)) {
+                        if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
+                            int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
+                                                   LFortran::ASRUtils::expr_value(operand))
+                                                   ->m_n;
+                            value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(
+                                al, x.base.base.loc, ~op_value, operand_type));
+                        }
+                        tmp = ASR::make_IntegerBitNot_t(
+                            al, x.base.base.loc, operand, operand_type, value);
+                        return;
+                    } else {
+                        throw SemanticError("Argument of `not` intrinsic must be INTEGER",
+                                            x.base.base.loc);
                     }
                 }
             }
