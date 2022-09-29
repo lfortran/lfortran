@@ -1289,12 +1289,6 @@ public:
                 if (x.n_attributes > 0) r.append(", ");
             }
             for (size_t i=0; i<x.n_attributes; i++) {
-                if(x.m_attributes[i]->type == decl_attributeType::AttrData
-                        && i == 0 ){
-                    r += syn(gr::Type);
-                    r += "data ";
-                    r += syn();
-                }
                 visit_decl_attribute(*x.m_attributes[i]);
                 r += s;
                 if (i < x.n_attributes-1) r.append(", ");
@@ -1377,20 +1371,27 @@ public:
         s = r;
     }
 
-    void visit_AttrData(const AttrData_t &x) {
+    void visit_DataStmt(const DataStmt_t &x) {
         std::string r;
-        for (size_t i=0; i<x.n_object; i++) {
-            this->visit_expr(*x.m_object[i]);
-            r.append(s);
-            if (i < x.n_object-1) r.append(", ");
+        r += syn(gr::Type);
+        r += "data ";
+        r += syn();
+        for (size_t n=0; n<x.n_items; n++) {
+            DataStmtSet_t *y = down_cast<DataStmtSet_t>(x.m_items[n]);
+            for (size_t i=0; i<y->n_object; i++) {
+                this->visit_expr(*y->m_object[i]);
+                r.append(s);
+                if (i < y->n_object-1) r.append(", ");
+            }
+            r += "/";
+            for (size_t i=0; i<y->n_value; i++) {
+                this->visit_expr(*y->m_value[i]);
+                r.append(s);
+                if (i < y->n_value-1) r.append(", ");
+            }
+            r += "/";
+            if (n < x.n_items-1) r += ", ";
         }
-        r += "/";
-        for (size_t i=0; i<x.n_value; i++) {
-            this->visit_expr(*x.m_value[i]);
-            r.append(s);
-            if (i < x.n_value-1) r.append(", ");
-        }
-        r += "/";
         s = r;
     }
 

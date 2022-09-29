@@ -946,6 +946,8 @@ public:
                             throw SemanticError("Cannot attribute non-variable type with dimension", x.base.base.loc);
                         }
                     }
+// TODO: This needs to be moved to DataStmt handling
+/*
                 } else if (AST::is_a<AST::AttrData_t>(*x.m_attributes[i])) {
                     // Example:
                     // data x, y / 1.0, 2.0 /
@@ -1019,6 +1021,7 @@ public:
                         ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
                         v2->m_value = expression_value;
                     }
+*/
                 } else {
                     throw SemanticError("Attribute declaration not supported",
                         x.base.base.loc);

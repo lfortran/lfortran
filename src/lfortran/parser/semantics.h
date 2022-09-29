@@ -330,15 +330,6 @@ decl_attribute_t** ATTRCOMMON(Allocator &al,
         varsym.p, varsym.n, \
         trivia_cast(trivia))
 
-#define VAR_DECL_DATA(x, trivia, l) make_Declaration_t(p.m_a, l, \
-        nullptr, VEC_CAST(x, decl_attribute), x.size(), \
-        nullptr, 0, trivia_cast(trivia))
-#define DATASTMT(x, l) make_DataStmt_t(p.m_a, l, \
-        0, VEC_CAST(x, decl_attribute), x.size(), nullptr)
-#define DATA(objects, values, l) make_AttrData_t(p.m_a, l, \
-        EXPRS(objects), objects.size(), \
-        EXPRS(values), values.size())
-
 ast_t* data_implied_do(Allocator &al, Location &loc,
         Vec<ast_t*> obj_list,
         ast_t* type,
@@ -1115,6 +1106,13 @@ void pos_to_linecol(const std::string &s, uint64_t position,
 }
 
 #define FORMAT(s, l) make_Format_t(p.m_a, l, 0, s.c_str(p.m_a), nullptr)
+
+#define DATASTMT(x, l) make_DataStmt_t(p.m_a, l, \
+        0, VEC_CAST(x, data_stmt_set), x.size(), nullptr)
+#define DATA(objects, values, l) make_DataStmtSet_t(p.m_a, l, \
+        EXPRS(objects), objects.size(), \
+        EXPRS(values), values.size())
+
 
 #define STOP(l) make_Stop_t(p.m_a, l, 0, nullptr, nullptr, nullptr)
 #define STOP1(stop_code, l) make_Stop_t(p.m_a, l, 0, EXPR(stop_code), nullptr, nullptr)
