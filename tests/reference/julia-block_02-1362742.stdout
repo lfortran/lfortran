@@ -4,15 +4,19 @@ function square(b::Int32)
     println(result)
 end
 
-global a::Int32 = 0
-a = 10
-@label label_1
-let
-    b::Int32 = 0
-    a = a + 5
-    if a == 15
-        @goto label_1
+function main()
+    local a::Int32 = 0
+    a = 10
+    @label label_1
+    let
+        b::Int32 = 0
+        a = a + 5
+        if a == 15
+            @goto label_1
+        end
+        b = a ÷ 2
+        square(b)
     end
-    b = a ÷ 2
-    square(b)
 end
+
+main()

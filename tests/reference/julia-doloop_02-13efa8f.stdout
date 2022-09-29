@@ -1,37 +1,41 @@
-global a::Int32 = 0
-global b::Int32 = 0
-global i::Int32 = 0
-global j::Int32 = 0
-j = 0
-a = 1
-b = 10
-for i ∈ a:b
-    j = j + i
-end
-if j ≠ 55
-    println(Base.stderr, "ERROR STOP")
-    exit(1)
-end
-println(j)
-a = 0
-for i ∈ 1:10
-    for j ∈ 1:10
-        a = a + (i - 1) * 10 + j
+function main()
+    local a::Int32 = 0
+    local b::Int32 = 0
+    local i::Int32 = 0
+    local j::Int32 = 0
+    j = 0
+    a = 1
+    b = 10
+    for i ∈ a:b
+        j = j + i
     end
-end
-if a ≠ 100 * 101 ÷ 2
-    println(Base.stderr, "ERROR STOP")
-    exit(1)
-end
-println(a)
-a = 0
-for i ∈ 1:10
-    for j ∈ 1:i
-        a = a + j
+    if j ≠ 55
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
     end
+    println(j)
+    a = 0
+    for i ∈ 1:10
+        for j ∈ 1:10
+            a = a + (i - 1) * 10 + j
+        end
+    end
+    if a ≠ 100 * 101 ÷ 2
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    println(a)
+    a = 0
+    for i ∈ 1:10
+        for j ∈ 1:i
+            a = a + j
+        end
+    end
+    if a ≠ 220
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    println(a)
 end
-if a ≠ 220
-    println(Base.stderr, "ERROR STOP")
-    exit(1)
-end
-println(a)
+
+main()

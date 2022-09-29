@@ -2,43 +2,47 @@ function f(a::Int32, b::Base.RefValue{Int32}, c::Int32, d::Int32)
     b[] = a + 1 + c + d
 end
 
-global i::Int32 = 0
-global j::Int32 = 0
-global k::Int32 = 0
-global l::Int32 = 0
-i = 1
-j = 1
-k = 1
-l = 1
-__j_ref__= Ref(j)
-f(i, __j_ref__, k, l)
-j = __j_ref__[]
-println(j)
-if j ≠ 4
-    println(Base.stderr, "ERROR STOP")
-    exit(1)
+function main()
+    local i::Int32 = 0
+    local j::Int32 = 0
+    local k::Int32 = 0
+    local l::Int32 = 0
+    i = 1
+    j = 1
+    k = 1
+    l = 1
+    __j_ref__= Ref(j)
+    f(i, __j_ref__, k, l)
+    j = __j_ref__[]
+    println(j)
+    if j ≠ 4
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    __j_ref__= Ref(j)
+    f(i, __j_ref__, k, l)
+    j = __j_ref__[]
+    println(j)
+    if j ≠ 4
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    __j_ref__= Ref(j)
+    f(i, __j_ref__, k, l)
+    j = __j_ref__[]
+    println(j)
+    if j ≠ 4
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    __j_ref__= Ref(j)
+    f(i, __j_ref__, k, l)
+    j = __j_ref__[]
+    println(j)
+    if j ≠ 4
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
 end
-__j_ref__= Ref(j)
-f(i, __j_ref__, k, l)
-j = __j_ref__[]
-println(j)
-if j ≠ 4
-    println(Base.stderr, "ERROR STOP")
-    exit(1)
-end
-__j_ref__= Ref(j)
-f(i, __j_ref__, k, l)
-j = __j_ref__[]
-println(j)
-if j ≠ 4
-    println(Base.stderr, "ERROR STOP")
-    exit(1)
-end
-__j_ref__= Ref(j)
-f(i, __j_ref__, k, l)
-j = __j_ref__[]
-println(j)
-if j ≠ 4
-    println(Base.stderr, "ERROR STOP")
-    exit(1)
-end
+
+main()

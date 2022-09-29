@@ -1,27 +1,31 @@
-global a = Array{Int32, 1}(undef, 3)
-global b = Array{Int32, 1}(undef, 4)
-global i::Int32 = 0
-global size_a4::Int32 = 0
-global size_a8::Int64 = 0
-global size_b4::Int32 = 0
-global size_b8::Int64 = 0
-size_a4 = length(a)
-size_b4 = size(b)[1]
-size_a8 = length(a)
-size_b8 = size(b)[1]
-if size_a4 ≠ 3
-    println(Base.stderr, "ERROR STOP")
-    exit(1)
+function main()
+    local a = Array{Int32, 1}(undef, 3)
+    local b = Array{Int32, 1}(undef, 4)
+    local i::Int32 = 0
+    local size_a4::Int32 = 0
+    local size_a8::Int64 = 0
+    local size_b4::Int32 = 0
+    local size_b8::Int64 = 0
+    size_a4 = length(a)
+    size_b4 = size(b)[1]
+    size_a8 = length(a)
+    size_b8 = size(b)[1]
+    if size_a4 ≠ 3
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    if size_b4 ≠ 4
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    if size_a8 ≠ 3
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    if size_b8 ≠ 4
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
 end
-if size_b4 ≠ 4
-    println(Base.stderr, "ERROR STOP")
-    exit(1)
-end
-if size_a8 ≠ 3
-    println(Base.stderr, "ERROR STOP")
-    exit(1)
-end
-if size_b8 ≠ 4
-    println(Base.stderr, "ERROR STOP")
-    exit(1)
-end
+
+main()

@@ -596,12 +596,13 @@ public:
         }
 
         // Generate code for the main program
+        indentation_level += 1;
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string decl;
         for (auto& item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
-                decl += "global " + this->convert_variable_decl(*v) + "\n";
+                decl += indent + "local " + this->convert_variable_decl(*v) + "\n";
             }
         }
 
@@ -611,8 +612,9 @@ public:
             body += src;
         }
 
-        src = format_dependencies() + contains + decl + body;
-        indentation_level -= 1;
+        src = format_dependencies() + contains + "function main()\n" + decl + body + "end\n\n"
+              + "main()\n";
+        indentation_level -= 2;
     }
 
     void visit_BlockCall(const ASR::BlockCall_t& x)

@@ -3,4 +3,8 @@ function print_int()
     println(a)
 end
 
-print_int()
+function main()
+    print_int()
+end
+
+main()

@@ -1,16 +1,20 @@
-global i::Int32 = 0
-i = 4
-if i == 1
-    println("1")
-elseif i == 2
-    println("2")
-elseif i == 3
-    println("3")
-elseif i == 4
-    println("4")
+function main()
+    local i::Int32 = 0
+    i = 4
+    if i == 1
+        println("1")
+    elseif i == 2
+        println("2")
+    elseif i == 3
+        println("3")
+    elseif i == 4
+        println("4")
+    end
+    if i == 1
+        println("1")
+    elseif i == 2 || i == 3 || i == 4
+        println("2,3,4")
+    end
 end
-if i == 1
-    println("1")
-elseif i == 2 || i == 3 || i == 4
-    println("2,3,4")
-end
+
+main()

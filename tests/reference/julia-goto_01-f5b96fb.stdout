@@ -1,5 +1,9 @@
-global a::Int32 = 0
-a = 5
-@goto label_1
-@label label_1
-println(a)
+function main()
+    local a::Int32 = 0
+    a = 5
+    @goto label_1
+    @label label_1
+    println(a)
+end
+
+main()
