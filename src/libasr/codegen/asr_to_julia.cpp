@@ -740,19 +740,6 @@ public:
                     }
                 }
                 src = var_name + ".extent(" + args + ")";
-            } else if (fn_name == "int") {
-                // TODO: implement this properly
-                // - Keep integers as they are
-                // - Convert real to integer (|A| < 1 => 0, |A| >= 1 => largest integer whose
-                // absolute value <= |A| with sign of A)
-                // - Take the real part of a complex number
-                LFORTRAN_ASSERT(x.n_args > 0);
-                visit_expr(*x.m_args[0].m_value);
-                src = "Int32(" + src + ")";
-            } else if (fn_name == "not") {
-                LFORTRAN_ASSERT(x.n_args > 0);
-                visit_expr(*x.m_args[0].m_value);
-                src = "!(" + src + ")";
             } else {
                 throw CodeGenError("Intrinsic function '" + fn_name + "' not implemented");
             }
@@ -1497,7 +1484,7 @@ public:
             }
             case (ASR::cast_kindType::RealToInteger): {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                src = "Int" + std::to_string(dest_kind * 8) + broadcast + "(" + src + ")";
+                src = "trunc" + broadcast + "(Int" + std::to_string(dest_kind * 8) + ", " + src + ")";
                 break;
             }
             case (ASR::cast_kindType::RealToReal): {
