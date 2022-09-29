@@ -1464,8 +1464,17 @@ public:
 
     void visit_Cast(const ASR::Cast_t& x)
     {
+        std::string broadcast;
+        if (x.m_arg->type == ASR::exprType::Var) {
+            ASR::Variable_t* value = ASRUtils::EXPR2VAR(x.m_arg);
+            if (ASRUtils::is_array(value->m_type))
+                broadcast = ".";
+        } else if (x.m_arg->type == ASR::exprType::ArrayConstant
+                   || x.m_arg->type == ASR::exprType::TupleConstant
+                   || x.m_arg->type == ASR::exprType::SetConstant) {
+            broadcast = ".";
+        }
         visit_expr(*x.m_arg);
-        std::string broadcast = ASRUtils::is_array(x.m_type) ? "." : "";
         switch (x.m_kind) {
             case (ASR::cast_kindType::IntegerToReal): {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
