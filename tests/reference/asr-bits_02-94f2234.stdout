@@ -12,13 +12,10 @@
                                     2 
                                     all_ones 
                                     Local 
-                                    (FunctionCall 
-                                        2 not@not64 
-                                        2 not 
-                                        [((Var 2 all_zeros))] 
+                                    (IntegerBitNot 
+                                        (Var 2 all_zeros) 
                                         (Integer 8 []) 
-                                        (IntegerConstant -1 (Integer 8 [])) 
-                                        ()
+                                        (IntegerConstant -1 (Integer 8 []))
                                     ) 
                                     (IntegerConstant -1 (Integer 8 [])) 
                                     Parameter 
@@ -101,16 +98,6 @@
                                     lfortran_intrinsic_bit 
                                     [] 
                                     not 
-                                    Private
-                                ), 
-                            not@not64:
-                                (ExternalSymbol 
-                                    2 
-                                    not@not64 
-                                    30 not64 
-                                    lfortran_intrinsic_bit 
-                                    [] 
-                                    not64 
                                     Private
                                 )
                             

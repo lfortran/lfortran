@@ -1,0 +1,10 @@
+function print_int()
+    local a::Int32 = 5
+    println(a)
+end
+
+function main()
+    print_int()
+end
+
+main()

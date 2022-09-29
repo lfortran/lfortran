@@ -1,0 +1,6 @@
+function main()
+    local x::Float32 =   3.29999999999999982e+00 +   6.00000000000000000e+00
+    println(x)
+end
+
+main()

@@ -1,0 +1,13 @@
+{
+    "basename": "julia-subroutines_04-c6808b6",
+    "cmd": "lfortran --no-color --show-julia {infile}",
+    "infile": "tests/../integration_tests/subroutines_04.f90",
+    "infile_hash": "64a0d218db09c2ed45f26712eeca158f8abd11043df4d26101c06498",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "julia-subroutines_04-c6808b6.stdout",
+    "stdout_hash": "2fb4aa4589710fe08674cd500f011efb2cc2d21ae2822d110a960fba",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
