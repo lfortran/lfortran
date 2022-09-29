@@ -913,7 +913,6 @@ public:
                                         ::AttrExternal) {
                                     assgnd_access[sym] = ASR::accessType::Public;
                                     auto fn_name = sym.data();
-                                    std::cout << "in visit_DeclUtil, fun: " << fn_name << "\n";
                                     auto v = current_scope->resolve_symbol(fn_name);
                                     if (v && external_functions[fn_name].second) throw SemanticError("External procedure already declared in same scope", s.loc);                                    
                                     auto pscope = current_scope;
@@ -934,9 +933,6 @@ public:
                                         false, false, false, false);
                                     parent_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
                                     external_functions[fn_name] = std::make_pair(ASR::down_cast<ASR::symbol_t>(tmp), false);
-                                    if (has_external_function(fn_name)) std::cout << "function " << fn_name << " inserted\n";
-                                    std::cout << "have " << external_functions.size() << " external functions\n";
-                                    std::cout << "&external_functions: " << &external_functions << "\n";
                                     current_scope = pscope; 
                                 } else {
                                     throw SemanticError("Attribute declaration not "

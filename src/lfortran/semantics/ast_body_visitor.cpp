@@ -927,9 +927,6 @@ public:
             return nullptr;
         }
         ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
-        std::cout << "fun name implicit dealloc " << subrout->m_name<<"\n";
-        std::cout << "subrout n_args " << subrout->n_args << "\n";
-        std::cout << "subrout call n_args " << subrout_call->n_args << "\n";
         if (has_external_function(subrout->m_name)) {
             return nullptr;
         }
@@ -1163,18 +1160,10 @@ public:
 
         Vec<ASR::call_arg_t> args;
         visit_expr_list(x.m_args, x.n_args, args);
-        std::cout << "in visit_SubroutineCall for " << sub_name << "\n";
-        if (ASR::is_a<ASR::Function_t>(*sym)) std::cout << "first ok\n";
-        for (const auto & [k,v]:external_functions) std::cout << "[" <<k<<","<<v.first<<"] ";
-        if (has_external_function(sub_name)) std::cout << "second ok\n";
-        std::cout << "have " << external_functions.size() << " ext funs\n";
-        std::cout << "&external_functions: " << &external_functions << "\n";
 
         if (ASR::is_a<ASR::Function_t>(*sym) && has_external_function(sub_name)) {
-            std::cout << "got the condition\n";
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
             if (external_functions[sub_name].first != nullptr && !external_functions[sub_name].second) {
-                std::cout << "now updating args\n";
                 Vec<ASR::expr_t *> exprs;  exprs.reserve(al, x.n_args);
                 for (size_t i=0;i<x.n_args;++i) {
                     if (!ASR::is_a<ASR::Var_t>(*args[i].m_value))

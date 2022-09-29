@@ -1,0 +1,34 @@
+Internal Compiler Error: Unhandled exception
+Traceback (most recent call last):
+[2m  Binary file "[0m[1m[35m$DIR/src/bin/lfortran[39m[0m[2m", in _start()[0m
+[2m  File "[0m[1m[35m./csu/../csu/libc-start.c[39m[0m[2m", line 392, in __libc_start_main_impl()[0m
+[2m  File "[0m[1m[35m./csu/../sysdeps/nptl/libc_start_call_main.h[39m[0m[2m", line 58, in __libc_start_call_main()[0m
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 1674, in ??[0m
+    return emit_asr(arg_file, lfortran_pass_manager,
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 552, in ??[0m
+    r = fe.get_asr2(input, lm, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 226, in LFortran::FortranEvaluator::get_asr2(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LFortran::LocationManager&, LFortran::diag::Diagnostics&)[0m
+    Result<ASR::TranslationUnit_t*> res2 = get_asr3(*ast, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 248, in LFortran::FortranEvaluator::get_asr3(LFortran::AST::TranslationUnit_t&, LFortran::diag::Diagnostics&)[0m
+    compiler_options.symtab_only, compiler_options);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_to_asr.cpp[39m[0m[2m", line 65, in LFortran::ast_to_asr(Allocator&, LFortran::AST::TranslationUnit_t&, LFortran::diag::Diagnostics&, LFortran::SymbolTable*, bool, LFortran::CompilerOptions&)[0m
+    LFORTRAN_ASSERT(asr_verify(*tu));
+[2m  File "[0m[1m[35m$DIR/src/libasr/asr_verify.cpp[39m[0m[2m", line 521, in LFortran::asr_verify(LFortran::ASR::TranslationUnit_t const&, bool)[0m
+    v.visit_TranslationUnit(unit);
+[2m  File "[0m[1m[35m$DIR/src/libasr/asr_verify.cpp[39m[0m[2m", line 111, in LFortran::ASR::VerifyVisitor::visit_TranslationUnit(LFortran::ASR::TranslationUnit_t const&)[0m
+    this->visit_symbol(*a.second);
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3821, in LFortran::ASR::BaseVisitor<LFortran::ASR::VerifyVisitor>::visit_symbol(LFortran::ASR::symbol_t const&)[0m
+    void visit_symbol(const symbol_t &b) { visit_symbol_t(b, self()); }
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3593, in ??[0m
+    case symbolType::Program: { v.visit_Program((const Program_t &)x); return; }
+[2m  File "[0m[1m[35m$DIR/src/libasr/asr_verify.cpp[39m[0m[2m", line 149, in LFortran::ASR::VerifyVisitor::visit_Program(LFortran::ASR::Program_t const&)[0m
+    visit_stmt(*x.m_body[i]);
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3834, in LFortran::ASR::BaseVisitor<LFortran::ASR::VerifyVisitor>::visit_stmt(LFortran::ASR::stmt_t const&)[0m
+    void visit_stmt(const stmt_t &b) { visit_stmt_t(b, self()); }
+[2m  File "[0m[1m[35m$DIR/src/libasr/../libasr/asr.h[39m[0m[2m", line 3639, in ??[0m
+    case stmtType::SubroutineCall: { v.visit_SubroutineCall((const SubroutineCall_t &)x); return; }
+[2m  File "[0m[1m[35m$DIR/src/libasr/asr_verify.cpp[39m[0m[2m", line 372, in LFortran::ASR::VerifyVisitor::visit_SubroutineCall(LFortran::ASR::SubroutineCall_t const&)[0m
+    require(symtab_in_scope(current_symtab, x.m_name),
+[2m  File "[0m[1m[35m$DIR/src/libasr/asr_verify.cpp[39m[0m[2m", line 60, in LFortran::ASR::VerifyVisitor::require(bool, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LFortran::Location const&)[0m
+    require(cond, msg);
+LCompilersException: ASR verify failed: 35:42: SubroutineCall::m_name 'g' cannot point outside of its symbol table
