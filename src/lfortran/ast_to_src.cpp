@@ -1383,7 +1383,7 @@ public:
                 r.append(s);
                 if (i < y->n_object-1) r.append(", ");
             }
-            r += " /";
+            r += "/";
             for (size_t i=0; i<y->n_value; i++) {
                 this->visit_expr(*y->m_value[i]);
                 r.append(s);
