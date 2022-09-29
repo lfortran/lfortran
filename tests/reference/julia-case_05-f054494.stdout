@@ -1,18 +1,14 @@
 global grade::String = "B"
-function main()
-    if grade == "A"
-        println("Excellent!")
-    elseif grade == "B"
-    elseif grade == "C"
-        println("Well done")
-    elseif grade == "D"
-        println("You passed")
-    elseif grade == "F"
-        println("Better try again")
-    else
-        println("Invalid grade")
-    end
-    println("Your grade is ", " ", grade)
+if grade == "A"
+    println("Excellent!")
+elseif grade == "B"
+elseif grade == "C"
+    println("Well done")
+elseif grade == "D"
+    println("You passed")
+elseif grade == "F"
+    println("Better try again")
+else
+    println("Invalid grade")
 end
-
-main()
+println("Your grade is ", " ", grade)

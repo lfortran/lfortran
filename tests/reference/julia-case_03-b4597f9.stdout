@@ -1,25 +1,21 @@
 global a::Int32 = 1
 global b::Int32 = 2
 global marks::Int32 = 0
-function main()
-    marks = 94
-    if marks ≥ 40 + b
-        println("Pass!")
-    elseif marks ≤ 39 - a
-        println("Failed!")
-    else
-        println("Invalid marks")
-    end
-    println("Your marks are ", " ", marks)
-    marks = -1
-    if marks ≥ 40 + b
-        println("Pass!")
-    elseif 0 ≤ marks ≤ 39 - a
-        println("Failed!")
-    else
-        println("Invalid marks")
-    end
-    println("Your marks are ", " ", marks)
+marks = 94
+if marks ≥ 40 + b
+    println("Pass!")
+elseif marks ≤ 39 - a
+    println("Failed!")
+else
+    println("Invalid marks")
 end
-
-main()
+println("Your marks are ", " ", marks)
+marks = -1
+if marks ≥ 40 + b
+    println("Pass!")
+elseif 0 ≤ marks ≤ 39 - a
+    println("Failed!")
+else
+    println("Invalid marks")
+end
+println("Your marks are ", " ", marks)

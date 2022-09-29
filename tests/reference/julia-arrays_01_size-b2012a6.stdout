@@ -3,76 +3,72 @@ global b = Array{Int32, 1}(undef, 4)
 global i::Int32 = 0
 global size_a::Int32 = 0
 global size_b::Int32 = 0
-function main()
-    size_a = length(a)
-    size_b = size(b)[1]
-    if size_a ≠ 3
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    if size_b ≠ 4
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    for i ∈ 1:size_a
-        a[i] = i + 10
-    end
-    if a[1] ≠ 11
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    if a[2] ≠ 12
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    if a[3] ≠ 13
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    for i ∈ 11:10 + size_b
-        b[i - 10] = i
-    end
-    if b[1] ≠ 11
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    if b[2] ≠ 12
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    if b[3] ≠ 13
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    if b[4] ≠ 14
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    for i ∈ 1:size_a
-        b[i] = a[i] - 10
-    end
-    if b[1] ≠ 1
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    if b[2] ≠ 2
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    if b[3] ≠ 3
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    b[4] = b[1] + b[2] + b[3] + a[1]
-    if b[4] ≠ 17
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    b[4] = a[1]
-    if b[4] ≠ 11
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
+size_a = length(a)
+size_b = size(b)[1]
+if size_a ≠ 3
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
 end
-
-main()
+if size_b ≠ 4
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+for i ∈ 1:size_a
+    a[i] = i + 10
+end
+if a[1] ≠ 11
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+if a[2] ≠ 12
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+if a[3] ≠ 13
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+for i ∈ 11:10 + size_b
+    b[i - 10] = i
+end
+if b[1] ≠ 11
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+if b[2] ≠ 12
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+if b[3] ≠ 13
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+if b[4] ≠ 14
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+for i ∈ 1:size_a
+    b[i] = a[i] - 10
+end
+if b[1] ≠ 1
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+if b[2] ≠ 2
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+if b[3] ≠ 3
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+b[4] = b[1] + b[2] + b[3] + a[1]
+if b[4] ≠ 17
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+b[4] = a[1]
+if b[4] ≠ 11
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end

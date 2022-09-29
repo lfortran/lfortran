@@ -6,43 +6,39 @@ global i::Int32 = 0
 global j::Int32 = 0
 global k::Int32 = 0
 global l::Int32 = 0
-function main()
-    i = 1
-    j = 1
-    k = 1
-    l = 1
-    __j_ref__= Ref(j)
-    f(i, __j_ref__, k, l)
-    j = __j_ref__[]
-    println(j)
-    if j ≠ 4
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    __j_ref__= Ref(j)
-    f(i, __j_ref__, k, l)
-    j = __j_ref__[]
-    println(j)
-    if j ≠ 4
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    __j_ref__= Ref(j)
-    f(i, __j_ref__, k, l)
-    j = __j_ref__[]
-    println(j)
-    if j ≠ 4
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    __j_ref__= Ref(j)
-    f(i, __j_ref__, k, l)
-    j = __j_ref__[]
-    println(j)
-    if j ≠ 4
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
+i = 1
+j = 1
+k = 1
+l = 1
+__j_ref__= Ref(j)
+f(i, __j_ref__, k, l)
+j = __j_ref__[]
+println(j)
+if j ≠ 4
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
 end
-
-main()
+__j_ref__= Ref(j)
+f(i, __j_ref__, k, l)
+j = __j_ref__[]
+println(j)
+if j ≠ 4
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+__j_ref__= Ref(j)
+f(i, __j_ref__, k, l)
+j = __j_ref__[]
+println(j)
+if j ≠ 4
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+__j_ref__= Ref(j)
+f(i, __j_ref__, k, l)
+j = __j_ref__[]
+println(j)
+if j ≠ 4
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end

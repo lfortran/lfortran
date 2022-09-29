@@ -12,45 +12,41 @@ end
 
 global i::Int32 = 0
 global j::Int32 = 0
-function main()
-    i = 1
-    j = 1
-    __j_ref__= Ref(j)
-    f(i, __j_ref__)
-    j = __j_ref__[]
-    println(i, " ", j)
-    if i ≠ 1
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    if j ≠ 2
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    __j_ref__= Ref(j)
-    g(i, __j_ref__)
-    j = __j_ref__[]
-    println(i, " ", j)
-    if i ≠ 1
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    if j ≠ 0
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    __j_ref__= Ref(j)
-    h(i, __j_ref__)
-    j = __j_ref__[]
-    println(i, " ", j)
-    if i ≠ 1
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
-    if j ≠ 0
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
+i = 1
+j = 1
+__j_ref__= Ref(j)
+f(i, __j_ref__)
+j = __j_ref__[]
+println(i, " ", j)
+if i ≠ 1
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
 end
-
-main()
+if j ≠ 2
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+__j_ref__= Ref(j)
+g(i, __j_ref__)
+j = __j_ref__[]
+println(i, " ", j)
+if i ≠ 1
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+if j ≠ 0
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+__j_ref__= Ref(j)
+h(i, __j_ref__)
+j = __j_ref__[]
+println(i, " ", j)
+if i ≠ 1
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end
+if j ≠ 0
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end

@@ -2,12 +2,8 @@ module module_12
 
 end
 
-function main()
-    a[5] = 5
-    if a[5] ≠ 5
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
+a[5] = 5
+if a[5] ≠ 5
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
 end
-
-main()

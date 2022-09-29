@@ -10,7 +10,3 @@ global f::Int32 = 0
 global g = Array{Int32, 1}(undef, 3)
 global g2 = Array{Int32, 2}(undef, 6, 3)
 global g3 = Array{Int32, 3}(undef, 4, 3, 2)
-function main()
-end
-
-main()

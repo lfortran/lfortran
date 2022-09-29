@@ -596,7 +596,6 @@ public:
         }
 
         // Generate code for the main program
-        indentation_level += 1;
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string decl;
         for (auto& item : x.m_symtab->get_scope()) {
@@ -612,9 +611,8 @@ public:
             body += src;
         }
 
-        src = format_dependencies() + contains + decl + "function main()\n" + body + "end\n\n"
-              + "main()\n";
-        indentation_level -= 2;
+        src = format_dependencies() + contains + decl + body;
+        indentation_level -= 1;
     }
 
     void visit_BlockCall(const ASR::BlockCall_t &x) {

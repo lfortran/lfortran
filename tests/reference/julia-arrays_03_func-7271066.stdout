@@ -11,16 +11,12 @@ end
 global i::Int32 = 0
 global s::Int32 = 0
 global x = Array{Int32, 1}(undef, 10)
-function main()
-    for i ∈ 1:length(x)
-        x[i] = i
-    end
-    s = mysum(x)
-    println(s)
-    if s ≠ 55
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
+for i ∈ 1:length(x)
+    x[i] = i
 end
-
-main()
+s = mysum(x)
+println(s)
+if s ≠ 55
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end

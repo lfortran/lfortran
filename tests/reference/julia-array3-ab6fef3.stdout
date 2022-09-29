@@ -1,8 +1,4 @@
 global a = Array{Float32, 1}(undef, 3)
 global b = Array{Float32, 1}(undef, 3)
-function main()
-    a .= Float32.([1, 2, 3])
-    b .= Float32.([1, 2, 3])
-end
-
-main()
+a .= Float32.([1, 2, 3])
+b .= Float32.([1, 2, 3])

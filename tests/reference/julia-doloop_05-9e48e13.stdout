@@ -1,22 +1,18 @@
 global i::Int32 = 0
 global j::Int32 = 0
-function main()
-    @label label_1
-    j = 0
-    @label label_2
-    for i ∈ 1:10
-        @label label_3
-        if i == 2
-            continue
-        end
-        @label label_4
-        j = j + i
+@label label_1
+j = 0
+@label label_2
+for i ∈ 1:10
+    @label label_3
+    if i == 2
+        continue
     end
-    @label label_6
-    if j ≠ 53
-        println(Base.stderr, "ERROR STOP")
-        exit(1);
-    end
+    @label label_4
+    j = j + i
 end
-
-main()
+@label label_6
+if j ≠ 53
+    println(Base.stderr, "ERROR STOP")
+    exit(1);
+end

@@ -1,6 +1,2 @@
 global x::Int32 = 3 + 6
-function main()
-    println(x)
-end
-
-main()
+println(x)

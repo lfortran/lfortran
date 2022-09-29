@@ -9,58 +9,54 @@ global dp::Float32 =   2.00000000000000000e+00
 global grade_fixed::String = "B"
 global marks::Int32 = 0
 global marks_fixed::Int32 = 94
-function main()
-    if grade_fixed == "A"
-        println("Excellent!")
-    elseif grade_fixed == "B"
-        if a == b
-            println("a == b")
-            if ap == bp
-                println("ap == bp")
+if grade_fixed == "A"
+    println("Excellent!")
+elseif grade_fixed == "B"
+    if a == b
+        println("a == b")
+        if ap == bp
+            println("ap == bp")
+        else
+            println("ap /= bp")
+        end
+    else
+        if Float32(ap) == cp
+            println("ap == cp")
+            if cp == dp
+                println("cp == dp")
             else
-                println("ap /= bp")
+                println("cp /= dp")
             end
         else
-            if Float32(ap) == cp
-                println("ap == cp")
-                if cp == dp
-                    println("cp == dp")
-                else
-                    println("cp /= dp")
-                end
-            else
-                if c == d
-                    println("c == d")
-                end
+            if c == d
+                println("c == d")
             end
         end
-    elseif grade_fixed == "C"
-        println("Well done")
-    elseif grade_fixed == "D"
-        println("You passed")
-    elseif grade_fixed == "F"
-        println("Better try again")
-    else
-        println("Invalid grade")
     end
-    println("Your grade is ", " ", grade_fixed)
-    marks = 94
-    if marks ≥ 40 + bp
-        println("Pass!")
-    elseif marks ≤ 39 - ap
-        println("Failed!")
-    else
-        println("Invalid marks")
-    end
-    println("Your marks are ", " ", marks)
-    if marks_fixed ≥ 40 + bp
-        println("Pass!")
-    elseif 0 ≤ marks_fixed ≤ 39 - ap
-        println("Failed!")
-    else
-        println("Invalid marks")
-    end
-    println("Your marks are ", " ", marks)
+elseif grade_fixed == "C"
+    println("Well done")
+elseif grade_fixed == "D"
+    println("You passed")
+elseif grade_fixed == "F"
+    println("Better try again")
+else
+    println("Invalid grade")
 end
-
-main()
+println("Your grade is ", " ", grade_fixed)
+marks = 94
+if marks ≥ 40 + bp
+    println("Pass!")
+elseif marks ≤ 39 - ap
+    println("Failed!")
+else
+    println("Invalid marks")
+end
+println("Your marks are ", " ", marks)
+if marks_fixed ≥ 40 + bp
+    println("Pass!")
+elseif 0 ≤ marks_fixed ≤ 39 - ap
+    println("Failed!")
+else
+    println("Invalid marks")
+end
+println("Your marks are ", " ", marks)
