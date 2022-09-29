@@ -535,13 +535,13 @@ asr = true
 filename = "../integration_tests/subroutines_07.f90"
 asr = true
 
-[[test]]
-filename = "../integration_tests/data_01.f90"
-ast = true
-
-[[test]]
-filename = "../integration_tests/data_02.f90"
-ast = true
+#[[test]]
+#filename = "../integration_tests/data_01.f90"
+#ast = true
+#
+#[[test]]
+#filename = "../integration_tests/data_02.f90"
+#ast = true
 
 [[test]]
 filename = "scopes1.f90"
