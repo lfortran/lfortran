@@ -1,7 +1,9 @@
 program data2
     implicit none
+    integer :: j
+    data j / 5 /
     integer :: i, iarx(3,1), iary(3,1)
-    print *, "1"
+    print *, "1", j
     if (.true.) then
         print *, "2"
         data(iarx(i,1), iary(i,1),i=1,3)/  1, 9, 1950,1350, 4350, 4/
