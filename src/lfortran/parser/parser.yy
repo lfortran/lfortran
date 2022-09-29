@@ -4,7 +4,7 @@
 %param {LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    206 // shift/reduce conflicts
+%expect    210 // shift/reduce conflicts
 %expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -612,10 +612,10 @@ submodule
 
 block_data
     : KW_BLOCK KW_DATA sep use_statement_star implicit_statement_star
-        decl_star end_blockdata sep {
+        decl_statements end_blockdata sep {
             $$ = BLOCKDATA(TRIVIA($3, $8, @$), $4, $5, $6, @$); }
     | KW_BLOCK KW_DATA id sep use_statement_star implicit_statement_star
-        decl_star end_blockdata sep {
+        decl_statements end_blockdata sep {
             $$ = BLOCKDATA1($3, TRIVIA($4, $9, @$), $5, $6, $7, @$); }
     ;
 
