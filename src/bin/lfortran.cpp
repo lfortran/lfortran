@@ -624,6 +624,24 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
+int emit_rust(const std::string &infile, CompilerOptions &compiler_options) 
+{
+    std::string input = read_file(infile);
+    LFortran::FortranEvaluator fe(compiler_options);
+    LFortran::LocationManager lm;
+    LFortran::diag::Diagnostics diagnostics;
+    lm.in_filename = infile;
+    LFortran::Result<std::string> rust = fe.get_rust(input, lm, diagnostics);
+    std::cerr << diagnostics.render(input, lm, compiler_options);
+    if (rust.ok) {
+        std::cout << rust.result;
+        return 0;
+    } else {
+        LFORTRAN_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+}
+
 int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
 {
     for (auto &item : u.m_global_scope->get_scope()) {
@@ -1421,6 +1439,7 @@ int main(int argc, char *argv[])
         bool show_asm = false;
         bool show_wat = false;
         bool show_julia = false;
+        bool show_rust = false;
         bool time_report = false;
         bool static_link = false;
         std::string arg_backend = "llvm";
@@ -1480,6 +1499,7 @@ int main(int argc, char *argv[])
         app.add_flag("--show-asm", show_asm, "Show assembly for the given file and exit");
         app.add_flag("--show-wat", show_wat, "Show WAT (WebAssembly Text Format) and exit");
         app.add_flag("--show-julia", show_julia, "Show Julia translation source for the given file and exit");
+        app.add_flag("--show-rust", show_rust, "Show Rust translation source for the given file and exit");
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors");
         app.add_flag("--symtab-only", compiler_options.symtab_only, "Only create symbol tables in ASR (skip executable stmt)");
         app.add_flag("--time-report", time_report, "Show compilation time report");
@@ -1649,6 +1669,8 @@ int main(int argc, char *argv[])
             outfile = basename + ".wat";
         } else if (show_julia) {
             outfile = basename + ".jl";
+        } else if (show_rust) {
+            outfile = basename + ".rs";
         } else {
             outfile = "a.out";
         }
@@ -1703,6 +1725,9 @@ int main(int argc, char *argv[])
         }
         if (show_julia) {
             return emit_julia(arg_file, compiler_options);
+        }
+        if (show_rust) {
+            return emit_rust(arg_file, compiler_options);
         }
         if (arg_S) {
             if (backend == Backend::llvm) {

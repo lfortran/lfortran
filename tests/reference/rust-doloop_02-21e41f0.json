@@ -1,0 +1,13 @@
+{
+    "basename": "rust-doloop_02-21e41f0",
+    "cmd": "lfortran --no-color --show-rust {infile}",
+    "infile": "tests/../integration_tests/doloop_02.f90",
+    "infile_hash": "3f887434509231f48fbbbda31f34778f17ddb6871b39c44626d54f2e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "rust-doloop_02-21e41f0.stdout",
+    "stdout_hash": "957c70c93428a4d391810a58138d9c72db7392e4a5cdd45a707d8255",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

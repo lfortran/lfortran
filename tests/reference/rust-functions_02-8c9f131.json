@@ -1,0 +1,13 @@
+{
+    "basename": "rust-functions_02-8c9f131",
+    "cmd": "lfortran --no-color --show-rust {infile}",
+    "infile": "tests/../integration_tests/functions_02.f90",
+    "infile_hash": "08451f55a67e43b7ce33f998e0eac697bb3b7e35f5564fb69cdd46cf",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "rust-functions_02-8c9f131.stdout",
+    "stdout_hash": "1f70c86aae58f6cca69eaa608bfdf168788f21c875c50e71c44ee240",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

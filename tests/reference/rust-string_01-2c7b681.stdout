@@ -1,0 +1,9 @@
+use num::complex::Complex;
+use num::traits::Pow;
+use ndarray::{array, Array1, Array2, Array3, Array4, Array5, Array6};
+
+fn main() {
+    let mut my_name: String = String::new();
+    my_name = "Dominic".to_string();
+    println!("{} {}", "My name is ".to_string(), my_name);
+}

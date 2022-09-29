@@ -1,0 +1,53 @@
+use num::complex::Complex;
+use num::traits::Pow;
+use ndarray::{array, Array1, Array2, Array3, Array4, Array5, Array6};
+
+fn main() {
+    let mut a: i32 = 0;
+    a = 1;
+    let mut ap: i32 = 0;
+    ap = 1;
+    let mut b: i32 = 0;
+    b = 2;
+    let mut bp: i32 = 0;
+    bp = 2;
+    let mut c: f32 = 0.0;
+    c =   1.00000000000000000e+00;
+    let mut cp: f32 = 0.0;
+    cp =   1.00000000000000000e+00;
+    let mut d: f32 = 0.0;
+    d =   2.00000000000000000e+00;
+    let mut dp: f32 = 0.0;
+    dp =   2.00000000000000000e+00;
+    if ap == bp {
+        println!("{}", "ap == bp".to_string());
+    } else {
+        println!("{}", "ap /= bp".to_string());
+    }
+    if cp == dp {
+        println!("{}", "cp == dp".to_string());
+    } else {
+        println!("{}", "cp /= dp".to_string());
+    }
+    if a == b {
+        println!("{}", "a == b".to_string());
+        if ap == bp {
+            println!("{}", "ap == bp".to_string());
+        } else {
+            println!("{}", "ap /= bp".to_string());
+        }
+    } else {
+        if ap as f32 == cp {
+            println!("{}", "ap == cp".to_string());
+            if cp == dp {
+                println!("{}", "cp == dp".to_string());
+            } else {
+                println!("{}", "cp /= dp".to_string());
+            }
+        } else {
+            if c == d {
+                println!("{}", "c == d".to_string());
+            }
+        }
+    }
+}

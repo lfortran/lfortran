@@ -1,0 +1,13 @@
+{
+    "basename": "rust-complex_01-19a7a5b",
+    "cmd": "lfortran --no-color --show-rust {infile}",
+    "infile": "tests/../integration_tests/complex_01.f90",
+    "infile_hash": "e94aebc987a1655b49e1e31229a6c24ccdbed83af0ebf6a0fb4684f2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "rust-complex_01-19a7a5b.stdout",
+    "stdout_hash": "a083c8a56ba1f675a89fe75181ae87af94a6836284003193296db198",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

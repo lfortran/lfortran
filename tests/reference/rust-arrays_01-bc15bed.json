@@ -1,0 +1,13 @@
+{
+    "basename": "rust-arrays_01-bc15bed",
+    "cmd": "lfortran --no-color --show-rust {infile}",
+    "infile": "tests/../integration_tests/arrays_01.f90",
+    "infile_hash": "f7df4142feb383f836dfa072a60673922e8873b5695f893be8329b89",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "rust-arrays_01-bc15bed.stdout",
+    "stdout_hash": "f94a1a799da422214cebe0715c6177c011657b236204ad2c48f8c9ad",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

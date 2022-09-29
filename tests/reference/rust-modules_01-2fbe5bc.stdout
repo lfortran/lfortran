@@ -1,0 +1,16 @@
+use num::complex::Complex;
+use num::traits::Pow;
+use ndarray::{array, Array1, Array2, Array3, Array4, Array5, Array6};
+
+mod a_01 {
+pub fn b() {
+    println!("{}", "b()".to_string());
+}
+
+}
+
+use a_01::{b};
+
+fn main() {
+    b();
+}

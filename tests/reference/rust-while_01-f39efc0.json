@@ -1,0 +1,13 @@
+{
+    "basename": "rust-while_01-f39efc0",
+    "cmd": "lfortran --no-color --show-rust {infile}",
+    "infile": "tests/../integration_tests/while_01.f90",
+    "infile_hash": "41dfb6c31552489d495806f20788fe3012284c0d6afbbc686d400c42",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "rust-while_01-f39efc0.stdout",
+    "stdout_hash": "3f10e4dd899370fa1508010e03f6cff9350c595f8620038ed359e7f5",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

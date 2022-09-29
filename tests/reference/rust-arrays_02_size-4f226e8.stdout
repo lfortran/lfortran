@@ -1,0 +1,33 @@
+use num::complex::Complex;
+use num::traits::Pow;
+use ndarray::{array, Array1, Array2, Array3, Array4, Array5, Array6};
+
+fn main() {
+    let mut a = Array1::<i32>::default(3);
+    let mut b = Array1::<i32>::default(4);
+    let mut i: i32 = 0;
+    let mut size_a4: i32 = 0;
+    let mut size_a8: i64 = 0;
+    let mut size_b4: i32 = 0;
+    let mut size_b8: i64 = 0;
+    size_a4 = a.len() as i32;
+    size_b4 = b.shape()[(1 - 1) as usize] as i32;
+    size_a8 = a.len() as i32;
+    size_b8 = b.shape()[(1 - 1) as usize] as i32;
+    if size_a4 != 3 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    if size_b4 != 4 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    if size_a8 != 3 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+    if size_b8 != 4 {
+        eprintln!("ERROR STOP");
+        std::process::exit(1);
+    }
+}

@@ -441,10 +441,12 @@ llvm = true
 [[test]]
 filename = "../integration_tests/while_01.f90"
 llvm = true
+rust = true
 
 [[test]]
 filename = "../integration_tests/while_02.f90"
 llvm = true
+rust = true
 
 [[test]]
 filename = "../integration_tests/program_cmake_02.f90"
@@ -459,6 +461,7 @@ ast_f90 = true
 filename = "../integration_tests/cond_02.f90"
 asr = true
 pass = "dead_code_removal"
+rust = true
 
 [[test]]
 filename = "../integration_tests/doloop_01.f90"
@@ -467,6 +470,7 @@ llvm = true
 pass = "do_loops"
 wat = true
 julia = true
+rust = true
 
 [[test]]
 filename = "../integration_tests/doloop_02.f90"
@@ -474,6 +478,7 @@ asr = true
 llvm = true
 wat = true
 julia = true
+rust = true
 
 [[test]]
 filename = "../integration_tests/doloop_03.f90"
@@ -498,12 +503,14 @@ filename = "../integration_tests/subroutines_01.f90"
 asr = true
 llvm = true
 julia = true
+rust = true
 
 [[test]]
 filename = "../integration_tests/subroutines_02.f90"
 asr = true
 llvm = true
 julia = true
+rust = true
 
 [[test]]
 filename = "../integration_tests/subroutines_03.f90"
@@ -655,22 +662,26 @@ cpp = true
 asr = true
 llvm = true
 julia = true
+rust = true
 
 [[test]]
 filename = "../integration_tests/arrays_05.f90"
 asr = true
 julia = true
+rust = true
 
 [[test]]
 filename = "../integration_tests/arrays_01_size.f90"
 asr = true
 llvm = true
 julia = true
+rust = true
 
 [[test]]
 filename = "../integration_tests/arrays_02_size.f90"
 asr = true
 julia = true
+rust = true # FIXME: This is currently incorrect, since we always convert usize to i32
 
 [[test]]
 filename = "../integration_tests/matrix_01_transpose.f90"
@@ -990,6 +1001,7 @@ filename = "../integration_tests/modules_01.f90"
 ast = true
 asr = true
 llvm = true
+rust = true
 
 [[test]]
 filename = "../integration_tests/modules_02.f90"
@@ -1047,6 +1059,7 @@ asr = true
 filename = "../integration_tests/block_02.f90"
 ast = true
 ast_f90 = true
+rust = true # FIXME: goto is not supported so the result does not match the original Fortran code
 
 [[test]]
 filename = "../integration_tests/block_03.f90"
@@ -1144,6 +1157,7 @@ asr = true
 filename = "../integration_tests/if_04.f90"
 ast = true
 wat = true
+rust = true
 
 [[test]]
 filename = "../integration_tests/case_01.f90"
@@ -1152,6 +1166,7 @@ ast_f90 = true
 asr = true
 llvm = true
 julia = true
+rust = true
 
 [[test]]
 filename = "../integration_tests/case_02.f90"
@@ -1319,6 +1334,7 @@ ast_f90 = true
 filename = "../integration_tests/complex_01.f90"
 ast = true
 ast_f90 = true
+rust = true
 
 [[test]]
 filename = "../integration_tests/complex_02.f90"
@@ -1646,12 +1662,14 @@ ast = true
 asr = true
 llvm = true
 cpp = true
+rust = true
 
 [[test]]
 filename = "../integration_tests/string_02.f90"
 ast = true
 asr = true
 llvm = true
+rust = true
 
 [[test]]
 filename = "../integration_tests/string_03.f90"
@@ -2185,6 +2203,18 @@ pass = "div_to_mul"
 filename = "../integration_tests/sign_from_value.f90"
 asr = true
 pass = "sign_from_value"
+
+[[test]]
+filename = "../integration_tests/functions_01.f90"
+rust = true
+
+[[test]]
+filename = "../integration_tests/functions_02.f90"
+rust = true
+
+[[test]]
+filename = "../integration_tests/functions_03.f90"
+rust = true
 
 [[test]]
 filename = "../integration_tests/functions_04.f90"

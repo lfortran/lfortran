@@ -36,6 +36,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
     cpp = is_included("cpp")
     c = is_included("c")
     julia = is_included("julia")
+    rust = is_included("rust")
     wat = is_included("wat")
     obj = is_included("obj")
     x86 = is_included("x86")
@@ -227,6 +228,10 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
 
     if julia:
         run_test(filename, "julia", "lfortran --no-color --show-julia {infile}",
+                 filename, update_reference, extra_args)
+        
+    if rust:
+        run_test(filename, "rust", "lfortran --no-color --show-rust {infile}",
                  filename, update_reference, extra_args)
 
     if wat:

@@ -1,0 +1,40 @@
+use num::complex::Complex;
+use num::traits::Pow;
+use ndarray::{array, Array1, Array2, Array3, Array4, Array5, Array6};
+
+pub fn f(a: Complex<f32>) -> Complex<f32> {
+    let mut b: Complex<f32> = Complex::<f32>::new(0.0_f32, 0.0_f32);
+    b = a + Complex::<f32>::new(5 as f32, 0.0);
+    return b;
+}
+
+pub fn g(a: Complex<f32>) -> Complex<f32> {
+    let mut b: Complex<f32> = Complex::<f32>::new(0.0_f32, 0.0_f32);
+    b = a + Complex::<f32>::new(5 as f32, 0.0);
+    return b;
+}
+
+fn main() {
+    let mut i: Complex<f32> = Complex::<f32>::new(0.0_f32, 0.0_f32);
+    let mut j: Complex<f32> = Complex::<f32>::new(0.0_f32, 0.0_f32);
+    let mut sp: i32 = 0;
+    sp = 4;
+    i = Complex::<f32>::new(1 as f32, 0.0);
+    j = Complex::<f32>::new(1 as f32, 0.0);
+    println!("{}", j);
+    j = f(i);
+    println!("{}", i);
+    println!("{}", j);
+    j = Complex::<f32>::new(1 as f32, 0.0);
+    println!("{}", j);
+    j = f(Complex::<f32>::new(  3.00000000000000000e+00 as f32,   0.00000000000000000e+00 as f32) as Complex<f32>);
+    println!("{}", j);
+    j = Complex::<f32>::new(1 as f32, 0.0);
+    println!("{}", j);
+    j = g(Complex::<f32>::new(  2.00000000000000000e+00 as f32,   0.00000000000000000e+00 as f32) as Complex<f32>);
+    println!("{}", j);
+    j = Complex::<f32>::new(1 as f32, 0.0);
+    println!("{}", j);
+    j = g(Complex::<f32>::new(  2.00000000000000000e+00 as f32,   3.00000000000000000e+00 as f32) as Complex<f32>);
+    println!("{}", j);
+}
