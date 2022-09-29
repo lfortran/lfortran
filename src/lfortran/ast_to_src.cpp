@@ -1383,7 +1383,7 @@ public:
                 r.append(s);
                 if (i < y->n_object-1) r.append(", ");
             }
-            r += "/";
+            r += " /";
             for (size_t i=0; i<y->n_value; i++) {
                 this->visit_expr(*y->m_value[i]);
                 r.append(s);
@@ -1391,6 +1391,11 @@ public:
             }
             r += "/";
             if (n < x.n_items-1) r += ", ";
+        }
+        if(x.m_trivia){
+            r += print_trivia_after(*x.m_trivia);
+        } else {
+            r.append("\n");
         }
         s = r;
     }
