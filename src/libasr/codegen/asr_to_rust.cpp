@@ -1,4 +1,3 @@
-#include "lfortran/parser/parser.tab.hh"
 #include "libasr/asr.h"
 #include "libasr/asr_utils.h"
 #include "libasr/diagnostics.h"
