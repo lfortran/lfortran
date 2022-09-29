@@ -2093,6 +2093,7 @@ void set_m_trivia(stmt_t *s, trivia_t *trivia) {
         TRIVIA_SET(Flush)
         TRIVIA_SET(ForAllSingle)
         TRIVIA_SET(Format)
+        TRIVIA_SET(DataStmt)
         TRIVIA_SET(FormTeam)
         TRIVIA_SET(GoTo)
         TRIVIA_SET(Inquire)
