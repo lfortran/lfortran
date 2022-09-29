@@ -39,17 +39,6 @@
             None 
             ())] 
             ()
-        )
-        (Declaration 
-            () 
-            [(AttrData 
-                [x0
-                x1] 
-                [1
-                10]
-            )] 
-            [] 
-            ()
         )]
     )
     (Program 
