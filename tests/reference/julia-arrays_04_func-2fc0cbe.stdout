@@ -28,5 +28,5 @@ a[3] = Float32(1)
 b = sum(a)
 if abs(Float32(b - Float32(6))) >   1.00000000000000008e-05
     println(Base.stderr, "ERROR STOP")
-    exit(1);
+    exit(1)
 end

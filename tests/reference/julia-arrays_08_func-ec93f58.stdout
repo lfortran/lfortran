@@ -27,5 +27,5 @@ r = verify(x, y)
 println(r)
 if !r
     println(Base.stderr, "ERROR STOP")
-    exit(1);
+    exit(1)
 end

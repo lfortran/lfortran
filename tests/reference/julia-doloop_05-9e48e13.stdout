@@ -14,5 +14,5 @@ end
 @label label_6
 if j ≠ 53
     println(Base.stderr, "ERROR STOP")
-    exit(1);
+    exit(1)
 end

@@ -18,5 +18,5 @@ s = mysum(x)
 println(s)
 if s ≠ 55
     println(Base.stderr, "ERROR STOP")
-    exit(1);
+    exit(1)
 end

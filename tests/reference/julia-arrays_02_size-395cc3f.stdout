@@ -11,17 +11,17 @@ size_a8 = length(a)
 size_b8 = size(b)[1]
 if size_a4 ≠ 3
     println(Base.stderr, "ERROR STOP")
-    exit(1);
+    exit(1)
 end
 if size_b4 ≠ 4
     println(Base.stderr, "ERROR STOP")
-    exit(1);
+    exit(1)
 end
 if size_a8 ≠ 3
     println(Base.stderr, "ERROR STOP")
-    exit(1);
+    exit(1)
 end
 if size_b8 ≠ 4
     println(Base.stderr, "ERROR STOP")
-    exit(1);
+    exit(1)
 end

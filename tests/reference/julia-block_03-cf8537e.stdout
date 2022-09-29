@@ -3,7 +3,7 @@ function square(b::Int32)
     result = b * b
     if result ≠ 100
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     println(result)
 end

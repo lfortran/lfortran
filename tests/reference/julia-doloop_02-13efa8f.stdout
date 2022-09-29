@@ -10,7 +10,7 @@ for i ∈ a:b
 end
 if j ≠ 55
     println(Base.stderr, "ERROR STOP")
-    exit(1);
+    exit(1)
 end
 println(j)
 a = 0
@@ -21,7 +21,7 @@ for i ∈ 1:10
 end
 if a ≠ 100 * 101 ÷ 2
     println(Base.stderr, "ERROR STOP")
-    exit(1);
+    exit(1)
 end
 println(a)
 a = 0
@@ -32,6 +32,6 @@ for i ∈ 1:10
 end
 if a ≠ 220
     println(Base.stderr, "ERROR STOP")
-    exit(1);
+    exit(1)
 end
 println(a)

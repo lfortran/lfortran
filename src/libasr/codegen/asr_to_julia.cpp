@@ -615,22 +615,23 @@ public:
         indentation_level -= 1;
     }
 
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
+    void visit_BlockCall(const ASR::BlockCall_t& x)
+    {
         LFORTRAN_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        std::string indent(indentation_level*indentation_spaces, ' ');
+        std::string indent(indentation_level * indentation_spaces, ' ');
         std::string decl, body;
         std::string open_paranthesis = indent + "let\n";
         std::string close_paranthesis = indent + "end\n";
         indent += std::string(indentation_spaces, ' ');
         indentation_level += 1;
-        for (auto &item : block->m_symtab->get_scope()) {
+        for (auto& item : block->m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
                 decl += indent + this->convert_variable_decl(*v) + "\n";
             }
         }
-        for (size_t i=0; i<block->n_body; i++) {
+        for (size_t i = 0; i < block->n_body; i++) {
             this->visit_stmt(*block->m_body[i]);
             body += src;
         }
@@ -1146,7 +1147,7 @@ public:
     {
         std::string indent(indentation_level * indentation_spaces, ' ');
         src = indent + "println(Base.stderr, \"ERROR STOP\")\n";
-        src += indent + "exit(1);\n";
+        src += indent + "exit(1)\n";
     }
 
     void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t& /*x*/)
@@ -1491,7 +1492,8 @@ public:
             }
             case (ASR::cast_kindType::RealToInteger): {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                src = "trunc" + broadcast + "(Int" + std::to_string(dest_kind * 8) + ", " + src + ")";
+                src = "trunc" + broadcast + "(Int" + std::to_string(dest_kind * 8) + ", " + src
+                      + ")";
                 break;
             }
             case (ASR::cast_kindType::RealToReal): {
