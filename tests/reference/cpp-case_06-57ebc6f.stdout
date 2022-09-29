@@ -1,0 +1,104 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <cassert>
+#include <cmath>
+#include <complex>
+#include <Kokkos_Core.hpp>
+#include <lfortran_intrinsics.h>
+
+template <typename T>
+Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
+{
+    Kokkos::View<T*> r("r", v.size());
+    for (size_t i=0; i < v.size(); i++) {
+        r(i) = v[i];
+    }
+    return r;
+}
+
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, length;
+};
+// Forward declarations
+namespace {
+}
+
+// Implementations
+namespace {
+
+void main2() {
+    static int32_t a=1;
+    int32_t ap=1;
+    static int32_t b=2;
+    int32_t bp=2;
+    static float c=  1.00000000000000000e+00;
+    float cp=  1.00000000000000000e+00;
+    static float d=  2.00000000000000000e+00;
+    float dp=  2.00000000000000000e+00;
+    std::string grade_fixed="B";
+    int32_t marks;
+    int32_t marks_fixed=94;
+    if (grade_fixed == "A") {
+        std::cout << "Excellent!" << std::endl;
+    } else if (grade_fixed == "B") {
+        if (a == b) {
+            std::cout << "a == b" << std::endl;
+            if (ap == bp) {
+                std::cout << "ap == bp" << std::endl;
+            } else {
+                std::cout << "ap /= bp" << std::endl;
+            }
+        } else {
+            if ((float)(ap) == cp) {
+                std::cout << "ap == cp" << std::endl;
+                if (cp == dp) {
+                    std::cout << "cp == dp" << std::endl;
+                } else {
+                    std::cout << "cp /= dp" << std::endl;
+                }
+            } else {
+                if (c == d) {
+                    std::cout << "c == d" << std::endl;
+                }
+            }
+        }
+    } else if (grade_fixed == "C") {
+        std::cout << "Well done" << std::endl;
+    } else if (grade_fixed == "D") {
+        std::cout << "You passed" << std::endl;
+    } else if (grade_fixed == "F") {
+        std::cout << "Better try again" << std::endl;
+    } else {
+        std::cout << "Invalid grade" << std::endl;
+    }
+    std::cout << "Your grade is " << " " << grade_fixed << std::endl;
+    marks = 94;
+    if (marks >= 40 + bp) {
+        std::cout << "Pass!" << std::endl;
+    } else if (marks <= 39 - ap) {
+        std::cout << "Failed!" << std::endl;
+    } else {
+        std::cout << "Invalid marks" << std::endl;
+    }
+    std::cout << "Your marks are " << " " << marks << std::endl;
+    if (marks_fixed >= 40 + bp) {
+        std::cout << "Pass!" << std::endl;
+    } else if (0 <= marks_fixed && marks_fixed <= 39 - ap) {
+        std::cout << "Failed!" << std::endl;
+    } else {
+        std::cout << "Invalid marks" << std::endl;
+    }
+    std::cout << "Your marks are " << " " << marks << std::endl;
+}
+
+}
+int main(int argc, char* argv[])
+{
+    Kokkos::initialize(argc, argv);
+    main2();
+    Kokkos::finalize();
+    return 0;
+}

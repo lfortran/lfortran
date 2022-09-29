@@ -963,9 +963,76 @@ R"(#include <stdio.h>
         src = out;
     }
 
-    void visit_Select(const ASR::Select_t &/*x*/) {
-        std::string indent(indentation_level*indentation_spaces, ' ');
-        std::string out = indent + "// FIXME: select case()\n";
+    void visit_Select(const ASR::Select_t& x)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        self().visit_expr(*x.m_test);
+        std::string var = std::move(src);
+        std::string out = indent + "if (";
+
+        for (size_t i = 0; i < x.n_body; i++) {
+            if (i > 0)
+                out += indent + "} else if (";
+            ASR::case_stmt_t* stmt = x.m_body[i];
+            if (stmt->type == ASR::case_stmtType::CaseStmt) {
+                ASR::CaseStmt_t* case_stmt = ASR::down_cast<ASR::CaseStmt_t>(stmt);
+                for (size_t j = 0; j < case_stmt->n_test; j++) {
+                    if (j > 0)
+                        out += " || ";
+                    self().visit_expr(*case_stmt->m_test[j]);
+                    out += var + " == " + src;
+                }
+                out += ") {\n";
+                indentation_level += 1;
+                for (size_t j = 0; j < case_stmt->n_body; j++) {
+                    this->visit_stmt(*case_stmt->m_body[j]);
+                    out += src;
+                }
+                indentation_level -= 1;
+            } else {
+                ASR::CaseStmt_Range_t* case_stmt_range
+                    = ASR::down_cast<ASR::CaseStmt_Range_t>(stmt);
+                std::string left, right;
+                if (case_stmt_range->m_start) {
+                    self().visit_expr(*case_stmt_range->m_start);
+                    left = std::move(src);
+                }
+                if (case_stmt_range->m_end) {
+                    self().visit_expr(*case_stmt_range->m_end);
+                    right = std::move(src);
+                }
+                if (left.empty() && right.empty()) {
+                    diag.codegen_error_label(
+                        "Empty range in select statement", { x.base.base.loc }, "");
+                    throw Abort();
+                }
+                if (left.empty()) {
+                    out += var + " <= " + right;
+                } else if (right.empty()) {
+                    out += var + " >= " + left;
+                } else {
+                    out += left + " <= " + var + " && " + var + " <= " + right;
+                }
+                out += ") {\n";
+                indentation_level += 1;
+                for (size_t j = 0; j < case_stmt_range->n_body; j++) {
+                    self().visit_stmt(*case_stmt_range->m_body[j]);
+                    out += src;
+                }
+                indentation_level -= 1;
+            }
+        }
+        if (x.n_default) {
+            out += indent + "} else {\n";
+            indentation_level += 1;
+            for (size_t i = 0; i < x.n_default; i++) {
+                self().visit_stmt(*x.m_default[i]);
+                out += src;
+            }
+            indentation_level -= 1;
+        }
+
+        out += indent + "}\n";
         src = out;
     }
 

@@ -1154,6 +1154,8 @@ ast_f90 = true
 asr = true
 llvm = true
 julia = true
+c = true
+cpp = true
 
 [[test]]
 filename = "../integration_tests/case_02.f90"
@@ -1162,6 +1164,8 @@ ast_f90 = true
 asr = true
 llvm = true
 julia = true
+c = true
+cpp = true
 
 [[test]]
 filename = "../integration_tests/case_03.f90"
@@ -1170,6 +1174,8 @@ ast_f90 = true
 asr = true
 llvm = true
 julia = true
+c = true
+cpp = true
 
 [[test]]
 filename = "../integration_tests/case_04.f90"
@@ -1182,12 +1188,16 @@ ast = true
 ast_f90 = true
 asr = true
 julia = true
+c = true
+cpp = true
 
 [[test]]
 filename = "../integration_tests/case_06.f90"
 asr = true
 pass = "dead_code_removal"
 julia = true
+c = true
+cpp = true
 
 [[test]]
 filename = "../integration_tests/program_02.f90"
