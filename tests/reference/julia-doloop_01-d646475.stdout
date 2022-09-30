@@ -7,7 +7,7 @@ function main()
     end
     if j ≠ 55
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     println(j)
     j = 0
@@ -16,7 +16,7 @@ function main()
     end
     if j ≠ 55
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     println(j)
     j = 0
@@ -25,7 +25,7 @@ function main()
     end
     if j ≠ 25
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     println(j)
     j = 0
@@ -34,7 +34,7 @@ function main()
     end
     if j ≠ 25
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     println(j)
     j = 0
@@ -43,7 +43,7 @@ function main()
     end
     if j ≠ 25
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     println(j)
     j = 0
@@ -52,7 +52,7 @@ function main()
     end
     if j ≠ 22
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     println(j)
     j = 0
@@ -61,7 +61,7 @@ function main()
     end
     if j ≠ 22
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     println(j)
     j = 0
@@ -70,7 +70,7 @@ function main()
     end
     if j ≠ 1
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     println(j)
     j = 0
@@ -79,7 +79,7 @@ function main()
     end
     if j ≠ 1
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     println(j)
     j = 0
@@ -88,7 +88,7 @@ function main()
     end
     if j ≠ 0
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     println(j)
     j = 0
@@ -97,7 +97,7 @@ function main()
     end
     if j ≠ 0
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     println(j)
 end

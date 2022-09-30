@@ -8,14 +8,14 @@ function main()
     println(y4, " ", x4)
     if x4 ≠ 25
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     y8 = 5
     x8 = y8 ^ 2
     println(y8, " ", x8)
     if x8 ≠ 25
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
 end
 

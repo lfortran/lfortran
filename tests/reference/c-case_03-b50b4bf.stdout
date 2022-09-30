@@ -1,0 +1,64 @@
+#include <inttypes.h>
+
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <lfortran_intrinsics.h>
+
+#define ASSERT(cond)                                                           \
+    {                                                                          \
+        if (!(cond)) {                                                         \
+            printf("%s%s", "ASSERT failed: ", __FILE__);                       \
+            printf("%s%s", "\nfunction ", __func__);                           \
+            printf("%s%d%s", "(), line number ", __LINE__, " at \n");          \
+            printf("%s%s", #cond, "\n");                                       \
+            exit(1);                                                           \
+        }                                                                      \
+    }
+#define ASSERT_MSG(cond, msg)                                                  \
+    {                                                                          \
+        if (!(cond)) {                                                         \
+            printf("%s%s", "ASSERT failed: ", __FILE__);                       \
+            printf("%s%s", "\nfunction ", __func__);                           \
+            printf("%s%d%s", "(), line number ", __LINE__, " at \n");          \
+            printf("%s%s", #cond, "\n");                                       \
+            printf("%s", "ERROR MESSAGE:\n");                                  \
+            printf("%s%s", msg, "\n");                                         \
+            exit(1);                                                           \
+        }                                                                      \
+    }
+
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, length;
+};
+// Forward declarations
+
+// Implementations
+int main(int argc, char* argv[])
+{
+    int32_t a=1;
+    int32_t b=2;
+    int32_t marks;
+    marks = 94;
+    if (marks >= 40 + b) {
+        printf("%s\n", "Pass!");
+    } else if (marks <= 39 - a) {
+        printf("%s\n", "Failed!");
+    } else {
+        printf("%s\n", "Invalid marks");
+    }
+    printf("%s%s%d\n", "Your marks are ", " ", marks);
+    marks = -1;
+    if (marks >= 40 + b) {
+        printf("%s\n", "Pass!");
+    } else if (0 <= marks && marks <= 39 - a) {
+        printf("%s\n", "Failed!");
+    } else {
+        printf("%s\n", "Invalid marks");
+    }
+    printf("%s%s%d\n", "Your marks are ", " ", marks);
+    return 0;
+}
