@@ -437,15 +437,31 @@ public:
                 //if no, then it is of type "implicit"
                 AST::Implicit_t* implicit = AST::down_cast<AST::Implicit_t>(x.m_implicit[i]);
                 AST::decl_typeType ast_type=AST::down_cast<AST::AttrType_t>(implicit->m_type)->m_type;
+                AST::AttrType_t *attr_type = AST::down_cast<AST::AttrType_t>(implicit->m_type);
                 ASR::ttype_t *type = nullptr;
                 //convert the ast_type to asr_type
+                int a_kind = 4;
+                int a_len = -10;
+                if (attr_type->m_kind != nullptr) {
+                    if (attr_type->n_kind == 1) {
+                        visit_expr(*attr_type->m_kind->m_value);
+                        ASR::expr_t* kind_expr = LFortran::ASRUtils::EXPR(tmp);
+                        if (attr_type->m_type == AST::decl_typeType::TypeCharacter) {
+                            a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
+                        } else {
+                            a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, x.base.base.loc);
+                        }
+                    } else {
+                        throw SemanticError("Only one kind item supported for now", x.base.base.loc);
+                    }
+                }
                 switch (ast_type) {
                     case (AST::decl_typeType::TypeInteger) : {
                         type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
                         break;
                     }
                     case (AST::decl_typeType::TypeReal) : {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind, nullptr, 0));
                         break;
                     }
                     case (AST::decl_typeType::TypeDoublePrecision) : {
@@ -453,7 +469,7 @@ public:
                         break;
                     }
                     case (AST::decl_typeType::TypeComplex) : {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 4, nullptr, 0));
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind, nullptr, 0));
                         break;
                     }
                     case (AST::decl_typeType::TypeLogical) : {
