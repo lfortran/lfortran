@@ -1,0 +1,244 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            idd_random_transf:
+                (Function 
+                    (SymbolTable
+                        2
+                        {
+                            ialbetas:
+                                (Variable 
+                                    2 
+                                    ialbetas 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            idd_random_transf:
+                                (Variable 
+                                    2 
+                                    idd_random_transf 
+                                    ReturnVar 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            iixs:
+                                (Variable 
+                                    2 
+                                    iixs 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            iww:
+                                (Variable 
+                                    2 
+                                    iww 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            n:
+                                (Variable 
+                                    2 
+                                    n 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            nsteps:
+                                (Variable 
+                                    2 
+                                    nsteps 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            w:
+                                (Variable 
+                                    2 
+                                    w 
+                                    Unspecified 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 [(() 
+                                    ())]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            x:
+                                (Variable 
+                                    2 
+                                    x 
+                                    Unspecified 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 [(() 
+                                    ())]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            y:
+                                (Variable 
+                                    2 
+                                    y 
+                                    Unspecified 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 [(() 
+                                    ())]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    idd_random_transf 
+                    [(Var 2 x)
+                    (Var 2 y)
+                    (Var 2 w)] 
+                    [] 
+                    [(= 
+                        (Var 2 ialbetas) 
+                        (Cast 
+                            (ArrayItem 
+                                (Var 2 w) 
+                                [(() 
+                                (IntegerConstant 1 (Integer 4 [])) 
+                                ())] 
+                                (Real 4 []) 
+                                ()
+                            ) 
+                            RealToInteger 
+                            (Integer 4 []) 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 iixs) 
+                        (Cast 
+                            (ArrayItem 
+                                (Var 2 w) 
+                                [(() 
+                                (IntegerConstant 2 (Integer 4 [])) 
+                                ())] 
+                                (Real 4 []) 
+                                ()
+                            ) 
+                            RealToInteger 
+                            (Integer 4 []) 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 nsteps) 
+                        (Cast 
+                            (ArrayItem 
+                                (Var 2 w) 
+                                [(() 
+                                (IntegerConstant 3 (Integer 4 [])) 
+                                ())] 
+                                (Real 4 []) 
+                                ()
+                            ) 
+                            RealToInteger 
+                            (Integer 4 []) 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 iww) 
+                        (Cast 
+                            (ArrayItem 
+                                (Var 2 w) 
+                                [(() 
+                                (IntegerConstant 4 (Integer 4 [])) 
+                                ())] 
+                                (Real 4 []) 
+                                ()
+                            ) 
+                            RealToInteger 
+                            (Integer 4 []) 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 n) 
+                        (Cast 
+                            (ArrayItem 
+                                (Var 2 w) 
+                                [(() 
+                                (IntegerConstant 5 (Integer 4 [])) 
+                                ())] 
+                                (Real 4 []) 
+                                ()
+                            ) 
+                            RealToInteger 
+                            (Integer 4 []) 
+                            ()
+                        ) 
+                        ()
+                    )] 
+                    (Var 2 idd_random_transf) 
+                    Source 
+                    Public 
+                    Implementation 
+                    () 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false.
+                )
+            
+        }) 
+    []
+)
