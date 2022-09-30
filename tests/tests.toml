@@ -2387,3 +2387,7 @@ asr = true
 [[test]]
 filename = "errors/implicit3.f90"
 asr = true
+
+[[test]]
+filename = "implicit3.f90"
+asr_implicit_typing = true
