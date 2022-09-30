@@ -6,7 +6,7 @@ function main()
     a[5] = 5
     if a[5] ≠ 5
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
 end
 

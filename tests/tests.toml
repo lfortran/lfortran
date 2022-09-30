@@ -1047,10 +1047,12 @@ asr = true
 filename = "../integration_tests/block_02.f90"
 ast = true
 ast_f90 = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/block_03.f90"
 asr = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/associate_01.f90"
