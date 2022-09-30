@@ -2395,3 +2395,11 @@ asr_implicit_typing = true
 [[test]]
 filename = "implicit4.f90"
 asr_implicit_typing = true
+
+[[test]]
+filename = "implicit5.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit6.f90"
+asr_implicit_typing = true
