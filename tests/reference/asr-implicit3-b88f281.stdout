@@ -29,7 +29,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Real 4 []) 
+                                    (Real 8 []) 
                                     Source 
                                     Public 
                                     Required 
@@ -143,9 +143,17 @@
                     )
                     (= 
                         (Var 2 k) 
-                        (RealConstant 
-                            9.230000 
-                            (Real 4 [])
+                        (Cast 
+                            (RealConstant 
+                                9.230000 
+                                (Real 4 [])
+                            ) 
+                            RealToReal 
+                            (Real 8 []) 
+                            (RealConstant 
+                                9.230000 
+                                (Real 8 [])
+                            )
                         ) 
                         ()
                     )
