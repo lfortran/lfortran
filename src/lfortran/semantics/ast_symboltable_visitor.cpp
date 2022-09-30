@@ -436,8 +436,8 @@ public:
             } else {
                 //if no, then it is of type "implicit"
                 AST::Implicit_t* implicit = AST::down_cast<AST::Implicit_t>(x.m_implicit[i]);
-                AST::decl_typeType ast_type=AST::down_cast<AST::AttrType_t>(implicit->m_type)->m_type;
                 AST::AttrType_t *attr_type = AST::down_cast<AST::AttrType_t>(implicit->m_type);
+                AST::decl_typeType ast_type=attr_type->m_type;
                 ASR::ttype_t *type = nullptr;
                 //convert the ast_type to asr_type
                 int a_kind = 4;
@@ -474,6 +474,10 @@ public:
                     }
                     case (AST::decl_typeType::TypeLogical) : {
                         type = LFortran::ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+                        break;
+                    }
+                    case (AST::decl_typeType::TypeCharacter) : {
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr, nullptr, 0));
                         break;
                     }
                     default :
