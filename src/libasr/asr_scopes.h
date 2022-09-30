@@ -15,6 +15,7 @@ namespace ASR {
 struct SymbolTable {
     private:
     std::map<std::string, ASR::symbol_t*> scope;
+    std::vector<std::pair<std::string, ASR::symbol_t*>> scope_vec;
 
     public:
     SymbolTable *parent;
@@ -51,6 +52,10 @@ struct SymbolTable {
         return scope;
     }
 
+    const std::vector<std::pair<std::string, ASR::symbol_t*>>& get_scope_vec() const {
+        return scope_vec;
+    }
+
     // Obtains the symbol `name` from the current symbol table
     // Returns `nullptr` if symbol not found.
     ASR::symbol_t* get_symbol(const std::string &name) const {
@@ -69,6 +74,8 @@ struct SymbolTable {
     }
 
     void add_symbol(const std::string &name, ASR::symbol_t* symbol) {
+        if (!scope.count(name))
+            scope_vec.emplace_back(name, symbol);
         scope[name] = symbol;
     }
 
