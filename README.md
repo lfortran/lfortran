@@ -44,10 +44,11 @@ Note: We moved to the above GitHub repository from GitLab on July 18, 2022.
 # Donations
 
 You can support LFortran's development by donating to NumFOCUS or Open
-Collective:
+Collective as well as GitHub Sponsors:
 
 * https://numfocus.org/donate-to-lfortran
 * https://opencollective.com/lfortran
+* https://github.com/sponsors/lfortran
 
 All donations will be used strictly to fund LFortran development, by supporting
 tasks such as paying developers to implement features, sprints, improved
