@@ -1,0 +1,6 @@
+function main()
+    while true
+    end
+end
+
+main()
