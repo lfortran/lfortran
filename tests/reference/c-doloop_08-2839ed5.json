@@ -2,7 +2,7 @@
     "basename": "c-doloop_08-2839ed5",
     "cmd": "lfortran --no-color --show-c {infile}",
     "infile": "tests/../integration_tests/doloop_08.f90",
-    "infile_hash": "6163adee7d6f662f20c16aa54f77b6af4e0b64857e28e4bca0a47c09",
+    "infile_hash": "993ea7aff776f158fe929f998f4beb16f7f876335983e4f3d7ab977e",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

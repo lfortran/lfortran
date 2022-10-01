@@ -163,7 +163,6 @@ RUN(NAME doloop_04 LABELS gfortran llvm)
 RUN(NAME doloop_05 LABELS gfortran llvm cpp)
 RUN(NAME doloop_06 LABELS gfortran llvm cpp wasm)
 RUN(NAME doloop_07 LABELS gfortran llvm cpp wasm)
-RUN(NAME doloop_08 LABELS gfortran llvm cpp)
 
 RUN(NAME goto_01 LABELS gfortran llvm)
 RUN(NAME goto_02 LABELS gfortran llvm)
