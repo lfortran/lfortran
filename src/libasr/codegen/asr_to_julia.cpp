@@ -1164,36 +1164,40 @@ public:
     {
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string out = indent;
-        if (concurrent) {
-            out += "Threads.@threads ";
-        }
-        out += "for ";
-        ASR::Variable_t* loop_var = LFortran::ASRUtils::EXPR2VAR(x.m_head.m_v);
-        std::string lvname = loop_var->m_name;
-        ASR::expr_t* a = x.m_head.m_start;
-        ASR::expr_t* b = x.m_head.m_end;
-        ASR::expr_t* c = x.m_head.m_increment;
-        LFORTRAN_ASSERT(a);
-        LFORTRAN_ASSERT(b);
-        int increment;
-        if (!c) {
-            increment = 1;
+        if (x.m_head.m_v == nullptr) {
+            out += "while true\n";
         } else {
-            if (c->type == ASR::exprType::IntegerConstant) {
-                increment = ASR::down_cast<ASR::IntegerConstant_t>(c)->m_n;
-            } else if (c->type == ASR::exprType::IntegerUnaryMinus) {
-                ASR::IntegerUnaryMinus_t* ium = ASR::down_cast<ASR::IntegerUnaryMinus_t>(c);
-                increment = -ASR::down_cast<ASR::IntegerConstant_t>(ium->m_arg)->m_n;
-            } else {
-                throw CodeGenError("Do loop increment type not supported");
+            if (concurrent) {
+                out += "Threads.@threads ";
             }
-        }
+            out += "for ";
+            ASR::Variable_t* loop_var = LFortran::ASRUtils::EXPR2VAR(x.m_head.m_v);
+            std::string lvname = loop_var->m_name;
+            ASR::expr_t* a = x.m_head.m_start;
+            ASR::expr_t* b = x.m_head.m_end;
+            ASR::expr_t* c = x.m_head.m_increment;
+            LFORTRAN_ASSERT(a);
+            LFORTRAN_ASSERT(b);
+            int increment;
+            if (!c) {
+                increment = 1;
+            } else {
+                if (c->type == ASR::exprType::IntegerConstant) {
+                    increment = ASR::down_cast<ASR::IntegerConstant_t>(c)->m_n;
+                } else if (c->type == ASR::exprType::IntegerUnaryMinus) {
+                    ASR::IntegerUnaryMinus_t* ium = ASR::down_cast<ASR::IntegerUnaryMinus_t>(c);
+                    increment = -ASR::down_cast<ASR::IntegerConstant_t>(ium->m_arg)->m_n;
+                } else {
+                    throw CodeGenError("Do loop increment type not supported");
+                }
+            }
 
-        out += lvname + " ∈ ";
-        visit_expr(*a);
-        out += src + ":" + (increment == 1 ? "" : (std::to_string(increment) + ":"));
-        visit_expr(*b);
-        out += src + "\n";
+            out += lvname + " ∈ ";
+            visit_expr(*a);
+            out += src + ":" + (increment == 1 ? "" : (std::to_string(increment) + ":"));
+            visit_expr(*b);
+            out += src + "\n";
+        }
         indentation_level += 1;
         for (size_t i = 0; i < x.n_body; i++) {
             visit_stmt(*x.m_body[i]);
