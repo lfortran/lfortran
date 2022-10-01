@@ -21,6 +21,11 @@
 
 namespace LFortran {
 
+uint64_t static get_hash(ASR::asr_t *node)
+{
+    return (uint64_t)node;
+}
+
 template <typename T>
 void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name) {
     if (x.m_bind) {
@@ -70,6 +75,7 @@ public:
     std::map<AST::intrinsicopType, std::vector<std::string>> overloaded_op_procs;
     std::map<std::string, std::vector<std::string>> defined_op_procs;
     std::map<std::string, std::map<std::string, std::string>> class_procedures;
+    std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> implicit_mapping;
     std::vector<std::string> assgn_proc_names;
     std::string dt_name;
     bool in_submodule = false;
@@ -735,6 +741,11 @@ public:
         current_procedure_used_type_parameter_indices.clear();
         is_current_procedure_templated = false;
         // print_implicit_dictionary(implicit_dictionary);
+        // get hash of the function and add it to the implicit_mapping
+        uint64_t hash = get_hash(tmp);
+
+        implicit_mapping[hash] = implicit_dictionary;
+
         implicit_dictionary.clear();
     }
 
@@ -1453,7 +1464,8 @@ public:
 Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
         SymbolTable *symbol_table, CompilerOptions &compiler_options,
-        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters)
+        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters,
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options);
     try {
@@ -1465,6 +1477,10 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
     } catch (const SemanticAbort &) {
         Error error;
         return error;
+    }
+    //iterate over local implicit_mapping and add to global implicit_mapping
+    for(auto it: v.implicit_mapping){
+        implicit_mapping[it.first] = it.second;
     }
     ASR::asr_t *unit = v.tmp;
     template_type_parameters = v.template_type_parameters;
