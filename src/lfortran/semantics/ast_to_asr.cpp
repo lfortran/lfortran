@@ -31,7 +31,8 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
-        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters);
+        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters,
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping);
 
 Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics,
@@ -48,12 +49,11 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     } else {
         return res.error;
     }
-
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
     LFORTRAN_ASSERT(asr_verify(*tu));
 
     if (!symtab_only) {
-        auto res = body_visitor(al, ast, diagnostics, unit, compiler_options, template_type_parameters);
+        auto res = body_visitor(al, ast, diagnostics, unit, compiler_options, template_type_parameters, implicit_mapping);
         if (res.ok) {
             tu = res.result;
         } else {

@@ -1686,7 +1686,8 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
-        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters)
+        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters, 
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options);
     try {
