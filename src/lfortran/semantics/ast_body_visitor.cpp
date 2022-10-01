@@ -1581,7 +1581,7 @@ public:
 
                 for (size_t i = 0; i < x.n_labels; ++i) {
                     if (!AST::is_a<AST::Num_t>(*x.m_labels[i])) {
-                        throw SemanticError("Can only `GOTO` integer labels",
+                        throw SemanticError("Only integer labels are supported in GOTO.",
                             x.base.base.loc);
                     } else {
                         auto l = AST::down_cast<AST::Num_t>(x.m_labels[i]); // l->m_n gets the target -> if l->m_n == (i+1) ...
@@ -1603,7 +1603,7 @@ public:
                            a_body_vec.size(), def_body.p, def_body.size());
             }
         } else {
-            throw SemanticError("Only 'goto INTEGER' is supported currently",
+            throw SemanticError("There must be a target to GOTO.",
                 x.base.base.loc);
         }
     }
