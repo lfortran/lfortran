@@ -21,6 +21,34 @@
                                     Public 
                                     Required 
                                     .false.
+                                ), 
+                            i:
+                                (Variable 
+                                    2 
+                                    i 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            w:
+                                (Variable 
+                                    2 
+                                    w 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Complex 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
                                 )
                             
                         }) 
@@ -99,6 +127,60 @@
                         [(Var 2 ans)] 
                         () 
                         ()
+                    )
+                    (= 
+                        (Var 2 w) 
+                        (Cast 
+                            (ComplexConstructor 
+                                (RealConstant 
+                                    7.700000 
+                                    (Real 4 [])
+                                ) 
+                                (RealConstant 
+                                    5.000000 
+                                    (Real 4 [])
+                                ) 
+                                (Complex 4 []) 
+                                (ComplexConstant 
+                                    7.700000 
+                                    5.000000 
+                                    (Complex 4 [])
+                                )
+                            ) 
+                            ComplexToComplex 
+                            (Complex 8 []) 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 i) 
+                        (Cast 
+                            (Var 2 w) 
+                            ComplexToInteger 
+                            (Integer 4 []) 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(Var 2 i)] 
+                        () 
+                        ()
+                    )
+                    (If 
+                        (IntegerCompare 
+                            (Var 2 i) 
+                            NotEq 
+                            (IntegerConstant 7 (Integer 4 [])) 
+                            (Logical 4 []) 
+                            ()
+                        ) 
+                        [(ErrorStop 
+                            ()
+                        )] 
+                        []
                     )]
                 )
             

@@ -8,4 +8,11 @@ program int_03
     ans(4) = 7303655603304982073_8
     ans(5) = 5108441843522503546_8
     print *, ans
+
+    integer :: i
+    complex*16 w
+    w = (7.7, 5.0)
+    i = w
+    print *, i
+    if (i /= 7) error stop
 end program
