@@ -15,7 +15,7 @@ C
       SUBROUTINE f(N)
       DO 1 I = 1, LOUT
         a = 1
-        do 3 j = 3, n
+        do j = 3, n
             b = 2
             do 4 k = 3, n
                 c = 3

@@ -190,10 +190,18 @@ static inline equi_t* EQUIVALENCE1(Allocator &al, Location &loc,
     return r;
 }
 
+static inline LFortran::IntSuffix divide_int_by_2(const LFortran::IntSuffix &n) {
+    LFortran::IntSuffix n2 = n;
+    n2.int_n.n /= 2;
+    return n2;
+}
+
 #define VAR_DECL_EQUIVALENCE(args, trivia, l) make_Declaration_t(p.m_a, l, \
         nullptr, EQUIVALENCE(p.m_a, l, args.p, args.n), 1, \
         nullptr, 0, trivia_cast(trivia))
 #define EQUIVALENCE_SET(set_list, l) EQUIVALENCE1(p.m_a, l, set_list)
+
+#define DIV2(x) divide_int_by_2(x)
 
 #define ATTR_TYPE(x, l) make_AttrType_t( \
             p.m_a, l, \
@@ -1447,6 +1455,14 @@ return make_Program_t(al, a_loc,
 #define LIST_NEW(l) l.reserve(p.m_a, 4)
 #define LIST_ADD(l, x) l.push_back(p.m_a, x)
 #define PLIST_ADD(l, x) l.push_back(p.m_a, *x)
+static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
+        ast_t *repeat, ast_t *e) {
+    int64_t n = LFortran::AST::down_cast2<LFortran::AST::Num_t>(repeat)->m_n;
+    for (int64_t i=0; i<n; i++) {
+        v.push_back(al, e);
+    }
+}
+#define REPEAT_LIST_ADD(l, r, x) repeat_list_add(l, p.m_a, r, x)
 
 #define WHILE(cond, trivia, body, l) make_WhileLoop_t(p.m_a, l, 0, nullptr, \
         /*test*/ EXPR(cond), \

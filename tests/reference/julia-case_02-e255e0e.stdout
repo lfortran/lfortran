@@ -1,0 +1,54 @@
+function main()
+    local marks::Int32 = 0
+    marks = 81
+    if 91 ≤ marks ≤ 100
+        println("Excellent!")
+    elseif 81 ≤ marks ≤ 90
+        println("Very good!")
+    elseif 71 ≤ marks ≤ 80
+        println("Well done!")
+    elseif 61 ≤ marks ≤ 70
+        println("Not bad!")
+    elseif 41 ≤ marks ≤ 60
+        println("You passed!")
+    elseif marks ≤ 40
+        println("Better try again!")
+    else
+        println("Invalid marks")
+    end
+    println("Your marks are ", " ", marks)
+    if 91 ≤ marks ≤ 100
+        println("Excellent!")
+    elseif 81 ≤ marks ≤ 90
+        println("Very good!")
+    elseif 71 ≤ marks ≤ 80
+        println("Well done!")
+    elseif 61 ≤ marks ≤ 70
+        println("Not bad!")
+    elseif 41 ≤ marks ≤ 60
+        println("You passed!")
+    elseif marks ≤ 40
+        println("Better try again!")
+    else
+        println("Invalid marks")
+    end
+    println("Your marks are ", " ", marks)
+    if 91 ≤ marks ≤ 100
+        println("Excellent!")
+    elseif 81 ≤ marks ≤ 90
+        println("Very good!")
+    elseif 71 ≤ marks ≤ 80
+        println("Well done!")
+    elseif 61 ≤ marks ≤ 70
+        println("Not bad!")
+    elseif 41 ≤ marks ≤ 60
+        println("You passed!")
+    elseif marks ≤ 40
+        println("Better try again!")
+    else
+        println("Invalid marks")
+    end
+    println("Your marks are ", " ", marks)
+end
+
+main()
