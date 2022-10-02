@@ -31,7 +31,8 @@ public:
     std::string token(unsigned char *tok, unsigned char* cur) const;
     std::string run(const std::string &input, LocationManager &lm,
         cpp_symtab &macro_definitions) const;
-    std::string preprocess_include(const std::string &input, LocationManager &lm) const;
+    std::string preprocess_include(const std::string &input, LocationManager &lm,
+                                   bool fixed_form) const;
     std::string function_like_macro_expansion(
                 std::vector<std::string> &def_args,
                 std::string &expansion,
