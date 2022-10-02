@@ -385,8 +385,6 @@ RUN(NAME where_01 LABELS gfortran)
 
 RUN(NAME forallloop_01 LABELS gfortran)
 
-RUN(NAME subroutines_03 LABELS gfortran)
-
 RUN(NAME parsing_01 LABELS gfortran)
 RUN(NAME parsing_02 LABELS gfortran)
 RUN(NAME parsing_03 LABELS gfortran llvm wasm)
