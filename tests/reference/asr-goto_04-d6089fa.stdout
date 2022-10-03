@@ -77,6 +77,17 @@
                         )] 
                         []
                     )
+                    (= 
+                        (Var 2 a) 
+                        (IntegerBinOp 
+                            (Var 2 a) 
+                            Add 
+                            (IntegerConstant 5 (Integer 4 [])) 
+                            (Integer 4 []) 
+                            ()
+                        ) 
+                        ()
+                    )
                     (GoToTarget 
                         1
                     )
@@ -159,6 +170,17 @@
                             )]
                         )] 
                         []
+                    )
+                    (= 
+                        (Var 2 a) 
+                        (IntegerBinOp 
+                            (Var 2 a) 
+                            Add 
+                            (IntegerConstant 5 (Integer 4 [])) 
+                            (Integer 4 []) 
+                            ()
+                        ) 
+                        ()
                     )
                     (GoToTarget 
                         4
@@ -243,6 +265,17 @@
                         )] 
                         []
                     )
+                    (= 
+                        (Var 2 a) 
+                        (IntegerBinOp 
+                            (Var 2 a) 
+                            Add 
+                            (IntegerConstant 5 (Integer 4 [])) 
+                            (Integer 4 []) 
+                            ()
+                        ) 
+                        ()
+                    )
                     (GoToTarget 
                         7
                     )
@@ -289,7 +322,7 @@
                         (IntegerCompare 
                             (Var 2 a) 
                             NotEq 
-                            (IntegerConstant 370 (Integer 4 [])) 
+                            (IntegerConstant 375 (Integer 4 [])) 
                             (Logical 4 []) 
                             ()
                         ) 

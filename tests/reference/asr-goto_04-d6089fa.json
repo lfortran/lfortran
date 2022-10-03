@@ -2,11 +2,11 @@
     "basename": "asr-goto_04-d6089fa",
     "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/goto_04.f90",
-    "infile_hash": "04da36871d43cc50facdc2f08b7b0df2cd66bf116d0543b74977ea69",
+    "infile_hash": "302db59379e85ba1677034f61bec227f237c56085cea27ad7a1554b5",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-goto_04-d6089fa.stdout",
-    "stdout_hash": "04a2ca8f96844e54a8825908cf606f84e75c2de790bd928a7d27880a",
+    "stdout_hash": "63a2f58f46e6516c3c4a01585b3fd093ecf356d592abac718a6f7da0",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
