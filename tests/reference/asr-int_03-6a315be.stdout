@@ -22,10 +22,34 @@
                                     Required 
                                     .false.
                                 ), 
-                            i:
+                            dp:
                                 (Variable 
                                     2 
-                                    i 
+                                    dp 
+                                    Local 
+                                    (FunctionCall 
+                                        2 kind 
+                                        () 
+                                        [((RealConstant 
+                                            0.000000 
+                                            (Real 8 [])
+                                        ))] 
+                                        (Integer 4 []) 
+                                        (IntegerConstant 8 (Integer 4 [])) 
+                                        ()
+                                    ) 
+                                    (IntegerConstant 8 (Integer 4 [])) 
+                                    Parameter 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            i4:
+                                (Variable 
+                                    2 
+                                    i4 
                                     Local 
                                     () 
                                     () 
@@ -36,10 +60,48 @@
                                     Required 
                                     .false.
                                 ), 
-                            w:
+                            i8:
                                 (Variable 
                                     2 
-                                    w 
+                                    i8 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            kind:
+                                (ExternalSymbol 
+                                    2 
+                                    kind 
+                                    4 kind 
+                                    lfortran_intrinsic_kind 
+                                    [] 
+                                    kind 
+                                    Private
+                                ), 
+                            w4:
+                                (Variable 
+                                    2 
+                                    w4 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Complex 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            w8:
+                                (Variable 
+                                    2 
+                                    w8 
                                     Local 
                                     () 
                                     () 
@@ -53,7 +115,7 @@
                             
                         }) 
                     int_03 
-                    [] 
+                    [lfortran_intrinsic_kind] 
                     [(= 
                         (ArrayItem 
                             (Var 2 ans) 
@@ -129,49 +191,55 @@
                         ()
                     )
                     (= 
-                        (Var 2 w) 
-                        (Cast 
-                            (ComplexConstructor 
-                                (RealConstant 
-                                    7.700000 
-                                    (Real 4 [])
-                                ) 
-                                (RealConstant 
-                                    5.000000 
-                                    (Real 4 [])
-                                ) 
-                                (Complex 4 []) 
-                                (ComplexConstant 
-                                    7.700000 
-                                    5.000000 
-                                    (Complex 4 [])
-                                )
+                        (Var 2 w8) 
+                        (ComplexConstructor 
+                            (RealConstant 
+                                7.700000 
+                                (Real 8 [])
                             ) 
-                            ComplexToComplex 
+                            (RealConstant 
+                                5.000000 
+                                (Real 8 [])
+                            ) 
                             (Complex 8 []) 
-                            ()
+                            (ComplexConstant 
+                                7.700000 
+                                5.000000 
+                                (Complex 8 [])
+                            )
                         ) 
                         ()
                     )
                     (= 
-                        (Var 2 i) 
+                        (Var 2 i4) 
                         (Cast 
-                            (Var 2 w) 
+                            (Var 2 w8) 
                             ComplexToInteger 
                             (Integer 4 []) 
                             ()
                         ) 
                         ()
                     )
+                    (= 
+                        (Var 2 i8) 
+                        (Cast 
+                            (Var 2 w8) 
+                            ComplexToInteger 
+                            (Integer 8 []) 
+                            ()
+                        ) 
+                        ()
+                    )
                     (Print 
                         () 
-                        [(Var 2 i)] 
+                        [(Var 2 i4)
+                        (Var 2 i8)] 
                         () 
                         ()
                     )
                     (If 
                         (IntegerCompare 
-                            (Var 2 i) 
+                            (Var 2 i4) 
                             NotEq 
                             (IntegerConstant 7 (Integer 4 [])) 
                             (Logical 4 []) 
@@ -181,8 +249,106 @@
                             ()
                         )] 
                         []
+                    )
+                    (If 
+                        (IntegerCompare 
+                            (Var 2 i8) 
+                            NotEq 
+                            (Cast 
+                                (IntegerConstant 7 (Integer 4 [])) 
+                                IntegerToInteger 
+                                (Integer 8 []) 
+                                (IntegerConstant 7 (Integer 8 []))
+                            ) 
+                            (Logical 4 []) 
+                            ()
+                        ) 
+                        [(ErrorStop 
+                            ()
+                        )] 
+                        []
+                    )
+                    (= 
+                        (Var 2 w4) 
+                        (ComplexConstructor 
+                            (RealConstant 
+                                7.700000 
+                                (Real 4 [])
+                            ) 
+                            (RealConstant 
+                                5.000000 
+                                (Real 4 [])
+                            ) 
+                            (Complex 4 []) 
+                            (ComplexConstant 
+                                7.700000 
+                                5.000000 
+                                (Complex 4 [])
+                            )
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 i4) 
+                        (Cast 
+                            (Var 2 w4) 
+                            ComplexToInteger 
+                            (Integer 4 []) 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 i8) 
+                        (Cast 
+                            (Var 2 w4) 
+                            ComplexToInteger 
+                            (Integer 8 []) 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(Var 2 i4)
+                        (Var 2 i8)] 
+                        () 
+                        ()
+                    )
+                    (If 
+                        (IntegerCompare 
+                            (Var 2 i4) 
+                            NotEq 
+                            (IntegerConstant 7 (Integer 4 [])) 
+                            (Logical 4 []) 
+                            ()
+                        ) 
+                        [(ErrorStop 
+                            ()
+                        )] 
+                        []
+                    )
+                    (If 
+                        (IntegerCompare 
+                            (Var 2 i8) 
+                            NotEq 
+                            (Cast 
+                                (IntegerConstant 7 (Integer 4 [])) 
+                                IntegerToInteger 
+                                (Integer 8 []) 
+                                (IntegerConstant 7 (Integer 8 []))
+                            ) 
+                            (Logical 4 []) 
+                            ()
+                        ) 
+                        [(ErrorStop 
+                            ()
+                        )] 
+                        []
                     )]
-                )
+                ), 
+            lfortran_intrinsic_kind:
+                (IntrinsicModule lfortran_intrinsic_kind)
             
         }) 
     []
