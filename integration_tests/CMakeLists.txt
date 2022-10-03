@@ -163,6 +163,7 @@ RUN(NAME doloop_04 LABELS gfortran llvm)
 RUN(NAME doloop_05 LABELS gfortran llvm cpp)
 RUN(NAME doloop_06 LABELS gfortran llvm cpp wasm)
 RUN(NAME doloop_07 LABELS gfortran llvm cpp wasm)
+RUN(NAME doloop_08 LABELS gfortran llvm cpp wasm)
 
 RUN(NAME goto_01 LABELS gfortran llvm)
 RUN(NAME goto_02 LABELS gfortran llvm)
@@ -385,8 +386,6 @@ RUN(NAME where_01 LABELS gfortran)
 
 RUN(NAME forallloop_01 LABELS gfortran)
 
-RUN(NAME subroutines_03 LABELS gfortran)
-
 RUN(NAME parsing_01 LABELS gfortran)
 RUN(NAME parsing_02 LABELS gfortran)
 RUN(NAME parsing_03 LABELS gfortran llvm wasm)
@@ -520,8 +519,8 @@ RUN(NAME callback_04 LABELS gfortran llvm)
 RUN(NAME callback_05 LABELS gfortran llvm)
 
 RUN(NAME recursion_01 LABELS gfortran llvm)
-RUN(NAME recursion_02 LABELS gfortran llvm)
-RUN(NAME recursion_03 LABELS gfortran llvm)
+RUN(NAME recursion_02 LABELS llvm)
+RUN(NAME recursion_03 LABELS llvm)
 
 RUN(NAME return_01 LABELS gfortran llvm wasm)
 RUN(NAME return_02 LABELS gfortran llvm) # contains module

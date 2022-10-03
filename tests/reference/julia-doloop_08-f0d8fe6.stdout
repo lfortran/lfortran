@@ -1,5 +1,15 @@
 function main()
+    local i::Int32 = 0
+    i = 1
     while true
+        i = i + 1
+        if i == 10
+            break
+        end
+    end
+    if i ≠ 10
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
     end
 end
 
