@@ -27,11 +27,13 @@ private:
 public:
     ASR::asr_t *asr;
     bool from_block;
-
+	std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>implicit_mapping;
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
-            CompilerOptions &compiler_options)
+            CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
          : CommonVisitor(al, nullptr, diagnostics, compiler_options),
-           asr{unit}, from_block{false} {}
+           asr{unit}, from_block{false} {
+		this->implicit_mapping = implicit_mapping;
+		}
 
     void visit_Declaration(const AST::Declaration_t& x) {
         if( from_block ) {
@@ -1421,7 +1423,7 @@ public:
         ASR::expr_t *var, *start, *end;
         var = start = end = nullptr;
         if (x.m_var) {
-            var = LFortran::ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(x.m_var)));
+            var = LFortran::ASRUtils::EXPR(resolve_variable3(x.base.base.loc, to_lower(x.m_var), implicit_mapping));
         }
         if (x.m_start) {
             visit_expr(*x.m_start);
@@ -1475,7 +1477,7 @@ public:
             throw SemanticError("Do loop: end condition required for now",
                 x.base.base.loc);
         }
-        ASR::expr_t *var = LFortran::ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
+        ASR::expr_t *var = LFortran::ASRUtils::EXPR(resolve_variable3(x.base.base.loc, to_lower(h.m_var), implicit_mapping));
         visit_expr(*h.m_start);
         ASR::expr_t *start = LFortran::ASRUtils::EXPR(tmp);
         visit_expr(*h.m_end);
@@ -1520,7 +1522,7 @@ public:
                 x.base.base.loc);
         }
         ASR::expr_t *var = LFortran::ASRUtils::EXPR(
-            resolve_variable(x.base.base.loc, to_lower(h.m_var))
+            resolve_variable3(x.base.base.loc, to_lower(h.m_var), implicit_mapping)
         );
         visit_expr(*h.m_start);
         ASR::expr_t *start = LFortran::ASRUtils::EXPR(tmp);
@@ -1689,7 +1691,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters, 
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
 {
-    BodyVisitor b(al, unit, diagnostics, compiler_options);
+    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping);
     try {
         b.is_body_visitor = true;
         b.template_type_parameters = template_type_parameters;
