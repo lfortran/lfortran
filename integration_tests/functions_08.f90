@@ -1,8 +1,9 @@
-module a
+module function_08_a
 implicit none
 
 end module
-program functions_01
+
+program functions_08
 implicit none
 
     real :: x = 5, y
