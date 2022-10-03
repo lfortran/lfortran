@@ -1,0 +1,13 @@
+{
+    "basename": "asr-goto_04-d6089fa",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/goto_04.f90",
+    "infile_hash": "04da36871d43cc50facdc2f08b7b0df2cd66bf116d0543b74977ea69",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-goto_04-d6089fa.stdout",
+    "stdout_hash": "04a2ca8f96844e54a8825908cf606f84e75c2de790bd928a7d27880a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1572,7 +1572,7 @@ public:
                 tmp = ASR::make_GoTo_t(al, x.base.base.loc, goto_label);
             } else {
                 this->visit_expr(*x.m_goto_label);
-                ASR::expr_t *goto_label = LFortran::ASRUtils::EXPR(tmp);
+                ASR::expr_t *goto_label = ASRUtils::EXPR(tmp);
 
                 // n_labels GOTO
                 Vec<ASR::case_stmt_t*> a_body_vec;
@@ -1591,9 +1591,6 @@ public:
                         Vec<ASR::stmt_t*> body;
                         body.reserve(al, 1);
                         body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n)));
-                        if (i == 0) {
-                            def_body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n)));
-                        }
                         Vec<ASR::expr_t*> comparator_one;
                         comparator_one.reserve(al, 1);
                         ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));

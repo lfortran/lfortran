@@ -1799,6 +1799,13 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "../integration_tests/goto_04.f90"
+ast = true
+ast_f90 = true
+asr = true
+julia = true
+
+[[test]]
 filename = "if1.f90"
 ast = true
 ast_f90 = true
