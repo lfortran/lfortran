@@ -19,7 +19,7 @@ go to (4, 5, 6), n + 1
 6 a = a + 60
 
 if(a /= 130) error stop
-
+! Jump to the label n*n -> 4 -> noop
 go to (7, 8, 9), n * n
 
 7 a = a + 70
