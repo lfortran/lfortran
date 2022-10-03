@@ -222,6 +222,20 @@ jobs:
             cd integration_tests
             ./run_tests.py -b llvm
 
+  gfortran:
+    name: Test integration_tests with GFortran
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Test integration_tests with GFortran
+        shell: bash -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b gfortran
+
   test_without_llvm:
     name: Test without LLVM Backend
     runs-on: ubuntu-latest
