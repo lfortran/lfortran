@@ -1432,7 +1432,7 @@ public:
             end = LFortran::ASRUtils::EXPR(tmp);
         }
 
-        ASR::expr_t *increment;
+        ASR::expr_t* increment;
         if (x.m_increment) {
             visit_expr(*x.m_increment);
             increment = LFortran::ASRUtils::EXPR(tmp);
@@ -1448,13 +1448,16 @@ public:
         head.m_start = start;
         head.m_end = end;
         head.m_increment = increment;
-        if( head.m_v ) {
+        if (head.m_v != nullptr) {
             head.loc = head.m_v->base.loc;
+            tmp = ASR::make_DoLoop_t(al, x.base.base.loc, head, body.p, body.size());
         } else {
-            head.loc = x.base.base.loc;
+            ASR::ttype_t* cond_type
+                = LFortran::ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+            ASR::expr_t* cond = LFortran::ASRUtils::EXPR(
+                ASR::make_LogicalConstant_t(al, x.base.base.loc, true, cond_type));
+            tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, cond, body.p, body.size());
         }
-        tmp = ASR::make_DoLoop_t(al, x.base.base.loc, head, body.p,
-                body.size());
     }
 
     void visit_DoConcurrentLoop(const AST::DoConcurrentLoop_t &x) {
