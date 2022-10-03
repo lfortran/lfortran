@@ -1,3 +1,4 @@
+#include <inttypes.h>
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -38,7 +39,17 @@ struct dimension_descriptor
 // Implementations
 int main(int argc, char* argv[])
 {
+    int32_t i;
+    i = 1;
     while (true) {
+        i = i + 1;
+        if (i == 10) {
+            break;
+        }
+    }
+    if (i != 10) {
+        fprintf(stderr, "ERROR STOP");
+        exit(1);
     }
     return 0;
 }
