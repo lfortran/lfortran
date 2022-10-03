@@ -21,11 +21,6 @@
 
 namespace LFortran {
 
-uint64_t static get_hash(ASR::asr_t *node)
-{
-    return (uint64_t)node;
-}
-
 template <typename T>
 void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name) {
     if (x.m_bind) {
