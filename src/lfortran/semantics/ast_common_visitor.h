@@ -732,7 +732,7 @@ public:
         return v;
     }
 
-    ASR::asr_t* resolve_variable(const Location &loc, const std::string &var_name ) {
+    ASR::asr_t* resolve_variable(const Location &loc, const std::string &var_name) {
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
         if (!v) {
@@ -776,7 +776,7 @@ public:
         return ASR::make_Var_t(al, loc, v);
     }
 
-	ASR::asr_t* resolve_variable3(const Location &loc, const std::string &var_name, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping ) {
+	ASR::asr_t* resolve_variable3(const Location &loc, const std::string &var_name, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping) {
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
         if (!v) {
@@ -785,12 +785,12 @@ public:
 				//we are in the body visitor
 				//find the hash of the current function
 				uint64_t fn_hash = get_hash(current_scope->asr_owner);
+				
 				//use this hash to find the corresponding implicit_dictionary in implicit_mapping
 				implicit_dictionary = implicit_mapping[fn_hash];
 			} else {
 				// we are in the symbol table visitor
 				// Directly use the implicit_dictionary internal variable, as we constructed it in the symbol table visitor
-
 				//do nothing as we will be using the implicit_dictionary itself
 			}
             if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()) {

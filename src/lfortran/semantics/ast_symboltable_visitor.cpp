@@ -404,8 +404,8 @@ public:
 
     void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         std::cout << "Implicit Dictionary: " << std::endl;
-        for( auto it: implicit_dictionary ) {
-            if ( it.second ) {
+        for (auto it: implicit_dictionary) {
+            if (it.second) {
                 std::cout << it.first << " " << ASRUtils::type_to_str(it.second) << std::endl;
             } else {
                 std::cout << it.first << " " << "NULL" << std::endl;
@@ -424,7 +424,7 @@ public:
         for (size_t i=0;i<x.n_implicit;i++) {
             //get the implicit statement
             //check if the implicit statement is of type "none"
-            if ( AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i]) ) {
+            if (AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
                 //if yes, clear the implicit dictionary i.e. set all characters to nullptr
                 if (x.n_implicit != 1) {
                     throw SemanticError("No other implicit statement is allowed when 'implicit none' is used", x.m_implicit[i]->base.loc);
@@ -1474,7 +1474,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         return error;
     }
     //iterate over local implicit_mapping and add to global implicit_mapping
-    for(auto it: v.implicit_mapping){
+    for (auto it: v.implicit_mapping) {
         implicit_mapping[it.first] = it.second;
     }
     ASR::asr_t *unit = v.tmp;

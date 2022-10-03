@@ -30,9 +30,9 @@ public:
 	std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>implicit_mapping;
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
-         : CommonVisitor(al, nullptr, diagnostics, compiler_options),
-           asr{unit}, from_block{false} {
-		this->implicit_mapping = implicit_mapping;
+        : CommonVisitor(al, nullptr, diagnostics, compiler_options),
+        	asr{unit}, from_block{false} {
+			this->implicit_mapping = implicit_mapping;
 		}
 
     void visit_Declaration(const AST::Declaration_t& x) {
