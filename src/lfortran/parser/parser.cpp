@@ -136,7 +136,7 @@ bool is_digit(unsigned char ch) {
 
 enum LineType {
     Comment, Statement, LabeledStatement, Continuation, EndOfFile,
-    ContinuationTab, StatementTab
+    ContinuationTab, StatementTab, Include
 };
 
 // Determines the type of line in the fixed-form prescanner
@@ -184,7 +184,11 @@ LineType determine_line_type(const unsigned char *pos)
         if (col <= 6) {
             return LineType::LabeledStatement;
         } else {
-            return LineType::Statement;
+            if (std::string(pos,6) == "include") {
+                return LineType::Include;
+            } else {
+                return LineType::Statement;
+            }
         }
     }
 }
@@ -359,6 +363,26 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
+                case LineType::Include : {
+                    // TODO: Skip the line, recognize the filename and load it,
+                    // and inser tit
+                    while (*pos == ' ') pos++;
+                    if ((*pos == '"') || (*pos == '\'')) {
+                        std::string filename = parse_string(pos);
+                        LocationManager lm2;
+                        std::string input1; // TODO: load the filename
+                        std::string input2 = fix_continuation(input1, lm2,
+                            fixed_form);
+                        // Possible it goes here
+                        //lm.out_start.push_back(out.size());
+                        out += input2;
+                        while (*pos != '\n') pos++;
+                        lm.in_newlines.push_back(pos);
+                        lm.out_start.push_back(out.size());
+                        lm.in_start.push_back(pos);
+                    }
+                    break;
+                }
                 case LineType::EndOfFile : {
                     break;
                 }
@@ -376,7 +400,9 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
         std::string out;
         size_t pos = 0;
         bool in_comment = false;
+        bool newline = false;
         while (pos < s.size()) {
+            newline = false;
             if (s[pos] == '!') in_comment = true;
             if (in_comment && s[pos] == '\n') in_comment = false;
             if (!in_comment && s[pos] == '&') {
@@ -400,10 +426,32 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     lm.in_start.push_back(pos);
                 }
             } else {
-                if (s[pos] == '\n') lm.in_newlines.push_back(pos);
+                if (s[pos] == '\n') {
+                    lm.in_newlines.push_back(pos);
+                    newline = true;
+                }
             }
             out += s[pos];
             pos++;
+            if (newline) {
+                if (std::string(pos, 6) == "include") {
+                    while (*pos == ' ') pos++;
+                    if ((*pos == '"') || (*pos == '\'')) {
+                        std::string filename = parse_string(pos);
+                        LocationManager lm2;
+                        std::string input1; // TODO: load the filename
+                        std::string input2 = fix_continuation(input1, lm2,
+                            fixed_form);
+                        // Possible it goes here
+                        //lm.out_start.push_back(out.size());
+                        out += input2;
+                        while (*pos != '\n') pos++;
+                        lm.in_newlines.push_back(pos);
+                        lm.out_start.push_back(out.size());
+                        lm.in_start.push_back(pos);
+                    }
+                }
+            }
         }
         // set the size of the last interval
     //    lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
