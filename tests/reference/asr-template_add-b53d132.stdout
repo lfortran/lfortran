@@ -2,7 +2,61 @@
     (SymbolTable
         1
         {
-            add_m:
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding), 
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin), 
+            lfortran_intrinsic_math:
+                (IntrinsicModule lfortran_intrinsic_math), 
+            template_add:
+                (Program 
+                    (SymbolTable
+                        6
+                        {
+                            add_generic:
+                                (ExternalSymbol 
+                                    6 
+                                    add_generic 
+                                    2 add_generic 
+                                    template_add_m 
+                                    [] 
+                                    add_generic 
+                                    Private
+                                ), 
+                            t:
+                                (ExternalSymbol 
+                                    6 
+                                    t 
+                                    2 t 
+                                    template_add_m 
+                                    [] 
+                                    t 
+                                    Private
+                                ), 
+                            test_template:
+                                (ExternalSymbol 
+                                    6 
+                                    test_template 
+                                    2 test_template 
+                                    template_add_m 
+                                    [] 
+                                    test_template 
+                                    Private
+                                )
+                            
+                        }) 
+                    template_add 
+                    [template_add_m] 
+                    [(SubroutineCall 
+                        6 test_template 
+                        () 
+                        [] 
+                        ()
+                    )]
+                ), 
+            template_add_m:
                 (Module 
                     (SymbolTable
                         2
@@ -483,64 +537,10 @@
                                 )
                             
                         }) 
-                    add_m 
+                    template_add_m 
                     [lfortran_intrinsic_math] 
                     .false. 
                     .false.
-                ), 
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding), 
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin), 
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math), 
-            use_template_module:
-                (Program 
-                    (SymbolTable
-                        6
-                        {
-                            add_generic:
-                                (ExternalSymbol 
-                                    6 
-                                    add_generic 
-                                    2 add_generic 
-                                    add_m 
-                                    [] 
-                                    add_generic 
-                                    Private
-                                ), 
-                            t:
-                                (ExternalSymbol 
-                                    6 
-                                    t 
-                                    2 t 
-                                    add_m 
-                                    [] 
-                                    t 
-                                    Private
-                                ), 
-                            test_template:
-                                (ExternalSymbol 
-                                    6 
-                                    test_template 
-                                    2 test_template 
-                                    add_m 
-                                    [] 
-                                    test_template 
-                                    Private
-                                )
-                            
-                        }) 
-                    use_template_module 
-                    [add_m] 
-                    [(SubroutineCall 
-                        6 test_template 
-                        () 
-                        [] 
-                        ()
-                    )]
                 )
             
         }) 
