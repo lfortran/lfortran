@@ -1,4 +1,4 @@
-module a_04
+module modules_04_a
 implicit none
 
 contains
@@ -18,12 +18,12 @@ call f()
 contains
 
     subroutine f()
-    use a_04, only: b
+    use modules_04_a, only: b
     call b()
     end subroutine
 
     integer function g()
-    use :: a_04, only: b
+    use :: modules_04_a, only: b
     call b()
     g = 5
     end function

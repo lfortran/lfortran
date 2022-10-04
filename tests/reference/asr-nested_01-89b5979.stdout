@@ -2,7 +2,53 @@
     (SymbolTable
         1
         {
-            a:
+            nested_01:
+                (Program 
+                    (SymbolTable
+                        5
+                        {
+                            b:
+                                (ExternalSymbol 
+                                    5 
+                                    b 
+                                    2 b 
+                                    nested_01_a 
+                                    [] 
+                                    b 
+                                    Public
+                                ), 
+                            c:
+                                (Variable 
+                                    5 
+                                    c 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    nested_01 
+                    [nested_01_a] 
+                    [(= 
+                        (Var 5 c) 
+                        (FunctionCall 
+                            5 b 
+                            () 
+                            [] 
+                            (Integer 4 []) 
+                            () 
+                            ()
+                        ) 
+                        ()
+                    )]
+                ), 
+            nested_01_a:
                 (Module 
                     (SymbolTable
                         2
@@ -131,56 +177,10 @@
                                 )
                             
                         }) 
-                    a 
+                    nested_01_a 
                     [] 
                     .false. 
                     .false.
-                ), 
-            nested_01:
-                (Program 
-                    (SymbolTable
-                        5
-                        {
-                            b:
-                                (ExternalSymbol 
-                                    5 
-                                    b 
-                                    2 b 
-                                    a 
-                                    [] 
-                                    b 
-                                    Public
-                                ), 
-                            c:
-                                (Variable 
-                                    5 
-                                    c 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
-                                    .false.
-                                )
-                            
-                        }) 
-                    nested_01 
-                    [a] 
-                    [(= 
-                        (Var 5 c) 
-                        (FunctionCall 
-                            5 b 
-                            () 
-                            [] 
-                            (Integer 4 []) 
-                            () 
-                            ()
-                        ) 
-                        ()
-                    )]
                 )
             
         }) 

@@ -2,19 +2,19 @@
     (SymbolTable
         1
         {
-            a:
+            function_08_a:
                 (Module 
                     (SymbolTable
                         2
                         {
                             
                         }) 
-                    a 
+                    function_08_a 
                     [] 
                     .false. 
                     .false.
                 ), 
-            functions_01:
+            functions_08:
                 (Program 
                     (SymbolTable
                         3
@@ -593,7 +593,7 @@
                                 )
                             
                         }) 
-                    functions_01 
+                    functions_08 
                     [] 
                     [(= 
                         (Var 3 a_f) 

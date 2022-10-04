@@ -9,7 +9,7 @@ source_filename = "LFortran"
 @5 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @6 = private unnamed_addr constant [5 x i8] c"%d%s\00", align 1
 
-define i32 @__module_a_06_b() {
+define i32 @__module_modules_06_a_b() {
 .entry:
   %r = alloca i32, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
@@ -26,7 +26,7 @@ declare void @_lfortran_printf(i8*, ...)
 define i32 @main() {
 .entry:
   %i = alloca i32, align 4
-  %0 = call i32 @__module_a_06_b()
+  %0 = call i32 @__module_modules_06_a_b()
   store i32 %0, i32* %i, align 4
   %1 = load i32, i32* %i, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @6, i32 0, i32 0), i32 %1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))

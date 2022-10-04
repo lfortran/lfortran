@@ -30,7 +30,17 @@ namespace {
 namespace {
 
 void main2() {
+    int32_t i;
+    i = 1;
     while (true) {
+        i = i + 1;
+        if (i == 10) {
+            break;
+        }
+    }
+    if (i != 10) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
     }
 }
 

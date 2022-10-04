@@ -53,7 +53,7 @@
         []
     )
     (Module 
-        a_mod 
+        parameter_02_a 
         (TriviaNode 
             [] 
             [(EndOfLine)
@@ -100,7 +100,7 @@
         () 
         [(Use 
             [] 
-            a_mod 
+            parameter_02_a 
             [(UseSymbol 
                 i 
                 ()

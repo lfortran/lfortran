@@ -2,7 +2,33 @@
     (SymbolTable
         1
         {
-            a_01:
+            modules_01:
+                (Program 
+                    (SymbolTable
+                        4
+                        {
+                            b:
+                                (ExternalSymbol 
+                                    4 
+                                    b 
+                                    2 b 
+                                    modules_01_a 
+                                    [] 
+                                    b 
+                                    Public
+                                )
+                            
+                        }) 
+                    modules_01 
+                    [modules_01_a] 
+                    [(SubroutineCall 
+                        4 b 
+                        () 
+                        [] 
+                        ()
+                    )]
+                ), 
+            modules_01_a:
                 (Module 
                     (SymbolTable
                         2
@@ -38,36 +64,10 @@
                                 )
                             
                         }) 
-                    a_01 
+                    modules_01_a 
                     [] 
                     .false. 
                     .false.
-                ), 
-            modules_01:
-                (Program 
-                    (SymbolTable
-                        4
-                        {
-                            b:
-                                (ExternalSymbol 
-                                    4 
-                                    b 
-                                    2 b 
-                                    a_01 
-                                    [] 
-                                    b 
-                                    Public
-                                )
-                            
-                        }) 
-                    modules_01 
-                    [a_01] 
-                    [(SubroutineCall 
-                        4 b 
-                        () 
-                        [] 
-                        ()
-                    )]
                 )
             
         }) 
