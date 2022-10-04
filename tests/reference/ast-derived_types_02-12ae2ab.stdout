@@ -1,6 +1,6 @@
 (TranslationUnit 
     [(Module 
-        a_02 
+        derived_types_02_m 
         (TriviaNode 
             [] 
             [(EndOfLine)
@@ -276,7 +276,7 @@
         () 
         [(Use 
             [] 
-            a_02 
+            derived_types_02_m 
             [(UseSymbol 
                 X 
                 ()

@@ -617,6 +617,30 @@ public:
         indentation_level -= 2;
     }
 
+    void visit_BlockCall(const ASR::BlockCall_t& x)
+    {
+        LFORTRAN_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
+        ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        std::string decl, body;
+        std::string open_paranthesis = indent + "let\n";
+        std::string close_paranthesis = indent + "end\n";
+        indent += std::string(indentation_spaces, ' ');
+        indentation_level += 1;
+        for (auto& item : block->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+                decl += indent + this->convert_variable_decl(*v) + "\n";
+            }
+        }
+        for (size_t i = 0; i < block->n_body; i++) {
+            this->visit_stmt(*block->m_body[i]);
+            body += src;
+        }
+        src = open_paranthesis + decl + body + close_paranthesis;
+        indentation_level -= 1;
+    }
+
     void visit_Function(const ASR::Function_t& x)
     {
         if (std::string(x.m_name) == "size" && intrinsic_module) {
@@ -717,19 +741,6 @@ public:
                     }
                 }
                 src = var_name + ".extent(" + args + ")";
-            } else if (fn_name == "int") {
-                // TODO: implement this properly
-                // - Keep integers as they are
-                // - Convert real to integer (|A| < 1 => 0, |A| >= 1 => largest integer whose
-                // absolute value <= |A| with sign of A)
-                // - Take the real part of a complex number
-                LFORTRAN_ASSERT(x.n_args > 0);
-                visit_expr(*x.m_args[0].m_value);
-                src = "Int32(" + src + ")";
-            } else if (fn_name == "not") {
-                LFORTRAN_ASSERT(x.n_args > 0);
-                visit_expr(*x.m_args[0].m_value);
-                src = "!(" + src + ")";
             } else {
                 throw CodeGenError("Intrinsic function '" + fn_name + "' not implemented");
             }
@@ -999,6 +1010,95 @@ public:
         src.clear();
     }
 
+    void visit_Select(const ASR::Select_t& x)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        this->visit_expr(*x.m_test);
+        std::string var = std::move(src);
+        std::string out = indent + "if ";
+
+        for (size_t i = 0; i < x.n_body; i++) {
+            if (i > 0)
+                out += indent + "elseif ";
+            ASR::case_stmt_t* stmt = x.m_body[i];
+            if (stmt->type == ASR::case_stmtType::CaseStmt) {
+                ASR::CaseStmt_t* case_stmt = ASR::down_cast<ASR::CaseStmt_t>(stmt);
+                for (size_t j = 0; j < case_stmt->n_test; j++) {
+                    if (j > 0)
+                        out += " || ";
+                    this->visit_expr(*case_stmt->m_test[j]);
+                    out += var + " == " + src;
+                }
+                out += "\n";
+                indentation_level += 1;
+                for (size_t j = 0; j < case_stmt->n_body; j++) {
+                    this->visit_stmt(*case_stmt->m_body[j]);
+                    out += src;
+                }
+                indentation_level -= 1;
+            } else {
+                ASR::CaseStmt_Range_t* case_stmt_range
+                    = ASR::down_cast<ASR::CaseStmt_Range_t>(stmt);
+                std::string left, right;
+                if (case_stmt_range->m_start) {
+                    this->visit_expr(*case_stmt_range->m_start);
+                    left = std::move(src);
+                }
+                if (case_stmt_range->m_end) {
+                    this->visit_expr(*case_stmt_range->m_end);
+                    right = std::move(src);
+                }
+                if (left.empty() && right.empty()) {
+                    diag.codegen_error_label(
+                        "Empty range in select statement", { x.base.base.loc }, "");
+                    throw Abort();
+                }
+                if (left.empty()) {
+                    out += var + " ≤ " + right;
+                } else if (right.empty()) {
+                    out += var + " ≥ " + left;
+                } else {
+                    out += left + " ≤ " + var + " ≤ " + right;
+                }
+                out += "\n";
+                indentation_level += 1;
+                for (size_t j = 0; j < case_stmt_range->n_body; j++) {
+                    this->visit_stmt(*case_stmt_range->m_body[j]);
+                    out += src;
+                }
+                indentation_level -= 1;
+            }
+        }
+        if (x.n_default) {
+            out += indent + "else\n";
+            indentation_level += 1;
+            for (size_t i = 0; i < x.n_default; i++) {
+                this->visit_stmt(*x.m_default[i]);
+                out += src;
+            }
+            indentation_level -= 1;
+        }
+
+        out += indent + "end\n";
+        src = out;
+    }
+
+    void visit_WhileLoop(const ASR::WhileLoop_t& x)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        std::string out = indent + "while ";
+        this->visit_expr(*x.m_test);
+        out += src + "\n";
+        indentation_level += 1;
+        for (size_t i = 0; i < x.n_body; i++) {
+            this->visit_stmt(*x.m_body[i]);
+            out += src;
+        }
+        out += indent + "end\n";
+        indentation_level -= 1;
+        src = out;
+    }
+
     void visit_Exit(const ASR::Exit_t& /* x */)
     {
         std::string indent(indentation_level * indentation_spaces, ' ');
@@ -1049,7 +1149,7 @@ public:
     {
         std::string indent(indentation_level * indentation_spaces, ' ');
         src = indent + "println(Base.stderr, \"ERROR STOP\")\n";
-        src += indent + "exit(1);\n";
+        src += indent + "exit(1)\n";
     }
 
     void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t& /*x*/)
@@ -1088,7 +1188,6 @@ public:
                 throw CodeGenError("Do loop increment type not supported");
             }
         }
-
         out += lvname + " ∈ ";
         visit_expr(*a);
         out += src + ":" + (increment == 1 ? "" : (std::to_string(increment) + ":"));
@@ -1365,8 +1464,17 @@ public:
 
     void visit_Cast(const ASR::Cast_t& x)
     {
+        std::string broadcast;
+        if (x.m_arg->type == ASR::exprType::Var) {
+            ASR::Variable_t* value = ASRUtils::EXPR2VAR(x.m_arg);
+            if (ASRUtils::is_array(value->m_type))
+                broadcast = ".";
+        } else if (x.m_arg->type == ASR::exprType::ArrayConstant
+                   || x.m_arg->type == ASR::exprType::TupleConstant
+                   || x.m_arg->type == ASR::exprType::SetConstant) {
+            broadcast = ".";
+        }
         visit_expr(*x.m_arg);
-        std::string broadcast = ASRUtils::is_array(x.m_type) ? "." : "";
         switch (x.m_kind) {
             case (ASR::cast_kindType::IntegerToReal): {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
@@ -1385,7 +1493,8 @@ public:
             }
             case (ASR::cast_kindType::RealToInteger): {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                src = "Int" + std::to_string(dest_kind * 8) + broadcast + "(" + src + ")";
+                src = "trunc" + broadcast + "(Int" + std::to_string(dest_kind * 8) + ", " + src
+                      + ")";
                 break;
             }
             case (ASR::cast_kindType::RealToReal): {

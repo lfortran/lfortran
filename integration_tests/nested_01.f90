@@ -1,4 +1,4 @@
-module a
+module nested_01_a
 implicit none
 
 contains
@@ -18,7 +18,7 @@ end function b
 end module
 
 program nested_01
-use a, only: b
+use nested_01_a, only: b
 implicit none
 integer c
 c = b()

@@ -141,7 +141,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Complex 8 []) 
+                                    (Complex 4 []) 
                                     Source 
                                     Public 
                                     Required 
@@ -155,7 +155,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Complex 16 []) 
+                                    (Complex 8 []) 
                                     Source 
                                     Public 
                                     Required 
@@ -354,7 +354,7 @@
                         (Cast 
                             (IntegerConstant 9 (Integer 4 [])) 
                             IntegerToComplex 
-                            (Complex 8 []) 
+                            (Complex 4 []) 
                             ()
                         ) 
                         ()
@@ -364,7 +364,7 @@
                         (Cast 
                             (IntegerConstant 10 (Integer 4 [])) 
                             IntegerToComplex 
-                            (Complex 16 []) 
+                            (Complex 8 []) 
                             ()
                         ) 
                         ()

@@ -1,4 +1,4 @@
-module a
+module functions_06_m
 implicit none
 
 contains
@@ -30,7 +30,7 @@ contains
 end module
 
 program functions_06
-    use :: a, only: trim_wrapper, int_return, real_return
+    use :: functions_06_m, only: trim_wrapper, int_return, real_return
     implicit none
 
     character(len=5) :: string = "  abc"

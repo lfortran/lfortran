@@ -1,6 +1,7 @@
 #ifndef LFORTRAN_SEMANTICS_AST_COMMON_VISITOR_H
 #define LFORTRAN_SEMANTICS_AST_COMMON_VISITOR_H
 
+#include <libasr/assert.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <lfortran/ast.h>
@@ -2459,6 +2460,28 @@ public:
         return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, nullptr);
     }
 
+    ASR::asr_t* create_Ichar(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"kind"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "ichar");
+        ASR::expr_t *arg = args[0], *kind = args[1];
+        int64_t kind_value = handle_kind(kind);
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                kind_value, nullptr, 0));
+        ASR::expr_t* ichar_value = nullptr;
+        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+        if( arg_value ) {
+            std::string arg_str;
+            bool is_const_value = ASRUtils::is_value_constant(arg_value, arg_str);
+            if( is_const_value ) {
+                int64_t ascii_code = arg_str[0];
+                ichar_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                ascii_code, type));
+            }
+        }
+        return ASR::make_Ichar_t(al, x.base.base.loc, arg, type, ichar_value);
+    }
+
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
@@ -2480,7 +2503,9 @@ public:
                 tmp = create_Cmplx(x);
             } else if( var_name == "reshape" ) {
                 tmp = create_ArrayReshape(x);
-            } else {
+            } else if( var_name == "ichar" ) {
+                tmp = create_Ichar(x);
+            }  else {
                 LCompilersException("create_" + var_name + " not implemented yet.");
             }
             return nullptr;
@@ -2683,6 +2708,28 @@ public:
                             tmp = create_Floor(x, p, v);
                             return;
                         }
+                    }
+                } else if (var_name == "not") {
+                    Vec<ASR::call_arg_t> args;
+                    visit_expr_list(x.m_args, x.n_args, args);
+                    LFORTRAN_ASSERT(args.size() == 1);
+                    ASR::expr_t* operand = args[0].m_value;
+                    ASR::expr_t* value = nullptr;
+                    ASR::ttype_t* operand_type = ASRUtils::expr_type(operand);
+                    if (LFortran::ASRUtils::is_integer(*operand_type)) {
+                        if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
+                            int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
+                                                   LFortran::ASRUtils::expr_value(operand))
+                                                   ->m_n;
+                            value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(
+                                al, x.base.base.loc, ~op_value, operand_type));
+                        }
+                        tmp = ASR::make_IntegerBitNot_t(
+                            al, x.base.base.loc, operand, operand_type, value);
+                        return;
+                    } else {
+                        throw SemanticError("Argument of `not` intrinsic must be INTEGER",
+                                            x.base.base.loc);
                     }
                 }
             }

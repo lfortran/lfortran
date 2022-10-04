@@ -1,0 +1,67 @@
+function f(a::Int32, b::Base.RefValue{Int32})
+    b[] = a + 1
+end
+
+function main()
+    local i::Int32 = 0
+    local j::Int32 = 0
+    i = 1
+    j = 1
+    if j ≠ 1
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    __j_ref__= Ref(j)
+    f(i, __j_ref__)
+    j = __j_ref__[]
+    println(i, " ", j)
+    if i ≠ 1
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    if j ≠ 2
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    j = 1
+    if j ≠ 1
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    __j_ref__= Ref(j)
+    f(Int32(3), __j_ref__)
+    j = __j_ref__[]
+    println(j)
+    if j ≠ 4
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    j = 1
+    if j ≠ 1
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    __j_ref__= Ref(j)
+    f(Int32(1 + 2), __j_ref__)
+    j = __j_ref__[]
+    println(j)
+    if j ≠ 4
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    j = 1
+    if j ≠ 1
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    __j_ref__= Ref(j)
+    f(Int32(i + 2), __j_ref__)
+    j = __j_ref__[]
+    println(j)
+    if j ≠ 4
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+end
+
+main()

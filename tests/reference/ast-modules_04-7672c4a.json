@@ -2,11 +2,11 @@
     "basename": "ast-modules_04-7672c4a",
     "cmd": "lfortran --indent --show-ast --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/modules_04.f90",
-    "infile_hash": "c2a3f2488f0cbfc5efc150ea277129289bfb30dc2a42d33d4861357b",
+    "infile_hash": "b04f80d4de5baea50808e962f08564088751c24a464b3d1d7c0c316f",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-modules_04-7672c4a.stdout",
-    "stdout_hash": "72fb6af528a632df863d17ba41794a9231b6108bbce7b657316c7696",
+    "stdout_hash": "680dfcad7afa4452d3f414cc0fc6158bb946410370a3470ed0ba1e5b",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

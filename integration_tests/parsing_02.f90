@@ -1,4 +1,4 @@
-module submodule
+module program_parsing_02_submodule
    implicit none
    integer :: complex = 1
    logical :: true = .TRUE.
@@ -6,7 +6,7 @@ module submodule
 
    type :: type
       type(type), allocatable :: types(:)
-   end type 
+   end type
 
    interface
       module subroutine function(integer,real)
@@ -15,18 +15,18 @@ module submodule
       end subroutine function
    end interface
    contains
-end module submodule
+end module program_parsing_02_submodule
 
-submodule (submodule) module
+submodule (program_parsing_02_submodule) program_parsing_02_module
    contains
       module procedure function
          real = 2*integer
       end procedure function
-end submodule module
+end submodule program_parsing_02_module
 
-program program
+program program_parsing_02
 
-   use submodule, only: character => complex, subroutine => function, &
+   use program_parsing_02_submodule, only: character => complex, subroutine => function, &
       then => true, else => false, type
    implicit none
 
@@ -55,4 +55,4 @@ program program
       print*, (complex)
    end associate associate
 
-end program program
+end program program_parsing_02

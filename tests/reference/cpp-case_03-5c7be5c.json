@@ -1,0 +1,13 @@
+{
+    "basename": "cpp-case_03-5c7be5c",
+    "cmd": "lfortran --no-color --show-cpp {infile}",
+    "infile": "tests/../integration_tests/case_03.f90",
+    "infile_hash": "4fc1bb48b2136f22bb44b7c69aaa05a43b4ed2e4b8464c433340295d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "cpp-case_03-5c7be5c.stdout",
+    "stdout_hash": "471f41d23e80610683b810c3259969d4ca5c92afeb4a7ac2ec6b1c90",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

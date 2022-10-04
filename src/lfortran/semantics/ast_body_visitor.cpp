@@ -27,7 +27,7 @@ private:
 public:
     ASR::asr_t *asr;
     bool from_block;
-	std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>implicit_mapping;
+    std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>implicit_mapping;
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
         : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping),
@@ -1434,7 +1434,7 @@ public:
             end = LFortran::ASRUtils::EXPR(tmp);
         }
 
-        ASR::expr_t *increment;
+        ASR::expr_t* increment;
         if (x.m_increment) {
             visit_expr(*x.m_increment);
             increment = LFortran::ASRUtils::EXPR(tmp);
@@ -1450,13 +1450,16 @@ public:
         head.m_start = start;
         head.m_end = end;
         head.m_increment = increment;
-        if( head.m_v ) {
+        if (head.m_v != nullptr) {
             head.loc = head.m_v->base.loc;
+            tmp = ASR::make_DoLoop_t(al, x.base.base.loc, head, body.p, body.size());
         } else {
-            head.loc = x.base.base.loc;
+            ASR::ttype_t* cond_type
+                = LFortran::ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+            ASR::expr_t* cond = LFortran::ASRUtils::EXPR(
+                ASR::make_LogicalConstant_t(al, x.base.base.loc, true, cond_type));
+            tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, cond, body.p, body.size());
         }
-        tmp = ASR::make_DoLoop_t(al, x.base.base.loc, head, body.p,
-                body.size());
     }
 
     void visit_DoConcurrentLoop(const AST::DoConcurrentLoop_t &x) {
@@ -1569,19 +1572,10 @@ public:
             if (AST::is_a<AST::Num_t>(*x.m_goto_label)) {
                 int goto_label = AST::down_cast<AST::Num_t>(x.m_goto_label)->m_n;
                 tmp = ASR::make_GoTo_t(al, x.base.base.loc, goto_label);
+            } else {
+                this->visit_expr(*x.m_goto_label);
+                ASR::expr_t *goto_label = ASRUtils::EXPR(tmp);
 
-            } else if (AST::is_a<AST::Name_t>(*x.m_goto_label)) {
-                auto name = AST::down_cast<AST::Name_t>(x.m_goto_label);
-                auto sym_name = std::string(name->m_id);
-                auto sym = current_scope->resolve_symbol(sym_name);
-                if (sym == nullptr) {
-                    throw SemanticError("Cannot do `GOTO select` for undeclared variable",
-                        x.base.base.loc);
-                }
-                if (!ASR::is_a<ASR::Variable_t>(*sym)) {
-                    throw SemanticError("Symbol needs to be a variable",
-                        x.base.base.loc);
-                }
                 // n_labels GOTO
                 Vec<ASR::case_stmt_t*> a_body_vec;
                 a_body_vec.reserve(al, x.n_labels);
@@ -1592,7 +1586,7 @@ public:
 
                 for (size_t i = 0; i < x.n_labels; ++i) {
                     if (!AST::is_a<AST::Num_t>(*x.m_labels[i])) {
-                        throw SemanticError("Can only `GOTO` integer labels",
+                        throw SemanticError("Only integer labels are supported in GOTO.",
                             x.base.base.loc);
                     } else {
                         auto l = AST::down_cast<AST::Num_t>(x.m_labels[i]); // l->m_n gets the target -> if l->m_n == (i+1) ...
@@ -1606,15 +1600,12 @@ public:
                         a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
                     }
                 }
-                ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
-                tmp = ASR::make_Select_t(al, x.base.base.loc, target_var, a_body_vec.p,
+
+                tmp = ASR::make_Select_t(al, x.base.base.loc, goto_label, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size());
-            } else {           
-                throw SemanticError("A goto label must be an integer",
-                    x.base.base.loc);
             }
         } else {
-            throw SemanticError("Only 'goto INTEGER' is supported currently",
+            throw SemanticError("There must be a target to GOTO.",
                 x.base.base.loc);
         }
     }

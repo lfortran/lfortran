@@ -1,0 +1,13 @@
+{
+    "basename": "julia-goto_01-f5b96fb",
+    "cmd": "lfortran --no-color --show-julia {infile}",
+    "infile": "tests/../integration_tests/goto_01.f90",
+    "infile_hash": "a5108e90af7ae9a352b6ef368d3ccf4f3af85127a5ea50c9a937fe49",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "julia-goto_01-f5b96fb.stdout",
+    "stdout_hash": "dd2f9b57a132fe07b10f74b340e2528bad15fcf806028ddcbf3b74e5",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
