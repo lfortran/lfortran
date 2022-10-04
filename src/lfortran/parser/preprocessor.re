@@ -471,7 +471,8 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
     lm.interval_type0.push_back(0);
 
     // Uncomment for debugging
-    /* std::cout << "in_start0: ";
+    /* 
+    std::cout << "in_start0: ";
     for (auto A : lm.in_start0) { std::cout << A << " "; }
     std::cout << std::endl;
     std::cout << "in_size0: ";
@@ -482,7 +483,8 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
     std::cout << std::endl;
     std::cout << "out_start0: ";
     for (auto A : lm.out_start0) { std::cout << A << " "; }
-    std::cout << std::endl; */
+    std::cout << std::endl; 
+    */
 
     return output;
 }
