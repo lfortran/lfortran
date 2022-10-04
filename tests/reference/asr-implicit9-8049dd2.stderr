@@ -1,5 +1,0 @@
-semantic error: Variable 'f' is not declared
-  --> tests/implicit9.f90:21:1
-   |
-21 | f = 4
-   | ^ 'f' is undeclared
