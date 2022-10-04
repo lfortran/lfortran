@@ -1423,7 +1423,7 @@ public:
         ASR::expr_t *var, *start, *end;
         var = start = end = nullptr;
         if (x.m_var) {
-            var = LFortran::ASRUtils::EXPR(resolve_variable3(x.base.base.loc, to_lower(x.m_var), implicit_mapping));
+            var = LFortran::ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(x.m_var)));
         }
         if (x.m_start) {
             visit_expr(*x.m_start);
@@ -1477,7 +1477,7 @@ public:
             throw SemanticError("Do loop: end condition required for now",
                 x.base.base.loc);
         }
-        ASR::expr_t *var = LFortran::ASRUtils::EXPR(resolve_variable3(x.base.base.loc, to_lower(h.m_var), implicit_mapping));
+        ASR::expr_t *var = LFortran::ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
         visit_expr(*h.m_start);
         ASR::expr_t *start = LFortran::ASRUtils::EXPR(tmp);
         visit_expr(*h.m_end);
@@ -1522,7 +1522,7 @@ public:
                 x.base.base.loc);
         }
         ASR::expr_t *var = LFortran::ASRUtils::EXPR(
-            resolve_variable3(x.base.base.loc, to_lower(h.m_var), implicit_mapping)
+            resolve_variable(x.base.base.loc, to_lower(h.m_var))
         );
         visit_expr(*h.m_start);
         ASR::expr_t *start = LFortran::ASRUtils::EXPR(tmp);

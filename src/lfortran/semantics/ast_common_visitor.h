@@ -784,61 +784,6 @@ public:
         return ASR::make_Var_t(al, loc, v);
     }
 
-	ASR::asr_t* resolve_variable3(const Location &loc, const std::string &var_name, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping) {
-        SymbolTable *scope = current_scope;
-        ASR::symbol_t *v = scope->resolve_symbol(var_name);
-        if (!v) {
-            std::string first_letter = std::string(1,var_name[0]);
-			if (current_scope->asr_owner) {
-				//we are in the body visitor
-				//find the hash of the current function
-				uint64_t fn_hash = get_hash(current_scope->asr_owner);
-				
-				//use this hash to find the corresponding implicit_dictionary in implicit_mapping
-				implicit_dictionary = implicit_mapping[fn_hash];
-			} else {
-				// we are in the symbol table visitor
-				// Directly use the implicit_dictionary internal variable, as we constructed it in the symbol table visitor
-				//do nothing as we will be using the implicit_dictionary itself
-			}
-            if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()) {
-                ASR::ttype_t *t = implicit_dictionary[first_letter];
-                if (t == nullptr) {
-                    diag.semantic_error_label("Variable '" + var_name
-                        + "' is not declared", {loc},
-                        "'" + var_name + "' is undeclared");
-                    throw SemanticAbort();
-                }
-                ASR::intentType intent;
-                if (std::find(current_procedure_args.begin(),
-                        current_procedure_args.end(), var_name) !=
-                        current_procedure_args.end()) {
-                    intent = LFortran::ASRUtils::intent_unspecified;
-                } else {
-                    intent = LFortran::ASRUtils::intent_local;
-                }
-                v = declare_implicit_variable2(loc, var_name, intent, t);
-            } else {
-                if (compiler_options.implicit_typing) {
-                    ASR::intentType intent;
-                    if (std::find(current_procedure_args.begin(),
-                            current_procedure_args.end(), var_name) !=
-                            current_procedure_args.end()) {
-                        intent = LFortran::ASRUtils::intent_unspecified;
-                    } else {
-                        intent = LFortran::ASRUtils::intent_local;
-                    }
-                    v = declare_implicit_variable(loc, var_name, intent);
-                } else {
-                    diag.semantic_error_label("Variable '" + var_name
-                        + "' is not declared", {loc},
-                        "'" + var_name + "' is undeclared");
-                    throw SemanticAbort();
-                }
-            }
-        }
-        return ASR::make_Var_t(al, loc, v);
-    }
 
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
         AST::dimension_t *m_dim, size_t n_dim) {
