@@ -5,7 +5,6 @@
 #include <memory>
 #include <string>
 #include <cmath>
-#include <optional>
 
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
