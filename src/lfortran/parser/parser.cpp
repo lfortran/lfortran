@@ -433,6 +433,10 @@ fix_continuation(const std::string& s, LocationManager& lm, bool fixed_form)
                 case LineType::Include: {
                     while (pos < s.size() && s[pos] == ' ')
                         pos++;
+                    LFORTRAN_ASSERT(std::string(pos, pos + 7) == "include");
+                    pos += 7;
+                    while (pos < s.size() && s[pos] == ' ')
+                        pos++;
                     if ((s[pos] == '"') || (s[pos] == '\''))
                         process_include(out, s, lm, pos, fixed_form);
                     break;
