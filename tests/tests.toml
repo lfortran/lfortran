@@ -2451,3 +2451,13 @@ asr_implicit_interface = true
 filename = "fixed_form_goto_select.f"
 ast = true
 asr = true
+
+[[test]]
+filename = "fixed_form_assign_to1.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "fixed_form_assign_to2.f"
+ast = true
+asr = true

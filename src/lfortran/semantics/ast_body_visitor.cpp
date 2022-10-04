@@ -1019,6 +1019,27 @@ public:
         tmp = nullptr;
     }
 
+    void visit_Assign(const AST::Assign_t &x) {
+        std::string var_name = to_lower(std::string{x.m_variable});
+        ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
+        std::cout << "label is "<<x.m_assign_label<<"\n";
+        ASR::ttype_t *int64_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8, nullptr, 0));
+        if (!sym) {
+            Str a_var_name_f;
+            a_var_name_f.from_str(al, var_name);
+            ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
+                                                            ASR::intentType::Local, nullptr, nullptr,
+                                                            ASR::storage_typeType::Default, int64_type,
+                                                            ASR::abiType::Source, ASR::Public, ASR::presenceType::Optional, false);
+            current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(a_variable));
+            sym = ASR::down_cast<ASR::symbol_t>(a_variable);
+        }
+
+        // ASSIGN XXX TO k -- XXX can only be integer for now.
+        ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
+        tmp = (ASR::asr_t*)ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target_var, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_assign_label, int64_type)), nullptr));
+    }
+
     void visit_Assignment(const AST::Assignment_t &x) {
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = LFortran::ASRUtils::EXPR(tmp);

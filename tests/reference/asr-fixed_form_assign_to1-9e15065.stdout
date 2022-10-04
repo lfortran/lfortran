@@ -1,0 +1,41 @@
+label is 10
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            assign3:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            next:
+                                (Variable 
+                                    2 
+                                    next 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 8 []) 
+                                    Source 
+                                    Public 
+                                    Optional 
+                                    .false.
+                                )
+                            
+                        }) 
+                    assign3 
+                    [] 
+                    [(GoToTarget 
+                        10
+                    )
+                    (= 
+                        (Var 2 next) 
+                        (IntegerConstant 10 (Integer 8 [])) 
+                        ()
+                    )]
+                )
+            
+        }) 
+    []
+)
