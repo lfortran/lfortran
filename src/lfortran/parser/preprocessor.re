@@ -352,10 +352,10 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 // Construct a filename relative to the current file
 
                 std::string current_filename = lm.in_filename;
-                std::string include_root = std::filesystem::path(include_filename).root_name();
+                std::filesystem::path include_path(include_filename);
                 std::string include_path_str;
-                if (include_root.empty()) {
-                    std::filesystem::path include_path = std::filesystem::path(current_filename).parent_path();
+                if (include_path.is_relative()) {
+                    include_path = std::filesystem::path(current_filename).parent_path();
                     include_path.append(include_filename);
                     include_path_str = include_path.string();
                 } else {
@@ -368,6 +368,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 }
 
                 LocationManager lm_tmp = lm; // Make a copy
+                lm_tmp.in_filename = include_path_str;
                 include = run(include, lm_tmp, macro_definitions);
 
                 // Prepare the start of the interval
