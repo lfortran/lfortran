@@ -1,0 +1,62 @@
+function main()
+    local a::Int32 = 0
+    local n::Int32 = 0
+    n = 2
+    a = 10
+    if n - 1 == 1
+        @goto label_1
+    elseif n - 1 == 2
+        @goto label_2
+    elseif n - 1 == 3
+        @goto label_3
+    end
+    a = a + 5
+    @label label_1
+    a = a + 10
+    @label label_2
+    a = a + 20
+    @label label_3
+    a = a + 30
+    if a ≠ 70
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    if n + 1 == 1
+        @goto label_4
+    elseif n + 1 == 2
+        @goto label_5
+    elseif n + 1 == 3
+        @goto label_6
+    end
+    a = a + 5
+    @label label_4
+    a = a + 40
+    @label label_5
+    a = a + 50
+    @label label_6
+    a = a + 60
+    if a ≠ 130
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    if n * n == 1
+        @goto label_7
+    elseif n * n == 2
+        @goto label_8
+    elseif n * n == 3
+        @goto label_9
+    end
+    a = a + 5
+    @label label_7
+    a = a + 70
+    @label label_8
+    a = a + 80
+    @label label_9
+    a = a + 90
+    if a ≠ 375
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+end
+
+main()
