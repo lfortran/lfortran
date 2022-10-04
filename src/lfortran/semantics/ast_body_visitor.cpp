@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <cmath>
+#include <optional>
 
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
@@ -1588,11 +1589,31 @@ public:
         tmp = nullptr;
     }
 
-    std::vector<AST::Name_t> get_expr_Name_t(AST::BinOp_t *x) {
-        // traverse an expression tree and extract all nodes that are AST::Name_t
-        // -> this is then used to check if one of those Name_t is a GOTO target variable
-        //    that has been initialized using ASSIGN TO
-        return {};
+    void extract_named_leaves(AST::expr_t *x, std::vector<std::string> &var_names) {
+        if (AST::is_a<AST::Name_t>(*x)) {
+            auto n = AST::down_cast<AST::Name_t>(x);
+            var_names.push_back(std::string(n->m_id));
+        } else if (AST::is_a<AST::BinOp_t>(*x)) {
+            auto op = AST::down_cast<AST::BinOp_t>(x);
+            extract_named_leaves(op->m_left, var_names);
+            extract_named_leaves(op->m_right, var_names);
+        } else {
+            return;
+        }
+    }
+
+    std::string get_expr_Name_t(AST::expr_t *x) {
+        // if a single variable in the expression is a GOTO target variable, return it
+        std::vector<std::string> var_names;
+        extract_named_leaves(x, var_names);
+        std::string var_label{""};
+        for (const auto & var : var_names) {
+            if (std::find(labels.begin(), labels.end(), var) != labels.end()) {
+                var_label = var;
+                break;
+            }
+        }
+        return var_label;
     }
 
     void visit_GoTo(const AST::GoTo_t &x) {
@@ -1602,25 +1623,20 @@ public:
                 tmp = ASR::make_GoTo_t(al, x.base.base.loc, goto_label);
             } else {
                 AST::Name_t *var_label = nullptr;
+                bool found_as_Assign = false;
                 if (AST::is_a<AST::Name_t>(*x.m_goto_label)) {
                     var_label = AST::down_cast<AST::Name_t>(x.m_goto_label);
+                    if (std::find(labels.begin(), labels.end(), std::string(var_label->m_id)) != labels.end())
+                        found_as_Assign = true;
                 }
 
                 if (AST::is_a<AST::BinOp_t>(*x.m_goto_label)) {
-                    AST::BinOp_t *op_label = AST::down_cast<AST::BinOp_t>(x.m_goto_label);
-                    if (AST::is_a<AST::Name_t>(*op_label->m_right)) {
-                        var_label = AST::down_cast<AST::Name_t>(op_label->m_right);
-                    }
-                    if (AST::is_a<AST::Name_t>(*op_label->m_left)) {
-                        var_label = AST::down_cast<AST::Name_t>(op_label->m_left);
-                    }
+                    std::string leaf_name = get_expr_Name_t(x.m_goto_label);
+                    if (leaf_name != "")
+                        found_as_Assign = true;
                 }
-
-                bool found_as_Assign = false;
-                if (std::find(labels.begin(), labels.end(), std::string(var_label->m_id)) != labels.end())
-                    found_as_Assign = true;
-        
-
+                
+                
                 this->visit_expr(*x.m_goto_label);
                 ASR::expr_t *goto_label = ASRUtils::EXPR(tmp);
 
