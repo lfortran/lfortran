@@ -1,6 +1,6 @@
 (TranslationUnit 
     [(Module 
-        add_m 
+        template_add_m 
         (TriviaNode 
             [] 
             [(EndOfLine)
@@ -351,11 +351,11 @@
         )]
     )
     (Program 
-        use_template_module 
+        template_add 
         () 
         [(Use 
             [] 
-            add_m 
+            template_add_m 
             [] 
             .false. 
             ()

@@ -45,21 +45,6 @@ return:                                           ; preds = %.entry
 
 declare i64 @_lfortran_mvbits64(i64, i32, i32, i64, i32)
 
-define i64 @__module_lfortran_intrinsic_bit_not64(i64* %x) {
-.entry:
-  %r = alloca i64, align 8
-  %0 = load i64, i64* %x, align 4
-  %1 = call i64 @_lfortran_not64(i64 %0)
-  store i64 %1, i64* %r, align 4
-  br label %return
-
-return:                                           ; preds = %.entry
-  %2 = load i64, i64* %r, align 4
-  ret i64 %2
-}
-
-declare i64 @_lfortran_not64(i64)
-
 declare i32 @__module_lfortran_intrinsic_builtin_bit_size(i32*)
 
 declare void @__module_lfortran_intrinsic_builtin_move_alloc(i32*, i32*)

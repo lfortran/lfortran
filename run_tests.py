@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import sys
 import os
+import sys
+from typing import Dict
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 sys.path.append(os.path.join(ROOT_DIR, "src", "libasr"))
@@ -9,32 +10,36 @@ sys.path.append(os.path.join(ROOT_DIR, "src", "libasr"))
 from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 
 
-def single_test(test, specific_test, verbose, no_llvm, update_reference):
+def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool,
+                specific_backends=None, excluded_backends=None) -> None:
+    def is_included(backend):
+        return test.get(backend, False) \
+            and (specific_backends is None or backend in specific_backends) \
+            and (excluded_backends is None or backend not in excluded_backends)
+
     filename = test["filename"]
-    if specific_test and specific_test not in filename and specific_test not in test:
-        return
     show_verbose = "" if not verbose else "-v"
-    tokens = test.get("tokens", False)
-    ast = test.get("ast", False)
-    ast_indent = test.get("ast_indent", False)
-    ast_f90 = test.get("ast_f90", False)
-    ast_cpp = test.get("ast_cpp", False)
-    ast_cpp_hip = test.get("ast_cpp_hip", False)
-    ast_openmp = test.get("ast_openmp", False)
-    asr = test.get("asr", False)
-    asr_implicit_typing = test.get("asr_implicit_typing", False)
-    asr_implicit_interface = test.get("asr_implicit_interface", False)
-    asr_preprocess = test.get("asr_preprocess", False)
-    asr_indent = test.get("asr_indent", False)
-    mod_to_asr = test.get("mod_to_asr", False)
-    llvm = test.get("llvm", False)
-    cpp = test.get("cpp", False)
-    c = test.get("c", False)
-    julia = test.get("julia", False)
-    wat = test.get("wat", False)
-    obj = test.get("obj", False)
-    x86 = test.get("x86", False)
-    bin_ = test.get("bin", False)
+    tokens = is_included("tokens")
+    ast = is_included("ast")
+    ast_indent = is_included("ast_indent")
+    ast_f90 = is_included("ast_f90")
+    ast_cpp = is_included("ast_cpp")
+    ast_cpp_hip = is_included("ast_cpp_hip")
+    ast_openmp = is_included("ast_openmp")
+    asr = is_included("asr")
+    asr_implicit_typing = is_included("asr_implicit_typing")
+    asr_implicit_interface = is_included("asr_implicit_interface")
+    asr_preprocess = is_included("asr_preprocess")
+    asr_indent = is_included("asr_indent")
+    mod_to_asr = is_included("mod_to_asr")
+    llvm = is_included("llvm")
+    cpp = is_included("cpp")
+    c = is_included("c")
+    julia = is_included("julia")
+    wat = is_included("wat")
+    obj = is_included("obj")
+    x86 = is_included("x86")
+    bin_ = is_included("bin")
     pass_ = test.get("pass", None)
     optimization_passes = ["flip_sign", "div_to_mul", "fma", "sign_from_value",
                            "inline_function_calls", "loop_unroll",
@@ -219,7 +224,7 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
     if c:
         run_test(filename, "c", "lfortran --no-color --show-c {infile}",
                  filename, update_reference, extra_args)
-        
+
     if julia:
         run_test(filename, "julia", "lfortran --no-color --show-julia {infile}",
                  filename, update_reference, extra_args)
@@ -240,7 +245,6 @@ def single_test(test, specific_test, verbose, no_llvm, update_reference):
     if bin_:
         run_test(filename, "bin", "lfortran --no-color {infile} -o {outfile}",
                  filename, update_reference, extra_args)
-
 
 
 if __name__ == "__main__":

@@ -1,0 +1,69 @@
+(TranslationUnit 
+    [(Program 
+        test_data 
+        () 
+        [] 
+        [] 
+        [(Declaration 
+            (AttrType 
+                TypeReal 
+                [(() 
+                8 
+                Value)] 
+                () 
+                None
+            ) 
+            [] 
+            [(coef 
+            [(1 
+            10 
+            DimensionExpr)
+            (1 
+            1 
+            DimensionExpr)] 
+            [] 
+            () 
+            None 
+            ())] 
+            ()
+        )
+        (Declaration 
+            () 
+            [(AttrData 
+                [(DataImpliedDo 
+                    [(FuncCallOrArray 
+                        coef 
+                        [] 
+                        [(() 
+                        i 
+                        ())
+                        (() 
+                        1 
+                        ())] 
+                        [] 
+                        []
+                    )] 
+                    () 
+                    i 
+                    1 
+                    10 
+                    ()
+                )] 
+                [(Real "1.0d0")
+                (Real "2.0d0")
+                (Real "3.0d0")
+                (Real "3.0d0")
+                (Real "3.0d0")
+                (Real "4.0d0")
+                (Real "4.0d0")
+                (Real "4.0d0")
+                (Real "4.0d0")
+                (Real "4.0d0")]
+            )] 
+            [] 
+            ()
+        )] 
+        [] 
+        []
+    )]
+)

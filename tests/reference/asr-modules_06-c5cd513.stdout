@@ -2,7 +2,59 @@
     (SymbolTable
         1
         {
-            a_06:
+            modules_06:
+                (Program 
+                    (SymbolTable
+                        4
+                        {
+                            b:
+                                (ExternalSymbol 
+                                    4 
+                                    b 
+                                    2 b 
+                                    modules_06_a 
+                                    [] 
+                                    b 
+                                    Public
+                                ), 
+                            i:
+                                (Variable 
+                                    4 
+                                    i 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    modules_06 
+                    [modules_06_a] 
+                    [(= 
+                        (Var 4 i) 
+                        (FunctionCall 
+                            4 b 
+                            () 
+                            [] 
+                            (Integer 4 []) 
+                            () 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(Var 4 i)] 
+                        () 
+                        ()
+                    )]
+                ), 
+            modules_06_a:
                 (Module 
                     (SymbolTable
                         2
@@ -57,62 +109,10 @@
                                 )
                             
                         }) 
-                    a_06 
+                    modules_06_a 
                     [] 
                     .false. 
                     .false.
-                ), 
-            modules_06:
-                (Program 
-                    (SymbolTable
-                        4
-                        {
-                            b:
-                                (ExternalSymbol 
-                                    4 
-                                    b 
-                                    2 b 
-                                    a_06 
-                                    [] 
-                                    b 
-                                    Public
-                                ), 
-                            i:
-                                (Variable 
-                                    4 
-                                    i 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
-                                    .false.
-                                )
-                            
-                        }) 
-                    modules_06 
-                    [a_06] 
-                    [(= 
-                        (Var 4 i) 
-                        (FunctionCall 
-                            4 b 
-                            () 
-                            [] 
-                            (Integer 4 []) 
-                            () 
-                            ()
-                        ) 
-                        ()
-                    )
-                    (Print 
-                        () 
-                        [(Var 4 i)] 
-                        () 
-                        ()
-                    )]
                 )
             
         }) 

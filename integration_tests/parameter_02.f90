@@ -5,14 +5,14 @@ parameter(i = 1)
 print *, i
 end subroutine a_proc
 
-module a_mod
+module parameter_02_a
 implicit none
 integer :: i
 parameter(i = 2)
-end module a_mod
+end module
 
 program parameter_02
-use a_mod, only: i
+use parameter_02_a, only: i
 implicit none
 call a_proc()
 print *, i

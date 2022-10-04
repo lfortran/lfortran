@@ -1507,6 +1507,7 @@ public:
             ATTRTYPE2(Character, "character")
             ATTRTYPE2(Complex, "complex")
             ATTRTYPE2(DoublePrecision, "double precision")
+            ATTRTYPE2(DoubleComplex, "double complex")
             ATTRTYPE2(Integer, "integer")
             ATTRTYPE2(Logical, "logical")
             ATTRTYPE2(Procedure, "procedure")

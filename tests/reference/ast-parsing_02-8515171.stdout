@@ -1,6 +1,6 @@
 (TranslationUnit 
     [(Module 
-        submodule 
+        program_parsing_02_submodule 
         (TriviaNode 
             [] 
             [(EndOfLine)
@@ -154,9 +154,9 @@
         []
     )
     (Submodule 
-        submodule 
+        program_parsing_02_submodule 
         () 
-        module 
+        program_parsing_02_module 
         (TriviaNode 
             [] 
             [(EndOfLine)
@@ -186,7 +186,7 @@
         )]
     )
     (Program 
-        program 
+        program_parsing_02 
         (TriviaNode 
             [(EndOfLine)
             (EndOfLine)] 
@@ -194,7 +194,7 @@
         ) 
         [(Use 
             [] 
-            submodule 
+            program_parsing_02_submodule 
             [(UseSymbol 
                 complex 
                 character
