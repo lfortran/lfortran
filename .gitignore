@@ -189,8 +189,3 @@ build.ninja
 
 ## Docs
 !doc/src/javascripts/*.js
-
-build-debug
-cmake-build-*
-.idea
-
