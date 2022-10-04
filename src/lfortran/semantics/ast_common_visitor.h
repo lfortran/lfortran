@@ -918,8 +918,6 @@ public:
                                     auto pscope = current_scope;
                                     SymbolTable *parent_scope = current_scope->parent;
                                     current_scope = al.make_new<SymbolTable>(parent_scope);
-                                    std::cout << "adding another scope to " << parent_scope << "\n";
-                                    std::cout << "function scope is " << current_scope << "\n";
                                     tmp = ASR::make_Function_t(
                                         al, s.loc,
                                         /* a_symtab */ current_scope,
@@ -934,8 +932,6 @@ public:
                                         ASR::accessType::Public, ASR::deftypeType::Interface, nullptr,
                                         false, false, false, false);
                                     parent_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
-                                    std::cout << "in visit_DeclarationUtil: added '" << fn_name << "' to: " << parent_scope << "\n";
-                                    std::cout << "as: " << tmp << "\n";
                                     external_functions[fn_name] = std::make_pair(ASR::down_cast<ASR::symbol_t>(tmp), false);
                                     current_scope = pscope; 
                                 } else {

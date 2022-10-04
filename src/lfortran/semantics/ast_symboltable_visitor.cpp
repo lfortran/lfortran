@@ -259,7 +259,13 @@ public:
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
+        auto fname = std::string({to_lower(x.m_name)});
+        if (has_external_function(fname)) {
+            auto fun = ASR::down_cast<ASR::Function_t>(external_functions[fname].first);
+            current_scope = fun->m_symtab;
+        } else {
+            current_scope = al.make_new<SymbolTable>(parent_scope);
+        }
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             current_procedure_args.push_back(to_lower(arg));
@@ -328,14 +334,15 @@ public:
                 // Previous declaration will be shadowed
                 parent_scope->erase_symbol(sym_name);
             } else if (has_external_function(sym_name)) {
-                // auto fn = ASR::down_cast<ASR::Function_t>(this->external_functions[sym_name].first);
-                // fn->m_args = args.p;
-                // fn->n_args = args.n;
-                // this->external_functions[sym_name].second = 1;
-                // tmp = (LFortran::ASR::asr_t*)fn;
-                // current_procedure_args.clear();
-                // current_procedure_abi_type = ASR::abiType::Source;
-                // return;
+                auto fn = ASR::down_cast<ASR::Function_t>(this->external_functions[sym_name].first);
+                fn->m_args = args.p;
+                fn->n_args = args.n;
+                this->external_functions[sym_name].second = 1;
+                tmp = (LFortran::ASR::asr_t*)fn;
+                current_procedure_args.clear();
+                current_procedure_abi_type = ASR::abiType::Source;
+                current_scope->erase_symbol(sym_name);
+                return;
             } else {
                 throw SemanticError("Subroutine already defined", tmp->loc);
             }
