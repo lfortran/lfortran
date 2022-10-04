@@ -2461,3 +2461,8 @@ asr = true
 filename = "fixed_form_assign_to2.f"
 ast = true
 asr = true
+
+[[test]]
+filename = "fixed_form_assign_to3.f"
+ast = true
+asr = true

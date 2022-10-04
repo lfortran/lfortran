@@ -1,0 +1,122 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            main:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            next:
+                                (Variable 
+                                    2 
+                                    next 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 8 []) 
+                                    Source 
+                                    Public 
+                                    Optional 
+                                    .false.
+                                )
+                            
+                        }) 
+                    main 
+                    [] 
+                    [(GoToTarget 
+                        10
+                    )
+                    (= 
+                        (Var 2 next) 
+                        (IntegerConstant 30 (Integer 8 [])) 
+                        ()
+                    )
+                    (GoToTarget 
+                        20
+                    )
+                    (Select 
+                        (IntegerConstant 0 (Integer 8 [])) 
+                        [(CaseStmt 
+                            [(IntegerConstant 30 (Integer 4 []))] 
+                            [(GoTo 
+                                30
+                            )]
+                        )
+                        (CaseStmt 
+                            [(IntegerConstant 50 (Integer 4 []))] 
+                            [(GoTo 
+                                50
+                            )]
+                        )
+                        (CaseStmt 
+                            [(IntegerConstant 70 (Integer 4 []))] 
+                            [(GoTo 
+                                70
+                            )]
+                        )
+                        (CaseStmt 
+                            [(IntegerConstant 110 (Integer 4 []))] 
+                            [(GoTo 
+                                110
+                            )]
+                        )] 
+                        []
+                    )
+                    (= 
+                        (Var 2 next) 
+                        (IntegerConstant 50 (Integer 8 [])) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 next) 
+                        (IntegerConstant 70 (Integer 8 [])) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 next) 
+                        (IntegerConstant 110 (Integer 8 [])) 
+                        ()
+                    )
+                    (GoToTarget 
+                        30
+                    )
+                    (Print 
+                        () 
+                        [(IntegerConstant 30 (Integer 4 []))] 
+                        () 
+                        ()
+                    )
+                    (GoToTarget 
+                        50
+                    )
+                    (Print 
+                        () 
+                        [(IntegerConstant 50 (Integer 4 []))] 
+                        () 
+                        ()
+                    )
+                    (GoToTarget 
+                        70
+                    )
+                    (Print 
+                        () 
+                        [(IntegerConstant 70 (Integer 4 []))] 
+                        () 
+                        ()
+                    )
+                    (GoToTarget 
+                        110
+                    )
+                    (Print 
+                        () 
+                        [(IntegerConstant 110 (Integer 4 []))] 
+                        () 
+                        ()
+                    )]
+                )
+            
+        }) 
+    []
+)

@@ -1685,6 +1685,42 @@ public:
                 tmp = ASR::make_Select_t(al, x.base.base.loc, goto_label, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size());
             }
+        } else if (x.m_int_var) {
+            std::string label_var{x.m_int_var};
+            if (std::find(labels.begin(), labels.end(), label_var) == labels.end()) {
+                throw SemanticError("Invalid GOTO target.", x.base.base.loc);
+            }
+
+            // this->visit_expr(*x.m_goto_label); <- is nullptr here
+            // ASR::expr_t *goto_label = ASRUtils::EXPR(tmp);
+            // n_labels GOTO
+            Vec<ASR::case_stmt_t*> a_body_vec;
+            a_body_vec.reserve(al, x.n_labels);
+            // 1 label SELECT
+            Vec<ASR::stmt_t*> def_body;
+            def_body.reserve(al, 1);
+
+            for (size_t i = 0; i < x.n_labels; ++i) {
+                if (!AST::is_a<AST::Num_t>(*x.m_labels[i])) {
+                    throw SemanticError("Only integer labels are supported in GOTO.",
+                        x.base.base.loc);
+                } else {
+                    auto l = AST::down_cast<AST::Num_t>(x.m_labels[i]);
+                    Vec<ASR::stmt_t*> body;
+                    body.reserve(al, 1);
+                    body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n)));
+                    Vec<ASR::expr_t*> comparator_one;
+                    comparator_one.reserve(al, 1);
+                    ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+                    comparator_one.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, l->m_n, int32_type)));
+                    a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
+                }
+            }
+            // adding an empty expression to enable the SELECT node
+            ASR::ttype_t *int64_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8, nullptr, 0));
+            auto empty_expr = LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 0, int64_type));
+            tmp = ASR::make_Select_t(al, x.base.base.loc, empty_expr, a_body_vec.p,
+                           a_body_vec.size(), def_body.p, def_body.size());
         } else {
             throw SemanticError("There must be a target to GOTO.",
                 x.base.base.loc);
