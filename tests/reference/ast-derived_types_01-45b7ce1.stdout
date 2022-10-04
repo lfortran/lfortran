@@ -1,6 +1,6 @@
 (TranslationUnit 
     [(Module 
-        a_01 
+        derived_types_01_m_01 
         (TriviaNode 
             [] 
             [(EndOfLine)
@@ -148,7 +148,7 @@
         )]
     )
     (Module 
-        a_02 
+        derived_types_01_m_02 
         (TriviaNode 
             [] 
             [(EndOfLine)
@@ -156,7 +156,7 @@
         ) 
         [(Use 
             [] 
-            a_01 
+            derived_types_01_m_01 
             [(UseSymbol 
                 Y 
                 ()
@@ -222,7 +222,7 @@
         () 
         [(Use 
             [] 
-            a_02 
+            derived_types_01_m_02 
             [(UseSymbol 
                 Z 
                 ()
@@ -232,7 +232,7 @@
         )
         (Use 
             [] 
-            a_01 
+            derived_types_01_m_01 
             [(UseSymbol 
                 X 
                 ()

@@ -19,7 +19,7 @@ source_filename = "LFortran"
 @10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @11 = private unnamed_addr constant [18 x i8] c"%f%s%d%s(%f,%f)%s\00", align 1
 
-define void @__module_a_01_set(%x* %a) {
+define void @__module_derived_types_01_m_01_set(%x* %a) {
 .entry:
   %0 = getelementptr %x, %x* %a, i32 0, i32 0
   store i32 1, i32* %0, align 4
@@ -45,7 +45,7 @@ define i32 @main() {
   %5 = load float, float* %4, align 4
   %6 = fpext float %5 to double
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @2, i32 0, i32 0), i32 %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %6, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
-  call void @__module_a_01_set(%x* %b)
+  call void @__module_derived_types_01_m_01_set(%x* %b)
   %7 = getelementptr %x, %x* %b, i32 0, i32 0
   %8 = load i32, i32* %7, align 4
   %9 = getelementptr %x, %x* %b, i32 0, i32 1
@@ -92,7 +92,7 @@ define i32 @main() {
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([18 x i8], [18 x i8]* @8, i32 0, i32 0), double %27, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 %31, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), double %37, double %41, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
   %42 = getelementptr %z, %z* %c, i32 0, i32 1
   %43 = getelementptr %y, %y* %42, i32 0, i32 1
-  call void @__module_a_01_set(%x* %43)
+  call void @__module_derived_types_01_m_01_set(%x* %43)
   %44 = getelementptr %z, %z* %c, i32 0, i32 1
   %45 = getelementptr %y, %y* %44, i32 0, i32 1
   %46 = getelementptr %x, %x* %45, i32 0, i32 1

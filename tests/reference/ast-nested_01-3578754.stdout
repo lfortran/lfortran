@@ -1,6 +1,6 @@
 (TranslationUnit 
     [(Module 
-        a 
+        nested_01_a 
         (TriviaNode 
             [] 
             [(EndOfLine)
@@ -116,7 +116,7 @@
         () 
         [(Use 
             [] 
-            a 
+            nested_01_a 
             [(UseSymbol 
                 b 
                 ()

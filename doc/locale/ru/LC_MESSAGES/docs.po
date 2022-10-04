@@ -3,18 +3,22 @@
 # This file is distributed under the same license as the LFortran package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: LFortran \n"
+"Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-19 12:04+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"PO-Revision-Date: 2022-09-30 17:18+0000\n"
+"Last-Translator: Sergey Torokhov <torokhov-s-a@yandex.ru>\n"
+"Language-Team: Russian <https://hosted.weblate.org/projects/fortran-lang/"
+"lfortran-docs/ru/>\n"
+"Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 4.14.1\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../src/ast_and_asr.ipynb:9
@@ -783,7 +787,7 @@ msgstr ""
 
 #: ../src/index.md:134
 msgid "Getting started"
-msgstr ""
+msgstr "Первые шаги"
 
 #: ../src/index.md:141 ../src/progress.md:1
 msgid "LFortran Development Status"
@@ -1661,7 +1665,7 @@ msgstr ""
 #: ../src/intrinsics/numeric/floor.md:28 ../src/intrinsics/numeric/gamma.md:23
 #: ../src/intrinsics/numeric/mod.md:31 ../src/progress.md
 msgid "Description"
-msgstr ""
+msgstr "Описание"
 
 #: ../src/intrinsics/array/allocated.md:25
 msgid ""
@@ -3634,7 +3638,7 @@ msgstr ""
 
 #: ../src/progress.md:45
 msgid "Modules"
-msgstr ""
+msgstr "Модули"
 
 #: ../src/progress.md:47
 msgid "Basic Usage"
@@ -3686,7 +3690,7 @@ msgstr ""
 
 #: ../src/progress.md:67
 msgid "Expressions"
-msgstr ""
+msgstr "Выражения"
 
 #: ../src/progress.md:69
 msgid "Arithmetic Operations"
@@ -3806,7 +3810,7 @@ msgstr ""
 
 #: ../src/progress.md:118
 msgid "Derived Types"
-msgstr ""
+msgstr "Производные типы данных"
 
 #: ../src/progress.md:120
 msgid "Directory: `tests/expressions/derived_type`"
@@ -4355,4 +4359,3 @@ msgstr ""
 #: ../src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/nint/t01_scalar_real.f90)"
 msgstr ""
-

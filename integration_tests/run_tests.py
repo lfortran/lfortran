@@ -6,7 +6,7 @@ import os
 
 # Initialization
 no_of_threads = 8 # default no of threads is 8
-supported_backends = ['llvm', 'llvm2', 'cpp', 'x86', 'wasm']
+supported_backends = ['llvm', 'llvm2', 'cpp', 'x86', 'wasm', 'gfortran']
 base_dir = os.path.dirname(os.path.realpath(__file__))
 lfortran_path = f"{base_dir}/../src/bin:$PATH"
 
@@ -20,8 +20,13 @@ def run_cmd(cmd, cwd=None):
 def run_test(backend):
     run_cmd(f"mkdir {base_dir}/test-{backend}")
     cwd=f"{base_dir}/test-{backend}"
-    run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DCURRENT_BINARY_DIR={base_dir}/test-{backend} -S {base_dir} -B {base_dir}/test-{backend}",
-            cwd=cwd)
+    common=f" -DCURRENT_BINARY_DIR={base_dir}/test-{backend} -S {base_dir} -B {base_dir}/test-{backend}"
+    if backend == "gfortran":
+        run_cmd(f"FC=gfortran cmake" + common,
+                cwd=cwd)
+    else:
+        run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend}" + common,
+                cwd=cwd)
     run_cmd(f"make -j{no_of_threads}", cwd=cwd)
     run_cmd(f"ctest -j{no_of_threads} --output-on-failure", cwd=cwd)
 

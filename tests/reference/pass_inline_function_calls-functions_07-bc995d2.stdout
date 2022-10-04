@@ -2,7 +2,235 @@
     (SymbolTable
         1
         {
-            a:
+            functions_07:
+                (Program 
+                    (SymbolTable
+                        8
+                        {
+                            f_a:
+                                (ExternalSymbol 
+                                    8 
+                                    f_a 
+                                    2 f_a 
+                                    functions_07_a 
+                                    [] 
+                                    f_a 
+                                    Public
+                                ), 
+                            f_b:
+                                (ExternalSymbol 
+                                    8 
+                                    f_b 
+                                    4 f_b 
+                                    functions_07_b 
+                                    [] 
+                                    f_b 
+                                    Public
+                                ), 
+                            f_c:
+                                (ExternalSymbol 
+                                    8 
+                                    f_c 
+                                    6 f_c 
+                                    functions_07_c 
+                                    [] 
+                                    f_c 
+                                    Public
+                                ), 
+                            p:
+                                (Variable 
+                                    8 
+                                    p 
+                                    Local 
+                                    (Cast 
+                                        (IntegerConstant 5 (Integer 4 [])) 
+                                        IntegerToReal 
+                                        (Real 4 []) 
+                                        (RealConstant 
+                                            5.000000 
+                                            (Real 4 [])
+                                        )
+                                    ) 
+                                    () 
+                                    Save 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            q:
+                                (Variable 
+                                    8 
+                                    q 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            u_f_a_f_b_f_c:
+                                (Variable 
+                                    8 
+                                    u_f_a_f_b_f_c 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            v_f_a_f_b_f_c:
+                                (Variable 
+                                    8 
+                                    v_f_a_f_b_f_c 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            w_f_c:
+                                (Variable 
+                                    8 
+                                    w_f_c 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            x_f_b_f_c:
+                                (Variable 
+                                    8 
+                                    x_f_b_f_c 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            y_f_b_f_c:
+                                (Variable 
+                                    8 
+                                    y_f_b_f_c 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            z_f_c:
+                                (Variable 
+                                    8 
+                                    z_f_c 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    functions_07 
+                    [functions_07_c] 
+                    [(= 
+                        (Var 8 w_f_c) 
+                        (Var 8 p) 
+                        ()
+                    )
+                    (= 
+                        (Var 8 x_f_b_f_c) 
+                        (Var 8 w_f_c) 
+                        ()
+                    )
+                    (= 
+                        (Var 8 u_f_a_f_b_f_c) 
+                        (Var 8 x_f_b_f_c) 
+                        ()
+                    )
+                    (= 
+                        (Var 8 v_f_a_f_b_f_c) 
+                        (RealBinOp 
+                            (Var 8 u_f_a_f_b_f_c) 
+                            Add 
+                            (RealConstant 
+                                1.000000 
+                                (Real 4 [])
+                            ) 
+                            (Real 4 []) 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 8 y_f_b_f_c) 
+                        (RealBinOp 
+                            (Var 8 v_f_a_f_b_f_c) 
+                            Add 
+                            (RealConstant 
+                                1.000000 
+                                (Real 4 [])
+                            ) 
+                            (Real 4 []) 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 8 z_f_c) 
+                        (RealBinOp 
+                            (Var 8 y_f_b_f_c) 
+                            Add 
+                            (RealConstant 
+                                1.000000 
+                                (Real 4 [])
+                            ) 
+                            (Real 4 []) 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 8 q) 
+                        (Var 8 z_f_c) 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(Var 8 q)] 
+                        () 
+                        ()
+                    )]
+                ), 
+            functions_07_a:
                 (Module 
                     (SymbolTable
                         2
@@ -71,12 +299,12 @@
                                 )
                             
                         }) 
-                    a 
+                    functions_07_a 
                     [] 
                     .false. 
                     .false.
                 ), 
-            b:
+            functions_07_b:
                 (Module 
                     (SymbolTable
                         4
@@ -86,7 +314,7 @@
                                     4 
                                     f_a 
                                     2 f_a 
-                                    a 
+                                    functions_07_a 
                                     [] 
                                     f_a 
                                     Public
@@ -202,12 +430,12 @@
                                 )
                             
                         }) 
-                    b 
-                    [a] 
+                    functions_07_b 
+                    [functions_07_a] 
                     .false. 
                     .false.
                 ), 
-            c:
+            functions_07_c:
                 (Module 
                     (SymbolTable
                         6
@@ -217,7 +445,7 @@
                                     6 
                                     f_a 
                                     2 f_a 
-                                    a 
+                                    functions_07_a 
                                     [] 
                                     f_a 
                                     Public
@@ -227,7 +455,7 @@
                                     6 
                                     f_b 
                                     4 f_b 
-                                    b 
+                                    functions_07_b 
                                     [] 
                                     f_b 
                                     Public
@@ -390,238 +618,10 @@
                                 )
                             
                         }) 
-                    c 
-                    [b] 
+                    functions_07_c 
+                    [functions_07_b] 
                     .false. 
                     .false.
-                ), 
-            functions_07:
-                (Program 
-                    (SymbolTable
-                        8
-                        {
-                            f_a:
-                                (ExternalSymbol 
-                                    8 
-                                    f_a 
-                                    2 f_a 
-                                    a 
-                                    [] 
-                                    f_a 
-                                    Public
-                                ), 
-                            f_b:
-                                (ExternalSymbol 
-                                    8 
-                                    f_b 
-                                    4 f_b 
-                                    b 
-                                    [] 
-                                    f_b 
-                                    Public
-                                ), 
-                            f_c:
-                                (ExternalSymbol 
-                                    8 
-                                    f_c 
-                                    6 f_c 
-                                    c 
-                                    [] 
-                                    f_c 
-                                    Public
-                                ), 
-                            p:
-                                (Variable 
-                                    8 
-                                    p 
-                                    Local 
-                                    (Cast 
-                                        (IntegerConstant 5 (Integer 4 [])) 
-                                        IntegerToReal 
-                                        (Real 4 []) 
-                                        (RealConstant 
-                                            5.000000 
-                                            (Real 4 [])
-                                        )
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
-                                    .false.
-                                ), 
-                            q:
-                                (Variable 
-                                    8 
-                                    q 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
-                                    .false.
-                                ), 
-                            u_f_a_f_b_f_c:
-                                (Variable 
-                                    8 
-                                    u_f_a_f_b_f_c 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
-                                    .false.
-                                ), 
-                            v_f_a_f_b_f_c:
-                                (Variable 
-                                    8 
-                                    v_f_a_f_b_f_c 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
-                                    .false.
-                                ), 
-                            w_f_c:
-                                (Variable 
-                                    8 
-                                    w_f_c 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
-                                    .false.
-                                ), 
-                            x_f_b_f_c:
-                                (Variable 
-                                    8 
-                                    x_f_b_f_c 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
-                                    .false.
-                                ), 
-                            y_f_b_f_c:
-                                (Variable 
-                                    8 
-                                    y_f_b_f_c 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
-                                    .false.
-                                ), 
-                            z_f_c:
-                                (Variable 
-                                    8 
-                                    z_f_c 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
-                                    .false.
-                                )
-                            
-                        }) 
-                    functions_07 
-                    [c] 
-                    [(= 
-                        (Var 8 w_f_c) 
-                        (Var 8 p) 
-                        ()
-                    )
-                    (= 
-                        (Var 8 x_f_b_f_c) 
-                        (Var 8 w_f_c) 
-                        ()
-                    )
-                    (= 
-                        (Var 8 u_f_a_f_b_f_c) 
-                        (Var 8 x_f_b_f_c) 
-                        ()
-                    )
-                    (= 
-                        (Var 8 v_f_a_f_b_f_c) 
-                        (RealBinOp 
-                            (Var 8 u_f_a_f_b_f_c) 
-                            Add 
-                            (RealConstant 
-                                1.000000 
-                                (Real 4 [])
-                            ) 
-                            (Real 4 []) 
-                            ()
-                        ) 
-                        ()
-                    )
-                    (= 
-                        (Var 8 y_f_b_f_c) 
-                        (RealBinOp 
-                            (Var 8 v_f_a_f_b_f_c) 
-                            Add 
-                            (RealConstant 
-                                1.000000 
-                                (Real 4 [])
-                            ) 
-                            (Real 4 []) 
-                            ()
-                        ) 
-                        ()
-                    )
-                    (= 
-                        (Var 8 z_f_c) 
-                        (RealBinOp 
-                            (Var 8 y_f_b_f_c) 
-                            Add 
-                            (RealConstant 
-                                1.000000 
-                                (Real 4 [])
-                            ) 
-                            (Real 4 []) 
-                            ()
-                        ) 
-                        ()
-                    )
-                    (= 
-                        (Var 8 q) 
-                        (Var 8 z_f_c) 
-                        ()
-                    )
-                    (Print 
-                        () 
-                        [(Var 8 q)] 
-                        () 
-                        ()
-                    )]
                 )
             
         }) 

@@ -11,7 +11,7 @@
                                 (ExternalSymbol 
                                     2 
                                     acos 
-                                    4 acos 
+                                    13 acos 
                                     lfortran_intrinsic_math 
                                     [] 
                                     acos 
@@ -21,7 +21,7 @@
                                 (ExternalSymbol 
                                     2 
                                     acos@sacos 
-                                    4 sacos 
+                                    13 sacos 
                                     lfortran_intrinsic_math 
                                     [] 
                                     sacos 
@@ -31,7 +31,7 @@
                                 (ExternalSymbol 
                                     2 
                                     acosh 
-                                    4 acosh 
+                                    13 acosh 
                                     lfortran_intrinsic_math 
                                     [] 
                                     acosh 
@@ -41,7 +41,7 @@
                                 (ExternalSymbol 
                                     2 
                                     acosh@sacosh 
-                                    4 sacosh 
+                                    13 sacosh 
                                     lfortran_intrinsic_math 
                                     [] 
                                     sacosh 
@@ -51,7 +51,7 @@
                                 (ExternalSymbol 
                                     2 
                                     asin 
-                                    4 asin 
+                                    13 asin 
                                     lfortran_intrinsic_math 
                                     [] 
                                     asin 
@@ -61,7 +61,7 @@
                                 (ExternalSymbol 
                                     2 
                                     asin@sasin 
-                                    4 sasin 
+                                    13 sasin 
                                     lfortran_intrinsic_math 
                                     [] 
                                     sasin 
@@ -71,7 +71,7 @@
                                 (ExternalSymbol 
                                     2 
                                     asinh 
-                                    4 asinh 
+                                    13 asinh 
                                     lfortran_intrinsic_math 
                                     [] 
                                     asinh 
@@ -81,7 +81,7 @@
                                 (ExternalSymbol 
                                     2 
                                     asinh@sasinh 
-                                    4 sasinh 
+                                    13 sasinh 
                                     lfortran_intrinsic_math 
                                     [] 
                                     sasinh 
@@ -91,7 +91,7 @@
                                 (ExternalSymbol 
                                     2 
                                     atan 
-                                    4 atan 
+                                    13 atan 
                                     lfortran_intrinsic_math 
                                     [] 
                                     atan 
@@ -101,7 +101,7 @@
                                 (ExternalSymbol 
                                     2 
                                     atan@satan 
-                                    4 satan 
+                                    13 satan 
                                     lfortran_intrinsic_math 
                                     [] 
                                     satan 
@@ -111,7 +111,7 @@
                                 (ExternalSymbol 
                                     2 
                                     atanh 
-                                    4 atanh 
+                                    13 atanh 
                                     lfortran_intrinsic_math 
                                     [] 
                                     atanh 
@@ -121,7 +121,7 @@
                                 (ExternalSymbol 
                                     2 
                                     atanh@satanh 
-                                    4 satanh 
+                                    13 satanh 
                                     lfortran_intrinsic_math 
                                     [] 
                                     satanh 
@@ -131,10 +131,44 @@
                                 (ExternalSymbol 
                                     2 
                                     datan 
-                                    4 datan 
+                                    13 datan 
                                     lfortran_intrinsic_math 
                                     [] 
                                     datan 
+                                    Private
+                                ), 
+                            dp:
+                                (Variable 
+                                    2 
+                                    dp 
+                                    Local 
+                                    (FunctionCall 
+                                        2 kind 
+                                        () 
+                                        [((RealConstant 
+                                            0.000000 
+                                            (Real 8 [])
+                                        ))] 
+                                        (Integer 4 []) 
+                                        (IntegerConstant 8 (Integer 4 [])) 
+                                        ()
+                                    ) 
+                                    (IntegerConstant 8 (Integer 4 [])) 
+                                    Parameter 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            kind:
+                                (ExternalSymbol 
+                                    2 
+                                    kind 
+                                    4 kind 
+                                    lfortran_intrinsic_kind 
+                                    [] 
+                                    kind 
                                     Private
                                 ), 
                             x:
@@ -154,7 +188,7 @@
                             
                         }) 
                     intrinsics_06 
-                    [] 
+                    [lfortran_intrinsic_kind] 
                     [(= 
                         (Var 2 x) 
                         (FunctionCall 
@@ -235,12 +269,12 @@
                                 () 
                                 [((RealConstant 
                                     1.557408 
-                                    (Real 4 [])
+                                    (Real 8 [])
                                 ))] 
                                 (Real 8 []) 
                                 (RealConstant 
                                     1.000000 
-                                    (Real 4 [])
+                                    (Real 8 [])
                                 ) 
                                 ()
                             ) 
@@ -338,6 +372,8 @@
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin), 
+            lfortran_intrinsic_kind:
+                (IntrinsicModule lfortran_intrinsic_kind), 
             lfortran_intrinsic_math:
                 (IntrinsicModule lfortran_intrinsic_math)
             

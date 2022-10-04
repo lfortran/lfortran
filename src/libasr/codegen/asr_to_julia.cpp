@@ -1188,7 +1188,6 @@ public:
                 throw CodeGenError("Do loop increment type not supported");
             }
         }
-
         out += lvname + " ∈ ";
         visit_expr(*a);
         out += src + ":" + (increment == 1 ? "" : (std::to_string(increment) + ":"));

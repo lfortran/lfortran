@@ -2,7 +2,66 @@
     (SymbolTable
         1
         {
-            a_02:
+            modules_02:
+                (Program 
+                    (SymbolTable
+                        7
+                        {
+                            b:
+                                (ExternalSymbol 
+                                    7 
+                                    b 
+                                    2 b 
+                                    modules_02_a 
+                                    [] 
+                                    b 
+                                    Public
+                                ), 
+                            e:
+                                (ExternalSymbol 
+                                    7 
+                                    e 
+                                    4 e 
+                                    modules_02_c 
+                                    [] 
+                                    e 
+                                    Public
+                                ), 
+                            x:
+                                (ExternalSymbol 
+                                    7 
+                                    x 
+                                    4 d 
+                                    modules_02_c 
+                                    [] 
+                                    d 
+                                    Public
+                                )
+                            
+                        }) 
+                    modules_02 
+                    [modules_02_a
+                    modules_02_c] 
+                    [(SubroutineCall 
+                        7 b 
+                        () 
+                        [] 
+                        ()
+                    )
+                    (SubroutineCall 
+                        7 x 
+                        () 
+                        [] 
+                        ()
+                    )
+                    (SubroutineCall 
+                        7 e 
+                        () 
+                        [] 
+                        ()
+                    )]
+                ), 
+            modules_02_a:
                 (Module 
                     (SymbolTable
                         2
@@ -38,12 +97,12 @@
                                 )
                             
                         }) 
-                    a_02 
+                    modules_02_a 
                     [] 
                     .false. 
                     .false.
                 ), 
-            c_02:
+            modules_02_c:
                 (Module 
                     (SymbolTable
                         4
@@ -108,69 +167,10 @@
                                 )
                             
                         }) 
-                    c_02 
+                    modules_02_c 
                     [] 
                     .false. 
                     .false.
-                ), 
-            modules_02:
-                (Program 
-                    (SymbolTable
-                        7
-                        {
-                            b:
-                                (ExternalSymbol 
-                                    7 
-                                    b 
-                                    2 b 
-                                    a_02 
-                                    [] 
-                                    b 
-                                    Public
-                                ), 
-                            e:
-                                (ExternalSymbol 
-                                    7 
-                                    e 
-                                    4 e 
-                                    c_02 
-                                    [] 
-                                    e 
-                                    Public
-                                ), 
-                            x:
-                                (ExternalSymbol 
-                                    7 
-                                    x 
-                                    4 d 
-                                    c_02 
-                                    [] 
-                                    d 
-                                    Public
-                                )
-                            
-                        }) 
-                    modules_02 
-                    [a_02
-                    c_02] 
-                    [(SubroutineCall 
-                        7 b 
-                        () 
-                        [] 
-                        ()
-                    )
-                    (SubroutineCall 
-                        7 x 
-                        () 
-                        [] 
-                        ()
-                    )
-                    (SubroutineCall 
-                        7 e 
-                        () 
-                        [] 
-                        ()
-                    )]
                 )
             
         }) 
