@@ -76,21 +76,53 @@ public:
                     if (sym2 == sym) {
                         // The symbol table was found and the symbol `sym` is in
                         // it
+                        std::cout << "symbol for " << sym_name << " found in " << s << "\n";
+                        if (ASR::is_a<ASR::Function_t>(*sym)) {
+                            auto f = ASR::down_cast<ASR::Function_t>(sym);
+                            std::cout << "f_scope: " << f->m_symtab << " scope2: " << s << "\n";
+                        }
                         return true;
                     } else {
                         // The symbol table was found and the symbol in it
                         // shares the name, but is not equal to `sym`
+                        std::cout << "symbol for " << sym_name << " found in " << s << "; differing addresses:\n";
+                        std::cout << "sym: " << sym << " -- sym2: " << sym2 << " (s: " << s << ")\n";
+            
+
+                        if (ASR::is_a<ASR::Function_t>(*sym)) {
+                            auto f = ASR::down_cast<ASR::Function_t>(sym);
+                            // std::cout << "f_scope: " << f->m_symtab << " scope2: " << s << "\n";
+
+                            std::cout << "other elements in scope for " << f->m_name << "\n";
+                            for (const auto & [k, v] : f->m_symtab->get_scope()) {
+                                std::cout << k << ", ";
+                            }
+                            std::cout << "\n";
+                        }
+
+                        if (ASR::is_a<ASR::Function_t>(*sym2)) {
+                            auto f = ASR::down_cast<ASR::Function_t>(sym2);
+                            // std::cout << "f_scope: " << f->m_symtab << " scope2: " << s << "\n";
+
+                            std::cout << "other elements in scope for " << f->m_name << "\n";
+                            for (const auto & [k, v] : f->m_symtab->get_scope()) {
+                                std::cout << k << ", ";
+                            }
+                            std::cout << "\n";
+                        }
                         return false;
                     }
                 } else {
                     // The symbol table was found, but the symbol `sym` is not
                     // in it
+                    std::cout << "symbol " << sym_name << " not found in " << s << "\n";
                     return false;
                 }
             }
             s = s->parent;
         }
         // The symbol table was not found in the scope of `symtab`.
+        std::cout << "symbol not found in scope of " << symtab << "\n";
         return false;
     }
 
@@ -365,12 +397,24 @@ public:
                 result = symtab_in_scope(symtab, x.m_name);
                 parent = get_parent_type_dt(parent, x.base.base.loc);
             }
+            std::string symtab_names = "";
+            for (auto const &[k, v] : symtab->get_scope()) {
+                symtab_names +=  " " + k;
+            }
             require(symtab_in_scope(symtab, x.m_name),
-                "SubroutineCall::m_name cannot point outside of its symbol table",
+                "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table; " + symtab_names,
                 x.base.base.loc);
         } else {
+            std::string symtab_names = "";
+            for (auto const &[k, v] : current_symtab->get_scope()) {
+                symtab_names +=  " " + k;
+            }
+            std::cout << "symtab: " << current_symtab << "\n";
+            std::cout << "x.m_name: " << x.m_name << "\n";
+            std::cout << "symtab_in_scope(current_symtab, x.m_name): " << symtab_in_scope(current_symtab, x.m_name) << "\n";
+            std::cout << "others in symtab: " << symtab_names << " current_symtab = " << current_symtab << "\n";
             require(symtab_in_scope(current_symtab, x.m_name),
-                "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table",
+                "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table; " + symtab_names,
                 x.base.base.loc);
         }
         for (size_t i=0; i<x.n_args; i++) {

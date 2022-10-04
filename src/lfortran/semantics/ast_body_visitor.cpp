@@ -1163,6 +1163,8 @@ public:
 
         if (ASR::is_a<ASR::Function_t>(*sym) && has_external_function(sub_name)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+            std::cout << "function in SubroutineCall: " << f << "\n";
+
             if (external_functions[sub_name].first != nullptr && !external_functions[sub_name].second) {
                 Vec<ASR::expr_t *> exprs;  exprs.reserve(al, x.n_args);
                 for (size_t i=0;i<x.n_args;++i) {
@@ -1190,6 +1192,10 @@ public:
                 original_sym = nullptr;
                 tmp = ASR::make_SubroutineCall_t(al, x.base.base.loc,
                     final_sym, original_sym, args.p, f->n_args, v_expr);
+                std::cout << "SubroutineCall added as " << tmp << "\n";
+                std::cout << "with final_sym: " << final_sym << "\n";
+                std::cout << "with original_sym: " << original_sym << "\n";
+                std::cout << "function: " << f << "\n";
                 external_functions[sub_name].second = true;
                 return;
             }

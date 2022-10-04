@@ -1,8 +1,8 @@
       program main 
           external f
-          integer a
-          a = 1
-          call f(a)
+          integer b, c, d
+          b = 1
+          call f(b)
       end program
 
       subroutine f(a)
