@@ -458,7 +458,7 @@ public:
                 }
                 switch (ast_type) {
                     case (AST::decl_typeType::TypeInteger) : {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind, nullptr, 0));
                         break;
                     }
                     case (AST::decl_typeType::TypeReal) : {
@@ -501,7 +501,6 @@ public:
                 }
             }
         }
-
         // Extract local (including dummy) variables first
         current_symbol = (int64_t) ASR::symbolType::Function;
         ASR::accessType s_access = dflt_access;
@@ -512,12 +511,10 @@ public:
             char *arg=x.m_args[i].m_arg;
             current_procedure_args.push_back(to_lower(arg));
         }
-
         // Determine the ABI (Source or BindC for now)
         current_procedure_abi_type = ASR::abiType::Source;
         char *bindc_name=nullptr;
         extract_bind(x, current_procedure_abi_type, bindc_name);
-
         for (size_t i=0; i<x.n_use; i++) {
             visit_unit_decl1(*x.m_use[i]);
         }
@@ -525,6 +522,7 @@ public:
             visit_unit_decl2(*x.m_decl[i]);
         }
         for (size_t i=0; i<x.n_contains; i++) {
+
             visit_program_unit(*x.m_contains[i]);
         }
         // Convert and check arguments
