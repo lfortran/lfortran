@@ -1647,7 +1647,7 @@ public:
                 Vec<ASR::stmt_t*> def_body;
                 def_body.reserve(al, 1);
 
-                if (var_label != nullptr && found_as_Assign) {
+                if (found_as_Assign) {
                     for (size_t i = 0; i < x.n_labels; ++i) {
                         if (!AST::is_a<AST::Num_t>(*x.m_labels[i])) {
                             throw SemanticError("Only integer labels are supported in GOTO.",
