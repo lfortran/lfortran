@@ -1,4 +1,3 @@
-label is 100
 (TranslationUnit 
     (SymbolTable
         1
@@ -61,13 +60,13 @@ label is 100
                             ()
                         ) 
                         [(CaseStmt 
-                            [(IntegerConstant 1 (Integer 4 []))] 
+                            [(IntegerConstant 100 (Integer 4 []))] 
                             [(GoTo 
                                 100
                             )]
                         )
                         (CaseStmt 
-                            [(IntegerConstant 2 (Integer 4 []))] 
+                            [(IntegerConstant 101 (Integer 4 []))] 
                             [(GoTo 
                                 101
                             )]
