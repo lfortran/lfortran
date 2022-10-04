@@ -1,0 +1,13 @@
+Internal Compiler Error: Unhandled exception
+Traceback (most recent call last):
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 1667[0m
+    return emit_ast(arg_file, compiler_options);
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 420[0m
+    LFortran::Result<std::string> r = fe.get_ast(input, lm, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 163[0m
+    Result<AST::TranslationUnit_t*> ast = get_ast2(code, lm,
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 190[0m
+    tmp = fix_continuation(*code, lm, compiler_options.fixed_form);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/parser/parser.cpp[39m[0m[2m", line 471[0m
+    LFORTRAN_ASSERT(check_newlines(s, lm.in_newlines))
+AssertFailed: check_newlines(s, lm.in_newlines)
