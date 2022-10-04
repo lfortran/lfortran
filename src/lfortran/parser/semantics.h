@@ -1032,6 +1032,7 @@ ast_t* builtin3(Allocator &al,
 #define FLUSH(args0, l) builtin1(p.m_a, args0, l, make_Flush_t)
 #define ENDFILE(args0, l) builtin1(p.m_a, args0, l, make_Endfile_t)
 
+#define INCLUDE(arg, l) make_Include_t(p.m_a, l, 0, arg.c_str(p.m_a), nullptr)
 #define INQUIRE0(args0, l) builtin2(p.m_a, args0, empty_vecast(), l, \
             make_Inquire_t)
 #define INQUIRE(args0, args, l) builtin2(p.m_a, args0, args, l, make_Inquire_t)
@@ -2095,6 +2096,7 @@ void set_m_trivia(stmt_t *s, trivia_t *trivia) {
         TRIVIA_SET(Format)
         TRIVIA_SET(FormTeam)
         TRIVIA_SET(GoTo)
+        TRIVIA_SET(Include)
         TRIVIA_SET(Inquire)
         TRIVIA_SET(Nullify)
         TRIVIA_SET(Open)

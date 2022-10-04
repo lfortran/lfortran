@@ -1,0 +1,56 @@
+(TranslationUnit 
+    [(Subroutine 
+        a 
+        [] 
+        [] 
+        () 
+        (TriviaNode 
+            [] 
+            [(EndOfLine)
+            (EndOfLine)
+            (EndOfLine)]
+        ) 
+        [] 
+        [] 
+        [] 
+        [] 
+        [(Include 
+            0 
+            "nested/b.f90" 
+            ()
+        )
+        (Print 
+            0 
+            () 
+            [(String 
+                "From A"
+            )] 
+            ()
+        )] 
+        []
+    )
+    (Program 
+        include_01 
+        () 
+        [] 
+        [] 
+        [] 
+        [(SubroutineCall 
+            0 
+            a 
+            [] 
+            [] 
+            [] 
+            ()
+        )
+        (Print 
+            0 
+            () 
+            [(String 
+                "From Main"
+            )] 
+            ()
+        )] 
+        []
+    )]
+)

@@ -130,6 +130,7 @@ stmt
             event_attribute* sync_stat, trivia? trivia)
     | GoTo(int label, identifier? int_var, expr? goto_label,
             expr* labels, trivia? trivia)
+    | Include(int label, string filename, trivia? trivia)
     | Inquire(int label, expr* args, keyword* kwargs, expr* values, trivia? trivia)
     | Nullify(int label, expr* args, keyword* kwargs, trivia? trivia)
     | Open(int label, expr* args, keyword* kwargs, trivia? trivia)

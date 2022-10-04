@@ -1,3 +1,4 @@
+#include "libasr/location.h"
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -8,46 +9,49 @@
 #include <libasr/diagnostics.h>
 #include <lfortran/parser/parser_exception.h>
 #include <lfortran/parser/fixedform_tokenizer.h>
+#include <lfortran/utils.h>
 
 #include <lfortran/pickle.h>
 
 namespace LFortran
 {
 
-Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
-        diag::Diagnostics &diagnostics, const bool &fixed_form)
+Result<AST::TranslationUnit_t*>
+parse(Allocator& al, const std::string& s, diag::Diagnostics& diagnostics, const bool& fixed_form)
 {
     Parser p(al, diagnostics, fixed_form);
     try {
         if (!p.parse(s)) {
             return Error();
         };
-    } catch (const parser_local::TokenizerError &e) {
+    } catch (const parser_local::TokenizerError& e) {
         Error error;
         diagnostics.diagnostics.push_back(e.d);
         return error;
-    } catch (const parser_local::ParserError &e) {
+    } catch (const parser_local::ParserError& e) {
         Error error;
         diagnostics.diagnostics.push_back(e.d);
         return error;
     }
     Location l;
     if (p.result.size() == 0) {
-        l.first=0;
-        l.last=0;
+        l.first = 0;
+        l.last = 0;
     } else {
-        l.first=p.result[0]->loc.first;
-        l.last=p.result[p.result.size()-1]->loc.last;
+        l.first = p.result[0]->loc.first;
+        l.last = p.result[p.result.size() - 1]->loc.last;
     }
-    return (AST::TranslationUnit_t*)AST::make_TranslationUnit_t(al, l,
-        p.result.p, p.result.size());
+    return (AST::TranslationUnit_t*) AST::make_TranslationUnit_t(
+        al, l, p.result.p, p.result.size());
 }
 
-bool Parser::parse(const std::string &input)
+bool
+Parser::parse(const std::string& input)
 {
     inp = input;
     if (inp.size() > 0) {
-        if (inp[inp.size()-1] != '\n') inp.append("\n");
+        if (inp[inp.size() - 1] != '\n')
+            inp.append("\n");
     } else {
         inp.append("\n");
     }
@@ -58,7 +62,8 @@ bool Parser::parse(const std::string &input)
         }
     } else {
         f_tokenizer.set_string(inp);
-        if (!f_tokenizer.tokenize_input(diag, m_a)) return false;
+        if (!f_tokenizer.tokenize_input(diag, m_a))
+            return false;
         if (yyparse(*this) == 0) {
             return true;
         }
@@ -66,11 +71,13 @@ bool Parser::parse(const std::string &input)
     throw parser_local::ParserError("Parsing unsuccessful (internal compiler error)");
 }
 
-Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
-        diag::Diagnostics &diagnostics,
-        std::vector<YYSTYPE> *stypes,
-        std::vector<Location> *locations,
-        bool fixed_form)
+Result<std::vector<int>>
+tokens(Allocator& al,
+       const std::string& input,
+       diag::Diagnostics& diagnostics,
+       std::vector<YYSTYPE>* stypes,
+       std::vector<Location>* locations,
+       bool fixed_form)
 {
     if (fixed_form) {
         FixedFormTokenizer t;
@@ -78,12 +85,12 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         if (t.tokenize_input(diagnostics, al)) {
             LFORTRAN_ASSERT(t.tokens.size() == t.stypes.size())
             if (stypes) {
-                for(const auto & el : t.stypes) {
+                for (const auto& el : t.stypes) {
                     stypes->push_back(el);
                 }
             }
             if (locations) {
-                for(const auto & el : t.locations) {
+                for (const auto& el : t.locations) {
                     locations->push_back(el);
                 }
             }
@@ -95,30 +102,34 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         Tokenizer t;
         t.set_string(input);
         std::vector<int> tst;
-        int token = yytokentype::END_OF_FILE + 1; // Something different from EOF
+        int token = yytokentype::END_OF_FILE + 1;  // Something different from EOF
         while (token != yytokentype::END_OF_FILE) {
             YYSTYPE y;
             Location l;
             try {
                 token = t.lex(al, y, l, diagnostics);
-            } catch (const parser_local::TokenizerError &e) {
+            } catch (const parser_local::TokenizerError& e) {
                 diagnostics.diagnostics.push_back(e.d);
                 return Error();
             }
             tst.push_back(token);
-            if (stypes) stypes->push_back(y);
-            if (locations) locations->push_back(l);
+            if (stypes)
+                stypes->push_back(y);
+            if (locations)
+                locations->push_back(l);
         }
         return tst;
     }
 }
 
-void cont1(const std::string &s, size_t &pos, bool &ws_or_comment)
+void
+cont1(const std::string& s, size_t& pos, bool& ws_or_comment)
 {
     ws_or_comment = true;
     bool in_comment = false;
     while (s[pos] != '\n') {
-        if (s[pos] == '!') in_comment = true;
+        if (s[pos] == '!')
+            in_comment = true;
         if (!in_comment) {
             if (s[pos] != ' ' && s[pos] != '\t') {
                 ws_or_comment = false;
@@ -130,21 +141,30 @@ void cont1(const std::string &s, size_t &pos, bool &ws_or_comment)
     pos++;
 }
 
-bool is_digit(unsigned char ch) {
+bool
+is_digit(unsigned char ch)
+{
     return (ch >= '0' && ch <= '9');
 }
 
 enum LineType {
-    Comment, Statement, LabeledStatement, Continuation, EndOfFile,
-    ContinuationTab, StatementTab
+    Comment,
+    Statement,
+    LabeledStatement,
+    Continuation,
+    EndOfFile,
+    ContinuationTab,
+    StatementTab,
+    Include,
 };
 
 // Determines the type of line in the fixed-form prescanner
 // `pos` points to the first character (column) of the line
 // The line ends with either `\n` or `\0`.
-LineType determine_line_type(const unsigned char *pos)
+LineType
+determine_line_type(const unsigned char* pos)
 {
-    int col=1;
+    int col = 1;
     if (*pos == '\n') {
         // Empty line => classified as comment
         return LineType::Comment;
@@ -165,15 +185,16 @@ LineType determine_line_type(const unsigned char *pos)
                 // A statement line after a tab
                 return LineType::StatementTab;
             }
-
         }
     } else {
         while (*pos == ' ') {
             pos++;
-            col+=1;
+            col += 1;
         }
-        if (*pos == '\n' || *pos == '\0') return LineType::Comment;
-        if (*pos == '!' && col != 6) return LineType::Comment;
+        if (*pos == '\n' || *pos == '\0')
+            return LineType::Comment;
+        if (*pos == '!' && col != 6)
+            return LineType::Comment;
         if (col == 6) {
             if (*pos == ' ' || *pos == '0') {
                 return LineType::Statement;
@@ -184,49 +205,57 @@ LineType determine_line_type(const unsigned char *pos)
         if (col <= 6) {
             return LineType::LabeledStatement;
         } else {
-            return LineType::Statement;
+            if (std::string(pos, pos + 7) == "include") {
+                return LineType::Include;
+            } else {
+                return LineType::Statement;
+            }
         }
     }
 }
 
-void skip_rest_of_line(const std::string &s, size_t &pos)
+void
+skip_rest_of_line(const std::string& s, size_t& pos)
 {
     while (pos < s.size() && s[pos] != '\n') {
         pos++;
     }
-    pos++; // Skip the last '\n'
+    pos++;  // Skip the last '\n'
 }
 
 // Parses string, including possible continuation lines
-void parse_string(std::string &out, const std::string &s, size_t &pos)
+void
+parse_string(std::string& out, const std::string& s, size_t& pos)
 {
     char quote = s[pos];
     LFORTRAN_ASSERT(quote == '"' || quote == '\'');
     out += s[pos];
     pos++;
-    while (pos < s.size() && ! (s[pos] == quote && s[pos+1] != quote)) {
+    while (pos < s.size() && !(s[pos] == quote && s[pos + 1] != quote)) {
         if (s[pos] == '\n') {
             pos++;
             pos += 6;
             continue;
         }
-        if (s[pos] == quote && s[pos+1] == quote) {
+        if (s[pos] == quote && s[pos + 1] == quote) {
             out += s[pos];
             pos++;
         }
         out += s[pos];
         pos++;
     }
-    out += s[pos]; // Copy the last quote
+    out += s[pos];  // Copy the last quote
     pos++;
 }
 
-bool is_num(char c)
+bool
+is_num(char c)
 {
     return '0' <= c && c <= '9';
 }
 
-void copy_label(std::string &out, const std::string &s, size_t &pos)
+void
+copy_label(std::string& out, const std::string& s, size_t& pos)
 {
     size_t col = 1;
     while (pos < s.size() && s[pos] != '\n' && col <= 6) {
@@ -237,8 +266,8 @@ void copy_label(std::string &out, const std::string &s, size_t &pos)
 }
 
 // Only used in fixed-form
-void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
-    LocationManager &lm)
+void
+copy_rest_of_line(std::string& out, const std::string& s, size_t& pos, LocationManager& lm)
 {
     while (pos < s.size() && s[pos] != '\n') {
         if (s[pos] == '"' || s[pos] == '\'') {
@@ -258,25 +287,67 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
             pos++;
         }
     }
-    out += s[pos]; // Copy the last `\n'
+    out += s[pos];  // Copy the last `\n'
     pos++;
 }
 
 // Checks that newlines are computed correctly
-bool check_newlines(const std::string &s, const std::vector<uint32_t> &newlines) {
+bool
+check_newlines(const std::string& s, const std::vector<uint32_t>& newlines)
+{
     std::vector<uint32_t> newlines2;
-    for (uint32_t pos=0; pos < s.size(); pos++) {
-        if (s[pos] == '\n') newlines2.push_back(pos);
+    for (uint32_t pos = 0; pos < s.size(); pos++) {
+        if (s[pos] == '\n')
+            newlines2.push_back(pos);
     }
-    if (newlines2.size() != newlines.size()) return false;
-    for (size_t i=0; i < newlines2.size(); i++) {
-        if (newlines2[i] != newlines[i]) return false;
+    if (newlines2.size() != newlines.size())
+        return false;
+    for (size_t i = 0; i < newlines2.size(); i++) {
+        if (newlines2[i] != newlines[i])
+            return false;
     }
     return true;
 }
 
-std::string fix_continuation(const std::string &s, LocationManager &lm,
-        bool fixed_form)
+void
+process_include(
+    std::string& out, const std::string& s, LocationManager& lm, size_t& pos, bool fixed_form)
+{
+    std::string include_filename;
+    parse_string(include_filename, s, pos);
+    include_filename = include_filename.substr(1, include_filename.size() - 2);
+    std::string current_filename = lm.in_filename;
+    std::string include_root = std::filesystem::path(include_filename).root_name();
+    std::string include_path_str;
+    if (include_root.empty()) {
+        std::filesystem::path include_path = std::filesystem::path(current_filename).parent_path();
+        include_path.append(include_filename);
+        include_path_str = include_path.string();
+    } else {
+        include_path_str = include_filename;
+    }
+
+    std::string include;
+    if (!read_file(include_path_str, include)) {
+        throw LCompilersException("Include file '" + include_filename + "' cannot be opened");
+    }
+
+    LocationManager lm_tmp;
+    lm_tmp.in_filename = include_path_str;
+    include = fix_continuation(include, lm_tmp, fixed_form);
+
+    // Possible it goes here
+    // lm.out_start.push_back(out.size());
+    out += include;
+    while (pos < s.size() && s[pos] != '\n')
+        pos++;
+    lm.in_newlines.push_back(pos);
+    lm.out_start.push_back(out.size());
+    lm.in_start.push_back(pos);
+}
+
+std::string
+fix_continuation(const std::string& s, LocationManager& lm, bool fixed_form)
 {
     if (fixed_form) {
         // `pos` is the position in the original code `s`
@@ -306,17 +377,17 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
          * parser can parse it correctly.
          */
         while (true) {
-            const char *p = &s[pos];
-            LineType lt = determine_line_type((const unsigned char*)p);
+            const char* p = &s[pos];
+            LineType lt = determine_line_type((const unsigned char*) p);
             switch (lt) {
-                case LineType::Comment : {
+                case LineType::Comment: {
                     // Skip
                     skip_rest_of_line(s, pos);
                     lm.out_start.push_back(out.size());
                     lm.in_start.push_back(pos);
                     break;
                 }
-                case LineType::Statement : {
+                case LineType::Statement: {
                     // Copy from column 7
                     pos += 6;
                     lm.out_start.push_back(out.size());
@@ -324,7 +395,7 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
-                case LineType::StatementTab : {
+                case LineType::StatementTab: {
                     // Copy from column 2
                     pos += 1;
                     lm.out_start.push_back(out.size());
@@ -332,7 +403,7 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
-                case LineType::LabeledStatement : {
+                case LineType::LabeledStatement: {
                     // Copy the label
                     copy_label(out, s, pos);
                     // Copy from column 7
@@ -341,29 +412,37 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
-                case LineType::Continuation : {
+                case LineType::Continuation: {
                     // Append from column 7 to previous line
-                    out = out.substr(0, out.size()-1); // Remove the last '\n'
+                    out = out.substr(0, out.size() - 1);  // Remove the last '\n'
                     pos += 6;
                     lm.out_start.push_back(out.size());
                     lm.in_start.push_back(pos);
                     copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
-                case LineType::ContinuationTab : {
+                case LineType::ContinuationTab: {
                     // Append from column 3 to previous line
-                    out = out.substr(0, out.size()-1); // Remove the last '\n'
+                    out = out.substr(0, out.size() - 1);  // Remove the last '\n'
                     pos += 2;
                     lm.out_start.push_back(out.size());
                     lm.in_start.push_back(pos);
                     copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
-                case LineType::EndOfFile : {
+                case LineType::Include: {
+                    while (pos < s.size() && s[pos] == ' ')
+                        pos++;
+                    if ((s[pos] == '"') || (s[pos] == '\''))
+                        process_include(out, s, lm, pos, fixed_form);
+                    break;
+                }
+                case LineType::EndOfFile: {
                     break;
                 }
             };
-            if (lt == LineType::EndOfFile) break;
+            if (lt == LineType::EndOfFile)
+                break;
         }
         lm.in_start.push_back(pos);
         lm.out_start.push_back(out.size());
@@ -375,38 +454,56 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
         lm.in_start.push_back(0);
         std::string out;
         size_t pos = 0;
-        bool in_comment = false;
+        bool in_comment = false, newline = true;
         while (pos < s.size()) {
-            if (s[pos] == '!') in_comment = true;
-            if (in_comment && s[pos] == '\n') in_comment = false;
+            if (newline) {
+                if (pos + 6 < s.size() && s.substr(pos, 7) == "include") {
+                    pos += 7;
+                    while (pos < s.size() && s[pos] == ' ')
+                        pos++;
+                    if (pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')))
+                        process_include(out, s, lm, pos, fixed_form);
+                }
+            }
+            newline = false;
+            if (s[pos] == '!')
+                in_comment = true;
+            if (in_comment && s[pos] == '\n')
+                in_comment = false;
             if (!in_comment && s[pos] == '&') {
-                size_t pos2=pos+1;
+                size_t pos2 = pos + 1;
                 bool ws_or_comment;
                 cont1(s, pos2, ws_or_comment);
-                if (ws_or_comment) lm.in_newlines.push_back(pos2-1);
+                if (ws_or_comment)
+                    lm.in_newlines.push_back(pos2 - 1);
                 if (ws_or_comment) {
                     while (ws_or_comment) {
                         cont1(s, pos2, ws_or_comment);
-                        if (ws_or_comment) lm.in_newlines.push_back(pos2-1);
+                        if (ws_or_comment)
+                            lm.in_newlines.push_back(pos2 - 1);
                     }
                     // `pos` will move by more than 1, close the old interval
-    //                lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
+                    //                lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
                     // Move `pos`
                     pos = pos2;
-                    if (s[pos] == '&') pos++;
+                    if (s[pos] == '&')
+                        pos++;
                     // Start a new interval (just the starts, the size will be
                     // filled in later)
                     lm.out_start.push_back(out.size());
                     lm.in_start.push_back(pos);
                 }
             } else {
-                if (s[pos] == '\n') lm.in_newlines.push_back(pos);
+                if (s[pos] == '\n') {
+                    lm.in_newlines.push_back(pos);
+                    newline = true;
+                }
             }
             out += s[pos];
             pos++;
         }
         // set the size of the last interval
-    //    lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
+        //    lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
 
         LFORTRAN_ASSERT(check_newlines(s, lm.in_newlines))
 
@@ -419,10 +516,12 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
 }
 
 
+#define T(tk, name)                                                                                \
+    case (yytokentype::tk):                                                                        \
+        return name;
 
-#define T(tk, name) case (yytokentype::tk) : return name;
-
-std::string token2text(const int token)
+std::string
+token2text(const int token)
 {
     if (0 < token && token < 256) {
         char t = token;
@@ -675,14 +774,15 @@ std::string token2text(const int token)
         T(KW_WHERE, "where")
         T(KW_WHILE, "while")
         T(KW_WRITE, "write")
-        default : {
+        default: {
             std::cout << "TOKEN: " << token << std::endl;
             throw LCompilersException("Token conversion not implemented yet.");
         }
     }
 }
 
-void Parser::handle_yyerror(const Location &loc, const std::string &msg)
+void
+Parser::handle_yyerror(const Location& loc, const std::string& msg)
 {
     std::string message;
     if (msg == "syntax is ambiguous") {
@@ -712,15 +812,16 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
         }
         // Create a nice error message
         if (token == yytokentype::END_OF_FILE) {
-            message =  "End of file is unexpected here";
+            message = "End of file is unexpected here";
         } else if (token == yytokentype::TK_NEWLINE) {
-            message =  "Newline is unexpected here";
+            message = "Newline is unexpected here";
         } else {
             std::string token_type = token2text(token);
             if (token_str == token_type || token_str.size() == 0) {
-                message =  "Token '" + token_type + "' is unexpected here";
+                message = "Token '" + token_type + "' is unexpected here";
             } else {
-                message =  "Token '" + token_str + "' (of type '" + token2text(token) + "') is unexpected here";
+                message = "Token '" + token_str + "' (of type '" + token2text(token)
+                          + "') is unexpected here";
             }
         }
     } else {
