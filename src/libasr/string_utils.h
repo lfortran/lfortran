@@ -27,6 +27,9 @@ std::string replace(const std::string &s,
 
 std::string read_file(const std::string &filename);
 
+// Returns the parent path to the given path
+std::string parent_path(const std::string &path);
+
 } // namespace LFortran
 
 #endif // LFORTRAN_STRING_UTILS_H

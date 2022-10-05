@@ -184,9 +184,8 @@ Result<AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
         code = &tmp;
     }
     if (compiler_options.prescan || compiler_options.fixed_form) {
-        std::string root_dir = std::filesystem::path(lm.in_filename).parent_path().string();
         tmp = fix_continuation(*code, lm, compiler_options.fixed_form,
-            root_dir);
+            parent_path(lm.in_filename));
         code = &tmp;
     }
     Result<AST::TranslationUnit_t*> res = parse(al, *code, diagnostics, compiler_options.fixed_form);

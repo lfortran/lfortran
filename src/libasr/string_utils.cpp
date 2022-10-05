@@ -102,6 +102,9 @@ std::string read_file(const std::string &filename)
     return std::string(&bytes[0], filesize);
 }
 
+std::string parent_path(const std::string &path) {
+    return std::filesystem::path(path).parent_path().string();
+}
 
 
 } // namespace LFortran
