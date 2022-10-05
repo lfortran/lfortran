@@ -1,0 +1,13 @@
+{
+    "basename": "ast-include_01-0993348",
+    "cmd": "lfortran --indent --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/include_01.f90",
+    "infile_hash": "ba2b458982cee4e8d6b9f14773bf7d3121b4e6efc4b978ea9ceb4459",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-include_01-0993348.stdout",
+    "stdout_hash": "9d7e1a32ced17dd19f27643d60917d1c4aaf9d97954660f63457049c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
