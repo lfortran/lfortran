@@ -201,7 +201,8 @@ void skip_rest_of_line(const std::string &s, size_t &pos)
 }
 
 // Parses string, including possible continuation lines
-void parse_string(std::string &out, const std::string &s, size_t &pos)
+void parse_string(std::string &out, const std::string &s, size_t &pos,
+    bool fixed_form)
 {
     char quote = s[pos];
     LFORTRAN_ASSERT(quote == '"' || quote == '\'');
@@ -210,7 +211,7 @@ void parse_string(std::string &out, const std::string &s, size_t &pos)
     while (pos < s.size() && ! (s[pos] == quote && s[pos+1] != quote)) {
         if (s[pos] == '\n') {
             pos++;
-            pos += 6;
+            if (fixed_form) pos += 6;
             continue;
         }
         if (s[pos] == quote && s[pos+1] == quote) {
@@ -245,7 +246,7 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
 {
     while (pos < s.size() && s[pos] != '\n') {
         if (s[pos] == '"' || s[pos] == '\'') {
-            parse_string(out, s, pos);
+            parse_string(out, s, pos, true);
         } else if (s[pos] == '!') {
             skip_rest_of_line(s, pos);
             out += '\n';
@@ -282,7 +283,7 @@ void process_include(std::string& out, const std::string& s,
                      LocationManager& lm, size_t& pos, bool fixed_form)
 {
     std::string include_filename;
-    parse_string(include_filename, s, pos);
+    parse_string(include_filename, s, pos, false);
     include_filename = include_filename.substr(1, include_filename.size() - 2);
     std::string current_filename = lm.in_filename;
     std::filesystem::path include_path(include_filename);
@@ -307,8 +308,7 @@ void process_include(std::string& out, const std::string& s,
     // Possible it goes here
     // lm.out_start.push_back(out.size());
     out += include;
-    while (pos < s.size() && s[pos] != '\n')
-        pos++;
+    while (pos < s.size() && s[pos] != '\n') pos++;
     lm.in_newlines.push_back(pos);
     lm.out_start.push_back(out.size());
     lm.in_start.push_back(pos);
@@ -430,10 +430,10 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
             if (newline) {
                 if (pos + 6 < s.size() && s.substr(pos, 7) == "include") {
                     pos += 7;
-                    while (pos < s.size() && s[pos] == ' ')
-                        pos++;
-                    if (pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')))
+                    while (pos < s.size() && s[pos] == ' ') pos++;
+                    if (pos < s.size() && ((s[pos] == '"') || (s[pos] == '\''))) {
                         process_include(out, s, lm, pos, fixed_form);
+                    }
                 }
             }
             newline = false;
