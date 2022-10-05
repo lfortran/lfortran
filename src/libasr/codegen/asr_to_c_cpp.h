@@ -51,7 +51,7 @@ namespace {
 }
 
 // Platform dependent fast unique hash:
-static uint64_t get_hash(ASR::asr_t *node)
+static inline uint64_t get_hash(ASR::asr_t *node)
 {
     return (uint64_t)node;
 }
