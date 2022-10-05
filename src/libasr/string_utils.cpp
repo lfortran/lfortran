@@ -103,7 +103,13 @@ std::string read_file(const std::string &filename)
 }
 
 std::string parent_path(const std::string &path) {
-    return std::filesystem::path(path).parent_path().string();
+    int pos = path.size()-1;
+    while (pos >= 0 && path[pos] != '/') pos--;
+    if (pos == -1) {
+        return "";
+    } else {
+        return path.substr(0, pos);
+    }
 }
 
 bool is_relative_path(const std::string &path) {
