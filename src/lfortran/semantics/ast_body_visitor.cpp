@@ -30,7 +30,7 @@ public:
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
         : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping),
-        	asr{unit}, from_block{false} {}
+        asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
         if( from_block ) {

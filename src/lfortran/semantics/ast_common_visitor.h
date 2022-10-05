@@ -676,15 +676,15 @@ public:
     std::vector<ASR::asr_t*> current_template_type_parameters;
     std::unordered_set<int> current_procedure_used_type_parameter_indices;
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
-	std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
+    std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
 
     Vec<char*> data_member_names;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
-			std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
+            std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
-          current_scope{symbol_table}, implicit_mapping{implicit_mapping}{
+          current_scope{symbol_table}, implicit_mapping{implicit_mapping} {
         current_module_dependencies.reserve(al, 4);
     }
 
@@ -739,10 +739,9 @@ public:
     ASR::asr_t* resolve_variable(const Location &loc, const std::string &var_name) {
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
-		// implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
-		if(implicit_dictionary.find(std::string(1,var_name[0])) == implicit_dictionary.end()) {
-			implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
-		}
+        if (implicit_dictionary.find(std::string(1,var_name[0])) == implicit_dictionary.end()) {
+        	implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
+        }
         if (!v) {
             std::string first_letter = std::string(1,var_name[0]);
             if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()) {
