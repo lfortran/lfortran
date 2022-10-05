@@ -377,6 +377,14 @@ def tester_main(compiler, single_test):
         + os.pathsep + os.environ["PATH"]
     test_data = toml.load(open(os.path.join(ROOT_DIR, "tests", "tests.toml")))
     filtered_tests = test_data["test"]
+    if list_tests:
+        log.info("All available tests and their options:")
+        for test in filtered_tests:
+            options = [k for k in test.keys() if k != "filename"]
+            test_and_options = test["filename"] + " " + str(options)
+            log.info(test_and_options)
+        return
+
     if specific_tests:
         filtered_tests = [test for test in filtered_tests if any(
             re.search(t, test["filename"]) for t in specific_tests)]

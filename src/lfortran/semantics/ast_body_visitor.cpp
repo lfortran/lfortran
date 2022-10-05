@@ -1113,10 +1113,8 @@ public:
     }
 
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
-        // std::cout << "in visit_SubroutineCall with " << x.m_name << "\n";
         if (has_external_function(to_lower(x.m_name)) && !external_functions[to_lower(x.m_name)].second) {
             auto cpy_scope = current_scope;
-             
             auto sub_name = to_lower(x.m_name);
             auto sym = external_functions[sub_name].first;
             Vec<ASR::call_arg_t> args;
@@ -1127,8 +1125,19 @@ public:
                 Vec<ASR::expr_t *> fun_exprs;  fun_exprs.reserve(al, x.n_args);
                 Vec<ASR::ttype_t *> type_exprs; type_exprs.reserve(al, x.n_args);
                 for (size_t i = 0;i < x.n_args; ++i) {
-                    // last remaining issue
-                    // if (ASR::is_a<ASR::Var_t>(*args[i].m_value)) { std::cout << "has Var_t\n";}
+                    if (ASR::is_a<ASR::Var_t>(*args[i].m_value)) { 
+                        auto var = LFortran::ASRUtils::EXPR2VAR(args[i].m_value);
+                        auto new_var = ASR::make_Variable_t(
+                            al, var->base.base.loc,
+                            f->m_symtab, s2c(al, var->m_name), var->m_intent,
+                            var->m_symbolic_value, var->m_value, var->m_storage,
+                            var->m_type, var->m_abi, var->m_access, var->m_presence, var->m_value_attr);
+                        auto new_sym = ASR::down_cast<ASR::symbol_t>(new_var);
+                        fun_exprs.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, new_sym)));
+                        f->m_symtab->add_symbol(var->m_name, new_sym);
+                        type_exprs.push_back(al, ASRUtils::expr_type(args[i].m_value));
+                        continue;
+                    }
                     fun_exprs.push_back(al, args[i].m_value);
                     type_exprs.push_back(al, ASRUtils::expr_type(args[i].m_value));
                 }
@@ -1146,7 +1155,7 @@ public:
                 current_scope = cpy_scope;
                 return;
             } else {
-                throw SemanticError("", x.base.base.loc);
+                throw SemanticError("External function declaration error.", x.base.base.loc);
             }
         }
         SymbolTable* scope = current_scope;

@@ -2633,7 +2633,6 @@ public:
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
-        // std::cout << "in visit_FuncCallOrArray with " << x.m_func << "\n";
         if (has_external_function(to_lower(x.m_func))) {
             Vec<ASR::call_arg_t> args;
             visit_expr_list(x.m_args, x.n_args, args);
@@ -2641,10 +2640,8 @@ public:
             if (external_functions[x.m_func].second && f->n_args != x.n_args) {
                 throw SemanticError("Function argument(s) ambiguous", x.base.base.loc);
             }
-
             Vec<ASR::expr_t *> fun_exprs;  fun_exprs.reserve(al, x.n_args);
             Vec<ASR::ttype_t *> type_exprs; type_exprs.reserve(al, x.n_args);
-
             for (size_t i = 0;i < x.n_args; ++i) {
                     fun_exprs.push_back(al, args[i].m_value);
                     type_exprs.push_back(al, ASRUtils::expr_type(args[i].m_value));
@@ -2653,8 +2650,6 @@ public:
             f->n_args = fun_exprs.n;
             f->n_type_params = type_exprs.n;
             f->m_type_params = type_exprs.p;
-            
-
             if (x.n_keywords > 0) {
                     diag::Diagnostics diags;
                     visit_kwargs(args, x.m_keywords, x.n_keywords,
@@ -2666,10 +2661,7 @@ public:
                         throw SemanticAbort();
                     }
             }
-            
-        
             external_functions[x.m_func].second = true;
-            // TODO: check -- take the first arguments type as a default return value?
             ASR::ttype_t *type = nullptr;
             type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
             tmp = ASR::make_FunctionCall_t(al, x.base.base.loc,
