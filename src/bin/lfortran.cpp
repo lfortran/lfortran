@@ -368,8 +368,9 @@ int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
     std::string input = read_file(infile);
     LFortran::LocationManager lm;
     lm.in_filename = infile;
+    std::string root_dir = std::filesystem::path(lm.in_filename).parent_path().string();
     std::string prescan = LFortran::fix_continuation(input, lm,
-        compiler_options.fixed_form);
+        compiler_options.fixed_form, root_dir);
     std::cout << prescan << std::endl;
     return 0;
 }
@@ -385,7 +386,8 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
     LFortran::diag::Diagnostics diagnostics;
     LFortran::LocationManager lm;
     if (compiler_options.prescan || compiler_options.fixed_form) {
-        input = fix_continuation(input, lm, compiler_options.fixed_form);
+        std::string root_dir = std::filesystem::path(infile).parent_path().string();
+        input = fix_continuation(input, lm, compiler_options.fixed_form, root_dir);
     }
     auto res = LFortran::tokens(al, input, diagnostics, &stypes, &locations,
         compiler_options.fixed_form);

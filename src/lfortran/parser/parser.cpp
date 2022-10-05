@@ -280,11 +280,18 @@ bool check_newlines(const std::string &s, const std::vector<uint32_t> &newlines)
 }
 
 void process_include(std::string& out, const std::string& s,
-                     LocationManager& lm, size_t& pos, bool fixed_form)
+                     LocationManager& lm, size_t& pos, bool fixed_form,
+                     const std::string &root_dir)
 {
     std::string include_filename;
     parse_string(include_filename, s, pos, false);
     include_filename = include_filename.substr(1, include_filename.size() - 2);
+    std::filesystem::path path(include_filename);
+    if (path.is_relative()) {
+        path = std::filesystem::path(root_dir);
+        path.append(include_filename);
+        include_filename = path.string();
+    }
 
     std::string include;
     if (!read_file(include_filename, include)) {
@@ -294,7 +301,7 @@ void process_include(std::string& out, const std::string& s,
 
     LocationManager lm_tmp;
     lm_tmp.in_filename = include_filename;
-    include = fix_continuation(include, lm_tmp, fixed_form);
+    include = fix_continuation(include, lm_tmp, fixed_form, root_dir);
 
     // Possible it goes here
     // lm.out_start.push_back(out.size());
@@ -305,7 +312,7 @@ void process_include(std::string& out, const std::string& s,
 }
 
 std::string fix_continuation(const std::string &s, LocationManager &lm,
-        bool fixed_form)
+        bool fixed_form, const std::string &root_dir)
 {
     if (fixed_form) {
         // `pos` is the position in the original code `s`
@@ -396,7 +403,8 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     while (pos < s.size() && s[pos] == ' ')
                         pos++;
                     if ((s[pos] == '"') || (s[pos] == '\''))
-                        process_include(out, s, lm, pos, fixed_form);
+                        process_include(out, s, lm, pos, fixed_form,
+                            root_dir);
                     break;
                 }
                 case LineType::EndOfFile : {
@@ -423,7 +431,8 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     pos += 7;
                     while (pos < s.size() && s[pos] == ' ') pos++;
                     if (pos < s.size() && ((s[pos] == '"') || (s[pos] == '\''))) {
-                        process_include(out, s, lm, pos, fixed_form);
+                        process_include(out, s, lm, pos, fixed_form,
+                            root_dir);
                     }
                 }
             }
