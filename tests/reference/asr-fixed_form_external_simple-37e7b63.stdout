@@ -1,5 +1,3 @@
-has Var_t
-has Var_t
 (TranslationUnit 
     (SymbolTable
         1
