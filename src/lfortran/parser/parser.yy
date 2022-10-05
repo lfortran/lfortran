@@ -613,10 +613,12 @@ submodule
 block_data
     : KW_BLOCK KW_DATA sep use_statement_star implicit_statement_star
         decl_statements end_blockdata sep {
-            $$ = BLOCKDATA(TRIVIA($3, $8, @$), $4, $5, SPLIT_DECL(p.m_a, $6), @$); }
+            $$ = BLOCKDATA(TRIVIA($3, $8, @$), $4, $5, SPLIT_DECL(p.m_a, $6),
+                SPLIT_STMT(p.m_a, $6), @$); }
     | KW_BLOCK KW_DATA id sep use_statement_star implicit_statement_star
         decl_statements end_blockdata sep {
-            $$ = BLOCKDATA1($3, TRIVIA($4, $9, @$), $5, $6, SPLIT_DECL(p.m_a, $7), @$); }
+            $$ = BLOCKDATA1($3, TRIVIA($4, $9, @$), $5, $6, SPLIT_DECL(p.m_a, $7),
+                SPLIT_STMT(p.m_a, $7), @$); }
     ;
 
 interface_decl

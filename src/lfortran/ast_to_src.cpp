@@ -430,6 +430,10 @@ public:
             this->visit_unit_decl2(*x.m_decl[i]);
             r.append(s);
         }
+        for (size_t i=0; i<x.n_body; i++) {
+            this->visit_stmt(*x.m_body[i]);
+            r.append(s);
+        }
         dec_indent();
         r += indent;
         r += syn(gr::UnitHeader);

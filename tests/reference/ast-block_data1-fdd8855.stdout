@@ -39,6 +39,16 @@
             None 
             ())] 
             ()
+        )] 
+        [(DataStmt 
+            0 
+            [(DataStmtSet 
+                [x0
+                x1] 
+                [1
+                10]
+            )] 
+            ()
         )]
     )
     (Program 

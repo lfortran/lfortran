@@ -1912,16 +1912,16 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         /*unit_decl2_t** a_decl*/ DECLS(decl), /*size_t n_decl*/ decl.size(), \
         /*program_unit_t** a_contains*/ CONTAINS(contains), /*size_t n_contains*/ contains.size())
 
-#define BLOCKDATA(trivia, use, implicit, decl, l) make_BlockData_t(p.m_a, l, \
+#define BLOCKDATA(trivia, use, implicit, decl, stmt, l) make_BlockData_t(p.m_a, l, \
         nullptr, trivia_cast(trivia), \
         USES(use), use.size(), \
         VEC_CAST(implicit, implicit_statement), implicit.size(), \
-        DECLS(decl), decl.size())
-#define BLOCKDATA1(name, trivia, use, implicit, decl, l) make_BlockData_t( \
+        DECLS(decl), decl.size(), STMTS(stmt), stmt.size())
+#define BLOCKDATA1(name, trivia, use, implicit, decl, stmt, l) make_BlockData_t( \
         p.m_a, l, name2char(name), trivia_cast(trivia), \
         USES(use), use.size(), \
         VEC_CAST(implicit, implicit_statement), implicit.size(), \
-        DECLS(decl), decl.size())
+        DECLS(decl), decl.size(), STMTS(stmt), stmt.size())
 
 #define INTERFACE_HEADER(l) make_InterfaceHeader_t(p.m_a, l)
 #define INTERFACE_HEADER_NAME(id, l) make_InterfaceHeaderName_t(p.m_a, l, \
