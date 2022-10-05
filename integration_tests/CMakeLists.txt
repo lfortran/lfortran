@@ -137,6 +137,8 @@ RUN(NAME expr_08 LABELS gfortran llvm wasm)
 RUN(NAME expr_09 LABELS gfortran llvm wasm)
 
 RUN(NAME data_01 LABELS gfortran llvm)
+RUN(NAME data_02 LABELS gfortran)
+RUN(NAME data_03 LABELS gfortran llvm)
 RUN(NAME minmax_01 LABELS gfortran llvm wasm)
 RUN(NAME arithmetic_if_01 LABELS gfortran llvm)
 RUN(NAME arithmetic_if_02 LABELS gfortran llvm)
