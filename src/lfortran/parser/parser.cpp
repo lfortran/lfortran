@@ -309,7 +309,6 @@ void process_include(std::string& out, const std::string& s,
     // lm.out_start.push_back(out.size());
     out += include;
     while (pos < s.size() && s[pos] != '\n') pos++;
-    lm.in_newlines.push_back(pos);
     lm.out_start.push_back(out.size());
     lm.in_start.push_back(pos);
 }
