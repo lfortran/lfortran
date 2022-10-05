@@ -460,7 +460,10 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     lm.in_start.push_back(pos);
                 }
             } else {
-                if (s[pos] == '\n') lm.in_newlines.push_back(pos);
+                if (s[pos] == '\n') {
+                    lm.in_newlines.push_back(pos);
+                    newline = true;
+                }
             }
             out += s[pos];
             pos++;
