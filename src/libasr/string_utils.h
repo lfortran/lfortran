@@ -31,6 +31,8 @@ std::string read_file(const std::string &filename);
 std::string parent_path(const std::string &path);
 // Returns true if the path is relative
 bool is_relative_path(const std::string &path);
+// Joins paths (paths can be empty)
+std::string join_paths(const std::vector<std::string> &paths);
 
 } // namespace LFortran
 

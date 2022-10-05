@@ -288,7 +288,7 @@ void process_include(std::string& out, const std::string& s,
     parse_string(include_filename, s, pos, false);
     include_filename = include_filename.substr(1, include_filename.size() - 2);
     if (is_relative_path(include_filename)) {
-        include_filename = root_dir + "/" + include_filename;
+        include_filename = join_paths({root_dir, include_filename});
     }
 
     std::string include;
