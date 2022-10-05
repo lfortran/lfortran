@@ -606,7 +606,7 @@ int emit_c(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-int emit_julia(const std::string &infile, CompilerOptions &compiler_options) 
+int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -1188,6 +1188,10 @@ int link_executable(const std::vector<std::string> &infiles,
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
                 return 10;
             }
+            if (outfile == "a.out") {
+                err = system("a.out");
+                if (err) return err;
+            }
         } else {
             std::string CC;
             std::string base_path = "\"" + runtime_library_dir + "\"";
@@ -1228,6 +1232,10 @@ int link_executable(const std::vector<std::string> &infiles,
             if (err) {
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
                 return 10;
+            }
+            if (outfile == "a.out") {
+                err = system("./a.out");
+                if (err) return err;
             }
         }
         return 0;
