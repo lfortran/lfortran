@@ -6,6 +6,7 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/diagnostics.h>
+#include <libasr/string_utils.h>
 #include <lfortran/parser/parser_exception.h>
 #include <lfortran/parser/fixedform_tokenizer.h>
 #include <lfortran/utils.h>
@@ -286,11 +287,8 @@ void process_include(std::string& out, const std::string& s,
     std::string include_filename;
     parse_string(include_filename, s, pos, false);
     include_filename = include_filename.substr(1, include_filename.size() - 2);
-    std::filesystem::path path(include_filename);
-    if (path.is_relative()) {
-        path = std::filesystem::path(root_dir);
-        path.append(include_filename);
-        include_filename = path.string();
+    if (is_relative_path(include_filename)) {
+        include_filename = root_dir + "/" + include_filename;
     }
 
     std::string include;

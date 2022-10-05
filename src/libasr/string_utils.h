@@ -29,6 +29,8 @@ std::string read_file(const std::string &filename);
 
 // Returns the parent path to the given path
 std::string parent_path(const std::string &path);
+// Returns true if the path is relative
+bool is_relative_path(const std::string &path);
 
 } // namespace LFortran
 

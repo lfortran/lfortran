@@ -106,5 +106,8 @@ std::string parent_path(const std::string &path) {
     return std::filesystem::path(path).parent_path().string();
 }
 
+bool is_relative_path(const std::string &path) {
+    return std::filesystem::path(path).is_relative();
+}
 
 } // namespace LFortran
