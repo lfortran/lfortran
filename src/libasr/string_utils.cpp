@@ -117,11 +117,17 @@ bool is_relative_path(const std::string &path) {
 }
 
 std::string join_paths(const std::vector<std::string> &paths) {
-    std::filesystem::path p;
+    std::string p;
+    std::string delim = "/";
     for (auto &path : paths) {
-        p.append(path);
+        if (path.size() > 0) {
+            if (p.size() > 0 && !endswith(p, delim)) {
+                p.append(delim);
+            }
+            p.append(path);
+        }
     }
-    return p.string();
+    return p;
 }
 
 } // namespace LFortran
