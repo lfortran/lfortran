@@ -295,6 +295,8 @@ expr
     | SetPop(expr a, ttype type, expr? value)
     | IntegerBitLen(expr a, ttype type, expr? value)
     | Ichar(expr arg, ttype type, expr? value)
+    | Scan(expr string, expr set, expr? back, ttype type, expr? value)
+    | Verify(expr string, expr set, expr? back, ttype type, expr? value)
 
 
 -- `len` in Character:
