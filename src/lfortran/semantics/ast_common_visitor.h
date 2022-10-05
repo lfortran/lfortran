@@ -2445,6 +2445,8 @@ public:
             }
         }
         return ASR::make_Ichar_t(al, x.base.base.loc, arg, type, ichar_value);
+    }
+
     void create_ScanVerify_util(const AST::FuncCallOrArray_t& x,
         ASR::expr_t*& string, ASR::expr_t*& set, ASR::expr_t*& back,
         ASR::ttype_t*& type, std::string func_name) {

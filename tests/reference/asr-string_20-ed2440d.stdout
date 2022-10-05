@@ -1,0 +1,208 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            test_scan:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            
+                        }) 
+                    test_scan 
+                    [] 
+                    [(FileWrite 
+                        0 
+                        () 
+                        () 
+                        () 
+                        () 
+                        () 
+                        [(Scan 
+                            (StringConstant 
+                                "fortran" 
+                                (Character 1 7 () [])
+                            ) 
+                            (StringConstant 
+                                "ao" 
+                                (Character 1 2 () [])
+                            ) 
+                            () 
+                            (Integer 4 []) 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (FileWrite 
+                        0 
+                        () 
+                        () 
+                        () 
+                        () 
+                        () 
+                        [(Scan 
+                            (StringConstant 
+                                "fortran" 
+                                (Character 1 7 () [])
+                            ) 
+                            (StringConstant 
+                                "ao" 
+                                (Character 1 2 () [])
+                            ) 
+                            (LogicalConstant 
+                                .true. 
+                                (Logical 4 [])
+                            ) 
+                            (Integer 4 []) 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (FileWrite 
+                        0 
+                        () 
+                        () 
+                        () 
+                        () 
+                        () 
+                        [(Scan 
+                            (StringConstant 
+                                "fortran" 
+                                (Character 1 7 () [])
+                            ) 
+                            (StringConstant 
+                                "c++" 
+                                (Character 1 3 () [])
+                            ) 
+                            () 
+                            (Integer 4 []) 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (FileWrite 
+                        0 
+                        () 
+                        () 
+                        () 
+                        () 
+                        () 
+                        [(Verify 
+                            (StringConstant 
+                                "fortran" 
+                                (Character 1 7 () [])
+                            ) 
+                            (StringConstant 
+                                "ao" 
+                                (Character 1 2 () [])
+                            ) 
+                            () 
+                            (Integer 4 []) 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (FileWrite 
+                        0 
+                        () 
+                        () 
+                        () 
+                        () 
+                        () 
+                        [(Verify 
+                            (StringConstant 
+                                "fortran" 
+                                (Character 1 7 () [])
+                            ) 
+                            (StringConstant 
+                                "foo" 
+                                (Character 1 3 () [])
+                            ) 
+                            () 
+                            (Integer 4 []) 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (FileWrite 
+                        0 
+                        () 
+                        () 
+                        () 
+                        () 
+                        () 
+                        [(Verify 
+                            (StringConstant 
+                                "fortran" 
+                                (Character 1 7 () [])
+                            ) 
+                            (StringConstant 
+                                "c++" 
+                                (Character 1 3 () [])
+                            ) 
+                            () 
+                            (Integer 4 []) 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (FileWrite 
+                        0 
+                        () 
+                        () 
+                        () 
+                        () 
+                        () 
+                        [(Verify 
+                            (StringConstant 
+                                "fortran" 
+                                (Character 1 7 () [])
+                            ) 
+                            (StringConstant 
+                                "c++" 
+                                (Character 1 3 () [])
+                            ) 
+                            (LogicalConstant 
+                                .true. 
+                                (Logical 4 [])
+                            ) 
+                            (Integer 4 []) 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (FileWrite 
+                        0 
+                        () 
+                        () 
+                        () 
+                        () 
+                        () 
+                        [(Verify 
+                            (StringConstant 
+                                "fortran" 
+                                (Character 1 7 () [])
+                            ) 
+                            (StringConstant 
+                                "fortran" 
+                                (Character 1 7 () [])
+                            ) 
+                            () 
+                            (Integer 4 []) 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )]
+                )
+            
+        }) 
+    []
+)
