@@ -107,7 +107,7 @@ std::string parent_path(const std::string &path) {
 }
 
 bool is_relative_path(const std::string &path) {
-    return std::filesystem::path(path).is_relative();
+    return !startswith(path, "/");
 }
 
 std::string join_paths(const std::vector<std::string> &paths) {
