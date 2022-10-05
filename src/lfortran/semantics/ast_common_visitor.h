@@ -877,7 +877,7 @@ public:
                 v2->m_value = expression_value;
             }
         }
-        throw SemanticError("DataStmt", x.base.base.loc);
+        tmp = nullptr;
     }
 
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
