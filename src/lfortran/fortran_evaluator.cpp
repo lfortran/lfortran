@@ -184,7 +184,8 @@ Result<AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
         code = &tmp;
     }
     if (compiler_options.prescan || compiler_options.fixed_form) {
-        tmp = fix_continuation(*code, lm, compiler_options.fixed_form);
+        tmp = fix_continuation(*code, lm, compiler_options.fixed_form,
+            parent_path(lm.in_filename));
         code = &tmp;
     }
     Result<AST::TranslationUnit_t*> res = parse(al, *code, diagnostics, compiler_options.fixed_form);
