@@ -285,24 +285,15 @@ void process_include(std::string& out, const std::string& s,
     std::string include_filename;
     parse_string(include_filename, s, pos, false);
     include_filename = include_filename.substr(1, include_filename.size() - 2);
-    std::string current_filename = lm.in_filename;
-    std::filesystem::path include_path(include_filename);
-    std::string include_path_str;
-    if (include_path.is_relative()) {
-        include_path = std::filesystem::path(current_filename).parent_path();
-        include_path.append(include_filename);
-        include_path_str = include_path.string();
-    } else {
-        include_path_str = include_filename;
-    }
 
     std::string include;
-    if (!read_file(include_path_str, include)) {
-        throw LCompilersException("Include file '" + include_filename + "' cannot be opened");
+    if (!read_file(include_filename, include)) {
+        throw LCompilersException("Include file '" + include_filename
+            + "' cannot be opened");
     }
 
     LocationManager lm_tmp;
-    lm_tmp.in_filename = include_path_str;
+    lm_tmp.in_filename = include_filename;
     include = fix_continuation(include, lm_tmp, fixed_form);
 
     // Possible it goes here
@@ -427,6 +418,7 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
         bool in_comment = false, newline = true;
         while (pos < s.size()) {
             if (newline) {
+                while (pos < s.size() && s[pos] == ' ') pos++;
                 if (pos + 6 < s.size() && s.substr(pos, 7) == "include") {
                     pos += 7;
                     while (pos < s.size() && s[pos] == ' ') pos++;
