@@ -2470,3 +2470,8 @@ asr = true
 filename = "fixed_form_external_mixed.f"
 ast = true
 asr = true
+
+[[test]]
+filename = "fixed_form_external_declaration.f"
+ast = true
+asr = true

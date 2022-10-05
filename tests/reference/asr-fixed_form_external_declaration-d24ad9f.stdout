@@ -1,0 +1,58 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            dm:
+                (Function 
+                    (SymbolTable
+                        3
+                        {
+                            
+                        }) 
+                    dm 
+                    [(StringConstant 
+                        "e" 
+                        (Character 1 1 () [])
+                    )] 
+                    [(Character 1 1 () [])] 
+                    [] 
+                    () 
+                    Source 
+                    Public 
+                    Interface 
+                    () 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false.
+                ), 
+            main:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            
+                        }) 
+                    main 
+                    [] 
+                    [(Print 
+                        () 
+                        [(FunctionCall 
+                            1 dm 
+                            () 
+                            [((StringConstant 
+                                "e" 
+                                (Character 1 1 () [])
+                            ))] 
+                            (Character 1 1 () []) 
+                            () 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )]
+                )
+            
+        }) 
+    []
+)

@@ -1113,6 +1113,42 @@ public:
     }
 
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
+        // std::cout << "in visit_SubroutineCall with " << x.m_name << "\n";
+        if (has_external_function(to_lower(x.m_name)) && !external_functions[to_lower(x.m_name)].second) {
+            auto cpy_scope = current_scope;
+             
+            auto sub_name = to_lower(x.m_name);
+            auto sym = external_functions[sub_name].first;
+            Vec<ASR::call_arg_t> args;
+            visit_expr_list(x.m_args, x.n_args, args);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+            current_scope = f->m_symtab;
+            if (external_functions[sub_name].first != nullptr && !external_functions[sub_name].second) {
+                Vec<ASR::expr_t *> fun_exprs;  fun_exprs.reserve(al, x.n_args);
+                Vec<ASR::ttype_t *> type_exprs; type_exprs.reserve(al, x.n_args);
+                for (size_t i = 0;i < x.n_args; ++i) {
+                    // last remaining issue
+                    // if (ASR::is_a<ASR::Var_t>(*args[i].m_value)) { std::cout << "has Var_t\n";}
+                    fun_exprs.push_back(al, args[i].m_value);
+                    type_exprs.push_back(al, ASRUtils::expr_type(args[i].m_value));
+                }
+                f->m_args = fun_exprs.p;
+                f->n_args = fun_exprs.n;
+                f->n_type_params = type_exprs.n;
+                f->m_type_params = type_exprs.p;
+                auto original_sym = sym;
+                auto final_sym = original_sym;
+                original_sym = nullptr;
+                ASR::expr_t *v_expr = nullptr;
+                tmp = ASR::make_SubroutineCall_t(al, x.base.base.loc,
+                    final_sym, original_sym, args.p, f->n_args, v_expr);
+                external_functions[sub_name].second = true;
+                current_scope = cpy_scope;
+                return;
+            } else {
+                throw SemanticError("", x.base.base.loc);
+            }
+        }
         SymbolTable* scope = current_scope;
         std::string sub_name = to_lower(x.m_name);
         ASR::symbol_t *original_sym;
@@ -1125,13 +1161,6 @@ public:
             v_expr = LFortran::ASRUtils::EXPR(v_var);
             original_sym = resolve_deriv_type_proc(x.base.base.loc, to_lower(x.m_name),
                 to_lower(x.m_member[0].m_name), scope);
-        } else if (has_external_function(sub_name)) {
-            if(external_functions[sub_name].first != nullptr) {
-                original_sym = external_functions[sub_name].first;
-            } else {
-                throw SemanticError("External procedure error", x.base.base.loc);
-            }
-
         } else {
             original_sym = current_scope->resolve_symbol(sub_name);
         }
@@ -1143,6 +1172,7 @@ public:
                 LFORTRAN_ASSERT(original_sym!=nullptr);
             }
         }
+
         ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(original_sym);
         if (ASR::is_a<ASR::Function_t>(*sym)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
@@ -1161,40 +1191,6 @@ public:
 
         Vec<ASR::call_arg_t> args;
         visit_expr_list(x.m_args, x.n_args, args);
-
-        if (ASR::is_a<ASR::Function_t>(*sym) && has_external_function(sub_name)) {
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
-            if (external_functions[sub_name].first != nullptr && !external_functions[sub_name].second) {
-                Vec<ASR::expr_t *> exprs;  exprs.reserve(al, x.n_args);
-                for (size_t i=0;i<x.n_args;++i) {
-                    if (!ASR::is_a<ASR::Var_t>(*args[i].m_value))
-                        throw SemanticError("External procedure cannot be called with non-variable argument", args[i].loc );
-                    auto var = LFortran::ASRUtils::EXPR2VAR(args[i].m_value);
-                    auto sym = current_scope->get_symbol(var->m_name); // program scope
-                    if (sym == nullptr) throw SemanticError("Variable not declared", args[i].loc);
-                    else {
-                        auto new_var = ASR::make_Variable_t(
-                            al, var->base.base.loc,
-                            f->m_symtab, s2c(al, var->m_name), var->m_intent,
-                            var->m_symbolic_value, var->m_value, var->m_storage,
-                            var->m_type, var->m_abi, var->m_access, var->m_presence, var->m_value_attr
-                        );
-                        auto new_sym = ASR::down_cast<ASR::symbol_t>(new_var);
-
-                        exprs.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, new_sym)));
-                        f->m_symtab->add_symbol(var->m_name, new_sym);
-                    }
-                }
-                f->m_args = exprs.p;
-                f->n_args = exprs.size();
-                auto final_sym = original_sym;
-                original_sym = nullptr;
-                tmp = ASR::make_SubroutineCall_t(al, x.base.base.loc,
-                    final_sym, original_sym, args.p, f->n_args, v_expr);
-                external_functions[sub_name].second = true;
-                return;
-            }
-        }
 
         if (x.n_keywords > 0) {
             ASR::symbol_t* f2 = LFortran::ASRUtils::symbol_get_past_external(original_sym);
