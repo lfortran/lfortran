@@ -2,11 +2,11 @@
     "basename": "asr-fixed_form_assign_to1-9e15065",
     "cmd": "lfortran --indent --fixed-form --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/fixed_form_assign_to1.f",
-    "infile_hash": "d76077afdd3f3c22b5e6769f2365e819c0fe06298487bd65c6e59526",
+    "infile_hash": "9dbe8770330acd15438625f1425b45ce1f593b85ba08bc96601b1ddd",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-fixed_form_assign_to1-9e15065.stdout",
-    "stdout_hash": "fb6a4f9a91fc56f3fde0452d68298d283db1fe6b106955f31f10ad3a",
+    "stdout_hash": "0d3a0034433bad37dba0a7e75cb1f1609d02bf9cadab124738e2d6c4",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

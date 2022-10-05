@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            main:
+            assign3:
                 (Program 
                     (SymbolTable
                         2
@@ -23,7 +23,7 @@
                                 )
                             
                         }) 
-                    main 
+                    assign3 
                     [] 
                     [(GoToTarget 
                         10

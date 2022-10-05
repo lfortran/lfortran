@@ -45,25 +45,28 @@
             None 
             ())] 
             ()
-        )] 
-        [(DataStmt 
-            0 
-            [(DataStmtSet 
+        )
+        (Declaration 
+            () 
+            [(AttrData 
                 [x] 
                 [1]
             )] 
+            [] 
             ()
         )
-        (DataStmt 
-            0 
-            [(DataStmtSet 
+        (Declaration 
+            () 
+            [(AttrData 
                 [one
                 two] 
                 [(Real "1.0")
                 (Real "2.0")]
             )] 
+            [] 
             ()
         )] 
+        [] 
         []
     )]
 )

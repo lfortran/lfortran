@@ -1,6 +1,6 @@
 (TranslationUnit 
     [(Program 
-        main 
+        assign2 
         () 
         [] 
         [] 

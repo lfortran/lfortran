@@ -1,4 +1,4 @@
-      program main
+      program assign3
    10 assign 30 to next
    20 GO TO next,(30, 50, 70, 110)
       assign 50 to next

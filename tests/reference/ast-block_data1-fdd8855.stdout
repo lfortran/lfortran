@@ -39,15 +39,16 @@
             None 
             ())] 
             ()
-        )] 
-        [(DataStmt 
-            0 
-            [(DataStmtSet 
+        )
+        (Declaration 
+            () 
+            [(AttrData 
                 [x0
                 x1] 
                 [1
                 10]
             )] 
+            [] 
             ()
         )]
     )

@@ -26,10 +26,10 @@
             None 
             ())] 
             ()
-        )] 
-        [(DataStmt 
-            0 
-            [(DataStmtSet 
+        )
+        (Declaration 
+            () 
+            [(AttrData 
                 [(DataImpliedDo 
                     [(FuncCallOrArray 
                         coef 
@@ -60,8 +60,10 @@
                 (Real "4.0d0")
                 (Real "4.0d0")]
             )] 
+            [] 
             ()
         )] 
+        [] 
         []
     )]
 )

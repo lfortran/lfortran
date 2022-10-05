@@ -85,10 +85,10 @@
             None 
             ())] 
             ()
-        )] 
-        [(DataStmt 
-            0 
-            [(DataStmtSet 
+        )
+        (Declaration 
+            () 
+            [(AttrData 
                 [x
                 td
                 b] 
@@ -96,44 +96,48 @@
                 4
                 3]
             )] 
+            [] 
             ()
         )
-        (DataStmt 
-            0 
-            [(DataStmtSet 
+        (Declaration 
+            () 
+            [(AttrData 
                 [y
                 z] 
                 [(Real "2.0")
                 (Real "3.0")]
             )] 
+            [] 
             ()
         )
-        (DataStmt 
-            0 
-            [(DataStmtSet 
+        (Declaration 
+            () 
+            [(AttrData 
                 [c1] 
                 [(Real "0.0")
                 (Real "0.22")
                 (u- (Real "0.14"))
                 (u- (Real "0.21"))]
             )] 
+            [] 
             ()
         )
-        (DataStmt 
-            0 
-            [(DataStmtSet 
+        (Declaration 
+            () 
+            [(AttrData 
                 [bf1] 
                 [(Real "0.8")]
             )
-            (DataStmtSet 
+            (AttrData 
                 [xx90
                 xx95] 
                 [(Real "0.55")
                 (Real "0.62")]
             )] 
+            [] 
             ()
-        )
-        (Print 
+        )] 
+        [(Print 
             0 
             () 
             [x
