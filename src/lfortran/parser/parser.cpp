@@ -8,6 +8,7 @@
 #include <libasr/diagnostics.h>
 #include <lfortran/parser/parser_exception.h>
 #include <lfortran/parser/fixedform_tokenizer.h>
+#include <lfortran/utils.h>
 
 #include <lfortran/pickle.h>
 
@@ -136,7 +137,7 @@ bool is_digit(unsigned char ch) {
 
 enum LineType {
     Comment, Statement, LabeledStatement, Continuation, EndOfFile,
-    ContinuationTab, StatementTab
+    ContinuationTab, StatementTab, Include,
 };
 
 // Determines the type of line in the fixed-form prescanner
@@ -183,6 +184,8 @@ LineType determine_line_type(const unsigned char *pos)
         }
         if (col <= 6) {
             return LineType::LabeledStatement;
+        } else if (std::string(pos, pos + 7) == "include") {
+            return LineType::Include;
         } else {
             return LineType::Statement;
         }
@@ -275,6 +278,42 @@ bool check_newlines(const std::string &s, const std::vector<uint32_t> &newlines)
     return true;
 }
 
+void process_include(std::string& out, const std::string& s,
+                     LocationManager& lm, size_t& pos, bool fixed_form)
+{
+    std::string include_filename;
+    parse_string(include_filename, s, pos);
+    include_filename = include_filename.substr(1, include_filename.size() - 2);
+    std::string current_filename = lm.in_filename;
+    std::filesystem::path include_path(include_filename);
+    std::string include_path_str;
+    if (include_path.is_relative()) {
+        include_path = std::filesystem::path(current_filename).parent_path();
+        include_path.append(include_filename);
+        include_path_str = include_path.string();
+    } else {
+        include_path_str = include_filename;
+    }
+
+    std::string include;
+    if (!read_file(include_path_str, include)) {
+        throw LCompilersException("Include file '" + include_filename + "' cannot be opened");
+    }
+
+    LocationManager lm_tmp;
+    lm_tmp.in_filename = include_path_str;
+    include = fix_continuation(include, lm_tmp, fixed_form);
+
+    // Possible it goes here
+    // lm.out_start.push_back(out.size());
+    out += include;
+    while (pos < s.size() && s[pos] != '\n')
+        pos++;
+    lm.in_newlines.push_back(pos);
+    lm.out_start.push_back(out.size());
+    lm.in_start.push_back(pos);
+}
+
 std::string fix_continuation(const std::string &s, LocationManager &lm,
         bool fixed_form)
 {
@@ -359,6 +398,17 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
+                case LineType::Include: {
+                    while (pos < s.size() && s[pos] == ' ')
+                        pos++;
+                    LFORTRAN_ASSERT(std::string(pos, pos + 7) == "include");
+                    pos += 7;
+                    while (pos < s.size() && s[pos] == ' ')
+                        pos++;
+                    if ((s[pos] == '"') || (s[pos] == '\''))
+                        process_include(out, s, lm, pos, fixed_form);
+                    break;
+                }
                 case LineType::EndOfFile : {
                     break;
                 }
@@ -375,8 +425,18 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
         lm.in_start.push_back(0);
         std::string out;
         size_t pos = 0;
-        bool in_comment = false;
+        bool in_comment = false, newline = true;
         while (pos < s.size()) {
+            if (newline) {
+                if (pos + 6 < s.size() && s.substr(pos, 7) == "include") {
+                    pos += 7;
+                    while (pos < s.size() && s[pos] == ' ')
+                        pos++;
+                    if (pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')))
+                        process_include(out, s, lm, pos, fixed_form);
+                }
+            }
+            newline = false;
             if (s[pos] == '!') in_comment = true;
             if (in_comment && s[pos] == '\n') in_comment = false;
             if (!in_comment && s[pos] == '&') {
