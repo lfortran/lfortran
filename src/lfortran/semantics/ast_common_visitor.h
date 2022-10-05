@@ -799,6 +799,10 @@ public:
         return false;
     }
 
+    void visit_DataStmt(const AST::DataStmt_t &x) {
+        throw SemanticError("DataStmt", x.base.base.loc);
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
