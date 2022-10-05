@@ -70,7 +70,6 @@ public:
     std::map<AST::intrinsicopType, std::vector<std::string>> overloaded_op_procs;
     std::map<std::string, std::vector<std::string>> defined_op_procs;
     std::map<std::string, std::map<std::string, std::string>> class_procedures;
-    std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> implicit_mapping;
     std::vector<std::string> assgn_proc_names;
     std::string dt_name;
     bool in_submodule = false;
