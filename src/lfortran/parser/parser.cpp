@@ -403,15 +403,14 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     break;
                 }
                 case LineType::Include: {
-                    while (pos < s.size() && s[pos] == ' ')
-                        pos++;
-                    LFORTRAN_ASSERT(std::string(pos, pos + 7) == "include");
+                    while (pos < s.size() && s[pos] == ' ') pos++;
+                    LFORTRAN_ASSERT(s.substr(pos, 7) == "include");
                     pos += 7;
-                    while (pos < s.size() && s[pos] == ' ')
-                        pos++;
-                    if ((s[pos] == '"') || (s[pos] == '\''))
+                    while (pos < s.size() && s[pos] == ' ') pos++;
+                    if ((s[pos] == '"') || (s[pos] == '\'')) {
                         process_include(out, s, lm, pos, fixed_form,
                             root_dir);
+                    }
                     break;
                 }
                 case LineType::EndOfFile : {
