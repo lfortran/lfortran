@@ -41,24 +41,13 @@
                         ) 
                         [(= 
                             (Var 2 k) 
-                            (IntegerConstant 100 (Integer 8 [])) 
+                            (IntegerConstant 101 (Integer 8 [])) 
                             ()
                         )] 
                         []
                     )
                     (Select 
-                        (IntegerBinOp 
-                            (Var 2 k) 
-                            Add 
-                            (Cast 
-                                (IntegerConstant 1 (Integer 4 [])) 
-                                IntegerToInteger 
-                                (Integer 8 []) 
-                                (IntegerConstant 1 (Integer 8 []))
-                            ) 
-                            (Integer 8 []) 
-                            ()
-                        ) 
+                        (IntegerConstant 0 (Integer 8 [])) 
                         [(CaseStmt 
                             [(IntegerConstant 100 (Integer 4 []))] 
                             [(GoTo 
@@ -72,6 +61,15 @@
                             )]
                         )] 
                         []
+                    )
+                    (Print 
+                        () 
+                        [(StringConstant 
+                            "no" 
+                            (Character 1 2 () [])
+                        )] 
+                        () 
+                        ()
                     )
                     (GoToTarget 
                         101
