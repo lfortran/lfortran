@@ -431,6 +431,7 @@ public:
             r.append(s);
         }
         for (size_t i=0; i<x.n_body; i++) {
+            r.append(indent);
             this->visit_stmt(*x.m_body[i]);
             r.append(s);
         }
