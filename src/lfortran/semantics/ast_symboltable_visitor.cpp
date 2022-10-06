@@ -375,17 +375,17 @@ public:
     }
 
     void populate_implicit_dictionary(const AST::Function_t &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
-		for (char ch='i'; ch<='n'; ch++) {
-			implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
-		}
+        for (char ch='i'; ch<='n'; ch++) {
+            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+        }
 
-		for (char ch='o'; ch<='z'; ch++) {
-			implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
-		}
+        for (char ch='o'; ch<='z'; ch++) {
+            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+        }
 
-		for (char ch='a'; ch<='h'; ch++) {
-			implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
-		}
+        for (char ch='a'; ch<='h'; ch++) {
+            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+        }
     }
 
     void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
