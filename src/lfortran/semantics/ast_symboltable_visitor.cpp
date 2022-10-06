@@ -375,30 +375,17 @@ public:
     }
 
     void populate_implicit_dictionary(const AST::Function_t &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
-        if (compiler_options.implicit_typing) {
-            //if --implicit-typing flag is used
+		for (char ch='i'; ch<='n'; ch++) {
+			implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+		}
 
-            //then define i-n as integer and rest all as real
+		for (char ch='o'; ch<='z'; ch++) {
+			implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+		}
 
-            for (char ch='i'; ch<='n'; ch++) {
-                implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
-            }
-
-            for (char ch='o'; ch<='z'; ch++) {
-                implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
-            }
-
-            for (char ch='a'; ch<='h'; ch++) {
-                implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
-            }
-        } else {
-            //if --implicit-typing flag is not used
-            //populate all characters as nullptr
-
-            for (char ch='a'; ch<='z'; ch++) {
-                implicit_dictionary[std::string(1, ch)] = nullptr;
-            }
-        }
+		for (char ch='a'; ch<='h'; ch++) {
+			implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+		}
     }
 
     void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
@@ -418,7 +405,9 @@ public:
         // TODO: this needs to be moved to Common Visitor, and it needs to be
         // made availabe when visiting the body, not the symbol table.
         //populate the implicit_dictionary
-        populate_implicit_dictionary(x, implicit_dictionary);
+        if (compiler_options.implicit_typing) {
+			populate_implicit_dictionary(x, implicit_dictionary);
+		}
         //iterate over all implicit statements
         for (size_t i=0;i<x.n_implicit;i++) {
             //get the implicit statement
