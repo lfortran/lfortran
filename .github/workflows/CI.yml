@@ -282,6 +282,12 @@ jobs:
             for file in $files; do
                 ../src/bin/lfortran --fixed-form fmt --no-color $file > $file.f90
                 gfortran -ffree-line-length-none -c $file.f90 -o $file.o
+                if [[ "$file" == *"minpack"* ]]; then
+                    if [[ "$file" != *"dpmpar.f"* ]]; then
+                        ../src/bin/lfortran --show-asr --no-color --fixed-form --implicit-typing --allow-implicit-interface $file > $file.asr
+                    fi
+                fi
+
             done
 
 
