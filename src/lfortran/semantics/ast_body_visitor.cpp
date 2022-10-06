@@ -1035,6 +1035,19 @@ public:
                                                             ASR::abiType::Source, ASR::Public, ASR::presenceType::Optional, false);
             current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(a_variable));
             sym = ASR::down_cast<ASR::symbol_t>(a_variable);
+        } else {
+            // symbol found but we need to have consistent types
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                throw SemanticError("Assign target needs to be a variable.", x.base.base.loc);
+            }
+
+            if (std::find(labels.begin(), labels.end(), var_name) == labels.end()) {
+                labels.push_back(var_name);
+            }
+            // ensure the precision is consistent
+            auto v = ASR::down_cast<ASR::Variable_t>(sym);
+            auto t = ASR::down_cast<ASR::Integer_t>(v->m_type);
+            t->m_kind = 4;
         }
 
         // ASSIGN XXX TO k -- XXX can only be integer for now.
@@ -1628,9 +1641,6 @@ public:
             if (std::find(labels.begin(), labels.end(), label_var) == labels.end()) {
                 throw SemanticError("Invalid GOTO target.", x.base.base.loc);
             }
-
-            // this->visit_expr(*x.m_goto_label); <- is nullptr here
-            // ASR::expr_t *goto_label = ASRUtils::EXPR(tmp);
 
             std::string label{x.m_int_var};
             if (std::find(labels.begin(), labels.end(), label) == labels.end()) {

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-assign_to1-c51ad95",
+    "cmd": "lfortran --indent --show-asr --implicit-typing --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/assign_to1.f90",
+    "infile_hash": "74de9fa2c8ccdcd1b7f5c013f2cc2ac04f79f2a4cf852db9b678f498",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-assign_to1-c51ad95.stdout",
+    "stdout_hash": "83afbad452d08f50d8f640fd093cee72a7b9c681596a326d38475a3e",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

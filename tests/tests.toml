@@ -2469,16 +2469,23 @@ ast = true
 asr = true
 
 [[test]]
-filename = "fixed_form_assign_to1.f"
+filename = "fixed_form/fixed_form_assign_to1.f"
 ast = true
-asr = true
 
 [[test]]
-filename = "fixed_form_assign_to2.f"
+filename = "fixed_form/fixed_form_assign_to2.f"
 ast = true
-asr = true
 
 [[test]]
-filename = "fixed_form_assign_to3.f"
+filename = "fixed_form/fixed_form_assign_to3.f"
 ast = true
-asr = true
+
+[[test]]
+filename = "../integration_tests/assign_to1.f90"
+ast = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "../integration_tests/assign_to2.f90"
+ast = true
+asr_implicit_typing = true

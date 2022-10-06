@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            assign2:
+            main:
                 (Program 
                     (SymbolTable
                         2
@@ -23,10 +23,10 @@
                                 )
                             
                         }) 
-                    assign2 
+                    main 
                     [] 
                     [(GoToTarget 
-                        100
+                        1000
                     )
                     (If 
                         (IntegerCompare 
@@ -41,47 +41,18 @@
                         ) 
                         [(= 
                             (Var 2 k) 
-                            (IntegerConstant 101 (Integer 4 [])) 
+                            (IntegerConstant 100 (Integer 4 [])) 
                             ()
                         )] 
                         []
                     )
+                    (GoToTarget 
+                        100
+                    )
                     (Select 
                         (Var 2 k) 
-                        [(CaseStmt 
-                            [(IntegerConstant 100 (Integer 4 []))] 
-                            [(GoTo 
-                                100
-                            )]
-                        )
-                        (CaseStmt 
-                            [(IntegerConstant 101 (Integer 4 []))] 
-                            [(GoTo 
-                                101
-                            )]
-                        )] 
+                        [] 
                         []
-                    )
-                    (Print 
-                        () 
-                        [(StringConstant 
-                            "no" 
-                            (Character 1 2 () [])
-                        )] 
-                        () 
-                        ()
-                    )
-                    (GoToTarget 
-                        101
-                    )
-                    (Print 
-                        () 
-                        [(StringConstant 
-                            "yes" 
-                            (Character 1 3 () [])
-                        )] 
-                        () 
-                        ()
                     )]
                 )
             
