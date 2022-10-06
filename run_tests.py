@@ -70,6 +70,15 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
                 filename,
                 update_reference,
                 extra_args)
+        elif "no_prescan" in filename:
+            # Use free form with prescan disabled
+            run_test(
+                filename,
+                "ast",
+                "lfortran --indent --no-prescan --show-ast --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                extra_args)
         else:
             # Use free form
             run_test(

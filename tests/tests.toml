@@ -2550,3 +2550,11 @@ asr_implicit_typing = true
 [[test]]
 filename = "../integration_tests/statement1.f90"
 asr = true
+
+[[test]]
+filename = "no_prescan_include1.f90"
+ast = true
+
+[[test]]
+filename = "no_prescan_include2.f90"
+ast = true
