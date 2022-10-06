@@ -71,6 +71,8 @@ public:
     // The `body` Vec must already be reserved
     void transform_stmts(Vec<ASR::stmt_t*> &body, size_t n_body, AST::stmt_t **m_body) {
         tmp = nullptr;
+        Vec<ASR::stmt_t*>* current_body_copy = current_body;
+        current_body = &body;
         for (size_t i=0; i<n_body; i++) {
             // If there is a label, create a GoToTarget node first
             int64_t label = stmt_label(m_body[i]);
@@ -92,6 +94,7 @@ public:
             }
             // To avoid last statement to be entered twice once we exit this node
             tmp = nullptr;
+            current_body = current_body_copy;
         }
     }
 

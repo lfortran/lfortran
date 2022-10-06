@@ -123,6 +123,8 @@ RUN(NAME stop_01 LABELS llvm wasm llvm2)
 RUN(NAME print_01 LABELS gfortran llvm cpp llvm2 wasm)
 RUN(NAME print_02 LABELS gfortran llvm llvm2)
 
+RUN(NAME include_01 LABELS gfortran llvm)
+
 RUN(NAME cond_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME cond_02 LABELS gfortran llvm wasm)
 
@@ -137,6 +139,8 @@ RUN(NAME expr_08 LABELS gfortran llvm wasm)
 RUN(NAME expr_09 LABELS gfortran llvm wasm)
 
 RUN(NAME data_01 LABELS gfortran llvm)
+RUN(NAME data_02 LABELS gfortran)
+RUN(NAME data_03 LABELS gfortran llvm)
 RUN(NAME minmax_01 LABELS gfortran llvm wasm)
 RUN(NAME arithmetic_if_01 LABELS gfortran llvm)
 RUN(NAME arithmetic_if_02 LABELS gfortran llvm)

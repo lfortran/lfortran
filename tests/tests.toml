@@ -536,6 +536,14 @@ filename = "../integration_tests/subroutines_07.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/data_01.f90"
+ast = true
+
+[[test]]
+filename = "../integration_tests/data_02.f90"
+ast = true
+
+[[test]]
 filename = "scopes1.f90"
 asr = true
 
@@ -1204,6 +1212,10 @@ pass = "dead_code_removal"
 julia = true
 c = true
 cpp = true
+
+[[test]]
+filename = "../integration_tests/include_01.f90"
+ast = true
 
 [[test]]
 filename = "../integration_tests/program_02.f90"
@@ -2382,6 +2394,10 @@ ast = true
 
 [[test]]
 filename = "fixed_form/double_complex1.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/include1.f"
 ast = true
 
 [[test]]
