@@ -1637,11 +1637,6 @@ public:
                            a_body_vec.size(), def_body.p, def_body.size());
             }
         } else if (x.m_int_var) {
-            std::string label_var{x.m_int_var};
-            if (std::find(labels.begin(), labels.end(), label_var) == labels.end()) {
-                throw SemanticError("Invalid GOTO target.", x.base.base.loc);
-            }
-
             std::string label{x.m_int_var};
             if (std::find(labels.begin(), labels.end(), label) == labels.end()) {
                 throw SemanticError("Cannot GOTO unknown label", x.base.base.loc);
@@ -1654,20 +1649,43 @@ public:
             Vec<ASR::stmt_t*> def_body;
             def_body.reserve(al, 1);
 
-            for (size_t i = 0; i < x.n_labels; ++i) {
-                if (!AST::is_a<AST::Num_t>(*x.m_labels[i])) {
-                    throw SemanticError("Only integer labels are supported in GOTO.",
-                        x.base.base.loc);
-                } else {
-                    auto l = AST::down_cast<AST::Num_t>(x.m_labels[i]);
+            auto is_integer = [] (const std::string & s) {
+                    return !s.empty() && std::all_of(s.begin(), s.end(), [](char c) {
+                        return ::isdigit(c) || c == ' ';
+                    });
+            };
+
+            // if there are no labels to iterate over, iterate over _all_ labels available in current scope
+            if (!x.n_labels) {
+                for (const auto &label : labels) {
+                    if (!is_integer(label)) continue;
+                    int32_t num = std::stoi(label);
                     Vec<ASR::stmt_t*> body;
                     body.reserve(al, 1);
-                    body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n)));
+                    body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, num)));
                     Vec<ASR::expr_t*> comparator_one;
                     comparator_one.reserve(al, 1);
                     ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
-                    comparator_one.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, l->m_n, int32_type)));
+                    comparator_one.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, num, int32_type)));
                     a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
+                }
+
+            } else {
+                for (size_t i = 0; i < x.n_labels; ++i) {
+                    if (!AST::is_a<AST::Num_t>(*x.m_labels[i])) {
+                        throw SemanticError("Only integer labels are supported in GOTO.",
+                            x.base.base.loc);
+                    } else {
+                        auto l = AST::down_cast<AST::Num_t>(x.m_labels[i]);
+                        Vec<ASR::stmt_t*> body;
+                        body.reserve(al, 1);
+                        body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n)));
+                        Vec<ASR::expr_t*> comparator_one;
+                        comparator_one.reserve(al, 1);
+                        ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+                        comparator_one.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, l->m_n, int32_type)));
+                        a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
+                    }
                 }
             }
             ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
