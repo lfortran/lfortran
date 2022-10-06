@@ -888,6 +888,39 @@ public:
         tmp = nullptr;
     }
 
+    void add_External(const AST::var_sym_t &s) {
+        std::string sym = to_lower(s.m_name);
+        assgnd_access[sym] = ASR::accessType::Public;
+        auto fn_name = sym.data();
+        auto v = current_scope->resolve_symbol(fn_name);
+        if (v && (external_functions[fn_name].second ||
+            !has_external_function(fn_name))) {
+            throw SemanticError("External procedure already declared in same scope", s.loc);
+        }
+        // we don't actually know the return type of the function for now
+        ASR::expr_t *return_type = nullptr;      
+        auto pscope = current_scope;
+        SymbolTable *parent_scope = current_scope->parent;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        tmp = ASR::make_Function_t(
+            al, s.loc,
+            /* a_symtab */ current_scope,
+            /* a_name */ s2c(al, sym),
+            /* a_args */ nullptr, // --
+            /* n_args */ 0,       // -- these two to be filled at a later point
+            nullptr, 0,
+            /* a_body */ nullptr,
+            /* n_body */ 0,
+            return_type,
+            ASR::abiType::Source,
+            ASR::accessType::Public, ASR::deftypeType::Interface, nullptr,
+            false, false, false, false);
+        parent_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
+        external_functions[fn_name] = std::make_pair(ASR::down_cast<ASR::symbol_t>(tmp), false);
+        external_functions[fn_name].second = false;
+        current_scope = pscope;
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
@@ -993,37 +1026,7 @@ public:
                                  // enable `EXTERNAL` attribute
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrExternal) {
-                                    assgnd_access[sym] = ASR::accessType::Public;
-                                    auto fn_name = sym.data();
-                                    auto v = current_scope->resolve_symbol(fn_name);
-                                    if (v && external_functions[fn_name].second) throw SemanticError("External procedure already declared in same scope", s.loc);
-
-                                    ASR::expr_t *return_type = nullptr;
-                                    // take declaration as return value
-                                    if (v && ASR::is_a<ASR::Variable_t>(*v)) {
-                                        // ASR::ttype_t *t = ASR::down_cast<ASR::Variable_t>(v)->m_type;
-                                        // TBD
-                                    }                                  
-                                    auto pscope = current_scope;
-                                    SymbolTable *parent_scope = current_scope->parent;
-                                    current_scope = al.make_new<SymbolTable>(parent_scope);
-                                    tmp = ASR::make_Function_t(
-                                        al, s.loc,
-                                        /* a_symtab */ current_scope,
-                                        /* a_name */ s2c(al, sym),
-                                        /* a_args */ nullptr, // --
-                                        /* n_args */ 0,       // -- these two to be filled at a later point
-                                        nullptr, 0,
-                                        /* a_body */ nullptr,
-                                        /* n_body */ 0,
-                                        return_type,
-                                        ASR::abiType::Source,
-                                        ASR::accessType::Public, ASR::deftypeType::Interface, nullptr,
-                                        false, false, false, false);
-                                    parent_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
-                                    external_functions[fn_name] = std::make_pair(ASR::down_cast<ASR::symbol_t>(tmp), false);
-                                    external_functions[fn_name].second = false;
-                                    current_scope = pscope;
+                                    add_External(s);
                                 } else {
                                     throw SemanticError("Attribute declaration not "
                                             "supported", x.base.base.loc);
@@ -1155,6 +1158,9 @@ public:
                             } else if(sa->m_attr == AST::simple_attributeType
                                     ::AttrIntrinsic) {
                                 excluded_from_symtab.push_back(sym);
+                            } else if (sa->m_attr == AST::simple_attributeType
+                                    ::AttrExternal) {
+                                add_External(s);
                             } else {
                                 throw SemanticError("Attribute type not implemented yet",
                                         x.base.base.loc);
@@ -2657,14 +2663,6 @@ public:
                         throw SemanticError("Type mismatch in argument " + std::to_string(i+1), x.base.base.loc);
                     }
                 }
-                ASR::ttype_t *type = nullptr;
-                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
-                tmp = ASR::make_FunctionCall_t(al, x.base.base.loc,
-                    external_functions[x.m_func].first, nullptr, args.p, args.size(), type,
-                    nullptr, nullptr);
-                return;
-
-
             } else {
                 Vec<ASR::expr_t *> fun_exprs;  fun_exprs.reserve(al, x.n_args);
                 Vec<ASR::ttype_t *> type_exprs; type_exprs.reserve(al, x.n_args);
@@ -2688,12 +2686,16 @@ public:
                         }
                 }
                 external_functions[x.m_func].second = true;
-                ASR::ttype_t *type = nullptr;
-                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
-                tmp = ASR::make_FunctionCall_t(al, x.base.base.loc,
-                    external_functions[x.m_func].first, nullptr, args.p, args.size(), type,
-                    nullptr, nullptr);
             }
+            ASR::ttype_t *type = nullptr;
+            if (f->m_return_var) {
+                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(f->m_return_var));
+            } else {                
+                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+            }
+            tmp = ASR::make_FunctionCall_t(al, x.base.base.loc,
+                external_functions[x.m_func].first, nullptr, args.p, args.size(), type,
+                nullptr, nullptr);
             return;
         }
         

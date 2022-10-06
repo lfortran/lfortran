@@ -1017,6 +1017,24 @@ public:
             t = current_scope->get_symbol(to_lower(x.m_name) + "~genericprocedure");
         }
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
+
+        if (has_external_function(to_lower(x.m_name))) {
+            ASR::symbol_t *external_sym = external_functions[to_lower(x.m_name)].first;
+            ASR::Function_t *external_fun = ASR::down_cast<ASR::Function_t>(external_sym);
+            if (v->n_args != external_fun->n_args) {
+                throw SemanticError("Argument number mismatch", x.base.base.loc);
+            }
+
+            for (size_t i = 0; i < v->n_args; ++i) {
+                ASR::ttype_t *subroutine_type = LFortran::ASRUtils::expr_type(v->m_args[i]);
+                ASR::ttype_t *external_type = LFortran::ASRUtils::expr_type(external_fun->m_args[i]);
+            
+                if (!ASRUtils::types_equal(*subroutine_type, *external_type)) {
+                    throw SemanticError("Type mismatch in argument " + std::to_string(i), x.base.base.loc);
+                }
+            }
+
+        }
         current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);

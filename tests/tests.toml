@@ -2501,3 +2501,8 @@ asr = true
 filename = "errors/external2.f90"
 ast = true
 asr = true
+
+[[test]]
+filename = "../integration_tests/external1.f90"
+ast = true
+asr_implicit_typing = true
