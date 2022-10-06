@@ -303,7 +303,7 @@ void process_include(std::string& out, const std::string& s,
 
     // Possible it goes here
     // lm.out_start.push_back(out.size());
-    out += include;
+    //out += include;
     while (pos < s.size() && s[pos] != '\n') pos++;
     lm.out_start.push_back(out.size());
     lm.in_start.push_back(pos);
