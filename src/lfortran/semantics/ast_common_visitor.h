@@ -739,8 +739,10 @@ public:
     ASR::asr_t* resolve_variable(const Location &loc, const std::string &var_name) {
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
-        if (implicit_dictionary.find(std::string(1,var_name[0])) == implicit_dictionary.end()) {
-        	implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
+        if (compiler_options.implicit_typing) {
+            if (implicit_dictionary.find(std::string(1,var_name[0])) == implicit_dictionary.end()) {
+        	    implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
+            }
         }
         if (!v) {
             std::string first_letter = std::string(1,var_name[0]);
