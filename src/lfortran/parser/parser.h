@@ -54,7 +54,7 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
 std::string token2text(const int token);
 
 std::string fix_continuation(const std::string &s, LocationManager &lm,
-        bool fixed_form);
+        bool fixed_form, const std::string &root_dir);
 
 } // namespace LFortran
 

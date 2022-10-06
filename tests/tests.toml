@@ -1214,6 +1214,10 @@ c = true
 cpp = true
 
 [[test]]
+filename = "../integration_tests/include_01.f90"
+ast = true
+
+[[test]]
 filename = "../integration_tests/program_02.f90"
 ast = true
 
@@ -2404,6 +2408,10 @@ ast = true
 
 [[test]]
 filename = "fixed_form/double_complex1.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/include1.f"
 ast = true
 
 [[test]]
