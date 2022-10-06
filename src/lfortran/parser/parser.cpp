@@ -297,6 +297,9 @@ void process_include(std::string& out, const std::string& s,
             + "' cannot be opened");
     }
 
+    throw LCompilersException("Include file '" + include_filename
+        + "' cannot be opened");
+
     LocationManager lm_tmp;
     lm_tmp.in_filename = include_filename;
     include = fix_continuation(include, lm_tmp, fixed_form, root_dir);
