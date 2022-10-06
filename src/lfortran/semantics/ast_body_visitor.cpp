@@ -1024,14 +1024,14 @@ public:
     void visit_Assign(const AST::Assign_t &x) {
         std::string var_name = to_lower(std::string{x.m_variable});
         ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
-        ASR::ttype_t *int64_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8, nullptr, 0));
+        ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
         if (!sym) {
             labels.push_back(var_name);
             Str a_var_name_f;
             a_var_name_f.from_str(al, var_name);
             ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
                                                             ASR::intentType::Local, nullptr, nullptr,
-                                                            ASR::storage_typeType::Default, int64_type,
+                                                            ASR::storage_typeType::Default, int32_type,
                                                             ASR::abiType::Source, ASR::Public, ASR::presenceType::Optional, false);
             current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(a_variable));
             sym = ASR::down_cast<ASR::symbol_t>(a_variable);
@@ -1039,7 +1039,7 @@ public:
 
         // ASSIGN XXX TO k -- XXX can only be integer for now.
         ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
-        tmp = (ASR::asr_t*)ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target_var, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_assign_label, int64_type)), nullptr));
+        tmp = (ASR::asr_t*)ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target_var, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_assign_label, int32_type)), nullptr));
     }
 
     void visit_Assignment(const AST::Assignment_t &x) {
@@ -1631,6 +1631,12 @@ public:
 
             // this->visit_expr(*x.m_goto_label); <- is nullptr here
             // ASR::expr_t *goto_label = ASRUtils::EXPR(tmp);
+
+            std::string label{x.m_int_var};
+            if (std::find(labels.begin(), labels.end(), label) == labels.end()) {
+                throw SemanticError("Cannot GOTO unknown label", x.base.base.loc);
+            }
+            auto sym = current_scope->resolve_symbol(label);
             // n_labels GOTO
             Vec<ASR::case_stmt_t*> a_body_vec;
             a_body_vec.reserve(al, x.n_labels);
@@ -1654,10 +1660,8 @@ public:
                     a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
                 }
             }
-            // adding an empty expression to enable the SELECT node
-            ASR::ttype_t *int64_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8, nullptr, 0));
-            auto empty_expr = LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 0, int64_type));
-            tmp = ASR::make_Select_t(al, x.base.base.loc, empty_expr, a_body_vec.p,
+            ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
+            tmp = ASR::make_Select_t(al, x.base.base.loc, var_expr, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size());
         } else {
             throw SemanticError("There must be a target to GOTO.",

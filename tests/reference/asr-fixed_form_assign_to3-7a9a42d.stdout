@@ -15,7 +15,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Integer 8 []) 
+                                    (Integer 4 []) 
                                     Source 
                                     Public 
                                     Optional 
@@ -30,14 +30,14 @@
                     )
                     (= 
                         (Var 2 next) 
-                        (IntegerConstant 30 (Integer 8 [])) 
+                        (IntegerConstant 30 (Integer 4 [])) 
                         ()
                     )
                     (GoToTarget 
                         20
                     )
                     (Select 
-                        (IntegerConstant 0 (Integer 8 [])) 
+                        (Var 2 next) 
                         [(CaseStmt 
                             [(IntegerConstant 30 (Integer 4 []))] 
                             [(GoTo 
@@ -66,17 +66,17 @@
                     )
                     (= 
                         (Var 2 next) 
-                        (IntegerConstant 50 (Integer 8 [])) 
+                        (IntegerConstant 50 (Integer 4 [])) 
                         ()
                     )
                     (= 
                         (Var 2 next) 
-                        (IntegerConstant 70 (Integer 8 [])) 
+                        (IntegerConstant 70 (Integer 4 [])) 
                         ()
                     )
                     (= 
                         (Var 2 next) 
-                        (IntegerConstant 110 (Integer 8 [])) 
+                        (IntegerConstant 110 (Integer 4 [])) 
                         ()
                     )
                     (GoToTarget 

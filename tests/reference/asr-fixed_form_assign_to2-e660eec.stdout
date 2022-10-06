@@ -15,7 +15,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Integer 8 []) 
+                                    (Integer 4 []) 
                                     Source 
                                     Public 
                                     Optional 
@@ -41,13 +41,13 @@
                         ) 
                         [(= 
                             (Var 2 k) 
-                            (IntegerConstant 101 (Integer 8 [])) 
+                            (IntegerConstant 101 (Integer 4 [])) 
                             ()
                         )] 
                         []
                     )
                     (Select 
-                        (IntegerConstant 0 (Integer 8 [])) 
+                        (Var 2 k) 
                         [(CaseStmt 
                             [(IntegerConstant 100 (Integer 4 []))] 
                             [(GoTo 
