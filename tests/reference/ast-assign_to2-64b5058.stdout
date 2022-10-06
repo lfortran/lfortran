@@ -4,7 +4,34 @@
         () 
         [] 
         [] 
-        [] 
+        [(Declaration 
+            (AttrType 
+                TypeInteger 
+                [] 
+                () 
+                None
+            ) 
+            [] 
+            [(i 
+            [] 
+            [] 
+            () 
+            None 
+            ())
+            (sum 
+            [] 
+            [] 
+            () 
+            None 
+            ())
+            (ZERO 
+            [] 
+            [] 
+            () 
+            None 
+            ())] 
+            ()
+        )] 
         [(Assign 
             10 
             30 

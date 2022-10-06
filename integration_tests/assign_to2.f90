@@ -1,4 +1,5 @@
 program main
+integer :: i, sum, ZERO
 10 assign 30 to next
 sum = ZERO
 i = 1
