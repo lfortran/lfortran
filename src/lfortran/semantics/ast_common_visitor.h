@@ -944,7 +944,15 @@ public:
             throw SemanticError("External procedure already declared in same scope", s.loc);
         }
         // we don't actually know the return type of the function for now
-        ASR::expr_t *return_type = nullptr;      
+        ASR::expr_t *return_type = nullptr;
+        // if declared before, e.g.
+        //   real dm
+        //   external dm
+        // then we have information about the return type
+        // TODO: to be solved together with statement functions
+        current_scope->erase_symbol(sym);
+
+
         auto pscope = current_scope;
         SymbolTable *parent_scope = current_scope->parent;
         current_scope = al.make_new<SymbolTable>(parent_scope);

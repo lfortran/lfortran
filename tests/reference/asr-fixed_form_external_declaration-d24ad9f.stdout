@@ -31,20 +31,6 @@
                     (SymbolTable
                         2
                         {
-                            dm:
-                                (Variable 
-                                    2 
-                                    dm 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 8 []) 
-                                    Source 
-                                    Public 
-                                    Required 
-                                    .false.
-                                )
                             
                         }) 
                     main 
