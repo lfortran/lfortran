@@ -996,7 +996,14 @@ public:
                                     assgnd_access[sym] = ASR::accessType::Public;
                                     auto fn_name = sym.data();
                                     auto v = current_scope->resolve_symbol(fn_name);
-                                    if (v && external_functions[fn_name].second) throw SemanticError("External procedure already declared in same scope", s.loc);                                    
+                                    if (v && external_functions[fn_name].second) throw SemanticError("External procedure already declared in same scope", s.loc);
+
+                                    ASR::expr_t *return_type = nullptr;
+                                    // take declaration as return value
+                                    if (v && ASR::is_a<ASR::Variable_t>(*v)) {
+                                        // ASR::ttype_t *t = ASR::down_cast<ASR::Variable_t>(v)->m_type;
+                                        // TBD
+                                    }                                  
                                     auto pscope = current_scope;
                                     SymbolTable *parent_scope = current_scope->parent;
                                     current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -1009,15 +1016,14 @@ public:
                                         nullptr, 0,
                                         /* a_body */ nullptr,
                                         /* n_body */ 0,
-                                        nullptr,
+                                        return_type,
                                         ASR::abiType::Source,
                                         ASR::accessType::Public, ASR::deftypeType::Interface, nullptr,
                                         false, false, false, false);
                                     parent_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
                                     external_functions[fn_name] = std::make_pair(ASR::down_cast<ASR::symbol_t>(tmp), false);
+                                    external_functions[fn_name].second = false;
                                     current_scope = pscope;
-                                    // to allow function declaration
-                                    current_scope->erase_symbol(sym);
                                 } else {
                                     throw SemanticError("Attribute declaration not "
                                             "supported", x.base.base.loc);
@@ -2637,36 +2643,57 @@ public:
             Vec<ASR::call_arg_t> args;
             visit_expr_list(x.m_args, x.n_args, args);
             auto f = ASR::down_cast<ASR::Function_t>(external_functions[x.m_func].first);
-            if (external_functions[x.m_func].second && f->n_args != x.n_args) {
-                throw SemanticError("Function argument(s) ambiguous", x.base.base.loc);
-            }
-            Vec<ASR::expr_t *> fun_exprs;  fun_exprs.reserve(al, x.n_args);
-            Vec<ASR::ttype_t *> type_exprs; type_exprs.reserve(al, x.n_args);
-            for (size_t i = 0;i < x.n_args; ++i) {
-                    fun_exprs.push_back(al, args[i].m_value);
-                    type_exprs.push_back(al, ASRUtils::expr_type(args[i].m_value));
-            }
-            f->m_args = fun_exprs.p;
-            f->n_args = fun_exprs.n;
-            f->n_type_params = type_exprs.n;
-            f->m_type_params = type_exprs.p;
-            if (x.n_keywords > 0) {
-                    diag::Diagnostics diags;
-                    visit_kwargs(args, x.m_keywords, x.n_keywords,
-                        f->m_args, f->n_args, x.base.base.loc, f,
-                        diags, x.n_member);
-                    if( diags.has_error() ) {
-                        diag.diagnostics.insert(diag.diagnostics.end(),
-                            diags.diagnostics.begin(), diags.diagnostics.end());
-                        throw SemanticAbort();
+            if (external_functions[x.m_func].second) {
+                // type checking -- if passes, do functioncall
+                auto external_fun = f;
+                if (x.n_args != external_fun->n_args) {
+                    throw SemanticError("Argument number mismatch.", x.base.base.loc);
+                }
+                for (size_t i = 0; i < args.n; ++i) {
+                    ASR::ttype_t *subroutine_type = LFortran::ASRUtils::expr_type(args[i].m_value);
+                    ASR::ttype_t *external_type = LFortran::ASRUtils::expr_type(external_fun->m_args[i]);
+                
+                    if (!ASRUtils::types_equal(*subroutine_type, *external_type)) {
+                        throw SemanticError("Type mismatch in argument " + std::to_string(i+1), x.base.base.loc);
                     }
+                }
+                ASR::ttype_t *type = nullptr;
+                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+                tmp = ASR::make_FunctionCall_t(al, x.base.base.loc,
+                    external_functions[x.m_func].first, nullptr, args.p, args.size(), type,
+                    nullptr, nullptr);
+                return;
+
+
+            } else {
+                Vec<ASR::expr_t *> fun_exprs;  fun_exprs.reserve(al, x.n_args);
+                Vec<ASR::ttype_t *> type_exprs; type_exprs.reserve(al, x.n_args);
+                for (size_t i = 0;i < x.n_args; ++i) {
+                        fun_exprs.push_back(al, args[i].m_value);
+                        type_exprs.push_back(al, ASRUtils::expr_type(args[i].m_value));
+                }
+                f->m_args = fun_exprs.p;
+                f->n_args = fun_exprs.n;
+                f->n_type_params = type_exprs.n;
+                f->m_type_params = type_exprs.p;
+                if (x.n_keywords > 0) {
+                        diag::Diagnostics diags;
+                        visit_kwargs(args, x.m_keywords, x.n_keywords,
+                            f->m_args, f->n_args, x.base.base.loc, f,
+                            diags, x.n_member);
+                        if( diags.has_error() ) {
+                            diag.diagnostics.insert(diag.diagnostics.end(),
+                                diags.diagnostics.begin(), diags.diagnostics.end());
+                            throw SemanticAbort();
+                        }
+                }
+                external_functions[x.m_func].second = true;
+                ASR::ttype_t *type = nullptr;
+                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+                tmp = ASR::make_FunctionCall_t(al, x.base.base.loc,
+                    external_functions[x.m_func].first, nullptr, args.p, args.size(), type,
+                    nullptr, nullptr);
             }
-            external_functions[x.m_func].second = true;
-            ASR::ttype_t *type = nullptr;
-            type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
-            tmp = ASR::make_FunctionCall_t(al, x.base.base.loc,
-                external_functions[x.m_func].first, nullptr, args.p, args.size(), type,
-                nullptr, nullptr);
             return;
         }
         

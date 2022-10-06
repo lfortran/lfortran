@@ -2483,11 +2483,21 @@ ast = true
 asr = true
 
 [[test]]
-filename = "fixed_form_external_mixed.f"
+filename = "errors/fixed_form_external_mixed.f"
 ast = true
 asr = true
 
 [[test]]
 filename = "fixed_form_external_declaration.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "errors/external1.f90"
+ast = true
+asr = true
+
+[[test]]
+filename = "errors/external2.f90"
 ast = true
 asr = true

@@ -1,0 +1,5 @@
+semantic error: Type mismatch in argument 1
+ --> tests/errors/external1.f90:4:3
+  |
+4 |   call f(a, b, c)
+  |   ^^^^^^^^^^^^^^^ 

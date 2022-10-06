@@ -933,6 +933,8 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
 
 void set_intrinsic(ASR::symbol_t* sym);
 
+bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b);
+
 static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
     if (type == nullptr) {
         return -1;

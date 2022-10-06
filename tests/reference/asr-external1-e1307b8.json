@@ -1,0 +1,13 @@
+{
+    "basename": "asr-external1-e1307b8",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/external1.f90",
+    "infile_hash": "fa9fce46158566fd2056f57d21bd44c5c196a736eb71053ab8c2b5ef",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-external1-e1307b8.stderr",
+    "stderr_hash": "37a43061e7c1155b39b2d4db9fc362bdbffca5a1c761a2eb6ce7980f",
+    "returncode": 2
+}

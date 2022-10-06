@@ -1,0 +1,5 @@
+semantic error: Type mismatch in argument 1
+ --> tests/errors/fixed_form_external_mixed.f:6:11
+  |
+6 |           call g(a)
+  |           ^^^^^^^^^ 
