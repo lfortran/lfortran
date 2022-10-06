@@ -281,7 +281,7 @@ jobs:
             files=$(<files.txt)
             for file in $files; do
                 ../src/bin/lfortran --fixed-form fmt --no-color $file > $file.f90
-                gfortran -ffree-line-length-none -fallow-argument-mismatch -c $file.f90 -o $file.o
+                gfortran -ffree-line-length-none -c $file.f90 -o $file.o
             done
 
 
