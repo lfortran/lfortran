@@ -272,7 +272,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test SciPy
-        shell: bash -l {0}
+        shell: bash -x -l {0}
         run: |
             git clone https://github.com/scipy/scipy.git
             cd scipy
