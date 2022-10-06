@@ -406,8 +406,8 @@ public:
         // made availabe when visiting the body, not the symbol table.
         //populate the implicit_dictionary
         if (compiler_options.implicit_typing) {
-			populate_implicit_dictionary(x, implicit_dictionary);
-		}
+            populate_implicit_dictionary(x, implicit_dictionary);
+        }
         //iterate over all implicit statements
         for (size_t i=0;i<x.n_implicit;i++) {
             //get the implicit statement
