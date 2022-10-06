@@ -2490,3 +2490,8 @@ asr_implicit_typing = true
 filename = "implicit9.f90"
 asr = true
 asr_implicit_typing = true
+
+[[test]]
+filename = "implicit10.f90"
+asr = true
+asr_implicit_typing = true
