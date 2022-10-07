@@ -28,8 +28,9 @@ private:
 public:
     ASR::asr_t *asr;
     bool from_block;
-    bool labels_set = false;
     std::set<std::string> labels;
+    size_t starting_n_body = 0;
+    AST::stmt_t **starting_m_body = nullptr;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options)
@@ -81,19 +82,7 @@ public:
             if (label != 0) {
                 ASR::asr_t *l = ASR::make_GoToTarget_t(al, m_body[i]->base.loc, label);
                 body.push_back(al, ASR::down_cast<ASR::stmt_t>(l));
-                labels.insert(std::to_string(label));
             }
-
-            if (!labels_set) {
-                for (size_t j = 0; j < n_body; ++j) {
-                    int64_t label = stmt_label(m_body[j]);
-                    if (label != 0) {
-                        labels.insert(std::to_string(label));
-                    }
-                }
-                labels_set = false;
-            }
-
             // Visit the statement
             this->visit_stmt(*m_body[i]);
             if (tmp != nullptr) {
@@ -915,6 +904,8 @@ public:
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Program_t *v = ASR::down_cast<ASR::Program_t>(t);
         current_scope = v->m_symtab;
+        starting_m_body = x.m_body;
+        starting_n_body = x.n_body;
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
@@ -930,6 +921,8 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
+        starting_m_body = nullptr;
+        starting_n_body =  0;
         current_scope = old_scope;
         tmp = nullptr;
     }
@@ -975,6 +968,8 @@ public:
     // TODO: add SymbolTable::get_symbol(), which will only check in Debug mode
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
+        starting_m_body = x.m_body;
+        starting_n_body = x.n_body;
         if( t->type == ASR::symbolType::GenericProcedure ) {
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->get_symbol(subrout_name);
@@ -999,11 +994,16 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
+        starting_m_body = nullptr;
+        starting_n_body = 0;
+
         current_scope = old_scope;
         tmp = nullptr;
     }
 
     void visit_Function(const AST::Function_t &x) {
+        starting_m_body = x.m_body;
+        starting_n_body = x.n_body;
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         if( t->type == ASR::symbolType::GenericProcedure ) {
@@ -1030,6 +1030,8 @@ public:
                 visit_unit_decl2(*x.m_decl[i]);
         }
 
+        starting_m_body = nullptr;
+        starting_n_body = 0;
         current_scope = old_scope;
         tmp = nullptr;
     }
@@ -1655,6 +1657,21 @@ public:
                 throw SemanticError("Cannot GOTO unknown label", x.base.base.loc);
             }
             auto sym = current_scope->resolve_symbol(label);
+
+            // get all labels in current scope
+            if (starting_m_body != nullptr) {
+                // collect all labels
+                for (size_t i = 0; i < starting_n_body; ++i) {
+                    int64_t label = stmt_label(starting_m_body[i]);
+                    if (label != 0) {
+                        labels.insert(std::to_string(label));
+                    }
+                }
+            } else {
+                // cannot perform expected behavior
+                throw SemanticError("Cannot compute GOTO.", x.base.base.loc);
+            }
+
             // n_labels GOTO
             Vec<ASR::case_stmt_t*> a_body_vec;
             a_body_vec.reserve(al, x.n_labels);
