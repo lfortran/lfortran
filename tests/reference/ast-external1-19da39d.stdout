@@ -1,0 +1,209 @@
+(TranslationUnit 
+    [(Program 
+        main 
+        (TriviaNode 
+            [] 
+            [(EndOfLine)
+            (EndOfLine)
+            (Comment 
+                "! TODO: this is valid Fortran code -- you can pass a function as an argument; we will need to figure out"
+            )
+            (Comment 
+                "!       how to do that."
+            )
+            (EndOfLine)
+            (Comment 
+                "!subroutine g(proc,fun)"
+            )
+            (Comment 
+                "!  external proc"
+            )
+            (Comment 
+                "!  integer :: fun,i"
+            )
+            (Comment 
+                "!  i=fun()"
+            )
+            (Comment 
+                "!  call proc(i)"
+            )
+            (Comment 
+                "!end subroutine"
+            )
+            (EndOfLine)]
+        ) 
+        [] 
+        [] 
+        [(Declaration 
+            () 
+            [(SimpleAttribute 
+                AttrExternal
+            )] 
+            [(sub1 
+            [] 
+            [] 
+            () 
+            None 
+            ())] 
+            (TriviaNode 
+                [] 
+                [(EOLComment 
+                    "! external statement"
+                )]
+            )
+        )
+        (Declaration 
+            (AttrType 
+                TypeInteger 
+                [] 
+                () 
+                None
+            ) 
+            [(SimpleAttribute 
+                AttrExternal
+            )] 
+            [(fun1 
+            [] 
+            [] 
+            () 
+            None 
+            ())] 
+            (TriviaNode 
+                [] 
+                [(EOLComment 
+                    "! external attribute"
+                )]
+            )
+        )
+        (Declaration 
+            (AttrType 
+                TypeInteger 
+                [] 
+                () 
+                None
+            ) 
+            [(SimpleAttribute 
+                AttrExternal
+            )] 
+            [(fun2 
+            [] 
+            [] 
+            () 
+            None 
+            ())] 
+            (TriviaNode 
+                [] 
+                [(EndOfLine)
+                (Comment 
+                    "!call g(sub1,fun1)"
+                )]
+            )
+        )] 
+        [] 
+        []
+    )
+    (Subroutine 
+        sub1 
+        [(i)] 
+        [] 
+        () 
+        (TriviaNode 
+            [] 
+            [(EndOfLine)
+            (EndOfLine)]
+        ) 
+        [] 
+        [] 
+        [] 
+        [(Declaration 
+            (AttrType 
+                TypeInteger 
+                [] 
+                () 
+                None
+            ) 
+            [] 
+            [(i 
+            [] 
+            [] 
+            () 
+            None 
+            ())] 
+            ()
+        )] 
+        [(Write 
+            0 
+            [(())
+            (())] 
+            [] 
+            [i] 
+            ()
+        )] 
+        []
+    )
+    (Function 
+        fun1 
+        [] 
+        [(AttrType 
+            TypeInteger 
+            [] 
+            () 
+            None
+        )] 
+        () 
+        () 
+        (TriviaNode 
+            [] 
+            [(EndOfLine)
+            (EndOfLine)
+            (Comment 
+                "! TODO the below should work fine the moment LFortran implements statement functions"
+            )
+            (Comment 
+                "!integer function fun2()"
+            )
+            (Comment 
+                "!    integer a"
+            )
+            (Comment 
+                "!    a = 100"
+            )
+            (Comment 
+                "!    fun2 = a + 1"
+            )
+            (Comment 
+                "!end function"
+            )]
+        ) 
+        [] 
+        [] 
+        [] 
+        [(Declaration 
+            (AttrType 
+                TypeInteger 
+                [] 
+                () 
+                None
+            ) 
+            [] 
+            [(a 
+            [] 
+            [] 
+            () 
+            None 
+            ())] 
+            (TriviaNode 
+                [] 
+                [(EndOfLine)
+                (Comment 
+                    "!a = 100"
+                )
+                (Comment 
+                    "!a = a+1"
+                )]
+            )
+        )] 
+        [] 
+        []
+    )]
+)

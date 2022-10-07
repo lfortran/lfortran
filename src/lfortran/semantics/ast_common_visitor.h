@@ -10,9 +10,10 @@
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
 
+#include <map>
 #include <string>
 #include <unordered_set>
-#include <map>
+#include <unordered_map>
 
 using LFortran::diag::Level;
 using LFortran::diag::Stage;
@@ -672,13 +673,16 @@ public:
     std::map<std::string, std::vector<ASR::asr_t*>> template_type_parameters;
     std::vector<ASR::asr_t*> current_template_type_parameters;
     std::unordered_set<int> current_procedure_used_type_parameter_indices;
+    // maps procedure name to a pair (ASR function node pointer, arguments initialized)
+    std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> &external_functions;
 
     Vec<char*> data_member_names;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
-            diag::Diagnostics &diagnostics, CompilerOptions &compiler_options)
+            diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
+            std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> &external_functions)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
-          current_scope{symbol_table} {
+          current_scope{symbol_table}, external_functions{external_functions} {
         current_module_dependencies.reserve(al, 4);
     }
 
@@ -689,6 +693,10 @@ public:
             throw SemanticError("Symbol '" + sub_name + "' not declared", loc);
         }
         return sub;
+    }
+
+    bool has_external_function(const std::string &fn_name) {
+        return external_functions.find(fn_name) != external_functions.end();
     }
 
     ASR::symbol_t* declare_implicit_variable(const Location &loc,
@@ -925,6 +933,47 @@ public:
         tmp = nullptr;
     }
 
+    void add_External(const AST::var_sym_t &s) {
+        std::string sym = to_lower(s.m_name);
+        assgnd_access[sym] = ASR::accessType::Public;
+        auto fn_name = sym.data();
+        auto v = current_scope->resolve_symbol(fn_name);
+        if (v && (external_functions[fn_name].second ||
+            !has_external_function(fn_name))) {
+            throw SemanticError("External procedure already declared in same scope", s.loc);
+        }
+        // we don't actually know the return type of the function for now
+        ASR::expr_t *return_type = nullptr;
+        // if declared before, e.g.
+        //   real dm
+        //   external dm
+        // then we have information about the return type
+        // TODO: to be solved together with statement functions
+        current_scope->erase_symbol(sym);
+
+
+        auto pscope = current_scope;
+        SymbolTable *parent_scope = current_scope->parent;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        tmp = ASR::make_Function_t(
+            al, s.loc,
+            /* a_symtab */ current_scope,
+            /* a_name */ s2c(al, sym),
+            /* a_args */ nullptr, // --
+            /* n_args */ 0,       // -- these two to be filled at a later point
+            nullptr, 0,
+            /* a_body */ nullptr,
+            /* n_body */ 0,
+            return_type,
+            ASR::abiType::Source,
+            ASR::accessType::Public, ASR::deftypeType::Interface, nullptr,
+            false, false, false, false);
+        parent_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
+        external_functions[fn_name] = std::make_pair(ASR::down_cast<ASR::symbol_t>(tmp), false);
+        external_functions[fn_name].second = false;
+        current_scope = pscope;
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
@@ -1018,8 +1067,7 @@ public:
                                     assgnd_access[sym] = ASR::accessType::Private;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrPublic || sa->m_attr == AST::simple_attributeType
-                                                ::AttrParameter || sa->m_attr == AST::simple_attributeType
-                                                        ::AttrExternal) {
+                                                ::AttrParameter) {
                                     assgnd_access[sym] = ASR::accessType::Public;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrOptional) {
@@ -1027,11 +1075,11 @@ public:
                                 } else if(sa->m_attr == AST::simple_attributeType
                                         ::AttrIntrinsic) {
                                     // Ignore Intrinsic attribute
+
+                                 // enable `EXTERNAL` attribute
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrExternal) {
-                                    // TODO
-                                    throw SemanticError("Attribute declaration not "
-                                        "supported yet", x.base.base.loc);
+                                    add_External(s);
                                 } else {
                                     throw SemanticError("Attribute declaration not "
                                             "supported", x.base.base.loc);
@@ -1039,7 +1087,7 @@ public:
                             }
                         }
                     }
-                // enable sole `dimension` attribute
+                // enable sole `DIMENSION` attribute
             } else if (AST::is_a<AST::AttrDimension_t>(*x.m_attributes[i])) {
                     for (size_t i=0;i<x.n_syms;++i) { // symbols for line only
                         AST::var_sym_t &s = x.m_syms[i];
@@ -1163,6 +1211,9 @@ public:
                             } else if(sa->m_attr == AST::simple_attributeType
                                     ::AttrIntrinsic) {
                                 excluded_from_symtab.push_back(sym);
+                            } else if (sa->m_attr == AST::simple_attributeType
+                                    ::AttrExternal) {
+                                add_External(s);
                             } else {
                                 throw SemanticError("Attribute type not implemented yet",
                                         x.base.base.loc);
@@ -2647,6 +2698,60 @@ public:
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
+        if (has_external_function(to_lower(x.m_func))) {
+            Vec<ASR::call_arg_t> args;
+            visit_expr_list(x.m_args, x.n_args, args);
+            auto f = ASR::down_cast<ASR::Function_t>(external_functions[x.m_func].first);
+            if (external_functions[x.m_func].second) {
+                // type checking -- if passes, do functioncall
+                auto external_fun = f;
+                if (x.n_args != external_fun->n_args) {
+                    throw SemanticError("Argument number mismatch.", x.base.base.loc);
+                }
+                for (size_t i = 0; i < args.n; ++i) {
+                    ASR::ttype_t *subroutine_type = LFortran::ASRUtils::expr_type(args[i].m_value);
+                    ASR::ttype_t *external_type = LFortran::ASRUtils::expr_type(external_fun->m_args[i]);
+                
+                    if (!ASRUtils::types_equal(*subroutine_type, *external_type)) {
+                        throw SemanticError("Type mismatch in argument " + std::to_string(i+1), x.base.base.loc);
+                    }
+                }
+            } else {
+                Vec<ASR::expr_t *> fun_exprs;  fun_exprs.reserve(al, x.n_args);
+                Vec<ASR::ttype_t *> type_exprs; type_exprs.reserve(al, x.n_args);
+                for (size_t i = 0;i < x.n_args; ++i) {
+                        fun_exprs.push_back(al, args[i].m_value);
+                        type_exprs.push_back(al, ASRUtils::expr_type(args[i].m_value));
+                }
+                f->m_args = fun_exprs.p;
+                f->n_args = fun_exprs.n;
+                f->n_type_params = type_exprs.n;
+                f->m_type_params = type_exprs.p;
+                if (x.n_keywords > 0) {
+                        diag::Diagnostics diags;
+                        visit_kwargs(args, x.m_keywords, x.n_keywords,
+                            f->m_args, f->n_args, x.base.base.loc, f,
+                            diags, x.n_member);
+                        if( diags.has_error() ) {
+                            diag.diagnostics.insert(diag.diagnostics.end(),
+                                diags.diagnostics.begin(), diags.diagnostics.end());
+                            throw SemanticAbort();
+                        }
+                }
+                external_functions[x.m_func].second = true;
+            }
+            ASR::ttype_t *type = nullptr;
+            if (f->m_return_var) {
+                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(f->m_return_var));
+            } else {                
+                type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+            }
+            tmp = ASR::make_FunctionCall_t(al, x.base.base.loc,
+                external_functions[x.m_func].first, nullptr, args.p, args.size(), type,
+                nullptr, nullptr);
+            return;
+        }
+        
         SymbolTable *scope = current_scope;
         std::string var_name = to_lower(x.m_func);
         ASR::symbol_t *v = nullptr;

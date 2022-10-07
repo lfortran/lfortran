@@ -570,5 +570,6 @@ RUN(NAME sign_from_value LABELS gfortran llvm wasm)
 
 RUN(NAME rewind_inquire_flush LABELS gfortran)
 
+RUN(NAME external1 LABELS gfortran llvm)
 RUN(NAME assign_to1 LABELS gfortran llvm)
 RUN(NAME assign_to2 LABELS gfortran llvm)

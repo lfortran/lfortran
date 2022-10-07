@@ -2026,7 +2026,6 @@ asr = true
 [[test]]
 filename = "fixed_form1.f"
 ast = true
-ast_f90 = true
 
 [[test]]
 filename = "fixed_form2.f"
@@ -2335,6 +2334,21 @@ filename = "errors/arithmetic_if1.f90"
 asr = true
 
 [[test]]
+filename = "fixed_form_external.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "fixed_form_external_simple.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "fixed_form_external_simple_outer.f"
+ast = true
+asr = true
+
+[[test]]
 filename = "fixed_form_if_variations.f"
 ast = true
 asr = true
@@ -2467,6 +2481,31 @@ asr_implicit_interface = true
 filename = "fixed_form_goto_select.f"
 ast = true
 asr = true
+
+[[test]]
+filename = "errors/fixed_form_external_mixed.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "fixed_form_external_declaration.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "errors/external1.f90"
+ast = true
+asr = true
+
+[[test]]
+filename = "errors/external2.f90"
+ast = true
+asr = true
+
+[[test]]
+filename = "../integration_tests/external1.f90"
+ast = true
+asr_implicit_typing = true
 
 [[test]]
 filename = "fixed_form/assign_to1.f"

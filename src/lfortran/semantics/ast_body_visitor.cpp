@@ -33,8 +33,8 @@ public:
     AST::stmt_t **starting_m_body = nullptr;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
-            CompilerOptions &compiler_options)
-         : CommonVisitor(al, nullptr, diagnostics, compiler_options),
+            CompilerOptions &compiler_options, std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> &external_functions)
+         : CommonVisitor(al, nullptr, diagnostics, compiler_options, external_functions),
            asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -938,6 +938,9 @@ public:
             return nullptr;
         }
         ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
+        if (has_external_function(subrout->m_name)) {
+            return nullptr;
+        }
         Vec<ASR::symbol_t*> del_syms;
         del_syms.reserve(al, 1);
         for( size_t i = 0; i < subrout_call->n_args; i++ ) {
@@ -970,6 +973,8 @@ public:
     // an error
     // TODO: add SymbolTable::get_symbol(), which will only check in Debug mode
         SymbolTable *old_scope = current_scope;
+        
+
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         starting_m_body = x.m_body;
         starting_n_body = x.n_body;
@@ -982,6 +987,23 @@ public:
                 visit_unit_decl2(*x.m_decl[i]);
         }
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
+        if (has_external_function(to_lower(x.m_name))) {
+            ASR::symbol_t *external_sym = external_functions[to_lower(x.m_name)].first;
+            ASR::Function_t *external_fun = ASR::down_cast<ASR::Function_t>(external_sym);
+            if (v->n_args != external_fun->n_args) {
+                throw SemanticError("Argument number mismatch", x.base.base.loc);
+            }
+
+            for (size_t i = 0; i < v->n_args; ++i) {
+                ASR::ttype_t *subroutine_type = LFortran::ASRUtils::expr_type(v->m_args[i]);
+                ASR::ttype_t *external_type = LFortran::ASRUtils::expr_type(external_fun->m_args[i]);
+            
+                if (!ASRUtils::types_equal(*subroutine_type, *external_type)) {
+                    throw SemanticError("Type mismatch in argument " + std::to_string(i), x.base.base.loc);
+                }
+            }
+
+        }
         current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
@@ -1013,6 +1035,24 @@ public:
             t = current_scope->get_symbol(to_lower(x.m_name) + "~genericprocedure");
         }
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
+
+        if (has_external_function(to_lower(x.m_name))) {
+            ASR::symbol_t *external_sym = external_functions[to_lower(x.m_name)].first;
+            ASR::Function_t *external_fun = ASR::down_cast<ASR::Function_t>(external_sym);
+            if (v->n_args != external_fun->n_args) {
+                throw SemanticError("Argument number mismatch", x.base.base.loc);
+            }
+
+            for (size_t i = 0; i < v->n_args; ++i) {
+                ASR::ttype_t *subroutine_type = LFortran::ASRUtils::expr_type(v->m_args[i]);
+                ASR::ttype_t *external_type = LFortran::ASRUtils::expr_type(external_fun->m_args[i]);
+            
+                if (!ASRUtils::types_equal(*subroutine_type, *external_type)) {
+                    throw SemanticError("Type mismatch in argument " + std::to_string(i), x.base.base.loc);
+                }
+            }
+
+        }
         current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
@@ -1163,6 +1203,80 @@ public:
     }
 
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
+        if (has_external_function(to_lower(x.m_name))) {
+            // TODO: there's the case where `EXTERNAL` declared a subroutine instead of a function
+            // would need to check depending on what return types are etc.
+            ASR::symbol_t *t = external_functions[to_lower(x.m_name)].first;
+            if (t == nullptr) {
+                throw SemanticError("Procedure not declared correctly.", x.base.base.loc);
+            }
+            Vec<ASR::call_arg_t> args;
+            visit_expr_list(x.m_args, x.n_args, args);
+
+            if (external_functions[to_lower(x.m_name)].second) {
+                auto external_fun = ASR::down_cast<ASR::Function_t>(t);
+                if (x.n_args != external_fun->n_args) {
+                    throw SemanticError("Argument number mismatch.", x.base.base.loc);
+                }
+                for (size_t i = 0; i < args.n; ++i) {
+                    ASR::ttype_t *subroutine_type = LFortran::ASRUtils::expr_type(args[i].m_value);
+                    ASR::ttype_t *external_type = LFortran::ASRUtils::expr_type(external_fun->m_args[i]);
+                    // !ASRUtils::check_equal_type(t1, t2)
+                    if (!ASRUtils::types_equal(*subroutine_type, *external_type)) {
+                        throw SemanticError("Type mismatch in argument " + std::to_string(i+1), x.base.base.loc);
+                    }
+                }
+                auto original_sym = t;
+                auto final_sym = original_sym;
+                original_sym = nullptr;
+                ASR::expr_t *v_expr = nullptr;
+                tmp = ASR::make_SubroutineCall_t(al, x.base.base.loc,
+                    final_sym, original_sym, args.p, external_fun->n_args, v_expr);
+                return;
+            } else {
+                auto cpy_scope = current_scope;
+                auto sub_name = to_lower(x.m_name);
+                auto sym = external_functions[sub_name].first;
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+                current_scope = f->m_symtab;
+                if (external_functions[sub_name].first != nullptr && !external_functions[sub_name].second) {
+                    Vec<ASR::expr_t *> fun_exprs;  fun_exprs.reserve(al, x.n_args);
+                    Vec<ASR::ttype_t *> type_exprs; type_exprs.reserve(al, x.n_args);
+                    for (size_t i = 0;i < x.n_args; ++i) {
+                        if (ASR::is_a<ASR::Var_t>(*args[i].m_value)) { 
+                            auto var = LFortran::ASRUtils::EXPR2VAR(args[i].m_value);
+                            auto new_var = ASR::make_Variable_t(
+                                al, var->base.base.loc,
+                                f->m_symtab, s2c(al, var->m_name), var->m_intent,
+                                var->m_symbolic_value, var->m_value, var->m_storage,
+                                var->m_type, var->m_abi, var->m_access, var->m_presence, var->m_value_attr);
+                            auto new_sym = ASR::down_cast<ASR::symbol_t>(new_var);
+                            fun_exprs.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, new_sym)));
+                            f->m_symtab->add_symbol(var->m_name, new_sym);
+                            type_exprs.push_back(al, ASRUtils::expr_type(args[i].m_value));
+                            continue;
+                        }
+                        fun_exprs.push_back(al, args[i].m_value);
+                        type_exprs.push_back(al, ASRUtils::expr_type(args[i].m_value));
+                    }
+                    f->m_args = fun_exprs.p;
+                    f->n_args = fun_exprs.n;
+                    f->n_type_params = type_exprs.n;
+                    f->m_type_params = type_exprs.p;
+                    auto original_sym = sym;
+                    auto final_sym = original_sym;
+                    original_sym = nullptr;
+                    ASR::expr_t *v_expr = nullptr;
+                    tmp = ASR::make_SubroutineCall_t(al, x.base.base.loc,
+                        final_sym, original_sym, args.p, f->n_args, v_expr);
+                    external_functions[sub_name].second = true;
+                    current_scope = cpy_scope;
+                    return;
+                } else {
+                    throw SemanticError("External function declaration error.", x.base.base.loc);
+                }
+            }
+        }
         SymbolTable* scope = current_scope;
         std::string sub_name = to_lower(x.m_name);
         ASR::symbol_t *original_sym;
@@ -1186,6 +1300,7 @@ public:
                 LFORTRAN_ASSERT(original_sym!=nullptr);
             }
         }
+
         ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(original_sym);
         if (ASR::is_a<ASR::Function_t>(*sym)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
@@ -1201,8 +1316,10 @@ public:
                 }
             }
         }
+
         Vec<ASR::call_arg_t> args;
         visit_expr_list(x.m_args, x.n_args, args);
+
         if (x.n_keywords > 0) {
             ASR::symbol_t* f2 = LFortran::ASRUtils::symbol_get_past_external(original_sym);
             if (ASR::is_a<ASR::Function_t>(*f2)) {
@@ -1798,9 +1915,11 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
-        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters)
+        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters,
+        std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> &external_functions
+        )
 {
-    BodyVisitor b(al, unit, diagnostics, compiler_options);
+    BodyVisitor b(al, unit, diagnostics, compiler_options, external_functions);
     try {
         b.is_body_visitor = true;
         b.template_type_parameters = template_type_parameters;

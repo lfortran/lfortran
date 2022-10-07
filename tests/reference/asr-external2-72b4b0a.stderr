@@ -1,0 +1,5 @@
+semantic error: Argument number mismatch.
+ --> tests/errors/external2.f90:4:3
+  |
+4 |   call f(a, b, c)
+  |   ^^^^^^^^^^^^^^^ 

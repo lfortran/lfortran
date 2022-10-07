@@ -366,7 +366,7 @@ public:
                 parent = get_parent_type_dt(parent, x.base.base.loc);
             }
             require(symtab_in_scope(symtab, x.m_name),
-                "SubroutineCall::m_name cannot point outside of its symbol table",
+                "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table",
                 x.base.base.loc);
         } else {
             require(symtab_in_scope(current_symtab, x.m_name),

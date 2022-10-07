@@ -89,8 +89,10 @@ public:
     };
 
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
-        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options)
-      : CommonVisitor(al, symbol_table, diagnostics, compiler_options) {}
+        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
+        std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> &external_functions
+        )
+      : CommonVisitor(al, symbol_table, diagnostics, compiler_options, external_functions) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -257,7 +259,13 @@ public:
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
+        auto fname = std::string({to_lower(x.m_name)});
+        if (has_external_function(fname)) {
+            auto fun = ASR::down_cast<ASR::Function_t>(external_functions[fname].first);
+            current_scope = fun->m_symtab;
+        } else {
+            current_scope = al.make_new<SymbolTable>(parent_scope);
+        }
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             current_procedure_args.push_back(to_lower(arg));
@@ -281,6 +289,11 @@ public:
                 if (compiler_options.implicit_typing) {
                     declare_implicit_variable(x.base.base.loc, arg_s,
                         ASRUtils::intent_unspecified);
+                } else if (has_external_function(arg_s)) {
+                    // ASR::symbol_t *fun = external_functions[arg_s].first;
+                    // auto var = ASR::make_Var_t(al, x.base.base.loc, fun);
+                    // args.push_back(al, LFortran::ASRUtils::EXPR();
+                    throw SemanticError("ICE: TODO: implement passing external functions as argument to other functions", x.base.base.loc);
                 } else {
                     throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
                 }
@@ -325,6 +338,16 @@ public:
                 f2->m_abi == ASR::abiType::Interactive) {
                 // Previous declaration will be shadowed
                 parent_scope->erase_symbol(sym_name);
+            } else if (has_external_function(sym_name)) {
+                auto fn = ASR::down_cast<ASR::Function_t>(this->external_functions[sym_name].first);
+                fn->m_args = args.p;
+                fn->n_args = args.n;
+                this->external_functions[sym_name].second = 1;
+                tmp = (LFortran::ASR::asr_t*)fn;
+                current_procedure_args.clear();
+                current_procedure_abi_type = ASR::abiType::Source;
+                current_scope->erase_symbol(sym_name);
+                return;
             } else {
                 throw SemanticError("Subroutine already defined", tmp->loc);
             }
@@ -410,7 +433,18 @@ public:
                 if (compiler_options.implicit_typing) {
                     declare_implicit_variable(x.base.base.loc, arg_s,
                         ASRUtils::intent_unspecified);
-                } else {
+                } else if (has_external_function(arg_s)) {
+                    ASR::symbol_t *sym = external_functions[arg_s].first;
+                    // make function call                  
+
+                    auto fun_call = ASR::make_FunctionCall_t(
+                        al, x.base.base.loc, sym, nullptr, nullptr, 0, nullptr, nullptr, nullptr
+                    );
+                    // make expr out of FunctionCall_t
+                    auto ex = ASR::down_cast<ASR::expr_t>(fun_call);
+                    args.push_back(al, ex);
+                    // throw SemanticError("ICE: TODO: implement passing external functions as argument to other functions", x.base.base.loc);
+                }  else {
                     throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
                 }
             }
@@ -1057,7 +1091,7 @@ public:
         }
         if (ASR::is_a<ASR::Function_t>(*t) &&
             ASR::down_cast<ASR::Function_t>(t)->m_return_var == nullptr) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
+            if (current_scope->get_symbol(local_sym) != nullptr && !has_external_function(local_sym)) {
                 throw SemanticError("Subroutine already defined",
                     loc);
             }
@@ -1324,9 +1358,12 @@ public:
 Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
         SymbolTable *symbol_table, CompilerOptions &compiler_options,
-        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters)
+        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters,
+        std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> &external_functions
+        )
 {
-    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options);
+    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options,
+        external_functions);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticError &e) {

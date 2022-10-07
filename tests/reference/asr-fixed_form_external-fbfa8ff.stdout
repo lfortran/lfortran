@@ -1,0 +1,111 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            f:
+                (Function 
+                    (SymbolTable
+                        3
+                        {
+                            a:
+                                (Variable 
+                                    3 
+                                    a 
+                                    Unspecified 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    f 
+                    [(Var 3 a)] 
+                    [] 
+                    [(Print 
+                        () 
+                        [(Var 3 a)] 
+                        () 
+                        ()
+                    )] 
+                    () 
+                    Source 
+                    Public 
+                    Interface 
+                    () 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false.
+                ), 
+            main:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            b:
+                                (Variable 
+                                    2 
+                                    b 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            c:
+                                (Variable 
+                                    2 
+                                    c 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            d:
+                                (Variable 
+                                    2 
+                                    d 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    main 
+                    [] 
+                    [(= 
+                        (Var 2 b) 
+                        (IntegerConstant 1 (Integer 4 [])) 
+                        ()
+                    )
+                    (SubroutineCall 
+                        1 f 
+                        () 
+                        [((Var 2 b))] 
+                        ()
+                    )]
+                )
+            
+        }) 
+    []
+)
