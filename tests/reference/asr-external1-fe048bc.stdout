@@ -7,57 +7,12 @@
                     (SymbolTable
                         4
                         {
-                            a:
-                                (Variable 
-                                    4 
-                                    a 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
-                                    .false.
-                                )
                             
                         }) 
                     fun1 
                     [] 
                     [] 
-                    [(= 
-                        (Var 4 a) 
-                        (Cast 
-                            (IntegerConstant 100 (Integer 4 [])) 
-                            IntegerToReal 
-                            (Real 4 []) 
-                            (RealConstant 
-                                100.000000 
-                                (Real 4 [])
-                            )
-                        ) 
-                        ()
-                    )
-                    (= 
-                        (Var 4 a) 
-                        (RealBinOp 
-                            (Var 4 a) 
-                            Add 
-                            (Cast 
-                                (IntegerConstant 1 (Integer 4 [])) 
-                                IntegerToReal 
-                                (Real 4 []) 
-                                (RealConstant 
-                                    1.000000 
-                                    (Real 4 [])
-                                )
-                            ) 
-                            (Real 4 []) 
-                            ()
-                        ) 
-                        ()
-                    )] 
+                    [] 
                     () 
                     Source 
                     Public 
@@ -89,29 +44,15 @@
                     .false. 
                     .false.
                 ), 
-            g:
-                (Function 
+            main:
+                (Program 
                     (SymbolTable
-                        6
+                        2
                         {
-                            fun:
+                            fun1:
                                 (Variable 
-                                    6 
-                                    fun 
-                                    Unspecified 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
-                                    .false.
-                                ), 
-                            i:
-                                (Variable 
-                                    6 
-                                    i 
+                                    2 
+                                    fun1 
                                     Local 
                                     () 
                                     () 
@@ -122,57 +63,6 @@
                                     Required 
                                     .false.
                                 ), 
-                            proc:
-                                (Variable 
-                                    6 
-                                    proc 
-                                    Unspecified 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
-                                    .false.
-                                )
-                            
-                        }) 
-                    g 
-                    [(Var 6 proc)
-                    (Var 6 fun)] 
-                    [] 
-                    [(= 
-                        (Var 6 i) 
-                        (ArrayItem 
-                            (Var 6 fun) 
-                            [] 
-                            (Integer 4 []) 
-                            ()
-                        ) 
-                        ()
-                    )
-                    (SubroutineCall 
-                        6 proc 
-                        () 
-                        [((Var 6 i))] 
-                        ()
-                    )] 
-                    () 
-                    Source 
-                    Public 
-                    Implementation 
-                    () 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false.
-                ), 
-            main:
-                (Program 
-                    (SymbolTable
-                        2
-                        {
                             fun2:
                                 (Variable 
                                     2 
@@ -191,13 +81,7 @@
                         }) 
                     main 
                     [] 
-                    [(SubroutineCall 
-                        1 g 
-                        () 
-                        [((Var 1 sub1))
-                        ((Var 1 fun1))] 
-                        ()
-                    )]
+                    []
                 ), 
             sub1:
                 (Function 
@@ -207,11 +91,11 @@
                             fun1:
                                 (Function 
                                     (SymbolTable
-                                        7
+                                        6
                                         {
                                             a:
                                                 (Variable 
-                                                    7 
+                                                    6 
                                                     a 
                                                     Local 
                                                     () 
@@ -225,7 +109,7 @@
                                                 ), 
                                             fun1:
                                                 (Variable 
-                                                    7 
+                                                    6 
                                                     fun1 
                                                     ReturnVar 
                                                     () 
@@ -243,7 +127,7 @@
                                     [] 
                                     [] 
                                     [] 
-                                    (Var 7 fun1) 
+                                    (Var 6 fun1) 
                                     Source 
                                     Public 
                                     Implementation 

@@ -4,6 +4,32 @@
         (TriviaNode 
             [] 
             [(EndOfLine)
+            (EndOfLine)
+            (Comment 
+                "! TODO: this is valid Fortran code -- you can pass a function as an argument; we will need to figure out"
+            )
+            (Comment 
+                "!       how to do that."
+            )
+            (EndOfLine)
+            (Comment 
+                "!subroutine g(proc,fun)"
+            )
+            (Comment 
+                "!  external proc"
+            )
+            (Comment 
+                "!  integer :: fun,i"
+            )
+            (Comment 
+                "!  i=fun()"
+            )
+            (Comment 
+                "!  call proc(i)"
+            )
+            (Comment 
+                "!end subroutine"
+            )
             (EndOfLine)]
         ) 
         [] 
@@ -27,7 +53,12 @@
             )
         )
         (Declaration 
-            () 
+            (AttrType 
+                TypeInteger 
+                [] 
+                () 
+                None
+            ) 
             [(SimpleAttribute 
                 AttrExternal
             )] 
@@ -60,81 +91,15 @@
             () 
             None 
             ())] 
-            ()
-        )] 
-        [(SubroutineCall 
-            0 
-            g 
-            [] 
-            [(() 
-            sub1 
-            ())
-            (() 
-            fun1 
-            ())] 
-            [] 
-            ()
-        )] 
-        []
-    )
-    (Subroutine 
-        g 
-        [(proc)
-        (fun)] 
-        [] 
-        () 
-        (TriviaNode 
-            [] 
-            [(EndOfLine)
-            (EndOfLine)]
-        ) 
-        [] 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
+            (TriviaNode 
                 [] 
-                () 
-                None
-            ) 
-            [] 
-            [(fun 
-            [] 
-            [] 
-            () 
-            None 
-            ())
-            (i 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
-            ()
+                [(EndOfLine)
+                (Comment 
+                    "!call g(sub1,fun1)"
+                )]
+            )
         )] 
-        [(= 
-            0 
-            i 
-            (FuncCallOrArray 
-                fun 
-                [] 
-                [] 
-                [] 
-                []
-            ) 
-            ()
-        )
-        (SubroutineCall 
-            0 
-            proc 
-            [] 
-            [(() 
-            i 
-            ())] 
-            [] 
-            ()
-        )] 
+        [] 
         []
     )
     (Subroutine 
@@ -227,20 +192,18 @@
             () 
             None 
             ())] 
-            ()
+            (TriviaNode 
+                [] 
+                [(EndOfLine)
+                (Comment 
+                    "!a = 100"
+                )
+                (Comment 
+                    "!a = a+1"
+                )]
+            )
         )] 
-        [(= 
-            0 
-            a 
-            100 
-            ()
-        )
-        (= 
-            0 
-            a 
-            (+ a 1) 
-            ()
-        )] 
+        [] 
         []
     )]
 )
