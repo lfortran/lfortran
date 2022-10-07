@@ -2467,3 +2467,25 @@ asr_implicit_interface = true
 filename = "fixed_form_goto_select.f"
 ast = true
 asr = true
+
+[[test]]
+filename = "fixed_form/assign_to1.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/assign_to2.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/assign_to3.f"
+ast = true
+
+[[test]]
+filename = "../integration_tests/assign_to1.f90"
+ast = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "../integration_tests/assign_to2.f90"
+ast = true
+asr_implicit_typing = true
