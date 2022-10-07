@@ -434,10 +434,16 @@ public:
                     declare_implicit_variable(x.base.base.loc, arg_s,
                         ASRUtils::intent_unspecified);
                 } else if (has_external_function(arg_s)) {
-                    // ASR::symbol_t *fun = external_functions[arg_s].first;
-                    // auto var = ASR::make_Var_t(al, x.base.base.loc, fun);
-                    // args.push_back(al, LFortran::ASRUtils::EXPR();
-                    throw SemanticError("ICE: TODO: implement passing external functions as argument to other functions", x.base.base.loc);
+                    ASR::symbol_t *sym = external_functions[arg_s].first;
+                    // make function call                  
+
+                    auto fun_call = ASR::make_FunctionCall_t(
+                        al, x.base.base.loc, sym, nullptr, nullptr, 0, nullptr, nullptr, nullptr
+                    );
+                    // make expr out of FunctionCall_t
+                    auto ex = ASR::down_cast<ASR::expr_t>(fun_call);
+                    args.push_back(al, ex);
+                    // throw SemanticError("ICE: TODO: implement passing external functions as argument to other functions", x.base.base.loc);
                 }  else {
                     throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
                 }
