@@ -134,15 +134,7 @@ void case_to_if(Allocator& al, const ASR::Select_t& x, ASR::expr_t* a_test, Vec<
 Vec<ASR::stmt_t*> replace_selectcase(Allocator &al, const ASR::Select_t &select_case) {
     ASR::expr_t *a = select_case.m_test;
     Vec<ASR::stmt_t*> body;
-    case_to_if(al, select_case, a, body);
-    /*
-    std::cout << "Input:" << std::endl;
-    std::cout << pickle((ASR::asr_t&)loop);
-    std::cout << "Output:" << std::endl;
-    std::cout << pickle((ASR::asr_t&)*stmt1);
-    std::cout << pickle((ASR::asr_t&)*stmt2);
-    std::cout << "--------------" << std::endl;
-    */
+    case_to_if(al, select_case, a, body);  
     return body;
 }
 

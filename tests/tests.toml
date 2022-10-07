@@ -2506,3 +2506,25 @@ asr = true
 filename = "../integration_tests/external1.f90"
 ast = true
 asr_implicit_typing = true
+
+[[test]]
+filename = "fixed_form/assign_to1.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/assign_to2.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/assign_to3.f"
+ast = true
+
+[[test]]
+filename = "../integration_tests/assign_to1.f90"
+ast = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "../integration_tests/assign_to2.f90"
+ast = true
+asr_implicit_typing = true

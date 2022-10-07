@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <cmath>
+#include <set>
 
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
@@ -27,6 +28,9 @@ private:
 public:
     ASR::asr_t *asr;
     bool from_block;
+    std::set<std::string> labels;
+    size_t starting_n_body = 0;
+    AST::stmt_t **starting_m_body = nullptr;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::unordered_map<std::string, std::pair<ASR::symbol_t*, bool>> &external_functions)
@@ -903,6 +907,8 @@ public:
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Program_t *v = ASR::down_cast<ASR::Program_t>(t);
         current_scope = v->m_symtab;
+        starting_m_body = x.m_body;
+        starting_n_body = x.n_body;
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
@@ -918,6 +924,8 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
+        starting_m_body = nullptr;
+        starting_n_body =  0;
         current_scope = old_scope;
         tmp = nullptr;
     }
@@ -968,6 +976,8 @@ public:
         
 
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
+        starting_m_body = x.m_body;
+        starting_n_body = x.n_body;
         if( t->type == ASR::symbolType::GenericProcedure ) {
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->get_symbol(subrout_name);
@@ -1009,11 +1019,16 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
+        starting_m_body = nullptr;
+        starting_n_body = 0;
+
         current_scope = old_scope;
         tmp = nullptr;
     }
 
     void visit_Function(const AST::Function_t &x) {
+        starting_m_body = x.m_body;
+        starting_n_body = x.n_body;
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         if( t->type == ASR::symbolType::GenericProcedure ) {
@@ -1058,8 +1073,44 @@ public:
                 visit_unit_decl2(*x.m_decl[i]);
         }
 
+        starting_m_body = nullptr;
+        starting_n_body = 0;
         current_scope = old_scope;
         tmp = nullptr;
+    }
+
+    void visit_Assign(const AST::Assign_t &x) {
+        std::string var_name = to_lower(std::string{x.m_variable});
+        ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
+        ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+        if (!sym) {
+            labels.insert(var_name);
+            Str a_var_name_f;
+            a_var_name_f.from_str(al, var_name);
+            ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
+                                                            ASR::intentType::Local, nullptr, nullptr,
+                                                            ASR::storage_typeType::Default, int32_type,
+                                                            ASR::abiType::Source, ASR::Public, ASR::presenceType::Optional, false);
+            current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(a_variable));
+            sym = ASR::down_cast<ASR::symbol_t>(a_variable);
+        } else {
+            // symbol found but we need to have consistent types
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                throw SemanticError("Assign target needs to be a variable.", x.base.base.loc);
+            }
+
+            if (std::find(labels.begin(), labels.end(), var_name) == labels.end()) {
+                labels.insert(var_name);
+            }
+            // ensure the precision is consistent
+            auto v = ASR::down_cast<ASR::Variable_t>(sym);
+            auto t = ASR::down_cast<ASR::Integer_t>(v->m_type);
+            t->m_kind = 4;
+        }
+
+        // ASSIGN XXX TO k -- XXX can only be integer for now.
+        ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
+        tmp = (ASR::asr_t*)ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target_var, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_assign_label, int32_type)), nullptr));
     }
 
     void visit_Assignment(const AST::Assignment_t &x) {
@@ -1701,7 +1752,6 @@ public:
                 // 1 label SELECT
                 Vec<ASR::stmt_t*> def_body;
                 def_body.reserve(al, 1);
-
                 for (size_t i = 0; i < x.n_labels; ++i) {
                     if (!AST::is_a<AST::Num_t>(*x.m_labels[i])) {
                         throw SemanticError("Only integer labels are supported in GOTO.",
@@ -1718,10 +1768,78 @@ public:
                         a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
                     }
                 }
-
                 tmp = ASR::make_Select_t(al, x.base.base.loc, goto_label, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size());
             }
+        } else if (x.m_int_var) {
+            std::string label{x.m_int_var};
+            if (std::find(labels.begin(), labels.end(), label) == labels.end()) {
+                throw SemanticError("Cannot GOTO unknown label", x.base.base.loc);
+            }
+            auto sym = current_scope->resolve_symbol(label);
+
+            // get all labels in current scope
+            if (starting_m_body != nullptr) {
+                // collect all labels
+                for (size_t i = 0; i < starting_n_body; ++i) {
+                    int64_t label = stmt_label(starting_m_body[i]);
+                    if (label != 0) {
+                        labels.insert(std::to_string(label));
+                    }
+                }
+            } else {
+                // cannot perform expected behavior
+                throw SemanticError("Cannot compute GOTO.", x.base.base.loc);
+            }
+
+            // n_labels GOTO
+            Vec<ASR::case_stmt_t*> a_body_vec;
+            a_body_vec.reserve(al, x.n_labels);
+            // 1 label SELECT
+            Vec<ASR::stmt_t*> def_body;
+            def_body.reserve(al, 1);
+
+            auto is_integer = [] (const std::string & s) {
+                    return !s.empty() && std::all_of(s.begin(), s.end(), [](char c) {
+                        return ::isdigit(c) || c == ' ';
+                    });
+            };
+
+            // if there are no labels to iterate over, iterate over _all_ labels available in current scope
+            if (!x.n_labels) {
+                for (const auto &label : labels) {
+                    if (!is_integer(label)) continue;
+                    int32_t num = std::stoi(label);
+                    Vec<ASR::stmt_t*> body;
+                    body.reserve(al, 1);
+                    body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, num)));
+                    Vec<ASR::expr_t*> comparator_one;
+                    comparator_one.reserve(al, 1);
+                    ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+                    comparator_one.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, num, int32_type)));
+                    a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
+                }
+            } else {
+                for (size_t i = 0; i < x.n_labels; ++i) {
+                    if (!AST::is_a<AST::Num_t>(*x.m_labels[i])) {
+                        throw SemanticError("Only integer labels are supported in GOTO.",
+                            x.base.base.loc);
+                    } else {
+                        auto l = AST::down_cast<AST::Num_t>(x.m_labels[i]);
+                        Vec<ASR::stmt_t*> body;
+                        body.reserve(al, 1);
+                        body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n)));
+                        Vec<ASR::expr_t*> comparator_one;
+                        comparator_one.reserve(al, 1);
+                        ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+                        comparator_one.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, l->m_n, int32_type)));
+                        a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
+                    }
+                }
+            }
+            ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
+            tmp = ASR::make_Select_t(al, x.base.base.loc, var_expr, a_body_vec.p,
+                           a_body_vec.size(), def_body.p, def_body.size());
         } else {
             throw SemanticError("There must be a target to GOTO.",
                 x.base.base.loc);
