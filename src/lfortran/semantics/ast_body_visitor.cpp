@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <cmath>
+#include <set>
 
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
@@ -27,7 +28,8 @@ private:
 public:
     ASR::asr_t *asr;
     bool from_block;
-    std::vector<std::string> labels;
+    bool labels_set = false;
+    std::set<std::string> labels;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options)
@@ -79,8 +81,19 @@ public:
             if (label != 0) {
                 ASR::asr_t *l = ASR::make_GoToTarget_t(al, m_body[i]->base.loc, label);
                 body.push_back(al, ASR::down_cast<ASR::stmt_t>(l));
-                labels.push_back(std::to_string(label));
+                labels.insert(std::to_string(label));
             }
+
+            if (!labels_set) {
+                for (size_t j = 0; j < n_body; ++j) {
+                    int64_t label = stmt_label(m_body[j]);
+                    if (label != 0) {
+                        labels.insert(std::to_string(label));
+                    }
+                }
+                labels_set = false;
+            }
+
             // Visit the statement
             this->visit_stmt(*m_body[i]);
             if (tmp != nullptr) {
@@ -1026,7 +1039,7 @@ public:
         ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
         ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
         if (!sym) {
-            labels.push_back(var_name);
+            labels.insert(var_name);
             Str a_var_name_f;
             a_var_name_f.from_str(al, var_name);
             ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
@@ -1042,7 +1055,7 @@ public:
             }
 
             if (std::find(labels.begin(), labels.end(), var_name) == labels.end()) {
-                labels.push_back(var_name);
+                labels.insert(var_name);
             }
             // ensure the precision is consistent
             auto v = ASR::down_cast<ASR::Variable_t>(sym);
@@ -1669,7 +1682,6 @@ public:
                     comparator_one.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, num, int32_type)));
                     a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1)));
                 }
-
             } else {
                 for (size_t i = 0; i < x.n_labels; ++i) {
                     if (!AST::is_a<AST::Num_t>(*x.m_labels[i])) {

@@ -41,7 +41,7 @@
                         ) 
                         [(= 
                             (Var 2 k) 
-                            (IntegerConstant 1 (Integer 4 [])) 
+                            (IntegerConstant 15 (Integer 4 [])) 
                             ()
                         )] 
                         []
@@ -51,11 +51,28 @@
                     )
                     (Select 
                         (Var 2 k) 
-                        [] 
+                        [(CaseStmt 
+                            [(IntegerConstant 100 (Integer 4 []))] 
+                            [(GoTo 
+                                100
+                            )]
+                        )
+                        (CaseStmt 
+                            [(IntegerConstant 1000 (Integer 4 []))] 
+                            [(GoTo 
+                                1000
+                            )]
+                        )
+                        (CaseStmt 
+                            [(IntegerConstant 15 (Integer 4 []))] 
+                            [(GoTo 
+                                15
+                            )]
+                        )] 
                         []
                     )
                     (GoToTarget 
-                        1
+                        15
                     )
                     (Print 
                         () 
