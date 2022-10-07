@@ -1,0 +1,13 @@
+{
+    "basename": "ast-loop_test4-2c8c1ea",
+    "cmd": "lfortran --indent --fixed-form --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/loop_test4.f",
+    "infile_hash": "c096d4180aaa691479e1ff9a28223a68a1bfbe4782d5d0fdce56cd96",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-loop_test4-2c8c1ea.stdout",
+    "stdout_hash": "8ff6832a5da2b501b0544091c755efe1ff12ff8d6a513f9b27b7b5af",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

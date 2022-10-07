@@ -369,7 +369,7 @@ int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
     LFortran::LocationManager lm;
     lm.in_filename = infile;
     std::string prescan = LFortran::fix_continuation(input, lm,
-        compiler_options.fixed_form);
+        compiler_options.fixed_form, LFortran::parent_path(lm.in_filename));
     std::cout << prescan << std::endl;
     return 0;
 }
@@ -385,7 +385,8 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
     LFortran::diag::Diagnostics diagnostics;
     LFortran::LocationManager lm;
     if (compiler_options.prescan || compiler_options.fixed_form) {
-        input = fix_continuation(input, lm, compiler_options.fixed_form);
+        input = fix_continuation(input, lm,
+            compiler_options.fixed_form, LFortran::parent_path(infile));
     }
     auto res = LFortran::tokens(al, input, diagnostics, &stypes, &locations,
         compiler_options.fixed_form);
@@ -605,6 +606,24 @@ int emit_c(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
+int emit_julia(const std::string &infile, CompilerOptions &compiler_options) 
+{
+    std::string input = read_file(infile);
+
+    LFortran::FortranEvaluator fe(compiler_options);
+    LFortran::LocationManager lm;
+    LFortran::diag::Diagnostics diagnostics;
+    lm.in_filename = infile;
+    LFortran::Result<std::string> julia = fe.get_julia(input, lm, diagnostics);
+    std::cerr << diagnostics.render(input, lm, compiler_options);
+    if (julia.ok) {
+        std::cout << julia.result;
+        return 0;
+    } else {
+        LFORTRAN_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+}
 
 int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
 {
@@ -1402,6 +1421,7 @@ int main(int argc, char *argv[])
         bool show_c = false;
         bool show_asm = false;
         bool show_wat = false;
+        bool show_julia = false;
         bool time_report = false;
         bool static_link = false;
         std::string arg_backend = "llvm";
@@ -1460,6 +1480,7 @@ int main(int argc, char *argv[])
         app.add_flag("--show-c", show_c, "Show C translation source for the given file and exit");
         app.add_flag("--show-asm", show_asm, "Show assembly for the given file and exit");
         app.add_flag("--show-wat", show_wat, "Show WAT (WebAssembly Text Format) and exit");
+        app.add_flag("--show-julia", show_julia, "Show Julia translation source for the given file and exit");
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors");
         app.add_flag("--symtab-only", compiler_options.symtab_only, "Only create symbol tables in ASR (skip executable stmt)");
         app.add_flag("--time-report", time_report, "Show compilation time report");
@@ -1545,6 +1566,9 @@ int main(int argc, char *argv[])
         compiler_options.use_colors = !arg_no_color;
 
         if (fmt) {
+            if (CLI::NonexistentPath(arg_fmt_file).empty())
+                throw LFortran::LCompilersException("File does not exist: " + arg_fmt_file);
+
             return format(arg_fmt_file, arg_fmt_inplace, !arg_fmt_no_color,
                 arg_fmt_indent, arg_fmt_indent_unit, compiler_options);
         }
@@ -1599,6 +1623,8 @@ int main(int argc, char *argv[])
         // TODO: for now we ignore the other filenames, only handle
         // the first:
         std::string arg_file = arg_files[0];
+        if (CLI::NonexistentPath(arg_file).empty())
+            throw LFortran::LCompilersException("File does not exist: " + arg_file);
 
         std::string outfile;
         std::string basename;
@@ -1622,6 +1648,8 @@ int main(int argc, char *argv[])
             outfile = basename + ".ll";
         } else if (show_wat) {
             outfile = basename + ".wat";
+        } else if (show_julia) {
+            outfile = basename + ".jl";
         } else {
             outfile = "a.out";
         }
@@ -1673,6 +1701,9 @@ int main(int argc, char *argv[])
         }
         if (show_c) {
             return emit_c(arg_file, compiler_options);
+        }
+        if (show_julia) {
+            return emit_julia(arg_file, compiler_options);
         }
         if (arg_S) {
             if (backend == Backend::llvm) {

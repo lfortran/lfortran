@@ -1,0 +1,13 @@
+{
+    "basename": "asr-global_scope6-cedf3bc",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/global_scope6.f90",
+    "infile_hash": "3f2dfa122b78175565b7baa8f4d0417cfb0ed5bbe26bbb5f0f1f6f2e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-global_scope6-cedf3bc.stdout",
+    "stdout_hash": "c9ce629c28ac07f621f461bdc19ceb8190766a3d8aa096b2230ffe54",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

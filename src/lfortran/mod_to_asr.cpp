@@ -55,14 +55,14 @@ int uncompress_gzip(
 }
 
 std::string extract_gzip(
-#ifdef HAVE_ZLIB    
+#ifdef HAVE_ZLIB
     std::vector<uint8_t>& buffer
-#else    
+#else
     std::vector<uint8_t>& /*buffer*/
 #endif
 )
 {
-#ifdef HAVE_ZLIB    
+#ifdef HAVE_ZLIB
     std::vector<uint8_t> data(1024*1024);
     uint64_t data_size = data.size();
     int res = uncompress_gzip(&data[0], &data_size, &buffer[0], buffer.size());
@@ -292,7 +292,7 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
                     nullptr, 0,
                     nullptr, // return var
                     ASR::abiType::GFortranModule, ASR::Public,
-                    ASR::Interface, nullptr, false, false, false);
+                    ASR::Interface, nullptr, false, false, false, false);
                 s.p.proc = down_cast<ASR::symbol_t>(asr);
                 std::string sym_name = s.name;
                 if (parent_scope->get_symbol(sym_name) != nullptr) {

@@ -1,0 +1,13 @@
+{
+    "basename": "pass_inline_function_calls-functions_07-bc995d2",
+    "cmd": "lfortran --pass=inline_function_calls --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/functions_07.f90",
+    "infile_hash": "4688c49c3c531f9e7dafd3b6a4ef2560b6e62ef554ea9df95ed61a8a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_inline_function_calls-functions_07-bc995d2.stdout",
+    "stdout_hash": "f5f765d0b8075760410ab15519e78dddbe3aef955e64a9831ca6dea1",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,472 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            derived_types_08:
+                (Program 
+                    (SymbolTable
+                        6
+                        {
+                            initialize_subrout:
+                                (ExternalSymbol 
+                                    6 
+                                    initialize_subrout 
+                                    2 initialize_subrout 
+                                    shape_mod 
+                                    [] 
+                                    initialize_subrout 
+                                    Public
+                                ), 
+                            rect:
+                                (Variable 
+                                    6 
+                                    rect 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Derived 
+                                        6 rectangle 
+                                        []
+                                    ) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            rectangle:
+                                (ExternalSymbol 
+                                    6 
+                                    rectangle 
+                                    2 rectangle 
+                                    shape_mod 
+                                    [] 
+                                    rectangle 
+                                    Public
+                                ), 
+                            shape:
+                                (ExternalSymbol 
+                                    6 
+                                    shape 
+                                    2 shape 
+                                    shape_mod 
+                                    [] 
+                                    shape 
+                                    Public
+                                ), 
+                            shp:
+                                (Variable 
+                                    6 
+                                    shp 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Derived 
+                                        6 shape 
+                                        []
+                                    ) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    derived_types_08 
+                    [shape_mod] 
+                    [(SubroutineCall 
+                        3 initialize 
+                        () 
+                        [((IntegerConstant 1 (Integer 4 [])))
+                        ((LogicalConstant 
+                            .true. 
+                            (Logical 4 [])
+                        ))
+                        ((IntegerConstant 10 (Integer 4 [])))
+                        ((IntegerConstant 20 (Integer 4 [])))] 
+                        (Var 6 shp)
+                    )
+                    (SubroutineCall 
+                        3 initialize 
+                        () 
+                        [((IntegerConstant 2 (Integer 4 [])))
+                        ((LogicalConstant 
+                            .false. 
+                            (Logical 4 [])
+                        ))
+                        ((IntegerConstant 100 (Integer 4 [])))
+                        ((IntegerConstant 200 (Integer 4 [])))] 
+                        (Var 6 rect)
+                    )
+                    (Print 
+                        () 
+                        [(DerivedRef 
+                            (Var 6 shp) 
+                            3 color 
+                            (Integer 4 []) 
+                            ()
+                        )
+                        (DerivedRef 
+                            (Var 6 shp) 
+                            3 filled 
+                            (Logical 4 []) 
+                            ()
+                        )
+                        (DerivedRef 
+                            (Var 6 shp) 
+                            3 x 
+                            (Integer 4 []) 
+                            ()
+                        )
+                        (DerivedRef 
+                            (Var 6 shp) 
+                            3 y 
+                            (Integer 4 []) 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(DerivedRef 
+                            (Var 6 rect) 
+                            3 color 
+                            (Integer 4 []) 
+                            ()
+                        )
+                        (DerivedRef 
+                            (Var 6 rect) 
+                            3 filled 
+                            (Logical 4 []) 
+                            ()
+                        )
+                        (DerivedRef 
+                            (Var 6 rect) 
+                            3 x 
+                            (Integer 4 []) 
+                            ()
+                        )
+                        (DerivedRef 
+                            (Var 6 rect) 
+                            3 y 
+                            (Integer 4 []) 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (= 
+                        (DerivedRef 
+                            (Var 6 rect) 
+                            4 length 
+                            (Integer 4 []) 
+                            ()
+                        ) 
+                        (IntegerConstant 100 (Integer 4 [])) 
+                        ()
+                    )
+                    (= 
+                        (DerivedRef 
+                            (Var 6 rect) 
+                            4 width 
+                            (Integer 4 []) 
+                            ()
+                        ) 
+                        (IntegerConstant 200 (Integer 4 [])) 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(DerivedRef 
+                            (Var 6 rect) 
+                            4 length 
+                            (Integer 4 []) 
+                            ()
+                        )
+                        (DerivedRef 
+                            (Var 6 rect) 
+                            4 width 
+                            (Integer 4 []) 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )]
+                ), 
+            shape_mod:
+                (Module 
+                    (SymbolTable
+                        2
+                        {
+                            initialize_subrout:
+                                (Function 
+                                    (SymbolTable
+                                        5
+                                        {
+                                            color:
+                                                (Variable 
+                                                    5 
+                                                    color 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            filled:
+                                                (Variable 
+                                                    5 
+                                                    filled 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Logical 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            sh:
+                                                (Variable 
+                                                    5 
+                                                    sh 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Class 
+                                                        2 shape 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            x:
+                                                (Variable 
+                                                    5 
+                                                    x 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            y:
+                                                (Variable 
+                                                    5 
+                                                    y 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    initialize_subrout 
+                                    [(Var 5 sh)
+                                    (Var 5 color)
+                                    (Var 5 filled)
+                                    (Var 5 x)
+                                    (Var 5 y)] 
+                                    [] 
+                                    [(= 
+                                        (DerivedRef 
+                                            (Var 5 sh) 
+                                            3 color 
+                                            (Integer 4 []) 
+                                            ()
+                                        ) 
+                                        (Var 5 color) 
+                                        ()
+                                    )
+                                    (= 
+                                        (DerivedRef 
+                                            (Var 5 sh) 
+                                            3 filled 
+                                            (Logical 4 []) 
+                                            ()
+                                        ) 
+                                        (Var 5 filled) 
+                                        ()
+                                    )
+                                    (= 
+                                        (DerivedRef 
+                                            (Var 5 sh) 
+                                            3 x 
+                                            (Integer 4 []) 
+                                            ()
+                                        ) 
+                                        (Var 5 x) 
+                                        ()
+                                    )
+                                    (= 
+                                        (DerivedRef 
+                                            (Var 5 sh) 
+                                            3 y 
+                                            (Integer 4 []) 
+                                            ()
+                                        ) 
+                                        (Var 5 y) 
+                                        ()
+                                    )] 
+                                    () 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false.
+                                ), 
+                            rectangle:
+                                (DerivedType 
+                                    (SymbolTable
+                                        4
+                                        {
+                                            length:
+                                                (Variable 
+                                                    4 
+                                                    length 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            width:
+                                                (Variable 
+                                                    4 
+                                                    width 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    rectangle 
+                                    [length
+                                    width] 
+                                    Source 
+                                    Public 
+                                    2 shape
+                                ), 
+                            shape:
+                                (DerivedType 
+                                    (SymbolTable
+                                        3
+                                        {
+                                            color:
+                                                (Variable 
+                                                    3 
+                                                    color 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            filled:
+                                                (Variable 
+                                                    3 
+                                                    filled 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Logical 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            initialize:
+                                                (ClassProcedure 
+                                                    3 
+                                                    initialize 
+                                                    initialize_subrout 
+                                                    2 initialize_subrout 
+                                                    Source
+                                                ), 
+                                            x:
+                                                (Variable 
+                                                    3 
+                                                    x 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            y:
+                                                (Variable 
+                                                    3 
+                                                    y 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    shape 
+                                    [color
+                                    filled
+                                    x
+                                    y] 
+                                    Source 
+                                    Public 
+                                    ()
+                                )
+                            
+                        }) 
+                    shape_mod 
+                    [] 
+                    .false. 
+                    .false.
+                )
+            
+        }) 
+    []
+)

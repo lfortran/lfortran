@@ -1,0 +1,81 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            bindc1:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            c_loc:
+                                (ExternalSymbol 
+                                    2 
+                                    c_loc 
+                                    4 c_loc 
+                                    lfortran_intrinsic_iso_c_binding 
+                                    [] 
+                                    c_loc 
+                                    Public
+                                ), 
+                            c_ptr:
+                                (ExternalSymbol 
+                                    2 
+                                    c_ptr 
+                                    4 c_ptr 
+                                    lfortran_intrinsic_iso_c_binding 
+                                    [] 
+                                    c_ptr 
+                                    Public
+                                ), 
+                            p:
+                                (Variable 
+                                    2 
+                                    p 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (CPtr) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            x:
+                                (Variable 
+                                    2 
+                                    x 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Pointer 
+                                        (Integer 4 [])
+                                    ) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    bindc1 
+                    [iso_c_binding] 
+                    [(= 
+                        (Var 2 p) 
+                        (PointerToCPtr 
+                            (Var 2 x) 
+                            (CPtr) 
+                            ()
+                        ) 
+                        ()
+                    )]
+                ), 
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding), 
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin)
+            
+        }) 
+    []
+)

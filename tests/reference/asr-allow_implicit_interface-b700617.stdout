@@ -1,0 +1,403 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding), 
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin), 
+            lfortran_intrinsic_math:
+                (IntrinsicModule lfortran_intrinsic_math), 
+            prho:
+                (Function 
+                    (SymbolTable
+                        2
+                        {
+                            alnorm:
+                                (Function 
+                                    (SymbolTable
+                                        225
+                                        {
+                                            alnorm_arg_0:
+                                                (Variable 
+                                                    225 
+                                                    alnorm_arg_0 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 8 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            alnorm_arg_1:
+                                                (Variable 
+                                                    225 
+                                                    alnorm_arg_1 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Logical 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            alnorm_return_var_name:
+                                                (Variable 
+                                                    225 
+                                                    alnorm_return_var_name 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 8 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    alnorm 
+                                    [(Var 225 alnorm_arg_0)
+                                    (Var 225 alnorm_arg_1)] 
+                                    [] 
+                                    [] 
+                                    (Var 225 alnorm_return_var_name) 
+                                    Source 
+                                    Public 
+                                    Interface 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false.
+                                ), 
+                            b:
+                                (Variable 
+                                    2 
+                                    b 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            dgetrf:
+                                (Function 
+                                    (SymbolTable
+                                        226
+                                        {
+                                            dgetrf_arg_0:
+                                                (Variable 
+                                                    226 
+                                                    dgetrf_arg_0 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 8 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            dgetrf_arg_1:
+                                                (Variable 
+                                                    226 
+                                                    dgetrf_arg_1 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 8 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            dgetrf_arg_2:
+                                                (Variable 
+                                                    226 
+                                                    dgetrf_arg_2 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 8 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    dgetrf 
+                                    [(Var 226 dgetrf_arg_0)
+                                    (Var 226 dgetrf_arg_1)
+                                    (Var 226 dgetrf_arg_2)] 
+                                    [] 
+                                    [] 
+                                    () 
+                                    Source 
+                                    Public 
+                                    Interface 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false.
+                                ), 
+                            exp:
+                                (ExternalSymbol 
+                                    2 
+                                    exp 
+                                    4 exp 
+                                    lfortran_intrinsic_math 
+                                    [] 
+                                    exp 
+                                    Private
+                                ), 
+                            exp@dexp:
+                                (ExternalSymbol 
+                                    2 
+                                    exp@dexp 
+                                    4 dexp 
+                                    lfortran_intrinsic_math 
+                                    [] 
+                                    dexp 
+                                    Private
+                                ), 
+                            one:
+                                (Variable 
+                                    2 
+                                    one 
+                                    Local 
+                                    () 
+                                    (RealConstant 
+                                        1.000000 
+                                        (Real 8 [])
+                                    ) 
+                                    Default 
+                                    (Real 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            prho:
+                                (Variable 
+                                    2 
+                                    prho 
+                                    ReturnVar 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            six:
+                                (Variable 
+                                    2 
+                                    six 
+                                    Local 
+                                    () 
+                                    (RealConstant 
+                                        6.000000 
+                                        (Real 8 [])
+                                    ) 
+                                    Default 
+                                    (Real 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            two:
+                                (Variable 
+                                    2 
+                                    two 
+                                    Local 
+                                    () 
+                                    (RealConstant 
+                                        2.000000 
+                                        (Real 8 [])
+                                    ) 
+                                    Default 
+                                    (Real 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            u:
+                                (Variable 
+                                    2 
+                                    u 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            x:
+                                (Variable 
+                                    2 
+                                    x 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            y:
+                                (Variable 
+                                    2 
+                                    y 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            zero:
+                                (Variable 
+                                    2 
+                                    zero 
+                                    Local 
+                                    () 
+                                    (RealConstant 
+                                        0.000000 
+                                        (Real 8 [])
+                                    ) 
+                                    Default 
+                                    (Real 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    prho 
+                    [] 
+                    [] 
+                    [(= 
+                        (Var 2 prho) 
+                        (RealBinOp 
+                            (RealBinOp 
+                                (Var 2 u) 
+                                Div 
+                                (FunctionCall 
+                                    2 exp@dexp 
+                                    2 exp 
+                                    [((RealBinOp 
+                                        (Var 2 y) 
+                                        Div 
+                                        (Var 2 two) 
+                                        (Real 8 []) 
+                                        ()
+                                    ))] 
+                                    (Real 8 []) 
+                                    () 
+                                    ()
+                                ) 
+                                (Real 8 []) 
+                                ()
+                            ) 
+                            Add 
+                            (FunctionCall 
+                                2 alnorm 
+                                () 
+                                [((Var 2 x))
+                                ((LogicalConstant 
+                                    .true. 
+                                    (Logical 4 [])
+                                ))] 
+                                (Real 8 []) 
+                                () 
+                                ()
+                            ) 
+                            (Real 8 []) 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (SubroutineCall 
+                        2 dgetrf 
+                        () 
+                        [((Var 2 x))
+                        ((Var 2 y))
+                        ((Var 2 u))] 
+                        ()
+                    )
+                    (If 
+                        (RealCompare 
+                            (Var 2 prho) 
+                            Lt 
+                            (Var 2 zero) 
+                            (Logical 4 []) 
+                            ()
+                        ) 
+                        [(= 
+                            (Var 2 prho) 
+                            (Var 2 zero) 
+                            ()
+                        )] 
+                        []
+                    )
+                    (If 
+                        (RealCompare 
+                            (Var 2 prho) 
+                            Gt 
+                            (Var 2 one) 
+                            (Logical 4 []) 
+                            ()
+                        ) 
+                        [(= 
+                            (Var 2 prho) 
+                            (Var 2 one) 
+                            ()
+                        )] 
+                        []
+                    )
+                    (Return)] 
+                    (Var 2 prho) 
+                    Source 
+                    Public 
+                    Implementation 
+                    () 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false.
+                )
+            
+        }) 
+    []
+)

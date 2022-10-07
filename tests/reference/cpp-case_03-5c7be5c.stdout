@@ -1,0 +1,63 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <cassert>
+#include <cmath>
+#include <complex>
+#include <Kokkos_Core.hpp>
+#include <lfortran_intrinsics.h>
+
+template <typename T>
+Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
+{
+    Kokkos::View<T*> r("r", v.size());
+    for (size_t i=0; i < v.size(); i++) {
+        r(i) = v[i];
+    }
+    return r;
+}
+
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, length;
+};
+// Forward declarations
+namespace {
+}
+
+// Implementations
+namespace {
+
+void main2() {
+    int32_t a=1;
+    int32_t b=2;
+    int32_t marks;
+    marks = 94;
+    if (marks >= 40 + b) {
+        std::cout << "Pass!" << std::endl;
+    } else if (marks <= 39 - a) {
+        std::cout << "Failed!" << std::endl;
+    } else {
+        std::cout << "Invalid marks" << std::endl;
+    }
+    std::cout << "Your marks are " << " " << marks << std::endl;
+    marks = -1;
+    if (marks >= 40 + b) {
+        std::cout << "Pass!" << std::endl;
+    } else if (0 <= marks && marks <= 39 - a) {
+        std::cout << "Failed!" << std::endl;
+    } else {
+        std::cout << "Invalid marks" << std::endl;
+    }
+    std::cout << "Your marks are " << " " << marks << std::endl;
+}
+
+}
+int main(int argc, char* argv[])
+{
+    Kokkos::initialize(argc, argv);
+    main2();
+    Kokkos::finalize();
+    return 0;
+}

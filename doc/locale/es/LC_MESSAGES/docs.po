@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-09-01 08:03+0000\n"
+"PO-Revision-Date: 2022-09-12 14:18+0000\n"
 "Last-Translator: Asdrubal Lozada-Blanco <aslozada@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/es/>\n"
@@ -1015,7 +1015,7 @@ msgstr ""
 
 #: ../../doc/src/index.md:134
 msgid "Getting started"
-msgstr "Iniciando"
+msgstr "Primeros pasos"
 
 #: ../../doc/src/index.md:141 ../../doc/src/progress.md:1
 msgid "LFortran Development Status"
@@ -2959,15 +2959,15 @@ msgstr "Léxicamente mayor que o igual."
 
 #: ../../doc/src/intrinsics/character/lge.md:17
 msgid "`x` input value of type character."
-msgstr ""
+msgstr "`x` valor de entrada de tipo carácter."
 
 #: ../../doc/src/intrinsics/character/lge.md:19
 msgid "`y` input value of type character."
-msgstr ""
+msgstr "`y` valor de entrada de tipo carácter."
 
 #: ../../doc/src/intrinsics/character/lge.md:21
 msgid "`x` and `y` can be seen as string A and string B."
-msgstr ""
+msgstr "`x`e `y` pueden ser vistos como la cadena A y la cadena B."
 
 #: ../../doc/src/intrinsics/character/lge.md:25
 msgid "The return value is of logical `true` or `false` type."

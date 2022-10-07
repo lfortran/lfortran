@@ -1,0 +1,523 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            kwarg_gp:
+                (Module 
+                    (SymbolTable
+                        2
+                        {
+                            mergegp:
+                                (GenericProcedure 
+                                    2 
+                                    mergegp 
+                                    [2 mergei32
+                                    2 merger32
+                                    2 merger64] 
+                                    Public
+                                ), 
+                            mergei32:
+                                (Function 
+                                    (SymbolTable
+                                        3
+                                        {
+                                            a:
+                                                (Variable 
+                                                    3 
+                                                    a 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 [(() 
+                                                    ())]) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            b:
+                                                (Variable 
+                                                    3 
+                                                    b 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 [(() 
+                                                    ())]) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            m:
+                                                (Variable 
+                                                    3 
+                                                    m 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 [(() 
+                                                    ())]) 
+                                                    Source 
+                                                    Public 
+                                                    Optional 
+                                                    .false.
+                                                ), 
+                                            r:
+                                                (Variable 
+                                                    3 
+                                                    r 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    mergei32 
+                                    [(Var 3 a)
+                                    (Var 3 b)
+                                    (Var 3 m)] 
+                                    [] 
+                                    [] 
+                                    (Var 3 r) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false.
+                                ), 
+                            merger32:
+                                (Function 
+                                    (SymbolTable
+                                        4
+                                        {
+                                            a:
+                                                (Variable 
+                                                    4 
+                                                    a 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 [(() 
+                                                    ())]) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            b:
+                                                (Variable 
+                                                    4 
+                                                    b 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 [(() 
+                                                    ())]) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            m:
+                                                (Variable 
+                                                    4 
+                                                    m 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 [(() 
+                                                    ())]) 
+                                                    Source 
+                                                    Public 
+                                                    Optional 
+                                                    .false.
+                                                ), 
+                                            r:
+                                                (Variable 
+                                                    4 
+                                                    r 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    merger32 
+                                    [(Var 4 a)
+                                    (Var 4 b)
+                                    (Var 4 m)] 
+                                    [] 
+                                    [] 
+                                    (Var 4 r) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false.
+                                ), 
+                            merger64:
+                                (Function 
+                                    (SymbolTable
+                                        5
+                                        {
+                                            a:
+                                                (Variable 
+                                                    5 
+                                                    a 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 8 [(() 
+                                                    ())]) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            b:
+                                                (Variable 
+                                                    5 
+                                                    b 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 8 [(() 
+                                                    ())]) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            m:
+                                                (Variable 
+                                                    5 
+                                                    m 
+                                                    Unspecified 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 8 [(() 
+                                                    ())]) 
+                                                    Source 
+                                                    Public 
+                                                    Optional 
+                                                    .false.
+                                                ), 
+                                            r:
+                                                (Variable 
+                                                    5 
+                                                    r 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 8 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    merger64 
+                                    [(Var 5 a)
+                                    (Var 5 b)
+                                    (Var 5 m)] 
+                                    [] 
+                                    [] 
+                                    (Var 5 r) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false.
+                                )
+                            
+                        }) 
+                    kwarg_gp 
+                    [] 
+                    .false. 
+                    .false.
+                ), 
+            kwarg_use:
+                (Program 
+                    (SymbolTable
+                        6
+                        {
+                            a1:
+                                (Variable 
+                                    6 
+                                    a1 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 4 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            a2:
+                                (Variable 
+                                    6 
+                                    a2 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 5 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            b1:
+                                (Variable 
+                                    6 
+                                    b1 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 4 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            b2:
+                                (Variable 
+                                    6 
+                                    b2 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 5 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            m1:
+                                (Variable 
+                                    6 
+                                    m1 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 4 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            m2:
+                                (Variable 
+                                    6 
+                                    m2 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 5 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            mergegp:
+                                (ExternalSymbol 
+                                    6 
+                                    mergegp 
+                                    2 mergegp 
+                                    kwarg_gp 
+                                    [] 
+                                    mergegp 
+                                    Public
+                                ), 
+                            mergegp@mergei32:
+                                (ExternalSymbol 
+                                    6 
+                                    mergegp@mergei32 
+                                    2 mergei32 
+                                    kwarg_gp 
+                                    [] 
+                                    mergei32 
+                                    Private
+                                ), 
+                            mergegp@merger32:
+                                (ExternalSymbol 
+                                    6 
+                                    mergegp@merger32 
+                                    2 merger32 
+                                    kwarg_gp 
+                                    [] 
+                                    merger32 
+                                    Private
+                                ), 
+                            mergei32:
+                                (ExternalSymbol 
+                                    6 
+                                    mergei32 
+                                    2 mergei32 
+                                    kwarg_gp 
+                                    [] 
+                                    mergei32 
+                                    Public
+                                ), 
+                            merger32:
+                                (ExternalSymbol 
+                                    6 
+                                    merger32 
+                                    2 merger32 
+                                    kwarg_gp 
+                                    [] 
+                                    merger32 
+                                    Public
+                                ), 
+                            merger64:
+                                (ExternalSymbol 
+                                    6 
+                                    merger64 
+                                    2 merger64 
+                                    kwarg_gp 
+                                    [] 
+                                    merger64 
+                                    Public
+                                )
+                            
+                        }) 
+                    kwarg_use 
+                    [kwarg_gp] 
+                    [(Print 
+                        () 
+                        [(FunctionCall 
+                            6 mergegp@mergei32 
+                            6 mergegp 
+                            [((Var 6 a1))
+                            ((Var 6 b1))] 
+                            (Integer 4 []) 
+                            () 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(FunctionCall 
+                            6 mergegp@mergei32 
+                            6 mergegp 
+                            [((Var 6 a1))
+                            ((Var 6 b1))
+                            ((Var 6 m1))] 
+                            (Integer 4 []) 
+                            () 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(FunctionCall 
+                            6 mergegp@mergei32 
+                            6 mergegp 
+                            [((Var 6 a1))
+                            ((Var 6 b1))
+                            ((Var 6 m1))] 
+                            (Integer 4 []) 
+                            () 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(FunctionCall 
+                            6 mergegp@merger32 
+                            6 mergegp 
+                            [((Var 6 a2))
+                            ((Var 6 b2))] 
+                            (Real 4 []) 
+                            () 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(FunctionCall 
+                            6 mergegp@merger32 
+                            6 mergegp 
+                            [((Var 6 a2))
+                            ((Var 6 b2))
+                            ((Var 6 m2))] 
+                            (Real 4 []) 
+                            () 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(FunctionCall 
+                            6 mergegp@merger32 
+                            6 mergegp 
+                            [((Var 6 a2))
+                            ((Var 6 b2))
+                            ((Var 6 m2))] 
+                            (Real 4 []) 
+                            () 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )]
+                )
+            
+        }) 
+    []
+)

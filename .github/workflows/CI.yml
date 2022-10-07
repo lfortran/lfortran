@@ -21,7 +21,7 @@ jobs:
         os: ["windows-2019", "macos-latest", "ubuntu-latest"]
         python-version: ["3.10"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -78,7 +78,7 @@ jobs:
     name: Build LFortran to WASM and Upload
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -142,7 +142,7 @@ jobs:
     name: Check Debug build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -185,7 +185,7 @@ jobs:
     name: Test LLVM 14
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -222,11 +222,80 @@ jobs:
             cd integration_tests
             ./run_tests.py -b llvm
 
+  gfortran:
+    name: Test integration_tests with GFortran
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Test integration_tests with GFortran
+        shell: bash -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b gfortran
+
+  test_codes:
+    name: Check Production Codes with LFortran
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/provision-with-micromamba@v12
+        with:
+          environment-file: ci/environment_linux.yml
+          extra-specs: |
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-ubuntu-latest
+
+      - name: Build Linux
+        shell: bash -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test SciPy
+        shell: bash -x -l {0}
+        run: |
+            git clone https://github.com/scipy/scipy.git
+            cd scipy
+            git checkout 527f2ddcda98ebf4dae37abc38c85082218fcd6a
+            find . -name "*.f" > files.txt
+            files=$(<files.txt)
+            for file in $files; do
+                ../src/bin/lfortran --fixed-form fmt --no-color $file > $file.f90
+                gfortran -ffree-line-length-none -c $file.f90 -o $file.o
+                if [[ "$file" == *"minpack"* ]]; then
+                    if [[ "$file" != *"dpmpar.f"* ]]; then
+                        ../src/bin/lfortran --show-asr --no-color --fixed-form --implicit-typing --allow-implicit-interface $file > $file.asr
+                    fi
+                fi
+
+            done
+
+
   test_without_llvm:
     name: Test without LLVM Backend
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -245,7 +314,7 @@ jobs:
     name: Test CPP
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -264,7 +333,7 @@ jobs:
     name: Test WASM
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -313,7 +382,7 @@ jobs:
     name: Upload Tarball
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -337,7 +406,7 @@ jobs:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 

@@ -112,33 +112,6 @@ uint64_t static get_hash(ASR::asr_t *node)
     return (uint64_t)node;
 }
 
-void printf(llvm::LLVMContext &context, llvm::Module &module,
-    llvm::IRBuilder<> &builder, const std::vector<llvm::Value*> &args)
-{
-    llvm::Function *fn_printf = module.getFunction("_lfortran_printf");
-    if (!fn_printf) {
-        llvm::FunctionType *function_type = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(context), {llvm::Type::getInt8PtrTy(context)}, true);
-        fn_printf = llvm::Function::Create(function_type,
-                llvm::Function::ExternalLinkage, "_lfortran_printf", &module);
-    }
-    builder.CreateCall(fn_printf, args);
-}
-
-void exit(llvm::LLVMContext &context, llvm::Module &module,
-    llvm::IRBuilder<> &builder, llvm::Value* exit_code)
-{
-    llvm::Function *fn_exit = module.getFunction("exit");
-    if (!fn_exit) {
-        llvm::FunctionType *function_type = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(context), {llvm::Type::getInt32Ty(context)},
-                false);
-        fn_exit = llvm::Function::Create(function_type,
-                llvm::Function::ExternalLinkage, "exit", &module);
-    }
-    builder.CreateCall(fn_exit, {exit_code});
-}
-
 void string_init(llvm::LLVMContext &context, llvm::Module &module,
         llvm::IRBuilder<> &builder, llvm::Value* arg_size, llvm::Value* arg_string) {
     std::string func_name = "_lfortran_string_init";
@@ -248,6 +221,7 @@ public:
     std::unique_ptr<LLVMUtils> llvm_utils;
     std::unique_ptr<LLVMList> list_api;
     std::unique_ptr<LLVMTuple> tuple_api;
+    std::unique_ptr<LLVMDict> dict_api;
     std::unique_ptr<LLVMArrUtils::Descriptor> arr_descr;
 
     uint64_t ptr_loads;
@@ -264,6 +238,7 @@ public:
     llvm_utils(std::make_unique<LLVMUtils>(context, builder.get())),
     list_api(std::make_unique<LLVMList>(context, llvm_utils.get(), builder.get())),
     tuple_api(std::make_unique<LLVMTuple>(context, llvm_utils.get(), builder.get())),
+    dict_api(std::make_unique<LLVMDictOptimizedLinearProbing>(context, llvm_utils.get(), builder.get())),
     arr_descr(LLVMArrUtils::Descriptor::get_descriptor(context,
               builder.get(),
               llvm_utils.get(),
@@ -271,6 +246,9 @@ public:
     ptr_loads(2),
     is_assignment_target(false)
     {
+        llvm_utils->tuple_api = tuple_api.get();
+        llvm_utils->list_api = list_api.get();
+        llvm_utils->dict_api = dict_api.get();
     }
 
     llvm::Value* CreateLoad(llvm::Value *x) {
@@ -1035,7 +1013,9 @@ public:
         // Generate function prototypes
         for (auto &item : x.m_global_scope->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
-                visit_Function(*ASR::down_cast<ASR::Function_t>(item.second));
+                if (ASR::down_cast<ASR::Function_t>(item.second)->n_type_params == 0) {
+                    visit_Function(*ASR::down_cast<ASR::Function_t>(item.second));
+                }
             }
         }
         prototype_only = false;
@@ -1055,7 +1035,9 @@ public:
         // Then do all the procedures
         for (auto &item : x.m_global_scope->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
-                visit_symbol(*item.second);
+                if (ASR::down_cast<ASR::Function_t>(item.second)->n_type_params == 0) {
+                    visit_symbol(*item.second);
+                }
             }
         }
 
@@ -1156,10 +1138,19 @@ public:
 
     void visit_ListConstant(const ASR::ListConstant_t& x) {
         ASR::List_t* list_type = ASR::down_cast<ASR::List_t>(x.m_type);
-        llvm::Type* llvm_el_type = get_el_type(list_type->m_type);
+        bool is_array_type_local = false, is_malloc_array_type_local = false;
+        bool is_list_local = false;
+        ASR::dimension_t* m_dims_local = nullptr;
+        int n_dims_local = -1, a_kind_local = -1;
+        llvm::Type* llvm_el_type = get_type_from_ttype_t(list_type->m_type,
+                                    ASR::storage_typeType::Default, is_array_type_local,
+                                    is_malloc_array_type_local, is_list_local, m_dims_local,
+                                    n_dims_local, a_kind_local);
         std::string type_code = ASRUtils::get_type_code(list_type->m_type);
         int32_t type_size = -1;
-        if( ASR::is_a<ASR::Character_t>(*list_type->m_type) ) {
+        if( ASR::is_a<ASR::Character_t>(*list_type->m_type) ||
+            LLVM::is_llvm_struct(list_type->m_type) ||
+            ASR::is_a<ASR::Complex_t>(*list_type->m_type) ) {
             llvm::DataLayout data_layout(module.get());
             type_size = data_layout.getTypeAllocSize(llvm_el_type);
         } else {
@@ -1174,10 +1165,34 @@ public:
             this->visit_expr(*x.m_args[i]);
             llvm::Value* item = tmp;
             llvm::Value* pos = llvm::ConstantInt::get(context, llvm::APInt(32, i));
-            list_api->write_item(const_list, pos, item);
+            list_api->write_item(const_list, pos, item, list_type->m_type, *module);
         }
         ptr_loads = ptr_loads_copy;
         tmp = const_list;
+    }
+
+    void visit_DictConstant(const ASR::DictConstant_t& x) {
+        llvm::Type* const_dict_type = get_dict_type(x.m_type);
+        llvm::Value* const_dict = builder->CreateAlloca(const_dict_type, nullptr, "const_dict");
+        ASR::Dict_t* x_dict = ASR::down_cast<ASR::Dict_t>(x.m_type);
+        std::string key_type_code = ASRUtils::get_type_code(x_dict->m_key_type);
+        std::string value_type_code = ASRUtils::get_type_code(x_dict->m_value_type);
+        dict_api->dict_init(key_type_code, value_type_code, const_dict, module.get(), x.n_keys);
+        uint64_t ptr_loads_key = LLVM::is_llvm_struct(x_dict->m_key_type) ? 0 : 2;
+        uint64_t ptr_loads_value = LLVM::is_llvm_struct(x_dict->m_value_type) ? 0 : 2;
+        uint64_t ptr_loads_copy = ptr_loads;
+        for( size_t i = 0; i < x.n_keys; i++ ) {
+            ptr_loads = ptr_loads_key;
+            visit_expr(*x.m_keys[i]);
+            llvm::Value* key = tmp;
+            ptr_loads = ptr_loads_value;
+            visit_expr(*x.m_values[i]);
+            llvm::Value* value = tmp;
+            dict_api->write_item(const_dict, key, value, module.get(),
+                                 x_dict->m_key_type, x_dict->m_value_type);
+        }
+        ptr_loads = ptr_loads_copy;
+        tmp = const_dict;
     }
 
     void visit_TupleConstant(const ASR::TupleConstant_t& x) {
@@ -1198,10 +1213,13 @@ public:
         llvm::Type* const_tuple_type = tuple_api->get_tuple_type(type_code, llvm_el_types);
         llvm::Value* const_tuple = builder->CreateAlloca(const_tuple_type, nullptr, "const_tuple");
         std::vector<llvm::Value*> init_values;
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 2;
         for( size_t i = 0; i < x.n_elements; i++ ) {
             this->visit_expr(*x.m_elements[i]);
             init_values.push_back(tmp);
         }
+        ptr_loads = ptr_loads_copy;
         tuple_api->tuple_init(const_tuple, init_values);
         tmp = const_tuple;
     }
@@ -1227,31 +1245,70 @@ public:
     }
 
     void visit_ListAppend(const ASR::ListAppend_t& x) {
+        ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(x.m_a));
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_a);
-        ptr_loads = ptr_loads_copy;
         llvm::Value* plist = tmp;
 
+        ptr_loads = !LLVM::is_llvm_struct(asr_list->m_type);
         this->visit_expr_wrapper(x.m_ele, true);
         llvm::Value *item = tmp;
+        ptr_loads = ptr_loads_copy;
 
-        ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(x.m_a));
-        std::string type_code = ASRUtils::get_type_code(asr_list->m_type);
-        list_api->append(plist, item, *module, type_code);
+        list_api->append(plist, item, asr_list->m_type, *module);
     }
 
     void visit_ListItem(const ASR::ListItem_t& x) {
+        ASR::ttype_t* el_type = ASRUtils::get_contained_type(
+                                        ASRUtils::expr_type(x.m_a));
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_a);
-        ptr_loads = ptr_loads_copy;
         llvm::Value* plist = tmp;
 
+        ptr_loads = 1;
         this->visit_expr_wrapper(x.m_pos, true);
+        ptr_loads = ptr_loads_copy;
         llvm::Value *pos = tmp;
 
-        tmp = list_api->read_item(plist, pos);
+        tmp = list_api->read_item(plist, pos,
+                (LLVM::is_llvm_struct(el_type) ||
+                ptr_loads == 0));
+    }
+
+    void visit_DictItem(const ASR::DictItem_t& x) {
+        ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(
+                                    ASRUtils::expr_type(x.m_a));
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr(*x.m_a);
+        llvm::Value* pdict = tmp;
+
+        ptr_loads = !LLVM::is_llvm_struct(dict_type->m_key_type);
+        this->visit_expr_wrapper(x.m_key, true);
+        ptr_loads = ptr_loads_copy;
+        llvm::Value *key = tmp;
+
+        tmp = dict_api->read_item(pdict, key, *module, dict_type->m_key_type,
+                                  LLVM::is_llvm_struct(dict_type->m_value_type));
+    }
+
+    void visit_DictPop(const ASR::DictPop_t& x) {
+        ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(
+                                    ASRUtils::expr_type(x.m_a));
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr(*x.m_a);
+        llvm::Value* pdict = tmp;
+
+        ptr_loads = !LLVM::is_llvm_struct(dict_type->m_key_type);
+        this->visit_expr_wrapper(x.m_key, true);
+        ptr_loads = ptr_loads_copy;
+        llvm::Value *key = tmp;
+
+        tmp = dict_api->pop_item(pdict, key, *module, dict_type,
+                                 LLVM::is_llvm_struct(dict_type->m_value_type));
     }
 
     void visit_ListLen(const ASR::ListLen_t& x) {
@@ -1265,6 +1322,85 @@ public:
             llvm::Value* plist = tmp;
             tmp = list_api->len(plist);
         }
+    }
+
+    void visit_DictLen(const ASR::DictLen_t& x) {
+        if (x.m_value) {
+            this->visit_expr(*x.m_value);
+            return ;
+        }
+
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr(*x.m_arg);
+        ptr_loads = ptr_loads_copy;
+        llvm::Value* pdict = tmp;
+        tmp = dict_api->len(pdict);
+    }
+
+    void visit_ListInsert(const ASR::ListInsert_t& x) {
+        ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(
+                                    ASRUtils::expr_type(x.m_a));
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr(*x.m_a);
+        llvm::Value* plist = tmp;
+
+        ptr_loads = 1;
+        this->visit_expr_wrapper(x.m_pos, true);
+        llvm::Value *pos = tmp;
+
+        ptr_loads = !LLVM::is_llvm_struct(asr_list->m_type);
+        this->visit_expr_wrapper(x.m_ele, true);
+        llvm::Value *item = tmp;
+        ptr_loads = ptr_loads_copy;
+
+        list_api->insert_item(plist, pos, item, asr_list->m_type, *module);
+    }
+
+    void visit_DictInsert(const ASR::DictInsert_t& x) {
+        ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(
+                                    ASRUtils::expr_type(x.m_a));
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr(*x.m_a);
+        llvm::Value* pdict = tmp;
+
+        ptr_loads = !LLVM::is_llvm_struct(dict_type->m_key_type);
+        this->visit_expr_wrapper(x.m_key, true);
+        llvm::Value *key = tmp;
+        ptr_loads = !LLVM::is_llvm_struct(dict_type->m_value_type);
+        this->visit_expr_wrapper(x.m_value, true);
+        llvm::Value *value = tmp;
+        ptr_loads = ptr_loads_copy;
+
+        dict_api->write_item(pdict, key, value, module.get(),
+                             dict_type->m_key_type,
+                             dict_type->m_value_type);
+    }
+
+    void visit_ListRemove(const ASR::ListRemove_t& x) {
+        ASR::ttype_t* asr_el_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_a));
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr(*x.m_a);
+        llvm::Value* plist = tmp;
+
+        ptr_loads = !LLVM::is_llvm_struct(asr_el_type);
+        this->visit_expr_wrapper(x.m_ele, true);
+        ptr_loads = ptr_loads_copy;
+        llvm::Value *item = tmp;
+        list_api->remove(plist, item, asr_el_type, *module);
+    }
+
+    void visit_ListClear(const ASR::ListClear_t& x) {
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr(*x.m_a);
+        llvm::Value* plist = tmp;
+        ptr_loads = ptr_loads_copy;
+
+        list_api->list_clear(plist);
     }
 
     void visit_TupleLen(const ASR::TupleLen_t& x) {
@@ -1282,7 +1418,7 @@ public:
         this->visit_expr_wrapper(x.m_pos, true);
         llvm::Value *pos = tmp;
 
-        tmp = tuple_api->read_item(ptuple, pos);
+        tmp = tuple_api->read_item(ptuple, pos, LLVM::is_llvm_struct(x.m_type));
     }
 
     void visit_ArrayItem(const ASR::ArrayItem_t& x) {
@@ -1302,9 +1438,9 @@ public:
             LFORTRAN_ASSERT(llvm_symtab.find(v_h) != llvm_symtab.end());
             array = llvm_symtab[v_h];
             is_argument = (v->m_intent == ASRUtils::intent_in)
-                 || (v->m_intent == ASRUtils::intent_out)
-                 || (v->m_intent == ASRUtils::intent_inout)
-                 || (v->m_intent == ASRUtils::intent_unspecified);
+                  || (v->m_intent == ASRUtils::intent_out)
+                  || (v->m_intent == ASRUtils::intent_inout)
+                  || (v->m_intent == ASRUtils::intent_unspecified);
         } else {
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
@@ -1647,6 +1783,8 @@ public:
     }
 
     void visit_Program(const ASR::Program_t &x) {
+        bool is_dict_present_copy = dict_api->is_dict_present;
+        dict_api->is_dict_present = false;
         llvm_goto_targets.clear();
         // Generate code for nested subroutines and functions first:
         for (auto &item : x.m_symtab->get_scope()) {
@@ -1675,6 +1813,7 @@ public:
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
+        dict_api->is_dict_present = is_dict_present_copy;
     }
 
     /*
@@ -1693,6 +1832,41 @@ public:
             }
         }
         return false;
+    }
+
+    int32_t get_type_size(ASR::ttype_t* asr_type, llvm::Type* llvm_type,
+                          int32_t a_kind) {
+        if( LLVM::is_llvm_struct(asr_type) ||
+            ASR::is_a<ASR::Character_t>(*asr_type) ||
+            ASR::is_a<ASR::Complex_t>(*asr_type) ) {
+            llvm::DataLayout data_layout(module.get());
+            return data_layout.getTypeAllocSize(llvm_type);
+        }
+        return a_kind;
+    }
+
+    llvm::Type* get_dict_type(ASR::ttype_t* asr_type) {
+        ASR::Dict_t* asr_dict = ASR::down_cast<ASR::Dict_t>(asr_type);
+        bool is_local_array_type = false, is_local_malloc_array_type = false;
+        bool is_local_list = false;
+        ASR::dimension_t* local_m_dims = nullptr;
+        int local_n_dims = 0;
+        int local_a_kind = -1;
+        ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
+        llvm::Type* key_llvm_type = get_type_from_ttype_t(asr_dict->m_key_type, local_m_storage,
+                                                            is_local_array_type, is_local_malloc_array_type,
+                                                            is_local_list, local_m_dims, local_n_dims,
+                                                            local_a_kind);
+        int32_t key_type_size = get_type_size(asr_dict->m_key_type, key_llvm_type, local_a_kind);
+        llvm::Type* value_llvm_type = get_type_from_ttype_t(asr_dict->m_value_type, local_m_storage,
+                                                            is_local_array_type, is_local_malloc_array_type,
+                                                            is_local_list, local_m_dims, local_n_dims,
+                                                            local_a_kind);
+        int32_t value_type_size = get_type_size(asr_dict->m_value_type, value_llvm_type, local_a_kind);
+        std::string key_type_code = ASRUtils::get_type_code(asr_dict->m_key_type);
+        std::string value_type_code = ASRUtils::get_type_code(asr_dict->m_value_type);
+        return dict_api->get_dict_type(key_type_code, value_type_code, key_type_size,
+                                        value_type_size, key_llvm_type, value_llvm_type);
     }
 
     llvm::Type* get_type_from_ttype_t(ASR::ttype_t* asr_type,
@@ -1832,13 +2006,19 @@ public:
                                                                  a_kind);
                 std::string el_type_code = ASRUtils::get_type_code(asr_list->m_type);
                 int32_t type_size = -1;
-                if( ASR::is_a<ASR::Character_t>(*asr_list->m_type) ) {
+                if( LLVM::is_llvm_struct(asr_list->m_type) ||
+                    ASR::is_a<ASR::Character_t>(*asr_list->m_type) ||
+                    ASR::is_a<ASR::Complex_t>(*asr_list->m_type) ) {
                     llvm::DataLayout data_layout(module.get());
                     type_size = data_layout.getTypeAllocSize(el_llvm_type);
                 } else {
                     type_size = a_kind;
                 }
                 llvm_type = list_api->get_list_type(el_llvm_type, el_type_code, type_size);
+                break;
+            }
+            case (ASR::ttypeType::Dict): {
+                llvm_type = get_dict_type(asr_type);
                 break;
             }
             case (ASR::ttypeType::Tuple) : {
@@ -1869,6 +2049,17 @@ public:
                                    " not yet implemented.");
         }
         return llvm_type;
+    }
+
+    inline llvm::Type* get_type_from_ttype_t_util(ASR::ttype_t* asr_type) {
+        ASR::storage_typeType m_storage_local = ASR::storage_typeType::Default;
+        bool is_array_type_local, is_malloc_array_type_local;
+        bool is_list_local;
+        ASR::dimension_t* m_dims_local;
+        int n_dims_local, a_kind_local;
+        return get_type_from_ttype_t(asr_type, m_storage_local, is_array_type_local,
+                                     is_malloc_array_type_local, is_list_local,
+                                     m_dims_local, n_dims_local, a_kind_local);
     }
 
     template<typename T>
@@ -2185,6 +2376,46 @@ public:
                 type = llvm::Type::getVoidTy(context)->getPointerTo();
                 break;
             }
+            case (ASR::ttypeType::Tuple) : {
+                ASR::Tuple_t* asr_tuple = ASR::down_cast<ASR::Tuple_t>(asr_type);
+                std::string type_code = ASRUtils::get_type_code(asr_tuple->m_type,
+                                                                asr_tuple->n_type);
+                std::vector<llvm::Type*> llvm_el_types;
+                for( size_t i = 0; i < asr_tuple->n_type; i++ ) {
+                    bool is_local_array_type = false;
+                    int local_n_dims = 0;
+                    int local_a_kind = -1;
+                    ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
+                    llvm_el_types.push_back(get_arg_type_from_ttype_t(asr_tuple->m_type[i], m_abi,
+                                            arg_m_abi, local_m_storage, arg_m_value_attr, local_n_dims,
+                                            local_a_kind, is_local_array_type, ASRUtils::intent_local));
+                }
+                type = tuple_api->get_tuple_type(type_code, llvm_el_types)->getPointerTo();
+                break;
+            }
+            case (ASR::ttypeType::List) : {
+                bool is_array_type = false, is_malloc_array_type = false;
+                bool is_list = true;
+                ASR::dimension_t *m_dims = nullptr;
+                ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(asr_type);
+                llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_list->m_type, m_storage,
+                                                                 is_array_type,
+                                                                 is_malloc_array_type,
+                                                                 is_list, m_dims, n_dims,
+                                                                 a_kind);
+                int32_t type_size = -1;
+                if( LLVM::is_llvm_struct(asr_list->m_type) ||
+                    ASR::is_a<ASR::Character_t>(*asr_list->m_type) ||
+                    ASR::is_a<ASR::Complex_t>(*asr_list->m_type) ) {
+                    llvm::DataLayout data_layout(module.get());
+                    type_size = data_layout.getTypeAllocSize(el_llvm_type);
+                } else {
+                    type_size = a_kind;
+                }
+                std::string el_type_code = ASRUtils::get_type_code(asr_list->m_type);
+                type = list_api->get_list_type(el_llvm_type, el_type_code, type_size)->getPointerTo();
+                break;
+            }
             default :
                 LFORTRAN_ASSERT(false);
         }
@@ -2396,6 +2627,8 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        bool is_dict_present_copy = dict_api->is_dict_present;
+        dict_api->is_dict_present = false;
         llvm_goto_targets.clear();
         instantiate_function(x);
         if (x.m_deftype == ASR::deftypeType::Interface) {
@@ -2406,6 +2639,7 @@ public:
         visit_procedures(x);
         generate_function(x);
         parent_function = nullptr;
+        dict_api->is_dict_present = is_dict_present_copy;
     }
 
     void instantiate_function(const ASR::Function_t &x){
@@ -2520,6 +2754,50 @@ public:
                 case (ASR::ttypeType::Derived) :
                     throw CodeGenError("Derived return type not implemented yet");
                     break;
+                case (ASR::ttypeType::Tuple) : {
+                    ASR::Tuple_t* asr_tuple = ASR::down_cast<ASR::Tuple_t>(return_var_type0);
+                    std::string type_code = ASRUtils::get_type_code(asr_tuple->m_type,
+                                                                    asr_tuple->n_type);
+                    std::vector<llvm::Type*> llvm_el_types;
+                    for( size_t i = 0; i < asr_tuple->n_type; i++ ) {
+                        bool is_local_array_type = false, is_local_malloc_array_type = false;
+                        bool is_local_list = false;
+                        ASR::dimension_t* local_m_dims = nullptr;
+                        int local_n_dims = 0;
+                        int local_a_kind = -1;
+                        ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
+                        llvm_el_types.push_back(get_type_from_ttype_t(asr_tuple->m_type[i], local_m_storage,
+                                                is_local_array_type, is_local_malloc_array_type,
+                                                is_local_list, local_m_dims, local_n_dims, local_a_kind));
+                    }
+                    return_type = tuple_api->get_tuple_type(type_code, llvm_el_types);
+                    break;
+                }
+                case (ASR::ttypeType::List) : {
+                    bool is_array_type = false, is_malloc_array_type = false;
+                    bool is_list = true;
+                    ASR::dimension_t *m_dims = nullptr;
+                    ASR::storage_typeType m_storage = ASR::storage_typeType::Default;
+                    int n_dims = 0, a_kind = -1;
+                    ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(return_var_type0);
+                    llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_list->m_type, m_storage,
+                                                                     is_array_type,
+                                                                     is_malloc_array_type,
+                                                                     is_list, m_dims, n_dims,
+                                                                     a_kind);
+                    int32_t type_size = -1;
+                    if( LLVM::is_llvm_struct(asr_list->m_type) ||
+                        ASR::is_a<ASR::Character_t>(*asr_list->m_type) ||
+                        ASR::is_a<ASR::Complex_t>(*asr_list->m_type) ) {
+                        llvm::DataLayout data_layout(module.get());
+                        type_size = data_layout.getTypeAllocSize(el_llvm_type);
+                    } else {
+                        type_size = a_kind;
+                    }
+                    std::string el_type_code = ASRUtils::get_type_code(asr_list->m_type);
+                    return_type = list_api->get_list_type(el_llvm_type, el_type_code, type_size);
+                    break;
+                }
                 default :
                     LFORTRAN_ASSERT(false);
                     throw CodeGenError("Type not implemented");
@@ -2876,6 +3154,8 @@ public:
         bool is_value_list = ASR::is_a<ASR::List_t>(*asr_value_type);
         bool is_target_tuple = ASR::is_a<ASR::Tuple_t>(*asr_target_type);
         bool is_value_tuple = ASR::is_a<ASR::Tuple_t>(*asr_value_type);
+        bool is_target_dict = ASR::is_a<ASR::Dict_t>(*asr_target_type);
+        bool is_value_dict = ASR::is_a<ASR::Dict_t>(*asr_value_type);
         if( is_target_list && is_value_list ) {
             uint64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
@@ -2887,43 +3167,74 @@ public:
             ASR::List_t* value_asr_list = ASR::down_cast<ASR::List_t>(
                                             ASRUtils::expr_type(x.m_value));
             std::string value_type_code = ASRUtils::get_type_code(value_asr_list->m_type);
-            list_api->list_deepcopy(value_list, target_list, value_type_code, *module);
+            list_api->list_deepcopy(value_list, target_list,
+                                    value_asr_list, *module);
             return ;
         } else if( is_target_tuple && is_value_tuple ) {
             uint64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
-            this->visit_expr(*x.m_value);
-            llvm::Value* value_tuple = tmp;
-            if( ASR::is_a<ASR::TupleConstant_t>(*x.m_target) ) {
-                ptr_loads = ptr_loads_copy;
+            if( ASR::is_a<ASR::TupleConstant_t>(*x.m_target) &&
+                !ASR::is_a<ASR::TupleConstant_t>(*x.m_value) ) {
+                ptr_loads = 0;
+                this->visit_expr(*x.m_value);
+                llvm::Value* value_tuple = tmp;
                 ASR::TupleConstant_t* const_tuple = ASR::down_cast<ASR::TupleConstant_t>(x.m_target);
                 for( size_t i = 0; i < const_tuple->n_elements; i++ ) {
-                    // TODO: Adjust for global variables as well
-                    // See if-else check on llvm_symtab for the logic
-                    ASR::Variable_t *target_var = EXPR2VAR(const_tuple->m_elements[i]);
-                    uint32_t h = get_hash((ASR::asr_t*)target_var);
-                    llvm::Value* target_ptr = nullptr;
-                    if (llvm_symtab.find(h) != llvm_symtab.end()) {
-                        target_ptr = llvm_symtab[h];
-                        if (ASR::is_a<ASR::Pointer_t>(*target_var->m_type)) {
-                            target_ptr = CreateLoad(target_ptr);
-                        }
-                    } else {
-                        throw CodeGenError("Support for unpacking tuple value to "
-                                           "a global variable is not available yet.");
-                    }
+                    ptr_loads = 0;
+                    visit_expr(*const_tuple->m_elements[i]);
+                    llvm::Value* target_ptr = tmp;
                     llvm::Value* item = tuple_api->read_item(value_tuple, i, false);
                     builder->CreateStore(item, target_ptr);
                 }
+                ptr_loads = ptr_loads_copy;
+            } else if( ASR::is_a<ASR::TupleConstant_t>(*x.m_target) &&
+                       ASR::is_a<ASR::TupleConstant_t>(*x.m_value) ) {
+                ASR::TupleConstant_t* asr_value_tuple = ASR::down_cast<ASR::TupleConstant_t>(x.m_value);
+                Vec<llvm::Value*> src_deepcopies;
+                src_deepcopies.reserve(al, asr_value_tuple->n_elements);
+                for( size_t i = 0; i < asr_value_tuple->n_elements; i++ ) {
+                    ASR::ttype_t* asr_tuple_i_type = ASRUtils::expr_type(asr_value_tuple->m_elements[i]);
+                    llvm::Type* llvm_tuple_i_type = get_type_from_ttype_t_util(asr_tuple_i_type);
+                    llvm::Value* llvm_tuple_i = builder->CreateAlloca(llvm_tuple_i_type, nullptr);
+                    ptr_loads = !LLVM::is_llvm_struct(asr_tuple_i_type);
+                    visit_expr(*asr_value_tuple->m_elements[i]);
+                    llvm_utils->deepcopy(tmp, llvm_tuple_i, asr_tuple_i_type, *module);
+                    src_deepcopies.push_back(al, llvm_tuple_i);
+                }
+                ASR::TupleConstant_t* asr_target_tuple = ASR::down_cast<ASR::TupleConstant_t>(x.m_target);
+                for( size_t i = 0; i < asr_target_tuple->n_elements; i++ ) {
+                    ptr_loads = 0;
+                    visit_expr(*asr_target_tuple->m_elements[i]);
+                    LLVM::CreateStore(*builder,
+                        LLVM::CreateLoad(*builder, src_deepcopies[i]),
+                        tmp
+                    );
+                }
+                ptr_loads = ptr_loads_copy;
             } else {
+                ptr_loads = 0;
+                this->visit_expr(*x.m_value);
+                llvm::Value* value_tuple = tmp;
                 this->visit_expr(*x.m_target);
                 llvm::Value* target_tuple = tmp;
                 ptr_loads = ptr_loads_copy;
                 ASR::Tuple_t* value_tuple_type = ASR::down_cast<ASR::Tuple_t>(asr_value_type);
                 std::string type_code = ASRUtils::get_type_code(value_tuple_type->m_type,
                                                                 value_tuple_type->n_type);
-                tuple_api->tuple_deepcopy(value_tuple, target_tuple, type_code);
+                tuple_api->tuple_deepcopy(value_tuple, target_tuple,
+                                          value_tuple_type, *module);
             }
+            return ;
+        } else if( is_target_dict && is_value_dict ) {
+            uint64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr(*x.m_value);
+            llvm::Value* value_dict = tmp;
+            this->visit_expr(*x.m_target);
+            llvm::Value* target_dict = tmp;
+            ptr_loads = ptr_loads_copy;
+            ASR::Dict_t* value_dict_type = ASR::down_cast<ASR::Dict_t>(asr_value_type);
+            dict_api->dict_deepcopy(value_dict, target_dict,
+                                    value_dict_type, module.get());
             return ;
         }
         if( ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
@@ -3327,6 +3638,7 @@ public:
     }
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        dict_api->set_iterators();
         llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
         llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
         llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
@@ -3348,6 +3660,7 @@ public:
 
         // end
         start_new_block(loopend);
+        dict_api->reset_iterators();
     }
 
     void visit_Exit(const ASR::Exit_t & /* x */) {
@@ -4436,6 +4749,32 @@ public:
                 }
                 break;
             }
+            case (ASR::cast_kindType::ComplexToInteger) : {
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                llvm::Value *re;
+                if (arg_kind > 0 && dest_kind > 0)
+                {
+                    if (arg_kind == 4) {
+                        // complex(4) -> real(8)
+                        re = complex_re(tmp, complex_type_4);
+                        tmp = re;
+                    } else if (arg_kind == 8) {
+                        // complex(8) -> real(8)
+                        re = complex_re(tmp, complex_type_8);
+                        tmp = re;
+                    } else {
+                        std::string msg = "Unsupported Complex type kind: " + std::to_string(arg_kind);
+                        throw CodeGenError(msg);
+                    }
+                    llvm::Type *target_type;
+                    target_type = getIntType(dest_kind);
+                    tmp = builder->CreateFPToSI(tmp, target_type);
+                } else {
+                    throw CodeGenError("Negative kinds are not supported.");
+                }
+                break;
+            }
             case (ASR::cast_kindType::RealToCharacter) : {
                 llvm::Value *arg = tmp;
                 ASR::ttype_t* arg_type = extract_ttype_t_from_expr(x.m_arg);
@@ -4868,10 +5207,13 @@ public:
                         }
                     }
                 } else {
+                    ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
+                    uint64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = !LLVM::is_llvm_struct(arg_type);
                     this->visit_expr_wrapper(x.m_args[i].m_value);
                     llvm::Value *value=tmp;
+                    ptr_loads = ptr_loads_copy;
                     llvm::Type *target_type;
-                    ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
                     bool character_bindc = false;
                     switch (arg_type->type) {
                         case (ASR::ttypeType::Integer) : {
@@ -4912,6 +5254,10 @@ public:
                         case (ASR::ttypeType::CPtr) :
                             target_type = llvm::Type::getVoidTy(context)->getPointerTo();
                             break;
+                        case (ASR::ttypeType::List) : {
+                            target_type = get_type_from_ttype_t_util(arg_type);
+                            break ;
+                        }
                         default :
                             throw CodeGenError("Type " + ASRUtils::type_to_str(arg_type) + " not implemented yet.");
                     }
@@ -4947,7 +5293,12 @@ public:
                                     if( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ) {
                                         value = CreateLoad(value);
                                     }
-                                    builder->CreateStore(value, target);
+                                    if( ASR::is_a<ASR::Tuple_t>(*arg_type) ||
+                                        ASR::is_a<ASR::List_t>(*arg_type) ) {
+                                        llvm_utils->deepcopy(value, target, arg_type, *module);
+                                    } else {
+                                        builder->CreateStore(value, target);
+                                    }
                                     tmp = target;
                                 }
                             }
@@ -5113,6 +5464,33 @@ public:
         tmp = builder->CreateOr(arg1, arg2);
     }
 
+    llvm::Value* CreatePointerToStructReturnValue(llvm::FunctionType* fnty,
+                                                  llvm::Value* return_value,
+                                                  ASR::ttype_t* asr_return_type) {
+        if( !LLVM::is_llvm_struct(asr_return_type) ) {
+            return return_value;
+        }
+
+        // Call to LLVM APIs not needed to fetch the return type of the function.
+        // We can use asr_return_type as well but anyways for compactness I did it here.
+        llvm::Value* pointer_to_struct = builder->CreateAlloca(fnty->getReturnType(), nullptr);
+        LLVM::CreateStore(*builder, return_value, pointer_to_struct);
+        return pointer_to_struct;
+    }
+
+    llvm::Value* CreateCallUtil(llvm::FunctionType* fnty, llvm::Function* fn,
+                                std::vector<llvm::Value*>& args,
+                                ASR::ttype_t* asr_return_type) {
+        llvm::Value* return_value = builder->CreateCall(fn, args);
+        return CreatePointerToStructReturnValue(fnty, return_value,
+                                                asr_return_type);
+    }
+
+    llvm::Value* CreateCallUtil(llvm::Function* fn, std::vector<llvm::Value*>& args,
+                                ASR::ttype_t* asr_return_type) {
+        return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type);
+    }
+
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
             ASR::Function_t* routine = ASR::down_cast<ASR::Function_t>(
@@ -5206,8 +5584,8 @@ public:
             std::string m_name = std::string(((ASR::Function_t*)(&(x.m_name->base)))->m_name);
             std::vector<llvm::Value *> args2 = convert_call_args(x, m_name);
             args.insert(args.end(), args2.begin(), args2.end());
+            ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (s->m_abi == ASR::abiType::BindC) {
-                ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
                 if (is_a<ASR::Complex_t>(*return_var_type0)) {
                     int a_kind = down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
                     if (a_kind == 8) {
@@ -5227,7 +5605,7 @@ public:
                     tmp = builder->CreateCall(fn, args);
                 }
             } else {
-                tmp = builder->CreateCall(fn, args);
+                tmp = CreateCallUtil(fn, args, return_var_type0);
             }
         }
         if (s->m_abi == ASR::abiType::BindC) {

@@ -45,7 +45,7 @@ interface max
 end interface
 
 interface huge
-    module procedure i32huge, sphuge, dphuge
+    module procedure i32huge, i64huge, sphuge, dphuge
 end interface
 
 contains
@@ -451,8 +451,14 @@ end function
 
 elemental integer(i32) function i32huge(x) result(r)
 integer(i32), intent(in) :: x
-r = 2147483647
+r = 2147483647_i32
 ! r = 2**31 - 1
+end function
+
+elemental integer(i64) function i64huge(x) result(r)
+integer(i64), intent(in) :: x
+r = 9223372036854775807_i64
+! r = 2**63 - 1
 end function
 
 elemental real(sp) function sphuge(x) result(r)
