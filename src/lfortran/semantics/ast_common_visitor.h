@@ -669,6 +669,7 @@ public:
     bool is_body_visitor = false;
     bool is_template = false;
     bool is_current_procedure_templated = false;
+    Vec<ASR::stmt_t*> *current_body = nullptr;
     std::map<std::string, std::vector<ASR::asr_t*>> template_type_parameters;
     std::vector<ASR::asr_t*> current_template_type_parameters;
     std::unordered_set<int> current_procedure_used_type_parameter_indices;
@@ -912,18 +913,16 @@ public:
                     } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
                         // This is the following case:
                         // x(2) / 2 /
-                        ASR::ArrayItem_t *v = ASR::down_cast<ASR::ArrayItem_t>(object);
-                        // TODO:
-                        // Now we need to assign the value to the array item `v` using
-                        // an assignment:
-                        // "v = expression_value"
+                        // We create an assignment node and insert into the current body.
+                        // i.e., x(2) = 2.
                         // Note: this will only work if the data statement is
                         // above the place where it is being used, otherwise it
                         // won't work correctly
                         // To fix that, we would have to iterate over data statements first
                         // but we can fix that later.
-                        throw SemanticError("Object type ArrayItem is not implemented yet.",
-                            v->base.base.loc);
+                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
+                                    object->base.loc, object, expression_value, nullptr));
+                        current_body->push_back(al, assign_stmt);
                     } else {
                         throw SemanticError("The variable (object) type is not supported (only variables and array items are supported so far)",
                             x.base.base.loc);
