@@ -572,3 +572,5 @@ RUN(NAME rewind_inquire_flush LABELS gfortran)
 
 RUN(NAME assign_to1 LABELS gfortran llvm)
 RUN(NAME assign_to2 LABELS gfortran llvm)
+
+RUN(NAME conv_complex2real LABELS gfortran llvm)
