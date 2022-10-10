@@ -26,7 +26,6 @@
                     a 
                     [] 
                     [] 
-                    [] 
                     (Var 2 a) 
                     Source 
                     Public 
@@ -35,6 +34,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 ), 
             b:
@@ -61,7 +64,6 @@
                     b 
                     [] 
                     [] 
-                    [] 
                     (Var 3 b) 
                     Source 
                     Public 
@@ -70,6 +72,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 ), 
             c:
@@ -96,7 +102,6 @@
                     c 
                     [] 
                     [] 
-                    [] 
                     (Var 4 c) 
                     Source 
                     Public 
@@ -105,6 +110,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 ), 
             d:
@@ -131,7 +140,6 @@
                     d 
                     [] 
                     [] 
-                    [] 
                     (Var 5 r) 
                     Source 
                     Public 
@@ -140,6 +148,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 ), 
             e:
@@ -166,7 +178,6 @@
                     e 
                     [] 
                     [] 
-                    [] 
                     (Var 6 r) 
                     Source 
                     Public 
@@ -175,6 +186,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 ), 
             f:
@@ -201,7 +216,6 @@
                     f 
                     [] 
                     [] 
-                    [] 
                     (Var 7 r) 
                     Source 
                     Public 
@@ -210,6 +224,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             

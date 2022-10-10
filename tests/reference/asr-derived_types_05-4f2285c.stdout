@@ -31,7 +31,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 string_type 
                                                         []
                                                     ) 
@@ -59,7 +59,6 @@
                                     new_string 
                                     [(Var 4 string)] 
                                     [] 
-                                    [] 
                                     (Var 4 new) 
                                     Source 
                                     Public 
@@ -68,6 +67,10 @@
                                     .true. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             new_string_from_integer_int32:
@@ -83,7 +86,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 string_type 
                                                         []
                                                     ) 
@@ -111,7 +114,6 @@
                                     new_string_from_integer_int32 
                                     [(Var 5 val)] 
                                     [] 
-                                    [] 
                                     (Var 5 new) 
                                     Source 
                                     Public 
@@ -120,6 +122,10 @@
                                     .true. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             new_string_from_integer_int64:
@@ -135,7 +141,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 string_type 
                                                         []
                                                     ) 
@@ -163,7 +169,6 @@
                                     new_string_from_integer_int64 
                                     [(Var 6 val)] 
                                     [] 
-                                    [] 
                                     (Var 6 new) 
                                     Source 
                                     Public 
@@ -172,6 +177,10 @@
                                     .true. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             new_string_from_logical_lk:
@@ -187,7 +196,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 string_type 
                                                         []
                                                     ) 
@@ -215,7 +224,6 @@
                                     new_string_from_logical_lk 
                                     [(Var 7 val)] 
                                     [] 
-                                    [] 
                                     (Var 7 new) 
                                     Source 
                                     Public 
@@ -224,10 +232,14 @@
                                     .true. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             string_type:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         3
                                         {
@@ -288,7 +300,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         8 string_type 
                                                         []
                                                     ) 
@@ -316,7 +328,6 @@
                                     new_string 
                                     [(Var 9 string)] 
                                     [] 
-                                    [] 
                                     (Var 9 new) 
                                     Source 
                                     Public 
@@ -325,6 +336,10 @@
                                     .true. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             new_string_from_integer_int32:
@@ -340,7 +355,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         8 string_type 
                                                         []
                                                     ) 
@@ -368,7 +383,6 @@
                                     new_string_from_integer_int32 
                                     [(Var 10 val)] 
                                     [] 
-                                    [] 
                                     (Var 10 new) 
                                     Source 
                                     Public 
@@ -377,6 +391,10 @@
                                     .true. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             new_string_from_integer_int64:
@@ -392,7 +410,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         8 string_type 
                                                         []
                                                     ) 
@@ -420,7 +438,6 @@
                                     new_string_from_integer_int64 
                                     [(Var 11 val)] 
                                     [] 
-                                    [] 
                                     (Var 11 new) 
                                     Source 
                                     Public 
@@ -429,6 +446,10 @@
                                     .true. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             new_string_from_logical_lk:
@@ -444,7 +465,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         8 string_type 
                                                         []
                                                     ) 
@@ -472,7 +493,6 @@
                                     new_string_from_logical_lk 
                                     [(Var 12 val)] 
                                     [] 
-                                    [] 
                                     (Var 12 new) 
                                     Source 
                                     Public 
@@ -481,6 +501,10 @@
                                     .true. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             string_type:

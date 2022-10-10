@@ -383,7 +383,6 @@
                                     greater_than_inverse 
                                     [(Var 3 log1)
                                     (Var 3 log2)] 
-                                    [] 
                                     [(If 
                                         (LogicalBinOp 
                                             (LogicalBinOp 
@@ -435,6 +434,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             less_than_inverse:
@@ -489,7 +492,6 @@
                                     less_than_inverse 
                                     [(Var 4 log1)
                                     (Var 4 log2)] 
-                                    [] 
                                     [(If 
                                         (LogicalBinOp 
                                             (LogicalBinOp 
@@ -541,6 +543,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             less_than_overload_use:
@@ -595,7 +601,6 @@
                                     less_than_overload_use 
                                     [(Var 5 log1)
                                     (Var 5 log2)] 
-                                    [] 
                                     [(= 
                                         (Var 5 less_than_overload_use) 
                                         (OverloadedCompare 
@@ -624,6 +629,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             ~gt:

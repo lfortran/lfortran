@@ -193,7 +193,6 @@
                                     (Var 3 b)
                                     (Var 3 scalar)
                                     (Var 3 c)] 
-                                    [] 
                                     [(= 
                                         (Var 3 n) 
                                         (ArraySize 
@@ -256,6 +255,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

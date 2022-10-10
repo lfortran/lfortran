@@ -25,7 +25,6 @@
                         }) 
                     f 
                     [(Var 2 a)] 
-                    [] 
                     [(Print 
                         () 
                         [(Var 2 a)] 
@@ -40,6 +39,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 ), 
             main:

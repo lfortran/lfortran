@@ -51,7 +51,6 @@
                                         }) 
                                     f 
                                     [(Var 3 x)] 
-                                    [] 
                                     [(= 
                                         (Var 3 e) 
                                         (Cast 
@@ -105,6 +104,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             x:

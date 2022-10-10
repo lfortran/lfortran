@@ -68,6 +68,7 @@
                     main 
                     [] 
                     [(GoToTarget 
+                        10 
                         10
                     )
                     (= 
@@ -86,6 +87,7 @@
                         ()
                     )
                     (GoToTarget 
+                        20 
                         20
                     )
                     (Select 
@@ -93,24 +95,28 @@
                         [(CaseStmt 
                             [(IntegerConstant 30 (Integer 4 []))] 
                             [(GoTo 
+                                30 
                                 30
                             )]
                         )
                         (CaseStmt 
                             [(IntegerConstant 50 (Integer 4 []))] 
                             [(GoTo 
+                                50 
                                 50
                             )]
                         )
                         (CaseStmt 
                             [(IntegerConstant 70 (Integer 4 []))] 
                             [(GoTo 
+                                70 
                                 70
                             )]
                         )] 
                         []
                     )
                     (GoToTarget 
+                        30 
                         30
                     )
                     (If 
@@ -125,11 +131,13 @@
                             )
                         ) 
                         [(GoTo 
+                            70 
                             70
                         )] 
                         []
                     )
                     (GoToTarget 
+                        50 
                         50
                     )
                     (Print 
@@ -144,6 +152,7 @@
                         ()
                     )
                     (GoToTarget 
+                        70 
                         70
                     )
                     (Print 

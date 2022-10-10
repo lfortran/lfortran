@@ -63,6 +63,7 @@
                                             ()
                                         ) 
                                         [(GoTo 
+                                            1 
                                             1
                                         )] 
                                         []
@@ -95,6 +96,7 @@
                         ()
                     )
                     (GoToTarget 
+                        1 
                         1
                     )
                     (BlockCall 
@@ -139,7 +141,6 @@
                         }) 
                     square 
                     [(Var 3 b)] 
-                    [] 
                     [(= 
                         (Var 3 result) 
                         (IntegerBinOp 
@@ -178,6 +179,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             

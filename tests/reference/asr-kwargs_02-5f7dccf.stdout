@@ -74,7 +74,6 @@
                                     [(Var 4 self)
                                     (Var 4 filename)
                                     (Var 4 unit)] 
-                                    [] 
                                     [(SubroutineCall 
                                         3 log_io_error 
                                         () 
@@ -91,6 +90,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             log_io_error:
@@ -165,7 +168,6 @@
                                     (Var 5 filename)
                                     (Var 5 unit)] 
                                     [] 
-                                    [] 
                                     () 
                                     Source 
                                     Public 
@@ -174,10 +176,14 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             logger_type:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         3
                                         {

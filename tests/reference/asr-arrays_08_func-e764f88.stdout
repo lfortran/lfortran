@@ -61,7 +61,6 @@
                                     copy_from_to 
                                     [(Var 3 a)
                                     (Var 3 b)] 
-                                    [] 
                                     [(DoLoop 
                                         ((Var 3 i) 
                                         (IntegerConstant 1 (Integer 4 [])) 
@@ -100,6 +99,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             i:
@@ -198,7 +201,6 @@
                                     verify 
                                     [(Var 4 a)
                                     (Var 4 b)] 
-                                    [] 
                                     [(= 
                                         (Var 4 r) 
                                         (LogicalConstant 
@@ -257,6 +259,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             x:

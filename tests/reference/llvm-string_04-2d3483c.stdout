@@ -25,7 +25,7 @@ source_filename = "LFortran"
 
 define i32 @main() {
 .entry:
-  %"1_k" = alloca i32, align 4
+  %__1_k = alloca i32, align 4
   %greetings = alloca %array, align 8
   %0 = getelementptr %array, %array* %greetings, i32 0, i32 2
   %1 = alloca i32, align 4
@@ -260,11 +260,11 @@ define i32 @main() {
   %198 = getelementptr %dimension_descriptor, %dimension_descriptor* %197, i32 0, i32 1
   %199 = load i32, i32* %198, align 4
   %200 = sub i32 %199, 1
-  store i32 %200, i32* %"1_k", align 4
+  store i32 %200, i32* %__1_k, align 4
   br label %loop.head
 
 loop.head:                                        ; preds = %loop.body, %.entry
-  %201 = load i32, i32* %"1_k", align 4
+  %201 = load i32, i32* %__1_k, align 4
   %202 = add i32 %201, 1
   %203 = getelementptr %array, %array* %greetings, i32 0, i32 2
   %204 = load %dimension_descriptor*, %dimension_descriptor** %203, align 8
@@ -279,10 +279,10 @@ loop.head:                                        ; preds = %loop.body, %.entry
   br i1 %212, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %213 = load i32, i32* %"1_k", align 4
+  %213 = load i32, i32* %__1_k, align 4
   %214 = add i32 %213, 1
-  store i32 %214, i32* %"1_k", align 4
-  %215 = load i32, i32* %"1_k", align 4
+  store i32 %214, i32* %__1_k, align 4
+  %215 = load i32, i32* %__1_k, align 4
   %216 = getelementptr %array, %array* %greetings, i32 0, i32 2
   %217 = load %dimension_descriptor*, %dimension_descriptor** %216, align 8
   %218 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %217, i32 0

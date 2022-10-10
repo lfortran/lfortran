@@ -16,7 +16,7 @@
                         5
                         {
                             point:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         6
                                         {
@@ -70,7 +70,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         5 point 
                                                         []
                                                     ) 
@@ -87,7 +87,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         5 point 
                                                         []
                                                     ) 
@@ -116,7 +116,6 @@
                                     [(Var 7 a)
                                     (Var 7 b)] 
                                     [] 
-                                    [] 
                                     (Var 7 distance) 
                                     Source 
                                     Public 
@@ -125,6 +124,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             point_dist_subrout:
@@ -140,7 +143,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         5 point 
                                                         []
                                                     ) 
@@ -157,7 +160,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         5 point 
                                                         []
                                                     ) 
@@ -187,7 +190,6 @@
                                     (Var 8 b)
                                     (Var 8 distance)] 
                                     [] 
-                                    [] 
                                     () 
                                     Source 
                                     Public 
@@ -196,6 +198,10 @@
                                     .false. 
                                     .true. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             rkind:
@@ -243,7 +249,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         9 point 
                                                         []
                                                     ) 
@@ -260,7 +266,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         9 point 
                                                         []
                                                     ) 
@@ -308,7 +314,6 @@
                                     point_dist_func 
                                     [(Var 10 a)
                                     (Var 10 b)] 
-                                    [] 
                                     [(= 
                                         (Var 10 distance) 
                                         (FunctionCall 
@@ -317,14 +322,14 @@
                                             [((RealBinOp 
                                                 (RealBinOp 
                                                     (RealBinOp 
-                                                        (DerivedRef 
+                                                        (StructInstanceMember 
                                                             (Var 10 a) 
                                                             6 x 
                                                             (Real 4 []) 
                                                             ()
                                                         ) 
                                                         Sub 
-                                                        (DerivedRef 
+                                                        (StructInstanceMember 
                                                             (Var 10 b) 
                                                             6 x 
                                                             (Real 4 []) 
@@ -349,14 +354,14 @@
                                                 Add 
                                                 (RealBinOp 
                                                     (RealBinOp 
-                                                        (DerivedRef 
+                                                        (StructInstanceMember 
                                                             (Var 10 a) 
                                                             6 y 
                                                             (Real 4 []) 
                                                             ()
                                                         ) 
                                                         Sub 
-                                                        (DerivedRef 
+                                                        (StructInstanceMember 
                                                             (Var 10 b) 
                                                             6 y 
                                                             (Real 4 []) 
@@ -395,6 +400,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             point_dist_subrout:
@@ -410,7 +419,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         9 point 
                                                         []
                                                     ) 
@@ -427,7 +436,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         9 point 
                                                         []
                                                     ) 
@@ -476,7 +485,6 @@
                                     [(Var 11 a)
                                     (Var 11 b)
                                     (Var 11 distance)] 
-                                    [] 
                                     [(= 
                                         (Var 11 distance) 
                                         (FunctionCall 
@@ -485,14 +493,14 @@
                                             [((RealBinOp 
                                                 (RealBinOp 
                                                     (RealBinOp 
-                                                        (DerivedRef 
+                                                        (StructInstanceMember 
                                                             (Var 11 a) 
                                                             6 x 
                                                             (Real 4 []) 
                                                             ()
                                                         ) 
                                                         Sub 
-                                                        (DerivedRef 
+                                                        (StructInstanceMember 
                                                             (Var 11 b) 
                                                             6 x 
                                                             (Real 4 []) 
@@ -517,14 +525,14 @@
                                                 Add 
                                                 (RealBinOp 
                                                     (RealBinOp 
-                                                        (DerivedRef 
+                                                        (StructInstanceMember 
                                                             (Var 11 a) 
                                                             6 y 
                                                             (Real 4 []) 
                                                             ()
                                                         ) 
                                                         Sub 
-                                                        (DerivedRef 
+                                                        (StructInstanceMember 
                                                             (Var 11 b) 
                                                             6 y 
                                                             (Real 4 []) 
@@ -563,6 +571,10 @@
                                     .false. 
                                     .true. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             rkind:

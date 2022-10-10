@@ -47,7 +47,6 @@
                                                         }) 
                                                     c 
                                                     [] 
-                                                    [] 
                                                     [(Print 
                                                         () 
                                                         [(IntegerConstant 5 (Integer 4 []))] 
@@ -68,6 +67,10 @@
                                                     .false. 
                                                     .false. 
                                                     .false. 
+                                                    .false. 
+                                                    .false. 
+                                                    [] 
+                                                    [] 
                                                     .false.
                                                 ), 
                                             x:
@@ -96,7 +99,6 @@
                                         }) 
                                     b 
                                     [] 
-                                    [] 
                                     [(Print 
                                         () 
                                         [(StringConstant 
@@ -120,6 +122,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

@@ -101,7 +101,6 @@
                     (Var 2 b)
                     (Var 2 scalar)
                     (Var 2 c)] 
-                    [] 
                     [(= 
                         (Var 2 n) 
                         (ArraySize 
@@ -164,6 +163,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             

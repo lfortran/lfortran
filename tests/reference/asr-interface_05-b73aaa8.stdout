@@ -226,7 +226,6 @@
                                         }) 
                                     a1 
                                     [(Var 3 a)] 
-                                    [] 
                                     [(= 
                                         (Var 3 a1) 
                                         (IntegerBinOp 
@@ -246,6 +245,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             a2:
@@ -285,7 +288,6 @@
                                         }) 
                                     a2 
                                     [(Var 4 a)] 
-                                    [] 
                                     [(= 
                                         (Var 4 a2) 
                                         (RealBinOp 
@@ -313,6 +315,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             
