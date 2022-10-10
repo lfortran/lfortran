@@ -17,7 +17,6 @@ configure_file(config.h.in config.h)
 set(SRC
     codegen/asr_to_cpp.cpp
     codegen/asr_to_c.cpp
-    codegen/asr_to_julia.cpp
     codegen/asr_to_py.cpp
     codegen/x86_assembler.cpp
     codegen/asr_to_x86.cpp
@@ -36,6 +35,7 @@ set(SRC
     pass/class_constructor.cpp
     pass/arr_slice.cpp
     pass/print_arr.cpp
+    pass/print_list.cpp
     pass/pass_utils.cpp
     pass/unused_functions.cpp
     pass/flip_sign.cpp
@@ -49,6 +49,7 @@ set(SRC
     pass/instantiate_template.cpp
     pass/update_array_dim_intrinsic_calls.cpp
     pass/pass_array_by_data.cpp
+    pass/pass_list_concat.cpp
 
     asr_verify.cpp
     asr_utils.cpp
