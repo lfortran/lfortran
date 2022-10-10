@@ -76,7 +76,6 @@
                                                     Default 
                                                     (TypeParameter 
                                                         t 
-                                                        [] 
                                                         []
                                                     ) 
                                                     Source 
@@ -94,7 +93,6 @@
                                                     Default 
                                                     (TypeParameter 
                                                         t 
-                                                        [] 
                                                         []
                                                     ) 
                                                     Source 
@@ -112,7 +110,6 @@
                                                     Default 
                                                     (TypeParameter 
                                                         t 
-                                                        [] 
                                                         []
                                                     ) 
                                                     Source 
@@ -133,7 +130,6 @@
                                             (Var 4 y) 
                                             (TypeParameter 
                                                 t 
-                                                [] 
                                                 []
                                             ) 
                                             ()
@@ -152,7 +148,6 @@
                                     .false. 
                                     [(TypeParameter 
                                         t 
-                                        [] 
                                         []
                                     )] 
                                     [] 
@@ -218,7 +213,6 @@
                                             (Var 8 y) 
                                             (TypeParameter 
                                                 t 
-                                                [] 
                                                 []
                                             ) 
                                             ()
@@ -299,7 +293,6 @@
                                             (Var 7 y) 
                                             (TypeParameter 
                                                 t 
-                                                [] 
                                                 []
                                             ) 
                                             ()
