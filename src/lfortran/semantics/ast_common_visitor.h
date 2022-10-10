@@ -1331,6 +1331,14 @@ public:
                 type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     type));
             }
+        } else if (sym_type->m_type == AST::decl_typeType::TypeDoubleComplex) {
+            a_kind = 8;
+            type = LFortran::ASRUtils::TYPE(ASR::make_Complex_t(al, loc,
+                a_kind, dims.p, dims.size()));
+            if (is_pointer) {
+                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                    type));
+            }
         } else if (sym_type->m_type == AST::decl_typeType::TypeCharacter) {
             int a_len = -10;
             ASR::expr_t *len_expr = nullptr;
