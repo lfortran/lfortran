@@ -60,7 +60,7 @@ class FlipSignVisitor : public PassUtils::SkipOptimizationFunctionVisitor<FlipSi
 private:
     ASR::TranslationUnit_t &unit;
 
-    std::string rl_path;
+    LFortran::CompilerOptions compiler_options;
 
     ASR::expr_t *flip_sign_signal_variable, *flip_sign_variable;
 
@@ -73,8 +73,8 @@ private:
 
 public:
     FlipSignVisitor(Allocator &al_, ASR::TranslationUnit_t &unit_,
-                    const std::string& rl_path_) : SkipOptimizationFunctionVisitor(al_),
-    unit(unit_), rl_path(rl_path_)
+                    const LFortran::CompilerOptions& compiler_options_) : SkipOptimizationFunctionVisitor(al_),
+    unit(unit_), compiler_options(compiler_options_)
     {
         pass_result.reserve(al, 1);
     }
@@ -100,7 +100,7 @@ public:
             LFORTRAN_ASSERT(flip_sign_signal_variable);
             LFORTRAN_ASSERT(flip_sign_variable);
             ASR::stmt_t* flip_sign_call = PassUtils::get_flipsign(flip_sign_signal_variable,
-                                            flip_sign_variable, al, unit, rl_path, current_scope,
+                                            flip_sign_variable, al, unit, compiler_options, current_scope,
                                             [&](const std::string &msg, const Location &) { throw LCompilersException(msg); });
             pass_result.push_back(al, flip_sign_call);
         }
@@ -209,9 +209,9 @@ public:
 };
 
 void pass_replace_flip_sign(Allocator &al, ASR::TranslationUnit_t &unit,
-                            const LCompilers::PassOptions& pass_options) {
-    std::string rl_path = pass_options.runtime_library_dir;
-    FlipSignVisitor v(al, unit, rl_path);
+                            const LFortran::CompilerOptions& compiler_options) {
+    // std::string rl_path = pass_options.runtime_library_dir;
+    FlipSignVisitor v(al, unit, compiler_options);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));
 }

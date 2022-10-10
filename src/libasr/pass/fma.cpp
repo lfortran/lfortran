@@ -37,7 +37,7 @@ class FMAVisitor : public PassUtils::SkipOptimizationFunctionVisitor<FMAVisitor>
 private:
     ASR::TranslationUnit_t &unit;
 
-    std::string rl_path;
+    LFortran::CompilerOptions compiler_options;
 
     ASR::expr_t* fma_var;
 
@@ -46,8 +46,8 @@ private:
     bool from_fma;
 
 public:
-    FMAVisitor(Allocator &al_, ASR::TranslationUnit_t &unit_, const std::string& rl_path_) : SkipOptimizationFunctionVisitor(al_),
-    unit(unit_), rl_path(rl_path_), fma_var(nullptr), from_fma(false)
+    FMAVisitor(Allocator &al_, ASR::TranslationUnit_t &unit_, const LFortran::CompilerOptions& compiler_options_) : SkipOptimizationFunctionVisitor(al_),
+    unit(unit_), compiler_options(compiler_options_), fma_var(nullptr), from_fma(false)
     {
         pass_result.reserve(al, 1);
     }
@@ -117,7 +117,7 @@ public:
         }
 
         fma_var = PassUtils::get_fma(other_expr, first_arg, second_arg,
-                                     al, unit, rl_path, current_scope, x.base.base.loc,
+                                     al, unit, compiler_options, current_scope, x.base.base.loc,
                                      [&](const std::string &msg, const Location &) { throw LCompilersException(msg); });
         from_fma = false;
     }
@@ -166,9 +166,9 @@ public:
 };
 
 void pass_replace_fma(Allocator &al, ASR::TranslationUnit_t &unit,
-                      const LCompilers::PassOptions& pass_options) {
-    std::string rl_path = pass_options.runtime_library_dir;
-    FMAVisitor v(al, unit, rl_path);
+                      const LFortran::CompilerOptions& compiler_options) {
+    // std::string rl_path = pass_options.runtime_library_dir;
+    FMAVisitor v(al, unit, compiler_options);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));
 }

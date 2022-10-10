@@ -44,7 +44,7 @@
 namespace LCompilers {
 
     typedef void (*pass_function)(Allocator&, LFortran::ASR::TranslationUnit_t&,
-                                  const LCompilers::PassOptions&);
+                                  const LCompilers::PassOptions&, const LFortran::CompilerOptions&);
 
     class PassManager {
         private:
@@ -79,10 +79,11 @@ namespace LCompilers {
         bool apply_default_passes;
 
         void _apply_passes(Allocator& al, LFortran::ASR::TranslationUnit_t* asr,
-                           std::vector<std::string>& passes, PassOptions pass_options) {
+                           std::vector<std::string>& passes, PassOptions pass_options,
+			   LFortran::CompilerOptions compiler_options) {
             pass_options.runtime_library_dir = LFortran::get_runtime_library_dir();
             for (size_t i = 0; i < passes.size(); i++) {
-                _passes_db[passes[i]](al, *asr, pass_options);
+                _passes_db[passes[i]](al, *asr, pass_options, compiler_options);
             }
         }
 
@@ -159,14 +160,14 @@ namespace LCompilers {
         }
 
         void apply_passes(Allocator& al, LFortran::ASR::TranslationUnit_t* asr,
-                          PassOptions& pass_options) {
+                          PassOptions& pass_options, const LFortran::CompilerOptions& compiler_options) {
             if( !_user_defined_passes.empty() ) {
-                _apply_passes(al, asr, _user_defined_passes, pass_options);
+                _apply_passes(al, asr, _user_defined_passes, pass_options, compiler_options);
             } else if( apply_default_passes ) {
                 if( is_fast ) {
-                    _apply_passes(al, asr, _with_optimization_passes, pass_options);
+                    _apply_passes(al, asr, _with_optimization_passes, pass_options, compiler_options);
                 } else {
-                    _apply_passes(al, asr, _passes, pass_options);
+                    _apply_passes(al, asr, _passes, pass_options, compiler_options);
                 }
             }
         }

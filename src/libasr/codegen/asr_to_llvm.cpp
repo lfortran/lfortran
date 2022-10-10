@@ -5338,13 +5338,14 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics,
         llvm::LLVMContext &context, Allocator &al,
         LCompilers::PassManager& pass_manager,
-        Platform platform, const std::string &run_fn)
+	Platform platform, const std::string &run_fn,
+	const LFortran::CompilerOptions& compiler_options)
 {
     ASRToLLVMVisitor v(al, context, platform, diagnostics);
     LCompilers::PassOptions pass_options;
     pass_options.run_fun = run_fn;
     pass_options.always_run = false;
-    pass_manager.apply_passes(al, &asr, pass_options);
+    pass_manager.apply_passes(al, &asr, pass_options, compiler_options);
 
     // Uncomment for debugging the ASR after the transformation
     // std::cout << pickle(asr, true, true, true) << std::endl;
