@@ -171,7 +171,7 @@ RUN(NAME doloop_08 LABELS gfortran llvm cpp wasm)
 
 RUN(NAME goto_01 LABELS gfortran llvm)
 RUN(NAME goto_02 LABELS gfortran llvm)
-RUN(NAME goto_03 LABELS gfortran)
+RUN(NAME goto_03 LABELS gfortran llvm)
 RUN(NAME goto_04 LABELS gfortran llvm)
 
 RUN(NAME subroutines_01 LABELS gfortran llvm cpp x86 wasm)
