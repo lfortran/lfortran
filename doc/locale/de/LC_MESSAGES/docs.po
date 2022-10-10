@@ -9,7 +9,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
 "PO-Revision-Date: 2022-10-10 18:45+0000\n"
-"Last-Translator: Ettore Atalan <atalanttore@googlemail.com>\n"
+"Last-Translator: Ralf Wuthenow <Ralfi.Burghardt@googlemail.com>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/de/>\n"
 "Language: de\n"
@@ -815,7 +815,7 @@ msgstr ""
 
 #: ../../doc/src/developer_tutorial.ipynb:14
 msgid "Introduction"
-msgstr ""
+msgstr "Einführung"
 
 #: ../../doc/src/developer_tutorial.ipynb:18
 msgid ""
