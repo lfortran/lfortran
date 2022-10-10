@@ -523,7 +523,7 @@ public:
 
 Result<int> asr_to_x86(ASR::TranslationUnit_t &asr, Allocator &al,
 	const std::string &filename, bool time_report,
-	LFortran::CompilerOptions& compiler_options)
+	const LFortran::CompilerOptions& compiler_options)
 {
     int time_pass_global=0;
     int time_pass_do_loops=0;
@@ -538,7 +538,7 @@ Result<int> asr_to_x86(ASR::TranslationUnit_t &asr, Allocator &al,
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        pass_wrap_global_stmts_into_function(al, asr, pass_options);
+        pass_wrap_global_stmts_into_function(al, asr, pass_options, compiler_options);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_pass_global = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     }

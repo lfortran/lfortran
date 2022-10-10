@@ -18,7 +18,8 @@ using LFortran::ASRUtils::EXPR;
  *
  */
 void pass_wrap_global_stmts_into_function(Allocator &al,
-            ASR::TranslationUnit_t &unit, const LCompilers::PassOptions& pass_options) {
+	    ASR::TranslationUnit_t &unit, const LCompilers::PassOptions& pass_options,
+	    const LFortran::CompilerOptions&) {
     std::string fn_name_s = pass_options.run_fun;
     if (unit.n_items > 0) {
         // Add an anonymous function
