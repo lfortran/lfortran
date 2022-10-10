@@ -1390,8 +1390,7 @@ public:
                         is_current_procedure_templated = true;
                         type_param = true;
                         type = LFortran::ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
-                                                        s2c(al, derived_type_name), nullptr, 0,
-                                                        nullptr, 0));
+                                                        s2c(al, derived_type_name), nullptr, 0));
                     }
                 }
             }

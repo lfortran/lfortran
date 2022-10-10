@@ -513,7 +513,7 @@ public:
                             }
                         }
                     }
-                    if(type_param) type = LFortran::ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, nullptr, nullptr, 0, nullptr, 0));
+                    if(type_param) type = LFortran::ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, nullptr, nullptr, 0));
                     else type = LFortran::ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v,
                         nullptr, 0));
                     break;
@@ -657,7 +657,7 @@ public:
             parent_sym = parent_scope->get_symbol(parent_sym_name);
         }
         if(is_template && data_member_names.size() == 0){
-            current_template_type_parameters.push_back(ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0, nullptr, 0));
+            current_template_type_parameters.push_back(ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0));
         }
         tmp = ASR::make_StructType_t(al, x.base.base.loc, current_scope,
             s2c(al, to_lower(x.m_name)), data_member_names.p, data_member_names.size(),
