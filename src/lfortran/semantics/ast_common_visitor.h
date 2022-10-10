@@ -2579,6 +2579,10 @@ public:
                     to_type, value));
             }
             return (ASR::asr_t *)arg;
+        } else if (ASRUtils::is_complex(*type)) {
+            return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
+                    al, loc, arg, ASR::cast_kindType::ComplexToReal,
+                    to_type, value));
         } else {
             std::string stype = ASRUtils::type_to_str(type);
             throw SemanticError(
