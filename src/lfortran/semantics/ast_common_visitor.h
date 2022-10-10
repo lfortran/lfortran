@@ -2478,6 +2478,33 @@ public:
         return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, nullptr);
     }
 
+    ASR::asr_t* create_DCmplx(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"y"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "dcmplx");
+        ASR::expr_t *x_ = args[0], *y_ = args[1];
+        if( ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(x_)) ) {
+            if( y_ != nullptr ) {
+                throw SemanticError("The first argument of dcmplx intrinsic"
+                                    " is of complex type, the second argument "
+                                    "in this case must be absent",
+                                    x.base.base.loc);
+            }
+            return (ASR::asr_t*) x_;
+        }
+        int64_t kind_value = 8;
+        if( y_ == nullptr ) {
+            ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al,
+                                        x.base.base.loc, kind_value,
+                                        nullptr, 0));
+            y_ = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
+                                                         0.0, real_type));
+        }
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc,
+                                kind_value, nullptr, 0));
+        return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, nullptr);
+    }
+
     ASR::asr_t* create_Ichar(const AST::FuncCallOrArray_t& x) {
         std::vector<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"kind"};
@@ -2519,6 +2546,8 @@ public:
                 tmp = create_BitCast(x);
             } else if( var_name == "cmplx" ) {
                 tmp = create_Cmplx(x);
+            } else if( var_name == "dcmplx" ) {
+                tmp = create_DCmplx(x);
             } else if( var_name == "reshape" ) {
                 tmp = create_ArrayReshape(x);
             } else if( var_name == "ichar" ) {
