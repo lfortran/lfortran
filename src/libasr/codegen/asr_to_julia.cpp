@@ -383,9 +383,9 @@ public:
                 } else {
                     sub = format_type(type_name, v.m_name, use_ref, init_default ? "\"\"" : "");
                 }
-            } else if (ASR::is_a<ASR::Derived_t>(*v.m_type)) {
+            } else if (ASR::is_a<ASR::Struct_t>(*v.m_type)) {
                 // TODO: handle this
-                ASR::Derived_t* t = ASR::down_cast<ASR::Derived_t>(v.m_type);
+                ASR::Struct_t* t = ASR::down_cast<ASR::Struct_t>(v.m_type);
                 std::string der_type_name = ASRUtils::symbol_name(t->m_derived_type);
                 if (is_array) {
                     generate_array_decl(sub,
@@ -957,8 +957,8 @@ public:
                 std::string type_name = "String";
                 generate_array_decl(
                     out, std::string(v->m_name), type_name, _dims, nullptr, n_dims, true, true);
-            } else if (ASR::is_a<ASR::Derived_t>(*v->m_type)) {
-                ASR::Derived_t* t = ASR::down_cast<ASR::Derived_t>(v->m_type);
+            } else if (ASR::is_a<ASR::Struct_t>(*v->m_type)) {
+                ASR::Struct_t* t = ASR::down_cast<ASR::Struct_t>(v->m_type);
                 std::string der_type_name = ASRUtils::symbol_name(t->m_derived_type);
                 generate_array_decl(
                     out, std::string(v->m_name), der_type_name, _dims, nullptr, n_dims, true, true);
@@ -1453,7 +1453,7 @@ public:
         last_expr_precedence = julia_prec::Base;
     }
 
-    void visit_DerivedRef(const ASR::DerivedRef_t& x)
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x)
     {
         std::string der_expr, member;
         this->visit_expr(*x.m_v);

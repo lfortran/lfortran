@@ -109,7 +109,6 @@
                                                         }) 
                                                     c 
                                                     [(Var 4 z)] 
-                                                    [] 
                                                     [(Print 
                                                         () 
                                                         [(Var 4 z)] 
@@ -141,6 +140,10 @@
                                                     .false. 
                                                     .false. 
                                                     .false. 
+                                                    .false. 
+                                                    .false. 
+                                                    [] 
+                                                    [] 
                                                     .false.
                                                 ), 
                                             x:
@@ -192,7 +195,6 @@
                                         }) 
                                     b 
                                     [(Var 3 x)] 
-                                    [] 
                                     [(= 
                                         (Var 3 y) 
                                         (Var 3 x) 
@@ -227,6 +229,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

@@ -15,7 +15,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Derived 
+                                    (Struct 
                                         2 x 
                                         []
                                     ) 
@@ -25,7 +25,7 @@
                                     .false.
                                 ), 
                             x:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         3
                                         {
@@ -57,7 +57,7 @@
                                         4
                                         {
                                             a:
-                                                (DerivedType 
+                                                (StructType 
                                                     (SymbolTable
                                                         5
                                                         {
@@ -91,7 +91,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         4 a 
                                                         []
                                                     ) 
@@ -105,7 +105,6 @@
                                     y 
                                     [] 
                                     [] 
-                                    [] 
                                     () 
                                     Source 
                                     Public 
@@ -114,6 +113,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             z:
@@ -122,7 +125,7 @@
                                         6
                                         {
                                             a:
-                                                (DerivedType 
+                                                (StructType 
                                                     (SymbolTable
                                                         7
                                                         {
@@ -156,7 +159,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         6 a 
                                                         []
                                                     ) 
@@ -183,7 +186,6 @@
                                         }) 
                                     z 
                                     [] 
-                                    [] 
                                     [(= 
                                         (Var 6 z) 
                                         (IntegerConstant 5 (Integer 4 [])) 
@@ -197,6 +199,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

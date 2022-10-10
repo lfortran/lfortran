@@ -95,7 +95,6 @@
                         }) 
                     f 
                     [] 
-                    [] 
                     [(= 
                         (Var 2 f1) 
                         (RealConstant 
@@ -236,6 +235,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             

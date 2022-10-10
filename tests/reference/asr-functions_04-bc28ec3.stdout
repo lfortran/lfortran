@@ -162,7 +162,6 @@
                                         }) 
                                     to_negative~genericprocedure 
                                     [(Var 3 int)] 
-                                    [] 
                                     [(If 
                                         (IntegerCompare 
                                             (Var 3 int) 
@@ -194,6 +193,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

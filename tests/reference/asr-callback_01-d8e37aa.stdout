@@ -92,7 +92,6 @@
                                                     f 
                                                     [(Var 4 x)] 
                                                     [] 
-                                                    [] 
                                                     (Var 4 f) 
                                                     Source 
                                                     Public 
@@ -101,6 +100,10 @@
                                                     .false. 
                                                     .false. 
                                                     .false. 
+                                                    .false. 
+                                                    .false. 
+                                                    [] 
+                                                    [] 
                                                     .false.
                                                 )
                                             
@@ -109,7 +112,6 @@
                                     [(Var 3 f)
                                     (Var 3 a)
                                     (Var 3 b)] 
-                                    [] 
                                     [(= 
                                         (Var 3 cb) 
                                         (RealBinOp 
@@ -155,6 +157,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             foo:
@@ -227,7 +233,6 @@
                                                         }) 
                                                     f 
                                                     [(Var 6 x)] 
-                                                    [] 
                                                     [(= 
                                                         (Var 6 f) 
                                                         (RealBinOp 
@@ -255,6 +260,10 @@
                                                     .false. 
                                                     .false. 
                                                     .false. 
+                                                    .false. 
+                                                    .false. 
+                                                    [] 
+                                                    [] 
                                                     .false.
                                                 )
                                             
@@ -262,7 +271,6 @@
                                     foo 
                                     [(Var 5 c)
                                     (Var 5 d)] 
-                                    [] 
                                     [(Print 
                                         () 
                                         [(FunctionCall 
@@ -286,6 +294,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

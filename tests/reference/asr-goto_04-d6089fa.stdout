@@ -60,18 +60,21 @@
                         [(CaseStmt 
                             [(IntegerConstant 1 (Integer 4 []))] 
                             [(GoTo 
+                                1 
                                 1
                             )]
                         )
                         (CaseStmt 
                             [(IntegerConstant 2 (Integer 4 []))] 
                             [(GoTo 
+                                2 
                                 2
                             )]
                         )
                         (CaseStmt 
                             [(IntegerConstant 3 (Integer 4 []))] 
                             [(GoTo 
+                                3 
                                 3
                             )]
                         )] 
@@ -89,6 +92,7 @@
                         ()
                     )
                     (GoToTarget 
+                        1 
                         1
                     )
                     (= 
@@ -103,6 +107,7 @@
                         ()
                     )
                     (GoToTarget 
+                        2 
                         2
                     )
                     (= 
@@ -117,6 +122,7 @@
                         ()
                     )
                     (GoToTarget 
+                        3 
                         3
                     )
                     (= 
@@ -154,18 +160,21 @@
                         [(CaseStmt 
                             [(IntegerConstant 1 (Integer 4 []))] 
                             [(GoTo 
+                                4 
                                 4
                             )]
                         )
                         (CaseStmt 
                             [(IntegerConstant 2 (Integer 4 []))] 
                             [(GoTo 
+                                5 
                                 5
                             )]
                         )
                         (CaseStmt 
                             [(IntegerConstant 3 (Integer 4 []))] 
                             [(GoTo 
+                                6 
                                 6
                             )]
                         )] 
@@ -183,6 +192,7 @@
                         ()
                     )
                     (GoToTarget 
+                        4 
                         4
                     )
                     (= 
@@ -197,6 +207,7 @@
                         ()
                     )
                     (GoToTarget 
+                        5 
                         5
                     )
                     (= 
@@ -211,6 +222,7 @@
                         ()
                     )
                     (GoToTarget 
+                        6 
                         6
                     )
                     (= 
@@ -248,18 +260,21 @@
                         [(CaseStmt 
                             [(IntegerConstant 1 (Integer 4 []))] 
                             [(GoTo 
+                                7 
                                 7
                             )]
                         )
                         (CaseStmt 
                             [(IntegerConstant 2 (Integer 4 []))] 
                             [(GoTo 
+                                8 
                                 8
                             )]
                         )
                         (CaseStmt 
                             [(IntegerConstant 3 (Integer 4 []))] 
                             [(GoTo 
+                                9 
                                 9
                             )]
                         )] 
@@ -277,6 +292,7 @@
                         ()
                     )
                     (GoToTarget 
+                        7 
                         7
                     )
                     (= 
@@ -291,6 +307,7 @@
                         ()
                     )
                     (GoToTarget 
+                        8 
                         8
                     )
                     (= 
@@ -305,6 +322,7 @@
                         ()
                     )
                     (GoToTarget 
+                        9 
                         9
                     )
                     (= 

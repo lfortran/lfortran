@@ -87,7 +87,6 @@
                                         }) 
                                     print_subrout 
                                     [(Var 3 x)] 
-                                    [] 
                                     [(Print 
                                         () 
                                         [(Var 3 x)] 
@@ -102,6 +101,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             x:

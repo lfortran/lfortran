@@ -16,7 +16,6 @@
                                         }) 
                                     print_vars 
                                     [] 
-                                    [] 
                                     [(Print 
                                         () 
                                         [(StringConstant 
@@ -45,6 +44,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             priv:

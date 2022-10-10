@@ -141,7 +141,6 @@
                                     identity 
                                     [(Var 3 x)
                                     (Var 3 y)] 
-                                    [] 
                                     [(= 
                                         (Var 3 y) 
                                         (Var 3 x) 
@@ -155,6 +154,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

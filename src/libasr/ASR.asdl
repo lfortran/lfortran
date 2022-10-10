@@ -84,10 +84,10 @@ symbol
         stmt* body)
     | Module(symbol_table symtab, identifier name, identifier* dependencies,
         bool loaded_from_mod, bool intrinsic)
-    | Function(symbol_table symtab, identifier name, expr* args,
-        ttype* type_params, stmt* body, expr? return_var, abi abi,
-        access access, deftype deftype, string? bindc_name, bool elemental,
-        bool pure, bool module, bool inline)
+    | Function(symbol_table symtab, identifier name, expr* args, stmt* body,
+        expr? return_var, abi abi, access access, deftype deftype,
+        string? bindc_name, bool elemental, bool pure, bool module, bool inline,
+        bool static, ttype* type_params, symbol* restrictions, bool is_restriction)
     | GenericProcedure(symbol_table parent_symtab, identifier name,
         symbol* procs, access access)
     | CustomOperator(symbol_table parent_symtab, identifier name,
@@ -95,7 +95,11 @@ symbol
     | ExternalSymbol(symbol_table parent_symtab, identifier name,
         symbol external, identifier module_name, identifier* scope_names,
         identifier original_name, access access)
-    | DerivedType(symbol_table symtab, identifier name, identifier* members,
+    | StructType(symbol_table symtab, identifier name, identifier* members,
+        abi abi, access access, symbol? parent)
+    | EnumType(symbol_table symtab, identifier name, identifier* members,
+        abi abi, access access, enumtype enum_value_type, ttype type, symbol? parent)
+    | UnionType(symbol_table symtab, identifier name, identifier* members,
         abi abi, access access, symbol? parent)
     | Variable(symbol_table parent_symtab, identifier name, intent intent,
         expr? symbolic_value, expr? value, storage_type storage, ttype type,
@@ -169,10 +173,10 @@ stmt
         -- GoTo points to a GoToTarget with the corresponding target_id within
         -- the same procedure. We currently use `int` IDs to link GoTo with
         -- GoToTarget to avoid issues with serialization.
-    | GoTo(int target_id)
+    | GoTo(int target_id, identifier name)
         -- An empty statement, a target of zero or more GoTo statements
         -- the `id` is only unique within a procedure
-    | GoToTarget(int id)
+    | GoToTarget(int id, identifier name)
     | If(expr test, stmt* body, stmt* orelse)
     | IfArithmetic(expr test, int lt_label, int eq_label, int gt_label)
     | Print(expr? fmt, expr* values, expr? separator, expr? end)
@@ -215,9 +219,11 @@ expr
         -- Such as: (x, y+z), (3.0, 2.0) generally not known at compile time
     | ComplexConstructor(expr re, expr im, ttype type, expr? value)
     | NamedExpr(expr target, expr value, ttype type)
-    | FunctionCall(symbol name, symbol? original_name,
-            call_arg* args, ttype type, expr? value, expr? dt)
-    | DerivedTypeConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
+    | FunctionCall(symbol name, symbol? original_name, call_arg* args,
+            ttype type, expr? value, expr? dt)
+    | StructTypeConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
+    | EnumTypeConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
+    | UnionTypeConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
     | ImpliedDoLoop(expr* values, expr var, expr start, expr end,
                     expr? increment, ttype type, expr? value)
     | IntegerConstant(int n, ttype type)
@@ -277,7 +283,11 @@ expr
     | ArrayReshape(expr array, expr shape, ttype type, expr? value)
 
     | BitCast(expr source, expr mold, expr? size, ttype type, expr? value)
-    | DerivedRef(expr v, symbol m, ttype type, expr? value)
+    | StructInstanceMember(expr v, symbol m, ttype type, expr? value)
+    | EnumMember(expr v, symbol m, ttype type, expr? value)
+    | UnionRef(expr v, symbol m, ttype type, expr? value)
+    | EnumName(expr v, ttype enum_type, ttype type, expr? value)
+    | EnumValue(expr v, ttype enum_type, ttype type, expr? value)
     | OverloadedCompare(expr left, cmpop op, expr right, ttype type, expr? value, expr overloaded)
     | OverloadedBinOp(expr left, binop op, expr right, ttype type, expr? value, expr overloaded)
     | Cast(expr arg, cast_kind kind, ttype type, expr? value)
@@ -325,7 +335,9 @@ ttype
     | Set(ttype type)
     | List(ttype type)
     | Tuple(ttype* type)
-    | Derived(symbol derived_type, dimension* dims)
+    | Struct(symbol derived_type, dimension* dims)
+    | Enum(symbol enum_type, dimension *dims)
+    | Union(symbol union_type, dimension *dims)
     | Class(symbol class_type, dimension* dims)
     | Dict(ttype key_type, ttype value_type)
     | Pointer(ttype type)
@@ -335,6 +347,8 @@ ttype
 restriction = Restriction(trait rt)
 
 trait = SupportsZero | SupportsPlus | Divisible | Any
+
+restriction_arg = RestrictionArg(identifier restriction_name, symbol restriction_func)
 
 binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift
 
@@ -386,5 +400,7 @@ array_index = (expr? left, expr? right, expr? step)
 do_loop_head = (expr? v, expr? start, expr? end, expr? increment)
 
 case_stmt = CaseStmt(expr* test, stmt* body) | CaseStmt_Range(expr? start, expr? end, stmt* body)
+
+enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
 
 }

@@ -25,7 +25,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Derived 
+                                    (Struct 
                                         8 x 
                                         []
                                     ) 
@@ -42,7 +42,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Derived 
+                                    (Struct 
                                         8 z 
                                         []
                                     ) 
@@ -87,7 +87,7 @@
                     [derived_types_01_m_02
                     derived_types_01_m_01] 
                     [(= 
-                        (DerivedRef 
+                        (StructInstanceMember 
                             (Var 8 b) 
                             3 i 
                             (Integer 4 []) 
@@ -97,7 +97,7 @@
                         ()
                     )
                     (= 
-                        (DerivedRef 
+                        (StructInstanceMember 
                             (Var 8 b) 
                             3 r 
                             (Real 4 []) 
@@ -111,13 +111,13 @@
                     )
                     (Print 
                         () 
-                        [(DerivedRef 
+                        [(StructInstanceMember 
                             (Var 8 b) 
                             3 i 
                             (Integer 4 []) 
                             ()
                         )
-                        (DerivedRef 
+                        (StructInstanceMember 
                             (Var 8 b) 
                             3 r 
                             (Real 4 []) 
@@ -134,13 +134,13 @@
                     )
                     (Print 
                         () 
-                        [(DerivedRef 
+                        [(StructInstanceMember 
                             (Var 8 b) 
                             3 i 
                             (Integer 4 []) 
                             ()
                         )
-                        (DerivedRef 
+                        (StructInstanceMember 
                             (Var 8 b) 
                             3 r 
                             (Real 4 []) 
@@ -150,19 +150,19 @@
                         ()
                     )
                     (= 
-                        (DerivedRef 
-                            (DerivedRef 
-                                (DerivedRef 
+                        (StructInstanceMember 
+                            (StructInstanceMember 
+                                (StructInstanceMember 
                                     (Var 8 c) 
                                     7 l 
-                                    (Derived 
+                                    (Struct 
                                         8 1_derived_types_01_m_01_y 
                                         []
                                     ) 
                                     ()
                                 ) 
                                 4 d 
-                                (Derived 
+                                (Struct 
                                     8 x 
                                     []
                                 ) 
@@ -179,19 +179,19 @@
                         ()
                     )
                     (= 
-                        (DerivedRef 
-                            (DerivedRef 
-                                (DerivedRef 
+                        (StructInstanceMember 
+                            (StructInstanceMember 
+                                (StructInstanceMember 
                                     (Var 8 c) 
                                     7 l 
-                                    (Derived 
+                                    (Struct 
                                         8 1_derived_types_01_m_01_y 
                                         []
                                     ) 
                                     ()
                                 ) 
                                 4 d 
-                                (Derived 
+                                (Struct 
                                     8 x 
                                     []
                                 ) 
@@ -205,7 +205,7 @@
                         ()
                     )
                     (= 
-                        (DerivedRef 
+                        (StructInstanceMember 
                             (Var 8 c) 
                             7 k 
                             (Complex 4 []) 
@@ -231,19 +231,19 @@
                     )
                     (Print 
                         () 
-                        [(DerivedRef 
-                            (DerivedRef 
-                                (DerivedRef 
+                        [(StructInstanceMember 
+                            (StructInstanceMember 
+                                (StructInstanceMember 
                                     (Var 8 c) 
                                     7 l 
-                                    (Derived 
+                                    (Struct 
                                         8 1_derived_types_01_m_01_y 
                                         []
                                     ) 
                                     ()
                                 ) 
                                 4 d 
-                                (Derived 
+                                (Struct 
                                     8 x 
                                     []
                                 ) 
@@ -253,19 +253,19 @@
                             (Real 4 []) 
                             ()
                         )
-                        (DerivedRef 
-                            (DerivedRef 
-                                (DerivedRef 
+                        (StructInstanceMember 
+                            (StructInstanceMember 
+                                (StructInstanceMember 
                                     (Var 8 c) 
                                     7 l 
-                                    (Derived 
+                                    (Struct 
                                         8 1_derived_types_01_m_01_y 
                                         []
                                     ) 
                                     ()
                                 ) 
                                 4 d 
-                                (Derived 
+                                (Struct 
                                     8 x 
                                     []
                                 ) 
@@ -275,7 +275,7 @@
                             (Integer 4 []) 
                             ()
                         )
-                        (DerivedRef 
+                        (StructInstanceMember 
                             (Var 8 c) 
                             7 k 
                             (Complex 4 []) 
@@ -287,18 +287,18 @@
                     (SubroutineCall 
                         8 set 
                         () 
-                        [((DerivedRef 
-                            (DerivedRef 
+                        [((StructInstanceMember 
+                            (StructInstanceMember 
                                 (Var 8 c) 
                                 7 l 
-                                (Derived 
+                                (Struct 
                                     8 1_derived_types_01_m_01_y 
                                     []
                                 ) 
                                 ()
                             ) 
                             4 d 
-                            (Derived 
+                            (Struct 
                                 8 x 
                                 []
                             ) 
@@ -308,19 +308,19 @@
                     )
                     (Print 
                         () 
-                        [(DerivedRef 
-                            (DerivedRef 
-                                (DerivedRef 
+                        [(StructInstanceMember 
+                            (StructInstanceMember 
+                                (StructInstanceMember 
                                     (Var 8 c) 
                                     7 l 
-                                    (Derived 
+                                    (Struct 
                                         8 1_derived_types_01_m_01_y 
                                         []
                                     ) 
                                     ()
                                 ) 
                                 4 d 
-                                (Derived 
+                                (Struct 
                                     8 x 
                                     []
                                 ) 
@@ -330,19 +330,19 @@
                             (Real 4 []) 
                             ()
                         )
-                        (DerivedRef 
-                            (DerivedRef 
-                                (DerivedRef 
+                        (StructInstanceMember 
+                            (StructInstanceMember 
+                                (StructInstanceMember 
                                     (Var 8 c) 
                                     7 l 
-                                    (Derived 
+                                    (Struct 
                                         8 1_derived_types_01_m_01_y 
                                         []
                                     ) 
                                     ()
                                 ) 
                                 4 d 
-                                (Derived 
+                                (Struct 
                                     8 x 
                                     []
                                 ) 
@@ -352,7 +352,7 @@
                             (Integer 4 []) 
                             ()
                         )
-                        (DerivedRef 
+                        (StructInstanceMember 
                             (Var 8 c) 
                             7 k 
                             (Complex 4 []) 
@@ -380,7 +380,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 x 
                                                         []
                                                     ) 
@@ -393,9 +393,8 @@
                                         }) 
                                     set 
                                     [(Var 5 a)] 
-                                    [] 
                                     [(= 
-                                        (DerivedRef 
+                                        (StructInstanceMember 
                                             (Var 5 a) 
                                             3 i 
                                             (Integer 4 []) 
@@ -405,7 +404,7 @@
                                         ()
                                     )
                                     (= 
-                                        (DerivedRef 
+                                        (StructInstanceMember 
                                             (Var 5 a) 
                                             3 r 
                                             (Real 4 []) 
@@ -425,10 +424,14 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             x:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         3
                                         {
@@ -470,7 +473,7 @@
                                     ()
                                 ), 
                             y:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         4
                                         {
@@ -496,7 +499,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 x 
                                                         []
                                                     ) 
@@ -537,7 +540,7 @@
                                     Public
                                 ), 
                             z:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         7
                                         {
@@ -563,7 +566,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         6 y 
                                                         []
                                                     ) 

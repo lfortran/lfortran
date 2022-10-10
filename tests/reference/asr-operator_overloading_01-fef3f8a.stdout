@@ -349,7 +349,6 @@
                                     bin_add 
                                     [(Var 4 log1)
                                     (Var 4 log2)] 
-                                    [] 
                                     [(If 
                                         (LogicalBinOp 
                                             (Var 4 log1) 
@@ -399,6 +398,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             logical_and:
@@ -453,7 +456,6 @@
                                     logical_and 
                                     [(Var 3 log1)
                                     (Var 3 log2)] 
-                                    [] 
                                     [(= 
                                         (Var 3 logical_and) 
                                         (LogicalBinOp 
@@ -473,6 +475,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             ~add:

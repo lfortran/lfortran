@@ -125,11 +125,6 @@
                                     add_generic 
                                     [(Var 4 x)
                                     (Var 4 y)] 
-                                    [(TypeParameter 
-                                        t 
-                                        [] 
-                                        []
-                                    )] 
                                     [(= 
                                         (Var 4 add_generic) 
                                         (TemplateBinOp 
@@ -153,6 +148,14 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [(TypeParameter 
+                                        t 
+                                        [] 
+                                        []
+                                    )] 
+                                    [] 
                                     .false.
                                 ), 
                             add_integer:
@@ -207,14 +210,17 @@
                                     add_integer 
                                     [(Var 8 x)
                                     (Var 8 y)] 
-                                    [] 
                                     [(= 
                                         (Var 8 add_generic) 
-                                        (IntegerBinOp 
+                                        (TemplateBinOp 
                                             (Var 8 x) 
                                             Add 
                                             (Var 8 y) 
-                                            (Integer 4 []) 
+                                            (TypeParameter 
+                                                t 
+                                                [] 
+                                                []
+                                            ) 
                                             ()
                                         ) 
                                         ()
@@ -227,6 +233,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             add_real:
@@ -281,14 +291,17 @@
                                     add_real 
                                     [(Var 7 x)
                                     (Var 7 y)] 
-                                    [] 
                                     [(= 
                                         (Var 7 add_generic) 
-                                        (RealBinOp 
+                                        (TemplateBinOp 
                                             (Var 7 x) 
                                             Add 
                                             (Var 7 y) 
-                                            (Real 4 []) 
+                                            (TypeParameter 
+                                                t 
+                                                [] 
+                                                []
+                                            ) 
                                             ()
                                         ) 
                                         ()
@@ -301,10 +314,14 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             t:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         3
                                         {
@@ -400,7 +417,6 @@
                                             
                                         }) 
                                     test_template 
-                                    [] 
                                     [] 
                                     [(= 
                                         (Var 5 x) 
@@ -533,6 +549,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

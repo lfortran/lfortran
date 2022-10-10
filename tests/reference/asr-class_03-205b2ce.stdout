@@ -8,7 +8,7 @@
                         2
                         {
                             employee:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         4
                                         {
@@ -48,7 +48,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 person 
                                                         []
                                                     ) 
@@ -68,7 +68,7 @@
                                     ()
                                 ), 
                             person:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         3
                                         {
@@ -169,7 +169,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Derived 
+                                    (Struct 
                                         5 person 
                                         []
                                     ) 
@@ -186,7 +186,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Derived 
+                                    (Struct 
                                         5 employee 
                                         []
                                     ) 
@@ -211,7 +211,7 @@
                     [hr] 
                     [(= 
                         (Var 5 jack) 
-                        (DerivedTypeConstructor 
+                        (StructTypeConstructor 
                             5 person 
                             [(StringConstant 
                                 "Jack" 
@@ -226,7 +226,7 @@
                                 "M" 
                                 (Character 1 1 () [])
                             )] 
-                            (Derived 
+                            (Struct 
                                 5 person 
                                 []
                             ) 
@@ -236,9 +236,9 @@
                     )
                     (= 
                         (Var 5 jill) 
-                        (DerivedTypeConstructor 
+                        (StructTypeConstructor 
                             5 employee 
-                            [(DerivedTypeConstructor 
+                            [(StructTypeConstructor 
                                 5 person 
                                 [(StringConstant 
                                     "Jill" 
@@ -253,7 +253,7 @@
                                     "F" 
                                     (Character 1 1 () [])
                                 )] 
-                                (Derived 
+                                (Struct 
                                     5 person 
                                     []
                                 ) 
@@ -264,7 +264,7 @@
                                 "sales" 
                                 (Character 1 5 () [])
                             )] 
-                            (Derived 
+                            (Struct 
                                 5 employee 
                                 []
                             ) 
@@ -274,25 +274,25 @@
                     )
                     (Print 
                         () 
-                        [(DerivedRef 
+                        [(StructInstanceMember 
                             (Var 5 jack) 
                             3 first 
                             (Character 1 20 () []) 
                             ()
                         )
-                        (DerivedRef 
+                        (StructInstanceMember 
                             (Var 5 jack) 
                             3 last 
                             (Character 1 20 () []) 
                             ()
                         )
-                        (DerivedRef 
+                        (StructInstanceMember 
                             (Var 5 jack) 
                             3 birthyear 
                             (Integer 4 []) 
                             ()
                         )
-                        (DerivedRef 
+                        (StructInstanceMember 
                             (Var 5 jack) 
                             3 sgender 
                             (Character 1 1 () []) 
@@ -303,11 +303,11 @@
                     )
                     (Print 
                         () 
-                        [(DerivedRef 
-                            (DerivedRef 
+                        [(StructInstanceMember 
+                            (StructInstanceMember 
                                 (Var 5 jill) 
                                 4 person 
-                                (Derived 
+                                (Struct 
                                     5 person 
                                     []
                                 ) 
@@ -317,11 +317,11 @@
                             (Character 1 20 () []) 
                             ()
                         )
-                        (DerivedRef 
-                            (DerivedRef 
+                        (StructInstanceMember 
+                            (StructInstanceMember 
                                 (Var 5 jill) 
                                 4 person 
-                                (Derived 
+                                (Struct 
                                     5 person 
                                     []
                                 ) 
@@ -331,11 +331,11 @@
                             (Character 1 20 () []) 
                             ()
                         )
-                        (DerivedRef 
-                            (DerivedRef 
+                        (StructInstanceMember 
+                            (StructInstanceMember 
                                 (Var 5 jill) 
                                 4 person 
-                                (Derived 
+                                (Struct 
                                     5 person 
                                     []
                                 ) 
@@ -345,11 +345,11 @@
                             (Integer 4 []) 
                             ()
                         )
-                        (DerivedRef 
-                            (DerivedRef 
+                        (StructInstanceMember 
+                            (StructInstanceMember 
                                 (Var 5 jill) 
                                 4 person 
-                                (Derived 
+                                (Struct 
                                     5 person 
                                     []
                                 ) 
@@ -359,13 +359,13 @@
                             (Character 1 1 () []) 
                             ()
                         )
-                        (DerivedRef 
+                        (StructInstanceMember 
                             (Var 5 jill) 
                             4 department 
                             (Character 1 20 () []) 
                             ()
                         )
-                        (DerivedRef 
+                        (StructInstanceMember 
                             (Var 5 jill) 
                             4 hire_date 
                             (Integer 4 []) 

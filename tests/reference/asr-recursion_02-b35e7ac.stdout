@@ -103,7 +103,6 @@
                                                     f 
                                                     [] 
                                                     [] 
-                                                    [] 
                                                     (Var 4 f) 
                                                     Source 
                                                     Public 
@@ -112,6 +111,10 @@
                                                     .false. 
                                                     .false. 
                                                     .false. 
+                                                    .false. 
+                                                    .false. 
+                                                    [] 
+                                                    [] 
                                                     .false.
                                                 ), 
                                             iter:
@@ -147,7 +150,6 @@
                                     solver 
                                     [(Var 3 f)
                                     (Var 3 iter)] 
-                                    [] 
                                     [(Print 
                                         () 
                                         [(StringConstant 
@@ -209,6 +211,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             sub1:
@@ -239,7 +245,6 @@
                                                         }) 
                                                     getx 
                                                     [] 
-                                                    [] 
                                                     [(Print 
                                                         () 
                                                         [(StringConstant 
@@ -263,6 +268,10 @@
                                                     .false. 
                                                     .false. 
                                                     .false. 
+                                                    .false. 
+                                                    .false. 
+                                                    [] 
+                                                    [] 
                                                     .false.
                                                 ), 
                                             iter:
@@ -340,7 +349,6 @@
                                     sub1 
                                     [(Var 5 y)
                                     (Var 5 iter)] 
-                                    [] 
                                     [(= 
                                         (Var 5 x) 
                                         (Var 5 y) 
@@ -404,6 +412,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

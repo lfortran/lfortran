@@ -26,6 +26,7 @@
                     main 
                     [] 
                     [(GoToTarget 
+                        1000 
                         1000
                     )
                     (If 
@@ -47,6 +48,7 @@
                         []
                     )
                     (GoToTarget 
+                        100 
                         100
                     )
                     (Select 
@@ -54,24 +56,28 @@
                         [(CaseStmt 
                             [(IntegerConstant 100 (Integer 4 []))] 
                             [(GoTo 
+                                100 
                                 100
                             )]
                         )
                         (CaseStmt 
                             [(IntegerConstant 1000 (Integer 4 []))] 
                             [(GoTo 
+                                1000 
                                 1000
                             )]
                         )
                         (CaseStmt 
                             [(IntegerConstant 15 (Integer 4 []))] 
                             [(GoTo 
+                                15 
                                 15
                             )]
                         )] 
                         []
                     )
                     (GoToTarget 
+                        15 
                         15
                     )
                     (Print 
