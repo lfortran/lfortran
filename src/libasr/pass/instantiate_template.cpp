@@ -3,15 +3,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr.h>
 #include <libasr/pass/pass_utils.h>
-
-// TODO: Remove lpython/lfortran includes, make it compiler agnostic
-#if __has_include(<lfortran/semantics/semantic_exception.h>)
-    #include <lfortran/semantics/semantic_exception.h>
-#endif
-
-#if __has_include(<lpython/semantics/semantic_exception.h>)
-    #include <lpython/semantics/semantic_exception.h>
-#endif
+#include <libasr/semantic_exception.h>
 
 namespace LFortran {
 
