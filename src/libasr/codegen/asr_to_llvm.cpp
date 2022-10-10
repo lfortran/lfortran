@@ -5096,6 +5096,32 @@ public:
                 }
                 break;
             }
+            case (ASR::cast_kindType::ComplexToInteger) : {
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                llvm::Value *re;
+                if (arg_kind > 0 && dest_kind > 0)
+                {
+                    if (arg_kind == 4) {
+                        // complex(4) -> real(8)
+                        re = complex_re(tmp, complex_type_4);
+                        tmp = re;
+                    } else if (arg_kind == 8) {
+                        // complex(8) -> real(8)
+                        re = complex_re(tmp, complex_type_8);
+                        tmp = re;
+                    } else {
+                        std::string msg = "Unsupported Complex type kind: " + std::to_string(arg_kind);
+                        throw CodeGenError(msg);
+                    }
+                    llvm::Type *target_type;
+                    target_type = getIntType(dest_kind);
+                    tmp = builder->CreateFPToSI(tmp, target_type);
+                } else {
+                    throw CodeGenError("Negative kinds are not supported.");
+                }
+                break;
+             }
             case (ASR::cast_kindType::RealToCharacter) : {
                 llvm::Value *arg = tmp;
                 ASR::ttype_t* arg_type = extract_ttype_t_from_expr(x.m_arg);
