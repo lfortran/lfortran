@@ -82,7 +82,8 @@ public:
             // If there is a label, create a GoToTarget node first
             int64_t label = stmt_label(m_body[i]);
             if (label != 0) {
-                ASR::asr_t *l = ASR::make_GoToTarget_t(al, m_body[i]->base.loc, label);
+                ASR::asr_t *l = ASR::make_GoToTarget_t(al, m_body[i]->base.loc, label,
+                                    s2c(al, std::to_string(label)));
                 body.push_back(al, ASR::down_cast<ASR::stmt_t>(l));
             }
             // Visit the statement
@@ -448,8 +449,9 @@ public:
         for(size_t i = 0; i < x.n_symbols; i++){
             AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
             ASR::symbol_t* s = resolve_symbol(x.base.base.loc, use_symbol->m_remote_sym);
-            pass_instantiate_generic_function(al, subs, current_scope, use_symbol->m_local_rename,
-                                                *ASR::down_cast<ASR::Function_t>(s));
+            std::map<std::string, ASR::symbol_t*> rt_subs;
+            pass_instantiate_generic_function(al, subs, rt_subs, current_scope,
+                use_symbol->m_local_rename, ASR::down_cast<ASR::Function_t>(s));
         }
     }
 
@@ -1088,7 +1090,7 @@ public:
         if( target->type != ASR::exprType::Var &&
             target->type != ASR::exprType::ArrayItem &&
             target->type != ASR::exprType::ArraySection &&
-            target->type != ASR::exprType::DerivedRef )
+            target->type != ASR::exprType::StructInstanceMember )
         {
             throw SemanticError(
                 "The LHS of assignment can only be a variable or an array reference",
@@ -1400,18 +1402,21 @@ public:
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
         body.push_back(al, ASRUtils::STMT(
-            ASR::make_GoTo_t(al, x.base.base.loc, x.m_lt_label)));
+            ASR::make_GoTo_t(al, x.base.base.loc, x.m_lt_label,
+                s2c(al, std::to_string(x.m_lt_label)))));
         Vec<ASR::stmt_t*> orelse;
         orelse.reserve(al, 1);
 
         Vec<ASR::stmt_t*> body_gt;
         body_gt.reserve(al, 1);
         body_gt.push_back(al, ASRUtils::STMT(
-            ASR::make_GoTo_t(al, x.base.base.loc, x.m_gt_label)));
+            ASR::make_GoTo_t(al, x.base.base.loc, x.m_gt_label,
+                s2c(al, std::to_string(x.m_gt_label)))));
         Vec<ASR::stmt_t*> orelse_gt;
         orelse_gt.reserve(al, 1);
         orelse_gt.push_back(al, ASRUtils::STMT(
-            ASR::make_GoTo_t(al, x.base.base.loc, x.m_eq_label)));
+            ASR::make_GoTo_t(al, x.base.base.loc, x.m_eq_label,
+                s2c(al, std::to_string(x.m_eq_label)))));
 
         orelse.push_back(al, ASRUtils::STMT(
             ASR::make_If_t(al, x.base.base.loc, test_gt, body_gt.p,
@@ -1623,7 +1628,8 @@ public:
         if (x.m_goto_label) {
             if (AST::is_a<AST::Num_t>(*x.m_goto_label)) {
                 int goto_label = AST::down_cast<AST::Num_t>(x.m_goto_label)->m_n;
-                tmp = ASR::make_GoTo_t(al, x.base.base.loc, goto_label);
+                tmp = ASR::make_GoTo_t(al, x.base.base.loc, goto_label,
+                        s2c(al, std::to_string(goto_label)));
             } else {
                 this->visit_expr(*x.m_goto_label);
                 ASR::expr_t *goto_label = ASRUtils::EXPR(tmp);
@@ -1643,7 +1649,7 @@ public:
                         auto l = AST::down_cast<AST::Num_t>(x.m_labels[i]); // l->m_n gets the target -> if l->m_n == (i+1) ...
                         Vec<ASR::stmt_t*> body;
                         body.reserve(al, 1);
-                        body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n)));
+                        body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n, s2c(al, std::to_string(l->m_n)))));
                         Vec<ASR::expr_t*> comparator_one;
                         comparator_one.reserve(al, 1);
                         ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
@@ -1695,7 +1701,7 @@ public:
                     int32_t num = std::stoi(label);
                     Vec<ASR::stmt_t*> body;
                     body.reserve(al, 1);
-                    body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, num)));
+                    body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, num, s2c(al, std::to_string(num)))));
                     Vec<ASR::expr_t*> comparator_one;
                     comparator_one.reserve(al, 1);
                     ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
@@ -1711,7 +1717,7 @@ public:
                         auto l = AST::down_cast<AST::Num_t>(x.m_labels[i]);
                         Vec<ASR::stmt_t*> body;
                         body.reserve(al, 1);
-                        body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n)));
+                        body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n, s2c(al, std::to_string(l->m_n)))));
                         Vec<ASR::expr_t*> comparator_one;
                         comparator_one.reserve(al, 1);
                         ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
