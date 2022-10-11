@@ -60,7 +60,7 @@ class FlipSignVisitor : public PassUtils::SkipOptimizationFunctionVisitor<FlipSi
 private:
     ASR::TranslationUnit_t &unit;
 
-    LFortran::CompilerOptions compiler_options;
+    const LFortran::CompilerOptions& compiler_options;
 
     ASR::expr_t *flip_sign_signal_variable, *flip_sign_variable;
 
@@ -209,8 +209,8 @@ public:
 };
 
 void pass_replace_flip_sign(Allocator &al, ASR::TranslationUnit_t &unit,
+			    const LCompilers::PassOptions& /* pass_options */,
                             const LFortran::CompilerOptions& compiler_options) {
-    // std::string rl_path = pass_options.runtime_library_dir;
     FlipSignVisitor v(al, unit, compiler_options);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));
