@@ -361,7 +361,8 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
     asr = ASR::make_TranslationUnit_t(al, loc,
         parent_scope, nullptr, 0);
     ASR::TranslationUnit_t *tu = down_cast2<ASR::TranslationUnit_t>(asr);
-    LFORTRAN_ASSERT(asr_verify(*tu));
+    diag::Diagnostics diagnostics;
+    LFORTRAN_ASSERT(asr_verify(*tu, true, diagnostics));
     return tu;
 
     //std::cout << format_item(mod);

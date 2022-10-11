@@ -421,7 +421,6 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     w.visit_TranslationUnit(unit);
     RemoveArrayByDescriptorProceduresVisitor x(al,v);
     x.visit_TranslationUnit(unit);
-    LFORTRAN_ASSERT(asr_verify(unit));
 }
 
 } // namespace LFortran

@@ -39,6 +39,7 @@
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
 #include <libasr/pass/pass_array_by_data.h>
 #include <libasr/pass/pass_list_concat.h>
+#include <libasr/asr_verify.h>
 
 #include <map>
 #include <vector>
@@ -83,10 +84,12 @@ namespace LCompilers {
         bool apply_default_passes;
 
         void _apply_passes(Allocator& al, LFortran::ASR::TranslationUnit_t* asr,
-                           std::vector<std::string>& passes, PassOptions &pass_options) {
+                           std::vector<std::string>& passes, PassOptions &pass_options,
+                           LFortran::diag::Diagnostics &diagnostics) {
             pass_options.runtime_library_dir = LFortran::get_runtime_library_dir();
             for (size_t i = 0; i < passes.size(); i++) {
                 _passes_db[passes[i]](al, *asr, pass_options);
+                LFORTRAN_ASSERT(LFortran::asr_verify(*asr, true, diagnostics));
             }
         }
 
@@ -167,16 +170,19 @@ namespace LCompilers {
         }
 
         void apply_passes(Allocator& al, LFortran::ASR::TranslationUnit_t* asr,
-                          PassOptions& pass_options) {
+                          PassOptions& pass_options,
+                          LFortran::diag::Diagnostics &diagnostics) {
             if( !_user_defined_passes.empty() ) {
                 pass_options.fast = true;
-                _apply_passes(al, asr, _user_defined_passes, pass_options);
+                _apply_passes(al, asr, _user_defined_passes, pass_options,
+                    diagnostics);
             } else if( apply_default_passes ) {
                 pass_options.fast = is_fast;
                 if( is_fast ) {
-                    _apply_passes(al, asr, _with_optimization_passes, pass_options);
+                    _apply_passes(al, asr, _with_optimization_passes, pass_options,
+                        diagnostics);
                 } else {
-                    _apply_passes(al, asr, _passes, pass_options);
+                    _apply_passes(al, asr, _passes, pass_options, diagnostics);
                 }
             }
         }

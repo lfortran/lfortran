@@ -578,7 +578,8 @@ public:
 
 } // namespace ASR
 
-bool asr_verify(const ASR::TranslationUnit_t &unit, bool check_external) {
+bool asr_verify(const ASR::TranslationUnit_t &unit, bool check_external,
+            diag::Diagnostics &diagnostics) {
     ASR::VerifyVisitor v(check_external);
     v.visit_TranslationUnit(unit);
     return true;
