@@ -502,10 +502,12 @@ public:
             char *arg=x.m_args[i].m_arg;
             current_procedure_args.push_back(to_lower(arg));
         }
+
         // Determine the ABI (Source or BindC for now)
         current_procedure_abi_type = ASR::abiType::Source;
         char *bindc_name=nullptr;
         extract_bind(x, current_procedure_abi_type, bindc_name);
+
         for (size_t i=0; i<x.n_use; i++) {
             visit_unit_decl1(*x.m_use[i]);
         }
