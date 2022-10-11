@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <utility>
+#include <filesystem>
 
 
 namespace LFortran {
