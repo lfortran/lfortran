@@ -31,12 +31,13 @@ class ImpliedDoLoopVisitor : public PassUtils::PassVisitor<ImpliedDoLoopVisitor>
 {
 private:
     bool contains_array;
+    std::string rl_path;
 public:
     // Public to surpress a warning
     ASR::TranslationUnit_t &unit;
 
-    ImpliedDoLoopVisitor(Allocator &al, ASR::TranslationUnit_t& unit) :
-             PassVisitor(al, nullptr), contains_array{false}, unit{unit} {
+    ImpliedDoLoopVisitor(Allocator &al, ASR::TranslationUnit_t& unit, const std::string rl_path) :
+	PassVisitor(al, nullptr), contains_array{false}, rl_path{rl_path}, unit{unit} {
         pass_result.reserve(al, 1);
     }
 
@@ -242,9 +243,9 @@ public:
 
 void pass_replace_implied_do_loops(Allocator &al, ASR::TranslationUnit_t &unit,
                                    const LCompilers::PassOptions& /* pass_options */,
-				   const LFortran::CompilerOptions& /* compiler_options */) {
-    // std::string rl_path = pass_options.runtime_library_dir;
-    ImpliedDoLoopVisitor v(al, unit);
+				   const LFortran::CompilerOptions& compiler_options) {
+    std::string rl_path = compiler_options.rl_path;
+    ImpliedDoLoopVisitor v(al, unit, rl_path);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));
 }
