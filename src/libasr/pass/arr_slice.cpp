@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <map>
 #include <utility>
+#include <filesystem>
 
 
 namespace LFortran {
@@ -39,10 +40,10 @@ private:
 
     int slice_counter;
 
-    std::string rl_path;
+    std::filesystem::path rl_path;
 
 public:
-    ArrSliceVisitor(Allocator &al, const std::string &rl_path) : PassVisitor(al, nullptr),
+    ArrSliceVisitor(Allocator &al, const std::filesystem::path &rl_path) : PassVisitor(al, nullptr),
     slice_var(nullptr), create_slice_var(false), slice_counter(0),
     rl_path(rl_path)
     {
@@ -274,9 +275,9 @@ public:
 };
 
 void pass_replace_arr_slice(Allocator &al, ASR::TranslationUnit_t &unit,
-                            const LCompilers::PassOptions& pass_options) {
-    std::string rl_path = pass_options.runtime_library_dir;
-    ArrSliceVisitor v(al, rl_path);
+                            const LCompilers::PassOptions& /* pass_options */,
+			    const LFortran::CompilerOptions& compiler_options) {
+    ArrSliceVisitor v(al, compiler_options.rl_path);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));
 }
