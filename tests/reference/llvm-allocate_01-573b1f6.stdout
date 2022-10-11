@@ -17,7 +17,7 @@ source_filename = "LFortran"
 @7 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
 @8 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
 
-define %complex_4 @reduce_sum_c(%complex_4* %c, i32* %"1c", i32* %"2c", i32* %"3c", i32* %"4c", i32* %"5c", i32* %"6c") {
+define %complex_4 @reduce_sum_c(%complex_4* %c, i32* %__1c, i32* %__2c, i32* %__3c, i32* %__4c, i32* %__5c, i32* %__6c) {
 .entry:
   %i = alloca i32, align 4
   %j = alloca i32, align 4
@@ -30,7 +30,7 @@ define %complex_4 @reduce_sum_c(%complex_4* %c, i32* %"1c", i32* %"2c", i32* %"3
   store float 0.000000e+00, float* %2, align 4
   %3 = load %complex_4, %complex_4* %0, align 4
   store %complex_4 %3, %complex_4* %r, align 4
-  %4 = load i32, i32* %"1c", align 4
+  %4 = load i32, i32* %__1c, align 4
   %5 = sub i32 %4, 1
   store i32 %5, i32* %i, align 4
   br label %loop.head
@@ -38,8 +38,8 @@ define %complex_4 @reduce_sum_c(%complex_4* %c, i32* %"1c", i32* %"2c", i32* %"3
 loop.head:                                        ; preds = %loop.end5, %.entry
   %6 = load i32, i32* %i, align 4
   %7 = add i32 %6, 1
-  %8 = load i32, i32* %"2c", align 4
-  %9 = load i32, i32* %"1c", align 4
+  %8 = load i32, i32* %__2c, align 4
+  %9 = load i32, i32* %__1c, align 4
   %10 = add i32 %8, %9
   %11 = sub i32 %10, 1
   %12 = icmp sle i32 %7, %11
@@ -49,7 +49,7 @@ loop.body:                                        ; preds = %loop.head
   %13 = load i32, i32* %i, align 4
   %14 = add i32 %13, 1
   store i32 %14, i32* %i, align 4
-  %15 = load i32, i32* %"3c", align 4
+  %15 = load i32, i32* %__3c, align 4
   %16 = sub i32 %15, 1
   store i32 %16, i32* %j, align 4
   br label %loop.head1
@@ -57,8 +57,8 @@ loop.body:                                        ; preds = %loop.head
 loop.head1:                                       ; preds = %loop.end, %loop.body
   %17 = load i32, i32* %j, align 4
   %18 = add i32 %17, 1
-  %19 = load i32, i32* %"4c", align 4
-  %20 = load i32, i32* %"3c", align 4
+  %19 = load i32, i32* %__4c, align 4
+  %20 = load i32, i32* %__3c, align 4
   %21 = add i32 %19, %20
   %22 = sub i32 %21, 1
   %23 = icmp sle i32 %18, %22
@@ -68,7 +68,7 @@ loop.body2:                                       ; preds = %loop.head1
   %24 = load i32, i32* %j, align 4
   %25 = add i32 %24, 1
   store i32 %25, i32* %j, align 4
-  %26 = load i32, i32* %"5c", align 4
+  %26 = load i32, i32* %__5c, align 4
   %27 = sub i32 %26, 1
   store i32 %27, i32* %k, align 4
   br label %loop.head3
@@ -76,8 +76,8 @@ loop.body2:                                       ; preds = %loop.head1
 loop.head3:                                       ; preds = %loop.body4, %loop.body2
   %28 = load i32, i32* %k, align 4
   %29 = add i32 %28, 1
-  %30 = load i32, i32* %"6c", align 4
-  %31 = load i32, i32* %"5c", align 4
+  %30 = load i32, i32* %__6c, align 4
+  %31 = load i32, i32* %__5c, align 4
   %32 = add i32 %30, %31
   %33 = sub i32 %32, 1
   %34 = icmp sle i32 %29, %33
@@ -91,12 +91,12 @@ loop.body4:                                       ; preds = %loop.head3
   %38 = load i32, i32* %i, align 4
   %39 = load i32, i32* %j, align 4
   %40 = load i32, i32* %k, align 4
-  %41 = load i32, i32* %"1c", align 4
-  %42 = load i32, i32* %"2c", align 4
-  %43 = load i32, i32* %"3c", align 4
-  %44 = load i32, i32* %"4c", align 4
-  %45 = load i32, i32* %"5c", align 4
-  %46 = load i32, i32* %"6c", align 4
+  %41 = load i32, i32* %__1c, align 4
+  %42 = load i32, i32* %__2c, align 4
+  %43 = load i32, i32* %__3c, align 4
+  %44 = load i32, i32* %__4c, align 4
+  %45 = load i32, i32* %__5c, align 4
+  %46 = load i32, i32* %__6c, align 4
   %47 = sub i32 %38, %41
   %48 = mul i32 1, %47
   %49 = add i32 0, %48

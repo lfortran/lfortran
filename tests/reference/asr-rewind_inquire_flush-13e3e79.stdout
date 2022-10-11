@@ -204,6 +204,7 @@
                         (Var 2 len)
                     )
                     (GoToTarget 
+                        10 
                         10
                     )
                     (Print 
@@ -216,6 +217,7 @@
                         ()
                     )
                     (GoToTarget 
+                        20 
                         20
                     )
                     (Print 

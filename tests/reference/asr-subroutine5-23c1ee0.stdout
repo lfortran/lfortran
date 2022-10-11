@@ -55,7 +55,6 @@
                     [(Var 2 a)
                     (Var 2 b)
                     (Var 2 c)] 
-                    [] 
                     [(= 
                         (Var 2 c) 
                         (RealBinOp 
@@ -75,6 +74,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             

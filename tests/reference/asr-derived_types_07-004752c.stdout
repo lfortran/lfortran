@@ -59,7 +59,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 logger_type 
                                                         []
                                                     ) 
@@ -87,7 +87,6 @@
                                     final_logger 
                                     [(Var 4 self)] 
                                     [] 
-                                    [] 
                                     () 
                                     Source 
                                     Private 
@@ -96,10 +95,14 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             logger_type:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         3
                                         {

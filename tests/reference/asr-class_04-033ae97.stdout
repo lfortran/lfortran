@@ -8,7 +8,7 @@
                         2
                         {
                             bar_a:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         3
                                         {
@@ -35,7 +35,7 @@
                                     ()
                                 ), 
                             bar_b:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         5
                                         {
@@ -62,7 +62,7 @@
                                     2 bar_a
                                 ), 
                             bar_c:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         6
                                         {
@@ -96,7 +96,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Derived 
+                                    (Struct 
                                         2 foo_c 
                                         []
                                     ) 
@@ -106,7 +106,7 @@
                                     .false.
                                 ), 
                             foo_a:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         4
                                         {
@@ -118,7 +118,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 bar_a 
                                                         []
                                                     ) 
@@ -136,7 +136,7 @@
                                     ()
                                 ), 
                             foo_b:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         7
                                         {
@@ -148,7 +148,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 bar_b 
                                                         []
                                                     ) 
@@ -166,7 +166,7 @@
                                     2 foo_a
                                 ), 
                             foo_c:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         8
                                         {
@@ -178,7 +178,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 bar_c 
                                                         []
                                                     ) 
@@ -200,11 +200,11 @@
                     main 
                     [] 
                     [(= 
-                        (DerivedRef 
-                            (DerivedRef 
+                        (StructInstanceMember 
+                            (StructInstanceMember 
                                 (Var 2 foo) 
                                 4 m_bar_a 
-                                (Derived 
+                                (Struct 
                                     2 bar_a 
                                     []
                                 ) 
@@ -222,11 +222,11 @@
                         ()
                     )
                     (= 
-                        (DerivedRef 
-                            (DerivedRef 
+                        (StructInstanceMember 
+                            (StructInstanceMember 
                                 (Var 2 foo) 
                                 7 m_bar_b 
-                                (Derived 
+                                (Struct 
                                     2 bar_b 
                                     []
                                 ) 
@@ -240,11 +240,11 @@
                         ()
                     )
                     (= 
-                        (DerivedRef 
-                            (DerivedRef 
+                        (StructInstanceMember 
+                            (StructInstanceMember 
                                 (Var 2 foo) 
                                 8 m_bar_c 
-                                (Derived 
+                                (Struct 
                                     2 bar_c 
                                     []
                                 ) 
@@ -259,11 +259,11 @@
                     )
                     (Print 
                         () 
-                        [(DerivedRef 
-                            (DerivedRef 
+                        [(StructInstanceMember 
+                            (StructInstanceMember 
                                 (Var 2 foo) 
                                 4 m_bar_a 
-                                (Derived 
+                                (Struct 
                                     2 bar_a 
                                     []
                                 ) 
@@ -278,11 +278,11 @@
                     )
                     (Print 
                         () 
-                        [(DerivedRef 
-                            (DerivedRef 
+                        [(StructInstanceMember 
+                            (StructInstanceMember 
                                 (Var 2 foo) 
                                 7 m_bar_b 
-                                (Derived 
+                                (Struct 
                                     2 bar_b 
                                     []
                                 ) 
@@ -297,11 +297,11 @@
                     )
                     (Print 
                         () 
-                        [(DerivedRef 
-                            (DerivedRef 
+                        [(StructInstanceMember 
+                            (StructInstanceMember 
                                 (Var 2 foo) 
                                 8 m_bar_c 
-                                (Derived 
+                                (Struct 
                                     2 bar_c 
                                     []
                                 ) 
@@ -318,11 +318,11 @@
                         (IntegerCompare 
                             (IntegerBinOp 
                                 (IntegerBinOp 
-                                    (DerivedRef 
-                                        (DerivedRef 
+                                    (StructInstanceMember 
+                                        (StructInstanceMember 
                                             (Var 2 foo) 
                                             4 m_bar_a 
-                                            (Derived 
+                                            (Struct 
                                                 2 bar_a 
                                                 []
                                             ) 
@@ -333,11 +333,11 @@
                                         ()
                                     ) 
                                     Add 
-                                    (DerivedRef 
-                                        (DerivedRef 
+                                    (StructInstanceMember 
+                                        (StructInstanceMember 
                                             (Var 2 foo) 
                                             7 m_bar_b 
-                                            (Derived 
+                                            (Struct 
                                                 2 bar_b 
                                                 []
                                             ) 
@@ -351,11 +351,11 @@
                                     ()
                                 ) 
                                 Add 
-                                (DerivedRef 
-                                    (DerivedRef 
+                                (StructInstanceMember 
+                                    (StructInstanceMember 
                                         (Var 2 foo) 
                                         8 m_bar_c 
-                                        (Derived 
+                                        (Struct 
                                             2 bar_c 
                                             []
                                         ) 

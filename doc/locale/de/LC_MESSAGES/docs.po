@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-08-19 09:32+0000\n"
-"Last-Translator: Sebastian Ehlert <awvwgk@gmail.com>\n"
+"PO-Revision-Date: 2022-10-10 18:45+0000\n"
+"Last-Translator: Ralf Wuthenow <Ralfi.Burghardt@googlemail.com>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/de/>\n"
 "Language: de\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.14-dev\n"
+"X-Generator: Weblate 4.14.1\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../../doc/src/ast_and_asr.ipynb:9
@@ -116,7 +116,7 @@ msgstr ""
 
 #: ../../doc/src/contributing.md:8
 msgid "Basic Setup"
-msgstr ""
+msgstr "Grundeinstellung"
 
 #: ../../doc/src/contributing.md:10
 msgid "To contribute, make sure your set up:"
@@ -124,11 +124,11 @@ msgstr ""
 
 #: ../../doc/src/contributing.md:12
 msgid "Your username + email"
-msgstr ""
+msgstr "Ihr Benutzername + E-Mail"
 
 #: ../../doc/src/contributing.md:13
 msgid "Your `~/.gitconfig`"
-msgstr ""
+msgstr "Ihre `~/.gitconfig`"
 
 #: ../../doc/src/contributing.md:14
 msgid "Your shell prompt to display the current branch name"
@@ -136,7 +136,7 @@ msgstr ""
 
 #: ../../doc/src/contributing.md:16
 msgid "Fork LFortran"
-msgstr ""
+msgstr "LFortran abspalten"
 
 #: ../../doc/src/contributing.md:18
 msgid ""
@@ -180,11 +180,11 @@ msgstr ""
 
 #: ../../doc/src/contributing.md:37
 msgid "Step 1. Create a new branch"
-msgstr ""
+msgstr "Schritt 1. Erstellen Sie einen neuen Zweig"
 
 #: ../../doc/src/contributing.md:42
 msgid "Step 2. Make changes in relevant file(s)"
-msgstr ""
+msgstr "Schritt 2. Nehmen Sie Änderungen in der/den betreffenden Datei(en) vor"
 
 #: ../../doc/src/contributing.md:44
 msgid "Step 3. Commit the changes:"
@@ -215,7 +215,7 @@ msgstr ""
 
 #: ../../doc/src/contributing.md:66
 msgid "Add New Features"
-msgstr ""
+msgstr "Neue Funktionen hinzufügen"
 
 #: ../../doc/src/contributing.md:68
 msgid ""
@@ -225,7 +225,7 @@ msgstr ""
 
 #: ../../doc/src/contributing.md:70
 msgid "Create New Token(s)"
-msgstr ""
+msgstr "Neue(s) Token erstellen"
 
 #: ../../doc/src/contributing.md:72
 msgid ""
@@ -815,7 +815,7 @@ msgstr ""
 
 #: ../../doc/src/developer_tutorial.ipynb:14
 msgid "Introduction"
-msgstr ""
+msgstr "Einführung"
 
 #: ../../doc/src/developer_tutorial.ipynb:18
 msgid ""
@@ -1516,7 +1516,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:328
 msgid "Ubuntu"
-msgstr ""
+msgstr "Ubuntu"
 
 #: ../../doc/src/installation.md:330
 msgid "In Ubuntu, `apt install binutils-dev`."
@@ -3843,7 +3843,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md
 msgid "LLVM"
-msgstr ""
+msgstr "LLVM"
 
 #: ../../doc/src/progress.md
 msgid "BIN"

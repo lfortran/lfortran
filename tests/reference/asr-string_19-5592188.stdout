@@ -56,7 +56,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 string_type 
                                                         []
                                                     ) 
@@ -70,7 +70,6 @@
                                     char_string 
                                     [(Var 5 string)] 
                                     [] 
-                                    [] 
                                     (Var 5 character_string) 
                                     Source 
                                     Public 
@@ -79,6 +78,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             len:
@@ -115,7 +118,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 string_type 
                                                         []
                                                     ) 
@@ -129,7 +132,6 @@
                                     len_string 
                                     [(Var 4 string)] 
                                     [] 
-                                    [] 
                                     (Var 4 length) 
                                     Source 
                                     Public 
@@ -138,10 +140,14 @@
                                     .true. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             string_type:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         3
                                         {
@@ -255,7 +261,6 @@
                                     compute_lps 
                                     [(Var 7 string)] 
                                     [] 
-                                    [] 
                                     (Var 7 lps_array) 
                                     Source 
                                     Public 
@@ -264,6 +269,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             compute_lps_use:
@@ -313,7 +322,6 @@
                                         }) 
                                     compute_lps_use 
                                     [(Var 32 string)] 
-                                    [] 
                                     [(Print 
                                         () 
                                         [(FunctionCall 
@@ -343,6 +351,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             compute_lps_use1:
@@ -392,7 +404,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         6 string_type 
                                                         []
                                                     ) 
@@ -405,7 +417,6 @@
                                         }) 
                                     compute_lps_use1 
                                     [(Var 33 string)] 
-                                    [] 
                                     [(Print 
                                         () 
                                         [(FunctionCall 
@@ -434,6 +445,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             len:
@@ -543,7 +558,6 @@
                                     padl_char_default 
                                     [(Var 36 string)
                                     (Var 36 output_length)] 
-                                    [] 
                                     [(= 
                                         (Var 36 res) 
                                         (FunctionCall 
@@ -584,6 +598,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             padl_char_pad_with:
@@ -713,7 +731,6 @@
                                     (Var 37 output_length)
                                     (Var 37 pad_with)] 
                                     [] 
-                                    [] 
                                     (Var 37 res) 
                                     Source 
                                     Public 
@@ -722,6 +739,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             padl_string_default:
@@ -791,7 +812,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         6 string_type 
                                                         []
                                                     ) 
@@ -808,7 +829,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         6 string_type 
                                                         []
                                                     ) 
@@ -822,10 +843,9 @@
                                     padl_string_default 
                                     [(Var 34 string)
                                     (Var 34 output_length)] 
-                                    [] 
                                     [(= 
                                         (Var 34 res) 
-                                        (DerivedTypeConstructor 
+                                        (StructTypeConstructor 
                                             6 string_type 
                                             [(FunctionCall 
                                                 6 padl_char_pad_with 
@@ -883,7 +903,7 @@
                                                 () 
                                                 ()
                                             )] 
-                                            (Derived 
+                                            (Struct 
                                                 6 string_type 
                                                 []
                                             ) 
@@ -899,6 +919,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             padl_string_pad_with:
@@ -982,7 +1006,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         6 string_type 
                                                         []
                                                     ) 
@@ -999,7 +1023,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         6 string_type 
                                                         []
                                                     ) 
@@ -1014,10 +1038,9 @@
                                     [(Var 35 string)
                                     (Var 35 output_length)
                                     (Var 35 pad_with)] 
-                                    [] 
                                     [(= 
                                         (Var 35 res) 
-                                        (DerivedTypeConstructor 
+                                        (StructTypeConstructor 
                                             6 string_type 
                                             [(FunctionCall 
                                                 6 padl_char_pad_with 
@@ -1072,7 +1095,7 @@
                                                 () 
                                                 ()
                                             )] 
-                                            (Derived 
+                                            (Struct 
                                                 6 string_type 
                                                 []
                                             ) 
@@ -1088,6 +1111,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             string_type:

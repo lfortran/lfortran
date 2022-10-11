@@ -8,7 +8,7 @@
                         2
                         {
                             complextype:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         3
                                         {
@@ -114,7 +114,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 complextype 
                                                         []
                                                     ) 
@@ -147,7 +147,6 @@
                                     (Var 4 r)
                                     (Var 4 i)
                                     (Var 4 sum)] 
-                                    [] 
                                     [(Print 
                                         () 
                                         [(StringConstant 
@@ -158,14 +157,14 @@
                                         ()
                                     )
                                     (= 
-                                        (DerivedRef 
+                                        (StructInstanceMember 
                                             (Var 4 sum) 
                                             3 r 
                                             (Real 4 []) 
                                             ()
                                         ) 
                                         (RealBinOp 
-                                            (DerivedRef 
+                                            (StructInstanceMember 
                                                 (Var 4 this) 
                                                 3 r 
                                                 (Real 4 []) 
@@ -184,14 +183,14 @@
                                         ()
                                     )
                                     (= 
-                                        (DerivedRef 
+                                        (StructInstanceMember 
                                             (Var 4 sum) 
                                             3 i 
                                             (Real 4 []) 
                                             ()
                                         ) 
                                         (RealBinOp 
-                                            (DerivedRef 
+                                            (StructInstanceMember 
                                                 (Var 4 this) 
                                                 3 i 
                                                 (Real 4 []) 
@@ -217,6 +216,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             real_add_subrout:
@@ -260,7 +263,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 complextype 
                                                         []
                                                     ) 
@@ -293,7 +296,6 @@
                                     (Var 5 r)
                                     (Var 5 i)
                                     (Var 5 sum)] 
-                                    [] 
                                     [(Print 
                                         () 
                                         [(StringConstant 
@@ -304,14 +306,14 @@
                                         ()
                                     )
                                     (= 
-                                        (DerivedRef 
+                                        (StructInstanceMember 
                                             (Var 5 sum) 
                                             3 r 
                                             (Real 4 []) 
                                             ()
                                         ) 
                                         (RealBinOp 
-                                            (DerivedRef 
+                                            (StructInstanceMember 
                                                 (Var 5 this) 
                                                 3 r 
                                                 (Real 4 []) 
@@ -325,14 +327,14 @@
                                         ()
                                     )
                                     (= 
-                                        (DerivedRef 
+                                        (StructInstanceMember 
                                             (Var 5 sum) 
                                             3 i 
                                             (Real 4 []) 
                                             ()
                                         ) 
                                         (RealBinOp 
-                                            (DerivedRef 
+                                            (StructInstanceMember 
                                                 (Var 5 this) 
                                                 3 i 
                                                 (Real 4 []) 
@@ -353,6 +355,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             
@@ -375,7 +381,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Derived 
+                                    (Struct 
                                         6 complextype 
                                         []
                                     ) 
@@ -392,7 +398,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Derived 
+                                    (Struct 
                                         6 complextype 
                                         []
                                     ) 
@@ -550,11 +556,11 @@
                     )
                     (= 
                         (Var 6 c) 
-                        (DerivedTypeConstructor 
+                        (StructTypeConstructor 
                             6 complextype 
                             [(Var 6 fpone)
                             (Var 6 fptwo)] 
-                            (Derived 
+                            (Struct 
                                 6 complextype 
                                 []
                             ) 
@@ -572,13 +578,13 @@
                     )
                     (Print 
                         () 
-                        [(DerivedRef 
+                        [(StructInstanceMember 
                             (Var 6 a) 
                             3 r 
                             (Real 4 []) 
                             ()
                         )
-                        (DerivedRef 
+                        (StructInstanceMember 
                             (Var 6 a) 
                             3 i 
                             (Real 4 []) 
@@ -597,13 +603,13 @@
                     )
                     (Print 
                         () 
-                        [(DerivedRef 
+                        [(StructInstanceMember 
                             (Var 6 a) 
                             3 r 
                             (Real 4 []) 
                             ()
                         )
-                        (DerivedRef 
+                        (StructInstanceMember 
                             (Var 6 a) 
                             3 i 
                             (Real 4 []) 

@@ -30,7 +30,6 @@
                                         }) 
                                     sub 
                                     [(Var 3 a)] 
-                                    [] 
                                     [(= 
                                         (Var 3 a) 
                                         (IntegerBinOp 
@@ -66,6 +65,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             x:

@@ -34,7 +34,7 @@
                         2
                         {
                             circle:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         3
                                         {
@@ -116,14 +116,13 @@
                                         }) 
                                     circle_area 
                                     [(Var 4 this)] 
-                                    [] 
                                     [(= 
                                         (Var 4 circle_area) 
                                         (RealBinOp 
                                             (Var 2 pi) 
                                             Mul 
                                             (RealBinOp 
-                                                (DerivedRef 
+                                                (StructInstanceMember 
                                                     (Var 4 this) 
                                                     3 radius 
                                                     (Real 4 []) 
@@ -155,6 +154,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             circle_print:
@@ -197,7 +200,6 @@
                                         }) 
                                     circle_print 
                                     [(Var 5 this)] 
-                                    [] 
                                     [(= 
                                         (Var 5 area) 
                                         (FunctionCall 
@@ -216,7 +218,7 @@
                                             "Circle: r = " 
                                             (Character 1 12 () [])
                                         )
-                                        (DerivedRef 
+                                        (StructInstanceMember 
                                             (Var 5 this) 
                                             3 radius 
                                             (Real 4 []) 
@@ -238,6 +240,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             main:
@@ -253,7 +259,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 circle 
                                                         []
                                                     ) 
@@ -266,16 +272,15 @@
                                         }) 
                                     main 
                                     [] 
-                                    [] 
                                     [(= 
                                         (Var 6 c) 
-                                        (DerivedTypeConstructor 
+                                        (StructTypeConstructor 
                                             2 circle 
                                             [(RealConstant 
                                                 1.000000 
                                                 (Real 4 [])
                                             )] 
-                                            (Derived 
+                                            (Struct 
                                                 2 circle 
                                                 []
                                             ) 
@@ -284,7 +289,7 @@
                                         ()
                                     )
                                     (= 
-                                        (DerivedRef 
+                                        (StructInstanceMember 
                                             (Var 6 c) 
                                             3 radius 
                                             (Real 4 []) 
@@ -310,6 +315,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             pi:

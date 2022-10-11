@@ -120,7 +120,6 @@
                                         }) 
                                     f 
                                     [(Var 4 a)] 
-                                    [] 
                                     [(= 
                                         (Var 4 b) 
                                         (RealBinOp 
@@ -150,6 +149,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             f_real:
@@ -189,7 +192,6 @@
                                         }) 
                                     f_real 
                                     [(Var 5 a)] 
-                                    [] 
                                     [(If 
                                         (RealCompare 
                                             (Var 5 a) 
@@ -239,6 +241,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             p:

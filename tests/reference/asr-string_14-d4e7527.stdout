@@ -83,7 +83,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 string_type 
                                                         []
                                                     ) 
@@ -130,7 +130,6 @@
                                     (Var 5 v_list)
                                     (Var 5 iostat)
                                     (Var 5 iomsg)] 
-                                    [] 
                                     [(ImplicitDeallocate 
                                         [5 line]
                                     )] 
@@ -142,10 +141,14 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             string_type:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         3
                                         {
@@ -226,7 +229,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 string_type 
                                                         []
                                                     ) 
@@ -274,7 +277,6 @@
                                     (Var 4 iostat)
                                     (Var 4 iomsg)] 
                                     [] 
-                                    [] 
                                     () 
                                     Source 
                                     Private 
@@ -283,6 +285,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

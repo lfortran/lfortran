@@ -30,7 +30,6 @@
                                         }) 
                                     print_int 
                                     [] 
-                                    [] 
                                     [(Print 
                                         () 
                                         [(Var 3 a)] 
@@ -45,6 +44,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

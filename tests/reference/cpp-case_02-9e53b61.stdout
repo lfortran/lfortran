@@ -32,53 +32,11 @@ namespace {
 void main2() {
     int32_t marks;
     marks = 81;
-    if (91 <= marks && marks <= 100) {
-        std::cout << "Excellent!" << std::endl;
-    } else if (81 <= marks && marks <= 90) {
-        std::cout << "Very good!" << std::endl;
-    } else if (71 <= marks && marks <= 80) {
-        std::cout << "Well done!" << std::endl;
-    } else if (61 <= marks && marks <= 70) {
-        std::cout << "Not bad!" << std::endl;
-    } else if (41 <= marks && marks <= 60) {
-        std::cout << "You passed!" << std::endl;
-    } else if (marks <= 40) {
-        std::cout << "Better try again!" << std::endl;
-    } else {
-        std::cout << "Invalid marks" << std::endl;
-    }
+    // FIXME: select case()
     std::cout << "Your marks are " << " " << marks << std::endl;
-    if (91 <= marks && marks <= 100) {
-        std::cout << "Excellent!" << std::endl;
-    } else if (81 <= marks && marks <= 90) {
-        std::cout << "Very good!" << std::endl;
-    } else if (71 <= marks && marks <= 80) {
-        std::cout << "Well done!" << std::endl;
-    } else if (61 <= marks && marks <= 70) {
-        std::cout << "Not bad!" << std::endl;
-    } else if (41 <= marks && marks <= 60) {
-        std::cout << "You passed!" << std::endl;
-    } else if (marks <= 40) {
-        std::cout << "Better try again!" << std::endl;
-    } else {
-        std::cout << "Invalid marks" << std::endl;
-    }
+    // FIXME: select case()
     std::cout << "Your marks are " << " " << marks << std::endl;
-    if (91 <= marks && marks <= 100) {
-        std::cout << "Excellent!" << std::endl;
-    } else if (81 <= marks && marks <= 90) {
-        std::cout << "Very good!" << std::endl;
-    } else if (71 <= marks && marks <= 80) {
-        std::cout << "Well done!" << std::endl;
-    } else if (61 <= marks && marks <= 70) {
-        std::cout << "Not bad!" << std::endl;
-    } else if (41 <= marks && marks <= 60) {
-        std::cout << "You passed!" << std::endl;
-    } else if (marks <= 40) {
-        std::cout << "Better try again!" << std::endl;
-    } else {
-        std::cout << "Invalid marks" << std::endl;
-    }
+    // FIXME: select case()
     std::cout << "Your marks are " << " " << marks << std::endl;
 }
 

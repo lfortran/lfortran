@@ -80,7 +80,6 @@
                                     imodulo 
                                     [(Var 4 x)
                                     (Var 4 y)] 
-                                    [] 
                                     [(= 
                                         (Var 4 r) 
                                         (IntegerBinOp 
@@ -112,6 +111,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             sfloor:
@@ -151,7 +154,6 @@
                                         }) 
                                     sfloor 
                                     [(Var 3 x)] 
-                                    [] 
                                     [(= 
                                         (Var 3 r) 
                                         (Cast 
@@ -170,6 +172,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

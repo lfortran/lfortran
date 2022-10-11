@@ -113,7 +113,6 @@
                                     [(Var 3 a)
                                     (Var 3 b)
                                     (Var 3 c)] 
-                                    [] 
                                     [(= 
                                         (Var 3 d) 
                                         (RealBinOp 
@@ -149,6 +148,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             b:
@@ -259,7 +262,6 @@
                                         }) 
                                     check 
                                     [(Var 4 c)] 
-                                    [] 
                                     [(DoLoop 
                                         ((Var 4 i) 
                                         (ArrayBound 
@@ -371,6 +373,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             d:

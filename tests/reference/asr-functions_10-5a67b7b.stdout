@@ -87,7 +87,6 @@
                                     (Var 3 b)
                                     (Var 3 m)] 
                                     [] 
-                                    [] 
                                     (Var 3 r) 
                                     Source 
                                     Public 
@@ -96,6 +95,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             merger32:
@@ -169,7 +172,6 @@
                                     (Var 4 b)
                                     (Var 4 m)] 
                                     [] 
-                                    [] 
                                     (Var 4 r) 
                                     Source 
                                     Public 
@@ -178,6 +180,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             merger64:
@@ -251,7 +257,6 @@
                                     (Var 5 b)
                                     (Var 5 m)] 
                                     [] 
-                                    [] 
                                     (Var 5 r) 
                                     Source 
                                     Public 
@@ -260,6 +265,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

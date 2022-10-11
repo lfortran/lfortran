@@ -145,7 +145,6 @@
                                     all_set 
                                     [(Var 3 x)
                                     (Var 3 num_bits)] 
-                                    [] 
                                     [(= 
                                         (Var 3 res) 
                                         (LogicalConstant 
@@ -198,6 +197,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             
