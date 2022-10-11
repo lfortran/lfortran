@@ -800,6 +800,15 @@ public:
         return false;
     }
 
+    void visit_Format(const AST::Format_t &x) {
+        diag.semantic_warning_label(
+            "Format statement is not implemented yet, for now we will ignore it",
+            {x.base.base.loc},
+            "ignored for now"
+        );
+        tmp = nullptr;
+    }
+
     void visit_DataStmt(const AST::DataStmt_t &x) {
         // The DataStmt is a statement, so it occurs in the BodyVisitor.
         // We add its contents into the symbol table here. This visitor
