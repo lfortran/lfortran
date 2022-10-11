@@ -103,7 +103,6 @@
                                     (Var 3 prinf_arg_1)
                                     (Var 3 prinf_arg_2)] 
                                     [] 
-                                    [] 
                                     () 
                                     Source 
                                     Public 
@@ -112,6 +111,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             w:
@@ -164,7 +167,6 @@
                     (Var 2 w)
                     (Var 2 x)
                     (Var 2 y)] 
-                    [] 
                     [(SubroutineCall 
                         2 prinf 
                         () 
@@ -208,6 +210,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             

@@ -44,7 +44,6 @@
                                         }) 
                                     add_z 
                                     [(Var 5 x)] 
-                                    [] 
                                     [(= 
                                         (Var 5 y) 
                                         (IntegerBinOp 
@@ -64,6 +63,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             apply:
@@ -109,7 +112,6 @@
                                                     fun 
                                                     [(Var 4 x)] 
                                                     [] 
-                                                    [] 
                                                     (Var 4 fun) 
                                                     Source 
                                                     Public 
@@ -118,6 +120,10 @@
                                                     .false. 
                                                     .false. 
                                                     .false. 
+                                                    .false. 
+                                                    .false. 
+                                                    [] 
+                                                    [] 
                                                     .false.
                                                 ), 
                                             x:
@@ -153,7 +159,6 @@
                                     apply 
                                     [(Var 3 fun)
                                     (Var 3 x)] 
-                                    [] 
                                     [(= 
                                         (Var 3 y) 
                                         (FunctionCall 
@@ -174,6 +179,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             z:

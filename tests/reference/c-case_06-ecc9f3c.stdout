@@ -47,59 +47,15 @@ int main(int argc, char* argv[])
     float cp=  1.00000000000000000e+00;
     static float d=  2.00000000000000000e+00;
     float dp=  2.00000000000000000e+00;
-    char * grade_fixed="B";
+    char * grade_fixed = (char*) malloc(40 * sizeof(char));
     int32_t marks;
     int32_t marks_fixed=94;
-    if (grade_fixed == "A") {
-        printf("%s\n", "Excellent!");
-    } else if (grade_fixed == "B") {
-        if (a == b) {
-            printf("%s\n", "a == b");
-            if (ap == bp) {
-                printf("%s\n", "ap == bp");
-            } else {
-                printf("%s\n", "ap /= bp");
-            }
-        } else {
-            if ((float)(ap) == cp) {
-                printf("%s\n", "ap == cp");
-                if (cp == dp) {
-                    printf("%s\n", "cp == dp");
-                } else {
-                    printf("%s\n", "cp /= dp");
-                }
-            } else {
-                if (c == d) {
-                    printf("%s\n", "c == d");
-                }
-            }
-        }
-    } else if (grade_fixed == "C") {
-        printf("%s\n", "Well done");
-    } else if (grade_fixed == "D") {
-        printf("%s\n", "You passed");
-    } else if (grade_fixed == "F") {
-        printf("%s\n", "Better try again");
-    } else {
-        printf("%s\n", "Invalid grade");
-    }
+    // FIXME: select case()
     printf("%s%s%s\n", "Your grade is ", " ", grade_fixed);
     marks = 94;
-    if (marks >= 40 + bp) {
-        printf("%s\n", "Pass!");
-    } else if (marks <= 39 - ap) {
-        printf("%s\n", "Failed!");
-    } else {
-        printf("%s\n", "Invalid marks");
-    }
+    // FIXME: select case()
     printf("%s%s%d\n", "Your marks are ", " ", marks);
-    if (marks_fixed >= 40 + bp) {
-        printf("%s\n", "Pass!");
-    } else if (0 <= marks_fixed && marks_fixed <= 39 - ap) {
-        printf("%s\n", "Failed!");
-    } else {
-        printf("%s\n", "Invalid marks");
-    }
+    // FIXME: select case()
     printf("%s%s%d\n", "Your marks are ", " ", marks);
     return 0;
 }

@@ -341,13 +341,13 @@ public:
             /* a_name */ s2c(al, to_lower(sym_name)),
             /* a_args */ args.p,
             /* n_args */ args.size(),
-            nullptr, 0,
             /* a_body */ nullptr,
             /* n_body */ 0,
             nullptr,
             current_procedure_abi_type,
             s_access, deftype, bindc_name,
-            is_pure, is_module, false, false);
+            is_pure, is_module, false, false, false,
+            nullptr, 0, nullptr, 0, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         /* FIXME: This can become incorrect/get cleared prematurely, perhaps
@@ -630,8 +630,8 @@ public:
                             }
                         }
                     }
-                    if(type_param) type = LFortran::ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, nullptr, nullptr, 0, nullptr, 0));
-                    else type = LFortran::ASRUtils::TYPE(ASR::make_Derived_t(al, x.base.base.loc, v,
+                    if(type_param) type = LFortran::ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, nullptr, nullptr, 0));
+                    else type = LFortran::ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v,
                         nullptr, 0));
                     break;
                 }
@@ -710,13 +710,13 @@ public:
             /* a_name */ s2c(al, to_lower(sym_name)),
             /* a_args */ args.p,
             /* n_args */ args.size(),
-            /* a_type_parameters */ is_current_procedure_templated ? params.p : nullptr,
-            /* n_type_parameters */ params.size(),
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ LFortran::ASRUtils::EXPR(return_var_ref),
             current_procedure_abi_type, s_access, deftype,
-            bindc_name, is_elemental, false, false, false);
+            bindc_name, is_elemental, false, false, false, false,
+            /* a_type_parameters */ is_current_procedure_templated ? params.p : nullptr,
+            /* n_type_parameters */ params.size(), nullptr, 0, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         current_procedure_args.clear();
@@ -783,9 +783,9 @@ public:
             parent_sym = parent_scope->get_symbol(parent_sym_name);
         }
         if(is_template && data_member_names.size() == 0){
-            current_template_type_parameters.push_back(ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0, nullptr, 0));
+            current_template_type_parameters.push_back(ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0));
         }
-        tmp = ASR::make_DerivedType_t(al, x.base.base.loc, current_scope,
+        tmp = ASR::make_StructType_t(al, x.base.base.loc, current_scope,
             s2c(al, to_lower(x.m_name)), data_member_names.p, data_member_names.size(),
             ASR::abiType::Source, dflt_access, parent_sym);
             parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
@@ -1002,7 +1002,7 @@ public:
             std::string sym_name_str = proc.first;
             if( current_scope->get_symbol(proc.first) != nullptr ) {
                 ASR::symbol_t* der_type_name = current_scope->get_symbol(proc.first);
-                if( der_type_name->type == ASR::symbolType::DerivedType ||
+                if( der_type_name->type == ASR::symbolType::StructType ||
                     der_type_name->type == ASR::symbolType::Function ) {
                     sym_name_str = "~" + proc.first;
                 }
@@ -1022,7 +1022,7 @@ public:
             Location loc;
             loc.first = 1;
             loc.last = 1;
-            ASR::DerivedType_t *clss = ASR::down_cast<ASR::DerivedType_t>(
+            ASR::StructType_t *clss = ASR::down_cast<ASR::StructType_t>(
                                             current_scope->get_symbol(proc.first));
             for (auto &pname : proc.second) {
                 Vec<ASR::symbol_t*> cand_procs;
@@ -1052,7 +1052,7 @@ public:
             Location loc;
             loc.first = 1;
             loc.last = 1;
-            ASR::DerivedType_t *clss = ASR::down_cast<ASR::DerivedType_t>(
+            ASR::StructType_t *clss = ASR::down_cast<ASR::StructType_t>(
                 current_scope->get_symbol(proc.first));
             for (auto &pname : proc.second) {
                 ASR::symbol_t *proc_sym = current_scope->get_symbol(pname.second);
@@ -1149,8 +1149,8 @@ public:
                     dflt_access
                     );
                 current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(es));
-            } else if( ASR::is_a<ASR::DerivedType_t>(*item.second) ) {
-                ASR::DerivedType_t *mv = ASR::down_cast<ASR::DerivedType_t>(item.second);
+            } else if( ASR::is_a<ASR::StructType_t>(*item.second) ) {
+                ASR::StructType_t *mv = ASR::down_cast<ASR::StructType_t>(item.second);
                 // `mv` is the Variable in a module. Now we construct
                 // an ExternalSymbol that points to it.
                 Str name;
@@ -1321,11 +1321,11 @@ public:
                 dflt_access
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
-        } else if( ASR::is_a<ASR::DerivedType_t>(*t) ) {
+        } else if( ASR::is_a<ASR::StructType_t>(*t) ) {
             if (current_scope->get_symbol(local_sym) != nullptr) {
                 throw SemanticError("Derived type already defined", loc);
             }
-            ASR::DerivedType_t *mv = ASR::down_cast<ASR::DerivedType_t>(t);
+            ASR::StructType_t *mv = ASR::down_cast<ASR::StructType_t>(t);
             // `mv` is the Variable in a module. Now we construct
             // an ExternalSymbol that points to it.
             Str name;

@@ -91,7 +91,6 @@
                                                         }) 
                                                     f 
                                                     [(Var 4 x)] 
-                                                    [] 
                                                     [(= 
                                                         (Var 4 f) 
                                                         (RealBinOp 
@@ -125,6 +124,10 @@
                                                     .false. 
                                                     .false. 
                                                     .false. 
+                                                    .false. 
+                                                    .false. 
+                                                    [] 
+                                                    [] 
                                                     .false.
                                                 ), 
                                             g:
@@ -146,7 +149,6 @@
                                     foo 
                                     [(Var 3 c)
                                     (Var 3 d)] 
-                                    [] 
                                     [(= 
                                         (Var 3 e) 
                                         (FunctionCall 
@@ -179,6 +181,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

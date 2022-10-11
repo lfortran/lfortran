@@ -121,7 +121,6 @@
                         }) 
                     dcstep 
                     [] 
-                    [] 
                     [(= 
                         (Var 2 s) 
                         (FunctionCall 
@@ -165,6 +164,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 ), 
             iso_c_binding:

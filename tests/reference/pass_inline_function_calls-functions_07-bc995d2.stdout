@@ -272,7 +272,6 @@
                                         }) 
                                     f_a 
                                     [(Var 3 u)] 
-                                    [] 
                                     [(= 
                                         (Var 3 v) 
                                         (RealBinOp 
@@ -295,6 +294,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             
@@ -384,7 +387,6 @@
                                         }) 
                                     f_b 
                                     [(Var 5 x)] 
-                                    [] 
                                     [(= 
                                         (Var 5 u_f_a) 
                                         (Var 5 x) 
@@ -426,6 +428,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             
@@ -553,7 +559,6 @@
                                         }) 
                                     f_c 
                                     [(Var 7 w)] 
-                                    [] 
                                     [(= 
                                         (Var 7 x_f_b) 
                                         (Var 7 w) 
@@ -614,6 +619,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

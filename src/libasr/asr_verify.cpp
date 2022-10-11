@@ -259,17 +259,18 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_DerivedType(const DerivedType_t &x) {
+    template <typename T>
+    void visit_StructTypeEnumTypeUnionType(const T &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
-            "The DerivedType::m_symtab cannot be nullptr");
+            "The StructType::m_symtab cannot be nullptr");
         require(x.m_symtab->parent == parent_symtab,
-            "The DerivedType::m_symtab->parent is not the right parent");
+            "The StructType::m_symtab->parent is not the right parent");
         require(x.m_symtab->asr_owner == (ASR::asr_t*)&x,
             "The X::m_symtab::asr_owner must point to X");
         require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
-            "Derivedtype::m_symtab->counter must be unique");
+            "StructType::m_symtab->counter must be unique");
         require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
@@ -277,6 +278,67 @@ public:
             this->visit_symbol(*a.second);
         }
         current_symtab = parent_symtab;
+    }
+
+    void visit_StructType(const StructType_t& x) {
+        visit_StructTypeEnumTypeUnionType(x);
+    }
+
+    void visit_EnumType(const EnumType_t& x) {
+        visit_StructTypeEnumTypeUnionType(x);
+        require(x.m_type != nullptr,
+            "The common type of Enum cannot be nullptr. " +
+            std::string(x.m_name) + " doesn't seem to follow this rule.");
+        ASR::ttype_t* common_type = x.m_type;
+        std::map<int64_t, int64_t> value2count;
+        for( auto itr: x.m_symtab->get_scope() ) {
+            ASR::Variable_t* itr_var = ASR::down_cast<ASR::Variable_t>(itr.second);
+            require(itr_var->m_symbolic_value != nullptr,
+                "All members of Enum must have their values to be set. " +
+                std::string(itr_var->m_name) + " doesn't seem to follow this rule in "
+                + std::string(x.m_name) + " Enum.");
+            require(ASRUtils::check_equal_type(itr_var->m_type, common_type),
+                "All members of Enum must the same type. " +
+                std::string(itr_var->m_name) + " doesn't seem to follow this rule in " +
+                std::string(x.m_name) + " Enum.");
+            ASR::expr_t* value = ASRUtils::expr_value(itr_var->m_symbolic_value);
+            int64_t value_int64 = -1;
+            ASRUtils::extract_value(value, value_int64);
+            if( value2count.find(value_int64) == value2count.end() ) {
+                value2count[value_int64] = 0;
+            }
+            value2count[value_int64] += 1;
+        }
+
+        bool is_enumtype_correct = false;
+        bool is_enum_integer = ASR::is_a<ASR::Integer_t>(*x.m_type);
+        if( x.m_enum_value_type == ASR::enumtypeType::IntegerConsecutiveFromZero ) {
+            is_enumtype_correct = (is_enum_integer &&
+                                   (value2count.find(0) != value2count.end()) &&
+                                   (value2count.size() == x.n_members));
+            int64_t prev = -1;
+            if( is_enumtype_correct ) {
+                for( auto enum_value: value2count ) {
+                    if( enum_value.first - prev != 1 ) {
+                        is_enumtype_correct = false;
+                        break ;
+                    }
+                    prev = enum_value.first;
+                }
+            }
+        } else if( x.m_enum_value_type == ASR::enumtypeType::IntegerNotUnique ) {
+            is_enumtype_correct = is_enum_integer && (value2count.size() != x.n_members);
+        } else if( x.m_enum_value_type == ASR::enumtypeType::IntegerUnique ) {
+            is_enumtype_correct = is_enum_integer && (value2count.size() == x.n_members);
+        } else if( x.m_enum_value_type == ASR::enumtypeType::NonInteger ) {
+            is_enumtype_correct = !is_enum_integer;
+        }
+        require(is_enumtype_correct, "Properties of enum value members don't match correspond "
+                                     "to EnumType::m_enum_value_type");
+    }
+
+    void visit_UnionType(const UnionType_t& x) {
+        visit_StructTypeEnumTypeUnionType(x);
     }
 
     void visit_Variable(const Variable_t &x) {
@@ -331,9 +393,9 @@ public:
         require(x.m_v != nullptr,
             "Var_t::m_v cannot be nullptr");
         require(is_a<Variable_t>(*x.m_v) || is_a<ExternalSymbol_t>(*x.m_v)
-                || is_a<Function_t>(*x.m_v),
-            "Var_t::m_v " + std::string(ASRUtils::symbol_name(x.m_v)) + " does not point to a Variable_t, ExternalSymbol_t," \
-            "Function_t, or Subroutine_t");
+                || is_a<Function_t>(*x.m_v) || is_a<ASR::EnumType_t>(*x.m_v),
+            "Var_t::m_v " + std::string(ASRUtils::symbol_name(x.m_v)) + " does not point to a Variable_t, ExternalSymbol_t, " \
+            "Function_t, Subroutine_t or EnumType_t");
         require(symtab_in_scope(current_symtab, x.m_v),
             "Var::m_v `" + std::string(ASRUtils::symbol_name(x.m_v)) + "` cannot point outside of its symbol table");
     }
@@ -398,8 +460,8 @@ public:
         ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(v->m_type);
         ASR::symbol_t *type_sym=nullptr;
         switch (t2->type) {
-            case (ASR::ttypeType::Derived): {
-                type_sym = ASR::down_cast<ASR::Derived_t>(t2)->m_derived_type;
+            case (ASR::ttypeType::Struct): {
+                type_sym = ASR::down_cast<ASR::Struct_t>(t2)->m_derived_type;
                 break;
             }
             case (ASR::ttypeType::Class): {
@@ -408,7 +470,7 @@ public:
             }
             default :
                 require(false,
-                    "m_dt::m_v::m_type must point to a type with a symbol table (Derived or Class)",
+                    "m_dt::m_v::m_type must point to a type with a symbol table (Struct or Class)",
                     loc);
         }
         return get_dt_symtab(type_sym, loc);
@@ -417,15 +479,15 @@ public:
     ASR::symbol_t *get_parent_type_dt(ASR::symbol_t *dt, const Location &loc) {
         ASR::symbol_t *parent = nullptr;
         switch (dt->type) {
-            case (ASR::symbolType::DerivedType): {
+            case (ASR::symbolType::StructType): {
                 dt = ASRUtils::symbol_get_past_external(dt);
-                ASR::DerivedType_t* der_type = ASR::down_cast<ASR::DerivedType_t>(dt);
+                ASR::StructType_t* der_type = ASR::down_cast<ASR::StructType_t>(dt);
                 parent = der_type->m_parent;
                 break;
             }
             default :
                 require(false,
-                    "m_dt::m_v::m_type must point to a Derived type",
+                    "m_dt::m_v::m_type must point to a Struct type",
                     loc);
         }
         return parent;
@@ -441,25 +503,25 @@ public:
         ASR::symbol_t *type_sym=nullptr;
         ASR::symbol_t *parent = nullptr;
         switch (t2->type) {
-            case (ASR::ttypeType::Derived): {
-                type_sym = ASR::down_cast<ASR::Derived_t>(t2)->m_derived_type;
+            case (ASR::ttypeType::Struct): {
+                type_sym = ASR::down_cast<ASR::Struct_t>(t2)->m_derived_type;
                 type_sym = ASRUtils::symbol_get_past_external(type_sym);
-                ASR::DerivedType_t* der_type = ASR::down_cast<ASR::DerivedType_t>(type_sym);
+                ASR::StructType_t* der_type = ASR::down_cast<ASR::StructType_t>(type_sym);
                 parent = der_type->m_parent;
                 break;
             }
             case (ASR::ttypeType::Class): {
                 type_sym = ASR::down_cast<ASR::Class_t>(t2)->m_class_type;
                 type_sym = ASRUtils::symbol_get_past_external(type_sym);
-                if( type_sym->type == ASR::symbolType::DerivedType ) {
-                    ASR::DerivedType_t* der_type = ASR::down_cast<ASR::DerivedType_t>(type_sym);
+                if( type_sym->type == ASR::symbolType::StructType ) {
+                    ASR::StructType_t* der_type = ASR::down_cast<ASR::StructType_t>(type_sym);
                     parent = der_type->m_parent;
                 }
                 break;
             }
             default :
                 require(false,
-                    "m_dt::m_v::m_type must point to a Derived type",
+                    "m_dt::m_v::m_type must point to a Struct type",
                     loc);
         }
         return parent;
@@ -497,9 +559,9 @@ public:
         visit_ttype(*x.m_type);
     }
 
-    void visit_Derived(const Derived_t &x) {
+    void visit_Struct(const Struct_t &x) {
         require(symtab_in_scope(current_symtab, x.m_derived_type),
-            "Derived::m_derived_type cannot point outside of its symbol table");
+            "Struct::m_derived_type cannot point outside of its symbol table");
         for (size_t i=0; i<x.n_dims; i++) {
             visit_dimension(x.m_dims[i]);
         }

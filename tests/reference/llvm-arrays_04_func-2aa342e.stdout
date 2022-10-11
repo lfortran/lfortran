@@ -41,7 +41,7 @@ return:                                           ; preds = %ifcont
   ret float %5
 }
 
-define float @sum_a(float* %a, i32* %"1a", i32* %"2a") {
+define float @sum_a(float* %a, i32* %__1a, i32* %__2a) {
 .entry:
   %i = alloca i32, align 4
   %r = alloca float, align 4
@@ -53,7 +53,7 @@ define float @sum_a(float* %a, i32* %"1a", i32* %"2a") {
 loop.head:                                        ; preds = %loop.body, %.entry
   %0 = load i32, i32* %i, align 4
   %1 = add i32 %0, 1
-  %2 = load i32, i32* %"2a", align 4
+  %2 = load i32, i32* %__2a, align 4
   %3 = mul i32 1, %2
   %4 = icmp sle i32 %1, %3
   br i1 %4, label %loop.body, label %loop.end
@@ -64,8 +64,8 @@ loop.body:                                        ; preds = %loop.head
   store i32 %6, i32* %i, align 4
   %7 = load float, float* %r, align 4
   %8 = load i32, i32* %i, align 4
-  %9 = load i32, i32* %"1a", align 4
-  %10 = load i32, i32* %"2a", align 4
+  %9 = load i32, i32* %__1a, align 4
+  %10 = load i32, i32* %__2a, align 4
   %11 = sub i32 %8, %9
   %12 = mul i32 1, %11
   %13 = add i32 0, %12

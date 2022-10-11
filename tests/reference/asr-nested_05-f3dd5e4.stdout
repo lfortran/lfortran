@@ -47,7 +47,6 @@
                                                         }) 
                                                     c 
                                                     [] 
-                                                    [] 
                                                     [(Print 
                                                         () 
                                                         [(Var 3 x)] 
@@ -81,6 +80,10 @@
                                                     .false. 
                                                     .false. 
                                                     .false. 
+                                                    .false. 
+                                                    .false. 
+                                                    [] 
+                                                    [] 
                                                     .false.
                                                 ), 
                                             x:
@@ -117,7 +120,6 @@
                                             
                                         }) 
                                     b 
-                                    [] 
                                     [] 
                                     [(Print 
                                         () 
@@ -157,6 +159,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-19 12:04+0200\n"
-"PO-Revision-Date: 2022-09-30 17:18+0000\n"
+"PO-Revision-Date: 2022-10-07 22:24+0000\n"
 "Last-Translator: Sergey Torokhov <torokhov-s-a@yandex.ru>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/ru/>\n"
@@ -515,7 +515,7 @@ msgstr ""
 
 #: ../src/design.md:82
 msgid "Notes:"
-msgstr ""
+msgstr "Примечания:"
 
 #: ../src/design.md:84
 msgid ""
@@ -1024,7 +1024,7 @@ msgstr ""
 
 #: ../src/installation.md:5
 msgid "Binaries"
-msgstr ""
+msgstr "Готовые бинарные сборки"
 
 #: ../src/installation.md:7
 msgid ""
