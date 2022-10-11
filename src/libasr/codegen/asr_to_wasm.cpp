@@ -2098,7 +2098,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
 
     LCompilers::PassOptions pass_options;
     pass_replace_do_loops(al, asr, pass_options, compiler_options);
-    pass_array_by_data(al, asr, pass_options);
+    pass_array_by_data(al, asr, pass_options, compiler_options);
     pass_options.always_run = true;
     pass_unused_functions(al, asr, pass_options, compiler_options);
 

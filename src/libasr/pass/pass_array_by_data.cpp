@@ -417,7 +417,8 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
 };
 
 void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
-                        const LCompilers::PassOptions& /*pass_options*/) {
+                        const LCompilers::PassOptions& /*pass_options*/,
+			const LFortran::CompilerOptions& /*compiler_options*/) {
     PassArrayByDataProcedureVisitor v(al);
     v.visit_TranslationUnit(unit);
     ReplaceSubroutineCallsVisitor u(al, v);
