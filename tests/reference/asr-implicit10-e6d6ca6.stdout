@@ -269,7 +269,6 @@
                         }) 
                     a 
                     [] 
-                    [] 
                     [(= 
                         (ArrayItem 
                             (Var 2 y) 
@@ -424,6 +423,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             

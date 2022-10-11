@@ -228,7 +228,6 @@
                     a 
                     [(Var 2 d)
                     (Var 2 e)] 
-                    [] 
                     [(= 
                         (ArrayItem 
                             (Var 2 y) 
@@ -403,6 +402,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             

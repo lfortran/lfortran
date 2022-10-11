@@ -142,7 +142,6 @@
                     [(Var 2 x)
                     (Var 2 y)
                     (Var 2 w)] 
-                    [] 
                     [(= 
                         (Var 2 ialbetas) 
                         (Cast 
@@ -236,6 +235,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             

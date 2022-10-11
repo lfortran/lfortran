@@ -68,7 +68,6 @@
                     ch12n 
                     [(Var 2 n)
                     (Var 2 z)] 
-                    [] 
                     [(= 
                         (Var 2 ci) 
                         (Cast 
@@ -105,6 +104,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             
