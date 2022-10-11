@@ -800,6 +800,15 @@ public:
         return false;
     }
 
+    void visit_Format(const AST::Format_t &x) {
+        diag.semantic_warning_label(
+            "Format statement is not implemented yet, for now we will ignore it",
+            {x.base.base.loc},
+            "ignored for now"
+        );
+        tmp = nullptr;
+    }
+
     void visit_DataStmt(const AST::DataStmt_t &x) {
         // The DataStmt is a statement, so it occurs in the BodyVisitor.
         // We add its contents into the symbol table here. This visitor
@@ -903,6 +912,14 @@ public:
                         ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
                         v2->m_value = expression_value;
                     } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
+                        if (current_body == nullptr) {
+                            diag.semantic_warning_label(
+                                "Data statement with ArrayItem has current_body == nullptr, it's a bug that we will fix later, for now we will ignore it",
+                                {x.base.base.loc},
+                                "ignored for now"
+                            );
+                            continue;
+                        }
                         // This is the following case:
                         // x(2) / 2 /
                         // We create an assignment node and insert into the current body.
@@ -1040,7 +1057,7 @@ public:
                         }
                     }
                 // enable sole `dimension` attribute
-            } else if (AST::is_a<AST::AttrDimension_t>(*x.m_attributes[i])) {
+                } else if (AST::is_a<AST::AttrDimension_t>(*x.m_attributes[i])) {
                     for (size_t i=0;i<x.n_syms;++i) { // symbols for line only
                         AST::var_sym_t &s = x.m_syms[i];
                         std::string sym = to_lower(s.m_name);
@@ -1073,6 +1090,12 @@ public:
                             throw SemanticError("Cannot attribute non-variable type with dimension", x.base.base.loc);
                         }
                     }
+                } else if (AST::is_a<AST::AttrEquivalence_t>(*x.m_attributes[i])) {
+                    diag.semantic_warning_label(
+                        "Equivalence statement is not implemented yet, for now we will ignore it",
+                        {x.base.base.loc},
+                        "ignored for now"
+                    );
                 } else {
                     throw SemanticError("Attribute declaration not supported",
                         x.base.base.loc);
