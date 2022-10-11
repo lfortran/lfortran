@@ -37,7 +37,7 @@ class FMAVisitor : public PassUtils::SkipOptimizationFunctionVisitor<FMAVisitor>
 private:
     ASR::TranslationUnit_t &unit;
 
-    LFortran::CompilerOptions compiler_options;
+    const LFortran::CompilerOptions& compiler_options;
 
     ASR::expr_t* fma_var;
 
@@ -166,8 +166,8 @@ public:
 };
 
 void pass_replace_fma(Allocator &al, ASR::TranslationUnit_t &unit,
+		      const LCompilers::PassOptions& /* pass_options */,
                       const LFortran::CompilerOptions& compiler_options) {
-    // std::string rl_path = pass_options.runtime_library_dir;
     FMAVisitor v(al, unit, compiler_options);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));

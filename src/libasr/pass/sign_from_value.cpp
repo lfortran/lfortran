@@ -36,7 +36,7 @@ class SignFromValueVisitor : public PassUtils::SkipOptimizationFunctionVisitor<S
 private:
     ASR::TranslationUnit_t &unit;
 
-    LFortran::CompilerOptions compiler_options;
+    const LFortran::CompilerOptions& compiler_options;
 
     ASR::expr_t* sign_from_value_var;
 
@@ -152,8 +152,8 @@ public:
 };
 
 void pass_replace_sign_from_value(Allocator &al, ASR::TranslationUnit_t &unit,
+				  const LCompilers::PassOptions& /* pass_options */,
                                   const LFortran::CompilerOptions& compiler_options) {
-    // std::string rl_path = pass_options.runtime_library_dir;
     SignFromValueVisitor v(al, unit, compiler_options);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));
