@@ -902,7 +902,10 @@ public:
                         ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
                         ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
                         v2->m_value = expression_value;
-                    } else if (ASR::is_a<ASR::ArrayItem_t>(*object) && current_body != nullptr) {
+                    } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
+                        if (!current_body) {
+                            throw SemanticError("ICE: current_body not allocated", x.base.base.loc);
+                        }
                         // This is the following case:
                         // x(2) / 2 /
                         // We create an assignment node and insert into the current body.

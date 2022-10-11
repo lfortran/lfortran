@@ -1,0 +1,13 @@
+{
+    "basename": "asr-unallocated_body-9e1d955",
+    "cmd": "lfortran --indent --fixed-form --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/fixed_form/unallocated_body.f",
+    "infile_hash": "30d19b7f05ffb2b73d69a80cc7df45706b1fb9a1f3b7b0420c07e68a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-unallocated_body-9e1d955.stderr",
+    "stderr_hash": "44e2c2b43131b052df6ebd370107a7b496083d8120ff09cdb8b5938b",
+    "returncode": 2
+}

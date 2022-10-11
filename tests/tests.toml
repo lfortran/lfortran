@@ -2493,3 +2493,7 @@ asr_implicit_typing = true
 [[test]]
 filename = "../integration_tests/conv_complex2real.f90"
 asr = true
+
+[[test]]
+filename = "fixed_form/unallocated_body.f"
+asr = true
