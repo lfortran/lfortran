@@ -94,11 +94,11 @@ private:
     */
     int result_var_num;
 
-    std::string rl_path;
+    std::filesystem::path rl_path;
 
 public:
     ArrayOpVisitor(Allocator &al,
-       const std::string &rl_path) : PassVisitor(al, nullptr),
+       const std::filesystem::path &rl_path) : PassVisitor(al, nullptr),
     tmp_val(nullptr), result_var(nullptr), use_custom_loop_params(false),
     result_var_num(0),  rl_path(rl_path)
     {
@@ -931,8 +931,7 @@ public:
 void pass_replace_array_op(Allocator &al, ASR::TranslationUnit_t &unit,
                            const LCompilers::PassOptions& /* pass_options */,
 			   const LFortran::CompilerOptions& compiler_options) {
-    std::string rl_path = compiler_options.rl_path;
-    ArrayOpVisitor v(al, rl_path);
+    ArrayOpVisitor v(al, compiler_options.rl_path);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));
 }

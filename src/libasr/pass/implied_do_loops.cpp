@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/exception.h>
@@ -31,12 +32,13 @@ class ImpliedDoLoopVisitor : public PassUtils::PassVisitor<ImpliedDoLoopVisitor>
 {
 private:
     bool contains_array;
-    std::string rl_path;
+    std::filesystem::path rl_path;
 public:
     // Public to surpress a warning
     ASR::TranslationUnit_t &unit;
 
-    ImpliedDoLoopVisitor(Allocator &al, ASR::TranslationUnit_t& unit, const std::string rl_path) :
+    ImpliedDoLoopVisitor(Allocator &al, ASR::TranslationUnit_t& unit,
+			 const std::filesystem::path rl_path) :
 	PassVisitor(al, nullptr), contains_array{false}, rl_path{rl_path}, unit{unit} {
         pass_result.reserve(al, 1);
     }
@@ -244,8 +246,7 @@ public:
 void pass_replace_implied_do_loops(Allocator &al, ASR::TranslationUnit_t &unit,
                                    const LCompilers::PassOptions& /* pass_options */,
 				   const LFortran::CompilerOptions& compiler_options) {
-    std::string rl_path = compiler_options.rl_path;
-    ImpliedDoLoopVisitor v(al, unit, rl_path);
+    ImpliedDoLoopVisitor v(al, unit, compiler_options.rl_path);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));
 }
