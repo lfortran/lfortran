@@ -1467,10 +1467,6 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         Error error;
         return error;
     }
-    //iterate over local implicit_mapping and add to global implicit_mapping
-    for (auto it: v.implicit_mapping) {
-        implicit_mapping[it.first] = it.second;
-    }
     ASR::asr_t *unit = v.tmp;
     template_type_parameters = v.template_type_parameters;
     return unit;
