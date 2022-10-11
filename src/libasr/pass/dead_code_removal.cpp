@@ -9,6 +9,7 @@
 #include <vector>
 #include <map>
 #include <utility>
+#include <filesystem>
 
 
 namespace LFortran {
@@ -21,13 +22,13 @@ class DeadCodeRemovalVisitor : public PassUtils::PassVisitor<DeadCodeRemovalVisi
 {
 private:
 
-    std::string rl_path;
+    std::filesystem::path rl_path;
 
 public:
 
     bool dead_code_removed;
 
-    DeadCodeRemovalVisitor(Allocator &al_, const std::string& rl_path_) : PassVisitor(al_, nullptr),
+    DeadCodeRemovalVisitor(Allocator &al_, const std::filesystem::path& rl_path_) : PassVisitor(al_, nullptr),
     rl_path(rl_path_), dead_code_removed(false)
     {
         pass_result.reserve(al, 1);
@@ -99,9 +100,9 @@ public:
 };
 
 void pass_dead_code_removal(Allocator &al, ASR::TranslationUnit_t &unit,
-                            const LCompilers::PassOptions& pass_options) {
-    std::string rl_path = pass_options.runtime_library_dir;
-    DeadCodeRemovalVisitor v(al, rl_path);
+                            const LCompilers::PassOptions& /* pass_options */,
+			    const LFortran::CompilerOptions& compiler_options) {
+    DeadCodeRemovalVisitor v(al, compiler_options.rl_path);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));
 }
