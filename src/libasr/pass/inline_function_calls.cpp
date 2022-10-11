@@ -9,6 +9,7 @@
 #include <vector>
 #include <map>
 #include <utility>
+#include <filesystem>
 
 
 namespace LFortran {
@@ -39,7 +40,7 @@ class InlineFunctionCallVisitor : public PassUtils::PassVisitor<InlineFunctionCa
 {
 private:
 
-    std::string rl_path;
+    std::filesystem::path rl_path;
 
     ASR::expr_t* function_result_var;
 
@@ -66,7 +67,7 @@ public:
 
     bool function_inlined;
 
-    InlineFunctionCallVisitor(Allocator &al_, const std::string& rl_path_, bool inline_external_symbol_calls_)
+    InlineFunctionCallVisitor(Allocator &al_, const std::filesystem::path& rl_path_, bool inline_external_symbol_calls_)
     : PassVisitor(al_, nullptr),
     rl_path(rl_path_), function_result_var(nullptr),
     from_inline_function_call(false), inlining_function(false), fixed_duplicated_expr_stmt(false),
@@ -445,10 +446,10 @@ public:
 };
 
 void pass_inline_function_calls(Allocator &al, ASR::TranslationUnit_t &unit,
-                                const LCompilers::PassOptions& pass_options) {
-    std::string rl_path = pass_options.runtime_library_dir;
+                                const LCompilers::PassOptions& pass_options,
+				const LFortran::CompilerOptions& compiler_options) {
     bool inline_external_symbol_calls = pass_options.inline_external_symbol_calls;
-    InlineFunctionCallVisitor v(al, rl_path, inline_external_symbol_calls);
+    InlineFunctionCallVisitor v(al, compiler_options.rl_path, inline_external_symbol_calls);
     v.configure_node_duplicator(false);
     v.visit_TranslationUnit(unit);
     v.configure_node_duplicator(true);
