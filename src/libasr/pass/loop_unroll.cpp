@@ -10,6 +10,7 @@
 #include <map>
 #include <utility>
 #include <cmath>
+#include <filesystem>
 
 
 namespace LFortran {
@@ -21,7 +22,7 @@ class LoopUnrollVisitor : public PassUtils::PassVisitor<LoopUnrollVisitor>
 {
 private:
 
-    std::string rl_path;
+    std::filesystem::path rl_path;
 
     int64_t unroll_factor;
 
@@ -29,7 +30,7 @@ private:
 
 public:
 
-    LoopUnrollVisitor(Allocator &al_, const std::string& rl_path_,
+    LoopUnrollVisitor(Allocator &al_, const std::filesystem::path& rl_path_,
                       size_t unroll_factor_) :
     PassVisitor(al_, nullptr), rl_path(rl_path_),
     unroll_factor(unroll_factor_), node_duplicator(al_)
@@ -107,10 +108,10 @@ public:
 };
 
 void pass_loop_unroll(Allocator &al, ASR::TranslationUnit_t &unit,
-                      const LCompilers::PassOptions& pass_options) {
-    std::string rl_path = pass_options.runtime_library_dir;
+                      const LCompilers::PassOptions& pass_options,
+		      const LFortran::CompilerOptions& compiler_options) {
     int64_t unroll_factor = pass_options.unroll_factor;
-    LoopUnrollVisitor v(al, rl_path, unroll_factor);
+    LoopUnrollVisitor v(al, compiler_options.rl_path, unroll_factor);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));
 }
