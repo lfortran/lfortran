@@ -1073,6 +1073,12 @@ public:
                             throw SemanticError("Cannot attribute non-variable type with dimension", x.base.base.loc);
                         }
                     }
+                } else if (AST::is_a<AST::AttrEquivalence_t>(*x.m_attributes[i])) {
+                    diag.semantic_warning_label(
+                        "Equivalence statement is not implemented yet, for now we will ignore it",
+                        {x.base.base.loc},
+                        "ignored for now"
+                    );
                 } else {
                     throw SemanticError("Attribute declaration not supported",
                         x.base.base.loc);
