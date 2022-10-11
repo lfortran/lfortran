@@ -658,7 +658,7 @@ Result<std::string> asr_to_c(Allocator &al, ASR::TranslationUnit_t &asr,
 {
     LCompilers::PassOptions pass_options;
     pass_options.always_run = true;
-    pass_unused_functions(al, asr, pass_options);
+    pass_unused_functions(al, asr, pass_options, compiler_options);
     pass_replace_class_constructor(al, asr, pass_options, compiler_options);
     ASRToCVisitor v(diagnostics, platform, default_lower_bound);
     try {

@@ -697,11 +697,12 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 
 Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
     diag::Diagnostics &diagnostics, Platform &platform,
-    int64_t default_lower_bound)
+    int64_t default_lower_bound,
+    const LFortran::CompilerOptions& compiler_options)
 {
     LCompilers::PassOptions pass_options;
     pass_options.always_run = true;
-    pass_unused_functions(al, asr, pass_options);
+    pass_unused_functions(al, asr, pass_options, compiler_options);
     ASRToCPPVisitor v(diagnostics, platform, default_lower_bound);
     try {
         v.visit_asr((ASR::asr_t &)asr);
