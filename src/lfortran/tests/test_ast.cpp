@@ -54,7 +54,7 @@ end program
     v->m_v = &(prog->base); // Assign the wrong symbol to Var_t::m_v
 
     // This will be caught by the verifier
-    CHECK_THROWS_AS(asr_verify(*asr, true, diagnostics), LCompilersException);
+    CHECK(!asr_verify(*asr, true, diagnostics));
 }
 
 
