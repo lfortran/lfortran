@@ -315,7 +315,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     Result<std::unique_ptr<LFortran::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
             e->get_context(), al, pass_manager,
-            compiler_options.platform, run_fn);
+	    compiler_options.platform, run_fn, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
     } else {
@@ -368,7 +368,7 @@ Result<Vec<uint8_t>> FortranEvaluator::get_wasm(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (asr.ok) {
-        return asr_to_wasm_bytes_stream(*asr.result, al, diagnostics);
+        return asr_to_wasm_bytes_stream(*asr.result, al, diagnostics, compiler_options);
     } else {
         LFORTRAN_ASSERT(diagnostics.has_error())
         return asr.error;
@@ -437,7 +437,7 @@ Result<std::string> FortranEvaluator::get_c2(ASR::TranslationUnit_t &asr,
 {
     // ASR -> C++
     return asr_to_c(al, asr, diagnostics, compiler_options.platform,
-                    default_lower_bound, compiler_optionns);
+                    default_lower_bound, compiler_options);
 }
 
 Result<std::string> FortranEvaluator::get_fmt(const std::string &code,

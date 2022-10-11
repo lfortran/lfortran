@@ -170,10 +170,9 @@ public:
                                             false, false);
         current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
         if( x.class_type == AST::modType::Submodule ) {
-            std::string rl_path = get_runtime_library_dir();
             ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
                                                 parent_name, x.base.base.loc, false,
-                                                rl_path, true,
+                                                compiler_options, true,
                                                 [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
                                                 ));
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
@@ -1228,9 +1227,8 @@ public:
         }
         ASR::symbol_t *t = current_scope->parent->resolve_symbol(msym);
         if (!t) {
-            std::string rl_path = get_runtime_library_dir();
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, current_scope->parent,
-                msym, x.base.base.loc, false, rl_path, true,
+                msym, x.base.base.loc, false, compiler_options, true,
                 [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
                 ));
         }
