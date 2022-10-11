@@ -5173,14 +5173,13 @@ public:
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
+        if (x.m_unit != nullptr) {
+            diag.codegen_warning_label("unit in write() is not implemented yet and it is currently treated as '*'",
+                {x.m_unit->base.loc}, "treated as '*'");
+        }
         if (x.m_fmt != nullptr) {
             diag.codegen_warning_label("format string in write() is not implemented yet and it is currently treated as '*'",
                 {x.m_fmt->base.loc}, "treated as '*'");
-        }
-        if (x.m_unit != nullptr) {
-            diag.codegen_error_label("unit in write() is not implemented yet",
-                {x.m_unit->base.loc}, "not implemented");
-            throw CodeGenAbort();
         }
         handle_print(x);
     }
