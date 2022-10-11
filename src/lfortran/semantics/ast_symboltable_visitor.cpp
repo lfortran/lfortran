@@ -400,11 +400,6 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
-        // TODO: The most common (modern) path is explicit typing, so in this
-        // path things should be as fast as possible. Currently they are slow.
-        // TODO: this needs to be moved to Common Visitor, and it needs to be
-        // made availabe when visiting the body, not the symbol table.
-        //populate the implicit_dictionary
         if (compiler_options.implicit_typing) {
             populate_implicit_dictionary(x, implicit_dictionary);
             //iterate over all implicit statements
