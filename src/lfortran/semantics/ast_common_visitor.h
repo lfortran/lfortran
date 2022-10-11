@@ -787,7 +787,6 @@ public:
         return ASR::make_Var_t(al, loc, v);
     }
 
-
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
         AST::dimension_t *m_dim, size_t n_dim) {
         LFORTRAN_ASSERT(dims.size() == 0);

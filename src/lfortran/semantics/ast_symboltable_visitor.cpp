@@ -513,7 +513,6 @@ public:
             visit_unit_decl2(*x.m_decl[i]);
         }
         for (size_t i=0; i<x.n_contains; i++) {
-
             visit_program_unit(*x.m_contains[i]);
         }
         // Convert and check arguments
