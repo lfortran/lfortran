@@ -6,6 +6,8 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/print_arr.h>
 
+#include <filesystem>
+
 
 namespace LFortran {
 
@@ -30,9 +32,9 @@ to:
 class PrintArrVisitor : public PassUtils::PassVisitor<PrintArrVisitor>
 {
 private:
-    std::string rl_path;
+    std::filesystem::path rl_path;
 public:
-    PrintArrVisitor(Allocator &al, const std::string &rl_path_) : PassVisitor(al, nullptr),
+    PrintArrVisitor(Allocator &al, const std::filesystem::path &rl_path_) : PassVisitor(al, nullptr),
     rl_path(rl_path_) {
         pass_result.reserve(al, 1);
 
@@ -79,9 +81,9 @@ public:
 };
 
 void pass_replace_print_arr(Allocator &al, ASR::TranslationUnit_t &unit,
-                            const LCompilers::PassOptions& pass_options) {
-    std::string rl_path = pass_options.runtime_library_dir;
-    PrintArrVisitor v(al, rl_path);
+                            const LCompilers::PassOptions& /* pass_options */,
+			    const LFortran::CompilerOptions& compiler_options) {
+    PrintArrVisitor v(al, compiler_options.rl_path);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));
 }

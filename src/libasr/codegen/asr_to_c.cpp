@@ -653,12 +653,13 @@ R"(
 
 Result<std::string> asr_to_c(Allocator &al, ASR::TranslationUnit_t &asr,
     diag::Diagnostics &diagnostics, Platform &platform,
-    int64_t default_lower_bound)
+    int64_t default_lower_bound,
+    const LFortran::CompilerOptions& compiler_options)
 {
     LCompilers::PassOptions pass_options;
     pass_options.always_run = true;
     pass_unused_functions(al, asr, pass_options);
-    pass_replace_class_constructor(al, asr, pass_options);
+    pass_replace_class_constructor(al, asr, pass_options, compiler_options);
     ASRToCVisitor v(diagnostics, platform, default_lower_bound);
     try {
         v.visit_asr((ASR::asr_t &)asr);
