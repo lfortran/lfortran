@@ -21,7 +21,7 @@ using LFortran::diag::Diagnostic;
 
 namespace LFortran {
 
-uint64_t static get_hash(ASR::asr_t *node)
+uint64_t static inline get_hash(ASR::asr_t *node)
 {
     return (uint64_t)node;
 }
