@@ -747,26 +747,26 @@ public:
             }
         }
         if (!v) {
-            std::string first_letter = std::string(1,var_name[0]);
-            if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()) {
-                ASR::ttype_t *t = implicit_dictionary[first_letter];
-                if (t == nullptr) {
-                    diag.semantic_error_label("Variable '" + var_name
-                        + "' is not declared", {loc},
-                        "'" + var_name + "' is undeclared");
-                    throw SemanticAbort();
-                }
-                ASR::intentType intent;
-                if (std::find(current_procedure_args.begin(),
-                        current_procedure_args.end(), var_name) !=
-                        current_procedure_args.end()) {
-                    intent = LFortran::ASRUtils::intent_unspecified;
+            if (compiler_options.implicit_typing) {
+                std::string first_letter = std::string(1,var_name[0]);
+                if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()) {
+                    ASR::ttype_t *t = implicit_dictionary[first_letter];
+                    if (t == nullptr) {
+                        diag.semantic_error_label("Variable '" + var_name
+                            + "' is not declared", {loc},
+                            "'" + var_name + "' is undeclared");
+                        throw SemanticAbort();
+                    }
+                    ASR::intentType intent;
+                    if (std::find(current_procedure_args.begin(),
+                            current_procedure_args.end(), var_name) !=
+                            current_procedure_args.end()) {
+                        intent = LFortran::ASRUtils::intent_unspecified;
+                    } else {
+                        intent = LFortran::ASRUtils::intent_local;
+                    }
+                    v = declare_implicit_variable2(loc, var_name, intent, t);
                 } else {
-                    intent = LFortran::ASRUtils::intent_local;
-                }
-                v = declare_implicit_variable2(loc, var_name, intent, t);
-            } else {
-                if (compiler_options.implicit_typing) {
                     ASR::intentType intent;
                     if (std::find(current_procedure_args.begin(),
                             current_procedure_args.end(), var_name) !=
@@ -776,12 +776,12 @@ public:
                         intent = LFortran::ASRUtils::intent_local;
                     }
                     v = declare_implicit_variable(loc, var_name, intent);
-                } else {
-                    diag.semantic_error_label("Variable '" + var_name
-                        + "' is not declared", {loc},
-                        "'" + var_name + "' is undeclared");
-                    throw SemanticAbort();
                 }
+            } else {
+                diag.semantic_error_label("Variable '" + var_name
+                    + "' is not declared", {loc},
+                    "'" + var_name + "' is undeclared");
+                throw SemanticAbort();
             }
         }
         return ASR::make_Var_t(al, loc, v);
