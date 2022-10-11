@@ -388,6 +388,88 @@ public:
         }
     }
 
+    void process_implicit_statements(const AST::Function_t &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
+        //iterate over all implicit statements
+        for (size_t i=0;i<x.n_implicit;i++) {
+            //check if the implicit statement is of type "none"
+            if (AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+                //if yes, clear the implicit dictionary i.e. set all characters to nullptr
+                if (x.n_implicit != 1) {
+                    throw SemanticError("No other implicit statement is allowed when 'implicit none' is used", x.m_implicit[i]->base.loc);
+                }
+                for ( auto it: implicit_dictionary) {
+                    it.second = nullptr;
+                }
+            } else {
+                //if no, then it is of type "implicit"
+                //get the implicit statement
+                AST::Implicit_t* implicit = AST::down_cast<AST::Implicit_t>(x.m_implicit[i]);
+                AST::AttrType_t *attr_type = AST::down_cast<AST::AttrType_t>(implicit->m_type);
+                AST::decl_typeType ast_type=attr_type->m_type;
+                ASR::ttype_t *type = nullptr;
+                //convert the ast_type to asr_type
+                int a_kind = 4;
+                int a_len = -10;
+                if (attr_type->m_kind != nullptr) {
+                    if (attr_type->n_kind == 1) {
+                        visit_expr(*attr_type->m_kind->m_value);
+                        ASR::expr_t* kind_expr = LFortran::ASRUtils::EXPR(tmp);
+                        if (attr_type->m_type == AST::decl_typeType::TypeCharacter) {
+                            a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
+                        } else {
+                            a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, x.base.base.loc);
+                        }
+                    } else {
+                        throw SemanticError("Only one kind item supported for now", x.base.base.loc);
+                    }
+                }
+                switch (ast_type) {
+                    case (AST::decl_typeType::TypeInteger) : {
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind, nullptr, 0));
+                        break;
+                    }
+                    case (AST::decl_typeType::TypeReal) : {
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind, nullptr, 0));
+                        break;
+                    }
+                    case (AST::decl_typeType::TypeDoublePrecision) : {
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
+                        break;
+                    }
+                    case (AST::decl_typeType::TypeComplex) : {
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind, nullptr, 0));
+                        break;
+                    }
+                    case (AST::decl_typeType::TypeLogical) : {
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+                        break;
+                    }
+                    case (AST::decl_typeType::TypeCharacter) : {
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr, nullptr, 0));
+                        break;
+                    }
+                    default :
+                        throw SemanticError("Return type not supported",
+                                x.base.base.loc);
+                }
+                //iterate over all implicit rules
+                for (size_t j=0;j<implicit->n_specs;j++) {
+                    //cast x.m_specs[j] to AST::LetterSpec_t
+                    AST::LetterSpec_t* letter_spec = AST::down_cast<AST::LetterSpec_t>(implicit->m_specs[j]);
+                    char *start=letter_spec->m_start;
+                    char *end=letter_spec->m_end;
+                    if (!start) {
+                        implicit_dictionary[std::string(1, *end)] = type;
+                    } else {
+                        for(char ch=*start; ch<=*end; ch++){
+                            implicit_dictionary[std::string(1, ch)] = type;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         std::cout << "Implicit Dictionary: " << std::endl;
         for (auto it: implicit_dictionary) {
@@ -402,85 +484,7 @@ public:
     void visit_Function(const AST::Function_t &x) {
         if (compiler_options.implicit_typing) {
             populate_implicit_dictionary(x, implicit_dictionary);
-            //iterate over all implicit statements
-            for (size_t i=0;i<x.n_implicit;i++) {
-                //check if the implicit statement is of type "none"
-                if (AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
-                    //if yes, clear the implicit dictionary i.e. set all characters to nullptr
-                    if (x.n_implicit != 1) {
-                        throw SemanticError("No other implicit statement is allowed when 'implicit none' is used", x.m_implicit[i]->base.loc);
-                    }
-                    for ( auto it: implicit_dictionary) {
-                        it.second = nullptr;
-                    }
-                } else {
-                    //if no, then it is of type "implicit"
-                    //get the implicit statement
-                    AST::Implicit_t* implicit = AST::down_cast<AST::Implicit_t>(x.m_implicit[i]);
-                    AST::AttrType_t *attr_type = AST::down_cast<AST::AttrType_t>(implicit->m_type);
-                    AST::decl_typeType ast_type=attr_type->m_type;
-                    ASR::ttype_t *type = nullptr;
-                    //convert the ast_type to asr_type
-                    int a_kind = 4;
-                    int a_len = -10;
-                    if (attr_type->m_kind != nullptr) {
-                        if (attr_type->n_kind == 1) {
-                            visit_expr(*attr_type->m_kind->m_value);
-                            ASR::expr_t* kind_expr = LFortran::ASRUtils::EXPR(tmp);
-                            if (attr_type->m_type == AST::decl_typeType::TypeCharacter) {
-                                a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
-                            } else {
-                                a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, x.base.base.loc);
-                            }
-                        } else {
-                            throw SemanticError("Only one kind item supported for now", x.base.base.loc);
-                        }
-                    }
-                    switch (ast_type) {
-                        case (AST::decl_typeType::TypeInteger) : {
-                            type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind, nullptr, 0));
-                            break;
-                        }
-                        case (AST::decl_typeType::TypeReal) : {
-                            type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind, nullptr, 0));
-                            break;
-                        }
-                        case (AST::decl_typeType::TypeDoublePrecision) : {
-                            type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
-                            break;
-                        }
-                        case (AST::decl_typeType::TypeComplex) : {
-                            type = LFortran::ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind, nullptr, 0));
-                            break;
-                        }
-                        case (AST::decl_typeType::TypeLogical) : {
-                            type = LFortran::ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
-                            break;
-                        }
-                        case (AST::decl_typeType::TypeCharacter) : {
-                            type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr, nullptr, 0));
-                            break;
-                        }
-                        default :
-                            throw SemanticError("Return type not supported",
-                                    x.base.base.loc);
-                    }
-                    //iterate over all implicit rules
-                    for (size_t j=0;j<implicit->n_specs;j++) {
-                        //cast x.m_specs[j] to AST::LetterSpec_t
-                        AST::LetterSpec_t* letter_spec = AST::down_cast<AST::LetterSpec_t>(implicit->m_specs[j]);
-                        char *start=letter_spec->m_start;
-                        char *end=letter_spec->m_end;
-                        if (!start) {
-                            implicit_dictionary[std::string(1, *end)] = type;
-                        } else {
-                            for(char ch=*start; ch<=*end; ch++){
-                                implicit_dictionary[std::string(1, ch)] = type;
-                            }
-                        }
-                    }
-                }
-            }
+            process_implicit_statements(x, implicit_dictionary);
         } else {
             for (size_t i=0;i<x.n_implicit;i++) {
                 if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
