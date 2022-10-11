@@ -1193,6 +1193,11 @@ inline int extract_dimensions_from_ttype(ASR::ttype_t *x,
     return n_dims;
 }
 
+inline int extract_n_dims_from_ttype(ASR::ttype_t *x) {
+    ASR::dimension_t* m_dims_temp = nullptr;
+    return extract_dimensions_from_ttype(x, m_dims_temp);
+}
+
 // Sets the dimension member of `ttype_t`. Returns `true` if dimensions set.
 // Returns `false` if the `ttype_t` does not have a dimension member.
 inline bool ttype_set_dimensions(ASR::ttype_t *x,

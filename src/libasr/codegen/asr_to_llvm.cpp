@@ -1637,6 +1637,9 @@ public:
                     llvm_diminfo.push_back(al, dim_size);
                 }
             }
+
+            LFORTRAN_ASSERT(ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(x.m_v)) > 0);
             tmp = arr_descr->get_single_element(array, indices, x.n_args,
                                                 is_data_only, llvm_diminfo.p);
         }
