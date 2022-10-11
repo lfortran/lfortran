@@ -404,20 +404,18 @@ public:
             populate_implicit_dictionary(x, implicit_dictionary);
             //iterate over all implicit statements
             for (size_t i=0;i<x.n_implicit;i++) {
-                //get the implicit statement
                 //check if the implicit statement is of type "none"
                 if (AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
                     //if yes, clear the implicit dictionary i.e. set all characters to nullptr
                     if (x.n_implicit != 1) {
                         throw SemanticError("No other implicit statement is allowed when 'implicit none' is used", x.m_implicit[i]->base.loc);
                     }
-                    if (compiler_options.implicit_typing) {
-                        for ( auto it: implicit_dictionary) {
-                            it.second = nullptr;
-                        }
+                    for ( auto it: implicit_dictionary) {
+                        it.second = nullptr;
                     }
                 } else {
                     //if no, then it is of type "implicit"
+                    //get the implicit statement
                     AST::Implicit_t* implicit = AST::down_cast<AST::Implicit_t>(x.m_implicit[i]);
                     AST::AttrType_t *attr_type = AST::down_cast<AST::AttrType_t>(implicit->m_type);
                     AST::decl_typeType ast_type=attr_type->m_type;
