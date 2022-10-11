@@ -68,7 +68,8 @@ enum Level {
  * Which stage of the compiler the error is coming from
  */
 enum Stage {
-    CPreprocessor, Prescanner, Tokenizer, Parser, Semantic, ASRPass, CodeGen
+    CPreprocessor, Prescanner, Tokenizer, Parser, Semantic, ASRPass,
+    ASRVerify, CodeGen
 };
 
 /*
