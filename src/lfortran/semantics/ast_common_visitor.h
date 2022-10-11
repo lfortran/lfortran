@@ -903,6 +903,14 @@ public:
                         ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
                         v2->m_value = expression_value;
                     } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
+                        if (current_body == nullptr) {
+                            diag.semantic_warning_label(
+                                "Data statement with ArrayItem has current_body == nullptr, it's a bug that we will fix later, for now we will ignore it",
+                                {x.base.base.loc},
+                                "ignored for now"
+                            );
+                            continue;
+                        }
                         // This is the following case:
                         // x(2) / 2 /
                         // We create an assignment node and insert into the current body.
