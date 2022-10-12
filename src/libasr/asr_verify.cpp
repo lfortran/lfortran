@@ -440,6 +440,11 @@ public:
         } else {
             require(symtab_in_scope(current_symtab, x.m_name),
                 "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table");
+            if (check_external) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
+                require(ASR::is_a<ASR::Function_t>(*s),
+                    "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function");
+            }
         }
         for (size_t i=0; i<x.n_args; i++) {
             if( x.m_args[i].m_value ) {
