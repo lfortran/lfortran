@@ -2513,6 +2513,10 @@ asr = true
 asr_implicit_typing = true
 
 [[test]]
+filename = "implicit11.f90"
+asr_implicit_typing = true
+
+[[test]]
 filename = "fixed_form/assign_to1.f"
 ast = true
 
