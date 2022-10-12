@@ -1090,8 +1090,7 @@ int compile_to_object_file_cpp(const std::string &infile,
 // infile is an object file
 // outfile will become the executable
 int link_executable(const std::vector<std::string> &infiles,
-    const std::string &outfile,
-    const std::string &runtime_library_dir, Backend backend,
+    const std::string &outfile, Backend backend,
     bool static_executable, bool link_with_gcc, bool kokkos,
     CompilerOptions &compiler_options)
 {
@@ -1162,7 +1161,7 @@ int link_executable(const std::vector<std::string> &infiles,
             for (auto &s : infiles) {
                 cmd += s + " ";
             }
-            cmd += runtime_library_dir + "\\lfortran_runtime_static.lib";
+            cmd += std::string{compiler_options.rl_path} + "\\lfortran_runtime_static.lib";
             int err = system(cmd.c_str());
             if (err) {
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1170,7 +1169,7 @@ int link_executable(const std::vector<std::string> &infiles,
             }
         } else {
             std::string CC;
-            std::string base_path = "\"" + runtime_library_dir + "\"";
+            std::string base_path = "\"" + std::string{compiler_options.rl_path} + "\"";
             std::string options;
             std::string runtime_lib = "lfortran_runtime";
 
@@ -1373,7 +1372,6 @@ int main(int argc, char *argv[])
         int dirname_length;
         LFortran::get_executable_path(LFortran::binary_executable_path, dirname_length);
 
-        std::string runtime_library_dir = LFortran::get_runtime_library_dir();
         std::string rtlib_header_dir = LFortran::get_runtime_library_header_dir();
         Backend backend;
 
@@ -1737,10 +1735,10 @@ int main(int argc, char *argv[])
                 throw LFortran::LCompilersException("Backend not supported");
             }
             if (err) return err;
-            return link_executable({tmp_o}, outfile, runtime_library_dir,
+            return link_executable({tmp_o}, outfile,
                     backend, static_link, link_with_gcc, true, compiler_options);
         } else {
-            return link_executable(arg_files, outfile, runtime_library_dir,
+            return link_executable(arg_files, outfile,
                     backend, static_link, link_with_gcc, true, compiler_options);
         }
     } catch(const LFortran::LCompilersException &e) {
