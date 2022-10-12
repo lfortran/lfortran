@@ -1190,7 +1190,7 @@ int link_executable(const std::vector<std::string> &infiles,
             }
             if (outfile == "a.out") {
                 err = system("a.out");
-                if (err) return err;
+                if (err != 0) return err;
             }
         } else {
             std::string CC;
@@ -1235,7 +1235,7 @@ int link_executable(const std::vector<std::string> &infiles,
             }
             if (outfile == "a.out") {
                 err = system("./a.out");
-                if (err) return err;
+                if (err != 0) return err;
             }
         }
         return 0;
