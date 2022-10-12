@@ -561,7 +561,7 @@ int emit_asr(const std::string &infile,
     LCompilers::PassOptions pass_options;
     pass_options.always_run = true;
     pass_options.run_fun = "f";
-    pass_manager.apply_passes(al, asr, pass_options);
+    pass_manager.apply_passes(al, asr, pass_options, compiler_options);
     std::cout << LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
             with_intrinsic_modules) << std::endl;
     return 0;
@@ -855,7 +855,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         diagnostics.diagnostics.clear();
         auto t1 = std::chrono::high_resolution_clock::now();
         LFortran::Result<int>
-            result = LFortran::asr_to_x86(*asr, al, outfile, time_report, LFortran);
+            result = LFortran::asr_to_x86(*asr, al, outfile, time_report, compiler_options);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_asr_to_x86 = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 

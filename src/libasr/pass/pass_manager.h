@@ -81,7 +81,7 @@ namespace LCompilers {
         void _apply_passes(Allocator& al, LFortran::ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions pass_options,
 			   const LFortran::CompilerOptions& compiler_options) {
-            pass_options.runtime_library_dir = LFortran::get_runtime_library_dir();
+            // pass_options.runtime_library_dir = LFortran::get_runtime_library_dir();
             for (size_t i = 0; i < passes.size(); i++) {
                 _passes_db[passes[i]](al, *asr, pass_options, compiler_options);
             }

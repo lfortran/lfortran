@@ -412,7 +412,7 @@ Result<std::string> FortranEvaluator::get_cpp2(ASR::TranslationUnit_t &asr,
 {
     // ASR -> C++
     return asr_to_cpp(al, asr, diagnostics, compiler_options.platform,
-                      default_lower_bound);
+                      default_lower_bound, compiler_options);
 }
 
 Result<std::string> FortranEvaluator::get_c(const std::string &code,
