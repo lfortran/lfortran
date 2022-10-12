@@ -76,6 +76,7 @@ struct IntrinsicProcedures {
 
             // Require evaluated arguments
             {"aimag", {m_math, &eval_aimag, true}},
+            {"imag", {m_math, &eval_aimag, true}},
             {"dimag", {m_math, &eval_aimag, true}},
             {"char", {m_builtin, &eval_char, true}},
             {"floor", {m_math3, &eval_floor, true}},

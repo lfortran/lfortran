@@ -11,8 +11,12 @@ interface aimag
     module procedure caimag, zaimag
 end interface
 
+interface imag
+    module procedure caimag
+end interface
+
 interface dimag
-    module procedure caimag, zaimag
+    module procedure zaimag
 end interface
 
 interface sqrt
