@@ -562,7 +562,7 @@ int emit_asr(const std::string &infile,
     LCompilers::PassOptions pass_options;
     pass_options.always_run = true;
     pass_options.run_fun = "f";
-    pass_manager.apply_passes(al, asr, pass_options);
+    pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     std::cout << LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
             with_intrinsic_modules) << std::endl;
     return 0;
@@ -647,13 +647,14 @@ int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
                 symtab, nullptr, 0);
             LFortran::ASR::TranslationUnit_t *tu =
                 LFortran::ASR::down_cast2<LFortran::ASR::TranslationUnit_t>(asr);
-            LFORTRAN_ASSERT(LFortran::asr_verify(*tu));
+            LFortran::diag::Diagnostics diagnostics;
+            LFORTRAN_ASSERT(LFortran::asr_verify(*tu, true, diagnostics));
 
             std::string modfile_binary = LFortran::save_modfile(*tu);
 
             m->m_symtab->parent = orig_symtab;
 
-            LFORTRAN_ASSERT(LFortran::asr_verify(u));
+            LFORTRAN_ASSERT(LFortran::asr_verify(u, true, diagnostics));
 
 
             std::string modfile = std::string(m->m_name) + ".mod";

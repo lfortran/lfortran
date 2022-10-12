@@ -6083,7 +6083,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     LCompilers::PassOptions pass_options;
     pass_options.run_fun = run_fn;
     pass_options.always_run = false;
-    pass_manager.apply_passes(al, &asr, pass_options);
+    pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
 
     // Uncomment for debugging the ASR after the transformation
     // std::cout << pickle(asr, true, true, true) << std::endl;

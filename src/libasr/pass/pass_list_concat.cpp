@@ -237,9 +237,7 @@ void pass_list_concat(Allocator &al, ASR::TranslationUnit_t &unit,
                         const LCompilers::PassOptions& /*pass_options*/) {
     ListConcatVisitor v(al, unit);
     v.visit_TranslationUnit(unit);
-    LFORTRAN_ASSERT(asr_verify(unit));
 }
 
 
 } // namespace LFortran
-
