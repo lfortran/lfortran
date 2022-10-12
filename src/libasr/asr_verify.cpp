@@ -408,9 +408,11 @@ public:
         int n_dims = ASRUtils::extract_n_dims_from_ttype(
                 ASRUtils::expr_type(x.m_v));
         if (ASR::is_a<ASR::Character_t>(*x.m_type) && n_dims == 0) {
+            // TODO: This seems like a bug, we should not use ArrayItem with
+            // strings but StringItem. For now we ignore it, but we should
+            // fix it
         } else {
-            require(ASRUtils::extract_n_dims_from_ttype(
-                ASRUtils::expr_type(x.m_v)) > 0,
+            require(n_dims > 0,
                 "The variable in ArrayItem must be an array, not a scalar");
         }
     }
