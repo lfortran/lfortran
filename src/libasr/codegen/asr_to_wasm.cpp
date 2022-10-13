@@ -2092,7 +2092,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
                                               Allocator &al,
                                               diag::Diagnostics &diagnostics,
-					      LFortran::CompilerOptions& compiler_options) {
+                                              LFortran::CompilerOptions& compiler_options) {
     ASRToWASMVisitor v(al, diagnostics);
     Vec<uint8_t> wasm_bytes;
 
@@ -2122,7 +2122,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
 Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al,
                         const std::string &filename, bool time_report,
                         diag::Diagnostics &diagnostics,
-			LFortran::CompilerOptions& compiler_options) {
+                        LFortran::CompilerOptions& compiler_options) {
     int time_visit_asr = 0;
     int time_save = 0;
 

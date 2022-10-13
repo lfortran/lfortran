@@ -96,11 +96,11 @@ ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
 }
 
 ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
-                            const std::string &module_name,
-                            const Location &loc, bool intrinsic,
-			    const LFortran::CompilerOptions &compiler_options,
-                            bool run_verify,
-                            const std::function<void (const std::string &, const Location &)> err) {
+                           const std::string &module_name,
+                           const Location &loc, bool intrinsic,
+                           const LFortran::CompilerOptions &compiler_options,
+                           bool run_verify,
+                           const std::function<void (const std::string &, const Location &)> err) {
     LFORTRAN_ASSERT(symtab);
     if (symtab->get_symbol(module_name) != nullptr) {
         ASR::symbol_t *m = symtab->get_symbol(module_name);
@@ -236,7 +236,7 @@ void set_intrinsic(ASR::TranslationUnit_t* trans_unit) {
 
 ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &msym,
                                              SymbolTable &symtab, bool intrinsic,
-																						 const LFortran::CompilerOptions &compiler_options) {
+                                             const LFortran::CompilerOptions &compiler_options) {
     std::filesystem::path filename {msym + ".mod"};
     std::vector<std::filesystem::path> mod_files_dirs;
 
@@ -245,20 +245,20 @@ ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &m
     mod_files_dirs.push_back( compiler_options.rl_path );
     mod_files_dirs.push_back( compiler_options.mod_files_dir );
     mod_files_dirs.insert(mod_files_dirs.end(),
-			  compiler_options.include_dirs.begin(),
-			  compiler_options.include_dirs.end());
-    
+                          compiler_options.include_dirs.begin(),
+                          compiler_options.include_dirs.end());
+
     for (std::filesystem::path path : mod_files_dirs) {
-	std::string modfile;
-	std::filesystem::path full_path = path / filename;
-	
-	if (read_file(full_path.string(), modfile)) {
-	    ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false, symtab);
-	    if (intrinsic) {
-		set_intrinsic(asr);
-	    }
-	    return asr;
-	}
+        std::string modfile;
+        std::filesystem::path full_path = path / filename;
+
+        if (read_file(full_path.string(), modfile)) {
+            ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false, symtab);
+            if (intrinsic) {
+                set_intrinsic(asr);
+            }
+            return asr;
+        }
     }
     return nullptr;
 }

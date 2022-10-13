@@ -447,7 +447,7 @@ public:
 
 void pass_inline_function_calls(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const LCompilers::PassOptions& pass_options,
-				const LFortran::CompilerOptions& compiler_options) {
+                                const LFortran::CompilerOptions& compiler_options) {
     bool inline_external_symbol_calls = pass_options.inline_external_symbol_calls;
     InlineFunctionCallVisitor v(al, compiler_options.rl_path, inline_external_symbol_calls);
     v.configure_node_duplicator(false);

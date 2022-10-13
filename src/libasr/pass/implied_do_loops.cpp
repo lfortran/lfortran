@@ -39,7 +39,7 @@ public:
 
     ImpliedDoLoopVisitor(Allocator &al, ASR::TranslationUnit_t& unit,
 			 const std::filesystem::path rl_path) :
-	PassVisitor(al, nullptr), contains_array{false}, rl_path{rl_path}, unit{unit} {
+            PassVisitor(al, nullptr), contains_array{false}, rl_path{rl_path}, unit{unit} {
         pass_result.reserve(al, 1);
     }
 
@@ -245,7 +245,7 @@ public:
 
 void pass_replace_implied_do_loops(Allocator &al, ASR::TranslationUnit_t &unit,
                                    const LCompilers::PassOptions& /* pass_options */,
-				   const LFortran::CompilerOptions& compiler_options) {
+                                   const LFortran::CompilerOptions& compiler_options) {
     ImpliedDoLoopVisitor v(al, unit, compiler_options.rl_path);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));

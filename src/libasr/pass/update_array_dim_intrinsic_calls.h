@@ -8,7 +8,7 @@ namespace LFortran {
 
     void pass_update_array_dim_intrinsic_calls(Allocator &al, ASR::TranslationUnit_t &unit,
                                                const LCompilers::PassOptions& pass_options,
-					       const LFortran::CompilerOptions& compiler_options);
+                                               const LFortran::CompilerOptions& compiler_options);
 
 } // namespace LFortran
 

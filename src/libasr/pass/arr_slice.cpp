@@ -276,7 +276,7 @@ public:
 
 void pass_replace_arr_slice(Allocator &al, ASR::TranslationUnit_t &unit,
                             const LCompilers::PassOptions& /* pass_options */,
-			    const LFortran::CompilerOptions& compiler_options) {
+                            const LFortran::CompilerOptions& compiler_options) {
     ArrSliceVisitor v(al, compiler_options.rl_path);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));

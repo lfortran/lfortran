@@ -233,7 +233,7 @@ namespace LFortran {
 
         ASR::symbol_t* import_generic_procedure(std::string func_name, std::string module_name,
                                        Allocator& al, ASR::TranslationUnit_t& unit,
-				       const LFortran::CompilerOptions &compiler_options,
+                                       const LFortran::CompilerOptions &compiler_options,
                                        SymbolTable*& current_scope, Location& loc) {
             ASR::symbol_t *v;
             std::string remote_sym = func_name;
@@ -389,7 +389,7 @@ namespace LFortran {
 
         ASR::stmt_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
                               Allocator& al, ASR::TranslationUnit_t& unit,
-			      const LFortran::CompilerOptions &compiler_options,
+                              const LFortran::CompilerOptions &compiler_options,
                               SymbolTable*& current_scope,
                               const std::function<void (const std::string &, const Location &)> err) {
             ASR::symbol_t *v = import_generic_procedure("flipsign", "lfortran_intrinsic_optimization",
@@ -464,7 +464,7 @@ namespace LFortran {
         }
 
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
-	    Allocator& al, ASR::TranslationUnit_t& unit, const LFortran::CompilerOptions& compiler_options,
+            Allocator& al, ASR::TranslationUnit_t& unit, const LFortran::CompilerOptions& compiler_options,
             SymbolTable*& current_scope, Location& loc,
             const std::function<void (const std::string &, const Location &)> err) {
             ASR::symbol_t *v = import_generic_procedure("fma", "lfortran_intrinsic_optimization",
@@ -579,7 +579,7 @@ namespace LFortran {
         }
 
         ASR::expr_t* get_sign_from_value(ASR::expr_t* arg0, ASR::expr_t* arg1,
-	    Allocator& al, ASR::TranslationUnit_t& unit, const LFortran::CompilerOptions& compiler_options,
+            Allocator& al, ASR::TranslationUnit_t& unit, const LFortran::CompilerOptions& compiler_options,
             SymbolTable*& current_scope, Location& loc,
             const std::function<void (const std::string &, const Location &)> err) {
             ASR::symbol_t *v = import_generic_procedure("sign_from_value", "lfortran_intrinsic_optimization",

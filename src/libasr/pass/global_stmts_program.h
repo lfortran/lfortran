@@ -8,7 +8,7 @@ namespace LFortran {
 
     void pass_wrap_global_stmts_into_program(Allocator &al, ASR::TranslationUnit_t &unit,
                                              const LCompilers::PassOptions& pass_options,
-					     const LFortran::CompileOptions& compiler_options);
+                                             const LFortran::CompileOptions& compiler_options);
 
 } // namespace LFortran
 

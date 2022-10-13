@@ -889,15 +889,15 @@ void extract_module_python(const ASR::TranslationUnit_t &m,
 ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m);
 
 ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
-                            const std::string &module_name,
-                            const Location &loc, bool intrinsic,
-			    const LFortran::CompilerOptions &compiler_options,
-                            bool run_verify,
-                            const std::function<void (const std::string &, const Location &)> err);
+                           const std::string &module_name,
+                           const Location &loc, bool intrinsic,
+                           const LFortran::CompilerOptions &compiler_options,
+                           bool run_verify,
+                           const std::function<void (const std::string &, const Location &)> err);
 
 ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &msym,
                                              SymbolTable &symtab, bool intrinsic,
-					     const LFortran::CompilerOptions &compiler_options);
+                                             const LFortran::CompilerOptions &compiler_options);
 
 void set_intrinsic(ASR::TranslationUnit_t* trans_unit);
 

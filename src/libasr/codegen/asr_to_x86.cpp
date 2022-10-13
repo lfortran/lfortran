@@ -522,8 +522,8 @@ public:
 
 
 Result<int> asr_to_x86(ASR::TranslationUnit_t &asr, Allocator &al,
-	const std::string &filename, bool time_report,
-	const LFortran::CompilerOptions& compiler_options)
+        const std::string &filename, bool time_report,
+        const LFortran::CompilerOptions& compiler_options)
 {
     int time_pass_global=0;
     int time_pass_do_loops=0;

@@ -109,7 +109,7 @@ public:
 
 void pass_loop_unroll(Allocator &al, ASR::TranslationUnit_t &unit,
                       const LCompilers::PassOptions& pass_options,
-		      const LFortran::CompilerOptions& compiler_options) {
+                      const LFortran::CompilerOptions& compiler_options) {
     int64_t unroll_factor = pass_options.unroll_factor;
     LoopUnrollVisitor v(al, compiler_options.rl_path, unroll_factor);
     v.visit_TranslationUnit(unit);

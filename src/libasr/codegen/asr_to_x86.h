@@ -7,8 +7,8 @@ namespace LFortran {
 
     // Generates a 32-bit x86 Linux executable binary `filename`
     Result<int> asr_to_x86(ASR::TranslationUnit_t &asr, Allocator &al,
-			   const std::string &filename, bool time_report,
-			   const LFortran::CompilerOptions& compiler_options);
+            const std::string &filename, bool time_report,
+            const LFortran::CompilerOptions& compiler_options);
 
 } // namespace LFortran
 

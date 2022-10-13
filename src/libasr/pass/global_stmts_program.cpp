@@ -18,8 +18,8 @@ using LFortran::ASRUtils::EXPR;
  *
  */
 void pass_wrap_global_stmts_into_program(Allocator &al,
-	    ASR::TranslationUnit_t &unit, const LCompilers::PassOptions& pass_options,
-	    const LFortran::CompilerOptions& compiler_options) {
+            ASR::TranslationUnit_t &unit, const LCompilers::PassOptions& pass_options,
+            const LFortran::CompilerOptions& compiler_options) {
     std::string program_fn_name = pass_options.run_fun;
     SymbolTable *current_scope = al.make_new<SymbolTable>(unit.m_global_scope);
     std::string prog_name = "main_program";

@@ -8,7 +8,7 @@ namespace LFortran {
 
     void pass_dead_code_removal(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const LCompilers::PassOptions& pass_options,
-				const LFortran::CompilerOptions& compiler_options);
+                                const LFortran::CompilerOptions& compiler_options);
 
 } // namespace LFortran
 

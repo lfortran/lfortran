@@ -80,7 +80,7 @@ public:
 
 void pass_replace_div_to_mul(Allocator &al, ASR::TranslationUnit_t &unit,
                              const LCompilers::PassOptions& /* pass_options */,
-			     const LFortran::CompilerOptions& compiler_options) {
+                             const LFortran::CompilerOptions& compiler_options) {
     DivToMulVisitor v(al, compiler_options.rl_path);
     v.visit_TranslationUnit(unit);
     LFORTRAN_ASSERT(asr_verify(unit));

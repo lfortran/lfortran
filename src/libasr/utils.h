@@ -22,7 +22,7 @@ struct CompilerOptions {
     std::filesystem::path mod_files_dir;
     std::vector<std::filesystem::path> include_dirs;
     std::filesystem::path rl_path;
-    
+
     bool fixed_form = false;
     bool c_preprocessor = false;
     std::vector<std::string> c_preprocessor_defines;
