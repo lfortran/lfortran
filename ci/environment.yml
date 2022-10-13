@@ -2,7 +2,7 @@ name: lf
 channels:
   - conda-forge
 dependencies:
-  - llvmdev=11.1.0
+  - llvmdev=15
   - toml
   - pytest
   - jupyter

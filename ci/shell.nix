@@ -19,7 +19,7 @@ let
       toml
     '';
   };
-  llvmPkgs = pkgs.buildPackages.llvmPackages_11;
+  llvmPkgs = pkgs.buildPackages.llvmPackages_15;
   myStdenv = if clangOnly=="yes" then llvmPkgs.stdenv else pkgs.gcc10Stdenv;
   myBinutils = if clangOnly=="yes" then llvmPkgs.bintools else pkgs.binutils;
   mkShellNewEnv = pkgs.mkShell.override { stdenv = myStdenv; };
@@ -33,8 +33,8 @@ in mkShellNewEnv {
     valgrind
     gdb
     fmt
-    llvm_11
-    lld_11
+    llvm_15
+    lld_15
     myBinutils
     bison_3_5
     zlib
