@@ -47,7 +47,7 @@ public:
   KaleidoscopeJIT(JITTargetMachineBuilder JTMB, DataLayout DL)
       : ObjectLayer(ES,
                     []() { return std::make_unique<SectionMemoryManager>(); }),
-        CompileLayer(ES, ObjectLayer, ConcurrentIRCompiler(std::move(JTMB))),
+        CompileLayer(ES, ObjectLayer, std::make_unique<IRCompileLayer::IRCompiler>(ConcurrentIRCompiler(std::move(JTMB)))),
         DL(std::move(DL)), Mangle(ES, this->DL),
         Ctx(std::make_unique<LLVMContext>()) {
     ES.getMainJITDylib().setGenerator(
