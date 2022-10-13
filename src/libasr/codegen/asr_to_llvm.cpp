@@ -3304,6 +3304,15 @@ public:
 
             if (interactive) return;
 
+            if (compiler_options.generate_object_code
+                    && (x.m_abi == ASR::abiType::Intrinsic)
+                    && !compiler_options.rtlib) {
+                // Skip intrinsic functions in generate_object_code mode
+                // They must be later linked
+                return;
+            }
+
+
             if (!prototype_only) {
                 define_function_entry(x);
 
