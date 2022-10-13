@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-arrays_13-8ff7d44",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/arrays_13.f90",
+    "infile_hash": "3d6432b6894b4854190fa2867979e11795c57d07fc5ed3c7392cbc50",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-arrays_13-8ff7d44.stdout",
+    "stdout_hash": "ff0e54ffd69a503592f231afbf642af375e29411aac168605079e6af",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -3,7 +3,7 @@
 
 #include <lfortran/cwrapper.h>
 #include <lfortran/ast.h>
-#include <lfortran/parser/alloc.h>
+#include <libasr/alloc.h>
 #include <lfortran/parser/parser.h>
 #include <lfortran/pickle.h>
 
@@ -15,7 +15,7 @@ extern "C" {
 #define CWRAPPER_END                                                           \
     return LFORTRAN_NO_EXCEPTION;                                              \
     }                                                                          \
-    catch (LFortran::LFortranException & e)                                    \
+    catch (LFortran::LCompilersException & e)                                    \
     {                                                                          \
         return e.error_code();                                                 \
     }                                                                          \
@@ -52,7 +52,14 @@ lfortran_exceptions_t lfortran_parser_parse(LFortranCParser *self,
     CWRAPPER_BEGIN
 
     LFortran::AST::ast_t* result;
-    result = LFortran::parse(self->al, input)->m_items[0];
+    LFortran::diag::Diagnostics diagnostics;
+    LFortran::Result<LFortran::AST::TranslationUnit_t*> res
+        = LFortran::parse(self->al, input, diagnostics);
+    if (res.ok) {
+        result = res.result->m_items[0];
+    } else {
+        return LFORTRAN_PARSER_ERROR;
+    }
     lfortran_ast_t* result2 = (lfortran_ast_t*)result;
     *ast = result2;
 

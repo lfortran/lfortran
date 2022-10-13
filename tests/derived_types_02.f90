@@ -7,7 +7,7 @@ type :: B
 end type
 
 type C
-end type
+endtype
 
 type, extends(B), public :: X
     private
@@ -16,16 +16,30 @@ type, extends(B), public :: X
     type(C), pointer :: cc => null()
     real(r8), pointer :: r2(:) => null(), r3(:) => null()
 contains
+    private
     procedure, private :: p1
     procedure(something), private :: p1b
     procedure, pass(self) :: p2
+    procedure :: proc_1, proc_2
     generic :: operator(/=) => p5, p6
     generic :: operator(+) => p8
+    generic :: operator(.in.) => p7
+    generic :: operator(.dot.) => p10
+    generic :: operator(/) => p11
     generic :: assignment(=) => p9
+    generic, public :: calcCoeffs => calcCoeffsReal, calcCoeffsKPoint
+    generic, private :: name => sample
     generic :: p1 => p2;
+    generic, public :: write(formatted) => t_write
+    generic :: read(unformatted) => t_read
     final :: y
 end type X
 
+type matrix(k, b)
+    integer, kind :: k = 4
+    integer(8), len :: b
+    real(k) :: element(b, b)
+endtype matrix
 
 contains
 

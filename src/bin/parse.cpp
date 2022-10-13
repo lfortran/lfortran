@@ -38,11 +38,12 @@ int main()
         text.append(" * " + t0);
     }
     Allocator al(64*1024*1024); // The actual size is 31,600,600
+    LFortran::diag::Diagnostics diagnostics;
     std::cout << "Parse" << std::endl;
     auto t1 = std::chrono::high_resolution_clock::now();
-    auto result = parse(al, text);
+    auto result = parse(al, text, diagnostics);
     auto t2 = std::chrono::high_resolution_clock::now();
-    int c = count(*result->m_items[0]);
+    int c = count(*LFortran::TRY(result)->m_items[0]);
     auto t3 = std::chrono::high_resolution_clock::now();
     std::cout << "Parsing: " <<
         std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()

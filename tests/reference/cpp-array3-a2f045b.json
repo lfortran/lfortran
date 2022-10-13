@@ -1,0 +1,13 @@
+{
+    "basename": "cpp-array3-a2f045b",
+    "cmd": "lfortran --no-color --show-cpp {infile}",
+    "infile": "tests/array3.f90",
+    "infile_hash": "047ac01d7e3df52429d6889258f37213048937dae8611af6cbd9ecae",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "cpp-array3-a2f045b.stdout",
+    "stdout_hash": "7a06371ddf571a6cd864c6c81cbe5f0596f54984c5c60c4ecce97496",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

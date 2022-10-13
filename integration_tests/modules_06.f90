@@ -1,4 +1,4 @@
-module a
+module modules_06_a
 implicit none
 
 contains
@@ -11,7 +11,7 @@ end function
 end module
 
 program modules_06
-use a, only: b
+use modules_06_a, only: b
 implicit none
 
 integer :: i

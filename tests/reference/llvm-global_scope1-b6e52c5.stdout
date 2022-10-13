@@ -1,5 +1,0 @@
-; ModuleID = 'LFortran'
-source_filename = "LFortran"
-
-@x = global i64 0
-

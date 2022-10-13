@@ -1,0 +1,13 @@
+{
+    "basename": "asr_preprocess-preprocessor7-399f4c5",
+    "cmd": "lfortran --indent --cpp --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/preprocessor7.f90",
+    "infile_hash": "67aeb717d19dca60cfa9d8bb49195e781ef549a0abd3b08f5d09771b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr_preprocess-preprocessor7-399f4c5.stdout",
+    "stdout_hash": "0e0c775a1e53debfb658603c20b0de13138a7dab77364e988c54b2bc",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

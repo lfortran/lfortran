@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-complex_div_test-0a2468c",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/complex_div_test.f90",
+    "infile_hash": "0bbb7100f12786a5fc5022ab6cfd9f97cc6ede016ed0bdab03eda670",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-complex_div_test-0a2468c.stdout",
+    "stdout_hash": "b0d01b4516edab62e12bc337490a5b2907bbe12d024bf1c0d0c5098b",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

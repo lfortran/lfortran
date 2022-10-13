@@ -1,0 +1,81 @@
+(module
+    (type (;0;) (func (param i32) (result)))
+    (type (;1;) (func (param i64) (result)))
+    (type (;2;) (func (param f32) (result)))
+    (type (;3;) (func (param f64) (result)))
+    (type (;4;) (func (param i32 i32) (result)))
+    (type (;5;) (func (param) (result)))
+    (type (;6;) (func (param i32) (result)))
+    (type (;7;) (func (param i32) (result i32)))
+    (type (;8;) (func (param) (result)))
+    (import "js" "print_i32" (func (;0;) (type 0)))
+    (import "js" "print_i64" (func (;1;) (type 1)))
+    (import "js" "print_f32" (func (;2;) (type 2)))
+    (import "js" "print_f64" (func (;3;) (type 3)))
+    (import "js" "print_str" (func (;4;) (type 4)))
+    (import "js" "flush_buf" (func (;5;) (type 5)))
+    (import "js" "set_exit_code" (func (;6;) (type 6)))
+    (import "js" "memory" (memory (;0;) 100 100))
+    (func $7 (type 7) (param i32) (result i32)
+        (local i32)
+        local.get 0
+        local.get 0
+        i32.mul
+        local.set 1
+        local.get 1
+        return
+    )
+    (func $8 (type 8) (param) (result)
+        (local i32 f32 i32 f32 i32 f32)
+        i32.const 3
+        local.set 2
+        i32.const 5
+        local.set 4
+        local.get 2
+        local.get 4
+        call 7
+        i32.mul
+        local.set 0
+        local.get 0
+        call 0
+        call 5
+        f32.const 3.140000
+        local.set 3
+        f32.const 5.000000
+        local.set 5
+        local.get 3
+        local.get 5
+        f32.mul
+        local.get 5
+        f32.mul
+        local.set 1
+        local.get 1
+        call 2
+        call 5
+        i32.const 0
+        i32.const 23
+        call 4
+        local.get 5
+        call 2
+        local.get 4
+        call 0
+        call 5
+        i32.const 23
+        i32.const 15
+        call 4
+        local.get 1
+        call 2
+        i32.const 38
+        i32.const 4
+        call 4
+        call 5
+        i32.const 0
+        call 6
+        return
+    )
+    (export "sqr" (func $7))
+    (export "_lcompilers_main" (func $8))
+    (data (;0;) (i32.const 0) "radius of the circle is")
+    (data (;1;) (i32.const 23) "and its area is")
+    (data (;2;) (i32.const 38) "cm^2")
+)

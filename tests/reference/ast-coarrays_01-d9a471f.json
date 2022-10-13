@@ -1,0 +1,13 @@
+{
+    "basename": "ast-coarrays_01-d9a471f",
+    "cmd": "lfortran --indent --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/coarrays_01.f90",
+    "infile_hash": "933ef6b85aed33b834bb7b03ae1f635e2b6e4fd18eb8ec999593251f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-coarrays_01-d9a471f.stdout",
+    "stdout_hash": "405d79bce18f80d86da5b5ca4aa2f2542d0aec8f69cff1f91d115f8b",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

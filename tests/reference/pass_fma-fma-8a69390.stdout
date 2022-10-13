@@ -1,0 +1,369 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            fma:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            abs:
+                                (ExternalSymbol 
+                                    2 
+                                    abs 
+                                    4 abs 
+                                    lfortran_intrinsic_math 
+                                    [] 
+                                    abs 
+                                    Private
+                                ), 
+                            abs@dabs:
+                                (ExternalSymbol 
+                                    2 
+                                    abs@dabs 
+                                    4 dabs 
+                                    lfortran_intrinsic_math 
+                                    [] 
+                                    dabs 
+                                    Private
+                                ), 
+                            abs@sabs:
+                                (ExternalSymbol 
+                                    2 
+                                    abs@sabs 
+                                    4 sabs 
+                                    lfortran_intrinsic_math 
+                                    [] 
+                                    sabs 
+                                    Private
+                                ), 
+                            fma@IntrinsicOptimization@fmar32:
+                                (ExternalSymbol 
+                                    2 
+                                    fma@IntrinsicOptimization@fmar32 
+                                    226 fmar32 
+                                    lfortran_intrinsic_optimization 
+                                    [] 
+                                    fmar32 
+                                    Private
+                                ), 
+                            fma@IntrinsicOptimization@fmar64:
+                                (ExternalSymbol 
+                                    2 
+                                    fma@IntrinsicOptimization@fmar64 
+                                    226 fmar64 
+                                    lfortran_intrinsic_optimization 
+                                    [] 
+                                    fmar64 
+                                    Private
+                                ), 
+                            pi:
+                                (Variable 
+                                    2 
+                                    pi 
+                                    Local 
+                                    (RealConstant 
+                                        3.140000 
+                                        (Real 4 [])
+                                    ) 
+                                    (RealConstant 
+                                        3.140000 
+                                        (Real 4 [])
+                                    ) 
+                                    Parameter 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            s1:
+                                (Variable 
+                                    2 
+                                    s1 
+                                    Local 
+                                    (Cast 
+                                        (RealConstant 
+                                            1.000000 
+                                            (Real 4 [])
+                                        ) 
+                                        RealToReal 
+                                        (Real 8 []) 
+                                        (RealConstant 
+                                            1.000000 
+                                            (Real 8 [])
+                                        )
+                                    ) 
+                                    () 
+                                    Save 
+                                    (Real 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            s2:
+                                (Variable 
+                                    2 
+                                    s2 
+                                    Local 
+                                    (Cast 
+                                        (RealConstant 
+                                            2.000000 
+                                            (Real 4 [])
+                                        ) 
+                                        RealToReal 
+                                        (Real 8 []) 
+                                        (RealConstant 
+                                            2.000000 
+                                            (Real 8 [])
+                                        )
+                                    ) 
+                                    () 
+                                    Save 
+                                    (Real 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            sign:
+                                (ExternalSymbol 
+                                    2 
+                                    sign 
+                                    4 sign 
+                                    lfortran_intrinsic_math 
+                                    [] 
+                                    sign 
+                                    Private
+                                ), 
+                            sign@signr32:
+                                (ExternalSymbol 
+                                    2 
+                                    sign@signr32 
+                                    4 signr32 
+                                    lfortran_intrinsic_math 
+                                    [] 
+                                    signr32 
+                                    Private
+                                ), 
+                            x:
+                                (Variable 
+                                    2 
+                                    x 
+                                    Local 
+                                    (RealConstant 
+                                        4.000000 
+                                        (Real 4 [])
+                                    ) 
+                                    () 
+                                    Save 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            z:
+                                (Variable 
+                                    2 
+                                    z 
+                                    Local 
+                                    (Cast 
+                                        (RealConstant 
+                                            1.000000 
+                                            (Real 4 [])
+                                        ) 
+                                        RealToReal 
+                                        (Real 8 []) 
+                                        (RealConstant 
+                                            1.000000 
+                                            (Real 8 [])
+                                        )
+                                    ) 
+                                    () 
+                                    Save 
+                                    (Real 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    fma 
+                    [] 
+                    [(= 
+                        (Var 2 x) 
+                        (FunctionCall 
+                            2 fma@IntrinsicOptimization@fmar32 
+                            1 fma@IntrinsicOptimization 
+                            [((FunctionCall 
+                                2 fma@IntrinsicOptimization@fmar32 
+                                1 fma@IntrinsicOptimization 
+                                [((RealBinOp 
+                                    (Var 2 x) 
+                                    Mul 
+                                    (Cast 
+                                        (IntegerConstant 4 (Integer 4 [])) 
+                                        IntegerToReal 
+                                        (Real 4 []) 
+                                        (RealConstant 
+                                            4.000000 
+                                            (Real 4 [])
+                                        )
+                                    ) 
+                                    (Real 4 []) 
+                                    ()
+                                ))
+                                ((RealConstant 
+                                    0.500000 
+                                    (Real 4 [])
+                                ))
+                                ((FunctionCall 
+                                    2 sign@signr32 
+                                    2 sign 
+                                    [((RealConstant 
+                                        1.000000 
+                                        (Real 4 [])
+                                    ))
+                                    ((Var 2 x))] 
+                                    (Real 4 []) 
+                                    () 
+                                    ()
+                                ))] 
+                                (Real 4 []) 
+                                () 
+                                ()
+                            ))
+                            ((RealUnaryMinus 
+                                (Var 2 x) 
+                                (Real 4 []) 
+                                ()
+                            ))
+                            ((Var 2 pi))] 
+                            (Real 4 []) 
+                            () 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 z) 
+                        (FunctionCall 
+                            2 fma@IntrinsicOptimization@fmar64 
+                            1 fma@IntrinsicOptimization 
+                            [((Var 2 s1))
+                            ((Var 2 z))
+                            ((Var 2 s2))] 
+                            (Real 8 []) 
+                            () 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (If 
+                        (RealCompare 
+                            (FunctionCall 
+                                2 abs@sabs 
+                                2 abs 
+                                [((RealBinOp 
+                                    (Var 2 x) 
+                                    Sub 
+                                    (RealConstant 
+                                        3.940000 
+                                        (Real 4 [])
+                                    ) 
+                                    (Real 4 []) 
+                                    ()
+                                ))] 
+                                (Real 4 []) 
+                                () 
+                                ()
+                            ) 
+                            Gt 
+                            (RealConstant 
+                                0.000001 
+                                (Real 4 [])
+                            ) 
+                            (Logical 4 []) 
+                            ()
+                        ) 
+                        [(ErrorStop 
+                            ()
+                        )] 
+                        []
+                    )
+                    (If 
+                        (RealCompare 
+                            (FunctionCall 
+                                2 abs@dabs 
+                                2 abs 
+                                [((RealBinOp 
+                                    (Var 2 z) 
+                                    Sub 
+                                    (Cast 
+                                        (RealConstant 
+                                            3.000000 
+                                            (Real 4 [])
+                                        ) 
+                                        RealToReal 
+                                        (Real 8 []) 
+                                        (RealConstant 
+                                            3.000000 
+                                            (Real 8 [])
+                                        )
+                                    ) 
+                                    (Real 8 []) 
+                                    ()
+                                ))] 
+                                (Real 8 []) 
+                                () 
+                                ()
+                            ) 
+                            Gt 
+                            (Cast 
+                                (RealConstant 
+                                    0.000001 
+                                    (Real 4 [])
+                                ) 
+                                RealToReal 
+                                (Real 8 []) 
+                                (RealConstant 
+                                    0.000001 
+                                    (Real 8 [])
+                                )
+                            ) 
+                            (Logical 4 []) 
+                            ()
+                        ) 
+                        [(ErrorStop 
+                            ()
+                        )] 
+                        []
+                    )]
+                ), 
+            fma@IntrinsicOptimization:
+                (ExternalSymbol 
+                    1 
+                    fma@IntrinsicOptimization 
+                    226 fma 
+                    lfortran_intrinsic_optimization 
+                    [] 
+                    fma 
+                    Private
+                ), 
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding), 
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin), 
+            lfortran_intrinsic_math:
+                (IntrinsicModule lfortran_intrinsic_math), 
+            lfortran_intrinsic_optimization:
+                (IntrinsicModule lfortran_intrinsic_optimization)
+            
+        }) 
+    []
+)

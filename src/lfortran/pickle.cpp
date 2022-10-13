@@ -4,7 +4,8 @@
 #include <lfortran/pickle.h>
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/parser.tab.hh>
-#include <lfortran/asr_utils.h>
+#include <libasr/asr_utils.h>
+#include <libasr/string_utils.h>
 
 using LFortran::AST::ast_t;
 using LFortran::AST::Declaration_t;
@@ -58,10 +59,17 @@ std::string pickle(int token, const LFortran::YYSTYPE &yystype,
     t += " \"";
     t += token2text(token);
     t += "\"";
+    if (token == yytokentype::TK_LABEL) {
+        t += " " + std::to_string(yystype.n) + " ";
+    }
+
     if (token == yytokentype::TK_NAME) {
         t += " " + yystype.string.str();
     } else if (token == yytokentype::TK_INTEGER) {
-        t += " " + std::to_string(yystype.n);
+        t += " " + yystype.int_suffix.int_n.str();
+        if (yystype.int_suffix.int_kind.p) {
+            t += "_" + yystype.int_suffix.int_kind.str();
+        }
     } else if (token == yytokentype::TK_STRING) {
         t = t + " " + "\"" + yystype.string.str() + "\"";
     } else if (token == yytokentype::TK_BOZ_CONSTANT) {
@@ -154,9 +162,13 @@ public:
         if (use_colors) {
             s.append(color(fg::cyan));
         }
-        s.append(std::to_string(x.m_n));
+        s.append(BigInt::int_to_str(x.m_n));
         if (use_colors) {
             s.append(color(fg::reset));
+        }
+        if (x.m_kind) {
+            s += "_";
+            s += x.m_kind;
         }
     }
     std::string get_str() {
@@ -164,16 +176,18 @@ public:
     }
 };
 
-std::string pickle(LFortran::AST::ast_t &ast, bool colors) {
+std::string pickle(LFortran::AST::ast_t &ast, bool colors, bool indent) {
     PickleVisitor v;
     v.use_colors = colors;
+    v.indent = indent;
     v.visit_ast(ast);
     return v.get_str();
 }
 
-std::string pickle(AST::TranslationUnit_t &ast, bool colors) {
+std::string pickle(AST::TranslationUnit_t &ast, bool colors,bool indent) {
     PickleVisitor v;
     v.use_colors = colors;
+    v.indent = indent;
     v.visit_ast((AST::ast_t&)(ast));
     return v.get_str();
 }
@@ -185,108 +199,29 @@ class ASRPickleVisitor :
     public LFortran::ASR::PickleBaseVisitor<ASRPickleVisitor>
 {
 public:
+    bool show_intrinsic_modules;
+
     std::string get_str() {
         return s;
     }
-    void visit_Var(const ASR::Var_t &x) {
-        s.append("(");
-        if (use_colors) {
-            s.append(color(style::bold));
-            s.append(color(fg::magenta));
-        }
-        s.append("Var");
-        if (use_colors) {
-            s.append(color(fg::reset));
-            s.append(color(style::reset));
-        }
-        s.append(" ");
-        s.append(ASR::down_cast<ASR::Variable_t>(x.m_v)->m_parent_symtab->get_hash());
+    void visit_symbol(const ASR::symbol_t &x) {
+        s.append(LFortran::ASRUtils::symbol_parent_symtab(&x)->get_counter());
         s.append(" ");
         if (use_colors) {
             s.append(color(fg::yellow));
         }
-        s.append(ASR::down_cast<ASR::Variable_t>(x.m_v)->m_name);
+        s.append(LFortran::ASRUtils::symbol_name(&x));
         if (use_colors) {
             s.append(color(fg::reset));
         }
-        s.append(")");
     }
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+    void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
         s.append("(");
         if (use_colors) {
             s.append(color(style::bold));
             s.append(color(fg::magenta));
         }
-        s.append("SubroutineCall");
-        if (use_colors) {
-            s.append(color(fg::reset));
-            s.append(color(style::reset));
-        }
-        s.append(" ");
-        s.append(ASR::down_cast<ASR::Subroutine_t>(x.m_name)->m_symtab->parent->get_hash());
-        s.append(" ");
-        if (use_colors) {
-            s.append(color(fg::yellow));
-        }
-        s.append(ASR::down_cast<ASR::Subroutine_t>(x.m_name)->m_name);
-        if (use_colors) {
-            s.append(color(fg::reset));
-        }
-        s.append(" ");
-        s.append("[");
-        for (size_t i=0; i<x.n_args; i++) {
-            this->visit_expr(*x.m_args[i]);
-            if (i < x.n_args-1) s.append(" ");
-        }
-        s.append("]");
-        s.append(")");
-    }
-    void visit_FuncCall(const ASR::FuncCall_t &x) {
-        s.append("(");
-        if (use_colors) {
-            s.append(color(style::bold));
-            s.append(color(fg::magenta));
-        }
-        s.append("FuncCall");
-        if (use_colors) {
-            s.append(color(fg::reset));
-            s.append(color(style::reset));
-        }
-        s.append(" ");
-        s.append(ASR::down_cast<ASR::Function_t>(x.m_func)->m_symtab->parent->get_hash());
-        s.append(" ");
-        if (use_colors) {
-            s.append(color(fg::yellow));
-        }
-        s.append(ASR::down_cast<ASR::Function_t>(x.m_func)->m_name);
-        if (use_colors) {
-            s.append(color(fg::reset));
-        }
-        s.append(" ");
-        s.append("[");
-        for (size_t i=0; i<x.n_args; i++) {
-            this->visit_expr(*x.m_args[i]);
-            if (i < x.n_args-1) s.append(" ");
-        }
-        s.append("]");
-        s.append(" ");
-        s.append("[");
-        for (size_t i=0; i<x.n_keywords; i++) {
-            this->visit_keyword(x.m_keywords[i]);
-            if (i < x.n_keywords-1) s.append(" ");
-        }
-        s.append("]");
-        s.append(" ");
-        this->visit_ttype(*x.m_type);
-        s.append(")");
-    }
-    void visit_Num(const ASR::Num_t &x) {
-        s.append("(");
-        if (use_colors) {
-            s.append(color(style::bold));
-            s.append(color(fg::magenta));
-        }
-        s.append("Num");
+        s.append("IntegerConstant");
         if (use_colors) {
             s.append(color(fg::reset));
             s.append(color(style::reset));
@@ -303,17 +238,40 @@ public:
         this->visit_ttype(*x.m_type);
         s.append(")");
     }
+    void visit_Module(const ASR::Module_t &x) {
+        if (!show_intrinsic_modules &&
+                    startswith(x.m_name, "lfortran_intrinsic_")) {
+            s.append("(");
+            if (use_colors) {
+                s.append(color(style::bold));
+                s.append(color(fg::magenta));
+            }
+            s.append("IntrinsicModule");
+            if (use_colors) {
+                s.append(color(fg::reset));
+                s.append(color(style::reset));
+            }
+            s.append(" ");
+            s.append(x.m_name);
+            s.append(")");
+        } else {
+            LFortran::ASR::PickleBaseVisitor<ASRPickleVisitor>::visit_Module(x);
+        };
+    }
 };
 
-std::string pickle(LFortran::ASR::asr_t &asr, bool colors) {
+std::string pickle(LFortran::ASR::asr_t &asr, bool colors, bool indent,
+        bool show_intrinsic_modules) {
     ASRPickleVisitor v;
     v.use_colors = colors;
+    v.indent = indent;
+    v.show_intrinsic_modules = show_intrinsic_modules;
     v.visit_asr(asr);
     return v.get_str();
 }
 
-std::string pickle(LFortran::ASR::TranslationUnit_t &asr, bool colors) {
-    return pickle((ASR::asr_t &)asr, colors);
+std::string pickle(LFortran::ASR::TranslationUnit_t &asr, bool colors, bool indent, bool show_intrinsic_modules) {
+    return pickle((ASR::asr_t &)asr, colors, indent, show_intrinsic_modules);
 }
 
 }

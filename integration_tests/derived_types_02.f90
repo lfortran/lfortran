@@ -1,4 +1,4 @@
-module a
+module derived_types_02_m
 implicit none
 
 integer, parameter :: r8 = kind(0.d0)
@@ -35,7 +35,7 @@ end subroutine
 end module
 
 program derived_types_02
-use a, only: X
+use derived_types_02_m, only: X
 implicit none
 type(X) :: b
 end

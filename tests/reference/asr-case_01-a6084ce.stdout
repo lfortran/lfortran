@@ -1,0 +1,119 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            case_01:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            i:
+                                (Variable 
+                                    2 
+                                    i 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    case_01 
+                    [] 
+                    [(= 
+                        (Var 2 i) 
+                        (IntegerConstant 4 (Integer 4 [])) 
+                        ()
+                    )
+                    (Select 
+                        (Var 2 i) 
+                        [(CaseStmt 
+                            [(IntegerConstant 1 (Integer 4 []))] 
+                            [(Print 
+                                () 
+                                [(StringConstant 
+                                    "1" 
+                                    (Character 1 1 () [])
+                                )] 
+                                () 
+                                ()
+                            )]
+                        )
+                        (CaseStmt 
+                            [(IntegerConstant 2 (Integer 4 []))] 
+                            [(Print 
+                                () 
+                                [(StringConstant 
+                                    "2" 
+                                    (Character 1 1 () [])
+                                )] 
+                                () 
+                                ()
+                            )]
+                        )
+                        (CaseStmt 
+                            [(IntegerConstant 3 (Integer 4 []))] 
+                            [(Print 
+                                () 
+                                [(StringConstant 
+                                    "3" 
+                                    (Character 1 1 () [])
+                                )] 
+                                () 
+                                ()
+                            )]
+                        )
+                        (CaseStmt 
+                            [(IntegerConstant 4 (Integer 4 []))] 
+                            [(Print 
+                                () 
+                                [(StringConstant 
+                                    "4" 
+                                    (Character 1 1 () [])
+                                )] 
+                                () 
+                                ()
+                            )]
+                        )] 
+                        []
+                    )
+                    (Select 
+                        (Var 2 i) 
+                        [(CaseStmt 
+                            [(IntegerConstant 1 (Integer 4 []))] 
+                            [(Print 
+                                () 
+                                [(StringConstant 
+                                    "1" 
+                                    (Character 1 1 () [])
+                                )] 
+                                () 
+                                ()
+                            )]
+                        )
+                        (CaseStmt 
+                            [(IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4 []))] 
+                            [(Print 
+                                () 
+                                [(StringConstant 
+                                    "2,3,4" 
+                                    (Character 1 5 () [])
+                                )] 
+                                () 
+                                ()
+                            )]
+                        )] 
+                        []
+                    )]
+                )
+            
+        }) 
+    []
+)

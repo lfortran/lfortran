@@ -1,0 +1,13 @@
+{
+    "basename": "wat-cpu_time_02_wasm-fa2b15f",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/../integration_tests/cpu_time_02_wasm.f90",
+    "infile_hash": "b059b12163601924d5ef98bed17705e08c0456055aa6c59be759794b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-cpu_time_02_wasm-fa2b15f.stdout",
+    "stdout_hash": "ae5c49d66852993d568416c7b63f8742bd814206105d49bd90fe8b44",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

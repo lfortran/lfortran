@@ -5,51 +5,56 @@
 #include <algorithm>
 #include <memory>
 
-#include <lfortran/containers.h>
+#include <libasr/containers.h>
+#include <libasr/diagnostics.h>
 #include <lfortran/parser/tokenizer.h>
+#include <lfortran/parser/fixedform_tokenizer.h>
+
 
 namespace LFortran
 {
 
 class Parser
 {
+public:
     std::string inp;
 
 public:
+    diag::Diagnostics &diag;
     Allocator &m_a;
     Tokenizer m_tokenizer;
+    FixedFormTokenizer f_tokenizer;
     Vec<AST::ast_t*> result;
+    bool fixed_form;
 
-    Parser(Allocator &al) : m_a{al} {
+    Parser(Allocator &al, diag::Diagnostics &diagnostics, const bool &fixed_form=false)
+            : diag{diagnostics}, m_a{al}, fixed_form{fixed_form}{
         result.reserve(al, 32);
     }
 
-    void parse(const std::string &input);
-    int parse();
-
-
-private:
+    bool parse(const std::string &input);
+    void handle_yyerror(const Location &loc, const std::string &msg);
 };
 
+
 // Parses Fortran code to AST
-AST::TranslationUnit_t* parse(Allocator &al, const std::string &s);
-
-// Just like `parse`, but prints a nice error message to std::cout if a
-// syntax error happens:
-AST::TranslationUnit_t* parse2(Allocator &al, const std::string &s);
-
-// Prints a nice error message to std::cout
-void show_syntax_error(const std::string &filename, const std::string &input,
-        const Location &loc, const int token, const std::string *tstr=nullptr);
+Result<AST::TranslationUnit_t*> parse(Allocator &al,
+    const std::string &s,
+    diag::Diagnostics &diagnostics,
+    const bool &fixed_form=false);
 
 // Tokenizes the `input` and return a list of tokens
-std::vector<int> tokens(const std::string &input,
-        std::vector<LFortran::YYSTYPE> *stypes=nullptr);
+Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
+        diag::Diagnostics &diagnostics,
+        std::vector<YYSTYPE> *stypes,
+        std::vector<Location> *locations,
+        bool fixed_form);
 
 // Converts token number to text
 std::string token2text(const int token);
 
-std::string fix_continuation(const std::string &s);
+std::string fix_continuation(const std::string &s, LocationManager &lm,
+        bool fixed_form, const std::string &root_dir);
 
 } // namespace LFortran
 

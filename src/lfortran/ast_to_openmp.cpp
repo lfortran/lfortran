@@ -1,3 +1,5 @@
+#include <cctype>
+
 #include <lfortran/ast_to_openmp.h>
 
 using LFortran::AST::expr_t;
@@ -22,6 +24,12 @@ namespace {
             case (operatorType::Pow) : return "**";
         }
         throw std::runtime_error("Unknown type");
+    }
+
+    inline std::string convert_to_lowercase(const std::string &s) {
+       std::string res;
+       for(auto x: s) res.push_back(std::tolower(x));
+       return res;
     }
 
 }
@@ -151,60 +159,7 @@ public:
         r.append("\n");
         s = r;
     }
-    void visit_Function(const Function_t &x) {
-        std::string r = "";
-        if (x.m_return_type) {
-            r.append(x.m_return_type);
-            r.append(" ");
-        }
-        r.append("function ");
-        r.append(x.m_name);
-        r.append("(");
-        for (size_t i=0; i<x.n_args; i++) {
-            this->visit_arg(x.m_args[i]);
-            r.append(s);
-            if (i < x.n_args-1) s.append(", ");
-        }
-        r.append(")");
-        if (x.m_return_var) {
-            r.append(" result(");
-            this->visit_expr(*x.m_return_var);
-            r.append(s);
-            r.append(")");
-        }
-        r.append(" ");
-        if (x.m_bind) {
-            this->visit_tbind(*x.m_bind);
-            r.append(s);
-        }
-        r.append("\n");
 
-        for (size_t i=0; i<x.n_use; i++) {
-            this->visit_unit_decl1(*x.m_use[i]);
-            r.append(s);
-            r.append("\n");
-        }
-        for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
-            r.append(s);
-            r.append("\n");
-        }
-        for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
-            r.append(s);
-            r.append("\n");
-        }
-        for (size_t i=0; i<x.n_contains; i++) {
-            this->visit_program_unit(*x.m_contains[i]);
-            r.append(s);
-            r.append("\n");
-        }
-        r.append("end function ");
-        r.append(x.m_name);
-        r.append("\n");
-
-        s = r;
-    }
     void visit_Use(const Use_t &x) {
         std::string r = "use ";
         r.append(x.m_module);
@@ -218,45 +173,248 @@ public:
         }
         s = r;
     }
+
     void visit_Declaration(const Declaration_t &x) {
         std::string r = "";
-        for (size_t i=0; i<x.n_vars; i++) {
-            this->visit_decl(x.m_vars[i]);
-            r.append(s);
-            if (i < x.n_vars-1) r.append("\n");
+        if (x.m_vartype == nullptr &&
+                x.n_attributes == 1 &&
+                is_a<SimpleAttribute_t>(*x.m_attributes[0]) &&
+                down_cast<SimpleAttribute_t>(x.m_attributes[0])->m_attr ==
+                    simple_attributeType::AttrParameter) {
+            // The parameter statement is printed differently than other
+            // attributes
+            r += "parameter";
+            r += "(";
+            for (size_t i=0; i<x.n_syms; i++) {
+                visit_var_sym(x.m_syms[i]);
+                r += s;
+                if (i < x.n_syms-1) r.append(", ");
+            }
+            r += ")";
+        } else if (x.m_vartype == nullptr &&
+                x.n_attributes == 1 &&
+                is_a<AttrNamelist_t>(*x.m_attributes[0])) {
+            // The namelist statement is printed differently than other
+            // atttributes
+            r.append("namelist");
+            r.append(" /");
+            r += down_cast<AttrNamelist_t>(x.m_attributes[0])->m_name;
+            r.append("/ ");
+            for (size_t i=0; i<x.n_syms; i++) {
+                visit_var_sym(x.m_syms[i]);
+                r += s;
+                if (i < x.n_syms-1) r.append(", ");
+            }
+        } else {
+            if (x.m_vartype) {
+                visit_decl_attribute(*x.m_vartype);
+                r += s;
+                if (x.n_attributes > 0) r.append(", ");
+            }
+            for (size_t i=0; i<x.n_attributes; i++) {
+                visit_decl_attribute(*x.m_attributes[i]);
+                r += s;
+                if (i < x.n_attributes-1) r.append(", ");
+            }
+            if (x.n_syms > 0) {
+                r.append(" :: ");
+                for (size_t i=0; i<x.n_syms; i++) {
+                    visit_var_sym(x.m_syms[i]);
+                    r += s;
+                    if (i < x.n_syms-1) r.append(", ");
+                }
+            }
         }
         s = r;
     }
-    void visit_Private(const Private_t &/* x */) {
-        s.append("(");
-        if (use_colors) {
-            s.append(color(style::bold));
-            s.append(color(fg::magenta));
+
+    void visit_var_sym(const var_sym_t &x) {
+        std::string r = "";
+        r.append(x.m_name);
+        if (x.n_dim > 0) {
+            r.append("(");
+            for (size_t i=0; i<x.n_dim; i++) {
+                visit_dimension(x.m_dim[i]);
+                r += s;
+                if (i < x.n_dim-1) r.append(",");
+            }
+            r.append(")");
         }
-        s.append("private");
-        if (use_colors) {
-            s.append(color(fg::reset));
-            s.append(color(style::reset));
+        if (x.m_initializer) {
+            visit_expr(*x.m_initializer);
+            r += "=" + s;
         }
-        s.append(" ");
-        s.append("Unimplementedidentifier");
-        s.append(")");
+        s = r;
     }
-    void visit_Public(const Public_t &/* x */) {
-        s.append("(");
-        if (use_colors) {
-            s.append(color(style::bold));
-            s.append(color(fg::magenta));
+
+#define ATTRTYPE(x) \
+            case (simple_attributeType::Attr##x) : \
+                r.append(convert_to_lowercase(#x)); \
+                break;
+
+    void visit_SimpleAttribute(const SimpleAttribute_t &x) {
+        std::string r;
+        switch (x.m_attr) {
+            ATTRTYPE(Abstract)
+            ATTRTYPE(Allocatable)
+            ATTRTYPE(Contiguous)
+            ATTRTYPE(Elemental)
+            ATTRTYPE(Enumerator)
+            ATTRTYPE(Impure)
+            ATTRTYPE(Module)
+            ATTRTYPE(NoPass)
+            ATTRTYPE(Optional)
+            ATTRTYPE(Parameter)
+            ATTRTYPE(Pointer)
+            ATTRTYPE(Private)
+            ATTRTYPE(Protected)
+            ATTRTYPE(Public)
+            ATTRTYPE(Pure)
+            ATTRTYPE(Recursive)
+            ATTRTYPE(Save)
+            ATTRTYPE(Target)
+            ATTRTYPE(Value)
+            default :
+                throw LCompilersException("Attribute type not implemented");
         }
-        s.append("public");
-        if (use_colors) {
-            s.append(color(fg::reset));
-            s.append(color(style::reset));
-        }
-        s.append(" ");
-        s.append("Unimplementedidentifier");
-        s.append(")");
+        s = r;
     }
+
+#define ATTRTYPE2(x, y) \
+            case (decl_typeType::Type##x) : \
+                r.append(y); \
+                break;
+
+    void visit_AttrType(const AttrType_t &x) {
+        std::string r;
+        switch (x.m_type) {
+            ATTRTYPE2(Class, "class")
+            ATTRTYPE2(Character, "character")
+            ATTRTYPE2(Complex, "complex")
+            ATTRTYPE2(DoublePrecision, "double precision")
+            ATTRTYPE2(Integer, "integer")
+            ATTRTYPE2(Logical, "logical")
+            ATTRTYPE2(Procedure, "procedure")
+            ATTRTYPE2(Real, "real")
+            ATTRTYPE2(Type, "type")
+            default :
+                throw LCompilersException("Attribute type not implemented");
+        }
+        if (x.n_kind > 0) {
+            r.append("(");
+
+            // Determine proper canonical printing of kinds
+            // TODO: Move this part into a separate AST pass
+            kind_item_t k[2];
+            LFORTRAN_ASSERT(x.n_kind <= 2);
+            for (size_t i=0; i<x.n_kind; i++) {
+                k[i] = x.m_kind[i];
+            }
+            if (x.n_kind == 1 && (
+                    x.m_type == decl_typeType::TypeReal ||
+                    x.m_type == decl_typeType::TypeInteger ||
+                    x.m_type == decl_typeType::TypeLogical ||
+                    x.m_type == decl_typeType::TypeComplex
+                ) && (
+                    k[0].m_id == nullptr || std::string(k[0].m_id) == "kind"
+                )) {
+                k[0].m_id = nullptr;
+            } else if (x.n_kind == 1 &&
+                    x.m_type == decl_typeType::TypeCharacter
+                && (
+                    k[0].m_id == nullptr || std::string(k[0].m_id) == "len"
+                )) {
+                k[0].m_id = (char*)"len";
+            } else if (x.n_kind == 2 &&
+                    x.m_type == decl_typeType::TypeCharacter
+                && (
+                    k[0].m_id != nullptr && k[1].m_id != nullptr
+                ) && std::string(k[1].m_id) == "len") {
+                    std::swap(k[0], k[1]);
+            }
+            if (x.m_type == decl_typeType::TypeCharacter &&
+                k[0].m_id == nullptr) {
+                    k[0].m_id = (char*)"len";
+            }
+
+            for (size_t i=0; i<x.n_kind; i++) {
+                visit_kind_item(k[i]);
+                r += s;
+                if (i < x.n_kind-1) r.append(", ");
+            }
+            r.append(")");
+        }
+        if (x.m_name) {
+            r.append("(");
+            r.append(x.m_name);
+            r.append(")");
+        }
+        s = r;
+    }
+
+    void visit_kind_item(const kind_item_t &x) {
+        std::string r;
+        if (x.m_id) {
+            r.append(x.m_id);
+            r.append("=");
+        }
+        r += kind_value(x.m_type, x.m_value);
+        s = r;
+    }
+
+    void visit_AttrIntent(const AttrIntent_t &x) {
+        std::string r;
+        r += "intent";
+        r += "(";
+        switch (x.m_intent) {
+            case (attr_intentType::In) : {
+                r.append("in");
+                break;
+            }
+            case (attr_intentType::Out) : {
+                r.append("out");
+                break;
+            }
+            case (attr_intentType::InOut) : {
+                r.append("inout");
+                break;
+            }
+        }
+        r += ")";
+        s = r;
+    }
+
+    void visit_AttrDimension(const AttrDimension_t &x) {
+        std::string r;
+        r += "dimension";
+        r += "(";
+        for (size_t i=0; i<x.n_dim; i++) {
+            visit_dimension(x.m_dim[i]);
+            r += s;
+            if (i < x.n_dim-1) r.append(", ");
+        }
+        r += ")";
+        s = r;
+    }
+
+    std::string kind_value(const AST::kind_item_typeType &type,
+            const AST::expr_t *value)
+    {
+        switch (type) {
+            case (AST::kind_item_typeType::Value) :
+                LFORTRAN_ASSERT(value != nullptr);
+                this->visit_expr(*value);
+                return s;
+            case (AST::kind_item_typeType::Colon) :
+                return ":";
+            case (AST::kind_item_typeType::Star) :
+                return "*";
+            default :
+                throw LCompilersException("Unknown type");
+        }
+    }
+
+
     void visit_Interface(const Interface_t &x) {
         s.append("(");
         if (use_colors) {
@@ -269,35 +427,9 @@ public:
             s.append(color(style::reset));
         }
         s.append(" ");
-        s.append(x.m_name);
+        s.append(AST::down_cast<AST::InterfaceHeaderName_t>(x.m_header)->m_name);
         s.append(" ");
         s.append("Unimplementedidentifier");
-        s.append(")");
-    }
-    void visit_Interface2(const Interface2_t &x) {
-        s.append("(");
-        if (use_colors) {
-            s.append(color(style::bold));
-            s.append(color(fg::magenta));
-        }
-        s.append("interface2");
-        if (use_colors) {
-            s.append(color(fg::reset));
-            s.append(color(style::reset));
-        }
-        s.append(" ");
-        if (x.m_name) {
-            s.append(x.m_name);
-        } else {
-            s.append("()");
-        }
-        s.append(" ");
-        s.append("[");
-        for (size_t i=0; i<x.n_procs; i++) {
-            this->visit_program_unit(*x.m_procs[i]);
-            if (i < x.n_procs-1) s.append(" ");
-        }
-        s.append("]");
         s.append(")");
     }
     void visit_Assignment(const Assignment_t &x) {
@@ -323,34 +455,12 @@ public:
         r.append(x.m_name);
         r.append("(");
         for (size_t i=0; i<x.n_args; i++) {
-            this->visit_expr(*x.m_args[i]);
+            this->visit_expr(*x.m_args[i].m_end);
             r.append(s);
             if (i < x.n_args-1) r.append(" ");
         }
         r.append(")");
         s = r;
-    }
-    void visit_BuiltinCall(const BuiltinCall_t &x) {
-        s.append("(");
-        if (use_colors) {
-            s.append(color(style::bold));
-            s.append(color(fg::magenta));
-        }
-        s.append("builtincall");
-        if (use_colors) {
-            s.append(color(fg::reset));
-            s.append(color(style::reset));
-        }
-        s.append(" ");
-        s.append(x.m_name);
-        s.append(" ");
-        s.append("[");
-        for (size_t i=0; i<x.n_args; i++) {
-            this->visit_expr(*x.m_args[i]);
-            if (i < x.n_args-1) s.append(" ");
-        }
-        s.append("]");
-        s.append(")");
     }
     void visit_If(const If_t &x) {
         s.append("(");
@@ -478,8 +588,7 @@ public:
     //Converts do concurrent to a regular do loop. Adds OpenMP pragmas.
     void visit_DoConcurrentLoop(const DoConcurrentLoop_t &x) {
         if (x.n_control != 1) {
-            throw SemanticError("Do concurrent: exactly one control statement is required for now",
-            x.base.base.loc);
+            throw LCompilersException("Do concurrent: exactly one control statement is implemented for now");
         }
         AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[0];
         AST::ConcurrentReduce_t *red=nullptr;
@@ -543,35 +652,6 @@ public:
         else
             r.append("!$OMP END PARALLEL DO");
         s = r;
-    }
-    void visit_Select(const Select_t &x) {
-        s.append("(");
-        if (use_colors) {
-            s.append(color(style::bold));
-            s.append(color(fg::magenta));
-        }
-        s.append("select");
-        if (use_colors) {
-            s.append(color(fg::reset));
-            s.append(color(style::reset));
-        }
-        s.append(" ");
-        this->visit_expr(*x.m_test);
-        s.append(" ");
-        s.append("[");
-        for (size_t i=0; i<x.n_body; i++) {
-            this->visit_case_stmt(*x.m_body[i]);
-            if (i < x.n_body-1) s.append(" ");
-        }
-        s.append("]");
-        s.append(" ");
-        s.append("[");
-        for (size_t i=0; i<x.n_default; i++) {
-            this->visit_stmt(*x.m_default[i]);
-            if (i < x.n_default-1) s.append(" ");
-        }
-        s.append("]");
-        s.append(")");
     }
     void visit_Cycle(const Cycle_t &/* x */) {
         s.append("(");
@@ -647,7 +727,7 @@ public:
         }
         s.append(" ");
         if (x.m_fmt) {
-            s.append(x.m_fmt);
+            this->visit_expr(*x.m_fmt);
         } else {
             s.append("()");
         }
@@ -722,41 +802,12 @@ public:
         this->visit_expr(*x.m_right);
         s.append(")");
     }
-    void visit_FuncCall(const FuncCall_t &x) {
-        s.append("(");
-        if (use_colors) {
-            s.append(color(style::bold));
-            s.append(color(fg::magenta));
-        }
-        s.append("funccall");
-        if (use_colors) {
-            s.append(color(fg::reset));
-            s.append(color(style::reset));
-        }
-        s.append(" ");
-        s.append(x.m_func);
-        s.append(" ");
-        s.append("[");
-        for (size_t i=0; i<x.n_args; i++) {
-            this->visit_expr(*x.m_args[i]);
-            if (i < x.n_args-1) s.append(" ");
-        }
-        s.append("]");
-        s.append(" ");
-        s.append("[");
-        for (size_t i=0; i<x.n_keywords; i++) {
-            this->visit_keyword(x.m_keywords[i]);
-            if (i < x.n_keywords-1) s.append(" ");
-        }
-        s.append("]");
-        s.append(")");
-    }
     void visit_FuncCallOrArray(const FuncCallOrArray_t &x) {
         std::string r = "";
         r.append(x.m_func);
         r.append("(");
         for (size_t i=0; i<x.n_args; i++) {
-            this->visit_expr(*x.m_args[i]);
+            this->visit_expr(*x.m_args[i].m_end);
             r.append(s);
             if (i < x.n_args-1) s.append(", ");
         }
@@ -767,28 +818,6 @@ public:
         }
         r.append(")");
         s = r;
-    }
-    void visit_Array(const Array_t &x) {
-        s.append("(");
-        if (use_colors) {
-            s.append(color(style::bold));
-            s.append(color(fg::magenta));
-        }
-        s.append("array");
-        if (use_colors) {
-            s.append(color(fg::reset));
-            s.append(color(style::reset));
-        }
-        s.append(" ");
-        s.append(x.m_name);
-        s.append(" ");
-        s.append("[");
-        for (size_t i=0; i<x.n_args; i++) {
-            this->visit_array_index(*x.m_args[i]);
-            if (i < x.n_args-1) s.append(" ");
-        }
-        s.append("]");
-        s.append(")");
     }
     void visit_ArrayInitializer(const ArrayInitializer_t &x) {
         std::string r = "[";
@@ -818,7 +847,7 @@ public:
         s.append("\"" + std::string(x.m_n) + "\"");
         s.append(")");
     }
-    void visit_Str(const Str_t &x) {
+    void visit_String(const String_t &x) {
         s.append("(");
         if (use_colors) {
             s.append(color(style::bold));
@@ -836,7 +865,7 @@ public:
     void visit_Name(const Name_t &x) {
         s = std::string(x.m_id);
     }
-    void visit_Constant(const Constant_t &/* x */) {
+    void visit_Logical(const Logical_t &/* x */) {
         s.append("(");
         if (use_colors) {
             s.append(color(style::bold));
@@ -851,34 +880,7 @@ public:
         s.append("Unimplementedconstant");
         s.append(")");
     }
-    void visit_decl(const decl_t &x) {
-        std::string r = std::string(x.m_sym_type);
-        if (x.n_attrs > 0) {
-            for (size_t i=0; i<x.n_attrs; i++) {
-                r.append(", ");
-                this->visit_attribute(*x.m_attrs[i]);
-                r.append(s);
-            }
-        }
-        r.append(" :: ");
-        r.append(x.m_sym);
-        if (x.n_dims > 0) {
-            r.append("(");
-            for (size_t i=0; i<x.n_dims; i++) {
-                this->visit_dimension(x.m_dims[i]);
-                r.append(s);
-                if (i < x.n_dims-1) r.append(",");
-            }
-            r.append(")");
-        }
-        r.append(" ");
-        if (x.m_initializer) {
-            r.append("=");
-            this->visit_expr(*x.m_initializer);
-            r.append(s);
-        }
-        s = r;
-    }
+
     void visit_dimension(const dimension_t &x) {
         std::string r = "";
         if (x.m_start) {
@@ -896,23 +898,6 @@ public:
         }
         s = r;
     }
-    void visit_Attribute(const Attribute_t &x) {
-        std::string r;
-        r.append(x.m_name);
-        if (x.n_args > 0) {
-            r.append("(");
-            for (size_t i=0; i<x.n_args; i++) {
-                this->visit_attribute_arg(x.m_args[i]);
-                r.append(s);
-                if (i < x.n_args-1) r.append(" ");
-            }
-            r.append(")");
-        }
-        s = r;
-    }
-    void visit_attribute_arg(const attribute_arg_t &x) {
-        s = std::string(x.m_arg);
-    }
     void visit_arg(const arg_t &x) {
         s = std::string(x.m_arg);
     }
@@ -925,26 +910,6 @@ public:
         }
         s.append(" ");
         this->visit_expr(*x.m_value);
-        s.append(")");
-    }
-    void visit_Bind(const Bind_t &x) {
-        s.append("(");
-        if (use_colors) {
-            s.append(color(style::bold));
-            s.append(color(fg::magenta));
-        }
-        s.append("bind");
-        if (use_colors) {
-            s.append(color(fg::reset));
-            s.append(color(style::reset));
-        }
-        s.append(" ");
-        s.append("[");
-        for (size_t i=0; i<x.n_args; i++) {
-            this->visit_keyword(x.m_args[i]);
-            if (i < x.n_args-1) s.append(" ");
-        }
-        s.append("]");
         s.append(")");
     }
     void visit_ArrayIndex(const ArrayIndex_t &x) {
@@ -980,11 +945,11 @@ public:
     }
     void visit_UseSymbol(const UseSymbol_t &x) {
         s = "";
-        if (x.m_rename) {
-            s.append(x.m_rename);
+        if (x.m_local_rename) {
+            s.append(x.m_local_rename);
             s.append(" => ");
         }
-        s.append(x.m_sym);
+        s.append(x.m_remote_sym);
     }
 };
 

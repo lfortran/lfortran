@@ -1,0 +1,13 @@
+{
+    "basename": "asr-floor_01-877d473",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/floor_01.f90",
+    "infile_hash": "ded4fcdd43f2c9f513539d73012a5e98b5b699ec077aa53214a7c77f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-floor_01-877d473.stdout",
+    "stdout_hash": "5b70e278ba84ef328825b0412bd1cc835991fc4d1682b2d28471b54e",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

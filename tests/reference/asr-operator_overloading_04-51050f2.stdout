@@ -1,0 +1,322 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            stdlib_string:
+                (Program 
+                    (SymbolTable
+                        8
+                        {
+                            
+                        }) 
+                    stdlib_string 
+                    [] 
+                    []
+                ), 
+            stdlib_string_type:
+                (Module 
+                    (SymbolTable
+                        2
+                        {
+                            assign_string_char:
+                                (Function 
+                                    (SymbolTable
+                                        4
+                                        {
+                                            lhs:
+                                                (Variable 
+                                                    4 
+                                                    lhs 
+                                                    InOut 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Struct 
+                                                        2 string_type 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            rhs:
+                                                (Variable 
+                                                    4 
+                                                    rhs 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Character 1 -1 () []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    assign_string_char 
+                                    [(Var 4 lhs)
+                                    (Var 4 rhs)] 
+                                    [(= 
+                                        (StructInstanceMember 
+                                            (Var 4 lhs) 
+                                            3 raw 
+                                            (Character 1 -2 () []) 
+                                            ()
+                                        ) 
+                                        (Var 4 rhs) 
+                                        ()
+                                    )] 
+                                    () 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .true. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                ), 
+                            string_type:
+                                (StructType 
+                                    (SymbolTable
+                                        3
+                                        {
+                                            raw:
+                                                (Variable 
+                                                    3 
+                                                    raw 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Allocatable 
+                                                    (Character 1 -2 () []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    string_type 
+                                    [raw] 
+                                    Source 
+                                    Public 
+                                    ()
+                                ), 
+                            trim_string:
+                                (Function 
+                                    (SymbolTable
+                                        5
+                                        {
+                                            string:
+                                                (Variable 
+                                                    5 
+                                                    string 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Struct 
+                                                        2 string_type 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            trimmed_string:
+                                                (Variable 
+                                                    5 
+                                                    trimmed_string 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Struct 
+                                                        2 string_type 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    trim_string 
+                                    [(Var 5 string)] 
+                                    [(= 
+                                        (Var 5 trimmed_string) 
+                                        (StructInstanceMember 
+                                            (Var 5 string) 
+                                            3 raw 
+                                            (Character 1 -2 () []) 
+                                            ()
+                                        ) 
+                                        (SubroutineCall 
+                                            2 assign_string_char 
+                                            2 ~assign 
+                                            [((Var 5 trimmed_string))
+                                            ((StructInstanceMember 
+                                                (Var 5 string) 
+                                                3 raw 
+                                                (Character 1 -2 () []) 
+                                                ()
+                                            ))] 
+                                            ()
+                                        )
+                                    )] 
+                                    (Var 5 trimmed_string) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .true. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                ), 
+                            ~assign:
+                                (CustomOperator 
+                                    2 
+                                    ~assign 
+                                    [2 assign_string_char] 
+                                    Public
+                                )
+                            
+                        }) 
+                    stdlib_string_type 
+                    [] 
+                    .false. 
+                    .false.
+                ), 
+            stdlib_string_use:
+                (Module 
+                    (SymbolTable
+                        6
+                        {
+                            chomp_string:
+                                (Function 
+                                    (SymbolTable
+                                        7
+                                        {
+                                            assign_string_char@~assign:
+                                                (ExternalSymbol 
+                                                    7 
+                                                    assign_string_char@~assign 
+                                                    2 assign_string_char 
+                                                    stdlib_string_type 
+                                                    [] 
+                                                    assign_string_char 
+                                                    Public
+                                                ), 
+                                            chomped_string:
+                                                (Variable 
+                                                    7 
+                                                    chomped_string 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Struct 
+                                                        6 string_type 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            last:
+                                                (Variable 
+                                                    7 
+                                                    last 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            string:
+                                                (Variable 
+                                                    7 
+                                                    string 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Struct 
+                                                        6 string_type 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            ~assign:
+                                                (ExternalSymbol 
+                                                    7 
+                                                    ~assign 
+                                                    2 ~assign 
+                                                    stdlib_string_type 
+                                                    [] 
+                                                    ~assign 
+                                                    Public
+                                                )
+                                            
+                                        }) 
+                                    chomp_string 
+                                    [(Var 7 string)] 
+                                    [] 
+                                    (Var 7 chomped_string) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                ), 
+                            string_type:
+                                (ExternalSymbol 
+                                    6 
+                                    string_type 
+                                    2 string_type 
+                                    stdlib_string_type 
+                                    [] 
+                                    string_type 
+                                    Public
+                                )
+                            
+                        }) 
+                    stdlib_string_use 
+                    [stdlib_string_type] 
+                    .false. 
+                    .false.
+                )
+            
+        }) 
+    []
+)

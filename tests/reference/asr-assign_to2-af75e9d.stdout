@@ -1,0 +1,168 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            main:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            i:
+                                (Variable 
+                                    2 
+                                    i 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            next:
+                                (Variable 
+                                    2 
+                                    next 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Optional 
+                                    .false.
+                                ), 
+                            sum:
+                                (Variable 
+                                    2 
+                                    sum 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            zero:
+                                (Variable 
+                                    2 
+                                    zero 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    main 
+                    [] 
+                    [(GoToTarget 
+                        10 
+                        10
+                    )
+                    (= 
+                        (Var 2 next) 
+                        (IntegerConstant 30 (Integer 4 [])) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 sum) 
+                        (Var 2 zero) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 i) 
+                        (IntegerConstant 1 (Integer 4 [])) 
+                        ()
+                    )
+                    (GoToTarget 
+                        20 
+                        20
+                    )
+                    (Select 
+                        (Var 2 next) 
+                        [(CaseStmt 
+                            [(IntegerConstant 30 (Integer 4 []))] 
+                            [(GoTo 
+                                30 
+                                30
+                            )]
+                        )
+                        (CaseStmt 
+                            [(IntegerConstant 50 (Integer 4 []))] 
+                            [(GoTo 
+                                50 
+                                50
+                            )]
+                        )
+                        (CaseStmt 
+                            [(IntegerConstant 70 (Integer 4 []))] 
+                            [(GoTo 
+                                70 
+                                70
+                            )]
+                        )] 
+                        []
+                    )
+                    (GoToTarget 
+                        30 
+                        30
+                    )
+                    (If 
+                        (IntegerCompare 
+                            (IntegerConstant 0 (Integer 4 [])) 
+                            Lt 
+                            (IntegerConstant 1 (Integer 4 [])) 
+                            (Logical 4 []) 
+                            (LogicalConstant 
+                                .true. 
+                                (Logical 4 [])
+                            )
+                        ) 
+                        [(GoTo 
+                            70 
+                            70
+                        )] 
+                        []
+                    )
+                    (GoToTarget 
+                        50 
+                        50
+                    )
+                    (Print 
+                        () 
+                        [(IntegerConstant 50 (Integer 4 []))] 
+                        () 
+                        ()
+                    )
+                    (= 
+                        (Var 2 next) 
+                        (IntegerConstant 50 (Integer 4 [])) 
+                        ()
+                    )
+                    (GoToTarget 
+                        70 
+                        70
+                    )
+                    (Print 
+                        () 
+                        [(IntegerConstant 70 (Integer 4 []))] 
+                        () 
+                        ()
+                    )]
+                )
+            
+        }) 
+    []
+)

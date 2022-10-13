@@ -1,0 +1,62 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            stop:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            x:
+                                (Variable 
+                                    2 
+                                    x 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    stop 
+                    [] 
+                    [(= 
+                        (Var 2 x) 
+                        (IntegerBinOp 
+                            (IntegerBinOp 
+                                (IntegerConstant 2 (Integer 4 [])) 
+                                Add 
+                                (IntegerConstant 3 (Integer 4 [])) 
+                                (Integer 4 []) 
+                                (IntegerConstant 5 (Integer 4 []))
+                            ) 
+                            Mul 
+                            (IntegerConstant 5 (Integer 4 [])) 
+                            (Integer 4 []) 
+                            (IntegerConstant 25 (Integer 4 []))
+                        ) 
+                        ()
+                    )
+                    (If 
+                        (IntegerCompare 
+                            (Var 2 x) 
+                            Eq 
+                            (IntegerConstant 25 (Integer 4 [])) 
+                            (Logical 4 []) 
+                            ()
+                        ) 
+                        [(Stop 
+                            ()
+                        )] 
+                        []
+                    )]
+                )
+            
+        }) 
+    []
+)

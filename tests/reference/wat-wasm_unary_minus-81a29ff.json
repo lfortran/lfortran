@@ -1,0 +1,13 @@
+{
+    "basename": "wat-wasm_unary_minus-81a29ff",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/wasm_unary_minus.f90",
+    "infile_hash": "37a1e4bd375869b0066f69a42ebd7681d5ff210b6489d1ed19d7ea9b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-wasm_unary_minus-81a29ff.stdout",
+    "stdout_hash": "1380c308782b1f246d8e00666e6f3160507fa60e1d883d128c8fec2c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

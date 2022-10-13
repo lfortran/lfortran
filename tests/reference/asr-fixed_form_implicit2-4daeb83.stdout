@@ -1,0 +1,19 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            main:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            
+                        }) 
+                    main 
+                    [] 
+                    []
+                )
+            
+        }) 
+    []
+)

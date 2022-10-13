@@ -1,0 +1,13 @@
+{
+    "basename": "ast-fixed_form_simple_continue-493124f",
+    "cmd": "lfortran --indent --fixed-form --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/fixed_form_simple_continue.f",
+    "infile_hash": "3568a4d42a544d5d2bee64f245d7408d7dc0ff795fba79436c728937",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-fixed_form_simple_continue-493124f.stdout",
+    "stdout_hash": "b853e07d4be6ad6cc4b9631e42afa854ee570bda09297126595593f5",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

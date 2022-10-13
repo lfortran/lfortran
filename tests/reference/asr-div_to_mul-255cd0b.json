@@ -1,0 +1,13 @@
+{
+    "basename": "asr-div_to_mul-255cd0b",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/div_to_mul.f90",
+    "infile_hash": "6c1d702f410e8db6aae79c37b446d7a2fd6295166902746ff799d239",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-div_to_mul-255cd0b.stdout",
+    "stdout_hash": "2b828a3c3a6ccf8b741a7d8019eb23c7647062f600e951e21cd094a8",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

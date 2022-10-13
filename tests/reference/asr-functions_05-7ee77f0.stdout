@@ -1,0 +1,493 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            functions_01:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable 
+                                    2 
+                                    a 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            b:
+                                (Variable 
+                                    2 
+                                    b 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            c:
+                                (Variable 
+                                    2 
+                                    c 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            f:
+                                (Function 
+                                    (SymbolTable
+                                        3
+                                        {
+                                            a:
+                                                (Variable 
+                                                    3 
+                                                    a 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            b:
+                                                (Variable 
+                                                    3 
+                                                    b 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            x:
+                                                (Variable 
+                                                    3 
+                                                    x 
+                                                    Local 
+                                                    (IntegerConstant 2 (Integer 4 [])) 
+                                                    () 
+                                                    Save 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    f 
+                                    [(Var 3 a)] 
+                                    [(= 
+                                        (Var 3 b) 
+                                        (IntegerBinOp 
+                                            (Var 3 a) 
+                                            Add 
+                                            (Var 3 x) 
+                                            (Integer 4 []) 
+                                            ()
+                                        ) 
+                                        ()
+                                    )] 
+                                    (Var 3 b) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                ), 
+                            f_real:
+                                (Function 
+                                    (SymbolTable
+                                        4
+                                        {
+                                            a:
+                                                (Variable 
+                                                    4 
+                                                    a 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            b:
+                                                (Variable 
+                                                    4 
+                                                    b 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    f_real 
+                                    [(Var 4 a)] 
+                                    [(= 
+                                        (Var 4 b) 
+                                        (RealBinOp 
+                                            (Var 4 a) 
+                                            Add 
+                                            (FunctionCall 
+                                                2 signr32 
+                                                () 
+                                                [((RealConstant 
+                                                    1.000000 
+                                                    (Real 4 [])
+                                                ))
+                                                ((Var 4 a))] 
+                                                (Real 4 []) 
+                                                () 
+                                                ()
+                                            ) 
+                                            (Real 4 []) 
+                                            ()
+                                        ) 
+                                        ()
+                                    )] 
+                                    (Var 4 b) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                ), 
+                            p:
+                                (Variable 
+                                    2 
+                                    p 
+                                    Local 
+                                    (Cast 
+                                        (IntegerConstant 5 (Integer 4 [])) 
+                                        IntegerToReal 
+                                        (Real 4 []) 
+                                        (RealConstant 
+                                            5.000000 
+                                            (Real 4 [])
+                                        )
+                                    ) 
+                                    () 
+                                    Save 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            q:
+                                (Variable 
+                                    2 
+                                    q 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            signr32:
+                                (Function 
+                                    (SymbolTable
+                                        5
+                                        {
+                                            r:
+                                                (Variable 
+                                                    5 
+                                                    r 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            x:
+                                                (Variable 
+                                                    5 
+                                                    x 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            y:
+                                                (Variable 
+                                                    5 
+                                                    y 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    signr32 
+                                    [(Var 5 x)
+                                    (Var 5 y)] 
+                                    [(= 
+                                        (Var 5 r) 
+                                        (Var 5 x) 
+                                        ()
+                                    )
+                                    (If 
+                                        (LogicalBinOp 
+                                            (LogicalBinOp 
+                                                (RealCompare 
+                                                    (Var 5 x) 
+                                                    GtE 
+                                                    (RealConstant 
+                                                        0.000000 
+                                                        (Real 4 [])
+                                                    ) 
+                                                    (Logical 4 []) 
+                                                    ()
+                                                ) 
+                                                And 
+                                                (RealCompare 
+                                                    (Var 5 y) 
+                                                    GtE 
+                                                    (RealConstant 
+                                                        0.000000 
+                                                        (Real 4 [])
+                                                    ) 
+                                                    (Logical 4 []) 
+                                                    ()
+                                                ) 
+                                                (Logical 4 []) 
+                                                ()
+                                            ) 
+                                            Or 
+                                            (LogicalBinOp 
+                                                (RealCompare 
+                                                    (Var 5 x) 
+                                                    LtE 
+                                                    (RealConstant 
+                                                        0.000000 
+                                                        (Real 4 [])
+                                                    ) 
+                                                    (Logical 4 []) 
+                                                    ()
+                                                ) 
+                                                And 
+                                                (RealCompare 
+                                                    (Var 5 y) 
+                                                    LtE 
+                                                    (RealConstant 
+                                                        0.000000 
+                                                        (Real 4 [])
+                                                    ) 
+                                                    (Logical 4 []) 
+                                                    ()
+                                                ) 
+                                                (Logical 4 []) 
+                                                ()
+                                            ) 
+                                            (Logical 4 []) 
+                                            ()
+                                        ) 
+                                        [(= 
+                                            (Var 5 r) 
+                                            (Var 5 x) 
+                                            ()
+                                        )] 
+                                        [(= 
+                                            (Var 5 r) 
+                                            (RealUnaryMinus 
+                                                (Var 5 x) 
+                                                (Real 4 []) 
+                                                ()
+                                            ) 
+                                            ()
+                                        )]
+                                    )] 
+                                    (Var 5 r) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                ), 
+                            x:
+                                (Variable 
+                                    2 
+                                    x 
+                                    Local 
+                                    (IntegerConstant 5 (Integer 4 [])) 
+                                    () 
+                                    Save 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            y:
+                                (Variable 
+                                    2 
+                                    y 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    functions_01 
+                    [] 
+                    [(= 
+                        (Var 2 y) 
+                        (FunctionCall 
+                            2 f 
+                            () 
+                            [((Var 2 x))] 
+                            (Integer 4 []) 
+                            () 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(Var 2 y)] 
+                        () 
+                        ()
+                    )
+                    (= 
+                        (Var 2 q) 
+                        (FunctionCall 
+                            2 f_real 
+                            () 
+                            [((Var 2 p))] 
+                            (Real 4 []) 
+                            () 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(Var 2 q)] 
+                        () 
+                        ()
+                    )
+                    (= 
+                        (Var 2 a) 
+                        (RealConstant 
+                            20.000000 
+                            (Real 4 [])
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 b) 
+                        (RealUnaryMinus 
+                            (RealConstant 
+                                30.000000 
+                                (Real 4 [])
+                            ) 
+                            (Real 4 []) 
+                            (RealConstant 
+                                -30.000000 
+                                (Real 4 [])
+                            )
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 c) 
+                        (FunctionCall 
+                            2 signr32 
+                            () 
+                            [((Var 2 a))
+                            ((Var 2 b))] 
+                            (Real 4 []) 
+                            () 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(Var 2 c)] 
+                        () 
+                        ()
+                    )]
+                )
+            
+        }) 
+    []
+)

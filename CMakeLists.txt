@@ -2,7 +2,13 @@ cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 
-file(STRINGS "version" LFORTRAN_VERSION)
+# We don't execute this if we have a tarball
+if (LFORTRAN_BUILD_ALL)
+    find_program(BASH_BIN bash)
+    execute_process(COMMAND "${BASH_BIN}" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
+
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/version" LFORTRAN_VERSION)
 
 project(lfortran LANGUAGES C CXX)
 
@@ -18,14 +24,16 @@ if (NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR
     message(FATAL_ERROR "CMAKE_BUILD_TYPE must be one of: Debug, Release (current value: '${CMAKE_BUILD_TYPE}')")
 endif ()
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(LFORTRAN_CXX_NO_RTTI_FLAG "-fno-rtti")
-elseif (CMAKE_CXX_COMPILER_ID MATCHES Clang)
-    set(LFORTRAN_CXX_NO_RTTI_FLAG "-fno-rtti")
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(LFORTRAN_CXX_NO_RTTI_FLAG "/GR-")
-endif ()
-
+# xeus does use `dynamic_cast` and thus needs rtti (otherwise it segfaults)
+if (NOT WITH_XEUS)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set(LFORTRAN_CXX_NO_RTTI_FLAG "-fno-rtti")
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES Clang)
+        set(LFORTRAN_CXX_NO_RTTI_FLAG "-fno-rtti")
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        set(LFORTRAN_CXX_NO_RTTI_FLAG "/GR-")
+    endif ()
+endif(NOT WITH_XEUS)
 
 # For CMAKE_INSTALL_BINDIR:
 include(GNUInstallDirs)
@@ -68,13 +76,91 @@ set(WITH_LFORTRAN_ASSERT ${WITH_LFORTRAN_ASSERT_DEFAULT}
 # LFORTRAN_STATIC_BIN
 set(LFORTRAN_STATIC_BIN no CACHE BOOL "Build LFortran as a static binary")
 
+# WITH_LFORTRAN_BINARY_MODFILES
+set(WITH_LFORTRAN_BINARY_MODFILES YES
+    CACHE BOOL "Use binary modfiles")
+
+set(WITH_RUNTIME_LIBRARY YES
+    CACHE BOOL "Compile and install the runtime library")
+
+set(WITH_WHEREAMI yes
+    CACHE BOOL "Include whereami.cpp")
+
+set(WITH_ZLIB yes
+    CACHE BOOL "Compile with ZLIB Library")
+
+# Build to wasm
+set(LFORTRAN_BUILD_TO_WASM no 
+    CACHE BOOL "Compile LFortran To WASM")
+    
+if (LFORTRAN_BUILD_TO_WASM)
+    set(HAVE_BUILD_TO_WASM yes)
+    SET(WITH_WHEREAMI no)
+    SET(WITH_ZLIB no)
+    SET(WITH_RUNTIME_LIBRARY no)
+    add_definitions("-DHAVE_BUILD_TO_WASM=1")
+endif()
+
+if (WITH_WHEREAMI)
+    add_definitions("-DHAVE_WHEREAMI=1")
+endif()
+
+if (WITH_ZLIB)
+    add_definitions("-DHAVE_ZLIB=1")
+
+    # Find ZLIB with our custom finder before including LLVM since the finder for LLVM
+    # might search for ZLIB again and find the shared libraries instead of the static ones
+    find_package(StaticZLIB REQUIRED)
+endif()
+
+
 # LLVM
 set(WITH_LLVM no CACHE BOOL "Build with LLVM support")
+set(WITH_TARGET_AARCH64 no CACHE BOOL "Enable target AARCH64")
+set(WITH_TARGET_X86 no CACHE BOOL "Enable target X86")
+set(WITH_TARGET_WASM no CACHE BOOL "Enable target WebAssembly")
 if (WITH_LLVM)
     set(LFORTRAN_LLVM_COMPONENTS core support mcjit orcjit native asmparser asmprinter)
     find_package(LLVM REQUIRED)
     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
     message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+
+    # Always enable the native target
+    if ("${LLVM_NATIVE_ARCH}" STREQUAL "AArch64")
+        set(WITH_TARGET_AARCH64 yes)
+    endif()
+
+    if ("${LLVM_NATIVE_ARCH}" STREQUAL "X86")
+        set(WITH_TARGET_X86 yes)
+    endif()
+
+    if (WITH_TARGET_AARCH64)
+        if (NOT ("${LLVM_TARGETS_TO_BUILD}" MATCHES "AArch64"))
+            message(FATAL_ERROR "The selected LLVM library doesn't have support for AArch64 targets")
+        endif()
+
+        list(APPEND LFORTRAN_LLVM_COMPONENTS aarch64info aarch64utils aarch64desc aarch64asmparser aarch64codegen aarch64disassembler)
+        add_definitions("-DHAVE_TARGET_AARCH64=1")
+    endif()
+
+    if (WITH_TARGET_X86)
+        if (NOT ("${LLVM_TARGETS_TO_BUILD}" MATCHES "X86"))
+            message(FATAL_ERROR "The selected LLVM library doesn't have support for X86 targets")
+        endif()
+
+        list(APPEND LFORTRAN_LLVM_COMPONENTS x86info x86desc x86codegen x86asmparser x86disassembler)
+        add_definitions("-DHAVE_TARGET_X86=1")
+    endif()
+
+    if (WITH_TARGET_WASM)
+        if (NOT ("${LLVM_TARGETS_TO_BUILD}" MATCHES "WebAssembly"))
+            message(FATAL_ERROR "The selected LLVM library doesn't have support for WebAssembly targets")
+        endif()
+
+        list(APPEND LFORTRAN_LLVM_COMPONENTS webassemblyasmparser webassemblycodegen webassemblydesc webassemblydisassembler webassemblyinfo)
+        add_definitions("-DHAVE_TARGET_WASM=1")
+    endif()
+    
     llvm_map_components_to_libnames(llvm_libs ${LFORTRAN_LLVM_COMPONENTS})
     unset(LFORTRAN_LLVM_COMPONENTS)
 
@@ -89,13 +175,20 @@ if (WITH_LLVM)
         $<$<COMPILE_LANGUAGE:CXX>:${LFORTRAN_CXX_NO_RTTI_FLAG}>)
     set_property(TARGET p::llvm PROPERTY INTERFACE_LINK_LIBRARIES
         ${llvm_libs})
+    if (MSVC)
+        # LLVM on Windows appends zlib shared library and we must provide
+        # a path to find it:
+        get_filename_component(mypath ${ZLIB_LIBRARY} DIRECTORY)
+        target_link_directories(p::llvm BEFORE INTERFACE ${mypath})
+        message(STATUS "ZLIB LIBRARY PATH: ${mypath}")
+    endif()
     set(HAVE_LFORTRAN_LLVM yes)
 endif()
 
 # XEUS (Fortran kernel)
 set(WITH_XEUS no CACHE BOOL "Build with XEUS support")
 if (WITH_XEUS)
-    find_package(xeus 0.24.1 REQUIRED)
+    find_package(xeus 2.4.1 REQUIRED)
     set(HAVE_LFORTRAN_XEUS yes)
 
     # Generate kernel.json with correct paths
@@ -128,7 +221,7 @@ if (MSVC)
     set(HAVE_LFORTRAN_DEMANGLE no)
 endif()
 
-# fmt
+# fmt (`conda install fmt`)
 set(WITH_FMT no CACHE BOOL "Build with `fmt` support")
 if (WITH_FMT)
     find_package(fmt)
@@ -139,6 +232,8 @@ set(WITH_UNWIND no
     CACHE BOOL "Build with unwind support")
 set(WITH_BFD no
     CACHE BOOL "Build with BFD support")
+set(WITH_DWARFDUMP no
+    CACHE BOOL "Build with dwarfdump support")
 set(WITH_LINKH no
     CACHE BOOL "Build with link.h support")
 set(WITH_MACHO no
@@ -147,17 +242,23 @@ set(WITH_STACKTRACE no
     CACHE BOOL "Build with stacktrace support (requires binutils-dev)")
 if (WITH_STACKTRACE)
     set(WITH_UNWIND yes)
-    set(WITH_BFD yes)
     if (APPLE)
         set(WITH_MACHO yes)
+        if (NOT WITH_BFD)
+            set(WITH_DWARFDUMP yes)
+        endif()
     else()
         set(WITH_LINKH yes)
+        set(WITH_BFD yes)
     endif()
     set(HAVE_LFORTRAN_STACKTRACE yes)
 endif()
 if (WITH_BFD)
     find_package(BFD REQUIRED)
     set(HAVE_LFORTRAN_BFD yes)
+endif()
+if (WITH_DWARFDUMP)
+    set(HAVE_LFORTRAN_DWARFDUMP yes)
 endif()
 if (WITH_LINKH)
     find_package(LINKH REQUIRED)
@@ -191,9 +292,11 @@ endif ()
 message("Installation prefix: ${CMAKE_INSTALL_PREFIX}")
 message("WITH_LFORTRAN_ASSERT: ${WITH_LFORTRAN_ASSERT}")
 message("LFORTRAN_STATIC_BIN: ${LFORTRAN_STATIC_BIN}")
+message("LFORTRAN_BUILD_TO_WASM: ${LFORTRAN_BUILD_TO_WASM}")
 message("WITH_STACKTRACE: ${WITH_STACKTRACE}")
 message("WITH_UNWIND: ${WITH_UNWIND}")
 message("WITH_BFD: ${WITH_BFD}")
+message("WITH_DWARFDUMP: ${WITH_DWARFDUMP}")
 message("WITH_LINKH: ${WITH_LINKH}")
 message("WITH_MACHO: ${WITH_MACHO}")
 message("HAVE_LFORTRAN_DEMANGLE: ${HAVE_LFORTRAN_DEMANGLE}")
@@ -201,6 +304,13 @@ message("WITH_LLVM: ${WITH_LLVM}")
 message("WITH_XEUS: ${WITH_XEUS}")
 message("WITH_JSON: ${WITH_JSON}")
 message("WITH_FMT: ${WITH_FMT}")
+message("WITH_LFORTRAN_BINARY_MODFILES: ${WITH_LFORTRAN_BINARY_MODFILES}")
+message("WITH_RUNTIME_LIBRARY: ${WITH_RUNTIME_LIBRARY}")
+message("WITH_WHEREAMI: ${WITH_WHEREAMI}")
+message("WITH_ZLIB: ${WITH_ZLIB}")
+message("WITH_TARGET_AARCH64: ${WITH_TARGET_AARCH64}")
+message("WITH_TARGET_X86: ${WITH_TARGET_X86}")
+message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
 
 
 add_subdirectory(src)

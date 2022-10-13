@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-callback_03-0f44942",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/callback_03.f90",
+    "infile_hash": "ed8de8dc63a13125cc459d17776eb179835cd6860aa332449493c9e8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-callback_03-0f44942.stdout",
+    "stdout_hash": "990608bd3d3b12d31f6ee86d56f222160e89d7c911ca02203881abe9",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

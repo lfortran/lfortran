@@ -1,0 +1,13 @@
+{
+    "basename": "asr-derived_types_01-a1b2a29",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/derived_types_01.f90",
+    "infile_hash": "d5361dd7a0436fd13655dcc3ad47c98f3ce6966934537f5e9cc001c5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-derived_types_01-a1b2a29.stdout",
+    "stdout_hash": "20649cc5ade503c86cc22a9e699824011bd4c2cd6b268aef9a274f3f",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

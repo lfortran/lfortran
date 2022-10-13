@@ -3,12 +3,14 @@ implicit none
 integer :: a, b, d
 a = 1
 b = 2
+associate (n => a)
 block
-    integer :: b, c
+    real :: b, c
     b = 3
-    c = 4
-    d = 5
+    c = -3
+    d = cos(b + c)
 end block
+end associate
 if (b /= 2) error stop
-if (d /= 5) error stop
+if (d /= 1) error stop
 end

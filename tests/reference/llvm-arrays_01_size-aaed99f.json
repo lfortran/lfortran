@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-arrays_01_size-aaed99f",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/arrays_01_size.f90",
+    "infile_hash": "cb58e1bbc81b8cb3e39e493299f8ce73339c3bfe6f97ec12ea102145",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-arrays_01_size-aaed99f.stdout",
+    "stdout_hash": "2a4e9e2966de218262790c7ec9d6460543ca612a0e3d085cfc8e5b4e",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

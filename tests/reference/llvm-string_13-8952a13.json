@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-string_13-8952a13",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/string_13.f90",
+    "infile_hash": "25354bac77715f94447d94e23c5c51c4ece9145b600155f8a5cb4c9f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-string_13-8952a13.stdout",
+    "stdout_hash": "0fdbecb298110faf9c4b93d874ec2a87bf9193367402555e860cc60a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

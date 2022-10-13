@@ -1,0 +1,132 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <cassert>
+#include <cmath>
+#include <complex>
+#include <Kokkos_Core.hpp>
+#include <lfortran_intrinsics.h>
+
+template <typename T>
+Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
+{
+    Kokkos::View<T*> r("r", v.size());
+    for (size_t i=0; i < v.size(); i++) {
+        r(i) = v[i];
+    }
+    return r;
+}
+
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, length;
+};
+
+struct i32_3_1
+{
+    Kokkos::View<int32_t*>* data;
+    dimension_descriptor dims[1];
+    bool is_allocated;
+
+    i32_3_1(Kokkos::View<int32_t*>* data_): data{data_} {};
+};
+
+
+struct i32_4_1
+{
+    Kokkos::View<int32_t*>* data;
+    dimension_descriptor dims[1];
+    bool is_allocated;
+
+    i32_4_1(Kokkos::View<int32_t*>* data_): data{data_} {};
+};
+
+// Forward declarations
+namespace {
+}
+
+// Implementations
+namespace {
+
+void main2() {
+    Kokkos::View<int32_t*> a_data("a_data", 3);
+    i32_3_1 a_value(&a_data);
+    i32_3_1* a = &a_value;
+    a->dims[0].lower_bound = 1;
+    a->dims[0].length = 3;
+    Kokkos::View<int32_t*> b_data("b_data", 4);
+    i32_4_1 b_value(&b_data);
+    i32_4_1* b = &b_value;
+    b->dims[0].lower_bound = 1;
+    b->dims[0].length = 4;
+    int32_t i;
+    for (i=1; i<=3; i++) {
+        a->data->operator[](i - a->dims[0].lower_bound) = i + 10;
+    }
+    if (a->data->operator[](1 - a->dims[0].lower_bound) != 11) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (a->data->operator[](2 - a->dims[0].lower_bound) != 12) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (a->data->operator[](3 - a->dims[0].lower_bound) != 13) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    for (i=11; i<=14; i++) {
+        b->data->operator[](i - 10 - b->dims[0].lower_bound) = i;
+    }
+    if (b->data->operator[](1 - b->dims[0].lower_bound) != 11) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (b->data->operator[](2 - b->dims[0].lower_bound) != 12) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (b->data->operator[](3 - b->dims[0].lower_bound) != 13) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (b->data->operator[](4 - b->dims[0].lower_bound) != 14) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    for (i=1; i<=3; i++) {
+        b->data->operator[](i - b->dims[0].lower_bound) = a->data->operator[](i - a->dims[0].lower_bound) - 10;
+    }
+    if (b->data->operator[](1 - b->dims[0].lower_bound) != 1) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (b->data->operator[](2 - b->dims[0].lower_bound) != 2) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (b->data->operator[](3 - b->dims[0].lower_bound) != 3) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    b->data->operator[](4 - b->dims[0].lower_bound) = b->data->operator[](1 - b->dims[0].lower_bound) + b->data->operator[](2 - b->dims[0].lower_bound) + b->data->operator[](3 - b->dims[0].lower_bound) + a->data->operator[](1 - a->dims[0].lower_bound);
+    if (b->data->operator[](4 - b->dims[0].lower_bound) != 17) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    b->data->operator[](4 - b->dims[0].lower_bound) = a->data->operator[](1 - a->dims[0].lower_bound);
+    if (b->data->operator[](4 - b->dims[0].lower_bound) != 11) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+}
+
+}
+int main(int argc, char* argv[])
+{
+    Kokkos::initialize(argc, argv);
+    main2();
+    Kokkos::finalize();
+    return 0;
+}

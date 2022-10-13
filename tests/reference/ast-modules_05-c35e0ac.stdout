@@ -1,1 +1,0 @@
-(TranslationUnit [(Module modules_05_mod [] [] []) (Program modules_05 [(Use modules_05_mod [(UseSymbol a ()) (UseSymbol c ())])] [] [(Print () [a c])] [])])

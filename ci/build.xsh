@@ -23,6 +23,10 @@
 $RAISE_SUBPROC_ERROR = True
 trace on
 
+import platform
+$IS_MAC = platform.system() == "Darwin"
+$IS_WIN = platform.system() == "Windows"
+
 echo "CONDA_PREFIX=$CONDA_PREFIX"
 llvm-config --components
 
@@ -30,12 +34,15 @@ llvm-config --components
 bash ci/version.sh
 
 # Generate a Fortran AST from AST.asdl (C++)
-python grammar/asdl_cpp.py
+python src/libasr/asdl_cpp.py grammar/AST.asdl src/lfortran/ast.h
 # Generate a Fortran ASR from ASR.asdl (C++)
-python grammar/asdl_cpp.py grammar/ASR.asdl src/lfortran/asr.h
+python src/libasr/asdl_cpp.py src/libasr/ASR.asdl src/libasr/asr.h
+# Generate a wasm_visitor.h from src/libasr/wasm_instructions.txt (C++)
+python src/libasr/wasm_instructions_visitor.py
 
 # Generate the tokenizer and parser
 pushd src/lfortran/parser && re2c -W -b tokenizer.re -o tokenizer.cpp && popd
+pushd src/lfortran/parser && re2c -W -b preprocessor.re -o preprocessor.cpp && popd
 pushd src/lfortran/parser && bison -Wall -d -r all parser.yy && popd
 
 $lfortran_version=$(cat version).strip()
@@ -50,15 +57,76 @@ cd test-bld
 # compiled in Release mode and we get link failures if we mix and match build
 # modes:
 BUILD_TYPE = "Release"
-cmake -G $LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DWITH_LLVM=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=@(BUILD_TYPE) ..
-cmake --build .
-./src/lfortran/tests/test_llvm -s
+cmake -G $LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=@(BUILD_TYPE) ..
+cmake --build . --target install
+./src/lfortran/tests/test_lfortran
 ./src/bin/lfortran < ../src/bin/example_input.txt
 ctest --output-on-failure
 cpack -V
 cd ../..
 
-if $WIN != "1":
-    cp lfortran-$lfortran_version/test-bld/src/bin/lfortran src/bin
-    cp lfortran-$lfortran_version/test-bld/src/bin/cpptranslate src/bin
+jupyter kernelspec list --json
+#python ci/test_fortran_kernel.py -v
+#
+cd share/lfortran/nb
+jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=60 --output Demo1_out.ipynb Demo1.ipynb
+jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=60 --output Demo2_out.ipynb Demo2.ipynb
+cat Demo1_out.ipynb
+jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=60 --output "Hello World_out.ipynb" "Hello World.ipynb"
+jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=60 --output "Operators Control Flow_out.ipynb" "Operators Control Flow.ipynb"
+jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=60 --output Variables_out.ipynb Variables.ipynb
+cd ../../..
+
+cp lfortran-$lfortran_version/test-bld/src/bin/lfortran src/bin
+cp lfortran-$lfortran_version/test-bld/src/bin/cpptranslate src/bin
+if uname == "Windows":
+    cp lfortran-$lfortran_version/test-bld/src/runtime/legacy/lfortran_runtime* src/runtime/
+else:
+    cp lfortran-$lfortran_version/test-bld/src/runtime/liblfortran_runtime* src/runtime/
+cp lfortran-$lfortran_version/test-bld/src/runtime/*.mod src/runtime/
+
+# Run some simple compilation tests, works everywhere:
+src/bin/lfortran --version
+# Compile and link separately
+src/bin/lfortran -c examples/expr2.f90 -o expr2.o
+src/bin/lfortran -o expr2 expr2.o
+./expr2
+
+# Compile C and Fortran
+src/bin/lfortran -c integration_tests/modules_15b.f90 -o modules_15b.o
+src/bin/lfortran -c integration_tests/modules_15.f90 -o modules_15.o
+
+
+if $IS_WIN:
+    cl /MD /c integration_tests/modules_15c.c /Fomodules_15c.o
+elif $IS_MAC:
+    # This is macOS
+    clang -c integration_tests/modules_15c.c -o modules_15c.o
+else:
+    gcc -c integration_tests/modules_15c.c -o modules_15c.o
+
+src/bin/lfortran modules_15.o modules_15b.o modules_15c.o -o modules_15
+./modules_15
+
+
+# Compile and link in one step
+src/bin/lfortran integration_tests/intrinsics_04s.f90 -o intrinsics_04s
+./intrinsics_04s
+
+src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
+./intrinsics_04
+
+
+# Run all tests (does not work on Windows yet):
+cmake --version
+if not $IS_WIN:
     ./run_tests.py
+
+    cd integration_tests
+    mkdir build-lfortran-llvm
+    cd build-lfortran-llvm
+    $FC="../../src/bin/lfortran"
+    cmake -DLFORTRAN_BACKEND=llvm ..
+    make
+    ctest -L llvm
+    cd ../..

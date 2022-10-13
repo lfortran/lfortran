@@ -1,0 +1,114 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            uppercase1:
+                (Module 
+                    (SymbolTable
+                        2
+                        {
+                            sub:
+                                (Function 
+                                    (SymbolTable
+                                        3
+                                        {
+                                            a:
+                                                (Variable 
+                                                    3 
+                                                    a 
+                                                    InOut 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    sub 
+                                    [(Var 3 a)] 
+                                    [(= 
+                                        (Var 3 a) 
+                                        (IntegerBinOp 
+                                            (IntegerBinOp 
+                                                (Var 3 a) 
+                                                Add 
+                                                (ArraySize 
+                                                    (Var 2 x) 
+                                                    () 
+                                                    (Integer 4 []) 
+                                                    (IntegerConstant 3 (Integer 4 []))
+                                                ) 
+                                                (Integer 4 []) 
+                                                ()
+                                            ) 
+                                            Add 
+                                            (ArraySize 
+                                                (Var 2 y) 
+                                                () 
+                                                (Integer 4 []) 
+                                                (IntegerConstant 3 (Integer 4 []))
+                                            ) 
+                                            (Integer 4 []) 
+                                            ()
+                                        ) 
+                                        ()
+                                    )] 
+                                    () 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                ), 
+                            x:
+                                (Variable 
+                                    2 
+                                    x 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 3 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            y:
+                                (Variable 
+                                    2 
+                                    y 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 3 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    uppercase1 
+                    [] 
+                    .false. 
+                    .false.
+                )
+            
+        }) 
+    []
+)

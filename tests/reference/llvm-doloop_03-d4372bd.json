@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-doloop_03-d4372bd",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/doloop_03.f90",
+    "infile_hash": "eafcb3d9dca52d81012b124f360aa148c946ed2e7ed8de07041aba1d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-doloop_03-d4372bd.stdout",
+    "stdout_hash": "5642083b05eeb4ab0e938c5f79eee93a09cd37e8c760eee26eec9c60",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

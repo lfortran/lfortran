@@ -1,0 +1,13 @@
+{
+    "basename": "wat-logical3-ce72150",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/../integration_tests/logical3.f90",
+    "infile_hash": "d7f7994a85ee59f1b3b80060886eeeb7390f9733461bd9349e4bb7c0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-logical3-ce72150.stdout",
+    "stdout_hash": "dbff3b93876faa1b1138d0a63b3a5536d1d4792b99e9f156539c5b42",
+    "stderr": "wat-logical3-ce72150.stderr",
+    "stderr_hash": "bfef4a46078cd921dcbfcade08fa1a2cf35ff66f6c17e1411ae172c5",
+    "returncode": 0
+}
