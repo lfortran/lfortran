@@ -1,0 +1,32 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            a:
+                (Function 
+                    (SymbolTable
+                        2
+                        {
+                            
+                        }) 
+                    a 
+                    [] 
+                    [] 
+                    () 
+                    Source 
+                    Public 
+                    Implementation 
+                    () 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
+                    .false.
+                )
+            
+        }) 
+    []
+)
