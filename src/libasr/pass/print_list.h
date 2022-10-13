@@ -8,7 +8,8 @@ namespace LFortran {
 
     void pass_replace_print_list(
     Allocator &al, ASR::TranslationUnit_t &unit,
-    const LCompilers::PassOptions &pass_options);
+    const LCompilers::PassOptions &pass_options,
+    const LFortran::CompilerOptions &compiler_options);
 
 } // namespace LFortran
 
