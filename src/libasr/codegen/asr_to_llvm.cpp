@@ -2814,7 +2814,7 @@ public:
                 }
                 if( is_array_type && arg->m_type->type != ASR::ttypeType::Pointer ) {
                     if( x.m_abi == ASR::abiType::Source ) {
-                        llvm::Type* orig_type = static_cast<llvm::PointerType*>(type)->getElementType();
+                        llvm::Type* orig_type = static_cast<llvm::PointerType*>(type)->getPointerElementType();
                         type = arr_descr->get_argument_type(orig_type, m_h, arg->m_name, arr_arg_type_cache);
                         is_array_type = false;
                     } else if( x.m_abi == ASR::abiType::Intrinsic &&
@@ -3453,8 +3453,8 @@ public:
                 llvm_shape = tmp;
             }
             llvm::Type* llvm_fptr_type = llvm_fptr->getType();
-            llvm_fptr_type = static_cast<llvm::PointerType*>(llvm_fptr_type)->getElementType();
-            llvm_fptr_type = static_cast<llvm::PointerType*>(llvm_fptr_type)->getElementType();
+            llvm_fptr_type = static_cast<llvm::PointerType*>(llvm_fptr_type)->getPointerElementType();
+            llvm_fptr_type = static_cast<llvm::PointerType*>(llvm_fptr_type)->getPointerElementType();
             llvm::Value* fptr_array = builder->CreateAlloca(llvm_fptr_type);
             ASR::dimension_t* fptr_dims;
             int fptr_rank = ASRUtils::extract_dimensions_from_ttype(
@@ -3473,7 +3473,7 @@ public:
                 shape_data = CreateLoad(arr_descr->get_pointer_to_data(llvm_shape));
             }
             llvm_cptr = builder->CreateBitCast(llvm_cptr,
-                            static_cast<llvm::PointerType*>(fptr_data->getType())->getElementType());
+                            static_cast<llvm::PointerType*>(fptr_data->getType())->getPointerElementType());
             builder->CreateStore(llvm_cptr, fptr_data);
             for( int i = 0; i < fptr_rank; i++ ) {
                 llvm::Value* curr_dim = llvm::ConstantInt::get(context, llvm::APInt(32, i));
@@ -3496,7 +3496,7 @@ public:
             llvm::Value* llvm_fptr = tmp;
             ptr_loads = ptr_loads_copy;
             llvm_cptr = builder->CreateBitCast(llvm_cptr,
-                            static_cast<llvm::PointerType*>(llvm_fptr->getType())->getElementType());
+                            static_cast<llvm::PointerType*>(llvm_fptr->getType())->getPointerElementType());
             builder->CreateStore(llvm_cptr, llvm_fptr);
         }
     }
@@ -5461,7 +5461,7 @@ public:
                                 if( arr_descr->is_array(tmp) ) {
                                     tmp = CreateLoad(arr_descr->get_pointer_to_data(tmp));
                                     llvm::PointerType* tmp_type = static_cast<llvm::PointerType*>(tmp->getType());
-                                    if( tmp_type->getElementType()->isArrayTy() ) {
+                                    if( tmp_type->getPointerElementType()->isArrayTy() ) {
                                         tmp = llvm_utils->create_gep(tmp, 0);
                                     }
                                 } else {
@@ -5688,7 +5688,7 @@ public:
         llvm::Value* int_var = builder->CreateBitCast(CreateLoad(variable), shifted_signal->getType());
         tmp = builder->CreateXor(shifted_signal, int_var);
         llvm::PointerType* variable_type = static_cast<llvm::PointerType*>(variable->getType());
-        builder->CreateStore(builder->CreateBitCast(tmp, variable_type->getElementType()), variable);
+        builder->CreateStore(builder->CreateBitCast(tmp, variable_type->getPointerElementType()), variable);
     }
 
     void generate_fma(ASR::call_arg_t* m_args) {
@@ -6079,6 +6079,9 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         LCompilers::PassManager& pass_manager,
         Platform platform, const std::string &run_fn)
 {
+#if LLVM_VERSION_MAJOR >= 15
+    context.setOpaquePointers(false);
+#endif
     ASRToLLVMVisitor v(al, context, platform, diagnostics);
     LCompilers::PassOptions pass_options;
     pass_options.run_fun = run_fn;
