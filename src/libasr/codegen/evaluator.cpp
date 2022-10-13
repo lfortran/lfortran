@@ -54,9 +54,7 @@
 #    include <llvm/Support/TargetRegistry.h>
 #endif
 #include <llvm/Support/Host.h>
-#if LLVM_VERSION_MAJOR <= 11
-#    include <libasr/codegen/KaleidoscopeJIT.h>
-#endif
+#include <libasr/codegen/KaleidoscopeJIT.h>
 
 #include <libasr/codegen/evaluator.h>
 #include <libasr/codegen/asr_to_llvm.h>
