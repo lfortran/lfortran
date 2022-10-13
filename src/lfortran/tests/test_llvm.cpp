@@ -39,9 +39,9 @@ define i64 @f2()
     ret i64 5
 }
     )""");
-    CHECK(e.intfn("f2") == 5);
+    CHECK(e.int64fn("f2") == 5);
     e.add_module("");
-    CHECK(e.intfn("f2") == 5);
+    CHECK(e.int64fn("f2") == 5);
 }
 
 TEST_CASE("llvm 1 fail") {
@@ -88,7 +88,7 @@ define i64 @f2()
 }
     )""");
 
-    CHECK(e.intfn("f2") == 4);
+    CHECK(e.int64fn("f2") == 4);
 /*
 
     CHECK_THROWS_AS(e.add_module(R"""(
