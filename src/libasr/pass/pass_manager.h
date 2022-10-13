@@ -88,12 +88,20 @@ namespace LCompilers {
                            LFortran::diag::Diagnostics &diagnostics) {
             pass_options.runtime_library_dir = LFortran::get_runtime_library_dir();
             for (size_t i = 0; i < passes.size(); i++) {
+                // TODO: rework the whole pass manager: construct the passes
+                // ahead of time (not at the last minute), and remove this much
+                // earlier
+                // Note: this is not enough for rtlib, we also need to include
+                // it
+                if (rtlib && passes[i] == "unused_functions") continue;
                 _passes_db[passes[i]](al, *asr, pass_options);
                 LFORTRAN_ASSERT(LFortran::asr_verify(*asr, true, diagnostics));
             }
         }
 
         public:
+
+        bool rtlib=false;
 
         PassManager(): is_fast{false}, apply_default_passes{false} {
             _passes = {
