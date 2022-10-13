@@ -1183,7 +1183,7 @@ int link_executable(const std::vector<std::string> &infiles,
             for (auto &s : infiles) {
                 cmd += s + " ";
             }
-            cmd += std::string{compiler_options.rl_path} + "\\lfortran_runtime_static.lib";
+            cmd += compiler_options.rl_path.string() + "\\lfortran_runtime_static.lib";
             int err = system(cmd.c_str());
             if (err) {
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1195,7 +1195,7 @@ int link_executable(const std::vector<std::string> &infiles,
             }
         } else {
             std::string CC;
-            std::string base_path = "\"" + std::string{compiler_options.rl_path} + "\"";
+            std::string base_path = "\"" + compiler_options.rl_path.string() + "\"";
             std::string options;
             std::string runtime_lib = "lfortran_runtime";
 

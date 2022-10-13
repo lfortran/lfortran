@@ -249,7 +249,7 @@ ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &m
                           compiler_options.include_dirs.begin(),
                           compiler_options.include_dirs.end());
 
-    for (std::filesystem::path path : mod_files_dirs) {
+    for (auto path : mod_files_dirs) {
         std::string modfile;
         std::filesystem::path full_path = path / filename;
 

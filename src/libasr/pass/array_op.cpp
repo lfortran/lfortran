@@ -101,7 +101,7 @@ public:
     ArrayOpVisitor(Allocator &al,
         const std::filesystem::path &rl_path) : PassVisitor(al, nullptr),
     tmp_val(nullptr), result_var(nullptr), use_custom_loop_params(false),
-    result_var_num(0),  rl_path(rl_path)
+    result_var_num(0), rl_path(rl_path)
     {
         pass_result.reserve(al, 1);
         result_lbound.reserve(al, 1);
