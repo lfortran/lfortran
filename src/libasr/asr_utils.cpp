@@ -236,7 +236,7 @@ void set_intrinsic(ASR::TranslationUnit_t* trans_unit) {
 
 ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &msym,
                                              SymbolTable &symtab, bool intrinsic,
-					     const LFortran::CompilerOptions &compiler_options) {
+																						 const LFortran::CompilerOptions &compiler_options) {
     std::filesystem::path filename {msym + ".mod"};
     std::vector<std::filesystem::path> mod_files_dirs;
 
