@@ -732,7 +732,7 @@ LFORTRAN_API int32_t _lpython_bit_length4(int32_t num)
 LFORTRAN_API int32_t _lpython_bit_length8(int64_t num)
 {
     int32_t res = 0;
-    num = abs(num);
+    num = llabs(num);
     for(; num; num >>= 1, res++);
     return res;
 }
@@ -756,6 +756,26 @@ LFORTRAN_API void _lfortran_strrepeat(char** s, int32_t n, char** dest)
     }
     dest_char[cntr] = trmn;
     *dest = &(dest_char[0]);
+}
+
+LFORTRAN_API char* _lfortran_strrepeat_c(char* s, int32_t n)
+{
+    int cntr = 0;
+    char trmn = '\0';
+    int s_len = strlen(s);
+    int trmn_size = sizeof(trmn);
+    int f_len = s_len*n;
+    if (f_len < 0)
+        f_len = 0;
+    char* dest_char = (char*)malloc(f_len+trmn_size);
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < s_len; j++) {
+            dest_char[cntr] = s[j];
+            cntr++;
+        }
+    }
+    dest_char[cntr] = trmn;
+    return dest_char;
 }
 
 // idx1 and idx2 both start from 1
@@ -784,6 +804,7 @@ LFORTRAN_API char* _lfortran_str_copy(char* s, int32_t idx1, int32_t idx2) {
 LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int32_t step,
                         bool idx1_present, bool idx2_present) {
     int s_len = strlen(s);
+    idx2++;
     if (step == 0) {
         printf("slice step cannot be zero\n");
         exit(1);
@@ -858,6 +879,10 @@ LFORTRAN_API char* _lfortran_malloc(int size) {
 
 LFORTRAN_API int8_t* _lfortran_realloc(int8_t* ptr, int32_t size) {
     return (int8_t*) realloc(ptr, size);
+}
+
+LFORTRAN_API int8_t* _lfortran_calloc(int32_t count, int32_t size) {
+    return (int8_t*) calloc(count, size);
 }
 
 LFORTRAN_API void _lfortran_free(char* ptr) {

@@ -4,8 +4,8 @@
 %param {LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    205 // shift/reduce conflicts
-%expect-rr 171 // reduce/reduce conflicts
+%expect    210 // shift/reduce conflicts
+%expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -171,6 +171,7 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %token <string> KW_DOWHILE
 %token <string> KW_DOUBLE
 %token <string> KW_DOUBLE_PRECISION
+%token <string> KW_DOUBLE_COMPLEX
 %token <string> KW_ELEMENTAL
 %token <string> KW_ELSE
 %token <string> KW_ELSEIF
@@ -481,6 +482,7 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %type <vec_ast> event_post_stat_list
 %type <ast> sync_stat
 %type <ast> format_statement
+%type <ast> data_statement
 %type <ast> form_team_statement
 %type <ast> decl_statement
 %type <vec_ast> statements
@@ -500,7 +502,6 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %type <ast> data_set
 %type <vec_ast> data_object_list
 %type <vec_ast> data_stmt_value_list
-%type <ast> data_stmt_value
 %type <ast> data_stmt_repeat
 %type <ast> data_stmt_constant
 %type <ast> data_object
@@ -611,11 +612,13 @@ submodule
 
 block_data
     : KW_BLOCK KW_DATA sep use_statement_star implicit_statement_star
-        decl_star end_blockdata sep {
-            $$ = BLOCKDATA(TRIVIA($3, $8, @$), $4, $5, $6, @$); }
+        decl_statements end_blockdata sep {
+            $$ = BLOCKDATA(TRIVIA($3, $8, @$), $4, $5, SPLIT_DECL(p.m_a, $6),
+                SPLIT_STMT(p.m_a, $6), @$); }
     | KW_BLOCK KW_DATA id sep use_statement_star implicit_statement_star
-        decl_star end_blockdata sep {
-            $$ = BLOCKDATA1($3, TRIVIA($4, $9, @$), $5, $6, $7, @$); }
+        decl_statements end_blockdata sep {
+            $$ = BLOCKDATA1($3, TRIVIA($4, $9, @$), $5, $6, SPLIT_DECL(p.m_a, $7),
+                SPLIT_STMT(p.m_a, $7), @$); }
     ;
 
 interface_decl
@@ -1055,7 +1058,7 @@ implicit_statement
     | KW_IMPLICIT KW_COMPLEX "(" letter_spec_list ")" sep {
             $$ = IMPLICIT(ATTR_TYPE(Complex, @$), $4, TRIVIA_AFTER($6, @$), @$); }
     | KW_IMPLICIT KW_COMPLEX "*" TK_INTEGER "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE_INT(Complex, $4, @$), $6, TRIVIA_AFTER($8, @$), @$); }
+            $$ = IMPLICIT(ATTR_TYPE_INT(Complex, DIV2($4), @$), $6, TRIVIA_AFTER($8, @$), @$); }
     | KW_IMPLICIT KW_COMPLEX "(" TK_INTEGER ")" "(" letter_spec_list ")" sep {
             $$ = IMPLICIT(ATTR_TYPE_INT(Complex, $4, @$), $7, TRIVIA_AFTER($9, @$), @$); }
     | KW_IMPLICIT KW_COMPLEX "(" letter_spec_list ")"
@@ -1188,8 +1191,6 @@ var_decl
         LLOC(@$, @5); $$ = VAR_DECL_NAMELIST($3, $5, TRIVIA_AFTER($6, @$), @$);}
     | KW_COMMON common_block_list sep {
         LLOC(@$, @2); $$ = VAR_DECL_COMMON($2, TRIVIA_AFTER($3, @$), @$); }
-    | KW_DATA data_set_list sep {
-        LLOC(@$, @2); $$ = VAR_DECL_DATA($2, TRIVIA_AFTER($3, @$), @$); }
     | KW_EQUIVALENCE equivalence_set_list sep {
         LLOC(@$, @2); $$ = VAR_DECL_EQUIVALENCE($2, TRIVIA_AFTER($3, @$), @$);}
     ;
@@ -1252,13 +1253,11 @@ data_object
     ;
 
 data_stmt_value_list
-    : data_stmt_value_list "," data_stmt_value { $$ = $1; LIST_ADD($$, $3); }
-    | data_stmt_value { LIST_NEW($$); LIST_ADD($$, $1); }
-    ;
-
-data_stmt_value
-    : data_stmt_repeat "*" data_stmt_constant
-    | data_stmt_constant
+    : data_stmt_value_list "," data_stmt_constant { $$ = $1; LIST_ADD($$, $3); }
+    | data_stmt_value_list "," data_stmt_repeat "*" data_stmt_constant {
+            $$ = $1; REPEAT_LIST_ADD($$, $3, $5); }
+    | data_stmt_constant { LIST_NEW($$); LIST_ADD($$, $1); }
+    | data_stmt_repeat "*" data_stmt_constant { LIST_NEW($$); REPEAT_LIST_ADD($$, $1, $3); }
     ;
 
 data_stmt_repeat
@@ -1365,12 +1364,14 @@ var_type
     | KW_REAL "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Real, $3, @$); }
     | KW_COMPLEX { $$ = ATTR_TYPE(Complex, @$); }
     | KW_COMPLEX "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Complex, $3, @$); }
-    | KW_COMPLEX "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Complex, $3, @$); }
+    | KW_COMPLEX "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Complex, DIV2($3), @$); }
     | KW_LOGICAL { $$ = ATTR_TYPE(Logical, @$); }
     | KW_LOGICAL "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Logical, $3, @$); }
     | KW_LOGICAL "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Logical, $3, @$); }
     | KW_DOUBLE KW_PRECISION { $$ = ATTR_TYPE(DoublePrecision, @$); }
     | KW_DOUBLE_PRECISION { $$ = ATTR_TYPE(DoublePrecision, @$); }
+    | KW_DOUBLE KW_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
+    | KW_DOUBLE_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
     | KW_TYPE "(" id ")" { $$ = ATTR_TYPE_NAME(Type, $3, @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
     | KW_PROCEDURE "(" id ")" { $$ = ATTR_TYPE_NAME(Procedure, $3, @$); }
@@ -1506,6 +1507,7 @@ single_line_statement
     | flush_statement
     | forall_statement_single
     | format_statement
+    | data_statement
     | form_team_statement
     | goto_statement
     | if_statement_single
@@ -1925,6 +1927,10 @@ format_statement
     : TK_FORMAT { $$ = FORMAT($1, @$); }
     ;
 
+data_statement
+    : KW_DATA data_set_list { $$ = DATASTMT($2, @$); }
+    ;
+
 form_team_statement
     : form_team "(" expr "," id ")" { $$ = FORMTEAM1($3, $5, @$); }
     | form_team "(" expr "," id sync_stat_list ")" {
@@ -2337,6 +2343,7 @@ id
     | KW_DOWHILE { $$ = SYMBOL($1, @$); }
     | KW_DOUBLE { $$ = SYMBOL($1, @$); }
     | KW_DOUBLE_PRECISION { $$ = SYMBOL($1, @$); }
+    | KW_DOUBLE_COMPLEX { $$ = SYMBOL($1, @$); }
     | KW_ELEMENTAL { $$ = SYMBOL($1, @$); }
     | KW_ELSE { $$ = SYMBOL($1, @$); }
     | KW_ELSEIF { $$ = SYMBOL($1, @$); }

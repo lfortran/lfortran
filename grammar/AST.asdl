@@ -38,7 +38,7 @@ mod
         unit_decl1* use, implicit_statement* implicit,
         unit_decl2* decl, program_unit* contains)
     | BlockData(identifier? name, trivia? trivia, unit_decl1* use,
-        implicit_statement* implicit, unit_decl2* decl)
+        implicit_statement* implicit, unit_decl2* decl, stmt* body)
     | Program(identifier name, trivia? trivia, unit_decl1* use, implicit_statement* implicit,
         unit_decl2* decl, stmt* body, program_unit* contains)
 
@@ -126,6 +126,7 @@ stmt
     | ForAllSingle(int label, identifier? stmt_name,
             concurrent_control *control, expr? mask, stmt assign, trivia? trivia)
     | Format(int label, string fmt, trivia? trivia)
+    | DataStmt(int label, data_stmt_set* items, trivia? trivia)
     | FormTeam(int label, expr team_number, identifier team_var,
             event_attribute* sync_stat, trivia? trivia)
     | GoTo(int label, identifier? int_var, expr? goto_label,
@@ -266,7 +267,6 @@ procedure_decl
 
 decl_attribute
     = AttrBind(bind bind)
-    | AttrData(expr* object, expr* value)
     | AttrDimension(dimension* dim)
     | AttrCodimension(codimension* codim)
     | AttrEquivalence(equi* args)
@@ -319,6 +319,7 @@ decl_type
     | TypeCharacter
     | TypeComplex
     | TypeDoublePrecision
+    | TypeDoubleComplex
     | TypeInteger
     | TypeLogical
     | TypeProcedure
@@ -435,5 +436,8 @@ concurrent_locality
     | ConcurrentReduce(reduce_op op, identifier *vars)
 
 reduce_op = ReduceAdd | ReduceMul | ReduceMIN | ReduceMAX
+
+data_stmt_set
+    = DataStmtSet(expr* object, expr* value)
 
 }

@@ -3,18 +3,21 @@
 # This file is distributed under the same license as the LFortran package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: LFortran \n"
+"Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"PO-Revision-Date: 2022-09-09 16:18+0000\n"
+"Last-Translator: Vincent Magnin <vinmagpub@yahoo.fr>\n"
+"Language-Team: French <https://hosted.weblate.org/projects/fortran-lang/"
+"lfortran-docs/fr/>\n"
+"Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 4.14.1-dev\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../../doc/src/ast_and_asr.ipynb:9
@@ -31,7 +34,7 @@ msgstr ""
 
 #: ../../doc/src/ast_and_asr.ipynb:25 ../../doc/src/progress.md
 msgid "AST"
-msgstr ""
+msgstr "AST"
 
 #: ../../doc/src/ast_and_asr.ipynb:76
 msgid ""
@@ -43,7 +46,7 @@ msgstr ""
 
 #: ../../doc/src/ast_and_asr.ipynb:88 ../../doc/src/progress.md
 msgid "ASR"
-msgstr ""
+msgstr "ASR"
 
 #: ../../doc/src/ast_and_asr.ipynb:139
 msgid ""
@@ -732,7 +735,7 @@ msgstr ""
 
 #: ../../doc/src/developer_tutorial.ipynb:14
 msgid "Introduction"
-msgstr ""
+msgstr "Introduction"
 
 #: ../../doc/src/developer_tutorial.ipynb:18
 msgid ""
@@ -783,7 +786,7 @@ msgstr ""
 
 #: ../../doc/src/index.md:134
 msgid "Getting started"
-msgstr ""
+msgstr "Se lancer !"
 
 #: ../../doc/src/index.md:141 ../../doc/src/progress.md:1
 msgid "LFortran Development Status"
@@ -1433,7 +1436,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:328
 msgid "Ubuntu"
-msgstr ""
+msgstr "Ubuntu"
 
 #: ../../doc/src/installation.md:330
 msgid "In Ubuntu, `apt install binutils-dev`."
@@ -3760,7 +3763,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md
 msgid "LLVM"
-msgstr ""
+msgstr "LLVM"
 
 #: ../../doc/src/progress.md
 msgid "BIN"
@@ -4509,4 +4512,3 @@ msgstr ""
 #: ../../doc/src/progress.md
 msgid "[t01_scalar_real.f90](https://gitlab.com/lfortran/compiler_tester/-/blob/master/tests/intrinsic/nint/t01_scalar_real.f90)"
 msgstr ""
-

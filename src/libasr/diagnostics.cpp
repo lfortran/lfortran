@@ -199,6 +199,9 @@ std::string render_diagnostic_human(const Diagnostic &d, bool use_colors) {
                 case (Stage::ASRPass):
                     message_type = "ASR pass error";
                     break;
+                case (Stage::ASRVerify):
+                    message_type = "ASR verify pass error";
+                    break;
                 case (Stage::CodeGen):
                     message_type = "code generation error";
                     break;
@@ -366,6 +369,9 @@ std::string render_diagnostic_short(const Diagnostic &d) {
                     break;
                 case (Stage::ASRPass):
                     message_type = "ASR pass error";
+                    break;
+                case (Stage::ASRVerify):
+                    message_type = "ASR verify pass error";
                     break;
                 case (Stage::CodeGen):
                     message_type = "code generation error";

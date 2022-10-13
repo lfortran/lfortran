@@ -128,9 +128,9 @@ public:
                                                     m_dims.p, m_dims.size()));
                 break;
             }
-            case ASR::ttypeType::Derived: {
-                ASR::Derived_t* curr_type = down_cast<ASR::Derived_t>(t2);
-                new_type = ASRUtils::TYPE(ASR::make_Derived_t(al, x.base.base.loc, curr_type->m_derived_type,
+            case ASR::ttypeType::Struct: {
+                ASR::Struct_t* curr_type = down_cast<ASR::Struct_t>(t2);
+                new_type = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, curr_type->m_derived_type,
                                                     m_dims.p, m_dims.size()));
                 break;
             }
@@ -279,7 +279,6 @@ void pass_replace_arr_slice(Allocator &al, ASR::TranslationUnit_t &unit,
                             const LFortran::CompilerOptions& compiler_options) {
     ArrSliceVisitor v(al, compiler_options.rl_path);
     v.visit_TranslationUnit(unit);
-    LFORTRAN_ASSERT(asr_verify(unit));
 }
 
 

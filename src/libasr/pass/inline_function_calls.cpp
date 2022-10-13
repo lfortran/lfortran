@@ -46,6 +46,7 @@ private:
 
     bool from_inline_function_call, inlining_function;
     bool fixed_duplicated_expr_stmt;
+    bool is_fast;
 
     // Stores the local variables corresponding to the ones
     // present in function symbol table.
@@ -67,10 +68,12 @@ public:
 
     bool function_inlined;
 
-    InlineFunctionCallVisitor(Allocator &al_, const std::filesystem::path& rl_path_, bool inline_external_symbol_calls_)
+    InlineFunctionCallVisitor(Allocator &al_, const std::filesystem::path& rl_path_,
+                              bool inline_external_symbol_calls_, bool is_fast_)
     : PassVisitor(al_, nullptr),
     rl_path(rl_path_), function_result_var(nullptr),
     from_inline_function_call(false), inlining_function(false), fixed_duplicated_expr_stmt(false),
+    is_fast(is_fast_),
     current_routine(""), inline_external_symbol_calls(inline_external_symbol_calls_),
     node_duplicator(al_), current_routine_scope(nullptr),
     label_generator(ASRUtils::LabelGenerator::get_instance()),
@@ -209,6 +212,10 @@ public:
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(routine);
         if( ASRUtils::is_intrinsic_function2(func) ||
             std::string(func->m_name) == current_routine ) {
+            return ;
+        }
+
+        if( !is_fast && !func->m_inline ) {
             return ;
         }
 
@@ -449,12 +456,12 @@ void pass_inline_function_calls(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const LCompilers::PassOptions& pass_options,
                                 const LFortran::CompilerOptions& compiler_options) {
     bool inline_external_symbol_calls = pass_options.inline_external_symbol_calls;
-    InlineFunctionCallVisitor v(al, compiler_options.rl_path, inline_external_symbol_calls);
+    InlineFunctionCallVisitor v(al, compiler_options.rl_path,
+                                inline_external_symbol_calls, pass_options.fast);
     v.configure_node_duplicator(false);
     v.visit_TranslationUnit(unit);
     v.configure_node_duplicator(true);
     v.visit_TranslationUnit(unit);
-    LFORTRAN_ASSERT(asr_verify(unit));
 }
 
 

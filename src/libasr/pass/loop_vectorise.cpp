@@ -194,7 +194,6 @@ void pass_loop_vectorise(Allocator &al, ASR::TranslationUnit_t &unit,
                          const LFortran::CompilerOptions& compiler_options) {
     LoopVectoriseVisitor v(al, unit, compiler_options.rl_path);
     v.visit_TranslationUnit(unit);
-    LFORTRAN_ASSERT(asr_verify(unit));
 }
 
 

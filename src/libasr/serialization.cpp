@@ -116,7 +116,7 @@ public:
                 READ_SYMBOL_CASE(Function)
                 READ_SYMBOL_CASE(GenericProcedure)
                 READ_SYMBOL_CASE(ExternalSymbol)
-                READ_SYMBOL_CASE(DerivedType)
+                READ_SYMBOL_CASE(StructType)
                 READ_SYMBOL_CASE(Variable)
                 READ_SYMBOL_CASE(ClassProcedure)
                 default : throw LCompilersException("Symbol type not supported");
@@ -141,7 +141,7 @@ public:
                 INSERT_SYMBOL_CASE(Function)
                 INSERT_SYMBOL_CASE(GenericProcedure)
                 INSERT_SYMBOL_CASE(ExternalSymbol)
-                INSERT_SYMBOL_CASE(DerivedType)
+                INSERT_SYMBOL_CASE(StructType)
                 INSERT_SYMBOL_CASE(Variable)
                 INSERT_SYMBOL_CASE(ClassProcedure)
                 default : throw LCompilersException("Symbol type not supported");
@@ -220,7 +220,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_DerivedType(const DerivedType_t &x) {
+    void visit_StructType(const StructType_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         x.m_symtab->parent = parent_symtab;
@@ -307,7 +307,12 @@ void fix_external_symbols(ASR::TranslationUnit_t &unit,
 }
 
 ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
-        bool load_symtab_id, SymbolTable &external_symtab) {
+        bool load_symtab_id, SymbolTable & /*external_symtab*/) {
+    return deserialize_asr(al, s, load_symtab_id);
+}
+
+ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
+        bool load_symtab_id) {
     ASRDeserializationVisitor v(al, s, load_symtab_id);
     ASR::asr_t *node = v.deserialize_node();
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(node);
@@ -317,10 +322,8 @@ ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
     ASR::FixParentSymtabVisitor p;
     p.visit_TranslationUnit(*tu);
 
-    LFORTRAN_ASSERT(asr_verify(*tu, false));
-
-    // Suppress a warning for now
-    if ((bool&)external_symtab) {}
+    diag::Diagnostics diagnostics;
+    LFORTRAN_ASSERT(asr_verify(*tu, false, diagnostics));
 
     return node;
 }

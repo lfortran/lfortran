@@ -1,4 +1,4 @@
-module a_01
+module derived_types_01_m_01
 implicit none
 
 type :: X
@@ -21,8 +21,8 @@ end subroutine
 
 end module
 
-module a_02
-use a_01, only: Y
+module derived_types_01_m_02
+use derived_types_01_m_01, only: Y
 implicit none
 
 type :: Z
@@ -33,8 +33,8 @@ end type
 end module
 
 program derived_types_01
-use a_02, only: Z
-use a_01, only: X, set
+use derived_types_01_m_02, only: Z
+use derived_types_01_m_01, only: X, set
 implicit none
 type(X) :: b
 type(Z) :: c

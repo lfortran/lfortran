@@ -1,0 +1,597 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            derived_types_01:
+                (Program 
+                    (SymbolTable
+                        8
+                        {
+                            1_derived_types_01_m_01_y:
+                                (ExternalSymbol 
+                                    8 
+                                    1_derived_types_01_m_01_y 
+                                    2 y 
+                                    derived_types_01_m_01 
+                                    [] 
+                                    y 
+                                    Public
+                                ), 
+                            b:
+                                (Variable 
+                                    8 
+                                    b 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Struct 
+                                        8 x 
+                                        []
+                                    ) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            c:
+                                (Variable 
+                                    8 
+                                    c 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Struct 
+                                        8 z 
+                                        []
+                                    ) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            set:
+                                (ExternalSymbol 
+                                    8 
+                                    set 
+                                    2 set 
+                                    derived_types_01_m_01 
+                                    [] 
+                                    set 
+                                    Public
+                                ), 
+                            x:
+                                (ExternalSymbol 
+                                    8 
+                                    x 
+                                    2 x 
+                                    derived_types_01_m_01 
+                                    [] 
+                                    x 
+                                    Public
+                                ), 
+                            z:
+                                (ExternalSymbol 
+                                    8 
+                                    z 
+                                    6 z 
+                                    derived_types_01_m_02 
+                                    [] 
+                                    z 
+                                    Public
+                                )
+                            
+                        }) 
+                    derived_types_01 
+                    [derived_types_01_m_02
+                    derived_types_01_m_01] 
+                    [(= 
+                        (StructInstanceMember 
+                            (Var 8 b) 
+                            3 i 
+                            (Integer 4 []) 
+                            ()
+                        ) 
+                        (IntegerConstant 5 (Integer 4 [])) 
+                        ()
+                    )
+                    (= 
+                        (StructInstanceMember 
+                            (Var 8 b) 
+                            3 r 
+                            (Real 4 []) 
+                            ()
+                        ) 
+                        (RealConstant 
+                            3.500000 
+                            (Real 4 [])
+                        ) 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(StructInstanceMember 
+                            (Var 8 b) 
+                            3 i 
+                            (Integer 4 []) 
+                            ()
+                        )
+                        (StructInstanceMember 
+                            (Var 8 b) 
+                            3 r 
+                            (Real 4 []) 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (SubroutineCall 
+                        8 set 
+                        () 
+                        [((Var 8 b))] 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(StructInstanceMember 
+                            (Var 8 b) 
+                            3 i 
+                            (Integer 4 []) 
+                            ()
+                        )
+                        (StructInstanceMember 
+                            (Var 8 b) 
+                            3 r 
+                            (Real 4 []) 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (= 
+                        (StructInstanceMember 
+                            (StructInstanceMember 
+                                (StructInstanceMember 
+                                    (Var 8 c) 
+                                    7 l 
+                                    (Struct 
+                                        8 1_derived_types_01_m_01_y 
+                                        []
+                                    ) 
+                                    ()
+                                ) 
+                                4 d 
+                                (Struct 
+                                    8 x 
+                                    []
+                                ) 
+                                ()
+                            ) 
+                            3 r 
+                            (Real 4 []) 
+                            ()
+                        ) 
+                        (RealConstant 
+                            2.000000 
+                            (Real 4 [])
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (StructInstanceMember 
+                            (StructInstanceMember 
+                                (StructInstanceMember 
+                                    (Var 8 c) 
+                                    7 l 
+                                    (Struct 
+                                        8 1_derived_types_01_m_01_y 
+                                        []
+                                    ) 
+                                    ()
+                                ) 
+                                4 d 
+                                (Struct 
+                                    8 x 
+                                    []
+                                ) 
+                                ()
+                            ) 
+                            3 i 
+                            (Integer 4 []) 
+                            ()
+                        ) 
+                        (IntegerConstant 2 (Integer 4 [])) 
+                        ()
+                    )
+                    (= 
+                        (StructInstanceMember 
+                            (Var 8 c) 
+                            7 k 
+                            (Complex 4 []) 
+                            ()
+                        ) 
+                        (ComplexConstructor 
+                            (RealConstant 
+                                2.000000 
+                                (Real 4 [])
+                            ) 
+                            (RealConstant 
+                                2.000000 
+                                (Real 4 [])
+                            ) 
+                            (Complex 4 []) 
+                            (ComplexConstant 
+                                2.000000 
+                                2.000000 
+                                (Complex 4 [])
+                            )
+                        ) 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(StructInstanceMember 
+                            (StructInstanceMember 
+                                (StructInstanceMember 
+                                    (Var 8 c) 
+                                    7 l 
+                                    (Struct 
+                                        8 1_derived_types_01_m_01_y 
+                                        []
+                                    ) 
+                                    ()
+                                ) 
+                                4 d 
+                                (Struct 
+                                    8 x 
+                                    []
+                                ) 
+                                ()
+                            ) 
+                            3 r 
+                            (Real 4 []) 
+                            ()
+                        )
+                        (StructInstanceMember 
+                            (StructInstanceMember 
+                                (StructInstanceMember 
+                                    (Var 8 c) 
+                                    7 l 
+                                    (Struct 
+                                        8 1_derived_types_01_m_01_y 
+                                        []
+                                    ) 
+                                    ()
+                                ) 
+                                4 d 
+                                (Struct 
+                                    8 x 
+                                    []
+                                ) 
+                                ()
+                            ) 
+                            3 i 
+                            (Integer 4 []) 
+                            ()
+                        )
+                        (StructInstanceMember 
+                            (Var 8 c) 
+                            7 k 
+                            (Complex 4 []) 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (SubroutineCall 
+                        8 set 
+                        () 
+                        [((StructInstanceMember 
+                            (StructInstanceMember 
+                                (Var 8 c) 
+                                7 l 
+                                (Struct 
+                                    8 1_derived_types_01_m_01_y 
+                                    []
+                                ) 
+                                ()
+                            ) 
+                            4 d 
+                            (Struct 
+                                8 x 
+                                []
+                            ) 
+                            ()
+                        ))] 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(StructInstanceMember 
+                            (StructInstanceMember 
+                                (StructInstanceMember 
+                                    (Var 8 c) 
+                                    7 l 
+                                    (Struct 
+                                        8 1_derived_types_01_m_01_y 
+                                        []
+                                    ) 
+                                    ()
+                                ) 
+                                4 d 
+                                (Struct 
+                                    8 x 
+                                    []
+                                ) 
+                                ()
+                            ) 
+                            3 r 
+                            (Real 4 []) 
+                            ()
+                        )
+                        (StructInstanceMember 
+                            (StructInstanceMember 
+                                (StructInstanceMember 
+                                    (Var 8 c) 
+                                    7 l 
+                                    (Struct 
+                                        8 1_derived_types_01_m_01_y 
+                                        []
+                                    ) 
+                                    ()
+                                ) 
+                                4 d 
+                                (Struct 
+                                    8 x 
+                                    []
+                                ) 
+                                ()
+                            ) 
+                            3 i 
+                            (Integer 4 []) 
+                            ()
+                        )
+                        (StructInstanceMember 
+                            (Var 8 c) 
+                            7 k 
+                            (Complex 4 []) 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )]
+                ), 
+            derived_types_01_m_01:
+                (Module 
+                    (SymbolTable
+                        2
+                        {
+                            set:
+                                (Function 
+                                    (SymbolTable
+                                        5
+                                        {
+                                            a:
+                                                (Variable 
+                                                    5 
+                                                    a 
+                                                    Out 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Struct 
+                                                        2 x 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    set 
+                                    [(Var 5 a)] 
+                                    [(= 
+                                        (StructInstanceMember 
+                                            (Var 5 a) 
+                                            3 i 
+                                            (Integer 4 []) 
+                                            ()
+                                        ) 
+                                        (IntegerConstant 1 (Integer 4 [])) 
+                                        ()
+                                    )
+                                    (= 
+                                        (StructInstanceMember 
+                                            (Var 5 a) 
+                                            3 r 
+                                            (Real 4 []) 
+                                            ()
+                                        ) 
+                                        (RealConstant 
+                                            1.500000 
+                                            (Real 4 [])
+                                        ) 
+                                        ()
+                                    )] 
+                                    () 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                ), 
+                            x:
+                                (StructType 
+                                    (SymbolTable
+                                        3
+                                        {
+                                            i:
+                                                (Variable 
+                                                    3 
+                                                    i 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            r:
+                                                (Variable 
+                                                    3 
+                                                    r 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    x 
+                                    [r
+                                    i] 
+                                    Source 
+                                    Public 
+                                    ()
+                                ), 
+                            y:
+                                (StructType 
+                                    (SymbolTable
+                                        4
+                                        {
+                                            c:
+                                                (Variable 
+                                                    4 
+                                                    c 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Complex 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            d:
+                                                (Variable 
+                                                    4 
+                                                    d 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Struct 
+                                                        2 x 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    y 
+                                    [c
+                                    d] 
+                                    Source 
+                                    Public 
+                                    ()
+                                )
+                            
+                        }) 
+                    derived_types_01_m_01 
+                    [] 
+                    .false. 
+                    .false.
+                ), 
+            derived_types_01_m_02:
+                (Module 
+                    (SymbolTable
+                        6
+                        {
+                            y:
+                                (ExternalSymbol 
+                                    6 
+                                    y 
+                                    2 y 
+                                    derived_types_01_m_01 
+                                    [] 
+                                    y 
+                                    Public
+                                ), 
+                            z:
+                                (StructType 
+                                    (SymbolTable
+                                        7
+                                        {
+                                            k:
+                                                (Variable 
+                                                    7 
+                                                    k 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Complex 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            l:
+                                                (Variable 
+                                                    7 
+                                                    l 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Struct 
+                                                        6 y 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    z 
+                                    [k
+                                    l] 
+                                    Source 
+                                    Public 
+                                    ()
+                                )
+                            
+                        }) 
+                    derived_types_01_m_02 
+                    [derived_types_01_m_01] 
+                    .false. 
+                    .false.
+                )
+            
+        }) 
+    []
+)

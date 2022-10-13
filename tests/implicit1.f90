@@ -34,7 +34,7 @@ implicit logical(4) (l, u-z)
 implicit complex (z)
 implicit complex (dp) (a-h,o-z)
 IMPLICIT COMPLEX (C)
-implicit complex*4 (z)
+implicit complex*8 (z)
 implicit complex(4) (z)
 
 IMPLICIT TYPE(BLOB) (A)

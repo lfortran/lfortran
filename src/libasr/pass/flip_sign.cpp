@@ -213,7 +213,6 @@ void pass_replace_flip_sign(Allocator &al, ASR::TranslationUnit_t &unit,
                             const LFortran::CompilerOptions& compiler_options) {
     FlipSignVisitor v(al, unit, compiler_options);
     v.visit_TranslationUnit(unit);
-    LFORTRAN_ASSERT(asr_verify(unit));
 }
 
 

@@ -49,10 +49,23 @@ std::string format_type(const std::string &dims, const std::string &type,
     return fmt;
 }
 
-std::string remove_characters(std::string s, char c)
-{
-    s.erase(remove(s.begin(), s.end(), c), s.end());
-    return s;
+std::string trim_dims(std::string &dims) {
+    std::string trimmed;
+    bool last_is_digit = true;
+    size_t i = 0;
+    while (!isdigit(dims[i])) i++;
+    for (; i < dims.size(); i++) {
+        if (isdigit(dims[i])) {
+            if (!last_is_digit) {
+                trimmed += "_";
+                last_is_digit = true;
+            }
+            trimmed.push_back(dims[i]);
+        } else {
+            last_is_digit = false;
+        }
+    }
+    return trimmed;
 }
 
 class ASRToCPPVisitor : public BaseCCPPVisitor<ASRToCPPVisitor>
@@ -118,9 +131,7 @@ public:
 
         std::string struct_name;
         std::string new_array_type;
-        std::string dims_copy = remove_characters(dims, '[');
-        dims_copy = remove_characters(dims_copy, ']');
-        dims_copy = remove_characters(dims_copy, '*');
+        std::string dims_copy = trim_dims(dims);
         std::string name = encoded_type_name + "_" + dims_copy + "_" + std::to_string(n_dims);
         struct_name = "struct " + name;
         std::string array_data = format_type("*", type_name, "data", false, false, true, "*");
@@ -140,7 +151,8 @@ public:
                              std::string& encoded_type_name,
                              ASR::dimension_t* m_dims, int n_dims, size_t size,
                              bool use_ref, bool dummy,
-                             bool declare_value, bool is_pointer=false) {
+                             bool declare_value, bool /*is_fixed_size*/,
+                             bool is_pointer=false) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string type_name_copy = type_name;
         type_name = get_array_type(type_name, encoded_type_name, dims, n_dims);
@@ -222,7 +234,7 @@ public:
                                             use_ref, dummy,
                                             v.m_intent != ASRUtils::intent_in &&
                                             v.m_intent != ASRUtils::intent_inout &&
-                                            v.m_intent != ASRUtils::intent_out, true);
+                                            v.m_intent != ASRUtils::intent_out, true, true);
                     }
                 } else {
                     sub = format_type(dims, type_name, v.m_name, use_ref, dummy);
@@ -251,7 +263,7 @@ public:
                                             use_ref, dummy,
                                             v.m_intent != ASRUtils::intent_in &&
                                             v.m_intent != ASRUtils::intent_inout &&
-                                            v.m_intent != ASRUtils::intent_out);
+                                            v.m_intent != ASRUtils::intent_out, true);
                     }
                 } else {
                     sub = format_type(dims, type_name, v.m_name, use_ref, dummy);
@@ -272,7 +284,7 @@ public:
                                             use_ref, dummy,
                                             v.m_intent != ASRUtils::intent_in &&
                                             v.m_intent != ASRUtils::intent_inout &&
-                                            v.m_intent != ASRUtils::intent_out);
+                                            v.m_intent != ASRUtils::intent_out, true);
                     }
                 } else {
                     sub = format_type(dims, type_name, v.m_name, use_ref, dummy);
@@ -293,7 +305,7 @@ public:
                                             use_ref, dummy,
                                             v.m_intent != ASRUtils::intent_in &&
                                             v.m_intent != ASRUtils::intent_inout &&
-                                            v.m_intent != ASRUtils::intent_out);
+                                            v.m_intent != ASRUtils::intent_out, true);
                     }
                 } else {
                     sub = format_type(dims, type_name, v.m_name, use_ref, dummy);
@@ -308,8 +320,8 @@ public:
                 size_t size;
                 dims = convert_dims(t->n_dims, t->m_dims, size);
                 sub = format_type(dims, "std::string", v.m_name, use_ref, dummy);
-            } else if (ASR::is_a<ASR::Derived_t>(*v.m_type)) {
-                ASR::Derived_t *t = ASR::down_cast<ASR::Derived_t>(v.m_type);
+            } else if (ASR::is_a<ASR::Struct_t>(*v.m_type)) {
+                ASR::Struct_t *t = ASR::down_cast<ASR::Struct_t>(v.m_type);
                 std::string der_type_name = ASRUtils::symbol_name(t->m_derived_type);
                 size_t size;
                 dims = convert_dims(t->n_dims, t->m_dims, size);
@@ -324,7 +336,7 @@ public:
                                             use_ref, dummy,
                                             v.m_intent != ASRUtils::intent_in &&
                                             v.m_intent != ASRUtils::intent_inout &&
-                                            v.m_intent != ASRUtils::intent_out);
+                                            v.m_intent != ASRUtils::intent_out, true);
                     }
                 } else {
                     sub = format_type(dims, "struct", v.m_name, use_ref, dummy);
@@ -562,6 +574,24 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         from_std_vector_helper += indent + "r = " + out + ";\n";
         src = "&r";
         last_expr_precedence = 2;
+    }
+
+    void visit_ArraySize(const ASR::ArraySize_t& x) {
+        visit_expr(*x.m_v);
+        std::string var_name = src;
+        std::string args = "";
+        if (x.m_dim == nullptr) {
+            // TODO: return the product of all dimensions:
+            args = "0";
+        } else {
+            if( x.m_dim ) {
+                visit_expr(*x.m_dim);
+                args += src + "-1";
+                args += ", ";
+            }
+            args += std::to_string(ASRUtils::extract_kind_from_ttype_t(x.m_type)) + "-1";
+        }
+        src = var_name + "->data->extent(" + args + ")";
     }
 
     void visit_StringConcat(const ASR::StringConcat_t &x) {

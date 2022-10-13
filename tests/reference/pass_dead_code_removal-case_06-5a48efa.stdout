@@ -1,0 +1,335 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            cond_03:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable 
+                                    2 
+                                    a 
+                                    Local 
+                                    (IntegerConstant 1 (Integer 4 [])) 
+                                    () 
+                                    Save 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            ap:
+                                (Variable 
+                                    2 
+                                    ap 
+                                    Local 
+                                    (IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 1 (Integer 4 [])) 
+                                    Parameter 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            b:
+                                (Variable 
+                                    2 
+                                    b 
+                                    Local 
+                                    (IntegerConstant 2 (Integer 4 [])) 
+                                    () 
+                                    Save 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            bp:
+                                (Variable 
+                                    2 
+                                    bp 
+                                    Local 
+                                    (IntegerConstant 2 (Integer 4 [])) 
+                                    (IntegerConstant 2 (Integer 4 [])) 
+                                    Parameter 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            c:
+                                (Variable 
+                                    2 
+                                    c 
+                                    Local 
+                                    (RealConstant 
+                                        1.000000 
+                                        (Real 4 [])
+                                    ) 
+                                    () 
+                                    Save 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            cp:
+                                (Variable 
+                                    2 
+                                    cp 
+                                    Local 
+                                    (RealConstant 
+                                        1.000000 
+                                        (Real 4 [])
+                                    ) 
+                                    (RealConstant 
+                                        1.000000 
+                                        (Real 4 [])
+                                    ) 
+                                    Parameter 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            d:
+                                (Variable 
+                                    2 
+                                    d 
+                                    Local 
+                                    (RealConstant 
+                                        2.000000 
+                                        (Real 4 [])
+                                    ) 
+                                    () 
+                                    Save 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            dp:
+                                (Variable 
+                                    2 
+                                    dp 
+                                    Local 
+                                    (RealConstant 
+                                        2.000000 
+                                        (Real 4 [])
+                                    ) 
+                                    (RealConstant 
+                                        2.000000 
+                                        (Real 4 [])
+                                    ) 
+                                    Parameter 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            grade_fixed:
+                                (Variable 
+                                    2 
+                                    grade_fixed 
+                                    Local 
+                                    (StringConstant 
+                                        "B" 
+                                        (Character 1 1 () [])
+                                    ) 
+                                    (StringConstant 
+                                        "B" 
+                                        (Character 1 1 () [])
+                                    ) 
+                                    Parameter 
+                                    (Character 1 1 () []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            marks:
+                                (Variable 
+                                    2 
+                                    marks 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            marks_fixed:
+                                (Variable 
+                                    2 
+                                    marks_fixed 
+                                    Local 
+                                    (IntegerConstant 94 (Integer 4 [])) 
+                                    (IntegerConstant 94 (Integer 4 [])) 
+                                    Parameter 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    cond_03 
+                    [] 
+                    [(If 
+                        (IntegerCompare 
+                            (Var 2 a) 
+                            Eq 
+                            (Var 2 b) 
+                            (Logical 4 []) 
+                            ()
+                        ) 
+                        [(Print 
+                            () 
+                            [(StringConstant 
+                                "a == b" 
+                                (Character 1 6 () [])
+                            )] 
+                            () 
+                            ()
+                        )
+                        (Print 
+                            () 
+                            [(StringConstant 
+                                "ap /= bp" 
+                                (Character 1 8 () [])
+                            )] 
+                            () 
+                            ()
+                        )] 
+                        [(Print 
+                            () 
+                            [(StringConstant 
+                                "ap == cp" 
+                                (Character 1 8 () [])
+                            )] 
+                            () 
+                            ()
+                        )
+                        (Print 
+                            () 
+                            [(StringConstant 
+                                "cp /= dp" 
+                                (Character 1 8 () [])
+                            )] 
+                            () 
+                            ()
+                        )]
+                    )
+                    (Print 
+                        () 
+                        [(StringConstant 
+                            "Your grade is " 
+                            (Character 1 14 () [])
+                        )
+                        (Var 2 grade_fixed)] 
+                        () 
+                        ()
+                    )
+                    (= 
+                        (Var 2 marks) 
+                        (IntegerConstant 94 (Integer 4 [])) 
+                        ()
+                    )
+                    (Select 
+                        (Var 2 marks) 
+                        [(CaseStmt_Range 
+                            (IntegerBinOp 
+                                (IntegerConstant 40 (Integer 4 [])) 
+                                Add 
+                                (Var 2 bp) 
+                                (Integer 4 []) 
+                                (IntegerConstant 42 (Integer 4 []))
+                            ) 
+                            () 
+                            [(Print 
+                                () 
+                                [(StringConstant 
+                                    "Pass!" 
+                                    (Character 1 5 () [])
+                                )] 
+                                () 
+                                ()
+                            )]
+                        )
+                        (CaseStmt_Range 
+                            () 
+                            (IntegerBinOp 
+                                (IntegerConstant 39 (Integer 4 [])) 
+                                Sub 
+                                (Var 2 ap) 
+                                (Integer 4 []) 
+                                (IntegerConstant 38 (Integer 4 []))
+                            ) 
+                            [(Print 
+                                () 
+                                [(StringConstant 
+                                    "Failed!" 
+                                    (Character 1 7 () [])
+                                )] 
+                                () 
+                                ()
+                            )]
+                        )] 
+                        [(Print 
+                            () 
+                            [(StringConstant 
+                                "Invalid marks" 
+                                (Character 1 13 () [])
+                            )] 
+                            () 
+                            ()
+                        )]
+                    )
+                    (Print 
+                        () 
+                        [(StringConstant 
+                            "Your marks are " 
+                            (Character 1 15 () [])
+                        )
+                        (Var 2 marks)] 
+                        () 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(StringConstant 
+                            "Pass!" 
+                            (Character 1 5 () [])
+                        )] 
+                        () 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(StringConstant 
+                            "Your marks are " 
+                            (Character 1 15 () [])
+                        )
+                        (Var 2 marks)] 
+                        () 
+                        ()
+                    )]
+                )
+            
+        }) 
+    []
+)

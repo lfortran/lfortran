@@ -1,0 +1,36 @@
+function abs(a::Float32)::Float32
+    local r::Float32 = 0.0
+    println("abs")
+    if a > Float32(0)
+        r = a
+    else
+        r = -a
+    end
+    return r
+end
+
+function sum(a::Array{Float32, 1})::Float32
+    local i::Int32 = 0
+    local r::Float32 = 0.0
+    println("sum")
+    r = Float32(0)
+    for i ∈ 1:length(a)
+        r = r + a[i]
+    end
+    return r
+end
+
+function main()
+    local a = Array{Float32, 1}(undef, 3)
+    local b::Float32 = 0.0
+    a[1] = Float32(3)
+    a[2] = Float32(2)
+    a[3] = Float32(1)
+    b = sum(a)
+    if abs(Float32(b - Float32(6))) >   1.00000000000000008e-05
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+end
+
+main()

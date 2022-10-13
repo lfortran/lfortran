@@ -1,0 +1,22 @@
+function main()
+    local i::Int32 = 0
+    local j::Int32 = 0
+    @label label_1
+    j = 0
+    @label label_2
+    for i ∈ 1:10
+        @label label_3
+        if i == 2
+            continue
+        end
+        @label label_4
+        j = j + i
+    end
+    @label label_6
+    if j ≠ 53
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+end
+
+main()

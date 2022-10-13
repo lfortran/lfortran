@@ -1,0 +1,136 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            main:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            do330i:
+                                (Variable 
+                                    2 
+                                    do330i 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            i:
+                                (Variable 
+                                    2 
+                                    i 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            j:
+                                (Variable 
+                                    2 
+                                    j 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            kp:
+                                (Variable 
+                                    2 
+                                    kp 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    main 
+                    [] 
+                    [(= 
+                        (Var 2 kp) 
+                        (IntegerConstant 10 (Integer 4 [])) 
+                        ()
+                    )
+                    (DoLoop 
+                        ((Var 2 i) 
+                        (IntegerConstant 1 (Integer 4 [])) 
+                        (Var 2 kp) 
+                        ()) 
+                        [(DoLoop 
+                            ((Var 2 j) 
+                            (IntegerBinOp 
+                                (Var 2 i) 
+                                Add 
+                                (IntegerConstant 1 (Integer 4 [])) 
+                                (Integer 4 []) 
+                                ()
+                            ) 
+                            (Var 2 kp) 
+                            ()) 
+                            [(If 
+                                (IntegerCompare 
+                                    (IntegerConstant 0 (Integer 4 [])) 
+                                    Gt 
+                                    (IntegerConstant 1 (Integer 4 [])) 
+                                    (Logical 4 []) 
+                                    (LogicalConstant 
+                                        .false. 
+                                        (Logical 4 [])
+                                    )
+                                ) 
+                                [(Print 
+                                    () 
+                                    [(Var 2 i)
+                                    (Var 2 j)] 
+                                    () 
+                                    ()
+                                )] 
+                                [(Print 
+                                    () 
+                                    [(Var 2 j)
+                                    (Var 2 i)] 
+                                    () 
+                                    ()
+                                )]
+                            )
+                            (GoToTarget 
+                                320 
+                                320
+                            )]
+                        )
+                        (GoToTarget 
+                            330 
+                            330
+                        )]
+                    )
+                    (= 
+                        (Var 2 do330i) 
+                        (IntegerConstant 15 (Integer 4 [])) 
+                        ()
+                    )]
+                )
+            
+        }) 
+    []
+)

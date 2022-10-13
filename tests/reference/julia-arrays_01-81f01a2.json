@@ -1,0 +1,13 @@
+{
+    "basename": "julia-arrays_01-81f01a2",
+    "cmd": "lfortran --no-color --show-julia {infile}",
+    "infile": "tests/../integration_tests/arrays_01.f90",
+    "infile_hash": "f7df4142feb383f836dfa072a60673922e8873b5695f893be8329b89",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "julia-arrays_01-81f01a2.stdout",
+    "stdout_hash": "c8c7d9259825624b57dc37d9a9f548e57d7a44d958d4519e90c189ae",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

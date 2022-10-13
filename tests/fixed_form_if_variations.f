@@ -7,6 +7,7 @@
       program main
           if (0<1) then
               print *, "first branch"
+   10 continue
           else
               print *, "second branch"
           endif

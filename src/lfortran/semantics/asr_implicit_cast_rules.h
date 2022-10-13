@@ -24,6 +24,8 @@ private:
   static const int complex_to_complex = ASR::cast_kindType::ComplexToComplex;
   static const int complex_to_real = ASR::cast_kindType::ComplexToReal;
   static const int real_to_real = ASR::cast_kindType::RealToReal;
+  static const int complex_to_integer = ASR::cast_kindType::ComplexToInteger;
+
   //! Stores the variable part of error messages to be passed to SemanticError.
   static constexpr const char *type_names[num_types][2] = {
       {"Integer", "Integer Pointer"},
@@ -51,7 +53,7 @@ private:
        default_case, default_case},
 
       // Complex
-      {default_case, complex_to_real, complex_to_complex, default_case,
+      {complex_to_integer, complex_to_real, complex_to_complex, default_case,
        default_case, default_case},
 
       // Character
@@ -184,6 +186,18 @@ public:
                 double rval = r->m_re;
                 value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
                     rval, dest_type2);
+            }
+        } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::ComplexToInteger) {
+            if (ASRUtils::expr_value(*convert_can)) {
+                LFORTRAN_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(dest_type)))
+                LFORTRAN_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(*convert_can)))
+                value = ASRUtils::expr_value(*convert_can);
+                LFORTRAN_ASSERT(ASR::is_a<ASR::ComplexConstant_t>(*value))
+                ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
+                double rval = r->m_re;
+                int64_t ival = (int64_t)rval;
+                value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
+                    ival, dest_type2);
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::IntegerToInteger) {
             if (ASRUtils::expr_value(*convert_can)) {

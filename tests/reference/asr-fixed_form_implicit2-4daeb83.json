@@ -1,0 +1,13 @@
+{
+    "basename": "asr-fixed_form_implicit2-4daeb83",
+    "cmd": "lfortran --indent --fixed-form --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/fixed_form_implicit2.f",
+    "infile_hash": "5300a387c8af9f01e109d5c3f7a9d8aa452020178f6e388e4bfcbce9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-fixed_form_implicit2-4daeb83.stdout",
+    "stdout_hash": "30cfed703cf26f649bf6cc9811eec65345a1e6b5528a585adbc5ef74",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

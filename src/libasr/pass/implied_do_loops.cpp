@@ -248,7 +248,6 @@ void pass_replace_implied_do_loops(Allocator &al, ASR::TranslationUnit_t &unit,
                                    const LFortran::CompilerOptions& compiler_options) {
     ImpliedDoLoopVisitor v(al, unit, compiler_options.rl_path);
     v.visit_TranslationUnit(unit);
-    LFORTRAN_ASSERT(asr_verify(unit));
 }
 
 

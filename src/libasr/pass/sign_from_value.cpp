@@ -156,7 +156,6 @@ void pass_replace_sign_from_value(Allocator &al, ASR::TranslationUnit_t &unit,
                                   const LFortran::CompilerOptions& compiler_options) {
     SignFromValueVisitor v(al, unit, compiler_options);
     v.visit_TranslationUnit(unit);
-    LFORTRAN_ASSERT(asr_verify(unit));
 }
 
 
