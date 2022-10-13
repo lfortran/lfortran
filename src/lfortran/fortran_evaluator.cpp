@@ -317,7 +317,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     Result<std::unique_ptr<LFortran::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
             e->get_context(), al, pass_manager,
-            compiler_options.platform, run_fn);
+            compiler_options, run_fn);
     if (res.ok) {
         m = std::move(res.result);
     } else {

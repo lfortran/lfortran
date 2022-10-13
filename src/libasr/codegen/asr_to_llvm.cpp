@@ -159,7 +159,6 @@ public:
     llvm::LLVMContext &context;
     std::unique_ptr<llvm::Module> module;
     std::unique_ptr<llvm::IRBuilder<>> builder;
-    Platform platform;
     Allocator &al;
 
     llvm::Value *tmp;
@@ -229,12 +228,13 @@ public:
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
 
-    ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, Platform platform,
+    CompilerOptions &compiler_options;
+
+    ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, CompilerOptions &compiler_options,
         diag::Diagnostics &diagnostics) :
     diag{diagnostics},
     context(context),
     builder(std::make_unique<llvm::IRBuilder<>>(context)),
-    platform{platform},
     al{al},
     prototype_only(false),
     llvm_utils(std::make_unique<LLVMUtils>(context, builder.get())),
@@ -248,7 +248,8 @@ public:
               LLVMArrUtils::DESCR_TYPE::_SimpleCMODescriptor)),
     ptr_loads(2),
     lookup_enum_value_for_nonints(false),
-    is_assignment_target(false)
+    is_assignment_target(false),
+    compiler_options{compiler_options}
     {
         llvm_utils->tuple_api = tuple_api.get();
         llvm_utils->list_api = list_api.get();
@@ -2636,11 +2637,11 @@ public:
                     if (arg_m_abi == ASR::abiType::BindC
                             && arg_m_value_attr) {
                         if (a_kind == 4) {
-                            if (platform == Platform::Windows) {
+                            if (compiler_options.platform == Platform::Windows) {
                                 // type_fx2 is i64
                                 llvm::Type* type_fx2 = llvm::Type::getInt64Ty(context);
                                 type = type_fx2;
-                            } else if (platform == Platform::macOS_ARM) {
+                            } else if (compiler_options.platform == Platform::macOS_ARM) {
                                 // type_fx2 is [2 x float]
                                 llvm::Type* type_fx2 = llvm::ArrayType::get(llvm::Type::getFloatTy(context), 2);
                                 type = type_fx2;
@@ -2651,7 +2652,7 @@ public:
                             }
                         } else {
                             LFORTRAN_ASSERT(a_kind == 8)
-                            if (platform == Platform::Windows) {
+                            if (compiler_options.platform == Platform::Windows) {
                                 // 128 bit aggregate type is passed by reference
                                 type = getComplexType(a_kind, true);
                             } else {
@@ -3079,10 +3080,10 @@ public:
                     int a_kind = down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
                     if (a_kind == 4) {
                         if (x.m_abi == ASR::abiType::BindC) {
-                            if (platform == Platform::Windows) {
+                            if (compiler_options.platform == Platform::Windows) {
                                 // i64
                                 return_type = llvm::Type::getInt64Ty(context);
-                            } else if (platform == Platform::macOS_ARM) {
+                            } else if (compiler_options.platform == Platform::macOS_ARM) {
                                 // {float, float}
                                 return_type = getComplexType(a_kind);
                             } else {
@@ -3095,7 +3096,7 @@ public:
                     } else {
                         LFORTRAN_ASSERT(a_kind == 8)
                         if (x.m_abi == ASR::abiType::BindC) {
-                            if (platform == Platform::Windows) {
+                            if (compiler_options.platform == Platform::Windows) {
                                 // pass as subroutine
                                 return_type = getComplexType(a_kind, true);
                                 std::vector<llvm::Type*> args = convert_args(x);
@@ -3258,7 +3259,7 @@ public:
                 if (is_a<ASR::Complex_t>(*arg_type)) {
                     int c_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                     if (c_kind == 4) {
-                        if (platform == Platform::Windows) {
+                        if (compiler_options.platform == Platform::Windows) {
                             // tmp is {float, float}*
                             // type_fx2p is i64*
                             llvm::Type* type_fx2p = llvm::Type::getInt64PtrTy(context);
@@ -3266,7 +3267,7 @@ public:
                             tmp = builder->CreateBitCast(tmp, type_fx2p);
                             // Then convert i64* -> i64
                             tmp = CreateLoad(tmp);
-                        } else if (platform == Platform::macOS_ARM) {
+                        } else if (compiler_options.platform == Platform::macOS_ARM) {
                             // Pass by value
                             tmp = CreateLoad(tmp);
                         } else {
@@ -3280,7 +3281,7 @@ public:
                         }
                     } else {
                         LFORTRAN_ASSERT(c_kind == 8)
-                        if (platform == Platform::Windows) {
+                        if (compiler_options.platform == Platform::Windows) {
                             // 128 bit aggregate type is passed by reference
                         } else {
                             // Pass by value
@@ -5474,7 +5475,7 @@ public:
                                             if (is_a<ASR::Complex_t>(*arg_type)) {
                                                 int c_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                                                 if (c_kind == 4) {
-                                                    if (platform == Platform::Windows) {
+                                                    if (compiler_options.platform == Platform::Windows) {
                                                         // tmp is {float, float}*
                                                         // type_fx2p is i64*
                                                         llvm::Type* type_fx2p = llvm::Type::getInt64PtrTy(context);
@@ -5482,7 +5483,7 @@ public:
                                                         tmp = builder->CreateBitCast(tmp, type_fx2p);
                                                         // Then convert i64* -> i64
                                                         tmp = CreateLoad(tmp);
-                                                    } else if (platform == Platform::macOS_ARM) {
+                                                    } else if (compiler_options.platform == Platform::macOS_ARM) {
                                                         // tmp is {float, float}*
                                                         // type_fx2p is [2 x float]*
                                                         llvm::Type* type_fx2p = llvm::ArrayType::get(llvm::Type::getFloatTy(context), 2)->getPointerTo();
@@ -5501,7 +5502,7 @@ public:
                                                     }
                                                 } else {
                                                     LFORTRAN_ASSERT(c_kind == 8)
-                                                    if (platform == Platform::Windows) {
+                                                    if (compiler_options.platform == Platform::Windows) {
                                                         // 128 bit aggregate type is passed by reference
                                                     } else {
                                                         // Pass by value
@@ -5953,7 +5954,7 @@ public:
                 if (is_a<ASR::Complex_t>(*return_var_type0)) {
                     int a_kind = down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
                     if (a_kind == 8) {
-                        if (platform == Platform::Windows) {
+                        if (compiler_options.platform == Platform::Windows) {
                             tmp = builder->CreateAlloca(complex_type_8, nullptr);
                             args.insert(args.begin(), tmp);
                             builder->CreateCall(fn, args);
@@ -5977,7 +5978,7 @@ public:
             if (is_a<ASR::Complex_t>(*return_var_type0)) {
                 int a_kind = down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
                 if (a_kind == 4) {
-                    if (platform == Platform::Windows) {
+                    if (compiler_options.platform == Platform::Windows) {
                         // tmp is i64, have to convert to {float, float}
 
                         // i64
@@ -5989,7 +5990,7 @@ public:
                         tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
                         // Convert {float,float}* to {float,float}
                         tmp = CreateLoad(tmp);
-                    } else if (platform == Platform::macOS_ARM) {
+                    } else if (compiler_options.platform == Platform::macOS_ARM) {
                         // pass
                     } else {
                         // tmp is <2 x float>, have to convert to {float, float}
@@ -6080,12 +6081,12 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics,
         llvm::LLVMContext &context, Allocator &al,
         LCompilers::PassManager& pass_manager,
-        Platform platform, const std::string &run_fn)
+        CompilerOptions &compiler_options, const std::string &run_fn)
 {
 #if LLVM_VERSION_MAJOR >= 15
     context.setOpaquePointers(false);
 #endif
-    ASRToLLVMVisitor v(al, context, platform, diagnostics);
+    ASRToLLVMVisitor v(al, context, compiler_options, diagnostics);
     LCompilers::PassOptions pass_options;
     pass_options.run_fun = run_fn;
     pass_options.always_run = false;
