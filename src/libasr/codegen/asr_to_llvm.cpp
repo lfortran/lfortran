@@ -3031,6 +3031,9 @@ public:
                 } else {
                     fn_name = sym_name;
                 }
+            } else if (x.m_deftype == ASR::deftypeType::Interface &&
+                x.m_abi != ASR::abiType::Intrinsic) {
+                fn_name = sym_name;
             } else {
                 fn_name = mangle_prefix + sym_name;
             }
