@@ -6079,6 +6079,9 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         LCompilers::PassManager& pass_manager,
         Platform platform, const std::string &run_fn)
 {
+#if LLVM_VERSION_MAJOR >= 15
+    context.setOpaquePointers(false);
+#endif
     ASRToLLVMVisitor v(al, context, platform, diagnostics);
     LCompilers::PassOptions pass_options;
     pass_options.run_fun = run_fn;
