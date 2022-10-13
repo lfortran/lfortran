@@ -237,19 +237,30 @@ void set_intrinsic(ASR::TranslationUnit_t* trans_unit) {
 ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &msym,
                                              SymbolTable &symtab, bool intrinsic,
 					     const LFortran::CompilerOptions &compiler_options) {
-    std::filesystem::path modfilename {msym + ".mod"};
-    if (intrinsic) {
-        modfilename = compiler_options.rl_path / modfilename;
-    }
+    std::filesystem::path filename {msym + ".mod"};
+    std::vector<std::filesystem::path> mod_files_dirs;
 
-    std::string modfile;
-    if (!read_file(modfilename, modfile)) return nullptr;
-    ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false,
-        symtab);
-    if (intrinsic) {
-        set_intrinsic(asr);
+    // inserting rl_path first is important to keep the previous behavior
+    // whether rl_path should be used to search for mod files is another matter
+    mod_files_dirs.push_back( compiler_options.rl_path );
+    mod_files_dirs.push_back( compiler_options.mod_files_dir );
+    mod_files_dirs.insert(mod_files_dirs.end(),
+			  compiler_options.include_dirs.begin(),
+			  compiler_options.include_dirs.end());
+    
+    for (std::filesystem::path path : mod_files_dirs) {
+	std::string modfile;
+	std::filesystem::path full_path = path / filename;
+	
+	if (read_file(full_path.string(), modfile)) {
+	    ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false, symtab);
+	    if (intrinsic) {
+		set_intrinsic(asr);
+	    }
+	    return asr;
+	}
     }
-    return asr;
+    return nullptr;
 }
 
 ASR::asr_t* getDerivedRef_t(Allocator& al, const Location& loc,

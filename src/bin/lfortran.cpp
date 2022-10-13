@@ -606,7 +606,8 @@ int emit_c(const std::string &infile, CompilerOptions &compiler_options)
 }
 
 
-int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
+int save_mod_files(const LFortran::ASR::TranslationUnit_t &u,
+		   const CompilerOptions &compiler_options)
 {
     for (auto &item : u.m_global_scope->get_scope()) {
         if (LFortran::ASR::is_a<LFortran::ASR::Module_t>(*item.second)) {
@@ -637,12 +638,14 @@ int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
             LFORTRAN_ASSERT(LFortran::asr_verify(u));
 
 
-            std::string modfile = std::string(m->m_name) + ".mod";
+            std::filesystem::path filename { std::string(m->m_name) + ".mod" };
+            std::filesystem::path fullpath = compiler_options.mod_files_dir / filename;
             {
                 std::ofstream out;
-                out.open(modfile, std::ofstream::out | std::ofstream::binary);
+                out.open(fullpath, std::ofstream::out | std::ofstream::binary);
                 out << modfile_binary;
             }
+	    
         }
     }
     return 0;
@@ -722,7 +725,7 @@ int compile_to_object_file(const std::string &infile,
 
     // Save .mod files
     {
-        int err = save_mod_files(*asr);
+        int err = save_mod_files(*asr, compiler_options);
         if (err) return err;
     }
 
@@ -1009,7 +1012,7 @@ int compile_to_object_file_cpp(const std::string &infile,
 
     // Save .mod files
     {
-        int err = save_mod_files(*asr);
+        int err = save_mod_files(*asr, compiler_options);
         if (err) return err;
     }
 
@@ -1380,8 +1383,6 @@ int main(int argc, char *argv[])
         bool arg_v = false;
         bool arg_E = false;
         bool arg_g = false;
-        std::string arg_J;
-        std::vector<std::string> arg_I;
         std::vector<std::string> arg_l;
         std::vector<std::string> arg_L;
         std::string arg_o;
@@ -1438,8 +1439,8 @@ int main(int argc, char *argv[])
         app.add_flag("-E", arg_E, "Preprocess only; do not compile, assemble or link");
         app.add_option("-l", arg_l, "Link library option");
         app.add_option("-L", arg_L, "Library path option");
-        app.add_option("-I", arg_I, "Include path")->allow_extra_args(false);
-        app.add_option("-J", arg_J, "Where to save mod files");
+        app.add_option("-I", compiler_options.include_dirs, "Include path");
+        app.add_option("-J", compiler_options.mod_files_dir, "Where to save mod files");
         app.add_flag("-g", arg_g, "Compile with debugging information");
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", arg_version, "Display compiler version information");
