@@ -253,7 +253,7 @@ public:
         fix_type_info();
     }
 
-	void populate_implicit_dictionary(Location &a_loc, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
+    void populate_implicit_dictionary(Location &a_loc, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         for (char ch='i'; ch<='n'; ch++) {
             implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4, nullptr, 0));
         }
@@ -351,29 +351,29 @@ public:
     }
 
 	void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
-        std::cout << "Implicit Dictionary: " << std::endl;
-        for (auto it: implicit_dictionary) {
-            if (it.second) {
-                std::cout << it.first << " " << ASRUtils::type_to_str(it.second) << std::endl;
-            } else {
-                std::cout << it.first << " " << "NULL" << std::endl;
-            }
-        }
-    }
+		std::cout << "Implicit Dictionary: " << std::endl;
+		for (auto it: implicit_dictionary) {
+			if (it.second) {
+				std::cout << it.first << " " << ASRUtils::type_to_str(it.second) << std::endl;
+			} else {
+				std::cout << it.first << " " << "NULL" << std::endl;
+			}
+		}
+	}
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
 
-		if (compiler_options.implicit_typing) {
-			Location a_loc = x.base.base.loc;
-			populate_implicit_dictionary(a_loc, implicit_dictionary);
-			process_implicit_statements(x, implicit_dictionary);
-		} else {
-			for (size_t i=0;i<x.n_implicit;i++) {
+        if (compiler_options.implicit_typing) {
+            Location a_loc = x.base.base.loc;
+            populate_implicit_dictionary(a_loc, implicit_dictionary);
+            process_implicit_statements(x, implicit_dictionary);
+        } else {
+            for (size_t i=0;i<x.n_implicit;i++) {
                 if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
                     throw SemanticError("Implicit typing is not allowed, enable it by using --implicit-typing ", x.m_implicit[i]->base.loc);
                 }
             }
-		}
+        }
 		
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
@@ -400,10 +400,8 @@ public:
             std::string arg_s = to_lower(arg);
             if (current_scope->get_symbol(arg_s) == nullptr) {
                 if (compiler_options.implicit_typing) {
-                    // declare_implicit_variable(x.base.base.loc, arg_s,
-                    //     ASRUtils::intent_unspecified);
                     ASR::ttype_t *t = implicit_dictionary[std::string(1, arg_s[0])];
-					declare_implicit_variable2(x.base.base.loc, arg_s,
+                    declare_implicit_variable2(x.base.base.loc, arg_s,
                         ASRUtils::intent_unspecified, t);
                 } else {
                     throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
@@ -510,7 +508,7 @@ public:
 
     void visit_Function(const AST::Function_t &x) {
         if (compiler_options.implicit_typing) {
-			Location a_loc = x.base.base.loc;
+            Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
             process_implicit_statements(x, implicit_dictionary);
         } else {
