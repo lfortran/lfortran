@@ -632,15 +632,21 @@ namespace LFortran {
                 }
                 LFORTRAN_ASSERT(c);
                 ASR::cmpopType cmp_op;
+
                 if( comp == -1 ) {
                     int increment;
+                    if (!ASRUtils::is_integer(*ASRUtils::expr_type(c))) {
+                        throw LCompilersException("Do loop increment type should be an integer");
+                    }
                     if (c->type == ASR::exprType::IntegerConstant) {
                         increment = ASR::down_cast<ASR::IntegerConstant_t>(c)->m_n;
                     } else if (c->type == ASR::exprType::IntegerUnaryMinus) {
                         ASR::IntegerUnaryMinus_t *u = ASR::down_cast<ASR::IntegerUnaryMinus_t>(c);
                         increment = - ASR::down_cast<ASR::IntegerConstant_t>(u->m_arg)->m_n;
                     } else {
-                        throw LCompilersException("Do loop increment type not supported");
+                        // This is the case when we don't have a constant value.
+                        // For now assuming that the increment is positive
+                        increment = 1;
                     }
                     if (increment > 0) {
                         cmp_op = ASR::cmpopType::LtE;
