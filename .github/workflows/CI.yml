@@ -34,7 +34,7 @@ jobs:
             sel(win): m2-bison=3.0.4
             sel(win): m2-filesystem
             sel(unix): llvmdev=11.1.0
-            sel(win): llvmdev=15.0.2
+            sel(win): llvmdev=14.0.6
 
       - uses: hendrikmuhs/ccache-action@main
         with:
