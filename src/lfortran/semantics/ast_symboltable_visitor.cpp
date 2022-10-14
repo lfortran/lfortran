@@ -253,17 +253,17 @@ public:
         fix_type_info();
     }
 
-	void populate_implicit_dictionary_subroutine(const AST::Subroutine_t &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
+	void populate_implicit_dictionary(Location &a_loc, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         for (char ch='i'; ch<='n'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4, nullptr, 0));
         }
 
         for (char ch='o'; ch<='z'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, a_loc, 4, nullptr, 0));
         }
 
         for (char ch='a'; ch<='h'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, a_loc, 4, nullptr, 0));
         }
     }
 
@@ -276,7 +276,7 @@ public:
                 if (x.n_implicit != 1) {
                     throw SemanticError("No other implicit statement is allowed when 'implicit none' is used", x.m_implicit[i]->base.loc);
                 }
-                for ( auto it: implicit_dictionary) {
+                for (auto it: implicit_dictionary) {
                     it.second = nullptr;
                 }
             } else {
@@ -352,7 +352,8 @@ public:
     void visit_Subroutine(const AST::Subroutine_t &x) {
 
 		if (compiler_options.implicit_typing) {
-			populate_implicit_dictionary_subroutine(x, implicit_dictionary);
+			Location a_loc = x.base.base.loc;
+			populate_implicit_dictionary(a_loc, implicit_dictionary);
 			process_implicit_statements_subroutine(x, implicit_dictionary);
 		} else {
 			for (size_t i=0;i<x.n_implicit;i++) {
@@ -495,19 +496,6 @@ public:
         return r;
     }
 
-    void populate_implicit_dictionary(const AST::Function_t &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
-        for (char ch='i'; ch<='n'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
-        }
-
-        for (char ch='o'; ch<='z'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
-        }
-
-        for (char ch='a'; ch<='h'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
-        }
-    }
 
     void process_implicit_statements(const AST::Function_t &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         //iterate over all implicit statements
@@ -604,7 +592,8 @@ public:
 
     void visit_Function(const AST::Function_t &x) {
         if (compiler_options.implicit_typing) {
-            populate_implicit_dictionary(x, implicit_dictionary);
+			Location a_loc = x.base.base.loc;
+            populate_implicit_dictionary(a_loc, implicit_dictionary);
             process_implicit_statements(x, implicit_dictionary);
         } else {
             for (size_t i=0;i<x.n_implicit;i++) {
