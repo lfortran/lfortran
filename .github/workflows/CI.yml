@@ -72,7 +72,10 @@ jobs:
         if: contains(matrix.os, 'windows')
         shell: cmd /C CALL {0}
         run: |
+            cd lfortran-*
+            cd test-bld
             src\lfortran\tests\test_lfortran.exe
+            cd ..\..
             call micromamba activate lf
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\test.xsh
