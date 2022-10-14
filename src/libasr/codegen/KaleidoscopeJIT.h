@@ -43,7 +43,11 @@ private:
 
 public:
   KaleidoscopeJIT(JITTargetMachineBuilder JTMB, DataLayout DL)
-      : ObjectLayer(ES,
+      :
+#if LLVM_VERSION_MAJOR >= 13
+        ES(cantFail(SelfExecutorProcessControl::Create())),
+#endif
+        ObjectLayer(ES,
                     []() { return std::make_unique<SectionMemoryManager>(); }),
         CompileLayer(ES, ObjectLayer, std::make_unique<ConcurrentIRCompiler>(ConcurrentIRCompiler(std::move(JTMB)))),
         DL(std::move(DL)), Mangle(ES, this->DL),
