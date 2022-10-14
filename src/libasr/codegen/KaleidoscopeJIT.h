@@ -48,6 +48,7 @@ public:
         CompileLayer(ES, ObjectLayer, std::make_unique<ConcurrentIRCompiler>(ConcurrentIRCompiler(std::move(JTMB)))),
         DL(std::move(DL)), Mangle(ES, this->DL),
         Ctx(std::make_unique<LLVMContext>()) {
+        ES.createJITDylib("LFortran");
             /*
     ES.getJITDylibByName("")->addGenerator(
         cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(
@@ -85,12 +86,12 @@ public:
   LLVMContext &getContext() { return *Ctx.getContext(); }
 
   Error addModule(std::unique_ptr<Module> M) {
-    return CompileLayer.add(*ES.getJITDylibByName(""),
+    return CompileLayer.add(*ES.getJITDylibByName("LFortran"),
                             ThreadSafeModule(std::move(M), Ctx));
   }
 
   Expected<JITEvaluatedSymbol> lookup(StringRef Name) {
-    return ES.lookup({ES.getJITDylibByName("")}, Mangle(Name.str()));
+    return ES.lookup({ES.getJITDylibByName("LFortran")}, Mangle(Name.str()));
   }
 
   TargetMachine &getTargetMachine() { return *TM; }
