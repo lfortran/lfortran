@@ -45,7 +45,7 @@ public:
   KaleidoscopeJIT(JITTargetMachineBuilder JTMB, DataLayout DL)
       : ObjectLayer(ES,
                     []() { return std::make_unique<SectionMemoryManager>(); }),
-        CompileLayer(ES, ObjectLayer, std::make_unique<IRCompileLayer::IRCompiler>(ConcurrentIRCompiler(std::move(JTMB)))),
+        CompileLayer(ES, ObjectLayer, std::make_unique<ConcurrentIRCompiler>(ConcurrentIRCompiler(std::move(JTMB)))),
         DL(std::move(DL)), Mangle(ES, this->DL),
         Ctx(std::make_unique<LLVMContext>()) {
     ES.getMainJITDylib().setGenerator(
@@ -83,12 +83,12 @@ public:
   LLVMContext &getContext() { return *Ctx.getContext(); }
 
   Error addModule(std::unique_ptr<Module> M) {
-    return CompileLayer.add(ES.getMainJITDylib(),
+    return CompileLayer.add(*ES.getJITDylibByName(""),
                             ThreadSafeModule(std::move(M), Ctx));
   }
 
   Expected<JITEvaluatedSymbol> lookup(StringRef Name) {
-    return ES.lookup({&ES.getMainJITDylib()}, Mangle(Name.str()));
+    return ES.lookup({ES.getJITDylibByName("")}, Mangle(Name.str()));
   }
 
   TargetMachine &getTargetMachine() { return *TM; }
