@@ -38,6 +38,7 @@ private:
   DataLayout DL;
   MangleAndInterner Mangle;
   ThreadSafeContext Ctx;
+  JITDylib &JITDL;
 
   TargetMachine *TM;
 
@@ -51,8 +52,12 @@ public:
                     []() { return std::make_unique<SectionMemoryManager>(); }),
         CompileLayer(ES, ObjectLayer, std::make_unique<ConcurrentIRCompiler>(ConcurrentIRCompiler(std::move(JTMB)))),
         DL(std::move(DL)), Mangle(ES, this->DL),
-        Ctx(std::make_unique<LLVMContext>()) {
-    ES.createJITDylib("Main");
+        Ctx(std::make_unique<LLVMContext>()),
+        JITDL(
+#if LLVM_VERSION_MAJOR >= 11
+            cantFail
+#endif
+          (ES.createJITDylib("Main"))) {
     ES.getJITDylibByName("Main")->addGenerator(
         cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(
             DL.getGlobalPrefix())));
