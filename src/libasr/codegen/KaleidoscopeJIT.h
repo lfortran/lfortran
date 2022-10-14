@@ -58,7 +58,7 @@ public:
             cantFail
 #endif
           (ES.createJITDylib("Main"))) {
-    ES.getJITDylibByName("Main")->addGenerator(
+    JITDL.addGenerator(
         cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(
             DL.getGlobalPrefix())));
 
@@ -93,12 +93,12 @@ public:
   LLVMContext &getContext() { return *Ctx.getContext(); }
 
   Error addModule(std::unique_ptr<Module> M) {
-    return CompileLayer.add(*ES.getJITDylibByName("Main"),
+    return CompileLayer.add(JITDL,
                             ThreadSafeModule(std::move(M), Ctx));
   }
 
   Expected<JITEvaluatedSymbol> lookup(StringRef Name) {
-    return ES.lookup({ES.getJITDylibByName("Main")}, Mangle(Name.str()));
+    return ES.lookup({&JITDL}, Mangle(Name.str()));
   }
 
   TargetMachine &getTargetMachine() { return *TM; }
