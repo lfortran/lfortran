@@ -48,7 +48,8 @@ public:
         CompileLayer(ES, ObjectLayer, std::make_unique<ConcurrentIRCompiler>(ConcurrentIRCompiler(std::move(JTMB)))),
         DL(std::move(DL)), Mangle(ES, this->DL),
         Ctx(std::make_unique<LLVMContext>()) {
-    ES.getMainJITDylib().setGenerator(
+    ES.createJITDylib("Main");
+    ES.getJITDylibByName("Main")->addGenerator(
         cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(
             DL.getGlobalPrefix())));
 
@@ -83,12 +84,12 @@ public:
   LLVMContext &getContext() { return *Ctx.getContext(); }
 
   Error addModule(std::unique_ptr<Module> M) {
-    return CompileLayer.add(ES.getMainJITDylib(),
+    return CompileLayer.add(*ES.getJITDylibByName("Main"),
                             ThreadSafeModule(std::move(M), Ctx));
   }
 
   Expected<JITEvaluatedSymbol> lookup(StringRef Name) {
-    return ES.lookup({&ES.getMainJITDylib()}, Mangle(Name.str()));
+    return ES.lookup({ES.getJITDylibByName("Main")}, Mangle(Name.str()));
   }
 
   TargetMachine &getTargetMachine() { return *TM; }
