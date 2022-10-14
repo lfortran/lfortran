@@ -983,11 +983,13 @@ end function
 TEST_CASE("FortranEvaluator 10 trig functions") {
     CompilerOptions cu;
     FortranEvaluator e(cu);
+    /*
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("sin(1.0)");
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
     CHECK(std::abs(r.result.f32 - 0.8414709848078965) < 1e-7);
+    */
     /*
     r = e.evaluate2("sin(1.d0)");
     CHECK(r.ok);
