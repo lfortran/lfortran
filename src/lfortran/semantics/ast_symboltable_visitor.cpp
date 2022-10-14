@@ -267,7 +267,8 @@ public:
         }
     }
 
-	template <typename T> process_implicit_statements(const T &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
+	template <typename T> 
+	void process_implicit_statements(const T &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         //iterate over all implicit statements
         for (size_t i=0;i<x.n_implicit;i++) {
             //check if the implicit statement is of type "none"
