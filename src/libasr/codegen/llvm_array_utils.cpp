@@ -551,11 +551,9 @@ namespace LFortran {
                                 getPointerElementType());
             llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
             num_elements = builder->CreateMul(num_elements, llvm_size);
-            /*
             builder->CreateMemCpy(LLVM::CreateLoad(*builder, first_ptr), llvm::MaybeAlign(),
                                   LLVM::CreateLoad(*builder, ptr2firstptr), llvm::MaybeAlign(),
                                   num_elements);
-            */
 
             if( this->is_array(shape) ) {
                 llvm::Value* n_dims = this->get_array_size(shape, nullptr, 4);

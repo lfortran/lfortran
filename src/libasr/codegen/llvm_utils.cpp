@@ -684,10 +684,8 @@ namespace LFortran {
             // end
             llvm_utils->start_new_block(loopend);
         } else {
-            /*
             builder->CreateMemCpy(copy_data, llvm::MaybeAlign(), src_data,
                                   llvm::MaybeAlign(), arg_size);
-            */
             builder->CreateStore(copy_data, get_pointer_to_list_data(dest));
         }
     }
@@ -718,10 +716,8 @@ namespace LFortran {
         llvm::Value* src_capacity = LLVM::CreateLoad(*builder, get_pointer_to_capacity(src));
         llvm::Value* dest_key_mask = LLVM::lfortran_calloc(context, *module, *builder, src_capacity,
                                                       llvm_mask_size);
-        /*
         builder->CreateMemCpy(dest_key_mask, llvm::MaybeAlign(), src_key_mask,
                               llvm::MaybeAlign(), builder->CreateMul(src_capacity, llvm_mask_size));
-        */
         LLVM::CreateStore(*builder, dest_key_mask, dest_key_mask_ptr);
     }
 
