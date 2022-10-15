@@ -63,7 +63,7 @@ set(SRC
     utils2.cpp
 )
 if (WITH_WHEREAMI)
-    set(SRC ${SRC} ../bin/tpl/whereami/whereami.cpp)
+    set(SRC ${SRC} whereami/whereami.cpp)
 endif()
 if (WITH_LLVM)
     set(SRC ${SRC}
