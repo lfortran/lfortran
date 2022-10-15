@@ -8,6 +8,10 @@
 
 namespace LFortran {
 
+void get_executable_path(std::string &executable_path, int &dirname_length);
+std::string get_runtime_library_dir();
+std::string get_runtime_library_header_dir();
+
 enum Platform {
     Linux,
     macOS_Intel,
@@ -19,6 +23,14 @@ enum Platform {
 Platform get_platform();
 
 struct CompilerOptions {
+    /*
+      If it ever comes a day when libasr is split from lfortran, your life
+      will be easier if you put mod files, library and runtime dirs on their
+      own struct, PlatformOptions. They are used by both lfortran and libasr,
+      yet passing CompilerOptions down to libasr is not the cleanest thing and
+      PassOptions is managed by asr_to_lang functions and thus can't be declared
+      on lfortran.cpp and be passed down like CompilerOptions.
+     */
     std::filesystem::path mod_files_dir;
     std::vector<std::filesystem::path> include_dirs;
     std::filesystem::path rl_path;
@@ -45,7 +57,7 @@ struct CompilerOptions {
     std::string target = "";
     Platform platform;
 
-    CompilerOptions () : platform{get_platform()} {};
+    CompilerOptions () : rl_path{ get_runtime_library_dir() }, platform{get_platform()} {};
 };
 
 bool read_file(const std::string &filename, std::string &text);
