@@ -2,7 +2,7 @@
 #define LFORTRAN_SRC_PARSER_PREPROCESSOR_H
 
 #include <libasr/exception.h>
-#include <lfortran/utils.h>
+#include <libasr/utils.h>
 #include <lfortran/parser/parser.h>
 
 namespace LFortran

@@ -7,7 +7,7 @@
 #include <lfortran/ast.h>
 #include <libasr/bigint.h>
 #include <libasr/string_utils.h>
-#include <lfortran/utils.h>
+#include <libasr/utils.h>
 #include <lfortran/semantics/semantic_exception.h>
 
 #include <set>

@@ -19,8 +19,6 @@ set(SRC
     ast_to_openmp.cpp
 
     mod_to_asr.cpp
-
-    utils.cpp
 )
 
 if (WITH_XEUS)

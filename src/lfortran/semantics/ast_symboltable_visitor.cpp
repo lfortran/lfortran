@@ -17,7 +17,7 @@
 #include <lfortran/semantics/ast_to_asr.h>
 #include <lfortran/parser/parser_stype.h>
 #include <libasr/string_utils.h>
-#include <lfortran/utils.h>
+#include <libasr/utils.h>
 
 namespace LFortran {
 

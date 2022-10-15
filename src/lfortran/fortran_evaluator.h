@@ -9,7 +9,7 @@
 #include <libasr/asr_scopes.h>
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
-#include <lfortran/utils.h>
+#include <libasr/utils.h>
 #include <libasr/config.h>
 #include <libasr/diagnostics.h>
 #include <libasr/pass/pass_manager.h>

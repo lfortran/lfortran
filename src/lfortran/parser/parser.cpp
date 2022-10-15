@@ -9,7 +9,7 @@
 #include <libasr/string_utils.h>
 #include <lfortran/parser/parser_exception.h>
 #include <lfortran/parser/fixedform_tokenizer.h>
-#include <lfortran/utils.h>
+#include <libasr/utils.h>
 
 #include <lfortran/pickle.h>
 

@@ -42,7 +42,7 @@
 #include <libasr/config.h>
 #include <lfortran/fortran_kernel.h>
 #include <libasr/string_utils.h>
-#include <lfortran/utils.h>
+#include <libasr/utils.h>
 #include <lfortran/parser/parser.tab.hh>
 
 #include <cpp-terminal/terminal.h>
