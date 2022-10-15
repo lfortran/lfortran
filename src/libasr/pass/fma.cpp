@@ -37,7 +37,7 @@ class FMAVisitor : public PassUtils::SkipOptimizationFunctionVisitor<FMAVisitor>
 private:
     ASR::TranslationUnit_t &unit;
 
-    LFortran::CompilerOptions compiler_options;
+    const LFortran::CompilerOptions& compiler_options;
 
     ASR::expr_t* fma_var;
 
