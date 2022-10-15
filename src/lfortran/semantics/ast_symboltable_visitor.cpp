@@ -477,7 +477,7 @@ public:
         current_procedure_args.clear();
         current_procedure_abi_type = ASR::abiType::Source;
 
-		// print_implicit_dictionary(implicit_dictionary);
+        // print_implicit_dictionary(implicit_dictionary);
         // get hash of the function and add it to the implicit_mapping
         if (compiler_options.implicit_typing) {
             uint64_t hash = get_hash(tmp);
