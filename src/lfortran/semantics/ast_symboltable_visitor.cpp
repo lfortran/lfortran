@@ -253,142 +253,22 @@ public:
         fix_type_info();
     }
 
-    void visit_Subroutine(const AST::Subroutine_t &x) {
-        ASR::accessType s_access = dflt_access;
-        ASR::deftypeType deftype = ASR::deftypeType::Implementation;
-        SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
-        for (size_t i=0; i<x.n_args; i++) {
-            char *arg=x.m_args[i].m_arg;
-            current_procedure_args.push_back(to_lower(arg));
-        }
-        current_procedure_abi_type = ASR::abiType::Source;
-        char *bindc_name=nullptr;
-        extract_bind(x, current_procedure_abi_type, bindc_name);
-
-        for (size_t i=0; i<x.n_decl; i++) {
-            visit_unit_decl2(*x.m_decl[i]);
-        }
-        for (size_t i=0; i<x.n_contains; i++) {
-            visit_program_unit(*x.m_contains[i]);
-        }
-        Vec<ASR::expr_t*> args;
-        args.reserve(al, x.n_args);
-        for (size_t i=0; i<x.n_args; i++) {
-            char *arg=x.m_args[i].m_arg;
-            std::string arg_s = to_lower(arg);
-            if (current_scope->get_symbol(arg_s) == nullptr) {
-                if (compiler_options.implicit_typing) {
-                    declare_implicit_variable(x.base.base.loc, arg_s,
-                        ASRUtils::intent_unspecified);
-                } else {
-                    throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
-                }
-            }
-            ASR::symbol_t *var = current_scope->get_symbol(arg_s);
-            args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
-                var)));
-        }
-        std::string sym_name = to_lower(x.m_name);
-        if (assgnd_access.count(sym_name)) {
-            s_access = assgnd_access[sym_name];
-        }
-        if (is_interface){
-            deftype = ASR::deftypeType::Interface;
-        }
-        bool is_pure = false, is_module = false;
-        for( size_t i = 0; i < x.n_attributes; i++ ) {
-            switch( x.m_attributes[i]->type ) {
-                case AST::decl_attributeType::SimpleAttribute: {
-                    AST::SimpleAttribute_t* simple_attr = AST::down_cast<AST::SimpleAttribute_t>(x.m_attributes[i]);
-                    if( simple_attr->m_attr == AST::simple_attributeType::AttrPure ) {
-                        is_pure = true;
-                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrModule ) {
-                        is_module = true;
-                    }
-                    break;
-                }
-                default: {
-                    // Continue with the original behaviour
-                    // of not processing unrequired attributes
-                    break;
-                }
-            }
-        }
-        if (parent_scope->get_symbol(sym_name) != nullptr) {
-            ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
-            ASR::Function_t *f2 = nullptr;
-            if( ASR::is_a<ASR::Function_t>(*f1) ) {
-                f2 = ASR::down_cast<ASR::Function_t>(f1);
-            }
-            if ((f1->type == ASR::symbolType::ExternalSymbol && in_submodule) ||
-                f2->m_abi == ASR::abiType::Interactive) {
-                // Previous declaration will be shadowed
-                parent_scope->erase_symbol(sym_name);
-            } else {
-                throw SemanticError("Subroutine already defined", tmp->loc);
-            }
-        }
-        if( sym_name == interface_name ) {
-            parent_scope->erase_symbol(sym_name);
-            sym_name = sym_name + "~genericprocedure";
-        }
-
-
-        tmp = ASR::make_Function_t(
-            al, x.base.base.loc,
-            /* a_symtab */ current_scope,
-            /* a_name */ s2c(al, to_lower(sym_name)),
-            /* a_args */ args.p,
-            /* n_args */ args.size(),
-            /* a_body */ nullptr,
-            /* n_body */ 0,
-            nullptr,
-            current_procedure_abi_type,
-            s_access, deftype, bindc_name,
-            is_pure, is_module, false, false, false,
-            nullptr, 0, nullptr, 0, false);
-        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
-        current_scope = parent_scope;
-        /* FIXME: This can become incorrect/get cleared prematurely, perhaps
-           in nested functions, and also in callback.f90 test, but it may not
-           matter since we would have already checked the intent */
-        current_procedure_args.clear();
-        current_procedure_abi_type = ASR::abiType::Source;
-    }
-
-    AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
-            size_t n, const Location &loc) {
-        AST::AttrType_t* r = nullptr;
-        bool found = false;
-        for (size_t i=0; i<n; i++) {
-            if (AST::is_a<AST::AttrType_t>(*attributes[i])) {
-                if (found) {
-                    throw SemanticError("Return type declared twice", loc);
-                } else {
-                    r = AST::down_cast<AST::AttrType_t>(attributes[i]);
-                    found = true;
-                }
-            }
-        }
-        return r;
-    }
-
-    void populate_implicit_dictionary(const AST::Function_t &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
+    void populate_implicit_dictionary(Location &a_loc, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         for (char ch='i'; ch<='n'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4, nullptr, 0));
         }
 
         for (char ch='o'; ch<='z'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, a_loc, 4, nullptr, 0));
         }
 
         for (char ch='a'; ch<='h'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, a_loc, 4, nullptr, 0));
         }
     }
 
-    void process_implicit_statements(const AST::Function_t &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
+    template <typename T> 
+    void process_implicit_statements(const T &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         //iterate over all implicit statements
         for (size_t i=0;i<x.n_implicit;i++) {
             //check if the implicit statement is of type "none"
@@ -397,7 +277,7 @@ public:
                 if (x.n_implicit != 1) {
                     throw SemanticError("No other implicit statement is allowed when 'implicit none' is used", x.m_implicit[i]->base.loc);
                 }
-                for ( auto it: implicit_dictionary) {
+                for (auto it: implicit_dictionary) {
                     it.second = nullptr;
                 }
             } else {
@@ -481,9 +361,154 @@ public:
         }
     }
 
+    void visit_Subroutine(const AST::Subroutine_t &x) {
+        if (compiler_options.implicit_typing) {
+            Location a_loc = x.base.base.loc;
+            populate_implicit_dictionary(a_loc, implicit_dictionary);
+            process_implicit_statements(x, implicit_dictionary);
+        } else {
+            for (size_t i=0;i<x.n_implicit;i++) {
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+                    throw SemanticError("Implicit typing is not allowed, enable it by using --implicit-typing ", x.m_implicit[i]->base.loc);
+                }
+            }
+        }
+		
+        ASR::accessType s_access = dflt_access;
+        ASR::deftypeType deftype = ASR::deftypeType::Implementation;
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        for (size_t i=0; i<x.n_args; i++) {
+            char *arg=x.m_args[i].m_arg;
+            current_procedure_args.push_back(to_lower(arg));
+        }
+        current_procedure_abi_type = ASR::abiType::Source;
+        char *bindc_name=nullptr;
+        extract_bind(x, current_procedure_abi_type, bindc_name);
+
+        for (size_t i=0; i<x.n_decl; i++) {
+            visit_unit_decl2(*x.m_decl[i]);
+        }
+        for (size_t i=0; i<x.n_contains; i++) {
+            visit_program_unit(*x.m_contains[i]);
+        }
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, x.n_args);
+        for (size_t i=0; i<x.n_args; i++) {
+            char *arg=x.m_args[i].m_arg;
+            std::string arg_s = to_lower(arg);
+            if (current_scope->get_symbol(arg_s) == nullptr) {
+                if (compiler_options.implicit_typing) {
+                    ASR::ttype_t *t = implicit_dictionary[std::string(1, arg_s[0])];
+                    declare_implicit_variable2(x.base.base.loc, arg_s,
+                        ASRUtils::intent_unspecified, t);
+                } else {
+                    throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
+                }
+            }
+            ASR::symbol_t *var = current_scope->get_symbol(arg_s);
+            args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                var)));
+        }
+        std::string sym_name = to_lower(x.m_name);
+        if (assgnd_access.count(sym_name)) {
+            s_access = assgnd_access[sym_name];
+        }
+        if (is_interface){
+            deftype = ASR::deftypeType::Interface;
+        }
+        bool is_pure = false, is_module = false;
+        for( size_t i = 0; i < x.n_attributes; i++ ) {
+            switch( x.m_attributes[i]->type ) {
+                case AST::decl_attributeType::SimpleAttribute: {
+                    AST::SimpleAttribute_t* simple_attr = AST::down_cast<AST::SimpleAttribute_t>(x.m_attributes[i]);
+                    if( simple_attr->m_attr == AST::simple_attributeType::AttrPure ) {
+                        is_pure = true;
+                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrModule ) {
+                        is_module = true;
+                    }
+                    break;
+                }
+                default: {
+                    // Continue with the original behaviour
+                    // of not processing unrequired attributes
+                    break;
+                }
+            }
+        }
+        if (parent_scope->get_symbol(sym_name) != nullptr) {
+            ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
+            ASR::Function_t *f2 = nullptr;
+            if( ASR::is_a<ASR::Function_t>(*f1) ) {
+                f2 = ASR::down_cast<ASR::Function_t>(f1);
+            }
+            if ((f1->type == ASR::symbolType::ExternalSymbol && in_submodule) ||
+                f2->m_abi == ASR::abiType::Interactive) {
+                // Previous declaration will be shadowed
+                parent_scope->erase_symbol(sym_name);
+            } else {
+                throw SemanticError("Subroutine already defined", tmp->loc);
+            }
+        }
+        if( sym_name == interface_name ) {
+            parent_scope->erase_symbol(sym_name);
+            sym_name = sym_name + "~genericprocedure";
+        }
+
+
+        tmp = ASR::make_Function_t(
+            al, x.base.base.loc,
+            /* a_symtab */ current_scope,
+            /* a_name */ s2c(al, to_lower(sym_name)),
+            /* a_args */ args.p,
+            /* n_args */ args.size(),
+            /* a_body */ nullptr,
+            /* n_body */ 0,
+            nullptr,
+            current_procedure_abi_type,
+            s_access, deftype, bindc_name,
+            is_pure, is_module, false, false, false,
+            nullptr, 0, nullptr, 0, false);
+        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        current_scope = parent_scope;
+        /* FIXME: This can become incorrect/get cleared prematurely, perhaps
+           in nested functions, and also in callback.f90 test, but it may not
+           matter since we would have already checked the intent */
+        current_procedure_args.clear();
+        current_procedure_abi_type = ASR::abiType::Source;
+
+        // print_implicit_dictionary(implicit_dictionary);
+        // get hash of the function and add it to the implicit_mapping
+        if (compiler_options.implicit_typing) {
+            uint64_t hash = get_hash(tmp);
+
+            implicit_mapping[hash] = implicit_dictionary;
+
+            implicit_dictionary.clear();
+        }
+    }
+
+    AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
+            size_t n, const Location &loc) {
+        AST::AttrType_t* r = nullptr;
+        bool found = false;
+        for (size_t i=0; i<n; i++) {
+            if (AST::is_a<AST::AttrType_t>(*attributes[i])) {
+                if (found) {
+                    throw SemanticError("Return type declared twice", loc);
+                } else {
+                    r = AST::down_cast<AST::AttrType_t>(attributes[i]);
+                    found = true;
+                }
+            }
+        }
+        return r;
+    }
+
     void visit_Function(const AST::Function_t &x) {
         if (compiler_options.implicit_typing) {
-            populate_implicit_dictionary(x, implicit_dictionary);
+            Location a_loc = x.base.base.loc;
+            populate_implicit_dictionary(a_loc, implicit_dictionary);
             process_implicit_statements(x, implicit_dictionary);
         } else {
             for (size_t i=0;i<x.n_implicit;i++) {

@@ -132,7 +132,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Integer 4 []) 
+                                    (Complex 8 []) 
                                     Source 
                                     Public 
                                     Required 
@@ -146,7 +146,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Real 4 []) 
+                                    (Complex 8 []) 
                                     Source 
                                     Public 
                                     Required 
@@ -161,12 +161,9 @@
                         (Var 3 z) 
                         (Cast 
                             (IntegerConstant 5 (Integer 4 [])) 
-                            IntegerToReal 
-                            (Real 4 []) 
-                            (RealConstant 
-                                5.000000 
-                                (Real 4 [])
-                            )
+                            IntegerToComplex 
+                            (Complex 8 []) 
+                            ()
                         ) 
                         ()
                     )] 

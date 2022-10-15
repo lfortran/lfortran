@@ -2541,3 +2541,8 @@ asr_implicit_typing = true
 [[test]]
 filename = "../integration_tests/conv_complex2real.f90"
 asr = true
+
+[[test]]
+filename = "implicit12.f90"
+asr = true
+asr_implicit_typing = true
