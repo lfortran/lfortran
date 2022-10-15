@@ -26,10 +26,128 @@
             [] 
             () 
             None 
+            ())
+            (k 
+            [] 
+            [] 
+            () 
+            None 
             ())] 
-            ()
+            (TriviaNode 
+                [] 
+                [(EndOfLine)
+                (EndOfLine)]
+            )
         )] 
         [(= 
+            0 
+            j 
+            0 
+            ()
+        )
+        (= 
+            0 
+            k 
+            2 
+            ()
+        )
+        (DoLoop 
+            0 
+            () 
+            0 
+            i 
+            1 
+            10 
+            k 
+            [(= 
+                0 
+                j 
+                (+ j i) 
+                ()
+            )] 
+            () 
+            ()
+        )
+        (If 
+            0 
+            () 
+            (/= j 25) 
+            [(ErrorStop 
+                0 
+                () 
+                () 
+                ()
+            )] 
+            [] 
+            () 
+            () 
+            ()
+        )
+        (Print 
+            0 
+            () 
+            [j] 
+            (TriviaNode 
+                [] 
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+        )
+        (= 
+            0 
+            j 
+            0 
+            ()
+        )
+        (= 
+            0 
+            k 
+            (u- 2) 
+            ()
+        )
+        (DoLoop 
+            0 
+            () 
+            0 
+            i 
+            10 
+            1 
+            k 
+            [(= 
+                0 
+                j 
+                (+ j i) 
+                ()
+            )] 
+            () 
+            ()
+        )
+        (If 
+            0 
+            () 
+            (/= j 30) 
+            [(ErrorStop 
+                0 
+                () 
+                () 
+                ()
+            )] 
+            [] 
+            () 
+            () 
+            ()
+        )
+        (Print 
+            0 
+            () 
+            [j] 
+            (TriviaNode 
+                [] 
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+        )
+        (= 
             0 
             j 
             0 
