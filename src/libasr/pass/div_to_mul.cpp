@@ -41,7 +41,7 @@ private:
     std::filesystem::path rl_path;
 
 public:
-    DivToMulVisitor(Allocator &al_, const std::filesystem::path rl_path_) : PassVisitor(al_, nullptr),
+    DivToMulVisitor(Allocator &al_, const std::filesystem::path &rl_path_) : PassVisitor(al_, nullptr),
     rl_path(rl_path_)
     {
         pass_result.reserve(al, 1);
