@@ -350,16 +350,16 @@ public:
         }
     }
 
-	void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
-		std::cout << "Implicit Dictionary: " << std::endl;
-		for (auto it: implicit_dictionary) {
-			if (it.second) {
-				std::cout << it.first << " " << ASRUtils::type_to_str(it.second) << std::endl;
-			} else {
-				std::cout << it.first << " " << "NULL" << std::endl;
-			}
-		}
-	}
+    void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
+        std::cout << "Implicit Dictionary: " << std::endl;
+        for (auto it: implicit_dictionary) {
+            if (it.second) {
+                std::cout << it.first << " " << ASRUtils::type_to_str(it.second) << std::endl;
+            } else {
+                std::cout << it.first << " " << "NULL" << std::endl;
+            }
+        }
+    }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
         if (compiler_options.implicit_typing) {
