@@ -241,8 +241,6 @@ ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &m
     std::filesystem::path filename {msym + ".mod"};
     std::vector<std::filesystem::path> mod_files_dirs;
 
-    // inserting rl_path first is important to keep the previous behavior
-    // whether rl_path should be used to search for mod files is another matter
     mod_files_dirs.push_back( compiler_options.rl_path );
     mod_files_dirs.push_back( compiler_options.mod_files_dir );
     mod_files_dirs.insert(mod_files_dirs.end(),
