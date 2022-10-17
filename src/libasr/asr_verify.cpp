@@ -411,8 +411,10 @@ public:
             // TODO: This seems like a bug, we should not use ArrayItem with
             // strings but StringItem. For now we ignore it, but we should
             // fix it
-        } else if (ASR::is_a<ASR::Real_t>(*x.m_type) && n_dims == 0) {
-            // some condition needed to check if it is a real scalar
+        } else if (n_dims == 0) {
+            if (ASR::is_a<ASR::Real_t>(*x.m_type)) {
+                // some condition needed to check if it is a real scalar
+            }
         } else {
             require(n_dims > 0,
                 "The variable in ArrayItem must be an array, not a scalar");
