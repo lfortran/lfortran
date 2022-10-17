@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-09-29 13:19+0000\n"
-"Last-Translator: 左志华 <zuo.zhihua@qq.com>\n"
+"PO-Revision-Date: 2022-10-17 00:56+0000\n"
+"Last-Translator: Euler-37 <1943133009@qq.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "fortran-lang/lfortran-docs/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 4.14.1\n"
+"X-Generator: Weblate 4.15-dev\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../../doc/src/ast_and_asr.ipynb:9
@@ -4575,7 +4575,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md:221
 msgid "log"
-msgstr "日志"
+msgstr "log"
 
 #: ../../doc/src/progress.md:223
 msgid "Directory: `tests/intrinsic/log`"
@@ -4601,7 +4601,7 @@ msgstr ""
 
 #: ../../doc/src/progress.md:232
 msgid "sqrt"
-msgstr "平方"
+msgstr "sqrt"
 
 #: ../../doc/src/progress.md:234
 msgid "Directory: `tests/intrinsic/sqrt`"
