@@ -11,7 +11,6 @@ namespace LFortran {
             diag::Diagnostics &diagnostics,
             llvm::LLVMContext &context, Allocator &al,
             LCompilers::PassManager& pass_manager,
-            Platform platform,
             const std::string &run_fn,
             const LFortran::CompilerOptions& compiler_options);
 

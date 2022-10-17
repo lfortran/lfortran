@@ -317,7 +317,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     Result<std::unique_ptr<LFortran::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
             e->get_context(), al, pass_manager,
-            compiler_options.platform, run_fn, compiler_options);
+            run_fn, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
     } else {
@@ -413,8 +413,7 @@ Result<std::string> FortranEvaluator::get_cpp2(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics, int64_t default_lower_bound)
 {
     // ASR -> C++
-    return asr_to_cpp(al, asr, diagnostics, compiler_options.platform,
-                      default_lower_bound, compiler_options);
+    return asr_to_cpp(al, asr, diagnostics, default_lower_bound, compiler_options);
 }
 
 Result<std::string> FortranEvaluator::get_c(const std::string &code,
@@ -438,8 +437,7 @@ Result<std::string> FortranEvaluator::get_c2(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics, int64_t default_lower_bound)
 {
     // ASR -> C++
-    return asr_to_c(al, asr, diagnostics, compiler_options.platform,
-                    default_lower_bound, compiler_options);
+    return asr_to_c(al, asr, diagnostics, default_lower_bound, compiler_options);
 }
 
 Result<std::string> FortranEvaluator::get_julia(const std::string &code,
