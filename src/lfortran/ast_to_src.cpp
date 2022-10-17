@@ -3435,7 +3435,7 @@ public:
         s +=  op2str(x.m_op);
         if (right_precedence == 9) {
             s += "(" + right + ")";
-        } else if (x.m_op == operatorType::Sub) {
+        } else if (x.m_op == operatorType::Sub || x.m_op == operatorType::Div) {
             if (right_precedence > last_expr_precedence) {
                 s += right;
             } else {
