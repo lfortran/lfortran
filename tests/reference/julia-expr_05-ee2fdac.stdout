@@ -41,7 +41,7 @@ function main()
     x = (a + b) ^ 2
     x = (a + b) * ((a ^ 2) - a * b + (b ^ 2))
     x = (a - b) * (a + b) * ((a ^ 2) + (b ^ 2))
-    x = 1 ÷ a * b
+    x = 1 ÷ (a * b)
     x = 1 ÷ a * b
     x = 1 ÷ a * b
     x = 1 ÷ (a * b + 1)
