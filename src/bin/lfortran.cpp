@@ -1450,9 +1450,6 @@ int main(int argc, char *argv[])
         std::string arg_pywrap_array_order="f";
 
         CompilerOptions compiler_options;
-        // Prefer using this instead of manually calling
-        // get_runtime_library_dir() everywhere.
-        compiler_options.rl_path = LFortran::get_runtime_library_dir();
 
         LCompilers::PassManager lfortran_pass_manager;
 
