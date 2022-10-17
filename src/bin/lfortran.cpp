@@ -1402,6 +1402,8 @@ int main(int argc, char *argv[])
         int dirname_length;
         LFortran::get_executable_path(LFortran::binary_executable_path, dirname_length);
 
+        // TODO: move this into CompilerOptions
+        // All functions that receive rtlib_header_dir already receive CompilerOptions
         std::string rtlib_header_dir = LFortran::get_runtime_library_header_dir();
         Backend backend;
 
