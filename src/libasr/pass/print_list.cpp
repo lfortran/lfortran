@@ -202,7 +202,7 @@ void pass_replace_print_list(
     Allocator &al, ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& /*pass_options*/,
     const LFortran::CompilerOptions &compiler_options) {
-    PrintListVisitor v(al, compiler_options.rl_path);
+    PrintListVisitor v(al, compiler_options.rl_path.string());
     v.visit_TranslationUnit(unit);
 }
 
