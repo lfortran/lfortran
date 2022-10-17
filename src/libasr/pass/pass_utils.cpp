@@ -632,15 +632,43 @@ namespace LFortran {
                 }
                 LFORTRAN_ASSERT(c);
                 ASR::cmpopType cmp_op;
+
                 if( comp == -1 ) {
                     int increment;
+                    bool not_constant_inc = false;
+                    if (!ASRUtils::is_integer(*ASRUtils::expr_type(c))) {
+                        throw LCompilersException("Do loop increment type should be an integer");
+                    }
                     if (c->type == ASR::exprType::IntegerConstant) {
                         increment = ASR::down_cast<ASR::IntegerConstant_t>(c)->m_n;
                     } else if (c->type == ASR::exprType::IntegerUnaryMinus) {
                         ASR::IntegerUnaryMinus_t *u = ASR::down_cast<ASR::IntegerUnaryMinus_t>(c);
                         increment = - ASR::down_cast<ASR::IntegerConstant_t>(u->m_arg)->m_n;
                     } else {
-                        throw LCompilersException("Do loop increment type not supported");
+                        // This is the case when increment operator is not a
+                        // constant, and so we need an if statement to check that
+                        // in the backend and generate while loop according
+                        // to avoid infinite loops.
+                        not_constant_inc = true;
+                    }
+                    if (not_constant_inc) {
+                        ASR::ttype_t *int_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al,
+                                    loc, 4, nullptr, 0));
+                        ASR::ttype_t *log_type = ASRUtils::TYPE(
+                            ASR::make_Logical_t(al, loc, 1, nullptr, 0));
+                        ASR::expr_t *const_zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                                    loc, 0, int_type));
+                        ASR::expr_t *test = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loop.base.base.loc,
+                            c, ASR::cmpopType::Gt, const_zero, log_type, nullptr));
+                        Vec<ASR::stmt_t*> if_body, or_body, result;
+                        if_body.reserve(al, 2);
+                        or_body.reserve(al, 2);
+                        result.reserve(al, 1);
+                        if_body = replace_doloop(al, loop, ASR::cmpopType::LtE);
+                        or_body = replace_doloop(al, loop, ASR::cmpopType::GtE);
+                        result.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc, test, if_body.p,
+                                if_body.size(), or_body.p, or_body.size())));
+                        return result;
                     }
                     if (increment > 0) {
                         cmp_op = ASR::cmpopType::LtE;

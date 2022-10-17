@@ -2,7 +2,7 @@ name: lf
 channels:
   - conda-forge
 dependencies:
-  - llvmdev=11.1.0
+  - llvmdev=15
   - toml
   - pytest
   - jupyter
@@ -14,8 +14,7 @@ dependencies:
   - xonsh
   - re2c
   - numpy
+  - bison=3.4
+  - rapidjson
   - ninja
-  - m2-bison=3.0.4
-  - git
-  - cmake
   - zlib
