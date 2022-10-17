@@ -2550,3 +2550,7 @@ asr_implicit_typing = true
 [[test]]
 filename = "statement1.f90"
 asr = true
+
+[[test]]
+filename = "statement1_eq.f90"
+asr = true
