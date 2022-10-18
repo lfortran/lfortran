@@ -1188,9 +1188,9 @@ int link_executable(const std::vector<std::string> &infiles,
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
                 return 10;
             }
-            if (outfile == "a.out") {
+            if (outfile == "a.out" && compiler_options.arg_o == "") {
                 err = system("a.out");
-                if (err != 0) return err;
+                if (err != 0) return 1;
             }
         } else {
             std::string CC;
@@ -1233,9 +1233,9 @@ int link_executable(const std::vector<std::string> &infiles,
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
                 return 10;
             }
-            if (outfile == "a.out") {
+            if (outfile == "a.out" && compiler_options.arg_o == "") {
                 err = system("./a.out");
-                if (err != 0) return err;
+                if (err != 0) return 1;
             }
         }
         return 0;
@@ -1414,7 +1414,6 @@ int main(int argc, char *argv[])
         std::vector<std::string> arg_I;
         std::vector<std::string> arg_l;
         std::vector<std::string> arg_L;
-        std::string arg_o;
         std::vector<std::string> arg_files;
         bool arg_version = false;
         bool show_prescan = false;
@@ -1461,7 +1460,7 @@ int main(int argc, char *argv[])
         app.add_option("files", arg_files, "Source files");
         app.add_flag("-S", arg_S, "Emit assembly, do not assemble or link");
         app.add_flag("-c", arg_c, "Compile and assemble, do not link");
-        app.add_option("-o", arg_o, "Specify the file to place the output into");
+        app.add_option("-o", compiler_options.arg_o, "Specify the file to place the output into");
         app.add_flag("-v", arg_v, "Be more verbose");
         app.add_flag("-E", arg_E, "Preprocess only; do not compile, assemble or link");
         app.add_option("-l", arg_l, "Link library option");
@@ -1640,8 +1639,8 @@ int main(int argc, char *argv[])
         std::string basename;
         basename = remove_extension(arg_file);
         basename = remove_path(basename);
-        if (arg_o.size() > 0) {
-            outfile = arg_o;
+        if (compiler_options.arg_o.size() > 0) {
+            outfile = compiler_options.arg_o;
         } else if (arg_S) {
             outfile = basename + ".s";
         } else if (arg_c) {
