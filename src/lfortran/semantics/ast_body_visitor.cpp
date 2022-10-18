@@ -1076,11 +1076,9 @@ public:
     }
 
     bool is_statement_function( const AST::Assignment_t &x ) {
-        if (!AST::is_a<AST::FuncCallOrArray_t>(*x.m_target)) {
-            return false;
-        } else {
+        if (AST::is_a<AST::FuncCallOrArray_t>(*x.m_target)) {
             // Look for the type of *x.m_target in symbol table, if it is integer or nullptr then it is a statement function
-            std::string var_name = "dfloat";
+            std::string var_name = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func;
 
             ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
             if (sym==nullptr) {
@@ -1093,7 +1091,11 @@ public:
                 if (ASR::is_a<ASR::Variable_t>(*sym)) {
                     auto v = ASR::down_cast<ASR::Variable_t>(sym);
                     if (ASR::is_a<ASR::Integer_t>(*v->m_type) or ASR::is_a<ASR::Real_t>(*v->m_type)) {
-                        return true;
+                        if (ASRUtils::is_array(v->m_type)) {
+                            return false;
+                        } else {
+                            return true;
+                        }
                     } else {
                         return false;
                     }
@@ -1101,14 +1103,16 @@ public:
                     return false;
                 }
             }
+        } else {
+            return false;
         }
     }
-
 
     void visit_Assignment(const AST::Assignment_t &x) {
         // ask if is the statement function.
         // if yes then create_statemnent_function, return tmp=NULL
         if (is_statement_function(x)) {
+            std::cout<<"Statement Function"<<std::endl;
         //     create_statement_function(x);
         //     tmp = nullptr;
         //     return;
