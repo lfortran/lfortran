@@ -67,7 +67,7 @@ return:                                           ; preds = %normal_continue
   ret i32 %13
 }
 
-declare i32 @__module_recursion_02_f()
+declare i32 @f()
 
 define i32 @__module_recursion_02_sub1(i32* %y, i32* %iter) {
 .entry:
