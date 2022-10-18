@@ -7,6 +7,34 @@
                     (SymbolTable
                         2
                         {
+                            X:
+                                (Variable 
+                                    2 
+                                    X 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Optional 
+                                    .false.
+                                ), 
+                            Y:
+                                (Variable 
+                                    2 
+                                    Y 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Optional 
+                                    .false.
+                                ), 
                             b:
                                 (Variable 
                                     2 
@@ -214,44 +242,6 @@
                     a 
                     [] 
                     [(= 
-                        (ArrayItem 
-                            (Var 2 y) 
-                            [(() 
-                            (IntegerConstant 1 (Integer 4 [])) 
-                            ())] 
-                            (Integer 4 []) 
-                            ()
-                        ) 
-                        (IntegerConstant 3 (Integer 4 [])) 
-                        ()
-                    )
-                    (= 
-                        (ArrayItem 
-                            (Var 2 x) 
-                            [(() 
-                            (IntegerConstant 1 (Integer 4 [])) 
-                            ())
-                            (() 
-                            (IntegerConstant 1 (Integer 4 [])) 
-                            ())
-                            (() 
-                            (IntegerConstant 1 (Integer 4 [])) 
-                            ())] 
-                            (Real 4 []) 
-                            ()
-                        ) 
-                        (Cast 
-                            (IntegerConstant 3 (Integer 4 [])) 
-                            IntegerToReal 
-                            (Real 4 []) 
-                            (RealConstant 
-                                3.000000 
-                                (Real 4 [])
-                            )
-                        ) 
-                        ()
-                    )
-                    (= 
                         (Var 2 b) 
                         (Cast 
                             (IntegerConstant 2 (Integer 4 [])) 

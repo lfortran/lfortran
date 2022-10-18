@@ -1,5 +1,5 @@
 ASR verify pass error: ASR verify: The variable in ArrayItem must be an array, not a scalar
- --> tests/statement1.f90:5:1
+ --> tests/statement1.f90:7:6
   |
-5 | dfloat(i,j) = i*j
-  | ^^^^^^^^^^^ failed here
+7 | ti = dfloat(1,8)*9.0
+  |      ^^^^^^^^^^^ failed here
