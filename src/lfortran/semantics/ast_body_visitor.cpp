@@ -1075,7 +1075,44 @@ public:
         tmp = (ASR::asr_t*)ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target_var, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_assign_label, int32_type)), nullptr));
     }
 
+    bool is_statement_function( const AST::Assignment_t &x ) {
+        if (!AST::is_a<AST::FuncCallOrArray_t>(*x.m_target)) {
+            return false;
+        } else {
+            // Look for the type of *x.m_target in symbol table, if it is integer or nullptr then it is a statement function
+            std::string var_name = "dfloat";
+
+            ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
+            if (sym==nullptr) {
+                if (compiler_options.implicit_typing) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } else {
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    auto v = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (ASR::is_a<ASR::Integer_t>(*v->m_type) or ASR::is_a<ASR::Real_t>(*v->m_type)) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+        }
+    }
+
+
     void visit_Assignment(const AST::Assignment_t &x) {
+        // ask if is the statement function.
+        // if yes then create_statemnent_function, return tmp=NULL
+        if (is_statement_function(x)) {
+        //     create_statement_function(x);
+        //     tmp = nullptr;
+        //     return;
+        } 
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = LFortran::ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_value);
