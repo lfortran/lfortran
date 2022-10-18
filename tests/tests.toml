@@ -2554,3 +2554,7 @@ asr = true
 [[test]]
 filename = "statement1_eq.f90"
 asr = true
+
+[[test]]
+filename = "statement2.f90"
+asr = true

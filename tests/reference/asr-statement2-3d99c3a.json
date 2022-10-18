@@ -1,0 +1,13 @@
+{
+    "basename": "asr-statement2-3d99c3a",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/statement2.f90",
+    "infile_hash": "6a83e2a2baeacc7059832646feb9b4b6ba14abf525832dc45a655dee",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-statement2-3d99c3a.stdout",
+    "stdout_hash": "c89429f9913c8b7d7aa54c70f06e4a14d71647a86be7158047e2e52c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

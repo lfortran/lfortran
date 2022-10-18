@@ -1,0 +1,152 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            errjac:
+                (Function 
+                    (SymbolTable
+                        2
+                        {
+                            dfloat:
+                                (Variable 
+                                    2 
+                                    dfloat 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Optional 
+                                    .false.
+                                ), 
+                            dp:
+                                (Variable 
+                                    2 
+                                    dp 
+                                    Local 
+                                    (FunctionCall 
+                                        2 kind 
+                                        () 
+                                        [((RealConstant 
+                                            0.000000 
+                                            (Real 8 [])
+                                        ))] 
+                                        (Integer 4 []) 
+                                        (IntegerConstant 8 (Integer 4 [])) 
+                                        ()
+                                    ) 
+                                    (IntegerConstant 8 (Integer 4 [])) 
+                                    Parameter 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            i:
+                                (Variable 
+                                    2 
+                                    i 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            j:
+                                (Variable 
+                                    2 
+                                    j 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            kind:
+                                (ExternalSymbol 
+                                    2 
+                                    kind 
+                                    4 kind 
+                                    lfortran_intrinsic_kind 
+                                    [] 
+                                    kind 
+                                    Private
+                                ), 
+                            sum:
+                                (Variable 
+                                    2 
+                                    sum 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            test:
+                                (Variable 
+                                    2 
+                                    test 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            ti:
+                                (Variable 
+                                    2 
+                                    ti 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    errjac 
+                    [] 
+                    [(Return)] 
+                    () 
+                    Source 
+                    Public 
+                    Implementation 
+                    () 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
+                    .false.
+                ), 
+            lfortran_intrinsic_kind:
+                (IntrinsicModule lfortran_intrinsic_kind)
+            
+        }) 
+    []
+)
