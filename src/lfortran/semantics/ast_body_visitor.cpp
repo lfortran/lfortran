@@ -1108,14 +1108,26 @@ public:
         }
     }
 
+    void create_statement_function(const AST::Assignment_t &x) {
+        std::string var_name = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func;
+        // Create a new variable
+        //currently hardcoding type to integer4
+        ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+        Str a_var_name_f;
+        a_var_name_f.from_str(al, var_name);
+        ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
+                                                        ASR::intentType::Local, nullptr, nullptr,
+                                                        ASR::storage_typeType::Default, int32_type,
+                                                        ASR::abiType::Source, ASR::Public, ASR::presenceType::Optional, false);
+        current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(a_variable));
+    }
     void visit_Assignment(const AST::Assignment_t &x) {
         // ask if is the statement function.
         // if yes then create_statemnent_function, return tmp=NULL
         if (is_statement_function(x)) {
-            std::cout<<"Statement Function"<<std::endl;
-        //     create_statement_function(x);
-        //     tmp = nullptr;
-        //     return;
+            create_statement_function(x);
+            tmp = nullptr;
+            return;
         } 
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = LFortran::ASRUtils::EXPR(tmp);
