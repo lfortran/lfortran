@@ -74,15 +74,11 @@ namespace LFortran
     class custom_interpreter : public xeus::xinterpreter
     {
     private:
+        LCompilers
         FortranEvaluator e;
 
     public:
-        custom_interpreter() {
-            LCompilers::PassOptions pass_options;
-            pass_options.runtime_library_dir = LFortran::get_runtime_library_dir();
-            CompilerOptions compiler_options;
-            e = FortranEvaluator { pass_options, compiler_options };
-        }
+        custom_interpreter() : e{make_FortranEvaluator()} {}
         virtual ~custom_interpreter() = default;
 
     private:
@@ -110,7 +106,13 @@ namespace LFortran
         void shutdown_request_impl() override;
     };
 
-
+    FortranEvaluator custom_interpreter::make_FortranEvaluator() {
+        LCompilers::PassOptions pass_options;
+        pass_options.runtime_library_dir = LFortran::get_runtime_library_dir();
+        CompilerOptions compiler_options;
+        return FortranEvaluator { pass_options, compiler_options };
+    }
+            
     nl::json custom_interpreter::execute_request_impl(int execution_counter, // Typically the cell number
                                                       const std::string& code, // Code to execute
                                                       bool /*silent*/,
