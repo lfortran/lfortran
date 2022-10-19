@@ -33,7 +33,6 @@ class LLVMEvaluator;
 class FortranEvaluator
 {
 public:
-    // TODO: put pass_options before compiler_options to be consistent with the rest of the codebase
     FortranEvaluator(LCompilers::PassOptions pass_options, CompilerOptions compiler_options);
     ~FortranEvaluator();
 
