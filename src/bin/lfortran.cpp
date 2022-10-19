@@ -290,7 +290,12 @@ int prompt(bool verbose)
                 continue;
             }
         } catch (const LFortran::LCompilersException &e) {
-            std::cout << "Other LFortran exception: " << e.msg() << std::endl;
+            std::cerr << "Internal Compiler Error: Unhandled exception" << std::endl;
+            std::vector<LFortran::StacktraceItem> d = e.stacktrace_addresses();
+            get_local_addresses(d);
+            get_local_info(d);
+            std::cerr << stacktrace2str(d, LFortran::stacktrace_depth);
+            std::cerr << e.name() + ": " << e.msg() << std::endl;
             continue;
         }
 
