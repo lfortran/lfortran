@@ -2,11 +2,11 @@
     "basename": "asr-statement2-3d99c3a",
     "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/statement2.f90",
-    "infile_hash": "6a83e2a2baeacc7059832646feb9b4b6ba14abf525832dc45a655dee",
+    "infile_hash": "f4f733c4e3689505cd43316198c495623ab88c5817a565ec643a610d",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-statement2-3d99c3a.stdout",
-    "stdout_hash": "c89429f9913c8b7d7aa54c70f06e4a14d71647a86be7158047e2e52c",
+    "stdout_hash": "02c2c9c3a64a096235b5138e0bae4faf1e079320fc05b95063d56eec",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
