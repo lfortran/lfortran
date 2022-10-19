@@ -11,14 +11,14 @@
                                 (Variable 
                                     2 
                                     dfloat 
-                                    Local 
+                                    ReturnVar 
                                     () 
                                     () 
                                     Default 
                                     (Real 8 []) 
                                     Source 
                                     Public 
-                                    Optional 
+                                    Required 
                                     .false.
                                 ), 
                             dp:
