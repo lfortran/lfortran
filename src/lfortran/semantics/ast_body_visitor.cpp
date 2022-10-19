@@ -1079,18 +1079,16 @@ public:
         if (AST::is_a<AST::FuncCallOrArray_t>(*x.m_target)) {
             // Look for the type of *x.m_target in symbol table, if it is integer or nullptr then it is a statement function
             std::string var_name = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func;
-
+            // std::cout<<"var_name: "<<var_name<<std::endl;
             ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
             if (sym==nullptr) {
-                if (compiler_options.implicit_typing) {
-                    return true;
-                } else {
-                    return false;
-                }
+                // as of now, skipping the consideration of implicit typing of statement functions
+                return false;
             } else {
                 if (ASR::is_a<ASR::Variable_t>(*sym)) {
                     auto v = ASR::down_cast<ASR::Variable_t>(sym);
                     if (ASR::is_a<ASR::Integer_t>(*v->m_type) or ASR::is_a<ASR::Real_t>(*v->m_type)) {
+                        // std::cout<<"In here"<<std::endl;
                         if (ASRUtils::is_array(v->m_type)) {
                             return false;
                         } else {
