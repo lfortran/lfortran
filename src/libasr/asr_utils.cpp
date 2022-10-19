@@ -237,7 +237,7 @@ void set_intrinsic(ASR::TranslationUnit_t* trans_unit) {
 ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
                                                 LCompilers::PassOptions& pass_options) {
-    std::string rl_path = pass_options.rl_path;
+    std::string rl_path = pass_options.runtime_library_dir;
     std::string modfilename = msym + ".mod";
     if (intrinsic) {
         modfilename = rl_path + "/" + modfilename;

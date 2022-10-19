@@ -1120,9 +1120,9 @@ int compile_to_object_file_cpp(const std::string &infile,
 // infile is an object file
 // outfile will become the executable
 int link_executable(const std::vector<std::string> &infiles,
-    const std::string &outfile,
-    const std::string &runtime_library_dir, Backend backend,
+    const std::string &outfile, Backend backend,
     bool static_executable, bool link_with_gcc, bool kokkos,
+    LCompilers::PassOptions &pass_options,
     CompilerOptions &compiler_options)
 {
     /*
@@ -1192,7 +1192,7 @@ int link_executable(const std::vector<std::string> &infiles,
             for (auto &s : infiles) {
                 cmd += s + " ";
             }
-            cmd += runtime_library_dir + "\\lfortran_runtime_static.lib";
+            cmd += pass_options.runtime_library_dir + "\\lfortran_runtime_static.lib";
             int err = system(cmd.c_str());
             if (err) {
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1204,7 +1204,7 @@ int link_executable(const std::vector<std::string> &infiles,
             }
         } else {
             std::string CC;
-            std::string base_path = "\"" + runtime_library_dir + "\"";
+            std::string base_path = "\"" + pass_options.runtime_library_dir + "\"";
             std::string options;
             std::string runtime_lib = "lfortran_runtime";
 
@@ -1411,7 +1411,6 @@ int main(int argc, char *argv[])
         int dirname_length;
         LFortran::get_executable_path(LFortran::binary_executable_path, dirname_length);
 
-        std::string runtime_library_dir = LFortran::get_runtime_library_dir();
         std::string rtlib_header_dir = LFortran::get_runtime_library_header_dir();
         Backend backend;
 
@@ -1465,6 +1464,7 @@ int main(int argc, char *argv[])
 
         LCompilers::PassManager lfortran_pass_manager;
         LCompilers::PassOptions pass_options;
+        pass_options.runtime_library_dir = LFortran::get_runtime_library_dir();
 
         CLI::App app{"LFortran: modern interactive LLVM-based Fortran compiler"};
         // Standard options compatible with gfortran, gcc or clang
@@ -1788,11 +1788,11 @@ int main(int argc, char *argv[])
                 throw LFortran::LCompilersException("Backend not supported");
             }
             if (err) return err;
-            return link_executable({tmp_o}, outfile, runtime_library_dir,
-                    backend, static_link, link_with_gcc, true, compiler_options);
+            return link_executable({tmp_o}, outfile, backend, static_link,
+                    link_with_gcc, true, pass_options, compiler_options);
         } else {
-            return link_executable(arg_files, outfile, runtime_library_dir,
-                    backend, static_link, link_with_gcc, true, compiler_options);
+            return link_executable(arg_files, outfile, backend, static_link,
+                    link_with_gcc, true, pass_options, compiler_options);
         }
     } catch(const LFortran::LCompilersException &e) {
         std::cerr << "Internal Compiler Error: Unhandled exception" << std::endl;

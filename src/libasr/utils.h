@@ -56,8 +56,7 @@ namespace LCompilers {
     struct PassOptions {
         std::filesystem::path mod_files_dir;
         std::vector<std::filesystem::path> include_dirs;
-        // std::filesystem::path rl_path;
-        std::string rl_path;
+        // std::filesystem::path runtime_library_dir
 
         std::string run_fun; // for global_stmts pass
         std::string runtime_library_dir;
