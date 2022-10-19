@@ -237,20 +237,28 @@ void set_intrinsic(ASR::TranslationUnit_t* trans_unit) {
 ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
                                                 LCompilers::PassOptions& pass_options) {
-    std::string rl_path = pass_options.runtime_library_dir;
-    std::string modfilename = msym + ".mod";
-    if (intrinsic) {
-        modfilename = rl_path + "/" + modfilename;
-    }
+    std::filesystem::path runtime_library_dir { pass_options.runtime_library_dir };
+    std::filesystem::path filename {msym + ".mod"};
+    std::vector<std::filesystem::path> mod_files_dirs;
 
-    std::string modfile;
-    if (!read_file(modfilename, modfile)) return nullptr;
-    ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false,
-        symtab);
-    if (intrinsic) {
-        set_intrinsic(asr);
+    mod_files_dirs.push_back( runtime_library_dir );
+    mod_files_dirs.push_back( pass_options.mod_files_dir );
+    mod_files_dirs.insert(mod_files_dirs.end(),
+                          pass_options.include_dirs.begin(),
+                          pass_options.include_dirs.end());
+
+    for (auto path : mod_files_dirs) {
+        std::string modfile;
+        std::filesystem::path full_path = path / filename;
+        if (read_file(full_path.string(), modfile)) {
+            ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false, symtab);
+            if (intrinsic) {
+                set_intrinsic(asr);
+            }
+            return asr;
+        }
     }
-    return asr;
+    return nullptr;
 }
 
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
