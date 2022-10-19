@@ -84,7 +84,7 @@ namespace LFortran
 
         void configure_impl() override;
 
-        FortranEvaluator custom_interpreter::make_FortranEvaluator() override;
+        FortranEvaluator make_FortranEvaluator() override;
 
         nl::json execute_request_impl(int execution_counter,
                                       const std::string& code,
