@@ -1111,14 +1111,32 @@ public:
     void create_statement_function(const AST::Assignment_t &x) {
         std::string var_name = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func;
         // Create a new variable
-        //currently hardcoding type to integer4
-        ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+
+        // extract the type of var_name from symbol table
+        ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
+        ASR::ttype_t *type;
+
+        if (sym==nullptr) {
+            if (compiler_options.implicit_typing) {
+                type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+            } else {
+                throw SemanticError("Statement function needs to be declared.", x.base.base.loc);
+            }
+        } else {
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                auto v = ASR::down_cast<ASR::Variable_t>(sym);
+                type = v->m_type;
+            } else {
+                throw SemanticError("Statement function needs to be declared.", x.base.base.loc);
+            }
+        }
+        // ASR::ttype_t *int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
         Str a_var_name_f;
         a_var_name_f.from_str(al, var_name);
         ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
-                                                        ASR::intentType::Local, nullptr, nullptr,
-                                                        ASR::storage_typeType::Default, int32_type,
-                                                        ASR::abiType::Source, ASR::Public, ASR::presenceType::Optional, false);
+                                                        ASR::intentType::ReturnVar, nullptr, nullptr,
+                                                        ASR::storage_typeType::Default, type,
+                                                        ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false);
         current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(a_variable));
     }
     void visit_Assignment(const AST::Assignment_t &x) {
