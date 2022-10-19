@@ -77,7 +77,12 @@ namespace LFortran
         FortranEvaluator e;
 
     public:
-        custom_interpreter() : e{CompilerOptions()} {}
+        custom_interpreter() {
+            LCompilers::PassOptions pass_options;
+            pass_options.runtime_library_dir = LFortran::get_runtime_library_dir();
+            CompilerOptions compiler_options;
+            e = FortranEvaluator{ pass_options, compiler_options };
+        }
         virtual ~custom_interpreter() = default;
 
     private:
