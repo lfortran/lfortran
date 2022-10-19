@@ -78,12 +78,14 @@ namespace LFortran
         FortranEvaluator e;
 
     public:
-        custom_interpreter() : e{make_FortranEvaluator()} {}
+        custom_interpreter() : e{custom_interpreter::make_FortranEvaluator()} {}
         virtual ~custom_interpreter() = default;
 
     private:
 
         void configure_impl() override;
+
+        FortranEvaluator custom_interpreter::make_FortranEvaluator() override;
 
         nl::json execute_request_impl(int execution_counter,
                                       const std::string& code,
