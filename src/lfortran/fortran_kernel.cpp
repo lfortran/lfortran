@@ -74,7 +74,6 @@ namespace LFortran
     class custom_interpreter : public xeus::xinterpreter
     {
     private:
-        LCompilers
         FortranEvaluator e;
 
     public:
