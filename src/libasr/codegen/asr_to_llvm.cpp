@@ -1850,22 +1850,37 @@ public:
             init_value = llvm::dyn_cast<llvm::Constant>(tmp);
         }
         if (x.m_type->type == ASR::ttypeType::Integer) {
-            int a_kind = down_cast<ASR::Integer_t>(x.m_type)->m_kind;
             llvm::Type *type;
-            int init_value_bits = 8*a_kind;
-            type = getIntType(a_kind);
+            ASR::Integer_t* v_type = down_cast<ASR::Integer_t>(x.m_type);
+            ASR::ttype_t* m_type_ = x.m_type;
+            //ASR::dimension_t* m_dims = v_type->m_dims;
+            size_t n_dims = v_type->n_dims;
+            int a_kind = v_type->m_kind;
+            if( n_dims > 0 ) {
+                //bool is_array_type = true;
+                llvm::Type* el_type = get_el_type(m_type_);
+                if( x.m_storage == ASR::storage_typeType::Allocatable ) {
+                    //bool is_malloc_array_type = true;
+                    type = arr_descr->get_malloc_array_type(m_type_, el_type, true);
+                } else {
+                    type = arr_descr->get_array_type(m_type_, el_type, true);
+                }
+            } else {
+                type = getIntType(a_kind);
+            }
+            //int init_value_bits = 8*a_kind;
             llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
                 type);
-            if (!external) {
-                if (init_value) {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
-                            init_value);
-                } else {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
-                            llvm::ConstantInt::get(context,
-                                llvm::APInt(init_value_bits, 0)));
-                }
-            }
+            // if (!external) {
+            //     if (init_value) {
+            //         module->getNamedGlobal(x.m_name)->setInitializer(
+            //                 init_value);
+            //     } else {
+            //         module->getNamedGlobal(x.m_name)->setInitializer(
+            //                 llvm::ConstantInt::get(context,
+            //                     llvm::APInt(init_value_bits, 0)));
+            //     }
+            // }
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::Real) {
             int a_kind = down_cast<ASR::Real_t>(x.m_type)->m_kind;
