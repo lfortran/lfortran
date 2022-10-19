@@ -6090,13 +6090,13 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics,
         llvm::LLVMContext &context, Allocator &al,
         LCompilers::PassManager& pass_manager,
+        LCompilers::PassOptions& pass_options,
         CompilerOptions &compiler_options, const std::string &run_fn)
 {
 #if LLVM_VERSION_MAJOR >= 15
     context.setOpaquePointers(false);
 #endif
     ASRToLLVMVisitor v(al, context, compiler_options, diagnostics);
-    LCompilers::PassOptions pass_options;
     pass_options.run_fun = run_fn;
     pass_options.always_run = false;
     pass_manager.rtlib = compiler_options.rtlib;

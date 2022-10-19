@@ -16,6 +16,7 @@
 using LFortran::TRY;
 using LFortran::FortranEvaluator;
 using LFortran::CompilerOptions;
+using LCompilers::PassOptions;
 
 
 TEST_CASE("llvm 1") {
@@ -365,6 +366,7 @@ end function)";
     Allocator al(4*1024);
     LFortran::diag::Diagnostics diagnostics;
     CompilerOptions compiler_options;
+    LCompilers::PassOptions pass_options;
     LFortran::AST::TranslationUnit_t* tu = TRY(LFortran::parse(al, source,
         diagnostics));
     LFortran::AST::ast_t* ast = tu->m_items[0];
@@ -373,11 +375,12 @@ end function)";
     // AST -> ASR
     LFortran::SymbolTable::reset_global_counter();
     LFortran::ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *tu,
-        diagnostics, nullptr, false, compiler_options));
+        diagnostics, nullptr, false, pass_options, compiler_options));
     CHECK(LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [(= (Var 2 f) (IntegerConstant 5 (Integer 4 [])) ())] (Var 2 f) Source Public Implementation () .false. .false. .false. .false. .false. [] [] .false.)}) [])");
 
     // ASR -> LLVM
     LFortran::LLVMEvaluator e;
+    PassOptions po;
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
     lpm.do_not_use_optimization_passes();
@@ -385,7 +388,7 @@ end function)";
     co.platform = LFortran::get_platform();
     LFortran::Result<std::unique_ptr<LFortran::LLVMModule>>
         res = LFortran::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            lpm, co, "f");
+                                    lpm, po, co, "f");
     REQUIRE(res.ok);
     std::unique_ptr<LFortran::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
@@ -406,6 +409,7 @@ end function)";
     Allocator al(4*1024);
     LFortran::diag::Diagnostics diagnostics;
     CompilerOptions compiler_options;
+    LCompilers::PassOptions pass_options;
     LFortran::AST::TranslationUnit_t* tu = TRY(LFortran::parse(al, source,
         diagnostics));
     LFortran::AST::ast_t* ast = tu->m_items[0];
@@ -413,16 +417,17 @@ end function)";
 
     // AST -> ASR
     LFortran::ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *tu,
-        diagnostics, nullptr, false, compiler_options));
+        diagnostics, nullptr, false, pass_options, compiler_options));
     CHECK(LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [(= (Var 4 f) (IntegerConstant 4 (Integer 4 [])) ())] (Var 4 f) Source Public Implementation () .false. .false. .false. .false. .false. [] [] .false.)}) [])");
     // ASR -> LLVM
     LFortran::LLVMEvaluator e;
+    PassOptions po;
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
     lpm.do_not_use_optimization_passes();
     LFortran::Result<std::unique_ptr<LFortran::LLVMModule>>
         res = LFortran::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            lpm, compiler_options, "f");
+            lpm, po, compiler_options, "f");
     REQUIRE(res.ok);
     std::unique_ptr<LFortran::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
@@ -435,7 +440,8 @@ end function)";
 
 TEST_CASE("FortranEvaluator 1") {
     CompilerOptions cu;
-    FortranEvaluator e(cu);
+    PassOptions po;
+    FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("integer :: i");
     CHECK(r.ok);
@@ -451,7 +457,8 @@ TEST_CASE("FortranEvaluator 1") {
 
 TEST_CASE("FortranEvaluator 2") {
     CompilerOptions cu;
-    FortranEvaluator e(cu);
+    PassOptions po;
+    FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2(R"(real :: r
 r = 3
@@ -464,7 +471,8 @@ r
 
 TEST_CASE("FortranEvaluator 3") {
     CompilerOptions cu;
-    FortranEvaluator e(cu);
+    PassOptions po;
+    FortranEvaluator e(po, cu);
     e.evaluate2("integer :: i, j");
     e.evaluate2(R"(j = 0
 do i = 1, 5
@@ -480,7 +488,8 @@ end do
 
 TEST_CASE("FortranEvaluator 4") {
     CompilerOptions cu;
-    FortranEvaluator e(cu);
+    PassOptions po;
+    FortranEvaluator e(po, cu);
     e.evaluate2(R"(
 integer function fn(i, j)
 integer, intent(in) :: i, j
@@ -509,7 +518,8 @@ end function
 
 TEST_CASE("FortranEvaluator 5") {
     CompilerOptions cu;
-    FortranEvaluator e(cu);
+    PassOptions po;
+    FortranEvaluator e(po, cu);
     e.evaluate2(R"(
 integer subroutine fn(i, j, r)
 integer, intent(in) :: i, j
@@ -543,7 +553,8 @@ end subroutine
 
 TEST_CASE("FortranEvaluator 6") {
     CompilerOptions cu;
-    FortranEvaluator e(cu);
+    PassOptions po;
+    FortranEvaluator e(po, cu);
 
     LFortran::LocationManager lm;
     LCompilers::PassManager lpm;
@@ -829,7 +840,8 @@ define float @f()
 
 TEST_CASE("FortranEvaluator 7") {
     CompilerOptions cu;
-    FortranEvaluator e(cu);
+    PassOptions po;
+    FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("integer :: i = 5");
     CHECK(r.ok);
@@ -842,7 +854,8 @@ TEST_CASE("FortranEvaluator 7") {
 
 TEST_CASE("FortranEvaluator 8") {
     CompilerOptions cu;
-    FortranEvaluator e(cu);
+    PassOptions po;
+    FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("real :: a = 3.5");
     CHECK(r.ok);
@@ -855,7 +868,8 @@ TEST_CASE("FortranEvaluator 8") {
 
 TEST_CASE("FortranEvaluator 8 double") {
     CompilerOptions cu;
-    FortranEvaluator e(cu);
+    PassOptions po;
+    FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("real(8) :: a = 3.5");
     CHECK(r.ok);
@@ -868,8 +882,9 @@ TEST_CASE("FortranEvaluator 8 double") {
 
 TEST_CASE("FortranEvaluator 9 single complex") {
     CompilerOptions cu;
+    PassOptions po;
     if (cu.platform == LFortran::Platform::Linux) {
-        FortranEvaluator e(cu);
+        FortranEvaluator e(po, cu);
         LFortran::Result<FortranEvaluator::EvalResult>
         r = e.evaluate2("(2.5_4, 3.5_4)");
         CHECK(r.ok);
@@ -881,8 +896,9 @@ TEST_CASE("FortranEvaluator 9 single complex") {
 
 TEST_CASE("FortranEvaluator 9 double complex") {
     CompilerOptions cu;
+    PassOptions po;
     if (cu.platform != LFortran::Platform::Windows) {
-        FortranEvaluator e(cu);
+        FortranEvaluator e(po, cu);
         LFortran::Result<FortranEvaluator::EvalResult>
         r = e.evaluate2("(2.5_8, 3.5_8)");
         CHECK(r.ok);
@@ -894,7 +910,8 @@ TEST_CASE("FortranEvaluator 9 double complex") {
 
 TEST_CASE("FortranEvaluator integer kind 1") {
     CompilerOptions cu;
-    FortranEvaluator e(cu);
+    PassOptions po;
+    FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("integer(4) :: i");
     CHECK(r.ok);
@@ -910,7 +927,8 @@ TEST_CASE("FortranEvaluator integer kind 1") {
 
 TEST_CASE("FortranEvaluator integer kind 2") {
     CompilerOptions cu;
-    FortranEvaluator e(cu);
+    PassOptions po;
+    FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("integer(8) :: i");
     CHECK(r.ok);
@@ -926,7 +944,8 @@ TEST_CASE("FortranEvaluator integer kind 2") {
 
 TEST_CASE("FortranEvaluator re-declaration 1") {
     CompilerOptions cu;
-    FortranEvaluator e(cu);
+    PassOptions po;
+    FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("integer :: i");
     CHECK(r.ok);
@@ -955,7 +974,8 @@ TEST_CASE("FortranEvaluator re-declaration 1") {
 
 TEST_CASE("FortranEvaluator re-declaration 2") {
     CompilerOptions cu;
-    FortranEvaluator e(cu);
+    PassOptions po;
+    FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2(R"(
 integer function fn(i)
@@ -991,7 +1011,8 @@ end function
 #ifndef _WIN32
 TEST_CASE("FortranEvaluator 10 trig functions") {
     CompilerOptions cu;
-    FortranEvaluator e(cu);
+    PassOptions po;
+    FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("sin(1.0)");
     CHECK(r.ok);

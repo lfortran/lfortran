@@ -2,6 +2,8 @@
 #define LIBASR_UTILS_H
 
 #include <string>
+#include <vector>
+#include <filesystem>
 #include <libasr/containers.h>
 
 namespace LFortran {
@@ -52,6 +54,11 @@ int initialize();
 namespace LCompilers {
 
     struct PassOptions {
+        std::filesystem::path mod_files_dir;
+        std::vector<std::filesystem::path> include_dirs;
+        // std::filesystem::path rl_path;
+        std::string rl_path;
+
         std::string run_fun; // for global_stmts pass
         std::string runtime_library_dir;
         bool always_run = false; // for unused_functions pass

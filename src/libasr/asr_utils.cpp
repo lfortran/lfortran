@@ -97,7 +97,7 @@ ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
 ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const std::string &module_name,
                             const Location &loc, bool intrinsic,
-                            const std::string &rl_path,
+                            LCompilers::PassOptions& pass_options,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err) {
     LFORTRAN_ASSERT(symtab);
@@ -111,14 +111,14 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     }
     LFORTRAN_ASSERT(symtab->parent == nullptr);
     ASR::TranslationUnit_t *mod1 = find_and_load_module(al, module_name,
-            *symtab, intrinsic, rl_path);
+            *symtab, intrinsic, pass_options);
     if (mod1 == nullptr && !intrinsic) {
         // Module not found as a regular module. Try intrinsic module
         if (module_name == "iso_c_binding"
             ||module_name == "iso_fortran_env"
             ||module_name == "ieee_arithmetic") {
             mod1 = find_and_load_module(al, "lfortran_intrinsic_" + module_name,
-                *symtab, true, rl_path);
+                *symtab, true, pass_options);
         }
     }
     if (mod1 == nullptr) {
@@ -155,13 +155,13 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 bool is_intrinsic = startswith(item, "lfortran_intrinsic");
                 ASR::TranslationUnit_t *mod1 = find_and_load_module(al,
                         item,
-                        *symtab, is_intrinsic, rl_path);
+                        *symtab, is_intrinsic, pass_options);
                 if (mod1 == nullptr && !is_intrinsic) {
                     // Module not found as a regular module. Try intrinsic module
                     if (item == "iso_c_binding"
                         ||item == "iso_fortran_env") {
                         mod1 = find_and_load_module(al, "lfortran_intrinsic_" + item,
-                            *symtab, true, rl_path);
+                            *symtab, true, pass_options);
                     }
                 }
 
@@ -236,7 +236,8 @@ void set_intrinsic(ASR::TranslationUnit_t* trans_unit) {
 
 ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
-                                                const std::string &rl_path) {
+                                                LCompilers::PassOptions& pass_options) {
+    std::string rl_path = pass_options.rl_path;
     std::string modfilename = msym + ".mod";
     if (intrinsic) {
         modfilename = rl_path + "/" + modfilename;
