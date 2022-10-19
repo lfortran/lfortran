@@ -12,6 +12,8 @@
 #include <libasr/codegen/asr_to_llvm.h>
 #include <lfortran/pickle.h>
 #include <libasr/utils.h>
+#include <lfortran/utils.h>
+
 
 using LFortran::TRY;
 using LFortran::FortranEvaluator;
@@ -367,6 +369,7 @@ end function)";
     LFortran::diag::Diagnostics diagnostics;
     CompilerOptions compiler_options;
     LCompilers::PassOptions pass_options;
+    pass_options.runtime_library_dir = LFortran::get_runtime_library_dir();
     LFortran::AST::TranslationUnit_t* tu = TRY(LFortran::parse(al, source,
         diagnostics));
     LFortran::AST::ast_t* ast = tu->m_items[0];
@@ -380,7 +383,6 @@ end function)";
 
     // ASR -> LLVM
     LFortran::LLVMEvaluator e;
-    PassOptions po;
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
     lpm.do_not_use_optimization_passes();
@@ -388,7 +390,7 @@ end function)";
     co.platform = LFortran::get_platform();
     LFortran::Result<std::unique_ptr<LFortran::LLVMModule>>
         res = LFortran::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-                                    lpm, po, co, "f");
+                                    lpm, pass_options, co, "f");
     REQUIRE(res.ok);
     std::unique_ptr<LFortran::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
@@ -410,6 +412,7 @@ end function)";
     LFortran::diag::Diagnostics diagnostics;
     CompilerOptions compiler_options;
     LCompilers::PassOptions pass_options;
+    pass_options.runtime_library_dir = LFortran::get_runtime_library_dir();
     LFortran::AST::TranslationUnit_t* tu = TRY(LFortran::parse(al, source,
         diagnostics));
     LFortran::AST::ast_t* ast = tu->m_items[0];
@@ -421,13 +424,12 @@ end function)";
     CHECK(LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [(= (Var 4 f) (IntegerConstant 4 (Integer 4 [])) ())] (Var 4 f) Source Public Implementation () .false. .false. .false. .false. .false. [] [] .false.)}) [])");
     // ASR -> LLVM
     LFortran::LLVMEvaluator e;
-    PassOptions po;
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
     lpm.do_not_use_optimization_passes();
     LFortran::Result<std::unique_ptr<LFortran::LLVMModule>>
         res = LFortran::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            lpm, po, compiler_options, "f");
+            lpm, pass_options, compiler_options, "f");
     REQUIRE(res.ok);
     std::unique_ptr<LFortran::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
@@ -441,6 +443,7 @@ end function)";
 TEST_CASE("FortranEvaluator 1") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("integer :: i");
@@ -458,6 +461,7 @@ TEST_CASE("FortranEvaluator 1") {
 TEST_CASE("FortranEvaluator 2") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2(R"(real :: r
@@ -472,6 +476,7 @@ r
 TEST_CASE("FortranEvaluator 3") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     FortranEvaluator e(po, cu);
     e.evaluate2("integer :: i, j");
     e.evaluate2(R"(j = 0
@@ -489,6 +494,7 @@ end do
 TEST_CASE("FortranEvaluator 4") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     FortranEvaluator e(po, cu);
     e.evaluate2(R"(
 integer function fn(i, j)
@@ -519,6 +525,7 @@ end function
 TEST_CASE("FortranEvaluator 5") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     FortranEvaluator e(po, cu);
     e.evaluate2(R"(
 integer subroutine fn(i, j, r)
@@ -554,6 +561,7 @@ end subroutine
 TEST_CASE("FortranEvaluator 6") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     FortranEvaluator e(po, cu);
 
     LFortran::LocationManager lm;
@@ -841,6 +849,7 @@ define float @f()
 TEST_CASE("FortranEvaluator 7") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("integer :: i = 5");
@@ -855,6 +864,7 @@ TEST_CASE("FortranEvaluator 7") {
 TEST_CASE("FortranEvaluator 8") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("real :: a = 3.5");
@@ -869,6 +879,7 @@ TEST_CASE("FortranEvaluator 8") {
 TEST_CASE("FortranEvaluator 8 double") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("real(8) :: a = 3.5");
@@ -883,6 +894,7 @@ TEST_CASE("FortranEvaluator 8 double") {
 TEST_CASE("FortranEvaluator 9 single complex") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     if (cu.platform == LFortran::Platform::Linux) {
         FortranEvaluator e(po, cu);
         LFortran::Result<FortranEvaluator::EvalResult>
@@ -897,6 +909,7 @@ TEST_CASE("FortranEvaluator 9 single complex") {
 TEST_CASE("FortranEvaluator 9 double complex") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     if (cu.platform != LFortran::Platform::Windows) {
         FortranEvaluator e(po, cu);
         LFortran::Result<FortranEvaluator::EvalResult>
@@ -911,6 +924,7 @@ TEST_CASE("FortranEvaluator 9 double complex") {
 TEST_CASE("FortranEvaluator integer kind 1") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("integer(4) :: i");
@@ -928,6 +942,7 @@ TEST_CASE("FortranEvaluator integer kind 1") {
 TEST_CASE("FortranEvaluator integer kind 2") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("integer(8) :: i");
@@ -945,6 +960,7 @@ TEST_CASE("FortranEvaluator integer kind 2") {
 TEST_CASE("FortranEvaluator re-declaration 1") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("integer :: i");
@@ -975,6 +991,7 @@ TEST_CASE("FortranEvaluator re-declaration 1") {
 TEST_CASE("FortranEvaluator re-declaration 2") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2(R"(
@@ -1012,6 +1029,7 @@ end function
 TEST_CASE("FortranEvaluator 10 trig functions") {
     CompilerOptions cu;
     PassOptions po;
+    po.runtime_library_dir = LFortran::get_runtime_library_dir();
     FortranEvaluator e(po, cu);
     LFortran::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("sin(1.0)");
