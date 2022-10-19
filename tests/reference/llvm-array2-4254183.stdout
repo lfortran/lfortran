@@ -7,8 +7,10 @@ source_filename = "LFortran"
 %array.1 = type { i1*, i32, %dimension_descriptor*, i1, i32 }
 %array.2 = type { float*, i32, %dimension_descriptor*, i1, i32 }
 %array.3 = type { i32*, i32, %dimension_descriptor*, i1, i32 }
-%array.4 = type { float*, i32, %dimension_descriptor*, i1, i32 }
-%array.5 = type { i32*, i32, %dimension_descriptor*, i1, i32 }
+%array.4 = type { i1*, i32, %dimension_descriptor*, i1, i32 }
+%array.5 = type { float*, i32, %dimension_descriptor*, i1, i32 }
+%array.6 = type { i32*, i32, %dimension_descriptor*, i1, i32 }
+%array.7 = type { i1*, i32, %dimension_descriptor*, i1, i32 }
 
 define i32 @main() {
 .entry:
@@ -176,15 +178,15 @@ define i32 @main() {
   %96 = load i32, i32* %94, align 4
   %97 = alloca i32, i32 %96, align 4
   store i32* %97, i32** %95, align 8
-  %g = alloca %array.1, align 8
-  %98 = getelementptr %array.1, %array.1* %g, i32 0, i32 1
+  %g = alloca %array.4, align 8
+  %98 = getelementptr %array.4, %array.4* %g, i32 0, i32 1
   store i32 0, i32* %98, align 4
-  %99 = getelementptr %array.1, %array.1* %g, i32 0, i32 2
+  %99 = getelementptr %array.4, %array.4* %g, i32 0, i32 2
   %100 = alloca i32, align 4
   store i32 2, i32* %100, align 4
   %101 = load i32, i32* %100, align 4
   %102 = alloca %dimension_descriptor, i32 %101, align 8
-  %103 = getelementptr %array.1, %array.1* %g, i32 0, i32 4
+  %103 = getelementptr %array.4, %array.4* %g, i32 0, i32 4
   store i32 2, i32* %103, align 4
   store %dimension_descriptor* %102, %dimension_descriptor** %99, align 8
   %104 = load %dimension_descriptor*, %dimension_descriptor** %99, align 8
@@ -204,19 +206,19 @@ define i32 @main() {
   store i32 2, i32* %112, align 4
   %113 = alloca i32, align 4
   store i32 10, i32* %113, align 4
-  %114 = getelementptr %array.1, %array.1* %g, i32 0, i32 0
+  %114 = getelementptr %array.4, %array.4* %g, i32 0, i32 0
   %115 = load i32, i32* %113, align 4
   %116 = alloca i1, i32 %115, align 1
   store i1* %116, i1** %114, align 8
-  %h = alloca %array.4, align 8
-  %117 = getelementptr %array.4, %array.4* %h, i32 0, i32 1
+  %h = alloca %array.5, align 8
+  %117 = getelementptr %array.5, %array.5* %h, i32 0, i32 1
   store i32 0, i32* %117, align 4
-  %118 = getelementptr %array.4, %array.4* %h, i32 0, i32 2
+  %118 = getelementptr %array.5, %array.5* %h, i32 0, i32 2
   %119 = alloca i32, align 4
   store i32 3, i32* %119, align 4
   %120 = load i32, i32* %119, align 4
   %121 = alloca %dimension_descriptor, i32 %120, align 8
-  %122 = getelementptr %array.4, %array.4* %h, i32 0, i32 4
+  %122 = getelementptr %array.5, %array.5* %h, i32 0, i32 4
   store i32 3, i32* %122, align 4
   store %dimension_descriptor* %121, %dimension_descriptor** %118, align 8
   %123 = load %dimension_descriptor*, %dimension_descriptor** %118, align 8
@@ -243,19 +245,19 @@ define i32 @main() {
   store i32 4, i32* %135, align 4
   %136 = alloca i32, align 4
   store i32 24, i32* %136, align 4
-  %137 = getelementptr %array.4, %array.4* %h, i32 0, i32 0
+  %137 = getelementptr %array.5, %array.5* %h, i32 0, i32 0
   %138 = load i32, i32* %136, align 4
   %139 = alloca float, i32 %138, align 4
   store float* %139, float** %137, align 8
-  %i = alloca %array.5, align 8
-  %140 = getelementptr %array.5, %array.5* %i, i32 0, i32 1
+  %i = alloca %array.6, align 8
+  %140 = getelementptr %array.6, %array.6* %i, i32 0, i32 1
   store i32 0, i32* %140, align 4
-  %141 = getelementptr %array.5, %array.5* %i, i32 0, i32 2
+  %141 = getelementptr %array.6, %array.6* %i, i32 0, i32 2
   %142 = alloca i32, align 4
   store i32 3, i32* %142, align 4
   %143 = load i32, i32* %142, align 4
   %144 = alloca %dimension_descriptor, i32 %143, align 8
-  %145 = getelementptr %array.5, %array.5* %i, i32 0, i32 4
+  %145 = getelementptr %array.6, %array.6* %i, i32 0, i32 4
   store i32 3, i32* %145, align 4
   store %dimension_descriptor* %144, %dimension_descriptor** %141, align 8
   %146 = load %dimension_descriptor*, %dimension_descriptor** %141, align 8
@@ -282,19 +284,19 @@ define i32 @main() {
   store i32 3, i32* %158, align 4
   %159 = alloca i32, align 4
   store i32 36, i32* %159, align 4
-  %160 = getelementptr %array.5, %array.5* %i, i32 0, i32 0
+  %160 = getelementptr %array.6, %array.6* %i, i32 0, i32 0
   %161 = load i32, i32* %159, align 4
   %162 = alloca i32, i32 %161, align 4
   store i32* %162, i32** %160, align 8
-  %j = alloca %array.1, align 8
-  %163 = getelementptr %array.1, %array.1* %j, i32 0, i32 1
+  %j = alloca %array.7, align 8
+  %163 = getelementptr %array.7, %array.7* %j, i32 0, i32 1
   store i32 0, i32* %163, align 4
-  %164 = getelementptr %array.1, %array.1* %j, i32 0, i32 2
+  %164 = getelementptr %array.7, %array.7* %j, i32 0, i32 2
   %165 = alloca i32, align 4
   store i32 3, i32* %165, align 4
   %166 = load i32, i32* %165, align 4
   %167 = alloca %dimension_descriptor, i32 %166, align 8
-  %168 = getelementptr %array.1, %array.1* %j, i32 0, i32 4
+  %168 = getelementptr %array.7, %array.7* %j, i32 0, i32 4
   store i32 3, i32* %168, align 4
   store %dimension_descriptor* %167, %dimension_descriptor** %164, align 8
   %169 = load %dimension_descriptor*, %dimension_descriptor** %164, align 8
@@ -321,7 +323,7 @@ define i32 @main() {
   store i32 2, i32* %181, align 4
   %182 = alloca i32, align 4
   store i32 20, i32* %182, align 4
-  %183 = getelementptr %array.1, %array.1* %j, i32 0, i32 0
+  %183 = getelementptr %array.7, %array.7* %j, i32 0, i32 0
   %184 = load i32, i32* %182, align 4
   %185 = alloca i1, i32 %184, align 1
   store i1* %185, i1** %183, align 8
