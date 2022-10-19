@@ -1320,7 +1320,9 @@ namespace wasm {
 #define INITIALIZE_VARS CompilerOptions compiler_options; \
                         compiler_options.use_colors = true; \
                         compiler_options.indent = true; \
-                        LFortran::FortranEvaluator fe(compiler_options, pass_options); \
+                        LCompilers::PassOptions pass_options; \
+                        pass_options.runtime_library_dir = LFortran::get_runtime_library_dir(); \
+                        LFortran::FortranEvaluator fe(pass_options, compiler_options); \
                         LFortran::LocationManager lm; \
                         LFortran::diag::Diagnostics diagnostics; \
                         lm.in_filename = "input";
