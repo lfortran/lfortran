@@ -1861,9 +1861,9 @@ public:
                 llvm::Type* el_type = get_el_type(m_type_);
                 if( x.m_storage == ASR::storage_typeType::Allocatable ) {
                     //bool is_malloc_array_type = true;
-                    type = arr_descr->get_malloc_array_type(m_type_, el_type, true);
+                    type = arr_descr->get_malloc_array_type(m_type_, el_type, false);
                 } else {
-                    type = arr_descr->get_array_type(m_type_, el_type, true);
+                    type = arr_descr->get_array_type(m_type_, el_type, false);
                 }
             } else {
                 type = getIntType(a_kind);
