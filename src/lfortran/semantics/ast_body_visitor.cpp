@@ -1153,7 +1153,7 @@ public:
             std::string arg_name = var_name + "_arg_" + std::to_string(i);
             arg_name = to_lower(arg_name);
             ASR::asr_t *arg_var = ASR::make_Variable_t(al, x.base.base.loc,
-                current_scope, s2c(al, arg_name), LFortran::ASRUtils::intent_unspecified, nullptr, nullptr,
+                current_scope, s2c(al, arg_name), LFortran::ASRUtils::intent_in, nullptr, nullptr,
                 ASR::storage_typeType::Default, ASRUtils::expr_type(end),
                 ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
                 false);
@@ -1161,13 +1161,14 @@ public:
             args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 current_scope->get_symbol(arg_name))));
         }
+        
         // extract the type of var_name from symbol table
         ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
         ASR::ttype_t *type;
 
         if (sym==nullptr) {
             if (compiler_options.implicit_typing) {
-                type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+                type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
             } else {
                 throw SemanticError("Statement function needs to be declared.", x.base.base.loc);
             }
@@ -1184,7 +1185,7 @@ public:
         ASR::expr_t *to_return = nullptr;
         std::string return_var_name = var_name + "_return_var_name";
         ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
-            current_scope, s2c(al, return_var_name), LFortran::ASRUtils::intent_return_var, nullptr, nullptr,
+            current_scope, s2c(al, return_var_name), ASRUtils::intent_return_var, nullptr, nullptr,
             ASR::storage_typeType::Default, type,
             ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
             false);
@@ -1192,16 +1193,22 @@ public:
         to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
             ASR::down_cast<ASR::symbol_t>(return_var)));
         
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        this->visit_expr(*x.m_value);
+        ASR::expr_t *value = ASRUtils::EXPR(tmp);
+        body.push_back(al, ASR::down_cast<ASR::stmt_t>(ASR::make_Assignment_t(al, x.base.base.loc, to_return, value, nullptr)));
+
         tmp = ASR::make_Function_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, var_name),
             /* a_args */ args.p,
             /* n_args */ args.size(),
-            /* a_body */ nullptr,
-            /* n_body */ 0,
+            /* a_body */ body.p,
+            /* n_body */ body.size(),
             /* a_return_var */ to_return,
-            ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface,
+            ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Implementation,
             nullptr, false, false, false, false, false, /* a_type_parameters */ nullptr,
             /* n_type_parameters */ 0, nullptr, 0, false);
         parent_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
