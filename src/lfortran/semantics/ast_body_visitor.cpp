@@ -1466,7 +1466,16 @@ public:
                 break;
             }
             case (ASR::symbolType::Variable) : {
-                final_sym=original_sym;
+                if (compiler_options.implicit_interface) {
+                    sub_name += "@change_by_implicit_interface";
+                    original_sym = current_scope->resolve_symbol(sub_name);
+                    if (!original_sym) {
+                        create_implicit_interface_function(x, sub_name, false);
+                        original_sym = current_scope->resolve_symbol(sub_name);
+                        LFORTRAN_ASSERT(original_sym!=nullptr);
+                    }
+                }
+                final_sym = original_sym;
                 original_sym = nullptr;
                 break;
             }
@@ -1949,7 +1958,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
-        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters, 
+        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping);
