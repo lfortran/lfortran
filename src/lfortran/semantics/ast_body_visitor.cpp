@@ -1467,6 +1467,9 @@ public:
             }
             case (ASR::symbolType::Variable) : {
                 if (compiler_options.implicit_interface) {
+                    // In case of implicit_interface, we change the subroutine name
+                    // and implicity define a new symbol and insert into the
+                    // symbol table.
                     sub_name += "@change_by_implicit_interface";
                     original_sym = current_scope->resolve_symbol(sub_name);
                     if (!original_sym) {
