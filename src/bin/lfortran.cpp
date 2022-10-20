@@ -1190,7 +1190,13 @@ int link_executable(const std::vector<std::string> &infiles,
             }
             if (outfile == "a.out" && compiler_options.arg_o == "") {
                 err = system("a.out");
-                if (err != 0) return 1;
+                if (err != 0) {
+                    if (0 < err && err < 256) {
+                        return err;
+                    } else {
+                        return 1;
+                    }
+                }
             }
         } else {
             std::string CC;
@@ -1235,7 +1241,13 @@ int link_executable(const std::vector<std::string> &infiles,
             }
             if (outfile == "a.out" && compiler_options.arg_o == "") {
                 err = system("./a.out");
-                if (err != 0) return 1;
+                if (err != 0) {
+                    if (0 < err && err < 256) {
+                        return err;
+                    } else {
+                        return 1;
+                    }
+                }
             }
         }
         return 0;
