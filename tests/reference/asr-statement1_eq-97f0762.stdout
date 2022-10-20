@@ -119,7 +119,90 @@
                     Private
                 ), 
             lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind)
+                (IntrinsicModule lfortran_intrinsic_kind), 
+            temp:
+                (Function 
+                    (SymbolTable
+                        12
+                        {
+                            i:
+                                (Variable 
+                                    12 
+                                    i 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            temp:
+                                (Variable 
+                                    12 
+                                    temp 
+                                    ReturnVar 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    temp 
+                    [] 
+                    [(= 
+                        (Var 12 i) 
+                        (Cast 
+                            (RealBinOp 
+                                (FunctionCall 
+                                    1 dfloat 
+                                    () 
+                                    [((IntegerConstant 1 (Integer 4 [])))
+                                    ((IntegerConstant 2 (Integer 4 [])))] 
+                                    (Real 8 []) 
+                                    () 
+                                    ()
+                                ) 
+                                Mul 
+                                (Cast 
+                                    (IntegerConstant 9 (Integer 4 [])) 
+                                    IntegerToReal 
+                                    (Real 8 []) 
+                                    (RealConstant 
+                                        9.000000 
+                                        (Real 8 [])
+                                    )
+                                ) 
+                                (Real 8 []) 
+                                ()
+                            ) 
+                            RealToInteger 
+                            (Integer 4 []) 
+                            ()
+                        ) 
+                        ()
+                    )] 
+                    (Var 12 temp) 
+                    Source 
+                    Public 
+                    Implementation 
+                    () 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
+                    .false.
+                )
             
         }) 
     []

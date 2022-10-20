@@ -20,7 +20,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Real 8 []) 
+                                                    (Real 4 []) 
                                                     Source 
                                                     Public 
                                                     Required 
@@ -70,7 +70,7 @@
                                                 ()
                                             ) 
                                             IntegerToReal 
-                                            (Real 8 []) 
+                                            (Real 4 []) 
                                             ()
                                         ) 
                                         ()
@@ -159,7 +159,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Real 8 []) 
+                                    (Real 4 []) 
                                     Source 
                                     Public 
                                     Required 
@@ -173,7 +173,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Real 8 []) 
+                                    (Real 4 []) 
                                     Source 
                                     Public 
                                     Required 
@@ -187,7 +187,7 @@
                                     () 
                                     () 
                                     Default 
-                                    (Real 8 []) 
+                                    (Real 4 []) 
                                     Source 
                                     Public 
                                     Required 
@@ -197,7 +197,50 @@
                         }) 
                     errjac 
                     [] 
-                    [(Return)] 
+                    [(= 
+                        (Var 2 test) 
+                        (RealConstant 
+                            1.900000 
+                            (Real 4 [])
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 ti) 
+                        (FunctionCall 
+                            2 dfloat 
+                            () 
+                            [((IntegerConstant 1 (Integer 4 [])))
+                            ((IntegerConstant 8 (Integer 4 [])))] 
+                            (Real 4 []) 
+                            () 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 sum) 
+                        (RealBinOp 
+                            (FunctionCall 
+                                2 dfloat 
+                                () 
+                                [((IntegerConstant 12 (Integer 4 [])))
+                                ((IntegerConstant 9 (Integer 4 [])))] 
+                                (Real 4 []) 
+                                () 
+                                ()
+                            ) 
+                            Add 
+                            (RealConstant 
+                                12.420000 
+                                (Real 4 [])
+                            ) 
+                            (Real 4 []) 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (Return)] 
                     () 
                     Source 
                     Public 

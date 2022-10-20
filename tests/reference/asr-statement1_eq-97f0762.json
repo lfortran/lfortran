@@ -2,11 +2,11 @@
     "basename": "asr-statement1_eq-97f0762",
     "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/statement1_eq.f90",
-    "infile_hash": "41981696d1564b3e861f7d909954aabb54a0a80408ce7566016bf62b",
+    "infile_hash": "d3bd808a7618b699049cb041c65b28c6359fef84ea952fdb8644b3b2",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-statement1_eq-97f0762.stdout",
-    "stdout_hash": "0b0ab16d0a9b338f7d16c93f4a12ea04d46ecc25bed3e5ab7e2ade90",
+    "stdout_hash": "08dead0e7cffe7b68002c09b76ca5b1ac7203e1991bbf04a6f7c99e9",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
