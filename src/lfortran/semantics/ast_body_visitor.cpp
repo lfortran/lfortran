@@ -1150,7 +1150,9 @@ public:
         for (size_t i=0; i<v->n_args; i++) {
             visit_expr(*(v->m_args[i]).m_end);
             ASR::expr_t *end = ASRUtils::EXPR(tmp);
-            std::string arg_name = var_name + "_arg_" + std::to_string(i);
+            ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(end);
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(tmp_var->m_v);
+            std::string arg_name = variable->m_name;
             arg_name = to_lower(arg_name);
             ASR::asr_t *arg_var = ASR::make_Variable_t(al, x.base.base.loc,
                 current_scope, s2c(al, arg_name), LFortran::ASRUtils::intent_in, nullptr, nullptr,
