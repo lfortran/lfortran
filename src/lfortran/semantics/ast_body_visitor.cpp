@@ -1079,7 +1079,7 @@ public:
         if (AST::is_a<AST::FuncCallOrArray_t>(*x.m_target)) {
             // Look for the type of *x.m_target in symbol table, if it is integer or nullptr then it is a statement function
             std::string var_name = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func;
-            // std::cout<<"var_name: "<<var_name<<std::endl;
+            std::cout<<"var_name: "<<var_name<<std::endl;
             ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
             if (sym==nullptr) {
                 // as of now, skipping the consideration of implicit typing of statement functions
@@ -1137,11 +1137,81 @@ public:
                                                         ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false);
         current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(a_variable));
     }
+
+    void create_statement_function2(const AST::Assignment_t &x) {
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        //create a new function, and add it to the symbol table
+        std::string var_name = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func;
+        auto v = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target);
+        
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, v->n_args);
+        for (size_t i=0; i<v->n_args; i++) {
+            visit_expr(*(v->m_args[i]).m_end);
+            ASR::expr_t *end = ASRUtils::EXPR(tmp);
+            std::string arg_name = var_name + "_arg_" + std::to_string(i);
+            arg_name = to_lower(arg_name);
+            ASR::asr_t *arg_var = ASR::make_Variable_t(al, x.base.base.loc,
+                current_scope, s2c(al, arg_name), LFortran::ASRUtils::intent_unspecified, nullptr, nullptr,
+                ASR::storage_typeType::Default, ASRUtils::expr_type(end),
+                ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+                false);
+            current_scope->add_symbol(arg_name, ASR::down_cast<ASR::symbol_t>(arg_var));
+            args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                current_scope->get_symbol(arg_name))));
+        }
+        // extract the type of var_name from symbol table
+        ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
+        ASR::ttype_t *type;
+
+        if (sym==nullptr) {
+            if (compiler_options.implicit_typing) {
+                type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+            } else {
+                throw SemanticError("Statement function needs to be declared.", x.base.base.loc);
+            }
+        } else {
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                auto v = ASR::down_cast<ASR::Variable_t>(sym);
+                type = v->m_type;
+            } else {
+                throw SemanticError("Statement function needs to be declared.", x.base.base.loc);
+            }
+        }
+
+        // Assign where to_return
+        ASR::expr_t *to_return = nullptr;
+        std::string return_var_name = var_name + "_return_var_name";
+        ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
+            current_scope, s2c(al, return_var_name), LFortran::ASRUtils::intent_return_var, nullptr, nullptr,
+            ASR::storage_typeType::Default, type,
+            ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+            false);
+        current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
+        to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+            ASR::down_cast<ASR::symbol_t>(return_var)));
+        
+        tmp = ASR::make_Function_t(
+            al, x.base.base.loc,
+            /* a_symtab */ current_scope,
+            /* a_name */ s2c(al, var_name),
+            /* a_args */ args.p,
+            /* n_args */ args.size(),
+            /* a_body */ nullptr,
+            /* n_body */ 0,
+            /* a_return_var */ to_return,
+            ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface,
+            nullptr, false, false, false, false, false, /* a_type_parameters */ nullptr,
+            /* n_type_parameters */ 0, nullptr, 0, false);
+        parent_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        current_scope = parent_scope;
+    }
     void visit_Assignment(const AST::Assignment_t &x) {
         // ask if is the statement function.
         // if yes then create_statemnent_function, return tmp=NULL
         if (is_statement_function(x)) {
-            create_statement_function(x);
+            create_statement_function2(x);
             tmp = nullptr;
             return;
         } 
