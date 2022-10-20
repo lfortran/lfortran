@@ -1079,7 +1079,6 @@ public:
         if (AST::is_a<AST::FuncCallOrArray_t>(*x.m_target)) {
             // Look for the type of *x.m_target in symbol table, if it is integer or nullptr then it is a statement function
             std::string var_name = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func;
-            std::cout<<"var_name: "<<var_name<<std::endl;
             ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
             if (sym==nullptr) {
                 // as of now, skipping the consideration of implicit typing of statement functions
@@ -1141,6 +1140,7 @@ public:
     void create_statement_function2(const AST::Assignment_t &x) {
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        
         //create a new function, and add it to the symbol table
         std::string var_name = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func;
         auto v = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target);
@@ -1199,6 +1199,19 @@ public:
         body.reserve(al, 1);
         this->visit_expr(*x.m_value);
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
+        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                                        ASRUtils::expr_type(value),ASRUtils::expr_type(to_return));
+        if (!ASRUtils::check_equal_type(ASRUtils::expr_type(to_return),
+                                    ASRUtils::expr_type(value))) {
+            std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(to_return));
+            std::string rtype = ASRUtils::type_to_str(ASRUtils::expr_type(value));
+            diag.semantic_error_label(
+                "Type mismatch in assignment, the types must be compatible",
+                {to_return->base.loc, value->base.loc},
+                "type mismatch (" + ltype + " and " + rtype + ")"
+            );
+            throw SemanticAbort();
+        }
         body.push_back(al, ASR::down_cast<ASR::stmt_t>(ASR::make_Assignment_t(al, x.base.base.loc, to_return, value, nullptr)));
 
         tmp = ASR::make_Function_t(
