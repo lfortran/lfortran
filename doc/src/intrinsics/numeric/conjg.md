@@ -55,7 +55,7 @@ end function
 ```fortran
 program intrinsics_conjg
     implicit none
-	print *, conjg(1.0, -3.0)
+	print *, conjg((1.0, -3.0))
 end program
 ```
 
