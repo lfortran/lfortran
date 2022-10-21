@@ -1441,6 +1441,7 @@ int main(int argc, char *argv[])
         bool show_ast_f90 = false;
         std::string arg_pass;
         bool arg_no_color = false;
+        bool arg_no_prescan = false;
         bool show_llvm = false;
         bool show_cpp = false;
         bool show_c = false;
@@ -1491,6 +1492,7 @@ int main(int argc, char *argv[])
         // LFortran specific options
         app.add_flag("--cpp", compiler_options.c_preprocessor, "Enable C preprocessing");
         app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing");
+        app.add_flag("--no-prescan", arg_no_prescan, "Turn off prescan");
         app.add_flag("--show-prescan", show_prescan, "Show tokens for the given file and exit");
         app.add_flag("--show-tokens", show_tokens, "Show tokens for the given file and exit");
         app.add_flag("--show-ast", show_ast, "Show AST for the given file and exit");
@@ -1590,6 +1592,7 @@ int main(int argc, char *argv[])
         }
 
         compiler_options.use_colors = !arg_no_color;
+        compiler_options.prescan = !arg_no_prescan;
 
         if (fmt) {
             if (CLI::NonexistentPath(arg_fmt_file).empty())

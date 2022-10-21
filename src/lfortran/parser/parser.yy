@@ -429,6 +429,7 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %type <ast> close_statement
 %type <ast> write_statement
 %type <ast> read_statement
+%type <ast> include_statement
 %type <ast> inquire_statement
 %type <ast> rewind_statement
 %type <ast> backspace_statement
@@ -1511,6 +1512,7 @@ single_line_statement
     | form_team_statement
     | goto_statement
     | if_statement_single
+    | include_statement
     | inquire_statement
     | nullify_statement
     | open_statement
@@ -1655,6 +1657,9 @@ read_statement
 nullify_statement
     : KW_NULLIFY "(" write_arg_list ")" {
             $$ = NULLIFY($3, @$); }
+
+include_statement
+    : KW_INCLUDE TK_STRING { $$ = INCLUDE($2, @$); }
 
 inquire_statement
     : KW_INQUIRE "(" write_arg_list ")" expr_list { $$ = INQUIRE($3, $5, @$); }
