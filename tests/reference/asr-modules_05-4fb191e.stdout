@@ -59,7 +59,6 @@
                                     print_vars 
                                     [(Var 3 a)
                                     (Var 3 b)] 
-                                    [] 
                                     [(Print 
                                         () 
                                         [(StringConstant 
@@ -93,6 +92,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             priv:

@@ -150,10 +150,11 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 }
                 ASR::asr_t* new_subrout = ASR::make_Function_t(al, x->base.base.loc,
                                             new_symtab, s2c(al, new_name), new_args.p,
-                                            new_args.size(), nullptr, 0, new_body.p, new_body.size(),
+                                            new_args.size(),  new_body.p, new_body.size(),
                                             return_var, x->m_abi, x->m_access, x->m_deftype,
                                             s2c(al, new_bindc_name), x->m_elemental,
-                                            x->m_pure, x->m_module, x->m_inline);
+                                            x->m_pure, x->m_module, x->m_inline,
+                                            x->m_static, nullptr, 0, nullptr, 0, false);
                 new_symbol = ASR::down_cast<ASR::symbol_t>(new_subrout);
             }
             current_scope->add_symbol(new_name, new_symbol);
@@ -420,7 +421,6 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     w.visit_TranslationUnit(unit);
     RemoveArrayByDescriptorProceduresVisitor x(al,v);
     x.visit_TranslationUnit(unit);
-    LFORTRAN_ASSERT(asr_verify(unit));
 }
 
 } // namespace LFortran

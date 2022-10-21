@@ -177,7 +177,6 @@
                                     check 
                                     [(Var 3 c)
                                     (Var 3 op_code)] 
-                                    [] 
                                     [(DoLoop 
                                         ((Var 3 i) 
                                         (ArrayBound 
@@ -468,6 +467,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             i:

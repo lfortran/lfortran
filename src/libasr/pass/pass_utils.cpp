@@ -30,8 +30,8 @@ namespace LFortran {
                     m_dims = x_type_ref->m_dims;
                     break;
                 }
-                case ASR::ttypeType::Derived: {
-                    ASR::Derived_t* x_type_ref = ASR::down_cast<ASR::Derived_t>(t2);
+                case ASR::ttypeType::Struct: {
+                    ASR::Struct_t* x_type_ref = ASR::down_cast<ASR::Struct_t>(t2);
                     n_dims = x_type_ref->n_dims;
                     m_dims = x_type_ref->m_dims;
                     break;
@@ -91,10 +91,10 @@ namespace LFortran {
                     }
                     break;
                 }
-                case ASR::ttypeType::Derived: {
-                    ASR::Derived_t* x_type_ref = ASR::down_cast<ASR::Derived_t>(t2);
+                case ASR::ttypeType::Struct: {
+                    ASR::Struct_t* x_type_ref = ASR::down_cast<ASR::Struct_t>(t2);
                     if( create_new ) {
-                        new_type = LFortran::ASRUtils::TYPE(ASR::make_Derived_t(*al, x_type->base.loc, x_type_ref->m_derived_type,
+                        new_type = LFortran::ASRUtils::TYPE(ASR::make_Struct_t(*al, x_type->base.loc, x_type_ref->m_derived_type,
                                                             m_dims, n_dims));
                     } else {
                         x_type_ref->n_dims = n_dims;
@@ -203,24 +203,33 @@ namespace LFortran {
                          Allocator& al, SymbolTable*& current_scope, std::string suffix,
                          ASR::intentType intent) {
             vars.reserve(al, n_vars);
-            for( int i = 1; i <= n_vars; i++ ) {
-                Str str_name;
-                str_name.from_str(al, std::to_string(i) + suffix);
-                const char* const_var_name = str_name.c_str(al);
-                char* var_name = (char*)const_var_name;
-                ASR::expr_t* var = nullptr;
+            for (int i = 1; i <= n_vars; i++) {
+                std::string idx_var_name = "__" + std::to_string(i) + suffix;
                 ASR::ttype_t* int32_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0));
-                if( current_scope->get_symbol(std::string(var_name)) == nullptr ) {
+                if( current_scope->get_symbol(idx_var_name) != nullptr ) {
+                    ASR::symbol_t* idx_sym = current_scope->get_symbol(idx_var_name);
+                    if( ASR::is_a<ASR::Variable_t>(*idx_sym) ) {
+                        ASR::Variable_t* idx_var = ASR::down_cast<ASR::Variable_t>(idx_sym);
+                        if( !(ASRUtils::check_equal_type(idx_var->m_type, int32_type) &&
+                              idx_var->m_symbolic_value == nullptr) ) {
+                            idx_var_name = current_scope->get_unique_name(idx_var_name);
+                        }
+                    } else {
+                        idx_var_name = current_scope->get_unique_name(idx_var_name);
+                    }
+                }
+                char* var_name = s2c(al, idx_var_name);;
+                ASR::expr_t* var = nullptr;
+                if( current_scope->get_symbol(idx_var_name) == nullptr ) {
                     ASR::asr_t* idx_sym = ASR::make_Variable_t(al, loc, current_scope, var_name,
                                                             intent, nullptr, nullptr, ASR::storage_typeType::Default,
                                                             int32_type, ASR::abiType::Source, ASR::accessType::Public,
                                                             ASR::presenceType::Required, false);
-                    current_scope->add_symbol(std::string(var_name), ASR::down_cast<ASR::symbol_t>(idx_sym));
+                    current_scope->add_symbol(idx_var_name, ASR::down_cast<ASR::symbol_t>(idx_sym));
                     var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(idx_sym)));
                 } else {
-                    ASR::symbol_t* idx_sym = current_scope->get_symbol(std::string(var_name));
+                    ASR::symbol_t* idx_sym = current_scope->get_symbol(idx_var_name);
                     var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, loc, idx_sym));
-
                 }
                 vars.push_back(al, var);
             }
@@ -537,10 +546,11 @@ namespace LFortran {
                 unit.base.base.loc,
                 vector_copy_symtab,
                 s2c(al, vector_copy_name), arg_exprs.p, arg_exprs.size(),
-                nullptr, 0, body.p, body.size(), nullptr,
+                /* nullptr, 0, */ body.p, body.size(), nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Implementation,
-                nullptr, false, false, false, false);
+                nullptr, false, false, false, false, false,
+                nullptr, 0, nullptr, 0, false);
             global_scope->add_symbol(vector_copy_name, ASR::down_cast<ASR::symbol_t>(vector_copy_asr));
             return ASR::down_cast<ASR::symbol_t>(vector_copy_asr);
         }
@@ -622,15 +632,43 @@ namespace LFortran {
                 }
                 LFORTRAN_ASSERT(c);
                 ASR::cmpopType cmp_op;
+
                 if( comp == -1 ) {
                     int increment;
+                    bool not_constant_inc = false;
+                    if (!ASRUtils::is_integer(*ASRUtils::expr_type(c))) {
+                        throw LCompilersException("Do loop increment type should be an integer");
+                    }
                     if (c->type == ASR::exprType::IntegerConstant) {
                         increment = ASR::down_cast<ASR::IntegerConstant_t>(c)->m_n;
                     } else if (c->type == ASR::exprType::IntegerUnaryMinus) {
                         ASR::IntegerUnaryMinus_t *u = ASR::down_cast<ASR::IntegerUnaryMinus_t>(c);
                         increment = - ASR::down_cast<ASR::IntegerConstant_t>(u->m_arg)->m_n;
                     } else {
-                        throw LCompilersException("Do loop increment type not supported");
+                        // This is the case when increment operator is not a
+                        // constant, and so we need an if statement to check that
+                        // in the backend and generate while loop according
+                        // to avoid infinite loops.
+                        not_constant_inc = true;
+                    }
+                    if (not_constant_inc) {
+                        ASR::ttype_t *int_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al,
+                                    loc, 4, nullptr, 0));
+                        ASR::ttype_t *log_type = ASRUtils::TYPE(
+                            ASR::make_Logical_t(al, loc, 1, nullptr, 0));
+                        ASR::expr_t *const_zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                                    loc, 0, int_type));
+                        ASR::expr_t *test = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loop.base.base.loc,
+                            c, ASR::cmpopType::Gt, const_zero, log_type, nullptr));
+                        Vec<ASR::stmt_t*> if_body, or_body, result;
+                        if_body.reserve(al, 2);
+                        or_body.reserve(al, 2);
+                        result.reserve(al, 1);
+                        if_body = replace_doloop(al, loop, ASR::cmpopType::LtE);
+                        or_body = replace_doloop(al, loop, ASR::cmpopType::GtE);
+                        result.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc, test, if_body.p,
+                                if_body.size(), or_body.p, or_body.size())));
+                        return result;
                     }
                     if (increment > 0) {
                         cmp_op = ASR::cmpopType::LtE;

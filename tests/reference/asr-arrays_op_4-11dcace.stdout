@@ -185,7 +185,6 @@
                                         }) 
                                     modulo2 
                                     [(Var 3 x)] 
-                                    [] 
                                     [(= 
                                         (Var 3 r) 
                                         (IntegerCompare 
@@ -223,6 +222,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             verify:
@@ -338,7 +341,6 @@
                                     verify 
                                     [(Var 4 c)
                                     (Var 4 op_code)] 
-                                    [] 
                                     [(DoLoop 
                                         ((Var 4 i) 
                                         (ArrayBound 
@@ -611,6 +613,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

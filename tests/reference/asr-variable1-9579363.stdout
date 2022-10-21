@@ -137,7 +137,6 @@
                                     (Var 3 matveca_arg_5)
                                     (Var 3 matveca_arg_6)] 
                                     [] 
-                                    [] 
                                     () 
                                     Source 
                                     Public 
@@ -146,6 +145,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             n:
@@ -252,7 +255,6 @@
                         }) 
                     variable01 
                     [] 
-                    [] 
                     [(SubroutineCall 
                         2 matveca 
                         () 
@@ -273,6 +275,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             

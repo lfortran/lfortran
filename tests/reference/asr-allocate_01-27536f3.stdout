@@ -226,7 +226,6 @@
                                         }) 
                                     reduce_sum 
                                     [(Var 4 c)] 
-                                    [] 
                                     [(= 
                                         (Var 4 r) 
                                         (Cast 
@@ -323,6 +322,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             sum:
@@ -448,7 +451,6 @@
                                     [(Var 3 a)
                                     (Var 3 b)
                                     (Var 3 c)] 
-                                    [] 
                                     [(Allocate 
                                         [(3 c_copy 
                                         [((ArrayBound 
@@ -823,6 +825,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

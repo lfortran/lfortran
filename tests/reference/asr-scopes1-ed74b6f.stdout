@@ -30,7 +30,6 @@
                                         }) 
                                     f 
                                     [(Var 3 b)] 
-                                    [] 
                                     [(= 
                                         (Var 3 b) 
                                         (IntegerBinOp 
@@ -50,6 +49,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             i:

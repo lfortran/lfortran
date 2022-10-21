@@ -336,6 +336,9 @@ std::tuple<std::string, std::string, std::string> diag_level_to_str(
                 case (Stage::ASRPass):
                     message_type = "ASR pass error";
                     break;
+                case (Stage::ASRVerify):
+                    message_type = "ASR verify pass error";
+                    break;
                 case (Stage::CodeGen):
                     message_type = "code generation error";
                     break;

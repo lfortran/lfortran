@@ -2467,3 +2467,82 @@ asr_implicit_interface = true
 filename = "fixed_form_goto_select.f"
 ast = true
 asr = true
+
+[[test]]
+filename = "implicit2.f90"
+asr = true
+
+[[test]]
+filename = "errors/implicit3.f90"
+asr = true
+
+[[test]]
+filename = "implicit3.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit4.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit5.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit6.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit7.f90"
+asr = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit8.f90"
+asr = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit9.f90"
+asr = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit10.f90"
+asr = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit11.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "fixed_form/assign_to1.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/assign_to2.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/assign_to3.f"
+ast = true
+
+[[test]]
+filename = "../integration_tests/assign_to1.f90"
+ast = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "../integration_tests/assign_to2.f90"
+ast = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "../integration_tests/conv_complex2real.f90"
+asr = true
+
+[[test]]
+filename = "implicit12.f90"
+asr = true
+asr_implicit_typing = true

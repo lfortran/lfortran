@@ -48,7 +48,6 @@
                                     all_abstract 
                                     [(Var 4 self)] 
                                     [] 
-                                    [] 
                                     (Var 4 all) 
                                     Source 
                                     Private 
@@ -57,10 +56,14 @@
                                     .true. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             bitset_type:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         3
                                         {

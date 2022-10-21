@@ -290,7 +290,12 @@ int prompt(bool verbose)
                 continue;
             }
         } catch (const LFortran::LCompilersException &e) {
-            std::cout << "Other LFortran exception: " << e.msg() << std::endl;
+            std::cerr << "Internal Compiler Error: Unhandled exception" << std::endl;
+            std::vector<LFortran::StacktraceItem> d = e.stacktrace_addresses();
+            get_local_addresses(d);
+            get_local_info(d);
+            std::cerr << stacktrace2str(d, LFortran::stacktrace_depth);
+            std::cerr << e.name() + ": " << e.msg() << std::endl;
             continue;
         }
 
@@ -562,7 +567,7 @@ int emit_asr(const std::string &infile,
     LCompilers::PassOptions pass_options;
     pass_options.always_run = true;
     pass_options.run_fun = "f";
-    pass_manager.apply_passes(al, asr, pass_options);
+    pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     std::cout << LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
             with_intrinsic_modules) << std::endl;
     return 0;
@@ -606,7 +611,7 @@ int emit_c(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-int emit_julia(const std::string &infile, CompilerOptions &compiler_options) 
+int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -647,13 +652,14 @@ int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
                 symtab, nullptr, 0);
             LFortran::ASR::TranslationUnit_t *tu =
                 LFortran::ASR::down_cast2<LFortran::ASR::TranslationUnit_t>(asr);
-            LFORTRAN_ASSERT(LFortran::asr_verify(*tu));
+            LFortran::diag::Diagnostics diagnostics;
+            LFORTRAN_ASSERT(LFortran::asr_verify(*tu, true, diagnostics));
 
             std::string modfile_binary = LFortran::save_modfile(*tu);
 
             m->m_symtab->parent = orig_symtab;
 
-            LFORTRAN_ASSERT(LFortran::asr_verify(u));
+            LFORTRAN_ASSERT(LFortran::asr_verify(u, true, diagnostics));
 
 
             std::string modfile = std::string(m->m_name) + ".mod";
@@ -1187,6 +1193,10 @@ int link_executable(const std::vector<std::string> &infiles,
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
                 return 10;
             }
+            if (outfile == "a.out") {
+                err = system("a.out");
+                if (err != 0) return err;
+            }
         } else {
             std::string CC;
             std::string base_path = "\"" + runtime_library_dir + "\"";
@@ -1227,6 +1237,10 @@ int link_executable(const std::vector<std::string> &infiles,
             if (err) {
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
                 return 10;
+            }
+            if (outfile == "a.out") {
+                err = system("./a.out");
+                if (err != 0) return err;
             }
         }
         return 0;
@@ -1491,6 +1505,7 @@ int main(int argc, char *argv[])
         app.add_option("--backend", arg_backend, "Select a backend (llvm, cpp, x86, wasm)")->capture_default_str();
         app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
         app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
+        app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
         app.add_flag("--fast", compiler_options.fast, "Best performance (disable strict standard compliance)");
         app.add_flag("--link-with-gcc", link_with_gcc, "Calls GCC for linking instead of clang");
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();

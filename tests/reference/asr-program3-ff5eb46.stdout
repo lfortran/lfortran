@@ -59,7 +59,6 @@
                                     func1 
                                     [(Var 3 a)
                                     (Var 3 b)] 
-                                    [] 
                                     [(= 
                                         (Var 3 c) 
                                         (RealBinOp 
@@ -92,6 +91,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             func2:
@@ -146,7 +149,6 @@
                                     func2 
                                     [(Var 4 a)
                                     (Var 4 b)] 
-                                    [] 
                                     [(= 
                                         (Var 4 c) 
                                         (RealBinOp 
@@ -166,6 +168,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             x:

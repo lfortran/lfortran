@@ -42,7 +42,6 @@
                                         }) 
                                     b 
                                     [] 
-                                    [] 
                                     [(Print 
                                         () 
                                         [(StringConstant 
@@ -60,6 +59,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

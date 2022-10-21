@@ -9,7 +9,7 @@ source_filename = "LFortran"
 @2 = private unnamed_addr constant [5 x i8] c"%d%s\00", align 1
 @3 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
 
-define i32 @mysum_a(i32* %a, i32* %"1a", i32* %"2a") {
+define i32 @mysum_a(i32* %a, i32* %__1a, i32* %__2a) {
 .entry:
   %i = alloca i32, align 4
   %r = alloca i32, align 4
@@ -20,7 +20,7 @@ define i32 @mysum_a(i32* %a, i32* %"1a", i32* %"2a") {
 loop.head:                                        ; preds = %loop.body, %.entry
   %0 = load i32, i32* %i, align 4
   %1 = add i32 %0, 1
-  %2 = load i32, i32* %"2a", align 4
+  %2 = load i32, i32* %__2a, align 4
   %3 = mul i32 1, %2
   %4 = icmp sle i32 %1, %3
   br i1 %4, label %loop.body, label %loop.end
@@ -31,8 +31,8 @@ loop.body:                                        ; preds = %loop.head
   store i32 %6, i32* %i, align 4
   %7 = load i32, i32* %r, align 4
   %8 = load i32, i32* %i, align 4
-  %9 = load i32, i32* %"1a", align 4
-  %10 = load i32, i32* %"2a", align 4
+  %9 = load i32, i32* %__1a, align 4
+  %10 = load i32, i32* %__2a, align 4
   %11 = sub i32 %8, %9
   %12 = mul i32 1, %11
   %13 = add i32 0, %12

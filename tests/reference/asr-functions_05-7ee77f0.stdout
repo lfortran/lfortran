@@ -100,7 +100,6 @@
                                         }) 
                                     f 
                                     [(Var 3 a)] 
-                                    [] 
                                     [(= 
                                         (Var 3 b) 
                                         (IntegerBinOp 
@@ -120,6 +119,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             f_real:
@@ -159,7 +162,6 @@
                                         }) 
                                     f_real 
                                     [(Var 4 a)] 
-                                    [] 
                                     [(= 
                                         (Var 4 b) 
                                         (RealBinOp 
@@ -190,6 +192,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             p:
@@ -280,7 +286,6 @@
                                     signr32 
                                     [(Var 5 x)
                                     (Var 5 y)] 
-                                    [] 
                                     [(= 
                                         (Var 5 r) 
                                         (Var 5 x) 
@@ -365,6 +370,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             x:

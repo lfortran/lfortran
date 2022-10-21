@@ -18,3 +18,4 @@ dependencies:
   - m2-bison=3.0.4
   - git
   - cmake
+  - zlib

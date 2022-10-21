@@ -25,7 +25,6 @@
                         }) 
                     f 
                     [] 
-                    [] 
                     [(= 
                         (Var 1 x) 
                         (Cast 
@@ -49,6 +48,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 ), 
             x:

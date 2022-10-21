@@ -46,7 +46,6 @@
                                     [(Var 3 set1)
                                     (Var 3 set2)] 
                                     [] 
-                                    [] 
                                     () 
                                     Source 
                                     Public 
@@ -55,6 +54,10 @@
                                     .true. 
                                     .true. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             assign_logint8_large:
@@ -97,7 +100,6 @@
                                     [(Var 4 self)
                                     (Var 4 logical_vector)] 
                                     [] 
-                                    [] 
                                     () 
                                     Source 
                                     Public 
@@ -106,6 +108,10 @@
                                     .true. 
                                     .true. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             error_handler:
@@ -191,7 +197,6 @@
                                     (Var 6 status)
                                     (Var 6 module)
                                     (Var 6 procedure)] 
-                                    [] 
                                     [(Print 
                                         () 
                                         [(Var 6 error)
@@ -207,6 +212,10 @@
                                     .false. 
                                     .true. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             error_handler~genericprocedure:
@@ -293,7 +302,6 @@
                                     (Var 5 module)
                                     (Var 5 procedure)] 
                                     [] 
-                                    [] 
                                     () 
                                     Source 
                                     Public 
@@ -302,6 +310,10 @@
                                     .false. 
                                     .true. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             ~assign:

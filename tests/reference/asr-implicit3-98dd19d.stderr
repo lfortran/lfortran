@@ -1,0 +1,5 @@
+semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
+ --> tests/errors/implicit3.f90:3:1
+  |
+3 | implicit real (a)
+  | ^^^^^^^^^^^^^^^^^^ 

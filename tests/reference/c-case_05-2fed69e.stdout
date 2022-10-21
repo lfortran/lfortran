@@ -38,19 +38,8 @@ struct dimension_descriptor
 // Implementations
 int main(int argc, char* argv[])
 {
-    static char * grade="B";
-    if (grade == "A") {
-        printf("%s\n", "Excellent!");
-    } else if (grade == "B") {
-    } else if (grade == "C") {
-        printf("%s\n", "Well done");
-    } else if (grade == "D") {
-        printf("%s\n", "You passed");
-    } else if (grade == "F") {
-        printf("%s\n", "Better try again");
-    } else {
-        printf("%s\n", "Invalid grade");
-    }
+    char * grade = (char*) malloc(40 * sizeof(char));
+    // FIXME: select case()
     printf("%s%s%s\n", "Your grade is ", " ", grade);
     return 0;
 }

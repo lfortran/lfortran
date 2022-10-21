@@ -131,7 +131,6 @@
                                     logical_gets_integer 
                                     [(Var 3 tf)
                                     (Var 3 i)] 
-                                    [] 
                                     [(= 
                                         (Var 3 tf) 
                                         (IntegerCompare 
@@ -151,6 +150,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             logical_gets_integer_use:
@@ -191,7 +194,6 @@
                                     logical_gets_integer_use 
                                     [(Var 4 tf)
                                     (Var 4 i)] 
-                                    [] 
                                     [(= 
                                         (Var 4 tf) 
                                         (Var 4 i) 
@@ -211,6 +213,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             ~assign:

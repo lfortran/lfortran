@@ -1,0 +1,127 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            a:
+                (Function 
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable 
+                                    2 
+                                    a 
+                                    ReturnVar 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            m:
+                                (Variable 
+                                    2 
+                                    m 
+                                    Unspecified 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            n:
+                                (Variable 
+                                    2 
+                                    n 
+                                    Unspecified 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            x:
+                                (Variable 
+                                    2 
+                                    x 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (Var 2 n))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            y:
+                                (Variable 
+                                    2 
+                                    y 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (Var 2 m))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    a 
+                    [(Var 2 n)
+                    (Var 2 m)] 
+                    [(= 
+                        (Var 2 n) 
+                        (IntegerConstant 5 (Integer 4 [])) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 m) 
+                        (IntegerConstant 8 (Integer 4 [])) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 x) 
+                        (ArrayConstant 
+                            [(IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4 []))
+                            (IntegerConstant 5 (Integer 4 []))] 
+                            (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                            (IntegerConstant 5 (Integer 4 [])))])
+                        ) 
+                        ()
+                    )] 
+                    (Var 2 a) 
+                    Source 
+                    Public 
+                    Implementation 
+                    () 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
+                    .false.
+                )
+            
+        }) 
+    []
+)

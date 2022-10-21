@@ -36,16 +36,7 @@ return:                                           ; preds = %.entry
   ret void
 }
 
-define void @__module_callback_02_f(float* %x, float* %res) {
-.entry:
-  %0 = load float, float* %x, align 4
-  %1 = fmul float 2.000000e+00, %0
-  store float %1, float* %res, align 4
-  br label %return
-
-return:                                           ; preds = %.entry
-  ret void
-}
+declare void @f(float*, float*)
 
 define float @__module_callback_02_foo(float* %c, float* %d, float* %res) {
 .entry:
@@ -58,6 +49,17 @@ define float @__module_callback_02_foo(float* %c, float* %d, float* %res) {
 return:                                           ; preds = %.entry
   %1 = load float, float* %foo, align 4
   ret float %1
+}
+
+define void @__module_callback_02_f(float* %x, float* %res) {
+.entry:
+  %0 = load float, float* %x, align 4
+  %1 = fmul float 2.000000e+00, %0
+  store float %1, float* %res, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
 }
 
 declare void @_lfortran_printf(i8*, ...)
