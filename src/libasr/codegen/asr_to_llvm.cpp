@@ -6143,8 +6143,13 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
 #endif
     ASRToLLVMVisitor v(al, context, compiler_options, diagnostics);
     LCompilers::PassOptions pass_options;
+    pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
+    pass_options.mod_files_dir = compiler_options.mod_files_dir;
+    pass_options.include_dirs = compiler_options.include_dirs;
+
     pass_options.run_fun = run_fn;
     pass_options.always_run = false;
+
     pass_manager.rtlib = compiler_options.rtlib;
     pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
 

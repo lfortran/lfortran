@@ -86,7 +86,6 @@ namespace LCompilers {
         void _apply_passes(Allocator& al, LFortran::ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
                            LFortran::diag::Diagnostics &diagnostics) {
-            pass_options.runtime_library_dir = LFortran::get_runtime_library_dir();
             for (size_t i = 0; i < passes.size(); i++) {
                 // TODO: rework the whole pass manager: construct the passes
                 // ahead of time (not at the last minute), and remove this much
