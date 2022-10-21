@@ -33,9 +33,8 @@ public:
     AST::stmt_t **starting_m_body = nullptr;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
-           LCompilers::PassOptions &pass_options, CompilerOptions &compiler_options,
-           std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
-        : CommonVisitor(al, nullptr, diagnostics, pass_options, compiler_options, implicit_mapping),
+            CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
+        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping),
         asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -1804,12 +1803,11 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
-        LCompilers::PassOptions &pass_options,
         CompilerOptions &compiler_options,
         std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters, 
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
 {
-    BodyVisitor b(al, unit, diagnostics, pass_options, compiler_options, implicit_mapping);
+    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping);
     try {
         b.is_body_visitor = true;
         b.template_type_parameters = template_type_parameters;

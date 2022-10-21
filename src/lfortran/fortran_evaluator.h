@@ -33,7 +33,7 @@ class LLVMEvaluator;
 class FortranEvaluator
 {
 public:
-    FortranEvaluator(LCompilers::PassOptions pass_options, CompilerOptions compiler_options);
+    FortranEvaluator(CompilerOptions compiler_options);
     ~FortranEvaluator();
 
     struct EvalResult {
@@ -107,7 +107,6 @@ private:
     int eval_count;
 #endif
     CompilerOptions compiler_options;
-    LCompilers::PassOptions pass_options;
     SymbolTable *symbol_table;
     std::string run_fn;
 };

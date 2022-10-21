@@ -77,14 +77,12 @@ namespace LFortran
         FortranEvaluator e;
 
     public:
-        custom_interpreter() : e{make_FortranEvaluator()} {}
+        custom_interpreter() : e{CompilerOptions()} {}
         virtual ~custom_interpreter() = default;
 
     private:
 
         void configure_impl() override;
-
-        FortranEvaluator make_FortranEvaluator();
 
         nl::json execute_request_impl(int execution_counter,
                                       const std::string& code,
@@ -107,13 +105,7 @@ namespace LFortran
         void shutdown_request_impl() override;
     };
 
-    FortranEvaluator custom_interpreter::make_FortranEvaluator() {
-        LCompilers::PassOptions pass_options;
-        pass_options.runtime_library_dir = LFortran::get_runtime_library_dir();
-        CompilerOptions compiler_options;
-        return FortranEvaluator { pass_options, compiler_options };
-    }
-            
+
     nl::json custom_interpreter::execute_request_impl(int execution_counter, // Typically the cell number
                                                       const std::string& code, // Code to execute
                                                       bool /*silent*/,

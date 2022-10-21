@@ -4,7 +4,6 @@
 #include <libasr/assert.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
-#include <libasr/utils.h>
 #include <lfortran/ast.h>
 #include <libasr/bigint.h>
 #include <libasr/string_utils.h>
@@ -646,7 +645,6 @@ public:
 
     ASR::asr_t *tmp;
     Allocator &al;
-    LCompilers::PassOptions &pass_options;
     CompilerOptions &compiler_options;
     SymbolTable *current_scope;
     ASR::Module_t *current_module = nullptr;
@@ -685,10 +683,9 @@ public:
     Vec<char*> data_member_names;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
-            diag::Diagnostics &diagnostics, LCompilers::PassOptions &pass_options,
-            CompilerOptions &compiler_options,
+            diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
             std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
-        : diag{diagnostics}, al{al}, pass_options{pass_options}, compiler_options{compiler_options},
+        : diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping} {
         current_module_dependencies.reserve(al, 4);
     }
@@ -2942,8 +2939,9 @@ public:
         std::string module_name = intrinsic_procedures.get_module(remote_sym, loc);
 
         SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
+        std::string rl_path = get_runtime_library_dir();
         ASR::Module_t *m = ASRUtils::load_module(al, tu_symtab, module_name,
-                loc, true, pass_options, true,
+                loc, true, rl_path, true,
                 [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
                 );
 

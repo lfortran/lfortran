@@ -31,7 +31,7 @@ namespace LFortran {
 /* ------------------------------------------------------------------------- */
 // FortranEvaluator
 
-FortranEvaluator::FortranEvaluator(LCompilers::PassOptions pass_options, CompilerOptions compiler_options)
+FortranEvaluator::FortranEvaluator(CompilerOptions compiler_options)
     :
     al{1024*1024},
 #ifdef HAVE_LFORTRAN_LLVM
@@ -39,7 +39,6 @@ FortranEvaluator::FortranEvaluator(LCompilers::PassOptions pass_options, Compile
     eval_count{0},
 #endif
     compiler_options{compiler_options},
-    pass_options{pass_options},
     symbol_table{nullptr}
 {
 }
@@ -247,7 +246,7 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
         symbol_table->mark_all_variables_external(al);
     }
     auto res = ast_to_asr(al, ast, diagnostics, symbol_table,
-        compiler_options.symtab_only, pass_options, compiler_options);
+        compiler_options.symtab_only, compiler_options);
     if (res.ok) {
         asr = res.result;
     } else {
@@ -318,7 +317,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     Result<std::unique_ptr<LFortran::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
             e->get_context(), al, pass_manager,
-            pass_options, compiler_options, run_fn);
+            compiler_options, run_fn);
     if (res.ok) {
         m = std::move(res.result);
     } else {
