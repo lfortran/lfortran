@@ -53,6 +53,7 @@ static inline int64_t stmt_label(AST::stmt_t *f)
         LFORTRAN_STMT_LABEL_TYPE(DataStmt)
         LFORTRAN_STMT_LABEL_TYPE(FormTeam)
         LFORTRAN_STMT_LABEL_TYPE(GoTo)
+        LFORTRAN_STMT_LABEL_TYPE(Include)
         LFORTRAN_STMT_LABEL_TYPE(Inquire)
         LFORTRAN_STMT_LABEL_TYPE(Nullify)
         LFORTRAN_STMT_LABEL_TYPE(Open)
@@ -848,6 +849,15 @@ public:
             "Format statement is not implemented yet, for now we will ignore it",
             {x.base.base.loc},
             "ignored for now"
+        );
+        tmp = nullptr;
+    }
+
+    void visit_Include(const AST::Include_t &x) {
+        diag.semantic_error_label(
+            "Include statement is not implemented at the AST level yet. You have to run LFortran with prescanning which can handle include statements.",
+            {x.base.base.loc},
+            "Enable prescanner to handle this"
         );
         tmp = nullptr;
     }
