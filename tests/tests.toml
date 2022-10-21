@@ -2554,7 +2554,9 @@ asr = true
 [[test]]
 filename = "no_prescan_include1.f90"
 ast = true
+ast_no_prescan = true
 
 [[test]]
 filename = "no_prescan_include2.f90"
 ast = true
+ast_no_prescan = true
