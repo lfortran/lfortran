@@ -233,6 +233,7 @@ std::string render_diagnostic_short(Diagnostic &d, const std::string &input,
  *    + syntax error
  *    + semantic error
  *    + ASR pass error
+ *    + ASR verify pass error
  *    + code generation error
  *
  * - Severity: Warning
