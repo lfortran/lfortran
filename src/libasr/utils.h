@@ -39,6 +39,7 @@ struct CompilerOptions {
     bool rtlib = false;
     std::string target = "";
     Platform platform;
+    std::string arg_o = "";
 
     CompilerOptions () : platform{get_platform()} {};
 };
