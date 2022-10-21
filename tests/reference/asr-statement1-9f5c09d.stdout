@@ -1,0 +1,249 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            lfortran_intrinsic_kind:
+                (IntrinsicModule lfortran_intrinsic_kind), 
+            statement1:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            dfloat:
+                                (Function 
+                                    (SymbolTable
+                                        12
+                                        {
+                                            dfloat_return_var_name:
+                                                (Variable 
+                                                    12 
+                                                    dfloat_return_var_name 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            i:
+                                                (Variable 
+                                                    12 
+                                                    i 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            j:
+                                                (Variable 
+                                                    12 
+                                                    j 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    dfloat 
+                                    [(Var 12 i)
+                                    (Var 12 j)] 
+                                    [(= 
+                                        (Var 12 dfloat_return_var_name) 
+                                        (Cast 
+                                            (IntegerBinOp 
+                                                (Var 12 i) 
+                                                Mul 
+                                                (Var 12 j) 
+                                                (Integer 4 []) 
+                                                ()
+                                            ) 
+                                            IntegerToReal 
+                                            (Real 4 []) 
+                                            ()
+                                        ) 
+                                        ()
+                                    )] 
+                                    (Var 12 dfloat_return_var_name) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                ), 
+                            dp:
+                                (Variable 
+                                    2 
+                                    dp 
+                                    Local 
+                                    (FunctionCall 
+                                        2 kind 
+                                        () 
+                                        [((RealConstant 
+                                            0.000000 
+                                            (Real 8 [])
+                                        ))] 
+                                        (Integer 4 []) 
+                                        (IntegerConstant 8 (Integer 4 [])) 
+                                        ()
+                                    ) 
+                                    (IntegerConstant 8 (Integer 4 [])) 
+                                    Parameter 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            i:
+                                (Variable 
+                                    2 
+                                    i 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            j:
+                                (Variable 
+                                    2 
+                                    j 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            kind:
+                                (ExternalSymbol 
+                                    2 
+                                    kind 
+                                    4 kind 
+                                    lfortran_intrinsic_kind 
+                                    [] 
+                                    kind 
+                                    Private
+                                ), 
+                            sum:
+                                (Variable 
+                                    2 
+                                    sum 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            test:
+                                (Variable 
+                                    2 
+                                    test 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            ti:
+                                (Variable 
+                                    2 
+                                    ti 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    statement1 
+                    [lfortran_intrinsic_kind] 
+                    [(= 
+                        (Var 2 test) 
+                        (RealConstant 
+                            1.900000 
+                            (Real 4 [])
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 ti) 
+                        (FunctionCall 
+                            2 dfloat 
+                            () 
+                            [((IntegerConstant 1 (Integer 4 [])))
+                            ((IntegerConstant 8 (Integer 4 [])))] 
+                            (Real 4 []) 
+                            () 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 sum) 
+                        (RealBinOp 
+                            (FunctionCall 
+                                2 dfloat 
+                                () 
+                                [((IntegerConstant 12 (Integer 4 [])))
+                                ((IntegerConstant 9 (Integer 4 [])))] 
+                                (Real 4 []) 
+                                () 
+                                ()
+                            ) 
+                            Add 
+                            (RealConstant 
+                                12.420000 
+                                (Real 4 [])
+                            ) 
+                            (Real 4 []) 
+                            ()
+                        ) 
+                        ()
+                    )]
+                )
+            
+        }) 
+    []
+)

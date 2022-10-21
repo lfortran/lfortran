@@ -2548,13 +2548,5 @@ asr = true
 asr_implicit_typing = true
 
 [[test]]
-filename = "statement1.f90"
-asr = true
-
-[[test]]
-filename = "statement1_eq.f90"
-asr = true
-
-[[test]]
-filename = "statement2.f90"
+filename = "../integration_tests/statement1.f90"
 asr = true
