@@ -1146,7 +1146,6 @@ public:
 
         if (sym==nullptr) {
             if (compiler_options.implicit_typing) {
-                // type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
                 type = implicit_dictionary[std::string(1, to_lower(var_name)[0])];
             } else {
                 throw SemanticError("Statement function needs to be declared.", x.base.base.loc);
@@ -1161,7 +1160,6 @@ public:
         }
 
         // Assign where to_return
-        ASR::expr_t *to_return = nullptr;
         std::string return_var_name = var_name + "_return_var_name";
         ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
             current_scope, s2c(al, return_var_name), ASRUtils::intent_return_var, nullptr, nullptr,
@@ -1169,7 +1167,7 @@ public:
             ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
             false);
         current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
-        to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+        ASR::expr_t* to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
             ASR::down_cast<ASR::symbol_t>(return_var)));
         
         Vec<ASR::stmt_t*> body;
@@ -1183,7 +1181,7 @@ public:
             std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(to_return));
             std::string rtype = ASRUtils::type_to_str(ASRUtils::expr_type(value));
             diag.semantic_error_label(
-                "Type mismatch in assignment, the types must be compatible",
+                "Type mismatch in statement function, the types must be compatible",
                 {to_return->base.loc, value->base.loc},
                 "type mismatch (" + ltype + " and " + rtype + ")"
             );
