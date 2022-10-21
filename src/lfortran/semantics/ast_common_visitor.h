@@ -2939,9 +2939,13 @@ public:
         std::string module_name = intrinsic_procedures.get_module(remote_sym, loc);
 
         SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
-        std::string rl_path = get_runtime_library_dir();
+        LCompilers::PassOptions pass_options;
+        pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
+        pass_options.mod_files_dir = compiler_options.mod_files_dir;
+        pass_options.include_dirs = compiler_options.include_dirs;
+
         ASR::Module_t *m = ASRUtils::load_module(al, tu_symtab, module_name,
-                loc, true, rl_path, true,
+                loc, true, pass_options, true,
                 [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
                 );
 
