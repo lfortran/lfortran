@@ -398,13 +398,27 @@ public:
             "Var::m_v `" + std::string(ASRUtils::symbol_name(x.m_v)) + "` cannot point outside of its symbol table");
     }
 
+    void check_var_external(const ASR::expr_t &x) {
+        if (ASR::is_a<ASR::Var_t>(x)) {
+            ASR::symbol_t *s = ((ASR::Var_t*)&x)->m_v;
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
+                ASR::ExternalSymbol_t *e = ASR::down_cast<ASR::ExternalSymbol_t>(s);
+                require_impl(e->m_external, "m_external cannot be null here",
+                        x.base.loc);
+            }
+        }
+    }
+
     template <typename T>
     void handle_ArrayItemSection(const T &x) {
         visit_expr(*x.m_v);
         for (size_t i=0; i<x.n_args; i++) {
             visit_array_index(x.m_args[i]);
         }
+        require(x.m_type != nullptr,
+            "ArrayItemSection::m_type cannot be nullptr");
         visit_ttype(*x.m_type);
+        check_var_external(*x.m_v);
         int n_dims = ASRUtils::extract_n_dims_from_ttype(
                 ASRUtils::expr_type(x.m_v));
         if (ASR::is_a<ASR::Character_t>(*x.m_type) && n_dims == 0) {
