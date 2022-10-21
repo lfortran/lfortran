@@ -28,7 +28,7 @@ return:                                           ; preds = %.entry
   ret void
 }
 
-declare void @__module_dr_fortran_cb_title_or_name()
+declare void @title_or_name()
 
 define void @__module_dr_fortran_cb_print_fortran() {
 .entry:

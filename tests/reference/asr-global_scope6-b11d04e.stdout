@@ -1,1 +1,0 @@
-(TranslationUnit (SymbolTable 1 {x: (Variable 1 x Local () () Default (Integer 4 []) Source Public Required .false.)}) [(= (Var 1 x) (IntegerConstant 6 (Integer 4 [])) ()) (IntegerBinOp (IntegerConstant 2 (Integer 4 [])) Mul (Var 1 x) (Integer 4 []) ()) (= (Var 1 x) (IntegerBinOp (Var 1 x) Add (IntegerConstant 1 (Integer 4 [])) (Integer 4 []) ()) ())])

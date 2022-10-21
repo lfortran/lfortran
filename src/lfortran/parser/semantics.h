@@ -190,10 +190,18 @@ static inline equi_t* EQUIVALENCE1(Allocator &al, Location &loc,
     return r;
 }
 
+static inline LFortran::IntSuffix divide_int_by_2(const LFortran::IntSuffix &n) {
+    LFortran::IntSuffix n2 = n;
+    n2.int_n.n /= 2;
+    return n2;
+}
+
 #define VAR_DECL_EQUIVALENCE(args, trivia, l) make_Declaration_t(p.m_a, l, \
         nullptr, EQUIVALENCE(p.m_a, l, args.p, args.n), 1, \
         nullptr, 0, trivia_cast(trivia))
 #define EQUIVALENCE_SET(set_list, l) EQUIVALENCE1(p.m_a, l, set_list)
+
+#define DIV2(x) divide_int_by_2(x)
 
 #define ATTR_TYPE(x, l) make_AttrType_t( \
             p.m_a, l, \
@@ -321,13 +329,6 @@ decl_attribute_t** ATTRCOMMON(Allocator &al,
         ATTRCOMMON(p.m_a, l), 1, \
         varsym.p, varsym.n, \
         trivia_cast(trivia))
-
-#define VAR_DECL_DATA(x, trivia, l) make_Declaration_t(p.m_a, l, \
-        nullptr, VEC_CAST(x, decl_attribute), x.size(), \
-        nullptr, 0, trivia_cast(trivia))
-#define DATA(objects, values, l) make_AttrData_t(p.m_a, l, \
-        EXPRS(objects), objects.size(), \
-        EXPRS(values), values.size())
 
 ast_t* data_implied_do(Allocator &al, Location &loc,
         Vec<ast_t*> obj_list,
@@ -1106,6 +1107,13 @@ void pos_to_linecol(const std::string &s, uint64_t position,
 
 #define FORMAT(s, l) make_Format_t(p.m_a, l, 0, s.c_str(p.m_a), nullptr)
 
+#define DATASTMT(x, l) make_DataStmt_t(p.m_a, l, \
+        0, VEC_CAST(x, data_stmt_set), x.size(), nullptr)
+#define DATA(objects, values, l) make_DataStmtSet_t(p.m_a, l, \
+        EXPRS(objects), objects.size(), \
+        EXPRS(values), values.size())
+
+
 #define STOP(l) make_Stop_t(p.m_a, l, 0, nullptr, nullptr, nullptr)
 #define STOP1(stop_code, l) make_Stop_t(p.m_a, l, 0, EXPR(stop_code), nullptr, nullptr)
 #define STOP2(quiet, l) make_Stop_t(p.m_a, l, 0, nullptr, EXPR(quiet), nullptr)
@@ -1447,6 +1455,14 @@ return make_Program_t(al, a_loc,
 #define LIST_NEW(l) l.reserve(p.m_a, 4)
 #define LIST_ADD(l, x) l.push_back(p.m_a, x)
 #define PLIST_ADD(l, x) l.push_back(p.m_a, *x)
+static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
+        ast_t *repeat, ast_t *e) {
+    int64_t n = LFortran::AST::down_cast2<LFortran::AST::Num_t>(repeat)->m_n;
+    for (int64_t i=0; i<n; i++) {
+        v.push_back(al, e);
+    }
+}
+#define REPEAT_LIST_ADD(l, r, x) repeat_list_add(l, p.m_a, r, x)
 
 #define WHILE(cond, trivia, body, l) make_WhileLoop_t(p.m_a, l, 0, nullptr, \
         /*test*/ EXPR(cond), \
@@ -1896,16 +1912,16 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         /*unit_decl2_t** a_decl*/ DECLS(decl), /*size_t n_decl*/ decl.size(), \
         /*program_unit_t** a_contains*/ CONTAINS(contains), /*size_t n_contains*/ contains.size())
 
-#define BLOCKDATA(trivia, use, implicit, decl, l) make_BlockData_t(p.m_a, l, \
+#define BLOCKDATA(trivia, use, implicit, decl, stmt, l) make_BlockData_t(p.m_a, l, \
         nullptr, trivia_cast(trivia), \
         USES(use), use.size(), \
         VEC_CAST(implicit, implicit_statement), implicit.size(), \
-        DECLS(decl), decl.size())
-#define BLOCKDATA1(name, trivia, use, implicit, decl, l) make_BlockData_t( \
+        DECLS(decl), decl.size(), STMTS(stmt), stmt.size())
+#define BLOCKDATA1(name, trivia, use, implicit, decl, stmt, l) make_BlockData_t( \
         p.m_a, l, name2char(name), trivia_cast(trivia), \
         USES(use), use.size(), \
         VEC_CAST(implicit, implicit_statement), implicit.size(), \
-        DECLS(decl), decl.size())
+        DECLS(decl), decl.size(), STMTS(stmt), stmt.size())
 
 #define INTERFACE_HEADER(l) make_InterfaceHeader_t(p.m_a, l)
 #define INTERFACE_HEADER_NAME(id, l) make_InterfaceHeaderName_t(p.m_a, l, \
@@ -2077,6 +2093,7 @@ void set_m_trivia(stmt_t *s, trivia_t *trivia) {
         TRIVIA_SET(Flush)
         TRIVIA_SET(ForAllSingle)
         TRIVIA_SET(Format)
+        TRIVIA_SET(DataStmt)
         TRIVIA_SET(FormTeam)
         TRIVIA_SET(GoTo)
         TRIVIA_SET(Inquire)

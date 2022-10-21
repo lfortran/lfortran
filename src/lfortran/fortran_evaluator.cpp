@@ -5,6 +5,7 @@
 #include <libasr/codegen/asr_to_cpp.h>
 #include <libasr/codegen/asr_to_c.h>
 #include <libasr/codegen/asr_to_wasm.h>
+#include <libasr/codegen/asr_to_julia.h>
 #include <libasr/codegen/wasm_to_wat.h>
 #include <lfortran/ast_to_src.h>
 #include <libasr/exception.h>
@@ -183,7 +184,8 @@ Result<AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
         code = &tmp;
     }
     if (compiler_options.prescan || compiler_options.fixed_form) {
-        tmp = fix_continuation(*code, lm, compiler_options.fixed_form);
+        tmp = fix_continuation(*code, lm, compiler_options.fixed_form,
+            parent_path(lm.in_filename));
         code = &tmp;
     }
     Result<AST::TranslationUnit_t*> res = parse(al, *code, diagnostics, compiler_options.fixed_form);
@@ -315,7 +317,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     Result<std::unique_ptr<LFortran::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
             e->get_context(), al, pass_manager,
-            compiler_options.platform, run_fn);
+            compiler_options, run_fn);
     if (res.ok) {
         m = std::move(res.result);
     } else {
@@ -438,6 +440,22 @@ Result<std::string> FortranEvaluator::get_c2(ASR::TranslationUnit_t &asr,
     // ASR -> C++
     return asr_to_c(al, asr, diagnostics, compiler_options.platform,
                     default_lower_bound);
+}
+
+Result<std::string> FortranEvaluator::get_julia(const std::string &code,
+    LocationManager &lm, diag::Diagnostics &diagnostics)
+{
+    // Src -> AST -> ASR -> Julia
+    SymbolTable *old_symbol_table = symbol_table;
+    symbol_table = nullptr;
+    Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
+    symbol_table = old_symbol_table;
+    if (asr.ok) {
+        return asr_to_julia(al, *asr.result, diagnostics);
+    } else {
+        LFORTRAN_ASSERT(diagnostics.has_error())
+        return asr.error;
+    }
 }
 
 Result<std::string> FortranEvaluator::get_fmt(const std::string &code,

@@ -1,0 +1,237 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            f:
+                (Function 
+                    (SymbolTable
+                        2
+                        {
+                            f1:
+                                (Variable 
+                                    2 
+                                    f1 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    BindC 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            f2:
+                                (Variable 
+                                    2 
+                                    f2 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    BindC 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            f3:
+                                (Variable 
+                                    2 
+                                    f3 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    BindC 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            f4:
+                                (Variable 
+                                    2 
+                                    f4 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    BindC 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            f5:
+                                (Variable 
+                                    2 
+                                    f5 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    BindC 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            f6:
+                                (Variable 
+                                    2 
+                                    f6 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    BindC 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            f7:
+                                (Variable 
+                                    2 
+                                    f7 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    BindC 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            f8:
+                                (Variable 
+                                    2 
+                                    f8 
+                                    ReturnVar 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    BindC 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    f 
+                    [] 
+                    [(= 
+                        (Var 2 f1) 
+                        (IntegerConstant 5 (Integer 4 [])) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 f2) 
+                        (IntegerBinOp 
+                            (IntegerConstant 5 (Integer 4 [])) 
+                            Add 
+                            (IntegerConstant 3 (Integer 4 [])) 
+                            (Integer 4 []) 
+                            (IntegerConstant 8 (Integer 4 []))
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 f3) 
+                        (IntegerBinOp 
+                            (IntegerBinOp 
+                                (IntegerConstant 5 (Integer 4 [])) 
+                                Add 
+                                (IntegerConstant 3 (Integer 4 [])) 
+                                (Integer 4 []) 
+                                (IntegerConstant 8 (Integer 4 []))
+                            ) 
+                            Mul 
+                            (IntegerConstant 2 (Integer 4 [])) 
+                            (Integer 4 []) 
+                            (IntegerConstant 16 (Integer 4 []))
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 f4) 
+                        (IntegerBinOp 
+                            (IntegerConstant 5 (Integer 4 [])) 
+                            Add 
+                            (IntegerBinOp 
+                                (IntegerConstant 3 (Integer 4 [])) 
+                                Mul 
+                                (IntegerConstant 2 (Integer 4 [])) 
+                                (Integer 4 []) 
+                                (IntegerConstant 6 (Integer 4 []))
+                            ) 
+                            (Integer 4 []) 
+                            (IntegerConstant 11 (Integer 4 []))
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 f5) 
+                        (IntegerBinOp 
+                            (IntegerConstant 5 (Integer 4 [])) 
+                            Sub 
+                            (IntegerConstant 3 (Integer 4 [])) 
+                            (Integer 4 []) 
+                            (IntegerConstant 2 (Integer 4 []))
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 f6) 
+                        (IntegerBinOp 
+                            (IntegerConstant 4 (Integer 4 [])) 
+                            Pow 
+                            (IntegerConstant 3 (Integer 4 [])) 
+                            (Integer 4 []) 
+                            (IntegerConstant 64 (Integer 4 []))
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 f7) 
+                        (IntegerBinOp 
+                            (IntegerConstant 5 (Integer 4 [])) 
+                            Add 
+                            (IntegerConstant 3 (Integer 4 [])) 
+                            (Integer 4 []) 
+                            (IntegerConstant 8 (Integer 4 []))
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 f8) 
+                        (IntegerBinOp 
+                            (IntegerConstant 5 (Integer 4 [])) 
+                            Add 
+                            (IntegerConstant 3 (Integer 4 [])) 
+                            (Integer 4 []) 
+                            (IntegerConstant 8 (Integer 4 []))
+                        ) 
+                        ()
+                    )] 
+                    (Var 2 f8) 
+                    BindC 
+                    Public 
+                    Implementation 
+                    () 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
+                    .false.
+                )
+            
+        }) 
+    []
+)

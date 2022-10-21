@@ -1,0 +1,254 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            f:
+                (Function 
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable 
+                                    2 
+                                    a 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (Var 2 n))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            b:
+                                (Variable 
+                                    2 
+                                    b 
+                                    Unspecified 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (Var 2 n))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            ifault:
+                                (Variable 
+                                    2 
+                                    ifault 
+                                    Unspecified 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            n:
+                                (Variable 
+                                    2 
+                                    n 
+                                    Unspecified 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            r:
+                                (Variable 
+                                    2 
+                                    r 
+                                    Unspecified 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    f 
+                    [(Var 2 ifault)
+                    (Var 2 r)
+                    (Var 2 n)
+                    (Var 2 b)] 
+                    [(= 
+                        (Var 2 ifault) 
+                        (IntegerConstant 4 (Integer 4 [])) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 r) 
+                        (Cast 
+                            (IntegerConstant 3 (Integer 4 [])) 
+                            IntegerToReal 
+                            (Real 4 []) 
+                            (RealConstant 
+                                3.000000 
+                                (Real 4 [])
+                            )
+                        ) 
+                        ()
+                    )] 
+                    () 
+                    Source 
+                    Public 
+                    Implementation 
+                    () 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
+                    .false.
+                ), 
+            g:
+                (Function 
+                    (SymbolTable
+                        3
+                        {
+                            a:
+                                (Variable 
+                                    3 
+                                    a 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (Var 3 n))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            b:
+                                (Variable 
+                                    3 
+                                    b 
+                                    Unspecified 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (Var 3 n))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            g:
+                                (Variable 
+                                    3 
+                                    g 
+                                    ReturnVar 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            ifault:
+                                (Variable 
+                                    3 
+                                    ifault 
+                                    Unspecified 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            n:
+                                (Variable 
+                                    3 
+                                    n 
+                                    Unspecified 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            r:
+                                (Variable 
+                                    3 
+                                    r 
+                                    Unspecified 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Real 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    g 
+                    [(Var 3 ifault)
+                    (Var 3 r)
+                    (Var 3 n)
+                    (Var 3 b)] 
+                    [(= 
+                        (Var 3 ifault) 
+                        (IntegerConstant 4 (Integer 4 [])) 
+                        ()
+                    )
+                    (= 
+                        (Var 3 r) 
+                        (Cast 
+                            (IntegerConstant 3 (Integer 4 [])) 
+                            IntegerToReal 
+                            (Real 4 []) 
+                            (RealConstant 
+                                3.000000 
+                                (Real 4 [])
+                            )
+                        ) 
+                        ()
+                    )] 
+                    (Var 3 g) 
+                    Source 
+                    Public 
+                    Implementation 
+                    () 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
+                    .false.
+                )
+            
+        }) 
+    []
+)

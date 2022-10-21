@@ -123,6 +123,8 @@ RUN(NAME stop_01 LABELS llvm wasm llvm2)
 RUN(NAME print_01 LABELS gfortran llvm cpp llvm2 wasm)
 RUN(NAME print_02 LABELS gfortran llvm llvm2)
 
+RUN(NAME include_01 LABELS gfortran llvm)
+
 RUN(NAME cond_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME cond_02 LABELS gfortran llvm wasm)
 
@@ -137,6 +139,8 @@ RUN(NAME expr_08 LABELS gfortran llvm wasm)
 RUN(NAME expr_09 LABELS gfortran llvm wasm)
 
 RUN(NAME data_01 LABELS gfortran llvm)
+RUN(NAME data_02 LABELS gfortran)
+RUN(NAME data_03 LABELS gfortran llvm)
 RUN(NAME minmax_01 LABELS gfortran llvm wasm)
 RUN(NAME arithmetic_if_01 LABELS gfortran llvm)
 RUN(NAME arithmetic_if_02 LABELS gfortran llvm)
@@ -163,10 +167,13 @@ RUN(NAME doloop_04 LABELS gfortran llvm)
 RUN(NAME doloop_05 LABELS gfortran llvm cpp)
 RUN(NAME doloop_06 LABELS gfortran llvm cpp wasm)
 RUN(NAME doloop_07 LABELS gfortran llvm cpp wasm)
+RUN(NAME doloop_08 LABELS gfortran llvm cpp wasm)
 
 RUN(NAME goto_01 LABELS gfortran llvm)
 RUN(NAME goto_02 LABELS gfortran llvm)
-RUN(NAME goto_03 LABELS gfortran)
+RUN(NAME goto_03 LABELS gfortran llvm)
+RUN(NAME goto_04 LABELS gfortran llvm)
+RUN(NAME goto_05 LABELS gfortran llvm)
 
 RUN(NAME subroutines_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME subroutines_02 LABELS gfortran llvm cpp x86 wasm)
@@ -287,7 +294,7 @@ RUN(NAME intrinsics_12 LABELS gfortran llvm wasm) # kind body
 RUN(NAME intrinsics_13 LABELS gfortran wasm) # kind symboltable
 RUN(NAME intrinsics_14 LABELS gfortran llvm) # selected_real,int_kind body
 RUN(NAME intrinsics_15 LABELS gfortran llvm) # real
-RUN(NAME intrinsics_16 LABELS gfortran) # aimag
+RUN(NAME intrinsics_16 LABELS gfortran llvm) # aimag
 RUN(NAME intrinsics_17 LABELS gfortran llvm) # exp, log, erf
 RUN(NAME intrinsics_18 LABELS gfortran llvm)
 RUN(NAME intrinsics_18c LABELS gfortran llvm)
@@ -384,8 +391,6 @@ RUN(NAME program_04 LABELS gfortran)
 RUN(NAME where_01 LABELS gfortran)
 
 RUN(NAME forallloop_01 LABELS gfortran)
-
-RUN(NAME subroutines_03 LABELS gfortran)
 
 RUN(NAME parsing_01 LABELS gfortran)
 RUN(NAME parsing_02 LABELS gfortran)
@@ -520,8 +525,8 @@ RUN(NAME callback_04 LABELS gfortran llvm)
 RUN(NAME callback_05 LABELS gfortran llvm)
 
 RUN(NAME recursion_01 LABELS gfortran llvm)
-RUN(NAME recursion_02 LABELS gfortran llvm)
-RUN(NAME recursion_03 LABELS gfortran llvm)
+RUN(NAME recursion_02 LABELS llvm)
+RUN(NAME recursion_03 LABELS llvm)
 
 RUN(NAME return_01 LABELS gfortran llvm wasm)
 RUN(NAME return_02 LABELS gfortran llvm) # contains module
@@ -565,3 +570,10 @@ RUN(NAME loop_unroll_large LABELS gfortran llvm)
 RUN(NAME sign_from_value LABELS gfortran llvm wasm)
 
 RUN(NAME rewind_inquire_flush LABELS gfortran)
+
+RUN(NAME assign_to1 LABELS gfortran llvm)
+RUN(NAME assign_to2 LABELS gfortran llvm)
+
+RUN(NAME conv_complex2real LABELS gfortran llvm)
+
+RUN(NAME statement1 LABELS gfortran llvm)

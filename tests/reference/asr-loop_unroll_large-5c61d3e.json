@@ -1,0 +1,13 @@
+{
+    "basename": "asr-loop_unroll_large-5c61d3e",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/loop_unroll_large.f90",
+    "infile_hash": "6dea35d299ef0d2baadd87d2ed6132d3e57e15e85a4bef2d609d1d22",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-loop_unroll_large-5c61d3e.stdout",
+    "stdout_hash": "7dc05d153cabf6e4f9e3e7c63837536632af17ac6b9386d2686a8128",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,15 @@
+(TranslationUnit 
+    [(Program 
+        format_03 
+        () 
+        [] 
+        [] 
+        [] 
+        [(Format 
+            1000 
+            "/' --- PROBLEM SIZE:'/'            N = ',i5,'          (NUMBER WITH NONZERO WEIGHT = ',i5,')'/'           NQ = ',i5/'            M = ',i5/'           NP = ',i5,'          (NUMBER UNFIXED = ',i5,')'" 
+            ()
+        )] 
+        []
+    )]
+)

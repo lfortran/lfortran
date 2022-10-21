@@ -25,7 +25,7 @@ struct IntrinsicProceduresAsASRNodes {
         IntrinsicProceduresAsASRNodes() {
             intrinsics_present_in_ASR = {"size", "lbound", "ubound",
                 "transpose", "matmul", "pack", "transfer", "cmplx",
-                "reshape"};
+                "dcmplx", "reshape", "ichar"};
         }
 
         bool is_intrinsic_present_in_ASR(std::string& name) {
@@ -76,6 +76,8 @@ struct IntrinsicProcedures {
 
             // Require evaluated arguments
             {"aimag", {m_math, &eval_aimag, true}},
+            {"imag", {m_math, &eval_aimag, true}},
+            {"dimag", {m_math, &eval_aimag, true}},
             {"char", {m_builtin, &eval_char, true}},
             {"floor", {m_math3, &eval_floor, true}},
             {"ceiling", {m_math2, &eval_ceiling, true}},
@@ -109,6 +111,11 @@ struct IntrinsicProcedures {
             {"erfc", {m_math, &eval_erfc, true}},
             {"abs", {m_math, &eval_abs, true}},
             {"sqrt", {m_math, &eval_sqrt, true}},
+            {"dsqrt", {m_math, &eval_dsqrt, true}},
+            {"datan", {m_math, &eval_datan, true}},
+            {"dabs", {m_math2, &eval_dabs, true}},
+            {"dcos", {m_math, &eval_dcos, true}},
+            {"dsin", {m_math, &eval_dsin, true}},
             {"gamma", {m_math, &eval_gamma, true}},
             {"log_gamma", {m_math, &eval_log_gamma, true}},
             {"log10", {m_math, &eval_log10, true}},
@@ -527,6 +534,12 @@ TRIG2(log, slog)
 TRIG2(log, clog)
 TRIG2(log, zlog)
 
+TRIG2(sin, dsin)
+TRIG2(cos, dcos)
+TRIG2(atan, datan)
+TRIG2(sqrt, dsqrt)
+
+
     static ASR::expr_t *eval_erf(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         return eval_trig(al, loc, args, &erf, nullptr);
     }
@@ -683,6 +696,24 @@ TRIG2(log, zlog)
             return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, result, t));
         } else {
             throw SemanticError("Argument of the abs function must be Integer, Real or Complex", loc);
+        }
+    }
+
+    static ASR::expr_t *eval_dabs(Allocator &al, const Location &loc,
+            Vec<ASR::expr_t*> &args
+            ) {
+        LFORTRAN_ASSERT(ASRUtils::all_args_evaluated(args));
+        if (args.size() != 1) {
+            throw SemanticError("Intrinsic abs function accepts exactly 1 argument", loc);
+        }
+        ASR::expr_t* trig_arg = args[0];
+        ASR::ttype_t* t = LFortran::ASRUtils::expr_type(args[0]);
+        if (LFortran::ASR::is_a<LFortran::ASR::Real_t>(*t)) {
+            double rv = ASR::down_cast<ASR::RealConstant_t>(trig_arg)->m_r;
+            double val = std::abs(rv);
+            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, val, t));
+        } else {
+            throw SemanticError("Argument of the dabs function must be Real", loc);
         }
     }
 
@@ -1070,16 +1101,19 @@ TRIG2(log, zlog)
         }
         if (ASR::is_a<LFortran::ASR::Integer_t>(*huge_type)) {
             int kind = LFortran::ASRUtils::extract_kind_from_ttype_t(huge_type);
-            if(kind == 4) {
-                int max_val = std::numeric_limits<int>::max();
+            if (kind == 4) {
+                int32_t max_val = std::numeric_limits<int>::max();
+                return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, max_val, huge_type));
+            } else if (kind == 8) {
+                int64_t max_val = std::numeric_limits<int64_t>::max();
                 return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, max_val, huge_type));
             } else {
-                throw SemanticError("Only int32 kind is supported", loc);
+                throw SemanticError("Only int32, int64 kind is supported", loc);
             }
         } else if (ASR::is_a<LFortran::ASR::Real_t>(*huge_type)) {
             // TODO: Figure out how to deal with higher precision later
             int kind = LFortran::ASRUtils::extract_kind_from_ttype_t(huge_type);
-            if (kind == 4){
+            if (kind == 4) {
                 float max_val = std::numeric_limits<float>::max();
                 return ASR::down_cast<ASR::expr_t>(
                     ASR::make_RealConstant_t(al, loc, max_val, huge_type)

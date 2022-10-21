@@ -170,7 +170,6 @@ void pass_replace_fma(Allocator &al, ASR::TranslationUnit_t &unit,
     std::string rl_path = pass_options.runtime_library_dir;
     FMAVisitor v(al, unit, rl_path);
     v.visit_TranslationUnit(unit);
-    LFORTRAN_ASSERT(asr_verify(unit));
 }
 
 

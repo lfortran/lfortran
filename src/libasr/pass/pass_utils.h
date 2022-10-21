@@ -71,12 +71,12 @@ namespace LFortran {
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
                                          int comp=-1);
 
-        template <class Derived>
-        class PassVisitor: public ASR::BaseWalkVisitor<Derived> {
+        template <class Struct>
+        class PassVisitor: public ASR::BaseWalkVisitor<Struct> {
 
             private:
 
-                Derived& self() { return static_cast<Derived&>(*this); }
+                Struct& self() { return static_cast<Struct&>(*this); }
 
             public:
 
@@ -142,6 +142,10 @@ namespace LFortran {
                             ASR::AssociateBlock_t *s = ASR::down_cast<ASR::AssociateBlock_t>(item.second);
                             self().visit_AssociateBlock(*s);
                         }
+                        if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                            ASR::Block_t *s = ASR::down_cast<ASR::Block_t>(item.second);
+                            self().visit_Block(*s);
+                        }
                     }
                 }
 
@@ -151,6 +155,13 @@ namespace LFortran {
                     ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
                     current_scope = xx.m_symtab;
                     transform_stmts(xx.m_body, xx.n_body);
+
+                    for (auto &item : x.m_symtab->get_scope()) {
+                        if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                            ASR::Block_t *s = ASR::down_cast<ASR::Block_t>(item.second);
+                            self().visit_Block(*s);
+                        }
+                    }
                 }
 
                 void visit_AssociateBlock(const ASR::AssociateBlock_t& x) {
@@ -163,23 +174,27 @@ namespace LFortran {
                     ASR::Block_t &xx = const_cast<ASR::Block_t&>(x);
                     current_scope = xx.m_symtab;
                     transform_stmts(xx.m_body, xx.n_body);
+
+                    for (auto &item : x.m_symtab->get_scope()) {
+                        self().visit_symbol(*item.second);
+                    }
                 }
 
         };
 
-        template <class Derived>
-        class SkipOptimizationFunctionVisitor: public PassVisitor<Derived> {
+        template <class Struct>
+        class SkipOptimizationFunctionVisitor: public PassVisitor<Struct> {
 
             public:
 
-                SkipOptimizationFunctionVisitor(Allocator& al_): PassVisitor<Derived>(al_, nullptr) {
+                SkipOptimizationFunctionVisitor(Allocator& al_): PassVisitor<Struct>(al_, nullptr) {
                 }
 
                 void visit_Function(const ASR::Function_t &x) {
                     if( ASRUtils::is_intrinsic_optimization<ASR::Function_t>(&x) ) {
                         return ;
                     }
-                    PassUtils::PassVisitor<Derived>::visit_Function(x);
+                    PassUtils::PassVisitor<Struct>::visit_Function(x);
                 }
 
         };

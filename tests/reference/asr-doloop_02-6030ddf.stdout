@@ -1,0 +1,249 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            doloop_02:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable 
+                                    2 
+                                    a 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            b:
+                                (Variable 
+                                    2 
+                                    b 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            i:
+                                (Variable 
+                                    2 
+                                    i 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            j:
+                                (Variable 
+                                    2 
+                                    j 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    doloop_02 
+                    [] 
+                    [(= 
+                        (Var 2 j) 
+                        (IntegerConstant 0 (Integer 4 [])) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 a) 
+                        (IntegerConstant 1 (Integer 4 [])) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 b) 
+                        (IntegerConstant 10 (Integer 4 [])) 
+                        ()
+                    )
+                    (DoLoop 
+                        ((Var 2 i) 
+                        (Var 2 a) 
+                        (Var 2 b) 
+                        ()) 
+                        [(= 
+                            (Var 2 j) 
+                            (IntegerBinOp 
+                                (Var 2 j) 
+                                Add 
+                                (Var 2 i) 
+                                (Integer 4 []) 
+                                ()
+                            ) 
+                            ()
+                        )]
+                    )
+                    (If 
+                        (IntegerCompare 
+                            (Var 2 j) 
+                            NotEq 
+                            (IntegerConstant 55 (Integer 4 [])) 
+                            (Logical 4 []) 
+                            ()
+                        ) 
+                        [(ErrorStop 
+                            ()
+                        )] 
+                        []
+                    )
+                    (Print 
+                        () 
+                        [(Var 2 j)] 
+                        () 
+                        ()
+                    )
+                    (= 
+                        (Var 2 a) 
+                        (IntegerConstant 0 (Integer 4 [])) 
+                        ()
+                    )
+                    (DoLoop 
+                        ((Var 2 i) 
+                        (IntegerConstant 1 (Integer 4 [])) 
+                        (IntegerConstant 10 (Integer 4 [])) 
+                        ()) 
+                        [(DoLoop 
+                            ((Var 2 j) 
+                            (IntegerConstant 1 (Integer 4 [])) 
+                            (IntegerConstant 10 (Integer 4 [])) 
+                            ()) 
+                            [(= 
+                                (Var 2 a) 
+                                (IntegerBinOp 
+                                    (IntegerBinOp 
+                                        (Var 2 a) 
+                                        Add 
+                                        (IntegerBinOp 
+                                            (IntegerBinOp 
+                                                (Var 2 i) 
+                                                Sub 
+                                                (IntegerConstant 1 (Integer 4 [])) 
+                                                (Integer 4 []) 
+                                                ()
+                                            ) 
+                                            Mul 
+                                            (IntegerConstant 10 (Integer 4 [])) 
+                                            (Integer 4 []) 
+                                            ()
+                                        ) 
+                                        (Integer 4 []) 
+                                        ()
+                                    ) 
+                                    Add 
+                                    (Var 2 j) 
+                                    (Integer 4 []) 
+                                    ()
+                                ) 
+                                ()
+                            )]
+                        )]
+                    )
+                    (If 
+                        (IntegerCompare 
+                            (Var 2 a) 
+                            NotEq 
+                            (IntegerBinOp 
+                                (IntegerBinOp 
+                                    (IntegerConstant 100 (Integer 4 [])) 
+                                    Mul 
+                                    (IntegerConstant 101 (Integer 4 [])) 
+                                    (Integer 4 []) 
+                                    (IntegerConstant 10100 (Integer 4 []))
+                                ) 
+                                Div 
+                                (IntegerConstant 2 (Integer 4 [])) 
+                                (Integer 4 []) 
+                                (IntegerConstant 5050 (Integer 4 []))
+                            ) 
+                            (Logical 4 []) 
+                            ()
+                        ) 
+                        [(ErrorStop 
+                            ()
+                        )] 
+                        []
+                    )
+                    (Print 
+                        () 
+                        [(Var 2 a)] 
+                        () 
+                        ()
+                    )
+                    (= 
+                        (Var 2 a) 
+                        (IntegerConstant 0 (Integer 4 [])) 
+                        ()
+                    )
+                    (DoLoop 
+                        ((Var 2 i) 
+                        (IntegerConstant 1 (Integer 4 [])) 
+                        (IntegerConstant 10 (Integer 4 [])) 
+                        ()) 
+                        [(DoLoop 
+                            ((Var 2 j) 
+                            (IntegerConstant 1 (Integer 4 [])) 
+                            (Var 2 i) 
+                            ()) 
+                            [(= 
+                                (Var 2 a) 
+                                (IntegerBinOp 
+                                    (Var 2 a) 
+                                    Add 
+                                    (Var 2 j) 
+                                    (Integer 4 []) 
+                                    ()
+                                ) 
+                                ()
+                            )]
+                        )]
+                    )
+                    (If 
+                        (IntegerCompare 
+                            (Var 2 a) 
+                            NotEq 
+                            (IntegerConstant 220 (Integer 4 [])) 
+                            (Logical 4 []) 
+                            ()
+                        ) 
+                        [(ErrorStop 
+                            ()
+                        )] 
+                        []
+                    )
+                    (Print 
+                        () 
+                        [(Var 2 a)] 
+                        () 
+                        ()
+                    )]
+                )
+            
+        }) 
+    []
+)

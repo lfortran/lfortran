@@ -33,7 +33,7 @@ return:                                           ; preds = %.entry
   ret void
 }
 
-declare void @__module_callback_05_f(i32*)
+declare void @f(i32*)
 
 define void @__module_callback_05_px_call3(void (i32*)* %f, i32* %x) {
 .entry:

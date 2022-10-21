@@ -1,0 +1,66 @@
+function main()
+    local a = Array{Int32, 1}(undef, 3)
+    local b = Array{Int32, 1}(undef, 4)
+    local i::Int32 = 0
+    for i ∈ 1:3
+        a[i] = i + 10
+    end
+    if a[1] ≠ 11
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    if a[2] ≠ 12
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    if a[3] ≠ 13
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    for i ∈ 11:14
+        b[i - 10] = i
+    end
+    if b[1] ≠ 11
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    if b[2] ≠ 12
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    if b[3] ≠ 13
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    if b[4] ≠ 14
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    for i ∈ 1:3
+        b[i] = a[i] - 10
+    end
+    if b[1] ≠ 1
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    if b[2] ≠ 2
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    if b[3] ≠ 3
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    b[4] = b[1] + b[2] + b[3] + a[1]
+    if b[4] ≠ 17
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+    b[4] = a[1]
+    if b[4] ≠ 11
+        println(Base.stderr, "ERROR STOP")
+        exit(1)
+    end
+end
+
+main()

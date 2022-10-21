@@ -1,4 +1,4 @@
-module a_04
+module modules_04_a
 implicit none
 
 
@@ -9,7 +9,7 @@ print *, "b()"
 end subroutine b
 
 
-end module a_04
+end module modules_04_a
 
 
 program modules_04
@@ -22,13 +22,13 @@ call f()
 contains
 
 subroutine f()
-use a_04, only: b
+use modules_04_a, only: b
 call b()
 end subroutine f
 
 
 integer function g()
-use a_04, only: b
+use modules_04_a, only: b
 call b()
 g = 5
 end function g

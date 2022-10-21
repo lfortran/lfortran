@@ -8,9 +8,6 @@
 namespace LFortran
 {
 
-void lex_format(unsigned char *&cur, Location &loc,
-        unsigned char *&start);
-
 void Tokenizer::set_string(const std::string &str)
 {
     // The input string must be NULL terminated, otherwise the tokenizer will
@@ -296,6 +293,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'dowhile' { KW(DOWHILE) }
             'double' { KW(DOUBLE) }
             'doubleprecision' { KW(DOUBLE_PRECISION) }
+            'doublecomplex' { KW(DOUBLE_COMPLEX) }
             'elemental' { KW(ELEMENTAL) }
             'else' { KW(ELSE) }
             'elseif' { KW(ELSEIF) }

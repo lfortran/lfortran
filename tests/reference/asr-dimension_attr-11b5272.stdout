@@ -1,0 +1,135 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            f:
+                (Function 
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable 
+                                    2 
+                                    a 
+                                    Unspecified 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    f 
+                    [(Var 2 a)] 
+                    [(Print 
+                        () 
+                        [(Var 2 a)] 
+                        () 
+                        ()
+                    )] 
+                    () 
+                    Source 
+                    Public 
+                    Implementation 
+                    () 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
+                    .false.
+                ), 
+            main:
+                (Program 
+                    (SymbolTable
+                        3
+                        {
+                            a:
+                                (Variable 
+                                    3 
+                                    a 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 2 (Integer 4 [])))
+                                    ((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 2 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            b:
+                                (Variable 
+                                    3 
+                                    b 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 10 (Integer 4 [])))
+                                    ((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 10 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            d:
+                                (Variable 
+                                    3 
+                                    d 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 2 (Integer 4 [])))
+                                    ((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 2 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            z:
+                                (Variable 
+                                    3 
+                                    z 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 3 (Integer 4 [])))
+                                    ((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 3 (Integer 4 [])))]) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    main 
+                    [] 
+                    [(SubroutineCall 
+                        1 f 
+                        () 
+                        [((IntegerConstant 1 (Integer 4 [])))] 
+                        ()
+                    )]
+                )
+            
+        }) 
+    []
+)

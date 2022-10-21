@@ -36,8 +36,10 @@ struct CompilerOptions {
     bool new_parser = false;
     bool implicit_typing = false;
     bool implicit_interface = false;
+    bool rtlib = false;
     std::string target = "";
     Platform platform;
+    std::string arg_o = "";
 
     CompilerOptions () : platform{get_platform()} {};
 };
@@ -53,14 +55,10 @@ namespace LCompilers {
     struct PassOptions {
         std::string run_fun; // for global_stmts pass
         std::string runtime_library_dir;
-        bool always_run; // for unused_functions pass
-        bool inline_external_symbol_calls; // for inline_function_calls pass
-        int64_t unroll_factor; // for loop_unroll pass
-        bool fast; // is fast flag enabled.
-
-        PassOptions(): always_run(false), inline_external_symbol_calls(true),
-                       unroll_factor(32), fast(false)
-        {}
+        bool always_run = false; // for unused_functions pass
+        bool inline_external_symbol_calls = true; // for inline_function_calls pass
+        int64_t unroll_factor = 32; // for loop_unroll pass
+        bool fast = false; // is fast flag enabled.
     };
 
 }

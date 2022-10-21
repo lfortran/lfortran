@@ -180,6 +180,16 @@ extsrc/
 tmp/
 tmpdebug/
 gentests/
+*.tlog
+*.filters
+*.obj
+*.exe
+*.exp
+*.lib
+*.vcxproj
+*.recipe
+*.sln
+*.dll
 
 ## Ninja
 build.ninja

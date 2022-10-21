@@ -1,0 +1,13 @@
+{
+    "basename": "asr-flip_sign-7d74d97",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/flip_sign.f90",
+    "infile_hash": "12739178c354710c6f6bbeb834508a7932ae385c1340b0c08bca8b8d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-flip_sign-7d74d97.stdout",
+    "stdout_hash": "5803b35c3e761c825af59beef3107c1de9b6934bdf41e7ce010cf06d",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
