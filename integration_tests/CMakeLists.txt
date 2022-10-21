@@ -575,3 +575,5 @@ RUN(NAME assign_to1 LABELS gfortran llvm)
 RUN(NAME assign_to2 LABELS gfortran llvm)
 
 RUN(NAME conv_complex2real LABELS gfortran llvm)
+
+RUN(NAME template_add LABELS gfortran llvm)
