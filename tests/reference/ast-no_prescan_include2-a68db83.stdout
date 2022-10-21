@@ -1,0 +1,41 @@
+(TranslationUnit 
+    [(Program 
+        include2 
+        () 
+        [] 
+        [] 
+        [(Declaration 
+            (AttrType 
+                TypeInteger 
+                [] 
+                () 
+                None
+            ) 
+            [] 
+            [(x 
+            [] 
+            [] 
+            () 
+            None 
+            ())] 
+            ()
+        )] 
+        [(= 
+            0 
+            x 
+            (* (+ 2 3) 5) 
+            ()
+        )
+        (Print 
+            0 
+            () 
+            [x] 
+            (TriviaNode 
+                [] 
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+        )] 
+        []
+    )]
+)
