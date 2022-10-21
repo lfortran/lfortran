@@ -1075,13 +1075,13 @@ public:
         tmp = (ASR::asr_t*)ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target_var, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_assign_label, int32_type)), nullptr));
     }
 
-    /* Returns true is `x` is a statement function, false otherwise.
+    /* Returns true if `x` is a statement function, false otherwise.
     Example of statement functions:
     integer :: A
     A(i,j) = i*j
     // implicit typing on
     A(i,j) = i*j
-    Examples of not statement functions:
+    Examples of non statement functions:
     integer :: A(3, 5)
     A(i,j) = i*j
     */
