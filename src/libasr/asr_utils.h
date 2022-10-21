@@ -685,19 +685,14 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
         }
         case ASR::ttypeType::Complex: {
             ASR::Complex_t *complx = ASR::down_cast<ASR::Complex_t>(t);
-            std::string res = "c" + std::to_string(complx->m_kind * 8);
+            std::string res = "r" + std::to_string(complx->m_kind * 8);
             if( encode_dimensions_ ) {
                 encode_dimensions(complx->n_dims, res, use_underscore_sep);
             }
             return res;
         }
         case ASR::ttypeType::Logical: {
-            ASR::Logical_t* bool_ = ASR::down_cast<ASR::Logical_t>(t);
-            std::string res = "bool";
-            if( encode_dimensions_ ) {
-                encode_dimensions(bool_->n_dims, res, use_underscore_sep);
-            }
-            return res;
+            return "bool";
         }
         case ASR::ttypeType::Character: {
             return "str";
@@ -755,11 +750,7 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
         }
         case ASR::ttypeType::Struct: {
             ASR::Struct_t* d = ASR::down_cast<ASR::Struct_t>(t);
-            std::string res = symbol_name(d->m_derived_type);
-            if( encode_dimensions_ ) {
-                encode_dimensions(d->n_dims, res, use_underscore_sep);
-            }
-            return res;
+            return symbol_name(d->m_derived_type);
         }
         case ASR::ttypeType::Pointer: {
             ASR::Pointer_t* p = ASR::down_cast<ASR::Pointer_t>(t);
@@ -1352,26 +1343,11 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
             return ASRUtils::TYPE(ASR::make_Real_t(al, t->base.loc,
                         tnew->m_kind, nullptr, 0));
         }
-        case ASR::ttypeType::Complex: {
-            ASR::Complex_t* tnew = ASR::down_cast<ASR::Complex_t>(t);
-            return ASRUtils::TYPE(ASR::make_Complex_t(al, t->base.loc,
-                        tnew->m_kind, nullptr, 0));
-        }
-        case ASR::ttypeType::Logical: {
-            ASR::Logical_t* tnew = ASR::down_cast<ASR::Logical_t>(t);
-            return ASRUtils::TYPE(ASR::make_Logical_t(al, t->base.loc,
-                        tnew->m_kind, nullptr, 0));
-        }
         case ASR::ttypeType::Character: {
             ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
             return ASRUtils::TYPE(ASR::make_Character_t(al, t->base.loc,
                         tnew->m_kind, tnew->m_len, tnew->m_len_expr,
                         nullptr, 0));
-        }
-        case ASR::ttypeType::Struct: {
-            ASR::Struct_t* tstruct = ASR::down_cast<ASR::Struct_t>(t);
-            return ASRUtils::TYPE(ASR::make_Struct_t(al, t->base.loc,
-                    tstruct->m_derived_type, nullptr, 0));
         }
         case ASR::ttypeType::TypeParameter: {
             ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
