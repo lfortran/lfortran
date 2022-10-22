@@ -1,0 +1,13 @@
+{
+    "basename": "ast_no_prescan-no_prescan_include1-acb97c0",
+    "cmd": "lfortran --indent --no-prescan --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/no_prescan_include1.f90",
+    "infile_hash": "075cc762767052e5ea227f825822032faad3fcaafa60bfbeb742a537",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_no_prescan-no_prescan_include1-acb97c0.stdout",
+    "stdout_hash": "91b60bb15a7ef9bae710079ed7aaf114126239dc70b5737117c85cdc",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

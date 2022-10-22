@@ -565,8 +565,13 @@ int emit_asr(const std::string &infile,
 
     Allocator al(64*1024*1024);
     LCompilers::PassOptions pass_options;
+    pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
+    pass_options.mod_files_dir = compiler_options.mod_files_dir;
+    pass_options.include_dirs = compiler_options.include_dirs;
+
     pass_options.always_run = true;
     pass_options.run_fun = "f";
+
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     std::cout << LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
             with_intrinsic_modules) << std::endl;
@@ -1418,7 +1423,9 @@ int main(int argc, char *argv[])
         int dirname_length;
         LFortran::get_executable_path(LFortran::binary_executable_path, dirname_length);
 
+        // TODO: This is now in compiler options and can be removed
         std::string runtime_library_dir = LFortran::get_runtime_library_dir();
+
         std::string rtlib_header_dir = LFortran::get_runtime_library_header_dir();
         Backend backend;
 
@@ -1427,8 +1434,6 @@ int main(int argc, char *argv[])
         bool arg_v = false;
         bool arg_E = false;
         bool arg_g = false;
-        std::string arg_J;
-        std::vector<std::string> arg_I;
         std::vector<std::string> arg_l;
         std::vector<std::string> arg_L;
         std::vector<std::string> arg_files;
@@ -1441,6 +1446,7 @@ int main(int argc, char *argv[])
         bool show_ast_f90 = false;
         std::string arg_pass;
         bool arg_no_color = false;
+        bool arg_no_prescan = false;
         bool show_llvm = false;
         bool show_cpp = false;
         bool show_c = false;
@@ -1468,6 +1474,7 @@ int main(int argc, char *argv[])
         std::string arg_pywrap_array_order="f";
 
         CompilerOptions compiler_options;
+        compiler_options.runtime_library_dir = LFortran::get_runtime_library_dir();
 
         LCompilers::PassManager lfortran_pass_manager;
 
@@ -1482,8 +1489,8 @@ int main(int argc, char *argv[])
         app.add_flag("-E", arg_E, "Preprocess only; do not compile, assemble or link");
         app.add_option("-l", arg_l, "Link library option");
         app.add_option("-L", arg_L, "Library path option");
-        app.add_option("-I", arg_I, "Include path")->allow_extra_args(false);
-        app.add_option("-J", arg_J, "Where to save mod files");
+        app.add_option("-I", compiler_options.include_dirs, "Include path");
+        app.add_option("-J", compiler_options.mod_files_dir, "Where to save mod files");
         app.add_flag("-g", arg_g, "Compile with debugging information");
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", arg_version, "Display compiler version information");
@@ -1491,6 +1498,7 @@ int main(int argc, char *argv[])
         // LFortran specific options
         app.add_flag("--cpp", compiler_options.c_preprocessor, "Enable C preprocessing");
         app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing");
+        app.add_flag("--no-prescan", arg_no_prescan, "Turn off prescan");
         app.add_flag("--show-prescan", show_prescan, "Show tokens for the given file and exit");
         app.add_flag("--show-tokens", show_tokens, "Show tokens for the given file and exit");
         app.add_flag("--show-ast", show_ast, "Show AST for the given file and exit");
@@ -1590,6 +1598,7 @@ int main(int argc, char *argv[])
         }
 
         compiler_options.use_colors = !arg_no_color;
+        compiler_options.prescan = !arg_no_prescan;
 
         if (fmt) {
             if (CLI::NonexistentPath(arg_fmt_file).empty())

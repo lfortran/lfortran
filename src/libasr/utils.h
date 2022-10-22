@@ -2,6 +2,8 @@
 #define LIBASR_UTILS_H
 
 #include <string>
+#include <vector>
+#include <filesystem>
 #include <libasr/containers.h>
 
 namespace LFortran {
@@ -17,6 +19,12 @@ enum Platform {
 Platform get_platform();
 
 struct CompilerOptions {
+    std::filesystem::path mod_files_dir;
+    std::vector<std::filesystem::path> include_dirs;
+
+    // TODO: Convert to std::filesystem::path (also change find_and_load_module())
+    std::string runtime_library_dir;
+
     bool fixed_form = false;
     bool c_preprocessor = false;
     std::vector<std::string> c_preprocessor_defines;
@@ -53,7 +61,11 @@ int initialize();
 namespace LCompilers {
 
     struct PassOptions {
+        std::filesystem::path mod_files_dir;
+        std::vector<std::filesystem::path> include_dirs;
+
         std::string run_fun; // for global_stmts pass
+        // TODO: Convert to std::filesystem::path (also change find_and_load_module())
         std::string runtime_library_dir;
         bool always_run = false; // for unused_functions pass
         bool inline_external_symbol_calls = true; // for inline_function_calls pass
