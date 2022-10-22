@@ -1579,6 +1579,7 @@ int main(int argc, char *argv[])
                 case (LFortran::Platform::macOS_ARM) : std::cout << "macOS ARM"; break;
                 case (LFortran::Platform::Windows) : std::cout << "Windows"; break;
                 case (LFortran::Platform::FreeBSD) : std::cout << "FreeBSD"; break;
+                case (LFortran::Platform::OpenBSD) : std::cout << "OpenBSD"; break;
             }
             std::cout << std::endl;
 #ifdef HAVE_LFORTRAN_LLVM

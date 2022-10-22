@@ -13,7 +13,8 @@ enum Platform {
     macOS_Intel,
     macOS_ARM,
     Windows,
-    FreeBSD
+    FreeBSD,
+    OpenBSD,
 };
 
 Platform get_platform();
