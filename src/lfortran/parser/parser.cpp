@@ -299,7 +299,7 @@ void process_include(std::string& out, const std::string& s,
 
     LocationManager lm_tmp;
     lm_tmp.in_filename = include_filename;
-    include = fix_continuation(include, lm_tmp, fixed_form, root_dir);
+    include = prescan(include, lm_tmp, fixed_form, root_dir);
 
     // Possible it goes here
     // lm.out_start.push_back(out.size());
@@ -318,7 +318,7 @@ bool is_include(const std::string &s, uint32_t pos) {
     }
 }
 
-std::string fix_continuation(const std::string &s, LocationManager &lm,
+std::string prescan(const std::string &s, LocationManager &lm,
         bool fixed_form, const std::string &root_dir)
 {
     if (fixed_form) {
