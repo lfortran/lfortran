@@ -312,7 +312,13 @@ void process_include(std::string& out, const std::string& s,
 bool is_include(const std::string &s, uint32_t pos) {
     while (pos < s.size() && s[pos] == ' ') pos++;
     if (pos + 6 < s.size() && s.substr(pos, 7) == "include") {
-        return true;
+        pos += 7;
+        while (pos < s.size() && s[pos] == ' ') pos++;
+        if (pos < s.size() && ((s[pos] == '"') || (s[pos] == '\''))) {
+            return true;
+        } else {
+            return false;
+        }
     } else {
         return false;
     }
