@@ -124,6 +124,7 @@ RUN(NAME print_01 LABELS gfortran llvm cpp llvm2 wasm)
 RUN(NAME print_02 LABELS gfortran llvm llvm2)
 
 RUN(NAME include_01 LABELS gfortran llvm)
+RUN(NAME include_02 LABELS gfortran llvm)
 
 RUN(NAME cond_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME cond_02 LABELS gfortran llvm wasm)
