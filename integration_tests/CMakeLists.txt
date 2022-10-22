@@ -237,7 +237,6 @@ RUN(NAME arrays_04_func LABELS gfortran cpp llvm wasm)
 RUN(NAME arrays_04_func_pass_arr_dims LABELS gfortran cpp llvm wasm)
 RUN(NAME arrays_05 LABELS gfortran llvm cpp wasm)
 RUN(NAME arrays_17 LABELS gfortran llvm)
-RUN(NAME arrays_18_func LABELS gfortran llvm)
 
 # GFortran
 RUN(NAME arrays_02 LABELS gfortran)
