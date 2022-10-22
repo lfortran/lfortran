@@ -442,12 +442,8 @@ std::string prescan(const std::string &s, LocationManager &lm,
                 LFORTRAN_ASSERT(pos + 6 < s.size() && s.substr(pos, 7) == "include")
                 pos += 7;
                 while (pos < s.size() && s[pos] == ' ') pos++;
-                if (pos < s.size() && ((s[pos] == '"') || (s[pos] == '\''))) {
-                    process_include(out, s, lm, pos, fixed_form,
-                        root_dir);
-                } else {
-                    throw parser_local::ParserError("Excpected a string in an include line");
-                }
+                LFORTRAN_ASSERT(pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')));
+                process_include(out, s, lm, pos, fixed_form, root_dir);
             }
             newline = false;
             if (s[pos] == '!') in_comment = true;
