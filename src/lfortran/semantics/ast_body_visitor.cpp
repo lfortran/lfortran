@@ -1075,7 +1075,152 @@ public:
         tmp = (ASR::asr_t*)ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target_var, LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_assign_label, int32_type)), nullptr));
     }
 
+    /* Returns true if `x` is a statement function, false otherwise.
+    Example of statement functions:
+    integer :: A
+    A(i,j) = i*j
+    // implicit typing on
+    A(i,j) = i*j
+    Examples of non statement functions:
+    integer :: A(3, 5)
+    A(i,j) = i*j
+    */
+    bool is_statement_function( const AST::Assignment_t &x ) {
+        if (AST::is_a<AST::FuncCallOrArray_t>(*x.m_target)) {
+            // Look for the type of *x.m_target in symbol table, if it is integer or nullptr then it is a statement function
+            std::string var_name = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func;
+            var_name = to_lower(var_name);
+            ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
+            if (sym==nullptr) {
+                if (compiler_options.implicit_typing) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } else {
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    auto v = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (ASR::is_a<ASR::Integer_t>(*v->m_type) || ASR::is_a<ASR::Real_t>(*v->m_type)) {
+                        if (ASRUtils::is_array(v->m_type)) {
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    } else {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+        } else {
+            return false;
+        }
+    }
+
+    void create_statement_function(const AST::Assignment_t &x) {
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        //create a new function, and add it to the symbol table
+        std::string var_name = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func;
+        auto v = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target);
+        
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, v->n_args);
+        for (size_t i=0; i<v->n_args; i++) {
+            visit_expr(*(v->m_args[i]).m_end);
+            ASR::expr_t *end = ASRUtils::EXPR(tmp);
+            ASR::Var_t* tmp_var;
+            if (ASR::is_a<ASR::Var_t>(*end)) {
+                tmp_var = ASR::down_cast<ASR::Var_t>(end);
+            } else {
+                throw SemanticError("Statement function can only contain variables as arguments.", x.base.base.loc);
+            }
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(tmp_var->m_v);
+            std::string arg_name = variable->m_name;
+            arg_name = to_lower(arg_name);
+            ASR::asr_t *arg_var = ASR::make_Variable_t(al, x.base.base.loc,
+                current_scope, s2c(al, arg_name), LFortran::ASRUtils::intent_in, nullptr, nullptr,
+                ASR::storage_typeType::Default, ASRUtils::expr_type(end),
+                ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+                false);
+            current_scope->add_symbol(arg_name, ASR::down_cast<ASR::symbol_t>(arg_var));
+            args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                current_scope->get_symbol(arg_name))));
+        }
+        
+        // extract the type of var_name from symbol table
+        ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
+        ASR::ttype_t *type;
+
+        if (sym==nullptr) {
+            if (compiler_options.implicit_typing) {
+                type = implicit_dictionary[std::string(1, to_lower(var_name)[0])];
+            } else {
+                throw SemanticError("Statement function needs to be declared.", x.base.base.loc);
+            }
+        } else {
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                auto v = ASR::down_cast<ASR::Variable_t>(sym);
+                type = v->m_type;
+            } else {
+                throw SemanticError("Statement function needs to be declared.", x.base.base.loc);
+            }
+        }
+
+        // Assign where to_return
+        std::string return_var_name = var_name + "_return_var_name";
+        ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
+            current_scope, s2c(al, return_var_name), ASRUtils::intent_return_var, nullptr, nullptr,
+            ASR::storage_typeType::Default, type,
+            ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+            false);
+        current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
+        ASR::expr_t* to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+            ASR::down_cast<ASR::symbol_t>(return_var)));
+        
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        this->visit_expr(*x.m_value);
+        ASR::expr_t *value = ASRUtils::EXPR(tmp);
+        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                                        ASRUtils::expr_type(value),ASRUtils::expr_type(to_return));
+        if (!ASRUtils::check_equal_type(ASRUtils::expr_type(to_return),
+                                    ASRUtils::expr_type(value))) {
+            std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(to_return));
+            std::string rtype = ASRUtils::type_to_str(ASRUtils::expr_type(value));
+            diag.semantic_error_label(
+                "Type mismatch in statement function, the types must be compatible",
+                {to_return->base.loc, value->base.loc},
+                "type mismatch (" + ltype + " and " + rtype + ")"
+            );
+            throw SemanticAbort();
+        }
+        body.push_back(al, ASR::down_cast<ASR::stmt_t>(ASR::make_Assignment_t(al, x.base.base.loc, to_return, value, nullptr)));
+
+        tmp = ASR::make_Function_t(
+            al, x.base.base.loc,
+            /* a_symtab */ current_scope,
+            /* a_name */ s2c(al, var_name),
+            /* a_args */ args.p,
+            /* n_args */ args.size(),
+            /* a_body */ body.p,
+            /* n_body */ body.size(),
+            /* a_return_var */ to_return,
+            ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Implementation,
+            nullptr, false, false, false, false, false, /* a_type_parameters */ nullptr,
+            /* n_type_parameters */ 0, nullptr, 0, false);
+        parent_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        current_scope = parent_scope;
+    }
     void visit_Assignment(const AST::Assignment_t &x) {
+
+        if (is_statement_function(x)) {
+            create_statement_function(x);
+            tmp = nullptr;
+            return;
+        } 
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = LFortran::ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_value);

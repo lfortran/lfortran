@@ -22,6 +22,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
     tokens = is_included("tokens")
     ast = is_included("ast")
     ast_indent = is_included("ast_indent")
+    ast_no_prescan = is_included("ast_no_prescan")
     ast_f90 = is_included("ast_f90")
     ast_cpp = is_included("ast_cpp")
     ast_cpp_hip = is_included("ast_cpp_hip")
@@ -84,6 +85,16 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
             filename,
             "ast_indent",
             "lfortran --show-ast --indent --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            extra_args)
+
+    if ast_no_prescan:
+        # Use free form with prescan disabled
+        run_test(
+            filename,
+            "ast_no_prescan",
+            "lfortran --indent --no-prescan --show-ast --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)

@@ -60,3 +60,7 @@ contributions will be tax-deductible.
 
 If you want to discuss another way to fund or help with the development, feel
 free to contact Ondřej Čertík (ondrej@certik.us).
+
+# Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=lfortran/lfortran&type=Date)](https://star-history.com/#lfortran/lfortran&Date)
