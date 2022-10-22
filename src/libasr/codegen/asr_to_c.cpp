@@ -769,8 +769,7 @@ R"(
             LFORTRAN_ASSERT(ASR::is_a<ASR::Variable_t>(*member));
             body += indent + convert_variable_decl(
                         *ASR::down_cast<ASR::Variable_t>(member),
-                        false,
-                        (c_type_name != "union")) + ";\n";
+                        false, false) + ";\n";
         }
         indentation_level -= 1;
         std::string end_struct = "};\n\n";
