@@ -2302,6 +2302,10 @@ filename = "allow_implicit_interface.f90"
 asr_implicit_interface = true
 
 [[test]]
+filename = "implicit_interface2.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "dimension_attr2.f90"
 asr_implicit_typing = true
 
