@@ -2729,6 +2729,7 @@ public:
             args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 current_scope->get_symbol(arg_name))));
         }
+        // FIXME: accept this type as an argument
         // currently hardcoding the return type to real-8
         ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
                                 8, nullptr, 0));
@@ -2797,6 +2798,22 @@ public:
                 v = current_scope->resolve_symbol(var_name);
                 LFORTRAN_ASSERT(v!=nullptr);
             }
+        }
+        if (compiler_options.implicit_interface
+                && ASR::is_a<ASR::Variable_t>(*v)
+                && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))) {
+            // If implicit interface is allowed, we have to handle the
+            // following case here:
+            // real :: x
+            // print *, x(5)
+            // Which is a function call.
+            // We remove "x" from the symbol table and instead recreate it.
+            // We use the type of the old "x" as the return value type.
+            // FIXME: for now we drop the old type
+            current_scope->erase_symbol(var_name);
+            create_implicit_interface_function(x, var_name, true);
+            v = current_scope->resolve_symbol(var_name);
+            LFORTRAN_ASSERT(v!=nullptr);
         }
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Function_t>(*f2)) {
