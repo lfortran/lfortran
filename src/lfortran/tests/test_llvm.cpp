@@ -1005,9 +1005,9 @@ end function
 */
 }
 
-// This test does not work on Windows and OpenBSD yet
+// This test does not work on Windows yet
 // https://github.com/lfortran/lfortran/issues/913
-#if !defined(_WIN32) && !defined(__OpenBSD__)
+#if !defined(_WIN32)
 TEST_CASE("FortranEvaluator 10 trig functions") {
     CompilerOptions cu;
     cu.runtime_library_dir = LFortran::get_runtime_library_dir();
