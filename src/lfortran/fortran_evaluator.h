@@ -13,6 +13,7 @@
 #include <libasr/config.h>
 #include <libasr/diagnostics.h>
 #include <libasr/pass/pass_manager.h>
+#include <libasr/utils.h>
 
 namespace LFortran {
 

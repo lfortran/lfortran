@@ -53,6 +53,7 @@ static inline int64_t stmt_label(AST::stmt_t *f)
         LFORTRAN_STMT_LABEL_TYPE(DataStmt)
         LFORTRAN_STMT_LABEL_TYPE(FormTeam)
         LFORTRAN_STMT_LABEL_TYPE(GoTo)
+        LFORTRAN_STMT_LABEL_TYPE(Include)
         LFORTRAN_STMT_LABEL_TYPE(Inquire)
         LFORTRAN_STMT_LABEL_TYPE(Nullify)
         LFORTRAN_STMT_LABEL_TYPE(Open)
@@ -848,6 +849,15 @@ public:
             "Format statement is not implemented yet, for now we will ignore it",
             {x.base.base.loc},
             "ignored for now"
+        );
+        tmp = nullptr;
+    }
+
+    void visit_Include(const AST::Include_t &x) {
+        diag.semantic_error_label(
+            "Include statement is not implemented at the AST level yet. You have to run LFortran with prescanning which can handle include statements.",
+            {x.base.base.loc},
+            "Enable prescanner to handle this"
         );
         tmp = nullptr;
     }
@@ -2939,9 +2949,13 @@ public:
         std::string module_name = intrinsic_procedures.get_module(remote_sym, loc);
 
         SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
-        std::string rl_path = get_runtime_library_dir();
+        LCompilers::PassOptions pass_options;
+        pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
+        pass_options.mod_files_dir = compiler_options.mod_files_dir;
+        pass_options.include_dirs = compiler_options.include_dirs;
+
         ASR::Module_t *m = ASRUtils::load_module(al, tu_symtab, module_name,
-                loc, true, rl_path, true,
+                loc, true, pass_options, true,
                 [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
                 );
 

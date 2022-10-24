@@ -15,6 +15,7 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/preprocessor.h>
 #include <lfortran/pickle.h>
+#include <libasr/utils.h>
 
 #ifdef HAVE_LFORTRAN_LLVM
 #include <libasr/codegen/evaluator.h>
