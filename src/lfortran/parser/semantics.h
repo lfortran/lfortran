@@ -1972,8 +1972,14 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         make_Template_t(p.m_a, l, name2char(name), \
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
         /*unit_decl2_t** a_decl*/ DECLS(decl), /*size_t n_decl*/ decl.size(), \
-        /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size() \
-        )
+        /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size())
+#define REQUIREMENT(name, namelist, decl, funcs, l) \
+        make_Requirement_t(p.m_a, l, name2char(name), \
+        REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
+        DECLS(decl), decl.size(), CONTAINS(funcs), funcs.size())
+#define REQUIRES(name, namelist, l) \
+        make_Requires_t(p.m_a, l, name2char(name), \
+        REDUCE_ARGS(p.m_a, namelist), namelist.size())
 #define INSTANTIATE(name, types, syms, l) \
         make_Instantiate_t(p.m_a, l, name2char(name), \
         VEC_CAST(types, decl_attribute), types.size(), \

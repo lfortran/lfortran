@@ -339,6 +339,8 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %token <string> KW_TARGET
 %token <string> KW_TEAM
 %token <string> KW_TEAM_NUMBER
+%token <string> KW_REQUIREMENT
+%token <string> KW_REQUIRES
 %token <string> KW_TEMPLATE
 %token <string> KW_THEN
 %token <string> KW_TO
@@ -371,6 +373,8 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
 %type <ast> template_decl
+%type <ast> requirement_decl
+%type <ast> requires_decl
 %type <ast> enum_decl
 %type <ast> program
 %type <ast> subroutine
@@ -708,6 +712,17 @@ template_decl
             $$ = TEMPLATE($2, $4, $7, $8, @$); }
     ;
 
+requirement_decl
+    : KW_REQUIREMENT id "(" id_list ")" sep decl_star
+        sub_or_func_plus KW_END KW_REQUIREMENT sep {
+            $$ = REQUIREMENT($2, $4, $7, $8, @$); }
+    ;
+
+requires_decl
+    : KW_REQUIRES id "(" id_list ")" sep {
+        $$ = REQUIRES($2, $4, @$); }
+    ;
+
 instantiate
     : KW_INSTANTIATE id "(" var_type_star ")" "," KW_ONLY ":" use_symbol_list sep {
         $$ = INSTANTIATE($2, $4, $9, @$); }
@@ -977,6 +992,8 @@ decl
     | interface_decl
     | derived_type_decl
     | template_decl
+    | requirement_decl
+    | requires_decl
     | enum_decl
     ;
 
