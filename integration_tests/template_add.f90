@@ -3,7 +3,16 @@ module template_add_m
     private
     public :: add_t
 
-    template add_t(T)
+    requirement R(T, F) 
+        type :: T; end type
+        pure function F(x, y) result(z)
+            type(T) :: y
+            type(T) :: x, y
+        end function
+    end requirement
+
+    template add_t(T, F)
+        requires R(T, F)
         private
         public :: add_generic
 
@@ -13,7 +22,7 @@ module template_add_m
     contains
         function add_generic(x, y) result(z)
             type(T) :: x, y, z
-            z = x + y
+            z = F(x, y)
         end function
     end template
 
