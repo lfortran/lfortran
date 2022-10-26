@@ -436,15 +436,19 @@ public:
         }
 
         // Check if number of type parameters match
-        if(template_type_parameters[template_name].size() != x.n_types){
+        /*
+        if(template_type_parameters[template_name].size() != x.n_funcs){
             throw SemanticError("Number of template arguments don't match", x.base.base.loc);
         }
+        */
 
         std::map<std::string, ASR::ttype_t*> subs;
+        /*
         for(size_t i = 0; i < x.n_types; i++){
             ASR::ttype_t* type = determine_type(x.base.base.loc, x.m_types[i], false, dims);
             subs[ASR::down_cast2<ASR::TypeParameter_t>(template_type_parameters[template_name][i])->m_param] = type;
         }
+        */
 
         for(size_t i = 0; i < x.n_symbols; i++){
             AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
