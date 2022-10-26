@@ -723,8 +723,13 @@ requires_decl
         $$ = REQUIRES($2, $4, @$); }
     ;
 
+//instantiate
+//    : KW_INSTANTIATE id "(" var_type_star ")" "," KW_ONLY ":" use_symbol_list sep {
+//        $$ = INSTANTIATE($2, $4, $9, @$); }
+//    ;
+
 instantiate
-    : KW_INSTANTIATE id "(" var_type_star ")" "," KW_ONLY ":" use_symbol_list sep {
+    : KW_INSTANTIATE id "(" fnarray_arg_list_opt ")" "," KW_ONLY ":" use_symbol_list sep {
         $$ = INSTANTIATE($2, $4, $9, @$); }
     ;
 

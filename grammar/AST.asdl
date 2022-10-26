@@ -68,9 +68,9 @@ unit_decl2
     | Template(identifier name, identifier* namelist, unit_decl2* decl,
         program_unit* contains)
     | Enum(decl_attribute* attr, trivia? trivia, unit_decl2* items)
-    | Instantiate(identifier name, decl_attribute* types, use_symbol* symbols)
+    | Instantiate(identifier name, fnarg* args, use_symbol* symbols)
     | Requirement(identifier name, identifier* namelist, unit_decl2* decl,
-        program_unit* contains)
+        program_unit* funcs)
     | Requires(identifier name, identifier* namelist)
 
 interface_header

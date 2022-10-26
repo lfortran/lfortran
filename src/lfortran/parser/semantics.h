@@ -1980,10 +1980,26 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
 #define REQUIRES(name, namelist, l) \
         make_Requires_t(p.m_a, l, name2char(name), \
         REDUCE_ARGS(p.m_a, namelist), namelist.size())
+/*
 #define INSTANTIATE(name, types, syms, l) \
         make_Instantiate_t(p.m_a, l, name2char(name), \
         VEC_CAST(types, decl_attribute), types.size(), \
         USE_SYMBOLS(syms), syms.size())
+*/
+ast_t* INSTANTIATE0(Allocator &al, const ast_t *id, 
+        const Vec<FnArg> &args,
+        const Vec<ast_t*> &syms,
+        Location &l) {
+    Vec<fnarg_t> v;
+    v.reserve(al, args.size());
+    for (auto &item : args) {
+        v.push_back(al, item.arg);
+    }
+    return make_Instantiate_t(al, l, name2char(id),
+        v.p, v.size(), USE_SYMBOLS(syms), syms.size());
+}
+#define INSTANTIATE(name, args, syms, l) \
+        INSTANTIATE0(p.m_a, name, args, syms, l)
 
 #define DERIVED_TYPE_PROC(attr, syms, trivia, l) make_DerivedTypeProc_t(p.m_a, l, \
         nullptr, VEC_CAST(attr, decl_attribute), attr.size(), \
