@@ -672,6 +672,7 @@ public:
     ASR::abiType current_procedure_abi_type = ASR::abiType::Source;
     bool is_derived_type = false;
     bool is_body_visitor = false;
+    bool is_requirement = false;
     bool is_template = false;
     bool is_current_procedure_templated = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
@@ -1464,7 +1465,7 @@ public:
             LFORTRAN_ASSERT(sym_type->m_name);
             std::string derived_type_name = to_lower(sym_type->m_name);
             bool type_param = false;
-            if(is_template){
+            if(is_template || is_requirement){
                 for(size_t i = 0; i < current_template_type_parameters.size(); i++){
                     ASR::TypeParameter_t* param = ASR::down_cast2<ASR::TypeParameter_t>(current_template_type_parameters[i]);
                     std::string name = std::string(param->m_param);

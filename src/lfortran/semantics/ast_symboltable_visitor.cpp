@@ -650,7 +650,7 @@ public:
 
                     // Check whether this function is templated
                     bool type_param = false;
-                    if(is_template){
+                    if(is_template || is_requirement){
                         for(size_t i = 0; i < current_template_type_parameters.size(); i++){
                             ASR::TypeParameter_t* param = ASR::down_cast2<ASR::TypeParameter_t>(current_template_type_parameters[i]);
                             std::string name = std::string(param->m_param);
@@ -736,6 +736,7 @@ public:
             params.push_back(al, ASR::down_cast<ASR::ttype_t>(param));
         }
 
+
         tmp = ASR::make_Function_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
@@ -748,7 +749,7 @@ public:
             current_procedure_abi_type, s_access, deftype,
             bindc_name, is_elemental, false, false, false, false,
             /* a_type_parameters */ is_current_procedure_templated ? params.p : nullptr,
-            /* n_type_parameters */ params.size(), nullptr, 0, false);
+            /* n_type_parameters */ params.size(), nullptr, 0, is_requirement);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         current_procedure_args.clear();
@@ -814,8 +815,9 @@ public:
             }
             parent_sym = parent_scope->get_symbol(parent_sym_name);
         }
-        if(is_template && data_member_names.size() == 0){
-            current_template_type_parameters.push_back(ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0));
+        if((is_template || is_requirement) && data_member_names.size() == 0){
+            current_template_type_parameters.push_back(
+                ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0));
         }
         tmp = ASR::make_StructType_t(al, x.base.base.loc, current_scope,
             s2c(al, to_lower(x.m_name)), data_member_names.p, data_member_names.size(),
@@ -1464,6 +1466,20 @@ public:
             std::string x_m_name = std::string(x.m_names[i]);
             generic_class_procedures[dt_name][generic_name].push_back(to_lower(x_m_name));
         }
+    }
+
+    void visit_Requirement(const AST::Requirement_t &x) {
+        is_requirement = true;
+
+        for (size_t i=0; i<x.n_decl; i++) {
+            this->visit_unit_decl2(*x.m_decl[i]);
+        }
+
+        for (size_t i=0; i<x.n_funcs; i++) {
+            this->visit_program_unit(*x.m_funcs[i]);
+        }
+
+        is_requirement = false;
     }
 
     void visit_Template(const AST::Template_t &x){
