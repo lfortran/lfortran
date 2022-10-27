@@ -3737,7 +3737,9 @@ public:
             h = get_hash((ASR::asr_t*)asr_target);
             if (llvm_symtab.find(h) != llvm_symtab.end()) {
                 target = llvm_symtab[h];
-                if (ASR::is_a<ASR::Pointer_t>(*asr_target->m_type)) {
+                if (ASR::is_a<ASR::Pointer_t>(*asr_target->m_type) &&
+                    !ASR::is_a<ASR::CPtr_t>(
+                        *ASR::down_cast<ASR::Pointer_t>(asr_target->m_type)->m_type)) {
                     target = CreateLoad(target);
                 }
             } else {
