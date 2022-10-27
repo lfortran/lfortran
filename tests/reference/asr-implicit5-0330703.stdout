@@ -149,13 +149,13 @@
                         (Var 2 eps) 
                         (Cast 
                             (RealConstant 
-                                1.000000 
+                                0.000000 
                                 (Real 8 [])
                             ) 
                             RealToReal 
                             (Real 4 []) 
                             (RealConstant 
-                                1.000000 
+                                0.000000 
                                 (Real 4 [])
                             )
                         ) 
