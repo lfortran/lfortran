@@ -13,7 +13,7 @@ source_filename = "LFortran"
 @7 = private unnamed_addr constant [6 x i8] c"False\00", align 1
 @8 = private unnamed_addr constant [5 x i8] c"True\00", align 1
 @9 = private unnamed_addr constant [5 x i8] c"left\00", align 1
-@10 = private unnamed_addr constant [42 x i8] c"%d%s%d%s%f%s(%f,%f)%s%d%s%s%s%s%s%f%s%s%s\00", align 1
+@10 = private unnamed_addr constant [50 x i8] c"%d%s%d%s%13.8e%s(%f,%f)%s%d%s%s%s%s%s%13.8e%s%s%s\00", align 1
 
 define i32 @main() {
 .entry:
@@ -61,7 +61,7 @@ define i32 @main() {
   %13 = getelementptr %complex_4, %complex_4* %12, i32 0, i32 1
   %14 = load float, float* %13, align 4
   %15 = fpext float %14 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([42 x i8], [42 x i8]* @10, i32 0, i32 0), i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), i32 2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), double 4.000000e+00, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), double %11, double %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), i32 3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @6, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), double -4.000000e+00, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([50 x i8], [50 x i8]* @10, i32 0, i32 0), i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), i32 2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), double 4.000000e+00, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), double %11, double %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), i32 3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @6, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), double -4.000000e+00, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
   ret i32 0
 }
 

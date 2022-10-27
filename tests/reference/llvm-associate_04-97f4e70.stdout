@@ -8,10 +8,10 @@ source_filename = "LFortran"
 @0 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
 @1 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@3 = private unnamed_addr constant [15 x i8] c"%f%s%f%s%lld%s\00", align 1
+@3 = private unnamed_addr constant [23 x i8] c"%13.8e%s%13.8e%s%lld%s\00", align 1
 @4 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @5 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@6 = private unnamed_addr constant [5 x i8] c"%f%s\00", align 1
+@6 = private unnamed_addr constant [9 x i8] c"%13.8e%s\00", align 1
 @7 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
 
 declare i8* @__module_lfortran_intrinsic_builtin_char(i32*)
@@ -124,7 +124,7 @@ define i32 @main() {
   %15 = fpext float %14 to double
   %16 = load float*, float** %v, align 8
   %17 = ptrtoint float* %16 to i64
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([15 x i8], [15 x i8]* @3, i32 0, i32 0), double %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), double %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), i64 %17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([23 x i8], [23 x i8]* @3, i32 0, i32 0), double %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), double %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), i64 %17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
   %18 = load float*, float** %v, align 8
   %19 = load float*, float** %v, align 8
   %20 = load float, float* %19, align 4
@@ -132,7 +132,7 @@ define i32 @main() {
   store float %21, float* %18, align 4
   %22 = load float, float* %myreal, align 4
   %23 = fpext float %22 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @6, i32 0, i32 0), double %23, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @6, i32 0, i32 0), double %23, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
   %24 = load float, float* %myreal, align 4
   %25 = fsub float %24, 0x4044EE1480000000
   %26 = fcmp ugt float %25, 0x3EE4F8B580000000
