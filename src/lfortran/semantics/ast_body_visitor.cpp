@@ -426,6 +426,7 @@ public:
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x){
+        is_instantiate = true;
         std::string template_name = std::string(x.m_name);
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 0);
@@ -436,11 +437,12 @@ public:
             throw SemanticError("Use of unspecified template", x.base.base.loc);
         }
         */
-        if (template_map.find(template_name) == template_map.end()) {
+        if (template_arg_map.find(template_name) == template_arg_map.end()) {
             throw SemanticError("Use of unspecified template", x.base.base.loc);
         }
 
-        std::map<std::string, ASR::asr_t*> current_template = template_map[template_name];
+        std::map<int, std::string> current_template_arg = template_arg_map[template_name];
+        std::map<std::string, ASR::asr_t*> current_template_asr = template_asr_map[template_name];
 
         // Check if number of type parameters match
         /*
@@ -448,26 +450,49 @@ public:
             throw SemanticError("Number of template arguments don't match", x.base.base.loc);
         }
         */
-        if (current_template.size() != x.n_args) {
+        if (current_template_arg.size() != x.n_args) {
             throw SemanticError("Number of template arguments don't match", x.base.base.loc);
         }
 
         std::map<std::string, ASR::ttype_t*> subs;
-        std::map<std::string, ASR::Function_t*> rt_subs;
+        std::map<std::string, ASR::symbol_t*> rt_subs;
         /*
         for(size_t i = 0; i < x.n_types; i++){
             ASR::ttype_t* type = determine_type(x.base.base.loc, x.m_types[i], false, dims);
             subs[ASR::down_cast2<ASR::TypeParameter_t>(template_type_parameters[template_name][i])->m_param] = type;
         }
         */
+        // TODO: specific type extractors for type parameters
+        // TODO: subs check
+        for (size_t i = 0; i < x.n_args; i++) {
+            this->visit_expr(*x.m_args[i].m_end);
+            ASR::expr_t *arg = ASRUtils::EXPR(tmp);
+            if (ASR::is_a<ASR::StringConstant_t>(*arg)) {
+                ASR::StringConstant_t *arg_string = ASR::down_cast<ASR::StringConstant_t>(arg);
+                std::string type_name = arg_string->m_s;
+                ASR::ttype_t *type_sub;
+                if (type_name.compare("real") == 0) {
+                    type_sub = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
+                } else {
+                    // TODO: make error, undefined type
+                    LFORTRAN_ASSERT(false);
+                }
+                subs[current_template_arg[i]] = type_sub;
+            } else if (ASR::is_a<ASR::Var_t>(*arg)) {
+                ASR::Var_t *arg_var = ASR::down_cast<ASR::Var_t>(arg);
+                rt_subs[current_template_arg[i]] = arg_var->m_v;
+            }
+        }
 
         for(size_t i = 0; i < x.n_symbols; i++){
             AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
             ASR::symbol_t* s = resolve_symbol(x.base.base.loc, use_symbol->m_remote_sym);
-            std::map<std::string, ASR::symbol_t*> rt_subs;
+            // std::map<std::string, ASR::symbol_t*> rt_subs;
             pass_instantiate_generic_function(al, subs, rt_subs, current_scope,
                 use_symbol->m_local_rename, ASR::down_cast<ASR::Function_t>(s));
         }
+
+        is_instantiate = false;
     }
 
     void visit_Inquire(const AST::Inquire_t& x) {
@@ -1966,14 +1991,17 @@ public:
             this->visit_program_unit(*x.m_contains[i]);
         }
         is_template = false;
-        std::map<std::string, ASR::asr_t*> current_template_map;
+        std::map<int, std::string> current_template_arg_map;
+        std::map<std::string, ASR::asr_t*> current_template_asr_map;
         for (size_t i=0; i<x.n_namelist; i++) {
             std::string arg_name = to_lower(x.m_namelist[i]);
             if (called_requirement.find(arg_name) != called_requirement.end()) {
-                current_template_map[arg_name] = called_requirement[arg_name];
+                current_template_arg_map[i] = arg_name;
+                current_template_asr_map[arg_name] = called_requirement[arg_name];
             }
         }
-        template_map[to_lower(x.m_name)] = current_template_map;
+        template_arg_map[to_lower(x.m_name)] = current_template_arg_map;
+        template_asr_map[to_lower(x.m_name)] = current_template_asr_map;
     }
 };
 

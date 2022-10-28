@@ -674,6 +674,7 @@ public:
     bool is_body_visitor = false;
     bool is_requirement = false;
     bool is_template = false;
+    bool is_instantiate = false;
     bool is_current_procedure_templated = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
     std::map<std::string, std::vector<ASR::asr_t*>> template_type_parameters;
@@ -682,7 +683,8 @@ public:
     std::vector<ASR::asr_t*> current_requirement_functions;
     std::map<std::string, std::map<std::string, ASR::asr_t*>> requirement_map;
     std::map<std::string, ASR::asr_t*> called_requirement;
-    std::map<std::string, std::map<std::string, ASR::asr_t*>> template_map;
+    std::map<std::string, std::map<std::string, ASR::asr_t*>> template_asr_map;
+    std::map<std::string, std::map<int, std::string>> template_arg_map;
     std::unordered_set<int> current_procedure_used_type_parameter_indices;
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
@@ -785,6 +787,12 @@ public:
                     v = declare_implicit_variable(loc, var_name, intent);
                 }
             } else {
+                // TODO: fix this ad-hoc solution
+                if (is_instantiate) {
+                    ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, loc,
+                            1, strlen(s2c(al, var_name)), nullptr, nullptr, 0));
+                    return ASR::make_StringConstant_t(al, loc, s2c(al, var_name), type);
+                }
                 diag.semantic_error_label("Variable '" + var_name
                     + "' is not declared", {loc},
                     "'" + var_name + "' is undeclared");
