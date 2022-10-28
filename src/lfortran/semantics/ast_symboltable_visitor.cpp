@@ -729,13 +729,29 @@ public:
                 is_elemental = is_elemental || simple_func_attr->m_attr == AST::simple_attributeType::AttrElemental;
             }
         }
+
         Vec<ASR::ttype_t*> params;
         params.reserve(al, current_procedure_used_type_parameter_indices.size());
         for(auto i = current_procedure_used_type_parameter_indices.begin(); i != current_procedure_used_type_parameter_indices.end(); i++){
             ASR::asr_t* param = current_template_type_parameters[*i];
             params.push_back(al, ASR::down_cast<ASR::ttype_t>(param));
         }
-
+        /*
+        if (is_template) {
+            for (const auto &req_pair: called_requirement) {
+                if (ASR::is_a<ASR::ttype_t>(*req_pair.second)) {
+                    ASR::ttype_t *tp = ASRUtils::duplicate_type(al,
+                        ASR::down_cast<ASR::ttype_t>(req_pair.second));
+                    params.push_back(al, tp);
+                }
+            }
+        } else {
+            for(auto i = current_procedure_used_type_parameter_indices.begin(); i != current_procedure_used_type_parameter_indices.end(); i++){
+                ASR::asr_t* param = current_template_type_parameters[*i];
+                params.push_back(al, ASR::down_cast<ASR::ttype_t>(param));
+            }
+        }
+        */
 
         tmp = ASR::make_Function_t(
             al, x.base.base.loc,
