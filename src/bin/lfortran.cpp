@@ -636,7 +636,7 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
 }
 
 int save_mod_files(const LFortran::ASR::TranslationUnit_t &u,
-		   const LFortran::CompilerOptions compiler_options)
+		   const LFortran::CompilerOptions &compiler_options)
 {
     for (auto &item : u.m_global_scope->get_scope()) {
         if (LFortran::ASR::is_a<LFortran::ASR::Module_t>(*item.second)) {
