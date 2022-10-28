@@ -671,7 +671,7 @@ int save_mod_files(const LFortran::ASR::TranslationUnit_t &u,
             std::filesystem::path fullpath = compiler_options.mod_files_dir / filename;
             {
                 std::ofstream out;
-		std::string modfile = std::string(m->m_name) + ".mod";
+		out.open(fullpath, std::ofstream::out | std::ofstream::binary);
                 out << modfile_binary;
             }
         }
