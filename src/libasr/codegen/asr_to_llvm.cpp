@@ -5348,13 +5348,13 @@ public:
                         // Cast float to double as a workaround for the fact that
                         // vprintf() seems to cast to double even for %f, which
                         // causes it to print 0.000000.
-                        fmt.push_back("%f");
+                        fmt.push_back("%13.8e");
                         d = builder->CreateFPExt(tmp,
                         llvm::Type::getDoubleTy(context));
                         break;
                     }
                     case 8 : {
-                        fmt.push_back("%23.17f");
+                        fmt.push_back("%23.17e");
                         d = builder->CreateFPExt(tmp,
                         llvm::Type::getDoubleTy(context));
                         break;
