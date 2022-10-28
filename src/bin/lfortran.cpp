@@ -635,7 +635,8 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
+int save_mod_files(const LFortran::ASR::TranslationUnit_t &u,
+		   const LFortran::CompilerOptions compiler_options)
 {
     for (auto &item : u.m_global_scope->get_scope()) {
         if (LFortran::ASR::is_a<LFortran::ASR::Module_t>(*item.second)) {
@@ -666,11 +667,11 @@ int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
 
             LFORTRAN_ASSERT(LFortran::asr_verify(u, true, diagnostics));
 
-
-            std::string modfile = std::string(m->m_name) + ".mod";
+	    std::filesystem::path filename { std::string(m->m_name) + ".mod" };
+            std::filesystem::path fullpath = compiler_options.mod_files_dir / filename;
             {
                 std::ofstream out;
-                out.open(modfile, std::ofstream::out | std::ofstream::binary);
+		std::string modfile = std::string(m->m_name) + ".mod";
                 out << modfile_binary;
             }
         }
@@ -752,7 +753,7 @@ int compile_to_object_file(const std::string &infile,
 
     // Save .mod files
     {
-        int err = save_mod_files(*asr);
+        int err = save_mod_files(*asr, compiler_options);
         if (err) return err;
     }
 
@@ -1039,7 +1040,7 @@ int compile_to_object_file_cpp(const std::string &infile,
 
     // Save .mod files
     {
-        int err = save_mod_files(*asr);
+        int err = save_mod_files(*asr, compiler_options);
         if (err) return err;
     }
 
