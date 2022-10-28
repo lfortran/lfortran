@@ -431,9 +431,16 @@ public:
         dims.reserve(al, 0);
 
         // Check if the template exists
+        /*
         if(template_type_parameters.find(x.m_name) == template_type_parameters.end()){
             throw SemanticError("Use of unspecified template", x.base.base.loc);
         }
+        */
+        if (template_map.find(template_name) == template_map.end()) {
+            throw SemanticError("Use of unspecified template", x.base.base.loc);
+        }
+
+        std::map<std::string, ASR::asr_t*> current_template = template_map[template_name];
 
         // Check if number of type parameters match
         /*
@@ -441,8 +448,12 @@ public:
             throw SemanticError("Number of template arguments don't match", x.base.base.loc);
         }
         */
+        if (current_template.size() != x.n_args) {
+            throw SemanticError("Number of template arguments don't match", x.base.base.loc);
+        }
 
         std::map<std::string, ASR::ttype_t*> subs;
+        std::map<std::string, ASR::Function_t*> rt_subs;
         /*
         for(size_t i = 0; i < x.n_types; i++){
             ASR::ttype_t* type = determine_type(x.base.base.loc, x.m_types[i], false, dims);
@@ -1939,12 +1950,30 @@ public:
         tmp = ASR::make_Nullify_t(al, x.base.base.loc, arg_vec.p, arg_vec.size());
     }
 
+    void visit_Requires(const AST::Requires_t &x) {
+        std::string req_name = x.m_name;
+        called_requirement = requirement_map[req_name];
+    }
+
     void visit_Template(const AST::Template_t &x){
         is_template = true;
+        for (size_t i=0; i<x.n_decl; i++) {
+            if (AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
+                this->visit_unit_decl2(*x.m_decl[i]);
+            }
+        }
         for (size_t i=0; i<x.n_contains; i++) {
             this->visit_program_unit(*x.m_contains[i]);
         }
         is_template = false;
+        std::map<std::string, ASR::asr_t*> current_template_map;
+        for (size_t i=0; i<x.n_namelist; i++) {
+            std::string arg_name = to_lower(x.m_namelist[i]);
+            if (called_requirement.find(arg_name) != called_requirement.end()) {
+                current_template_map[arg_name] = called_requirement[arg_name];
+            }
+        }
+        template_map[to_lower(x.m_name)] = current_template_map;
     }
 };
 
@@ -1954,12 +1983,14 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
         std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters, 
+        std::map<std::string, std::map<std::string, ASR::asr_t*>>& requirement_map,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping);
     try {
         b.is_body_visitor = true;
         b.template_type_parameters = template_type_parameters;
+        b.requirement_map = requirement_map;
         b.visit_TranslationUnit(ast);
         b.is_body_visitor = false;
     } catch (const SemanticError &e) {
