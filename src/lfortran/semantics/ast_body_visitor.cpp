@@ -473,6 +473,8 @@ public:
                 ASR::ttype_t *type_sub;
                 if (type_name.compare("real") == 0) {
                     type_sub = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+                } else if (type_name.compare("integer") == 0) {
+                    type_sub = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));                
                 } else {
                     // TODO: make error, undefined type
                     LFORTRAN_ASSERT(false);
