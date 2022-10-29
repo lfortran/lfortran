@@ -472,7 +472,7 @@ public:
                 std::string type_name = arg_string->m_s;
                 ASR::ttype_t *type_sub;
                 if (type_name.compare("real") == 0) {
-                    type_sub = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
+                    type_sub = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
                 } else {
                     // TODO: make error, undefined type
                     LFORTRAN_ASSERT(false);
