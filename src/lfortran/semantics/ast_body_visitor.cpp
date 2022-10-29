@@ -1508,7 +1508,19 @@ public:
                 break;
             }
             case (ASR::symbolType::Variable) : {
-                final_sym=original_sym;
+                if (compiler_options.implicit_interface) {
+                    // In case of implicit_interface, we change the subroutine name
+                    // and implicity define a new symbol and insert into the
+                    // symbol table.
+                    sub_name += "@change_by_implicit_interface";
+                    original_sym = current_scope->resolve_symbol(sub_name);
+                    if (!original_sym) {
+                        create_implicit_interface_function(x, sub_name, false);
+                        original_sym = current_scope->resolve_symbol(sub_name);
+                        LFORTRAN_ASSERT(original_sym!=nullptr);
+                    }
+                }
+                final_sym = original_sym;
                 original_sym = nullptr;
                 break;
             }

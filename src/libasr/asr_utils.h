@@ -16,8 +16,13 @@ namespace LFortran  {
     namespace ASRUtils  {
 
 static inline  double extract_real(const char *s) {
-        return std::atof(s);
-    }
+    // TODO: this is inefficient. We should
+    // convert this in the tokenizer where we know most information
+    std::string x = s;
+    x = replace(x, "d", "e");
+    x = replace(x, "D", "E");
+    return std::atof(x.c_str());
+}
 
 static inline ASR::expr_t* EXPR(const ASR::asr_t *f)
 {

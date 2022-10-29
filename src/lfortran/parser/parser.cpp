@@ -299,7 +299,7 @@ void process_include(std::string& out, const std::string& s,
 
     LocationManager lm_tmp;
     lm_tmp.in_filename = include_filename;
-    include = fix_continuation(include, lm_tmp, fixed_form, root_dir);
+    include = prescan(include, lm_tmp, fixed_form, root_dir);
 
     // Possible it goes here
     // lm.out_start.push_back(out.size());
@@ -312,13 +312,19 @@ void process_include(std::string& out, const std::string& s,
 bool is_include(const std::string &s, uint32_t pos) {
     while (pos < s.size() && s[pos] == ' ') pos++;
     if (pos + 6 < s.size() && s.substr(pos, 7) == "include") {
-        return true;
+        pos += 7;
+        while (pos < s.size() && s[pos] == ' ') pos++;
+        if (pos < s.size() && ((s[pos] == '"') || (s[pos] == '\''))) {
+            return true;
+        } else {
+            return false;
+        }
     } else {
         return false;
     }
 }
 
-std::string fix_continuation(const std::string &s, LocationManager &lm,
+std::string prescan(const std::string &s, LocationManager &lm,
         bool fixed_form, const std::string &root_dir)
 {
     if (fixed_form) {
@@ -436,12 +442,8 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                 LFORTRAN_ASSERT(pos + 6 < s.size() && s.substr(pos, 7) == "include")
                 pos += 7;
                 while (pos < s.size() && s[pos] == ' ') pos++;
-                if (pos < s.size() && ((s[pos] == '"') || (s[pos] == '\''))) {
-                    process_include(out, s, lm, pos, fixed_form,
-                        root_dir);
-                } else {
-                    throw parser_local::ParserError("Excpected a string in an include line");
-                }
+                LFORTRAN_ASSERT(pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')));
+                process_include(out, s, lm, pos, fixed_form, root_dir);
             }
             newline = false;
             if (s[pos] == '!') in_comment = true;
