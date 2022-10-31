@@ -1,0 +1,116 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            complex_10:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            conjg:
+                                (ExternalSymbol 
+                                    2 
+                                    conjg 
+                                    4 conjg 
+                                    lfortran_intrinsic_math 
+                                    [] 
+                                    conjg 
+                                    Private
+                                ), 
+                            conjg@conjgz64:
+                                (ExternalSymbol 
+                                    2 
+                                    conjg@conjgz64 
+                                    4 conjgz64 
+                                    lfortran_intrinsic_math 
+                                    [] 
+                                    conjgz64 
+                                    Private
+                                ), 
+                            k:
+                                (Variable 
+                                    2 
+                                    k 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Complex 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            z:
+                                (Variable 
+                                    2 
+                                    z 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Complex 8 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    complex_10 
+                    [] 
+                    [(= 
+                        (Var 2 k) 
+                        (Cast 
+                            (ComplexConstructor 
+                                (IntegerConstant 3 (Integer 4 [])) 
+                                (IntegerUnaryMinus 
+                                    (IntegerConstant 4 (Integer 4 [])) 
+                                    (Integer 4 []) 
+                                    (IntegerConstant -4 (Integer 4 []))
+                                ) 
+                                (Complex 4 []) 
+                                (ComplexConstant 
+                                    3.000000 
+                                    -4.000000 
+                                    (Complex 4 [])
+                                )
+                            ) 
+                            ComplexToComplex 
+                            (Complex 8 []) 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (= 
+                        (Var 2 z) 
+                        (FunctionCall 
+                            2 conjg@conjgz64 
+                            2 conjg 
+                            [((Var 2 k))] 
+                            (Complex 8 []) 
+                            () 
+                            ()
+                        ) 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(Var 2 k)
+                        (Var 2 z)] 
+                        () 
+                        ()
+                    )]
+                ), 
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding), 
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin), 
+            lfortran_intrinsic_math:
+                (IntrinsicModule lfortran_intrinsic_math)
+            
+        }) 
+    []
+)
