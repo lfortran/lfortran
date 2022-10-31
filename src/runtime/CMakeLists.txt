@@ -2,24 +2,8 @@ cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
 project(lfortran_unif_runtime C Fortran)
 
-# add_subdirectory(builtin)
-# add_subdirectory(pure)
-# add_subdirectory(impure)
-
-# set(runtime_components
-#     lfortran_runtime_pure
-#     lfortran_runtime_impure
-#     lfortran_runtime_builtin
-#     )
-
-# add_library(lfortran_unif_runtime INTERFACE)
-# target_link_libraries(lfortran_unif_runtime INTERFACE ${runtime_components})
-
-# # Install
-# install(TARGETS lfortran_unif_runtime)
-
 # lfortran needs this to find the .mod files created during the build
-# set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 macro(lfrotran_compile_runtime name dir)
   add_library(${name} OBJECT ${dir}/${name}.f90)
@@ -27,13 +11,6 @@ macro(lfrotran_compile_runtime name dir)
   set_target_properties(${name} PROPERTIES
     POSITION_INDEPENDENT_CODE False
     Fortran_PREPROCESS False)
-
-  # If we are only building the runtime libraries assume
-  # the user already built lfortran and don't require
-  # it as a dependency.
-  if(NOT WITH_RUNTIME_LIBRARY_ONLY)
-    add_dependencies(${name} lfortran ${ARGN})
-  endif()
 
   if(ARGN)
     add_dependencies(${name} ${ARGN})
