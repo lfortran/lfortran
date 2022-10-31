@@ -1224,10 +1224,6 @@ int link_executable(const std::vector<std::string> &infiles,
             char *env_CC = std::getenv("LFORTRAN_CC");
             if (env_CC) CC = env_CC;
 
-            if (compiler_options.target != "" && link_with_gcc) {
-                options = " --target " + compiler_options.target;
-            }
-
             if (compiler_options.target != "" && !link_with_gcc) {
                 options = " -target " + compiler_options.target;
             }
