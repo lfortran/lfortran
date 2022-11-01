@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-09-03 06:16+0000\n"
+"PO-Revision-Date: 2022-10-30 20:02+0000\n"
 "Last-Translator: Ian Giestas Pauli <iangiestaspauli@gmail.com>\n"
 "Language-Team: Portuguese <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/pt/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.14.1-dev\n"
+"X-Generator: Weblate 4.14.2-dev\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../../doc/src/ast_and_asr.ipynb:9
@@ -354,6 +354,9 @@ msgid ""
 " as `e = (2+3)^5` which is evaluated at compile time. An expression such "
 "as `e = x^5` is evaluated at run time only."
 msgstr ""
+"Também o adicionamos para avaliação de expressões em tempo de compilação "
+"como `e = (2+3)^5` que é calculado em tempo de compilação. Uma expressão "
+"como `e = x^5` é calculada apenas em tempo de execução."
 
 #: ../../doc/src/contributing.md:183
 msgid "The section is tested with `lfortran --show-asr examples/expr2.f90`"
@@ -2237,7 +2240,7 @@ msgstr "bit_size(x): Tamanho em Bits"
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:3
 msgid "Bit size."
-msgstr ""
+msgstr "Bit size."
 
 #: ../../doc/src/intrinsics/bit/bit_size.md:16
 msgid "`x` is integer input value."
