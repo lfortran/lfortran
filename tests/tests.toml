@@ -2306,6 +2306,10 @@ filename = "implicit_interface2.f90"
 asr_implicit_interface = true
 
 [[test]]
+filename = "implicit_interface3.f90"
+asr_implicit_interface_and_typing = true
+
+[[test]]
 filename = "allow_implicit_interface2.f90"
 asr_implicit_interface_and_typing = true
 
