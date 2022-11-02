@@ -1481,6 +1481,27 @@ public:
                     create_implicit_interface_function(x, sub_name, false);
                     original_sym = current_scope->resolve_symbol(sub_name);
                     LFORTRAN_ASSERT(original_sym!=nullptr);
+
+                    // One issue to solve is if `sub_name` is an argument of
+                    // the current function, such as in:
+                    //
+                    //     subroutine(f)
+                    //     call f(3, 4)
+                    //
+                    // With implicit typing `f` would already be declared
+                    // as `real :: f`, so we need to change it.
+                    //
+                    // TODO: we are in the body visitor, which means
+                    // the function might have already been used with the
+                    // incorrect interface, and most likely LFortran gave
+                    // an error message.
+                    //
+                    // We simply redo function arguments based on the updated
+                    // symbol table:
+                    LFORTRAN_ASSERT(current_scope->asr_owner != nullptr)
+                    ASR::Function_t *current_function = ASR::down_cast2
+                        <ASR::Function_t>(current_scope->asr_owner);
+                    redo_function_argument(*current_function, sub_name);
                 }
                 final_sym = original_sym;
                 original_sym = nullptr;
@@ -1492,6 +1513,21 @@ public:
         }
         tmp = ASR::make_SubroutineCall_t(al, x.base.base.loc,
                 final_sym, original_sym, args.p, args.size(), v_expr);
+    }
+
+    // Changes argument `sub_name` to the new symbol from the current symbol
+    // table of the function `x`.
+    void redo_function_argument(ASR::Function_t &x, const std::string &sub_name) {
+        for (size_t i=0; i<x.n_args; i++) {
+            ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v;
+            std::string arg_s = ASRUtils::symbol_name(sym);
+            if (arg_s == sub_name) {
+                ASR::symbol_t *var = x.m_symtab->get_symbol(arg_s);
+                x.m_args[i] = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var));
+                return;
+            }
+        }
+        throw LCompilersException("Argument not found");
     }
 
     void visit_Print(const AST::Print_t &x) {
