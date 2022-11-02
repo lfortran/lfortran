@@ -164,17 +164,12 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
-	      -DWITH_RUNTIME_LIBRARY=No \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-	    cmake . -GNinja -DWITH_RUNTIME_LIBRARY=Yes
 
             cmake --build . -j16 --target install
 
