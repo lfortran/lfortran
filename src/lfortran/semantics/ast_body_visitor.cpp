@@ -1467,16 +1467,20 @@ public:
             }
             case (ASR::symbolType::Variable) : {
                 if (compiler_options.implicit_interface) {
-                    // In case of implicit_interface, we change the subroutine name
-                    // and implicity define a new symbol and insert into the
-                    // symbol table.
-                    sub_name += "@change_by_implicit_interface";
+                    // In case of implicit_interface, we redefine the symbol
+                    // from a Variable to Function. Example:
+                    //
+                    //     real :: x
+                    //     call x(3, 4)
+                    //
+                    // TODO: We currently do not explictly handle the case
+                    // of previously using the variable as a variable and now
+                    // using it as a function. This will (eventually) fail
+                    // in verify(). But we should give an error earlier as well.
+                    current_scope->erase_symbol(sub_name);
+                    create_implicit_interface_function(x, sub_name, false);
                     original_sym = current_scope->resolve_symbol(sub_name);
-                    if (!original_sym) {
-                        create_implicit_interface_function(x, sub_name, false);
-                        original_sym = current_scope->resolve_symbol(sub_name);
-                        LFORTRAN_ASSERT(original_sym!=nullptr);
-                    }
+                    LFORTRAN_ASSERT(original_sym!=nullptr);
                 }
                 final_sym = original_sym;
                 original_sym = nullptr;
