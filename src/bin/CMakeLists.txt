@@ -3,6 +3,7 @@ target_include_directories(lfortran PRIVATE "tpl")
 target_link_libraries(lfortran lfortran_lib)
 if (LFORTRAN_STATIC_BIN)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
+        OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
         OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
 
         # Link statically on Linux with gcc or clang
@@ -14,6 +15,7 @@ if (LFORTRAN_STATIC_BIN)
 endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
+    OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
     OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
 
     target_link_options(lfortran PRIVATE "LINKER:--export-dynamic")

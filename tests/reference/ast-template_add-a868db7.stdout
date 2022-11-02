@@ -52,7 +52,7 @@
                 [(SimpleAttribute 
                     AttrPublic
                 )] 
-                [(add 
+                [(add_generic 
                 [] 
                 [] 
                 () 
@@ -81,7 +81,7 @@
                 [(x)
                 (y)] 
                 [] 
-                () 
+                z 
                 () 
                 () 
                 [] 
@@ -107,27 +107,19 @@
                     () 
                     None 
                     ())
-                    (add_generic 
+                    (z 
                     [] 
                     [] 
                     () 
                     None 
                     ())] 
-                    (TriviaNode 
-                        [] 
-                        [(EndOfLine)
-                        (EndOfLine)]
-                    )
+                    ()
                 )] 
                 [(= 
                     0 
-                    add_generic 
+                    z 
                     (+ x y) 
-                    (TriviaNode 
-                        [] 
-                        [(EndOfLine)
-                        (EndOfLine)]
-                    )
+                    ()
                 )] 
                 []
             )]

@@ -826,9 +826,10 @@ public:
     }
 
     void visit_InterfaceProc(const AST::InterfaceProc_t &x) {
+        bool old_is_interface = is_interface;
         is_interface = true;
         visit_program_unit(*x.m_proc);
-        is_interface = false;
+        is_interface = old_is_interface;
         return;
     }
 
