@@ -618,7 +618,7 @@ public:
             const std::map<std::string, ASR::symbol_t*>& scope = der_type->m_symtab->get_scope();
             for( auto itr = scope.begin(); itr != scope.end(); itr++ ) {
                 ASR::Variable_t* member = (ASR::Variable_t*)(&(itr->second->base));
-                llvm::Type* llvm_mem_type = getMemberType(member->m_type, member);
+                llvm::Type* llvm_mem_type = get_type_from_ttype_t_util(member->m_type);
                 member_types.push_back(llvm_mem_type);
                 name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
@@ -1389,7 +1389,10 @@ public:
         member_type_asr = member_var->m_type;
         llvm::Type* member_type_llvm = getMemberType(member_type_asr, member_var)->getPointerTo();
         tmp = builder->CreateBitCast(union_llvm, member_type_llvm);
-        if( !is_assignment_target ) {
+        if( is_assignment_target ) {
+            return ;
+        }
+        if( ptr_loads > 0 ) {
             tmp = LLVM::CreateLoad(*builder, tmp);
         }
     }
@@ -1796,7 +1799,11 @@ public:
         der_type_name = "";
         ASR::ttype_t* x_m_v_type = ASRUtils::expr_type(x.m_v);
         uint64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = ptr_loads_copy - ASR::is_a<ASR::Pointer_t>(*x_m_v_type);
+        if( ASR::is_a<ASR::UnionRef_t>(*x.m_v) ) {
+            ptr_loads = 0;
+        } else {
+            ptr_loads = ptr_loads_copy - ASR::is_a<ASR::Pointer_t>(*x_m_v_type);
+        }
         this->visit_expr(*x.m_v);
         ptr_loads = ptr_loads_copy;
         ASR::Variable_t* member = down_cast<ASR::Variable_t>(symbol_get_past_external(x.m_m));
@@ -1814,10 +1821,10 @@ public:
         std::vector<llvm::Value*> idx_vec = {
             llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
             llvm::ConstantInt::get(context, llvm::APInt(32, member_idx))};
-        if( ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
-            is_nested_pointer(tmp) ) {
-            tmp = CreateLoad(tmp);
-        }
+        // if( ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
+        //     is_nested_pointer(tmp) ) {
+        //     tmp = CreateLoad(tmp);
+        // }
         llvm::Value* tmp1 = CreateGEP(tmp, idx_vec);
         ASR::ttype_t* member_type = member->m_type;
         if( ASR::is_a<ASR::Pointer_t>(*member_type) ) {
@@ -3425,10 +3432,12 @@ public:
         // For pointers, the actual LLVM variable will be a
         // double pointer, so we need to load one time and then
         // use it later on.
-        if( is_nested_pointer(llvm_tmp) ) {
+        if( is_nested_pointer(llvm_tmp) &&
+            !ASR::is_a<ASR::CPtr_t>(*asr_type) ) {
             llvm_tmp = CreateLoad(llvm_tmp);
         }
-        if( arr_descr->is_array(asr_type) ) {
+        if( arr_descr->is_array(asr_type) &&
+            !ASR::is_a<ASR::CPtr_t>(*asr_type) ) {
             llvm_tmp = CreateLoad(arr_descr->get_pointer_to_data(llvm_tmp));
         }
 
@@ -3567,6 +3576,8 @@ public:
         bool is_value_tuple = ASR::is_a<ASR::Tuple_t>(*asr_value_type);
         bool is_target_dict = ASR::is_a<ASR::Dict_t>(*asr_target_type);
         bool is_value_dict = ASR::is_a<ASR::Dict_t>(*asr_value_type);
+        bool is_target_struct = ASR::is_a<ASR::Struct_t>(*asr_target_type);
+        bool is_value_struct = ASR::is_a<ASR::Struct_t>(*asr_value_type);
         if( is_target_list && is_value_list ) {
             uint64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
@@ -3648,7 +3659,24 @@ public:
             llvm_utils->dict_api->dict_deepcopy(value_dict, target_dict,
                                     value_dict_type, module.get());
             return ;
+        } else if( is_target_struct && is_value_struct ) {
+            uint64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr(*x.m_value);
+            llvm::Value* value_struct = tmp;
+            bool is_assignment_target_copy = is_assignment_target;
+            is_assignment_target = true;
+            this->visit_expr(*x.m_target);
+            is_assignment_target = is_assignment_target_copy;
+            llvm::Value* target_struct = tmp;
+            ptr_loads = ptr_loads_copy;
+            LLVM::CreateStore(*builder,
+                LLVM::CreateLoad(*builder, value_struct),
+                target_struct
+            );
+            return ;
         }
+
         if( ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
             ASR::is_a<ASR::GetPointer_t>(*x.m_value) ) {
             ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
@@ -3711,7 +3739,9 @@ public:
             h = get_hash((ASR::asr_t*)asr_target);
             if (llvm_symtab.find(h) != llvm_symtab.end()) {
                 target = llvm_symtab[h];
-                if (ASR::is_a<ASR::Pointer_t>(*asr_target->m_type)) {
+                if (ASR::is_a<ASR::Pointer_t>(*asr_target->m_type) &&
+                    !ASR::is_a<ASR::CPtr_t>(
+                        *ASR::down_cast<ASR::Pointer_t>(asr_target->m_type)->m_type)) {
                     target = CreateLoad(target);
                 }
             } else {
@@ -3736,6 +3766,8 @@ public:
         if( ASR::is_a<ASR::UnionTypeConstructor_t>(*x.m_value) ) {
             return ;
         }
+        ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+        ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
         this->visit_expr_wrapper(x.m_value, true);
         value = tmp;
         if ( is_a<ASR::Character_t>(*expr_type(x.m_value)) ) {
@@ -3746,12 +3778,12 @@ public:
                 }
             }
         }
-        ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
-        ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
         if( ASRUtils::is_array(target_type) &&
             ASRUtils::is_array(value_type) &&
             ASRUtils::check_equal_type(target_type, value_type) ) {
-            arr_descr->copy_array(value, target);
+            bool create_dim_des_array = !ASR::is_a<ASR::Var_t>(*x.m_target);
+            arr_descr->copy_array(value, target, module.get(),
+                                  target_type, create_dim_des_array);
         } else {
             builder->CreateStore(value, target);
         }
@@ -5320,13 +5352,13 @@ public:
                         // Cast float to double as a workaround for the fact that
                         // vprintf() seems to cast to double even for %f, which
                         // causes it to print 0.000000.
-                        fmt.push_back("%f");
+                        fmt.push_back("%13.8e");
                         d = builder->CreateFPExt(tmp,
                         llvm::Type::getDoubleTy(context));
                         break;
                     }
                     case 8 : {
-                        fmt.push_back("%23.17f");
+                        fmt.push_back("%23.17e");
                         d = builder->CreateFPExt(tmp,
                         llvm::Type::getDoubleTy(context));
                         break;
@@ -5500,8 +5532,16 @@ public:
                         uint32_t h = get_hash((ASR::asr_t*)arg);
                         if (llvm_symtab.find(h) != llvm_symtab.end()) {
                             tmp = llvm_symtab[h];
+                            bool is_data_only_array = false;
+                            ASR::dimension_t* dims_arg = nullptr;
+                            size_t n_arg = ASRUtils::extract_dimensions_from_ttype(arg->m_type, dims_arg);
+                            if( ASRUtils::is_arg_dummy(arg->m_intent) &&
+                                !ASRUtils::is_dimension_empty(dims_arg, n_arg) ) {
+                                is_data_only_array = true;
+                            }
                             if( x_abi == ASR::abiType::Source &&
-                                arr_descr->is_array(arg->m_type) ) {
+                                arr_descr->is_array(arg->m_type) &&
+                                !is_data_only_array ) {
                                 llvm::Type* new_arr_type = arr_arg_type_cache[m_h][orig_arg_name];
                                 ASR::dimension_t* dims;
                                 size_t n;

@@ -3,7 +3,7 @@ source_filename = "LFortran"
 
 @0 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2 = private unnamed_addr constant [5 x i8] c"%f%s\00", align 1
+@2 = private unnamed_addr constant [9 x i8] c"%13.8e%s\00", align 1
 
 define void @__module_dflt_intent_foo(float* %c, float* %d) {
 .entry:
@@ -27,7 +27,7 @@ define float @__module_dflt_intent_f(float* %x) {
   store float %1, float* %f, align 4
   %2 = load float, float* %f, align 4
   %3 = fpext float %2 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), double %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @2, i32 0, i32 0), double %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
   br label %return
 
 return:                                           ; preds = %.entry

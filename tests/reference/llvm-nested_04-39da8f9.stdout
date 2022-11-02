@@ -12,7 +12,7 @@ source_filename = "LFortran"
 @5 = private unnamed_addr constant [5 x i8] c"%d%s\00", align 1
 @6 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@8 = private unnamed_addr constant [5 x i8] c"%f%s\00", align 1
+@8 = private unnamed_addr constant [9 x i8] c"%13.8e%s\00", align 1
 @9 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @11 = private unnamed_addr constant [4 x i8] c"b()\00", align 1
@@ -51,7 +51,7 @@ define i32 @__module_nested_04_a_c(i32* %z) {
   %3 = load float*, float** getelementptr inbounds (%b_nstd_types, %b_nstd_types* @b_nstd_strct, i32 0, i32 1), align 8
   %4 = load float, float* %3, align 4
   %5 = fpext float %4 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), double %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @8, i32 0, i32 0), double %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
   %6 = load i32, i32* %z, align 4
   store i32 %6, i32* %c, align 4
   br label %return
