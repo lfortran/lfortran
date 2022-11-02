@@ -916,7 +916,7 @@ public:
                         dims.push_back(al, dim);
                         obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
                         tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
-                            body.size(), obj_type);
+                            body.size(), obj_type, ASR::arraystorageType::ColMajor);
                         ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
                         ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
                         v2->m_value = ASRUtils::EXPR(tmp);
@@ -1651,7 +1651,7 @@ public:
             empty_dims.reserve(al, 1);
             type = ASRUtils::duplicate_type(al, type, &empty_dims);
             return ASR::make_ArrayItem_t(al, loc,
-                v_Var, args.p, args.size(), type, arr_ref_val);
+                v_Var, args.p, args.size(), type, ASR::arraystorageType::ColMajor, arr_ref_val);
         } else {
             return ASR::make_ArraySection_t(al, loc,
                 v_Var, args.p, args.size(), type, arr_ref_val);
@@ -1688,7 +1688,7 @@ public:
         dims.push_back(al, dim);
         type = ASRUtils::duplicate_type(al, type, &dims);
         tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
-            body.size(), type);
+            body.size(), type, ASR::arraystorageType::ColMajor);
     }
 
     void fill_expr_in_ttype_t(std::vector<ASR::expr_t*>& exprs, ASR::dimension_t* dims, size_t n_dims) {
