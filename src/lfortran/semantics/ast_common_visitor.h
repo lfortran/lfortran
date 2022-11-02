@@ -1474,6 +1474,10 @@ public:
                 char_data->type = type;
                 type_info.push_back(char_data);
             }
+            if (is_pointer) {
+                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                    type));
+            }
         } else if (sym_type->m_type == AST::decl_typeType::TypeType) {
             LFORTRAN_ASSERT(sym_type->m_name);
             std::string derived_type_name = to_lower(sym_type->m_name);

@@ -618,7 +618,7 @@ public:
             const std::map<std::string, ASR::symbol_t*>& scope = der_type->m_symtab->get_scope();
             for( auto itr = scope.begin(); itr != scope.end(); itr++ ) {
                 ASR::Variable_t* member = (ASR::Variable_t*)(&(itr->second->base));
-                llvm::Type* llvm_mem_type = getMemberType(member->m_type, member);
+                llvm::Type* llvm_mem_type = get_type_from_ttype_t_util(member->m_type);
                 member_types.push_back(llvm_mem_type);
                 name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
@@ -3434,10 +3434,12 @@ public:
         // For pointers, the actual LLVM variable will be a
         // double pointer, so we need to load one time and then
         // use it later on.
-        if( is_nested_pointer(llvm_tmp) ) {
+        if( is_nested_pointer(llvm_tmp) &&
+            !ASR::is_a<ASR::CPtr_t>(*asr_type) ) {
             llvm_tmp = CreateLoad(llvm_tmp);
         }
-        if( arr_descr->is_array(asr_type) ) {
+        if( arr_descr->is_array(asr_type) &&
+            !ASR::is_a<ASR::CPtr_t>(*asr_type) ) {
             llvm_tmp = CreateLoad(arr_descr->get_pointer_to_data(llvm_tmp));
         }
 
@@ -3766,6 +3768,8 @@ public:
         if( ASR::is_a<ASR::UnionTypeConstructor_t>(*x.m_value) ) {
             return ;
         }
+        ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+        ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
         this->visit_expr_wrapper(x.m_value, true);
         value = tmp;
         if ( is_a<ASR::Character_t>(*expr_type(x.m_value)) ) {
@@ -3776,12 +3780,12 @@ public:
                 }
             }
         }
-        ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
-        ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
         if( ASRUtils::is_array(target_type) &&
             ASRUtils::is_array(value_type) &&
             ASRUtils::check_equal_type(target_type, value_type) ) {
-            arr_descr->copy_array(value, target);
+            bool create_dim_des_array = !ASR::is_a<ASR::Var_t>(*x.m_target);
+            arr_descr->copy_array(value, target, module.get(),
+                                  target_type, create_dim_des_array);
         } else {
             builder->CreateStore(value, target);
         }
