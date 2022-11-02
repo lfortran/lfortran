@@ -2475,6 +2475,8 @@ id
     | KW_REAL { $$ = SYMBOL($1, @$); }
     | KW_RECURSIVE { $$ = SYMBOL($1, @$); }
     | KW_REDUCE { $$ = SYMBOL($1, @$); }
+    | KW_REQUIREMENT { $$ = SYMBOL($1, @$); }
+    | KW_REQUIRES { $$ = SYMBOL($1, @$); }
     | KW_RESULT { $$ = SYMBOL($1, @$); }
     | KW_RETURN { $$ = SYMBOL($1, @$); }
     | KW_REWIND { $$ = SYMBOL($1, @$); }
