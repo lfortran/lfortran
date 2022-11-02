@@ -2725,38 +2725,19 @@ public:
             std::string arg_name = sym_name + "_arg_" + std::to_string(i);
             arg_name = to_lower(arg_name);
             ASR::expr_t *var_expr = c_args[i].m_value;
-            ASR::ttype_t *var_type;
-            ASR::asr_t *arg_var;
-            if (ASR::is_a<ASR::Var_t>(*var_expr)) {
-                ASR::symbol_t *s = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
-                LFORTRAN_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*s));
-                if (ASR::is_a<ASR::Variable_t>(*s)) {
-                    //ASRUtils::expr_type(var_expr);
-                    var_type = ASR::down_cast<ASR::Variable_t>(s)->m_type;
-                } else if (ASR::is_a<ASR::Function_t>(*s)) {
-                    // It's a Function
-                    var_type = nullptr;
-                } else {
-                    throw LCompilersException("Symbol type not implemented");
-                }
+            ASR::symbol_t *v;
+            if (ASR::is_a<ASR::Var_t>(*var_expr) &&
+                    ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::Var_t>(var_expr)->m_v)) {
+                v = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
             } else {
-                var_type = ASRUtils::expr_type(var_expr);
-                //throw LCompilersException("Symbol type not implemented 2");
-            }
-            if (var_type != nullptr) {
-                arg_var = ASR::make_Variable_t(al, x.base.base.loc,
+                ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
+                v = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_Variable_t(al, x.base.base.loc,
                     current_scope, s2c(al, arg_name), LFortran::ASRUtils::intent_unspecified, nullptr, nullptr,
                     ASR::storage_typeType::Default, var_type,
                     ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
-                    false);
-                current_scope->add_symbol(arg_name, ASR::down_cast<ASR::symbol_t>(arg_var));
-            } else {
-                ASR::symbol_t *s = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
-                arg_var = (ASR::asr_t *)s;
-            }
-            ASR::symbol_t *v = current_scope->get_symbol(arg_name);
-            if (v == nullptr) {
-                v = ASR::down_cast<ASR::symbol_t>(arg_var);
+                    false));
+                current_scope->add_symbol(arg_name, v);
             }
             LFORTRAN_ASSERT(v != nullptr)
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
