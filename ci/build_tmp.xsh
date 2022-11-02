@@ -63,7 +63,7 @@ else:
     BUILD_TYPE = "Release"
 cmake -G$LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DWITH_LLVM=yes -DWITH_XEUS=yes -DWITH_RUNTIME_LIBRARY=No -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=@(BUILD_TYPE) ..
 cmake --build . --target install
-cmake -DCMAKE_Fortran_COMPILER=$CONDA_PREFIX+"/bin/lfortran" -DWITH_RUNTIME_LIBRARY=Yes ..
+cmake -DCMAKE_Fortran_COMPILER="$CONDA_PREFIX/bin/lfortran" -DWITH_RUNTIME_LIBRARY=Yes ..
 cmake --build . --target install
 ./src/lfortran/tests/test_lfortran
 ./src/bin/lfortran < ../src/bin/example_input.txt
