@@ -66,23 +66,6 @@
                                     (SymbolTable
                                         4
                                         {
-                                            add_generic:
-                                                (Variable 
-                                                    4 
-                                                    add_generic 
-                                                    ReturnVar 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (TypeParameter 
-                                                        t 
-                                                        []
-                                                    ) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
-                                                    .false.
-                                                ), 
                                             x:
                                                 (Variable 
                                                     4 
@@ -116,6 +99,23 @@
                                                     Private 
                                                     Required 
                                                     .false.
+                                                ), 
+                                            z:
+                                                (Variable 
+                                                    4 
+                                                    z 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        t 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
                                                 )
                                             
                                         }) 
@@ -123,7 +123,7 @@
                                     [(Var 4 x)
                                     (Var 4 y)] 
                                     [(= 
-                                        (Var 4 add_generic) 
+                                        (Var 4 z) 
                                         (TemplateBinOp 
                                             (Var 4 x) 
                                             Add 
@@ -136,9 +136,9 @@
                                         ) 
                                         ()
                                     )] 
-                                    (Var 4 add_generic) 
+                                    (Var 4 z) 
                                     Source 
-                                    Private 
+                                    Public 
                                     Implementation 
                                     () 
                                     .false. 
@@ -158,20 +158,6 @@
                                     (SymbolTable
                                         8
                                         {
-                                            add_generic:
-                                                (Variable 
-                                                    8 
-                                                    add_generic 
-                                                    ReturnVar 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 4 []) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
-                                                    .false.
-                                                ), 
                                             x:
                                                 (Variable 
                                                     8 
@@ -199,6 +185,20 @@
                                                     Private 
                                                     Required 
                                                     .false.
+                                                ), 
+                                            z:
+                                                (Variable 
+                                                    8 
+                                                    z 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
                                                 )
                                             
                                         }) 
@@ -206,22 +206,19 @@
                                     [(Var 8 x)
                                     (Var 8 y)] 
                                     [(= 
-                                        (Var 8 add_generic) 
-                                        (TemplateBinOp 
+                                        (Var 8 z) 
+                                        (IntegerBinOp 
                                             (Var 8 x) 
                                             Add 
                                             (Var 8 y) 
-                                            (TypeParameter 
-                                                t 
-                                                []
-                                            ) 
+                                            (Integer 4 []) 
                                             ()
                                         ) 
                                         ()
                                     )] 
-                                    (Var 8 add_generic) 
+                                    (Var 8 z) 
                                     Source 
-                                    Private 
+                                    Public 
                                     Implementation 
                                     () 
                                     .false. 
@@ -238,20 +235,6 @@
                                     (SymbolTable
                                         7
                                         {
-                                            add_generic:
-                                                (Variable 
-                                                    7 
-                                                    add_generic 
-                                                    ReturnVar 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
-                                                    .false.
-                                                ), 
                                             x:
                                                 (Variable 
                                                     7 
@@ -279,6 +262,20 @@
                                                     Private 
                                                     Required 
                                                     .false.
+                                                ), 
+                                            z:
+                                                (Variable 
+                                                    7 
+                                                    z 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
                                                 )
                                             
                                         }) 
@@ -286,22 +283,19 @@
                                     [(Var 7 x)
                                     (Var 7 y)] 
                                     [(= 
-                                        (Var 7 add_generic) 
-                                        (TemplateBinOp 
+                                        (Var 7 z) 
+                                        (RealBinOp 
                                             (Var 7 x) 
                                             Add 
                                             (Var 7 y) 
-                                            (TypeParameter 
-                                                t 
-                                                []
-                                            ) 
+                                            (Real 4 []) 
                                             ()
                                         ) 
                                         ()
                                     )] 
-                                    (Var 7 add_generic) 
+                                    (Var 7 z) 
                                     Source 
-                                    Private 
+                                    Public 
                                     Implementation 
                                     () 
                                     .false. 

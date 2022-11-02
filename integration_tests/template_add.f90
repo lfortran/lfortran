@@ -5,17 +5,15 @@ module template_add_m
 
     template add_t(T)
         private
-        public :: add
+        public :: add_generic
 
         type :: T
         end type
 
     contains
-        function add_generic(x, y)
-            type(T) :: x, y, add_generic
-
-            add_generic = x + y
-
+        function add_generic(x, y) result(z)
+            type(T) :: x, y, z
+            z = x + y
         end function
     end template
 
@@ -46,4 +44,4 @@ implicit none
 
 call test_template()
 
-end program use_template_module
+end program template_add
