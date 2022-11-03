@@ -37,10 +37,8 @@ struct Import {
     std::string mod_name;
     std::string name;
     uint8_t kind;
-    union {
-        uint32_t type_idx;
-        std::pair<uint32_t, uint32_t> mem_page_size_limits;
-    };
+    uint32_t type_idx;
+    std::pair<uint32_t, uint32_t> mem_page_size_limits;
 };
 
 struct Data {

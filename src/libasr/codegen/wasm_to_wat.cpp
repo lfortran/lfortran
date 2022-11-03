@@ -48,7 +48,7 @@ class WASMDecoder {
     size_t PREAMBLE_SIZE;
 
     Vec<wasm::FuncType> func_types;
-    Vec<wasm::Import> imports;
+    std::vector<wasm::Import> imports;
     Vec<uint32_t> type_indices;
     Vec<wasm::Export> exports;
     Vec<wasm::Code> codes;
@@ -124,44 +124,44 @@ class WASMDecoder {
         // read imports section contents
         uint32_t no_of_imports = read_u32(wasm_bytes, offset);
         DEBUG("no_of_imports: " + std::to_string(no_of_imports));
-        imports.resize(al, no_of_imports);
+        imports.resize(no_of_imports);
 
         for (uint32_t i = 0; i < no_of_imports; i++) {
             uint32_t mod_name_size = read_u32(wasm_bytes, offset);
-            imports.p[i].mod_name.resize(
+            imports[i].mod_name.resize(
                 mod_name_size);  // do not pass al to this resize as it is
                                  // std::string.resize()
             for (uint32_t j = 0; j < mod_name_size; j++) {
-                imports.p[i].mod_name[j] = read_b8(wasm_bytes, offset);
+                imports[i].mod_name[j] = read_b8(wasm_bytes, offset);
             }
 
             uint32_t name_size = read_u32(wasm_bytes, offset);
-            imports.p[i].name.resize(
+            imports[i].name.resize(
                 name_size);  // do not pass al to this resize as it is
                              // std::string.resize()
             for (uint32_t j = 0; j < name_size; j++) {
-                imports.p[i].name[j] = read_b8(wasm_bytes, offset);
+                imports[i].name[j] = read_b8(wasm_bytes, offset);
             }
 
-            imports.p[i].kind = read_b8(wasm_bytes, offset);
+            imports[i].kind = read_b8(wasm_bytes, offset);
 
-            switch (imports.p[i].kind) {
+            switch (imports[i].kind) {
                 case 0x00: {
-                    imports.p[i].type_idx = read_u32(wasm_bytes, offset);
+                    imports[i].type_idx = read_u32(wasm_bytes, offset);
                     break;
                 }
                 case 0x02: {
                     uint8_t byte = read_b8(wasm_bytes, offset);
                     if (byte == 0x00) {
-                        imports.p[i].mem_page_size_limits.first =
+                        imports[i].mem_page_size_limits.first =
                             read_u32(wasm_bytes, offset);
-                        imports.p[i].mem_page_size_limits.second =
-                            imports.p[i].mem_page_size_limits.first;
+                        imports[i].mem_page_size_limits.second =
+                            imports[i].mem_page_size_limits.first;
                     } else {
                         LFORTRAN_ASSERT(byte == 0x01);
-                        imports.p[i].mem_page_size_limits.first =
+                        imports[i].mem_page_size_limits.first =
                             read_u32(wasm_bytes, offset);
-                        imports.p[i].mem_page_size_limits.second =
+                        imports[i].mem_page_size_limits.second =
                             read_u32(wasm_bytes, offset);
                     }
                     break;
