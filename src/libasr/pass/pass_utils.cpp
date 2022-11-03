@@ -667,10 +667,6 @@ namespace LFortran {
                         ASR::expr_t *test2 = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loop.base.base.loc,
                             c, ASR::cmpopType::LtE, const_zero, log_type, nullptr));
 
-                        stmt1 = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
-                            LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
-                                    ASR::binopType::Sub, c, int_type, nullptr)), nullptr));
-
                         ASR::expr_t *test11 = LFortran::ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
                             LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
                             ASR::binopType::Add, c, int_type, nullptr)), ASR::cmpopType::LtE, b, log_type, nullptr));
@@ -696,21 +692,24 @@ namespace LFortran {
                     cmp_op = (ASR::cmpopType) comp;
                 }
 
-                if (cond == nullptr) {
-                    ASR::expr_t *target = loop.m_head.m_v;
-                    int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target));
-                    ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind, nullptr, 0));
-                    stmt1 = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
-                        LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
-                                ASR::binopType::Sub, c, type, nullptr)), nullptr));
+                ASR::expr_t *target = loop.m_head.m_v;
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target));
+                ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+                            a_kind, nullptr, 0));
 
+                stmt1 = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
+                    LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
+                            ASR::binopType::Sub, c, type, nullptr)), nullptr));
+
+                inc_stmt = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
+                            LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
+                                ASR::binopType::Add, c, type, nullptr)), nullptr));
+                if (cond == nullptr) {
+                    ASR::ttype_t *log_type = ASRUtils::TYPE(
+                        ASR::make_Logical_t(al, loc, 1, nullptr, 0));
                     cond = LFortran::ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
                         LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                            ASR::binopType::Add, c, type, nullptr)), cmp_op, b, type, nullptr));
-
-                    inc_stmt = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
-                                LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                                    ASR::binopType::Add, c, type, nullptr)), nullptr));
+                            ASR::binopType::Add, c, type, nullptr)), cmp_op, b, log_type, nullptr));
                 }
             }
             Vec<ASR::stmt_t*> body;
