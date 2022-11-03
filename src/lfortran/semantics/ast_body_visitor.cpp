@@ -465,7 +465,10 @@ public:
         // TODO: specific type extractors for type parameters
         // TODO: subs check
         for (size_t i = 0; i < x.n_args; i++) {
-            this->visit_expr(*x.m_args[i].m_end);
+            std::string arg0 = to_lower(x.m_args[i]);
+            // TODO: here we now have to lookup the template and handle the
+            // arg accordingly
+            this->visit_expr(*arg0);
             ASR::expr_t *arg = ASRUtils::EXPR(tmp);
             if (ASR::is_a<ASR::StringConstant_t>(*arg)) {
                 ASR::StringConstant_t *arg_string = ASR::down_cast<ASR::StringConstant_t>(arg);
