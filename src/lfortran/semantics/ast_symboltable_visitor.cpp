@@ -273,7 +273,7 @@ public:
         }
     }
 
-    template <typename T> 
+    template <typename T>
     void process_implicit_statements(const T &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         //iterate over all implicit statements
         for (size_t i=0;i<x.n_implicit;i++) {
@@ -379,7 +379,7 @@ public:
                 }
             }
         }
-		
+
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         SymbolTable *parent_scope = current_scope;
@@ -457,7 +457,6 @@ public:
             }
         }
         if( sym_name == interface_name ) {
-            parent_scope->erase_symbol(sym_name);
             sym_name = sym_name + "~genericprocedure";
         }
 
@@ -702,7 +701,6 @@ public:
         }
 
         if( generic_procedures.find(sym_name) != generic_procedures.end() ) {
-            parent_scope->erase_symbol(sym_name);
             sym_name = sym_name + "~genericprocedure";
         }
 
@@ -845,9 +843,10 @@ public:
     }
 
     void visit_InterfaceProc(const AST::InterfaceProc_t &x) {
+        bool old_is_interface = is_interface;
         is_interface = true;
         visit_program_unit(*x.m_proc);
-        is_interface = false;
+        is_interface = old_is_interface;
         return;
     }
 

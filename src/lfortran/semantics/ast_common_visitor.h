@@ -2765,14 +2765,24 @@ public:
         for (size_t i=0; i<x.n_args; i++) {
             std::string arg_name = sym_name + "_arg_" + std::to_string(i);
             arg_name = to_lower(arg_name);
-            ASR::asr_t *arg_var = ASR::make_Variable_t(al, x.base.base.loc,
-                current_scope, s2c(al, arg_name), LFortran::ASRUtils::intent_unspecified, nullptr, nullptr,
-                ASR::storage_typeType::Default, ASRUtils::expr_type(c_args[i].m_value),
-                ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
-                false);
-            current_scope->add_symbol(arg_name, ASR::down_cast<ASR::symbol_t>(arg_var));
-            args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
-                current_scope->get_symbol(arg_name))));
+            ASR::expr_t *var_expr = c_args[i].m_value;
+            ASR::symbol_t *v;
+            if (ASR::is_a<ASR::Var_t>(*var_expr) &&
+                    ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::Var_t>(var_expr)->m_v)) {
+                v = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
+            } else {
+                ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
+                v = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_Variable_t(al, x.base.base.loc,
+                    current_scope, s2c(al, arg_name), LFortran::ASRUtils::intent_unspecified, nullptr, nullptr,
+                    ASR::storage_typeType::Default, var_type,
+                    ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+                    false));
+                current_scope->add_symbol(arg_name, v);
+            }
+            LFORTRAN_ASSERT(v != nullptr)
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                v)));
         }
         // FIXME: accept this type as an argument
         // currently hardcoding the return type to real-8
