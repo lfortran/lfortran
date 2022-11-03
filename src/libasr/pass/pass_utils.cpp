@@ -662,25 +662,32 @@ namespace LFortran {
                         ASR::expr_t *const_zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
                                     loc, 0, int_type));
 
+                        // test1: c > 0
                         ASR::expr_t *test1 = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loop.base.base.loc,
                             c, ASR::cmpopType::Gt, const_zero, log_type, nullptr));
+                        // test2: c <= 0
                         ASR::expr_t *test2 = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loop.base.base.loc,
                             c, ASR::cmpopType::LtE, const_zero, log_type, nullptr));
 
+                        // test11: target + c <= b
                         ASR::expr_t *test11 = LFortran::ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
                             LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
                             ASR::binopType::Add, c, int_type, nullptr)), ASR::cmpopType::LtE, b, log_type, nullptr));
 
+                        // test22: target + c >= b
                         ASR::expr_t *test22 = LFortran::ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
                             LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
                             ASR::binopType::Add, c, int_type, nullptr)), ASR::cmpopType::GtE, b, log_type, nullptr));
 
+                        // cond1: test1 && test11
                         ASR::expr_t *cond1 = LFortran::ASRUtils::EXPR(make_LogicalBinOp_t(al, loc,
                             test1, ASR::logicalbinopType::And, test11, log_type, nullptr));
 
+                        // cond2: test2 && test22
                         ASR::expr_t *cond2 = LFortran::ASRUtils::EXPR(make_LogicalBinOp_t(al, loc,
                             test2, ASR::logicalbinopType::And, test22, log_type, nullptr));
 
+                        // cond: cond1 || cond2
                         cond = LFortran::ASRUtils::EXPR(make_LogicalBinOp_t(al, loc,
                             cond1, ASR::logicalbinopType::Or, cond2, log_type, nullptr));
                     } else if (increment > 0) {
