@@ -437,7 +437,7 @@ RUN(NAME complex_06 LABELS gfortran llvm)
 RUN(NAME complex_07 LABELS gfortran) # cmplx
 RUN(NAME complex_08 LABELS gfortran) # conjg
 RUN(NAME complex_09 LABELS gfortran)
-RUN(NAME complex_10 LABELS gfortran) # conjg
+RUN(NAME complex_10 LABELS gfortran llvm) # conjg
 RUN(NAME complex_sub_test LABELS gfortran llvm)
 RUN(NAME complex_mul_test LABELS gfortran llvm)
 RUN(NAME complex_div_test LABELS gfortran llvm)

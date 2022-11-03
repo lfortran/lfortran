@@ -7,6 +7,26 @@
                     (SymbolTable
                         2
                         {
+                            abs:
+                                (ExternalSymbol 
+                                    2 
+                                    abs 
+                                    4 abs 
+                                    lfortran_intrinsic_math 
+                                    [] 
+                                    abs 
+                                    Private
+                                ), 
+                            abs@zabs:
+                                (ExternalSymbol 
+                                    2 
+                                    abs@zabs 
+                                    4 zabs 
+                                    lfortran_intrinsic_math 
+                                    [] 
+                                    zabs 
+                                    Private
+                                ), 
                             conjg:
                                 (ExternalSymbol 
                                     2 
@@ -100,6 +120,57 @@
                         (Var 2 z)] 
                         () 
                         ()
+                    )
+                    (If 
+                        (RealCompare 
+                            (FunctionCall 
+                                2 abs@zabs 
+                                2 abs 
+                                [((ComplexBinOp 
+                                    (Var 2 z) 
+                                    Sub 
+                                    (Cast 
+                                        (ComplexConstructor 
+                                            (IntegerConstant 3 (Integer 4 [])) 
+                                            (IntegerConstant 4 (Integer 4 [])) 
+                                            (Complex 4 []) 
+                                            (ComplexConstant 
+                                                3.000000 
+                                                4.000000 
+                                                (Complex 4 [])
+                                            )
+                                        ) 
+                                        ComplexToComplex 
+                                        (Complex 8 []) 
+                                        ()
+                                    ) 
+                                    (Complex 8 []) 
+                                    ()
+                                ))] 
+                                (Real 8 []) 
+                                () 
+                                ()
+                            ) 
+                            Gt 
+                            (Cast 
+                                (RealConstant 
+                                    0.000000 
+                                    (Real 4 [])
+                                ) 
+                                RealToReal 
+                                (Real 8 []) 
+                                (RealConstant 
+                                    0.000000 
+                                    (Real 8 [])
+                                )
+                            ) 
+                            (Logical 4 []) 
+                            ()
+                        ) 
+                        [(ErrorStop 
+                            ()
+                        )] 
+                        []
                     )]
                 ), 
             iso_c_binding:
