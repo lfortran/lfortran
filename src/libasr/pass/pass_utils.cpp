@@ -658,7 +658,7 @@ namespace LFortran {
                         ASR::ttype_t *int_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind, nullptr, 0));
 
                         ASR::ttype_t *log_type = ASRUtils::TYPE(
-                            ASR::make_Logical_t(al, loc, 1, nullptr, 0));
+                            ASR::make_Logical_t(al, loc, 4, nullptr, 0));
                         ASR::expr_t *const_zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
                                     loc, 0, int_type));
 
@@ -713,7 +713,7 @@ namespace LFortran {
                                 ASR::binopType::Add, c, type, nullptr)), nullptr));
                 if (cond == nullptr) {
                     ASR::ttype_t *log_type = ASRUtils::TYPE(
-                        ASR::make_Logical_t(al, loc, 1, nullptr, 0));
+                        ASR::make_Logical_t(al, loc, 4, nullptr, 0));
                     cond = LFortran::ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
                         LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
                             ASR::binopType::Add, c, type, nullptr)), cmp_op, b, log_type, nullptr));
