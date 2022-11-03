@@ -1365,7 +1365,6 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/complex_10.f90"
-asr = true
 
 [[test]]
 filename = "errors/complex_01.f90"
