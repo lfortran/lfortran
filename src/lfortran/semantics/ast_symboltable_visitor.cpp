@@ -673,35 +673,9 @@ public:
                             }
                         }
                     }
-                    /*
-                    bool type_param = false;
-                    if(is_template || is_requirement){
-                        for(size_t i = 0; i < current_template_type_parameters.size(); i++){
-                            ASR::TypeParameter_t* param = ASR::down_cast2<ASR::TypeParameter_t>(current_template_type_parameters[i]);
-                            std::string name = std::string(param->m_param);
-
-                            if(name.compare(derived_type_name) == 0){
-                                current_procedure_used_type_parameter_indices.insert(i);
-                                is_current_procedure_templated = true;
-                                type_param = true;
-                            }
-                        }
-                    } else if (is_requirement) {
-                        for (size_t i = 0; i < current_requirement_type_parameters.size(); i++) {
-                            ASR::TypeParameter_t* tp = ASR::down_cast2<ASR::TypeParameter_t>(current_requirement_type_parameters[i]);
-                            std::string param_name = std::string(tp->m_param);
-                            if (param_name.compare(derived_type_name) == 0) 
-                        }
-                    }
-                    */
                     if (!type_param) {
                         type = LFortran::ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v, nullptr, 0));
                     }
-                    /*
-                    if(type_param) type = LFortran::ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, nullptr, nullptr, 0));
-                    else type = LFortran::ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v,
-                        nullptr, 0));
-                    */
                     break;
                 }
                 default :
@@ -802,8 +776,6 @@ public:
         current_procedure_args.clear();
         current_procedure_abi_type = ASR::abiType::Source;
         current_symbol = -1;
-        current_procedure_used_type_parameter_indices.clear();
-        is_current_procedure_templated = false;
         // print_implicit_dictionary(implicit_dictionary);
         // get hash of the function and add it to the implicit_mapping
         if (compiler_options.implicit_typing) {
@@ -861,11 +833,6 @@ public:
                 throw SemanticError(parent_sym_name + " is not defined.", x.base.base.loc);
             }
             parent_sym = parent_scope->get_symbol(parent_sym_name);
-        }
-        if (is_template && data_member_names.size() == 0){
-            // TODO: check requirement instead
-            // current_template_type_parameters.push_back(
-            //     ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0));
         }
         if (is_requirement && data_member_names.size() == 0) {
             current_requirement_type_parameters.push_back(
@@ -1589,7 +1556,6 @@ public:
                     ASR::make_TypeParameter_t(al, x.base.base.loc, tp->m_param, tp->m_dims, tp->n_dims));
             }
         }
-        template_type_parameters[x.m_name] = current_template_type_parameters;
         called_requirement.clear();
     }
 
@@ -1598,7 +1564,6 @@ public:
 Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
         SymbolTable *symbol_table, CompilerOptions &compiler_options,
-        std::map<std::string, std::vector<ASR::asr_t*>>& template_type_parameters,
         std::map<std::string, std::map<std::string, ASR::asr_t*>>& requirement_map,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
 {
@@ -1614,7 +1579,6 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         return error;
     }
     ASR::asr_t *unit = v.tmp;
-    template_type_parameters = v.template_type_parameters;
     requirement_map = v.requirement_map;
     return unit;
 }
