@@ -586,6 +586,6 @@ RUN(NAME template_add LABELS llvm)
 
 RUN(NAME statement1 LABELS gfortran llvm)
 
-RUN(NAME implied_do_loop1 LABELS gfortran)
-RUN(NAME implied_do_loop2 LABELS gfortran)
-RUN(NAME implied_do_loop3 LABELS gfortran)
+RUN(NAME implied_do_loops1 LABELS gfortran)
+RUN(NAME implied_do_loops2 LABELS gfortran)
+RUN(NAME implied_do_loops3 LABELS gfortran)
