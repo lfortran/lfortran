@@ -460,7 +460,6 @@ public:
             sym_name = sym_name + "~genericprocedure";
         }
 
-
         tmp = ASR::make_Function_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
@@ -647,7 +646,34 @@ public:
 
                     }
 
-                    // Check whether this function is templated
+                    // TODO: abstract this into a function
+                    bool type_param = false;
+                    if (is_requirement) {
+                        for (size_t i = 0; i < current_requirement_type_parameters.size(); i++) {
+                            ASR::TypeParameter_t *param = ASR::down_cast2<ASR::TypeParameter_t>(current_requirement_type_parameters[i]);
+                            std::string name = std::string(param->m_param);
+                            if (name.compare(derived_type_name) == 0) {
+                                type_param = true;
+                                // TODO: if current_requirement_type_parameters can be replaced with
+                                // std::vector<ASR::ttype_t*> then use duplicate instead
+                                type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, param->m_param, 
+                                                                                param->m_dims, param->n_dims));
+                            }
+                        }
+                    } else if (is_template) {
+                        for (const auto &pair: called_requirement) {
+                            if (pair.first.compare(derived_type_name) == 0) {
+                                ASR::asr_t *req_asr = pair.second;
+                                if (ASR::is_a<ASR::ttype_t>(*req_asr)) {
+                                    ASR::TypeParameter_t *param = ASR::down_cast2<ASR::TypeParameter_t>(req_asr);
+                                    type_param = true;
+                                    type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, param->m_param, 
+                                                                                    param->m_dims, param->n_dims));
+                                }
+                            }
+                        }
+                    }
+                    /*
                     bool type_param = false;
                     if(is_template || is_requirement){
                         for(size_t i = 0; i < current_template_type_parameters.size(); i++){
@@ -660,10 +686,22 @@ public:
                                 type_param = true;
                             }
                         }
+                    } else if (is_requirement) {
+                        for (size_t i = 0; i < current_requirement_type_parameters.size(); i++) {
+                            ASR::TypeParameter_t* tp = ASR::down_cast2<ASR::TypeParameter_t>(current_requirement_type_parameters[i]);
+                            std::string param_name = std::string(tp->m_param);
+                            if (param_name.compare(derived_type_name) == 0) 
+                        }
                     }
+                    */
+                    if (!type_param) {
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v, nullptr, 0));
+                    }
+                    /*
                     if(type_param) type = LFortran::ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, nullptr, nullptr, 0));
                     else type = LFortran::ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v,
                         nullptr, 0));
+                    */
                     break;
                 }
                 default :
@@ -729,27 +767,21 @@ public:
         }
 
         Vec<ASR::ttype_t*> params;
-        params.reserve(al, current_procedure_used_type_parameter_indices.size());
-        for(auto i = current_procedure_used_type_parameter_indices.begin(); i != current_procedure_used_type_parameter_indices.end(); i++){
-            ASR::asr_t* param = current_template_type_parameters[*i];
-            params.push_back(al, ASR::down_cast<ASR::ttype_t>(param));
-        }
-        /*
-        if (is_template) {
-            for (const auto &req_pair: called_requirement) {
-                if (ASR::is_a<ASR::ttype_t>(*req_pair.second)) {
-                    ASR::ttype_t *tp = ASRUtils::duplicate_type(al,
-                        ASR::down_cast<ASR::ttype_t>(req_pair.second));
-                    params.push_back(al, tp);
-                }
+        if (is_requirement) {
+            params.reserve(al, current_requirement_type_parameters.size());
+            for (ASR::asr_t *tp: current_requirement_type_parameters) {
+                params.push_back(al, ASR::down_cast<ASR::ttype_t>(tp));
             }
         } else {
-            for(auto i = current_procedure_used_type_parameter_indices.begin(); i != current_procedure_used_type_parameter_indices.end(); i++){
-                ASR::asr_t* param = current_template_type_parameters[*i];
-                params.push_back(al, ASR::down_cast<ASR::ttype_t>(param));
+            // TODO: build based on called requirement
+            params.reserve(al, called_requirement.size());
+            for (const auto &req: called_requirement) {
+                if (ASR::is_a<ASR::ttype_t>(*req.second)) {
+                    ASR::ttype_t *new_param = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::ttype_t>(req.second));
+                    params.push_back(al, new_param);
+                }
             }
         }
-        */
 
         tmp = ASR::make_Function_t(
             al, x.base.base.loc,
@@ -762,7 +794,7 @@ public:
             /* a_return_var */ LFortran::ASRUtils::EXPR(return_var_ref),
             current_procedure_abi_type, s_access, deftype,
             bindc_name, is_elemental, false, false, false, false,
-            /* a_type_parameters */ is_current_procedure_templated ? params.p : nullptr,
+            /* a_type_parameters */ (params.size() > 0) ? params.p : nullptr,
             /* n_type_parameters */ params.size(), nullptr, 0, is_requirement);
         if (is_requirement) current_requirement_functions.push_back(tmp);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
@@ -830,8 +862,13 @@ public:
             }
             parent_sym = parent_scope->get_symbol(parent_sym_name);
         }
-        if((is_template || is_requirement) && data_member_names.size() == 0){
-            current_template_type_parameters.push_back(
+        if (is_template && data_member_names.size() == 0){
+            // TODO: check requirement instead
+            // current_template_type_parameters.push_back(
+            //     ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0));
+        }
+        if (is_requirement && data_member_names.size() == 0) {
+            current_requirement_type_parameters.push_back(
                 ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0));
         }
         tmp = ASR::make_StructType_t(al, x.base.base.loc, current_scope,
@@ -1497,7 +1534,7 @@ public:
         for (size_t i=0; i<x.n_namelist; i++) {
             std::string current_arg = to_lower(x.m_namelist[i]);
             bool tp_not_found = true;
-            for (ASR::asr_t *tp_asr: current_template_type_parameters) {
+            for (ASR::asr_t *tp_asr: current_requirement_type_parameters) {
                 ASR::TypeParameter_t *tp = ASR::down_cast2<ASR::TypeParameter_t>(tp_asr);
                 std::string tp_name = tp->m_param;
                 if (tp_name.compare(current_arg) == 0) {
@@ -1515,7 +1552,7 @@ public:
                 }
             }
         }
-        current_template_type_parameters.clear();
+        // current_template_type_parameters.clear();
         current_requirement_functions.clear();
         requirement_map[x.m_name] = current_req;
         is_requirement = false;
@@ -1544,7 +1581,16 @@ public:
         }
 
         is_template = false;
+        std::vector<ASR::asr_t*> current_template_type_parameters;
+        for (const auto &req: called_requirement) {
+            if (ASR::is_a<ASR::ttype_t>(*req.second)) {
+                ASR::TypeParameter_t *tp = ASR::down_cast2<ASR::TypeParameter_t>(req.second);
+                current_template_type_parameters.push_back(
+                    ASR::make_TypeParameter_t(al, x.base.base.loc, tp->m_param, tp->m_dims, tp->n_dims));
+            }
+        }
         template_type_parameters[x.m_name] = current_template_type_parameters;
+        called_requirement.clear();
     }
 
 };

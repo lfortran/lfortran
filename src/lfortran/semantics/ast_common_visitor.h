@@ -679,12 +679,14 @@ public:
     Vec<ASR::stmt_t*> *current_body = nullptr;
     std::map<std::string, std::vector<ASR::asr_t*>> template_type_parameters;
     // used for requirement type parameters
-    std::vector<ASR::asr_t*> current_template_type_parameters;
+    // std::vector<ASR::asr_t*> current_template_type_parameters;
+    std::vector<ASR::asr_t*> current_requirement_type_parameters;
     std::vector<ASR::asr_t*> current_requirement_functions;
     std::map<std::string, std::map<std::string, ASR::asr_t*>> requirement_map;
     std::map<std::string, ASR::asr_t*> called_requirement;
     std::map<std::string, std::map<std::string, ASR::asr_t*>> template_asr_map;
     std::map<std::string, std::map<int, std::string>> template_arg_map;
+    // TODO: remove this
     std::unordered_set<int> current_procedure_used_type_parameter_indices;
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
@@ -1485,15 +1487,15 @@ public:
             std::string derived_type_name = to_lower(sym_type->m_name);
             bool type_param = false;
             if (is_requirement) {
-                for (size_t i = 0; i < current_template_type_parameters.size(); i++){
-                    ASR::TypeParameter_t* param = ASR::down_cast2<ASR::TypeParameter_t>(current_template_type_parameters[i]);
+                for (size_t i = 0; i < current_requirement_type_parameters.size(); i++) {
+                    ASR::TypeParameter_t* param = ASR::down_cast2<ASR::TypeParameter_t>(current_requirement_type_parameters[i]);
                     std::string name = std::string(param->m_param);
                     if(name.compare(derived_type_name) == 0){
                         current_procedure_used_type_parameter_indices.insert(i);
                         is_current_procedure_templated = true;
                         type_param = true;
                         type = LFortran::ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
-                                                        s2c(al, derived_type_name), nullptr, 0));
+                                                        param->m_param, param->m_dims, param->n_dims));
                     }
                 }
             } else if (is_template) {
@@ -1508,23 +1510,6 @@ public:
                     }
                 }
             }
-            
-            /*
-            if (is_template || is_requirement){
-                for(size_t i = 0; i < current_template_type_parameters.size(); i++){
-                    ASR::TypeParameter_t* param = ASR::down_cast2<ASR::TypeParameter_t>(current_template_type_parameters[i]);
-                    std::string name = std::string(param->m_param);
-
-                    if(name.compare(derived_type_name) == 0){
-                        current_procedure_used_type_parameter_indices.insert(i);
-                        is_current_procedure_templated = true;
-                        type_param = true;
-                        type = LFortran::ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
-                                                        s2c(al, derived_type_name), nullptr, 0));
-                    }
-                }
-            }
-            */
 
             ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
             if(!type_param){
