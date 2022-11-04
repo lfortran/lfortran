@@ -432,11 +432,6 @@ public:
         dims.reserve(al, 0);
 
         // Check if the template exists
-        /*
-        if(template_type_parameters.find(x.m_name) == template_type_parameters.end()){
-            throw SemanticError("Use of unspecified template", x.base.base.loc);
-        }
-        */
         if (template_arg_map.find(template_name) == template_arg_map.end()) {
             throw SemanticError("Use of unspecified template", x.base.base.loc);
         }
@@ -445,49 +440,13 @@ public:
         std::map<std::string, ASR::asr_t*> current_template_asr = template_asr_map[template_name];
 
         // Check if number of type parameters match
-        /*
-        if(template_type_parameters[template_name].size() != x.n_funcs){
-            throw SemanticError("Number of template arguments don't match", x.base.base.loc);
-        }
-        */
         if (current_template_arg.size() != x.n_args) {
             throw SemanticError("Number of template arguments don't match", x.base.base.loc);
         }
 
         std::map<std::string, ASR::ttype_t*> subs;
-        std::map<std::string, ASR::symbol_t*> rt_subs;
-        /*
-        for(size_t i = 0; i < x.n_types; i++){
-            ASR::ttype_t* type = determine_type(x.base.base.loc, x.m_types[i], false, dims);
-            subs[ASR::down_cast2<ASR::TypeParameter_t>(template_type_parameters[template_name][i])->m_param] = type;
-        }
-        */
-        /*
-        for (size_t i = 0; i < x.n_args; i++) {
-            std::string arg0 = to_lower(x.m_args[i]);
-            // TODO: here we now have to lookup the template and handle the
-            // arg accordingly
-            this->visit_expr(*arg0);
-            ASR::expr_t *arg = ASRUtils::EXPR(tmp);
-            if (ASR::is_a<ASR::StringConstant_t>(*arg)) {
-                ASR::StringConstant_t *arg_string = ASR::down_cast<ASR::StringConstant_t>(arg);
-                std::string type_name = arg_string->m_s;
-                ASR::ttype_t *type_sub;
-                if (type_name.compare("real") == 0) {
-                    type_sub = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
-                } else if (type_name.compare("integer") == 0) {
-                    type_sub = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));                
-                } else {
-                    // TODO: make error, undefined type
-                    LFORTRAN_ASSERT(false);
-                }
-                subs[current_template_arg[i]] = type_sub;
-            } else if (ASR::is_a<ASR::Var_t>(*arg)) {
-                ASR::Var_t *arg_var = ASR::down_cast<ASR::Var_t>(arg);
-                rt_subs[current_template_arg[i]] = arg_var->m_v;
-            }
-        }
-        */
+        std::map<std::string, ASR::symbol_t*> restriction_subs;
+
         for (size_t i = 0; i < x.n_args; i++) {
             std::string arg = to_lower(x.m_args[i]);
             ASR::asr_t *template_param = current_template_asr[current_template_arg[i]];
@@ -500,35 +459,88 @@ public:
                 } else if (arg.compare("integer") == 0) {
                     type_arg = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));                
                 } else {
-                    // TODO: make error, undefined type
-                    LFORTRAN_ASSERT(false); 
+                    throw SemanticError(
+                        "The type " + arg + " is not yet handled for generic instantiation",
+                        x.base.base.loc);
                 }
-                // TODO: subs check
-                subs[current_template_arg[i]] = type_arg;
+                subs[type_param->m_param] = type_arg;
             // Handle function restrictions
             } else if (ASR::is_a<ASR::symbol_t>(*template_param)) {
                 ASR::Function_t *restriction = ASR::down_cast2<ASR::Function_t>(template_param);
                 ASR::symbol_t *func_arg = current_scope->resolve_symbol(arg);
-                if (!ASR::is_a<ASR::Function_t>(*func_arg)) {
-                    // TODO: make error, undefined function
-                    LFORTRAN_ASSERT(false); 
+                if (!func_arg) {
+                    throw SemanticError("The function argument " + arg + " is not found",
+                        x.base.base.loc);
                 }
-                // TODO: restriction check
-                rt_subs[current_template_arg[i]] = func_arg;
+                if (!ASR::is_a<ASR::Function_t>(*func_arg)) {
+                    throw SemanticError(
+                        "The argument for " + current_template_arg[i] + " must be a function",
+                        x.base.base.loc);
+                }
+                check_restriction(subs, restriction_subs, restriction, func_arg, x.base.base.loc);
             }
         }
-
-        // LFORTRAN_ASSERT(false);
 
         for(size_t i = 0; i < x.n_symbols; i++){
             AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
             ASR::symbol_t* s = resolve_symbol(x.base.base.loc, use_symbol->m_remote_sym);
-            // std::map<std::string, ASR::symbol_t*> rt_subs;
-            pass_instantiate_generic_function(al, subs, rt_subs, current_scope,
+            pass_instantiate_generic_function(al, subs, restriction_subs, current_scope,
                 use_symbol->m_local_rename, ASR::down_cast<ASR::Function_t>(s));
         }
 
         is_instantiate = false;
+    }
+
+    void check_restriction(std::map<std::string, ASR::ttype_t*> subs,
+            std::map<std::string, ASR::symbol_t*>& restriction_subs,
+            ASR::Function_t* restriction, ASR::symbol_t *sym_arg, const Location& loc) {
+        std::string restriction_name = restriction->m_name;
+        ASR::Function_t *arg = ASR::down_cast<ASR::Function_t>(sym_arg);
+        std::string arg_name = arg->m_name;
+        if (restriction->n_args != arg->n_args) {
+            // TODO: use diagnostics showing both the restriction and the argument
+            std::string msg = "The argument " + arg_name
+                + " has different number of arguments with the restriction "
+                + restriction_name;
+            throw SemanticError(msg, loc);
+        }
+        for (size_t i = 0; i < restriction->n_args; i++) {
+            ASR::ttype_t *restriction_parameter = ASRUtils::expr_type(restriction->m_args[i]);
+            ASR::ttype_t *arg_parameter = ASRUtils::expr_type(arg->m_args[i]);
+            if (ASR::is_a<ASR::TypeParameter_t>(*restriction_parameter)) {
+                ASR::TypeParameter_t *restriction_tp 
+                    = ASR::down_cast<ASR::TypeParameter_t>(restriction_parameter);
+                if (!ASRUtils::check_equal_type(subs[restriction_tp->m_param],
+                                                arg_parameter)) {
+                    throw SemanticError("Restriction type mismatch with provided " 
+                        "type arguments", loc);
+                }
+            }
+        }
+        if (restriction->m_return_var) {
+            if (!arg->m_return_var) {
+                std::string msg = "The restriction argument " + arg_name
+                    + " should have a return value";
+                throw SemanticError(msg, loc);
+            }
+            ASR::ttype_t *restriction_return = ASRUtils::expr_type(restriction->m_return_var);
+            ASR::ttype_t *arg_return = ASRUtils::expr_type(arg->m_return_var);
+            if (ASR::is_a<ASR::TypeParameter_t>(*restriction_return)) {
+                ASR::TypeParameter_t *return_tp
+                    = ASR::down_cast<ASR::TypeParameter_t>(restriction_return);
+                if (!ASRUtils::check_equal_type(subs[return_tp->m_param], arg_return)) {
+                    throw SemanticError("Restriction type mismatch with provided "
+                        "type arguments", loc);
+                }
+            }
+        } else {
+            if (arg->m_return_var) {
+                std::string msg = "The restriction argument " + arg_name
+                    + " should not have a return value";
+                throw SemanticError(msg, loc);
+            }
+        }
+        restriction_subs[restriction_name] = sym_arg;
     }
 
     void visit_Inquire(const AST::Inquire_t& x) {
