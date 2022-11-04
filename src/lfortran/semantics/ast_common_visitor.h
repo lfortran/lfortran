@@ -787,12 +787,14 @@ public:
                     v = declare_implicit_variable(loc, var_name, intent);
                 }
             } else {
-                // TODO: fix this ad-hoc solution
+                // DONE: fix this ad-hoc solution ==> remove this solution
+                /*
                 if (is_instantiate) {
                     ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, loc,
                             1, strlen(s2c(al, var_name)), nullptr, nullptr, 0));
                     return ASR::make_StringConstant_t(al, loc, s2c(al, var_name), type);
                 }
+                */
                 diag.semantic_error_label("Variable '" + var_name
                     + "' is not declared", {loc},
                     "'" + var_name + "' is undeclared");

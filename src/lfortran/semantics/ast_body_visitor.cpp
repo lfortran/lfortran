@@ -462,8 +462,7 @@ public:
             subs[ASR::down_cast2<ASR::TypeParameter_t>(template_type_parameters[template_name][i])->m_param] = type;
         }
         */
-        // TODO: specific type extractors for type parameters
-        // TODO: subs check
+        /*
         for (size_t i = 0; i < x.n_args; i++) {
             std::string arg0 = to_lower(x.m_args[i]);
             // TODO: here we now have to lookup the template and handle the
@@ -488,6 +487,38 @@ public:
                 rt_subs[current_template_arg[i]] = arg_var->m_v;
             }
         }
+        */
+        for (size_t i = 0; i < x.n_args; i++) {
+            std::string arg = to_lower(x.m_args[i]);
+            ASR::asr_t *template_param = current_template_asr[current_template_arg[i]];
+            // Handle type parameters
+            if (ASR::is_a<ASR::ttype_t>(*template_param)) {
+                ASR::TypeParameter_t *type_param = ASR::down_cast2<ASR::TypeParameter_t>(template_param);
+                ASR::ttype_t *type_arg;
+                if (arg.compare("real") == 0) {
+                    type_arg = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+                } else if (arg.compare("integer") == 0) {
+                    type_arg = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));                
+                } else {
+                    // TODO: make error, undefined type
+                    LFORTRAN_ASSERT(false); 
+                }
+                // TODO: subs check
+                subs[current_template_arg[i]] = type_arg;
+            // Handle function restrictions
+            } else if (ASR::is_a<ASR::symbol_t>(*template_param)) {
+                ASR::Function_t *restriction = ASR::down_cast2<ASR::Function_t>(template_param);
+                ASR::symbol_t *func_arg = current_scope->resolve_symbol(arg);
+                if (!ASR::is_a<ASR::Function_t>(*func_arg)) {
+                    // TODO: make error, undefined function
+                    LFORTRAN_ASSERT(false); 
+                }
+                // TODO: restriction check
+                rt_subs[current_template_arg[i]] = func_arg;
+            }
+        }
+
+        // LFORTRAN_ASSERT(false);
 
         for(size_t i = 0; i < x.n_symbols; i++){
             AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
