@@ -585,3 +585,7 @@ RUN(NAME conv_complex2real LABELS gfortran llvm)
 RUN(NAME template_add LABELS llvm)
 
 RUN(NAME statement1 LABELS gfortran llvm)
+
+RUN(NAME implied_do_loop1 LABELS gfortran)
+RUN(NAME implied_do_loop2 LABELS gfortran)
+RUN(NAME implied_do_loop3 LABELS gfortran)
