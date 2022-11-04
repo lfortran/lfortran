@@ -93,6 +93,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Logical 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         (LogicalConstant 
@@ -113,6 +114,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Logical 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (LogicalNot 
@@ -128,6 +130,7 @@
                                     ) 
                                     ())] 
                                     (Logical 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (Logical 4 []) 
@@ -144,6 +147,7 @@
                                 (IntegerConstant 1 (Integer 4 [])) 
                                 ())] 
                                 (Logical 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Logical 4 []) 
@@ -161,6 +165,7 @@
                             (IntegerConstant 2 (Integer 4 [])) 
                             ())] 
                             (Logical 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         [(ErrorStop 
@@ -176,6 +181,7 @@
                                 (IntegerConstant 3 (Integer 4 [])) 
                                 ())] 
                                 (Logical 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Logical 4 []) 
@@ -193,6 +199,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Logical 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         (LogicalConstant 
@@ -219,6 +226,7 @@
                                 ) 
                                 ())] 
                                 (Logical 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (LogicalNot 
@@ -240,6 +248,7 @@
                                     ) 
                                     ())] 
                                     (Logical 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (Logical 4 []) 
@@ -255,6 +264,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Logical 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         [(ErrorStop 
@@ -270,6 +280,7 @@
                                 (IntegerConstant 2 (Integer 4 [])) 
                                 ())] 
                                 (Logical 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Logical 4 []) 
@@ -287,6 +298,7 @@
                             (IntegerConstant 3 (Integer 4 [])) 
                             ())] 
                             (Logical 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         [(ErrorStop 
@@ -302,6 +314,7 @@
                                 (IntegerConstant 4 (Integer 4 [])) 
                                 ())] 
                                 (Logical 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Logical 4 []) 
@@ -324,6 +337,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Logical 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (LogicalBinOp 
@@ -333,6 +347,7 @@
                                     (Var 2 i) 
                                     ())] 
                                     (Logical 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 And 
@@ -353,6 +368,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Logical 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         [(ErrorStop 
@@ -367,6 +383,7 @@
                             (IntegerConstant 2 (Integer 4 [])) 
                             ())] 
                             (Logical 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         [(ErrorStop 
@@ -381,6 +398,7 @@
                             (IntegerConstant 3 (Integer 4 [])) 
                             ())] 
                             (Logical 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         [(ErrorStop 
@@ -395,6 +413,7 @@
                             (IntegerConstant 4 (Integer 4 [])) 
                             ())] 
                             (Logical 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         (LogicalBinOp 
@@ -406,6 +425,7 @@
                                         (IntegerConstant 1 (Integer 4 [])) 
                                         ())] 
                                         (Logical 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     Or 
@@ -415,6 +435,7 @@
                                         (IntegerConstant 2 (Integer 4 [])) 
                                         ())] 
                                         (Logical 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (Logical 4 []) 
@@ -427,6 +448,7 @@
                                     (IntegerConstant 3 (Integer 4 [])) 
                                     ())] 
                                     (Logical 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (Logical 4 []) 
@@ -439,6 +461,7 @@
                                 (IntegerConstant 1 (Integer 4 [])) 
                                 ())] 
                                 (Logical 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Logical 4 []) 
@@ -454,6 +477,7 @@
                                 (IntegerConstant 4 (Integer 4 [])) 
                                 ())] 
                                 (Logical 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Logical 4 []) 
@@ -471,6 +495,7 @@
                             (IntegerConstant 4 (Integer 4 [])) 
                             ())] 
                             (Logical 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         (ArrayItem 
@@ -479,6 +504,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Logical 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         ()
@@ -491,6 +517,7 @@
                                 (IntegerConstant 4 (Integer 4 [])) 
                                 ())] 
                                 (Logical 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Logical 4 []) 
@@ -559,6 +586,7 @@
                                         (Var 2 j) 
                                         ())] 
                                         (Logical 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (LogicalConstant 
@@ -577,6 +605,7 @@
                                         (Var 2 j) 
                                         ())] 
                                         (Logical 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (LogicalConstant 
@@ -598,6 +627,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Logical 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         [(ErrorStop 
@@ -616,6 +646,7 @@
                                 (IntegerConstant 2 (Integer 4 [])) 
                                 ())] 
                                 (Logical 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Logical 4 []) 
@@ -637,6 +668,7 @@
                                 (IntegerConstant 1 (Integer 4 [])) 
                                 ())] 
                                 (Logical 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Logical 4 []) 
@@ -657,6 +689,7 @@
                             (IntegerConstant 2 (Integer 4 [])) 
                             ())] 
                             (Logical 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         [(ErrorStop 

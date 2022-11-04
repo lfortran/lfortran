@@ -78,6 +78,7 @@
                                                 (Var 3 i) 
                                                 ())] 
                                                 (Integer 4 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             (ArrayItem 
@@ -86,6 +87,7 @@
                                                 (Var 3 i) 
                                                 ())] 
                                                 (Integer 4 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             ()
@@ -231,6 +233,7 @@
                                                         (Var 4 i) 
                                                         ())] 
                                                         (Integer 4 []) 
+                                                        ColMajor 
                                                         ()
                                                     ) 
                                                     Eq 
@@ -240,6 +243,7 @@
                                                         (Var 4 i) 
                                                         ())] 
                                                         (Integer 4 []) 
+                                                        ColMajor 
                                                         ()
                                                     ) 
                                                     (Logical 4 []) 
@@ -316,6 +320,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Var 2 i) 

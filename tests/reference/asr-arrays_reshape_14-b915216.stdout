@@ -270,6 +270,7 @@
                                                 (Var 4 k) 
                                                 ())] 
                                                 (Real 8 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             (Cast 
@@ -308,6 +309,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 16 (Integer 4 [])) 
@@ -320,6 +322,7 @@
                                             (IntegerConstant 2 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 16 (Integer 4 [])) 
@@ -363,6 +366,7 @@
                                                                         (Var 4 j) 
                                                                         ())] 
                                                                         (Real 8 []) 
+                                                                        ColMajor 
                                                                         ()
                                                                     ) 
                                                                     Sub 
@@ -436,6 +440,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 16 (Integer 4 [])) 
@@ -448,6 +453,7 @@
                                             (IntegerConstant 2 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 16 (Integer 4 [])) 
@@ -460,6 +466,7 @@
                                             (IntegerConstant 3 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 16 (Integer 4 [])) 
@@ -512,6 +519,7 @@
                                                                                 (Var 4 k) 
                                                                                 ())] 
                                                                                 (Real 8 []) 
+                                                                                ColMajor 
                                                                                 ()
                                                                             ) 
                                                                             Sub 
@@ -827,6 +835,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 256 (Integer 4 [])) 
@@ -902,6 +911,7 @@
                                                                     (Var 3 k) 
                                                                     ())] 
                                                                     (Real 8 []) 
+                                                                    ColMajor 
                                                                     ()
                                                                 ) 
                                                                 Sub 
@@ -983,6 +993,7 @@
                                                         (Var 3 k) 
                                                         ())] 
                                                         (Real 8 []) 
+                                                        ColMajor 
                                                         ()
                                                     ) 
                                                     (Cast 
@@ -1047,6 +1058,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 4096 (Integer 4 [])) 
@@ -1164,6 +1176,7 @@
                                                                         (Var 3 l) 
                                                                         ())] 
                                                                         (Real 8 []) 
+                                                                        ColMajor 
                                                                         ()
                                                                     ) 
                                                                     Sub 
@@ -1358,6 +1371,7 @@
                                                     (Var 5 j) 
                                                     ())] 
                                                     (Real 8 []) 
+                                                    ColMajor 
                                                     ()
                                                 ) 
                                                 (Cast 
@@ -1501,6 +1515,7 @@
                                                 (Var 5 l) 
                                                 ())] 
                                                 (Real 8 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             (Cast 

@@ -78,6 +78,7 @@
                                     (Var 2 j) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (Real 4 []) 

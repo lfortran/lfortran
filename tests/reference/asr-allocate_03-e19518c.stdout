@@ -79,6 +79,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 99 (Integer 4 [])) 
@@ -154,6 +155,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         )] 
                                         () 
@@ -182,6 +184,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         )] 
                                         () 
@@ -200,6 +203,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 8 (Integer 4 [])) 
@@ -266,6 +270,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         )] 
                                         () 
@@ -294,6 +299,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         )] 
                                         () 
@@ -312,6 +318,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 8 (Integer 4 [])) 
@@ -406,6 +413,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         (IntegerConstant 3 (Integer 4 [])) 
@@ -446,6 +454,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )] 
                         () 

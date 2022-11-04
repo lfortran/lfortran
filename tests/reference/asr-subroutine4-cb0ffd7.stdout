@@ -123,6 +123,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Real 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (RealBinOp 
@@ -132,6 +133,7 @@
                                     (Var 2 i) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 Add 
@@ -144,6 +146,7 @@
                                         (Var 2 i) 
                                         ())] 
                                         (Real 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (Real 4 []) 
