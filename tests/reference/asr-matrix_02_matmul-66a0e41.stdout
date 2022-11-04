@@ -175,6 +175,7 @@
                                                     (Var 2 k) 
                                                     ())] 
                                                     (Integer 4 []) 
+                                                    ColMajor 
                                                     ()
                                                 ) 
                                                 IntegerToReal 
@@ -191,6 +192,7 @@
                                                 (Var 2 j) 
                                                 ())] 
                                                 (Real 4 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             (Real 4 []) 
@@ -213,6 +215,7 @@
                                         (Var 2 j) 
                                         ())] 
                                         (Real 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     NotEq 

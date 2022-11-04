@@ -327,6 +327,7 @@
                                                             (Var 4 k) 
                                                             ())] 
                                                             (Real 4 []) 
+                                                            ColMajor 
                                                             ()
                                                         ) 
                                                         NotEq 
@@ -472,6 +473,7 @@
                                         (Var 2 k) 
                                         ())] 
                                         (Real 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (Cast 
@@ -525,6 +527,7 @@
                                         (Var 2 k) 
                                         ())] 
                                         (Real 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (Cast 
@@ -584,6 +587,7 @@
                                         (Var 2 k) 
                                         ())] 
                                         (Real 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (Cast 

@@ -224,6 +224,7 @@
                                                 (Var 4 i) 
                                                 ())] 
                                                 (Integer 4 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             (IntegerConstant 2 (Integer 4 [])) 
@@ -332,6 +333,7 @@
                                                 (Var 29 i) 
                                                 ())] 
                                                 (Real 4 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             (RealConstant 
