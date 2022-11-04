@@ -322,12 +322,8 @@
             [] 
             [(Instantiate 
                 add_t 
-                [(() 
-                real 
-                ())
-                (() 
-                func_arg_real 
-                ())] 
+                [real
+                func_arg_real] 
                 [(UseSymbol 
                     add_generic 
                     add_real
@@ -379,12 +375,8 @@
             )
             (Instantiate 
                 add_t 
-                [(() 
-                integer 
-                ())
-                (() 
-                func_arg_int 
-                ())] 
+                [integer
+                func_arg_int] 
                 [(UseSymbol 
                     add_generic 
                     add_integer
