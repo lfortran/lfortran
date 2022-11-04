@@ -56,6 +56,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Character 1 40 () []) 
+                            ColMajor 
                             ()
                         ) 
                         (StringConstant 
@@ -71,6 +72,7 @@
                             (IntegerConstant 2 (Integer 4 [])) 
                             ())] 
                             (Character 1 40 () []) 
+                            ColMajor 
                             ()
                         ) 
                         (StringConstant 
@@ -86,6 +88,7 @@
                             (IntegerConstant 3 (Integer 4 [])) 
                             ())] 
                             (Character 1 40 () []) 
+                            ColMajor 
                             ()
                         ) 
                         (StringConstant 
@@ -109,6 +112,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Character 1 1 () []) 
+                            ColMajor 
                             ()
                         ) 
                         (StringConstant 
@@ -124,6 +128,7 @@
                             (IntegerConstant 2 (Integer 4 [])) 
                             ())] 
                             (Character 1 1 () []) 
+                            ColMajor 
                             ()
                         ) 
                         (StringConstant 
@@ -139,6 +144,7 @@
                             (IntegerConstant 3 (Integer 4 [])) 
                             ())] 
                             (Character 1 1 () []) 
+                            ColMajor 
                             ()
                         ) 
                         (StringConstant 
@@ -154,6 +160,7 @@
                             (IntegerConstant 4 (Integer 4 [])) 
                             ())] 
                             (Character 1 1 () []) 
+                            ColMajor 
                             ()
                         ) 
                         (StringConstant 
@@ -169,6 +176,7 @@
                             (IntegerConstant 5 (Integer 4 [])) 
                             ())] 
                             (Character 1 1 () []) 
+                            ColMajor 
                             ()
                         ) 
                         (StringConstant 
@@ -189,6 +197,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Character 1 40 () []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -197,6 +206,7 @@
                             (IntegerConstant 2 (Integer 4 [])) 
                             ())] 
                             (Character 1 40 () []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -205,6 +215,7 @@
                             (IntegerConstant 3 (Integer 4 [])) 
                             ())] 
                             (Character 1 40 () []) 
+                            ColMajor 
                             ()
                         )] 
                         () 

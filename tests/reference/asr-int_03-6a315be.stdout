@@ -123,6 +123,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 8 []) 
+                            ColMajor 
                             ()
                         ) 
                         (IntegerConstant 8524933037632333570 (Integer 8 [])) 
@@ -135,6 +136,7 @@
                             (IntegerConstant 2 (Integer 4 [])) 
                             ())] 
                             (Integer 8 []) 
+                            ColMajor 
                             ()
                         ) 
                         (IntegerUnaryMinus 
@@ -151,6 +153,7 @@
                             (IntegerConstant 3 (Integer 4 [])) 
                             ())] 
                             (Integer 8 []) 
+                            ColMajor 
                             ()
                         ) 
                         (IntegerUnaryMinus 
@@ -167,6 +170,7 @@
                             (IntegerConstant 4 (Integer 4 [])) 
                             ())] 
                             (Integer 8 []) 
+                            ColMajor 
                             ()
                         ) 
                         (IntegerConstant 7303655603304982073 (Integer 8 [])) 
@@ -179,6 +183,7 @@
                             (IntegerConstant 5 (Integer 4 [])) 
                             ())] 
                             (Integer 8 []) 
+                            ColMajor 
                             ()
                         ) 
                         (IntegerConstant 5108441843522503546 (Integer 8 [])) 

@@ -98,6 +98,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Cast 
@@ -123,6 +124,7 @@
                                 (IntegerConstant 1 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -148,6 +150,7 @@
                                 (IntegerConstant 2 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -173,6 +176,7 @@
                                 (IntegerConstant 3 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -208,6 +212,7 @@
                                 ) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Cast 
@@ -227,6 +232,7 @@
                                 (IntegerConstant 1 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -252,6 +258,7 @@
                                 (IntegerConstant 2 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -277,6 +284,7 @@
                                 (IntegerConstant 3 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -302,6 +310,7 @@
                                 (IntegerConstant 4 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -331,6 +340,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (ComplexBinOp 
@@ -340,6 +350,7 @@
                                     (Var 2 i) 
                                     ())] 
                                     (Complex 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 Sub 
@@ -363,6 +374,7 @@
                                 (IntegerConstant 1 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -388,6 +400,7 @@
                                 (IntegerConstant 2 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -413,6 +426,7 @@
                                 (IntegerConstant 3 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -437,6 +451,7 @@
                             (IntegerConstant 4 (Integer 4 [])) 
                             ())] 
                             (Complex 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         (ComplexBinOp 
@@ -448,6 +463,7 @@
                                         (IntegerConstant 1 (Integer 4 [])) 
                                         ())] 
                                         (Complex 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     Add 
@@ -457,6 +473,7 @@
                                         (IntegerConstant 2 (Integer 4 [])) 
                                         ())] 
                                         (Complex 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (Complex 4 []) 
@@ -469,6 +486,7 @@
                                     (IntegerConstant 3 (Integer 4 [])) 
                                     ())] 
                                     (Complex 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (Complex 4 []) 
@@ -481,6 +499,7 @@
                                 (IntegerConstant 1 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Complex 4 []) 
@@ -496,6 +515,7 @@
                                 (IntegerConstant 4 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -520,6 +540,7 @@
                             (IntegerConstant 4 (Integer 4 [])) 
                             ())] 
                             (Complex 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         (ArrayItem 
@@ -528,6 +549,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Complex 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         ()
@@ -540,6 +562,7 @@
                                 (IntegerConstant 4 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -577,6 +600,7 @@
                                     (Var 2 j) 
                                     ())] 
                                     (Complex 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (Cast 
@@ -612,6 +636,7 @@
                                 (IntegerConstant 1 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -640,6 +665,7 @@
                                 (IntegerConstant 2 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -668,6 +694,7 @@
                                 (IntegerConstant 1 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -696,6 +723,7 @@
                                 (IntegerConstant 2 (Integer 4 [])) 
                                 ())] 
                                 (Complex 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
