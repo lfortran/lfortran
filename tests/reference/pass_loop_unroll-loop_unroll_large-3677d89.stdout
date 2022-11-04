@@ -98,7 +98,7 @@
                             ) 
                             LtE 
                             (IntegerConstant 32 (Integer 4 [])) 
-                            (Integer 4 []) 
+                            (Logical 4 []) 
                             ()
                         ) 
                         [(= 
@@ -929,7 +929,7 @@
                             ) 
                             LtE 
                             (IntegerConstant 32 (Integer 4 [])) 
-                            (Integer 4 []) 
+                            (Logical 4 []) 
                             ()
                         ) 
                         [(= 

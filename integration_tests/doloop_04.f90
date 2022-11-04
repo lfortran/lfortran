@@ -41,4 +41,11 @@ c: do
 end do c
 if (j /= 3) error stop
 
+!test-issue 746
+
+k = 2
+do i = 1, 10, k
+    100 continue
+end do
+
 end

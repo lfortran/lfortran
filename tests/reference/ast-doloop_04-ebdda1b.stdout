@@ -324,6 +324,35 @@
             (TriviaNode 
                 [] 
                 [(EndOfLine)
+                (EndOfLine)
+                (Comment 
+                    "!test-issue 746"
+                )
+                (EndOfLine)]
+            )
+        )
+        (= 
+            0 
+            k 
+            2 
+            ()
+        )
+        (DoLoop 
+            0 
+            () 
+            0 
+            i 
+            1 
+            10 
+            k 
+            [(Continue 
+                100 
+                ()
+            )] 
+            () 
+            (TriviaNode 
+                [] 
+                [(EndOfLine)
                 (EndOfLine)]
             )
         )] 
