@@ -677,7 +677,6 @@ public:
     bool is_instantiate = false;
     bool is_current_procedure_templated = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
-    // std::map<std::string, std::vector<ASR::asr_t*>> template_type_parameters;
     // used for requirement type parameters
     std::vector<ASR::asr_t*> current_requirement_type_parameters;
     std::vector<ASR::asr_t*> current_requirement_functions;
