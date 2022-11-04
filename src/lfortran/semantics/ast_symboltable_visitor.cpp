@@ -1519,9 +1519,9 @@ public:
                 }
             }
         }
-        // current_template_type_parameters.clear();
-        current_requirement_functions.clear();
         requirement_map[x.m_name] = current_req;
+        current_requirement_type_parameters.clear();
+        current_requirement_functions.clear();
         is_requirement = false;
     }
 

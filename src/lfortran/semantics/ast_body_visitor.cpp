@@ -2102,6 +2102,7 @@ public:
         }
         template_arg_map[to_lower(x.m_name)] = current_template_arg_map;
         template_asr_map[to_lower(x.m_name)] = current_template_asr_map;
+        called_requirement.clear();
     }
 };
 
