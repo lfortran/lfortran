@@ -225,13 +225,13 @@ end
 
 function conjgz32(x::ComplexF32)::ComplexF32
     local r::ComplexF32 = 0.0
-    r = (-x) + complex(Float32(2) * real(x))
+    r = complex(real(x)) - complex(caimag(x)) * ComplexF32(0, 1)
     return r
 end
 
 function conjgz64(x::ComplexF64)::ComplexF64
     local r::ComplexF64 = 0.0
-    r = (-x) + complex(Float32(2) * real(x))
+    r = complex(real(x)) - complex(zaimag(x)) * ComplexF32(0, 1)
     return r
 end
 
