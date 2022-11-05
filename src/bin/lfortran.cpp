@@ -256,6 +256,7 @@ int prompt(bool verbose)
 
     Allocator al(64*1024*1024);
     CompilerOptions cu;
+    cu.runtime_library_dir = LFortran::get_runtime_library_dir();
     LFortran::FortranEvaluator e(cu);
 
     std::vector<std::string> history;
