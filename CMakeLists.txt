@@ -83,11 +83,18 @@ set(WITH_LFORTRAN_BINARY_MODFILES YES
 set(WITH_RUNTIME_LIBRARY YES
     CACHE BOOL "Compile and install the runtime library")
 
+set(WITH_RUNTIME_LIBRARY_ONLY NO
+    CACHE BOOL "Compile and install only the runtime library")
+
 set(WITH_WHEREAMI yes
     CACHE BOOL "Include whereami.cpp")
 
 set(WITH_ZLIB yes
     CACHE BOOL "Compile with ZLIB Library")
+
+if (WITH_RUNTIME_LIBRARY_ONLY AND NOT WITH_RUNTIME_LIBRARY)
+  message(FATAL_ERROR "Invalid set of options: WITH_RUNTIME_LIBRARY_ONLY=Yes but WITH_RUNTIME_LIBRARY=No. Please change one of them.")
+endif()
 
 # Build to wasm
 set(LFORTRAN_BUILD_TO_WASM no 
@@ -306,6 +313,7 @@ message("WITH_JSON: ${WITH_JSON}")
 message("WITH_FMT: ${WITH_FMT}")
 message("WITH_LFORTRAN_BINARY_MODFILES: ${WITH_LFORTRAN_BINARY_MODFILES}")
 message("WITH_RUNTIME_LIBRARY: ${WITH_RUNTIME_LIBRARY}")
+message("WITH_RUNTIME_LIBRARY_ONLY: ${WITH_RUNTIME_LIBRARY_ONLY}")
 message("WITH_WHEREAMI: ${WITH_WHEREAMI}")
 message("WITH_ZLIB: ${WITH_ZLIB}")
 message("WITH_TARGET_AARCH64: ${WITH_TARGET_AARCH64}")

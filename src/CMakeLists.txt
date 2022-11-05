@@ -1,10 +1,16 @@
-if (NOT WITH_RUNTIME_LIBRARY)
+if (NOT WITH_RUNTIME_LIBRARY_ONLY)
   add_subdirectory(libasr)
   add_subdirectory(tests)
   add_subdirectory(lfortran)
   add_subdirectory(bin)
   add_subdirectory(runtime/legacy)
-else ()
+endif()
+
+if (WITH_RUNTIME_LIBRARY)
+  add_subdirectory(runtime)
+endif()
+
+if (WITH_RUNTIME_LIBRARY_ONLY)
   add_subdirectory(runtime)
   add_subdirectory(runtime/legacy)
 endif()
