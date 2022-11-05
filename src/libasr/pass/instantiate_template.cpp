@@ -232,8 +232,8 @@ public:
         ASR::expr_t* value = duplicate_expr(x->m_value);
         ASR::expr_t* dt = duplicate_expr(x->m_dt);
         std::string call_name = ASRUtils::symbol_name(x->m_name);
-        for (ASR::Function_t* rt: rts) {
-            if (call_name.compare(rt->m_name) == 0) {
+        //for (ASR::Function_t* rt: rts) {
+        //    if (call_name.compare(rt->m_name) == 0) {
                 if (rt_subs.find(call_name) == rt_subs.end()) {
                     if (call_name.compare("add") == 0) {
                         ASR::expr_t* left_arg = duplicate_expr(x->m_args[0].m_value);
@@ -262,8 +262,8 @@ public:
                     LFORTRAN_ASSERT(false); // should never happen
                 }
                 name = rt_subs[call_name];
-            }
-        }
+        //    }
+        //}
         // TODO: Nested generic function call
         return ASR::make_FunctionCall_t(al, x->base.base.loc, name, x->m_original_name,
             args.p, args.size(), type, value, dt);

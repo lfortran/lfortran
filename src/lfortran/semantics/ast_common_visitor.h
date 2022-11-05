@@ -672,12 +672,18 @@ public:
     ASR::abiType current_procedure_abi_type = ASR::abiType::Source;
     bool is_derived_type = false;
     bool is_body_visitor = false;
+    bool is_requirement = false;
     bool is_template = false;
+    bool is_instantiate = false;
     bool is_current_procedure_templated = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
-    std::map<std::string, std::vector<ASR::asr_t*>> template_type_parameters;
-    std::vector<ASR::asr_t*> current_template_type_parameters;
-    std::unordered_set<int> current_procedure_used_type_parameter_indices;
+    // used for requirement type parameters
+    std::vector<ASR::asr_t*> current_requirement_type_parameters;
+    std::vector<ASR::asr_t*> current_requirement_functions;
+    std::map<std::string, std::map<std::string, ASR::asr_t*>> requirement_map;
+    std::map<std::string, ASR::asr_t*> called_requirement;
+    std::map<std::string, std::map<std::string, ASR::asr_t*>> template_asr_map;
+    std::map<std::string, std::map<int, std::string>> template_arg_map;
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
 
@@ -779,6 +785,14 @@ public:
                     v = declare_implicit_variable(loc, var_name, intent);
                 }
             } else {
+                // DONE: fix this ad-hoc solution ==> remove this solution
+                /*
+                if (is_instantiate) {
+                    ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, loc,
+                            1, strlen(s2c(al, var_name)), nullptr, nullptr, 0));
+                    return ASR::make_StringConstant_t(al, loc, s2c(al, var_name), type);
+                }
+                */
                 diag.semantic_error_label("Variable '" + var_name
                     + "' is not declared", {loc},
                     "'" + var_name + "' is undeclared");
@@ -1468,17 +1482,25 @@ public:
             LFORTRAN_ASSERT(sym_type->m_name);
             std::string derived_type_name = to_lower(sym_type->m_name);
             bool type_param = false;
-            if(is_template){
-                for(size_t i = 0; i < current_template_type_parameters.size(); i++){
-                    ASR::TypeParameter_t* param = ASR::down_cast2<ASR::TypeParameter_t>(current_template_type_parameters[i]);
+            if (is_requirement) {
+                for (size_t i = 0; i < current_requirement_type_parameters.size(); i++) {
+                    ASR::TypeParameter_t* param = ASR::down_cast2<ASR::TypeParameter_t>(current_requirement_type_parameters[i]);
                     std::string name = std::string(param->m_param);
-
                     if(name.compare(derived_type_name) == 0){
-                        current_procedure_used_type_parameter_indices.insert(i);
-                        is_current_procedure_templated = true;
                         type_param = true;
                         type = LFortran::ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
-                                                        s2c(al, derived_type_name), nullptr, 0));
+                                                        param->m_param, param->m_dims, param->n_dims));
+                    }
+                }
+            } else if (is_template) {
+                for (const auto &pair: called_requirement) {
+                    if (pair.first.compare(derived_type_name) == 0) {
+                        ASR::asr_t *req_asr = pair.second;
+                        if (ASR::is_a<ASR::ttype_t>(*req_asr)) {
+                            type_param = true;
+                            type = LFortran::ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
+                                                            s2c(al, derived_type_name), nullptr, 0));
+                        }
                     }
                 }
             }
@@ -2947,6 +2969,26 @@ public:
                     }
                     if( v == nullptr ) {
                         throw SemanticError("Unable to find a function to bind for generic procedure call, " + std::string(gp->m_name),
+                                            x.base.base.loc);
+                    }
+                }
+            }
+            // check whether the requirement function is included in the template
+            if (ASR::is_a<ASR::Function_t>(*v)) {
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(v);
+                if (f->m_is_restriction) {
+                    if (!is_template) {
+                        throw SemanticError("A requirement function must be called from a tempalte",
+                                            x.base.base.loc);  
+                    }
+                    bool requirement_found = false;
+                    std::string f_name = f->m_name;
+                    if (called_requirement.find(f_name) != called_requirement.end()
+                            && ASR::is_a<ASR::symbol_t>(*called_requirement[f_name])) {
+                        requirement_found = true;
+                    }
+                    if (!requirement_found) {
+                        throw SemanticError("The template did not declare this requirement funciton",
                                             x.base.base.loc);
                     }
                 }
