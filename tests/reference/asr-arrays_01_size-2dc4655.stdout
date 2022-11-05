@@ -141,6 +141,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (IntegerBinOp 
@@ -161,6 +162,7 @@
                                 (IntegerConstant 1 (Integer 4 [])) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -181,6 +183,7 @@
                                 (IntegerConstant 2 (Integer 4 [])) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -201,6 +204,7 @@
                                 (IntegerConstant 3 (Integer 4 [])) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -237,6 +241,7 @@
                                 ) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Var 2 i) 
@@ -251,6 +256,7 @@
                                 (IntegerConstant 1 (Integer 4 [])) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -271,6 +277,7 @@
                                 (IntegerConstant 2 (Integer 4 [])) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -291,6 +298,7 @@
                                 (IntegerConstant 3 (Integer 4 [])) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -311,6 +319,7 @@
                                 (IntegerConstant 4 (Integer 4 [])) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -335,6 +344,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (IntegerBinOp 
@@ -344,6 +354,7 @@
                                     (Var 2 i) 
                                     ())] 
                                     (Integer 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 Sub 
@@ -362,6 +373,7 @@
                                 (IntegerConstant 1 (Integer 4 [])) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -382,6 +394,7 @@
                                 (IntegerConstant 2 (Integer 4 [])) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -402,6 +415,7 @@
                                 (IntegerConstant 3 (Integer 4 [])) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -421,6 +435,7 @@
                             (IntegerConstant 4 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         (IntegerBinOp 
@@ -432,6 +447,7 @@
                                         (IntegerConstant 1 (Integer 4 [])) 
                                         ())] 
                                         (Integer 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     Add 
@@ -441,6 +457,7 @@
                                         (IntegerConstant 2 (Integer 4 [])) 
                                         ())] 
                                         (Integer 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (Integer 4 []) 
@@ -453,6 +470,7 @@
                                     (IntegerConstant 3 (Integer 4 [])) 
                                     ())] 
                                     (Integer 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (Integer 4 []) 
@@ -465,6 +483,7 @@
                                 (IntegerConstant 1 (Integer 4 [])) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Integer 4 []) 
@@ -480,6 +499,7 @@
                                 (IntegerConstant 4 (Integer 4 [])) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 
@@ -499,6 +519,7 @@
                             (IntegerConstant 4 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         (ArrayItem 
@@ -507,6 +528,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         ) 
                         ()
@@ -519,6 +541,7 @@
                                 (IntegerConstant 4 (Integer 4 [])) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             NotEq 

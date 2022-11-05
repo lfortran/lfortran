@@ -138,6 +138,7 @@
                                         (Var 2 k) 
                                         ())] 
                                         (Integer 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (IntegerBinOp 
@@ -162,6 +163,7 @@
                                         (Var 2 k) 
                                         ())] 
                                         (Integer 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (IntegerBinOp 
@@ -195,6 +197,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -209,6 +212,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -223,6 +227,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -237,6 +242,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )] 
                         () 
@@ -256,6 +262,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -270,6 +277,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -284,6 +292,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -298,6 +307,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )] 
                         () 
@@ -333,6 +343,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -347,6 +358,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -361,6 +373,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -375,6 +388,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )] 
                         () 
@@ -410,6 +424,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -424,6 +439,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -438,6 +454,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -452,6 +469,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )] 
                         () 
@@ -487,6 +505,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -501,6 +520,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -515,6 +535,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -529,6 +550,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )] 
                         () 
@@ -564,6 +586,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -578,6 +601,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -592,6 +616,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )
                         (ArrayItem 
@@ -606,6 +631,7 @@
                             (IntegerConstant 1 (Integer 4 [])) 
                             ())] 
                             (Integer 4 []) 
+                            ColMajor 
                             ()
                         )] 
                         () 

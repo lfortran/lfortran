@@ -290,6 +290,7 @@
                                                                     (Var 3 k) 
                                                                     ())] 
                                                                     (Complex 4 []) 
+                                                                    ColMajor 
                                                                     ()
                                                                 ) 
                                                                 NotEq 
@@ -400,6 +401,7 @@
                                                                     (Var 3 k) 
                                                                     ())] 
                                                                     (Complex 4 []) 
+                                                                    ColMajor 
                                                                     ()
                                                                 ) 
                                                                 NotEq 
@@ -547,6 +549,7 @@
                                         (Var 2 k) 
                                         ())] 
                                         (Integer 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (IntegerBinOp 
@@ -577,6 +580,7 @@
                                         (Var 2 k) 
                                         ())] 
                                         (Integer 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (IntegerBinOp 

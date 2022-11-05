@@ -339,6 +339,8 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %token <string> KW_TARGET
 %token <string> KW_TEAM
 %token <string> KW_TEAM_NUMBER
+%token <string> KW_REQUIREMENT
+%token <string> KW_REQUIRES
 %token <string> KW_TEMPLATE
 %token <string> KW_THEN
 %token <string> KW_TO
@@ -371,6 +373,8 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
 %type <ast> template_decl
+%type <ast> requirement_decl
+%type <ast> requires_decl
 %type <ast> enum_decl
 %type <ast> program
 %type <ast> subroutine
@@ -400,7 +404,6 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %type <dim> array_comp_decl
 %type <codim> coarray_comp_decl
 %type <ast> var_type
-%type <vec_ast> var_type_star
 %type <ast> fn_mod
 %type <vec_ast> fn_mod_plus
 %type <vec_ast> var_modifiers
@@ -708,8 +711,19 @@ template_decl
             $$ = TEMPLATE($2, $4, $7, $8, @$); }
     ;
 
+requirement_decl
+    : KW_REQUIREMENT id "(" id_list ")" sep decl_star
+        sub_or_func_plus KW_END KW_REQUIREMENT sep {
+            $$ = REQUIREMENT($2, $4, $7, $8, @$); }
+    ;
+
+requires_decl
+    : KW_REQUIRES id "(" id_list ")" sep {
+        $$ = REQUIRES($2, $4, @$); }
+    ;
+
 instantiate
-    : KW_INSTANTIATE id "(" var_type_star ")" "," KW_ONLY ":" use_symbol_list sep {
+    : KW_INSTANTIATE id "(" id_list ")" "," KW_ONLY ":" use_symbol_list sep {
         $$ = INSTANTIATE($2, $4, $9, @$); }
     ;
 
@@ -977,6 +991,8 @@ decl
     | interface_decl
     | derived_type_decl
     | template_decl
+    | requirement_decl
+    | requires_decl
     | enum_decl
     ;
 
@@ -1342,13 +1358,6 @@ var_modifier
     | bind { $$ = BIND($1, @$); }
     | KW_KIND { $$ = SIMPLE_ATTR(Kind, @$); }
     | KW_LEN { $$ = SIMPLE_ATTR(Len, @$); }
-    ;
-
-// var_type*
-var_type_star
-    : var_type_star "," var_type { $$ = $1; LIST_ADD($$, $3); }
-    | var_type { LIST_NEW($$); LIST_ADD($$, $1); }
-    | %empty { LIST_NEW($$); }
     ;
 
 var_type
@@ -2449,6 +2458,8 @@ id
     | KW_REAL { $$ = SYMBOL($1, @$); }
     | KW_RECURSIVE { $$ = SYMBOL($1, @$); }
     | KW_REDUCE { $$ = SYMBOL($1, @$); }
+    | KW_REQUIREMENT { $$ = SYMBOL($1, @$); }
+    | KW_REQUIRES { $$ = SYMBOL($1, @$); }
     | KW_RESULT { $$ = SYMBOL($1, @$); }
     | KW_RETURN { $$ = SYMBOL($1, @$); }
     | KW_REWIND { $$ = SYMBOL($1, @$); }
