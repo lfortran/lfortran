@@ -338,12 +338,12 @@ RUN(NAME parameter_03 LABELS gfortran llvm wasm)
 RUN(NAME parameter_04 LABELS gfortran llvm wasm) # selected_real,int_kind symboltable
 RUN(NAME parameter_05 LABELS gfortran llvm wasm) # Implicit IntegerToReal
 
-RUN(NAME modules_01 LABELS gfortran llvm)
-RUN(NAME modules_02 LABELS gfortran llvm)
+RUN(NAME modules_01 LABELS gfortran llvm wasm)
+RUN(NAME modules_02 LABELS gfortran llvm wasm)
 RUN(NAME modules_03 LABELS gfortran)
 RUN(NAME modules_04 LABELS gfortran)
 RUN(NAME modules_05 LABELS gfortran)
-RUN(NAME modules_06 LABELS gfortran llvm)
+RUN(NAME modules_06 LABELS gfortran llvm wasm)
 RUN(NAME modules_07 LABELS gfortran llvm EXTRAFILES modules_07_module.f90)
 RUN(NAME modules_22 LABELS gfortran llvm EXTRAFILES modules_22_module.f90)
 RUN(NAME modules_23 LABELS gfortran llvm EXTRAFILES modules_23_module.f90)
@@ -351,10 +351,10 @@ RUN(NAME modules_08 LABELS gfortran llvm EXTRAFILES
         modules_08_a.f90 modules_08_b.f90)
 RUN(NAME modules_09 LABELS gfortran llvm EXTRAFILES
         modules_09_a.f90 modules_09_b.f90)
-RUN(NAME modules_10 LABELS gfortran llvm)
+RUN(NAME modules_10 LABELS gfortran llvm wasm)
 RUN(NAME modules_11 LABELS gfortran llvm)
 RUN(NAME modules_12 LABELS gfortran)
-RUN(NAME modules_13 LABELS gfortran llvm)
+RUN(NAME modules_13 LABELS gfortran llvm wasm)
 RUN(NAME modules_14 LABELS gfortran llvm EXTRAFILES modules_14_a.f90)
 RUN(NAME modules_15 LABELS gfortran llvm EXTRAFILES
         modules_15b.f90 modules_15c.c)
