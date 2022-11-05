@@ -1720,45 +1720,99 @@ public:
                 body.size());
     }
 
-    void visit_ImpliedDoLoop(const AST::ImpliedDoLoop_t& x) {
-        Vec<ASR::expr_t*> a_values_vec;
+    // void visit_ImpliedDoLoop(const AST::ImpliedDoLoop_t& x) {
+    //     std::cout<<"ImpliedDoLoop"<<std::endl;
+    //     Vec<ASR::expr_t*> a_values_vec;
+    //     ASR::expr_t *a_start, *a_end, *a_increment;
+    //     a_start = a_end = a_increment = nullptr;
+    //     a_values_vec.reserve(al, x.n_values);
+    //     for( size_t i = 0; i < x.n_values; i++ ) {
+    //         this->visit_expr(*(x.m_values[i]));
+    //         a_values_vec.push_back(al, LFortran::ASRUtils::EXPR(tmp));
+    //     }
+    //     this->visit_expr(*(x.m_start));
+    //     a_start = LFortran::ASRUtils::EXPR(tmp);
+    //     this->visit_expr(*(x.m_end));
+    //     a_end = LFortran::ASRUtils::EXPR(tmp);
+    //     if( x.m_increment != nullptr ) {
+    //         this->visit_expr(*(x.m_increment));
+    //         a_increment = LFortran::ASRUtils::EXPR(tmp);
+    //     }
+    //     ASR::expr_t** a_values = a_values_vec.p;
+    //     size_t n_values = a_values_vec.size();
+    //     // std::string a_var_name = std::to_string(iloop_counter) + std::string(x.m_var);
+    //     // iloop_counter += 1;
+    //     // Str a_var_name_f;
+    //     // a_var_name_f.from_str(al, a_var_name);
+    //     // ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
+    //     //                                                 ASR::intentType::Local, nullptr,
+    //     //                                                 ASR::storage_typeType::Default, LFortran::ASRUtils::expr_type(a_start),
+    //     //                                                 ASR::abiType::Source, ASR::Public);
+    //     std::string var_name = to_lower(x.m_var);
+    //     if (current_scope->get_symbol(var_name) == nullptr) {
+    //         throw SemanticError("The implied do loop variable '" + var_name + "' is not declared", x.base.base.loc);
+    //     };
+
+    //     LFORTRAN_ASSERT(current_scope->get_symbol(var_name) != nullptr);
+    //     ASR::symbol_t* a_sym = current_scope->get_symbol(var_name);
+    //     // current_scope->scope[a_var_name] = a_sym;
+    //     ASR::expr_t* a_var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
+    //     tmp = ASR::make_ImpliedDoLoop_t(al, x.base.base.loc, a_values, n_values,
+    //                                         a_var, a_start, a_end, a_increment,
+    //                                         LFortran::ASRUtils::expr_type(a_start), nullptr);
+    // }
+
+    void visit_ImpliedDoLoop(const AST::ImpliedDoLoop_t &x) {
+        // initialise do_loop_head
+        ASR::do_loop_head_t head;
+
         ASR::expr_t *a_start, *a_end, *a_increment;
         a_start = a_end = a_increment = nullptr;
-        a_values_vec.reserve(al, x.n_values);
-        for( size_t i = 0; i < x.n_values; i++ ) {
-            this->visit_expr(*(x.m_values[i]));
-            a_values_vec.push_back(al, LFortran::ASRUtils::EXPR(tmp));
-        }
+
         this->visit_expr(*(x.m_start));
         a_start = LFortran::ASRUtils::EXPR(tmp);
         this->visit_expr(*(x.m_end));
         a_end = LFortran::ASRUtils::EXPR(tmp);
-        if( x.m_increment != nullptr ) {
+        if (x.m_increment != nullptr) {
             this->visit_expr(*(x.m_increment));
             a_increment = LFortran::ASRUtils::EXPR(tmp);
         }
-        ASR::expr_t** a_values = a_values_vec.p;
-        size_t n_values = a_values_vec.size();
-        // std::string a_var_name = std::to_string(iloop_counter) + std::string(x.m_var);
-        // iloop_counter += 1;
-        // Str a_var_name_f;
-        // a_var_name_f.from_str(al, a_var_name);
-        // ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
-        //                                                 ASR::intentType::Local, nullptr,
-        //                                                 ASR::storage_typeType::Default, LFortran::ASRUtils::expr_type(a_start),
-        //                                                 ASR::abiType::Source, ASR::Public);
+
         std::string var_name = to_lower(x.m_var);
         if (current_scope->get_symbol(var_name) == nullptr) {
             throw SemanticError("The implied do loop variable '" + var_name + "' is not declared", x.base.base.loc);
         };
-
         LFORTRAN_ASSERT(current_scope->get_symbol(var_name) != nullptr);
         ASR::symbol_t* a_sym = current_scope->get_symbol(var_name);
         // current_scope->scope[a_var_name] = a_sym;
         ASR::expr_t* a_var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
-        tmp = ASR::make_ImpliedDoLoop_t(al, x.base.base.loc, a_values, n_values,
-                                            a_var, a_start, a_end, a_increment,
-                                            LFortran::ASRUtils::expr_type(a_start), nullptr);
+
+        head.m_v = a_var;
+        head.m_start = a_start;
+        head.m_end = a_end;
+        head.m_increment = a_increment;
+
+        // initialise expr body
+        ASR::expr_t* a_body;
+        // Need Help over here!
+        this->visit_expr(*(x.m_values[0]));
+        a_body = LFortran::ASRUtils::EXPR(tmp);
+
+        // initialise type
+        ASR::ttype_t* a_type = LFortran::ASRUtils::expr_type(a_start);
+
+        // initialise value
+        ASR::expr_t* a_value=nullptr;
+
+        // make DoLoopExpr_t
+        tmp = ASR::make_DoLoopExpr_t(
+            al,
+            x.base.base.loc,
+            head,
+            a_body,
+            a_type,
+            a_value
+        );
     }
 
     void visit_DoLoop(const AST::DoLoop_t &x) {
