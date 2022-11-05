@@ -1331,6 +1331,7 @@ namespace wasm {
 #define INITIALIZE_VARS CompilerOptions compiler_options; \
                         compiler_options.use_colors = true; \
                         compiler_options.indent = true; \
+                        compiler_options.runtime_library_dir = LFortran::get_runtime_library_dir(); \
                         LFortran::FortranEvaluator fe(compiler_options); \
                         LFortran::LocationManager lm; \
                         LFortran::diag::Diagnostics diagnostics; \
