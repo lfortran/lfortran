@@ -67,10 +67,10 @@ cmake --build . --target install
 
 if $IS_WIN:
     cmake -DCMAKE_Fortran_COMPILER=src/bin/lfortran.exe -DWITH_RUNTIME_LIBRARY=Yes ..
+    cmake --build . -j1 --target install
 else:
     cmake -DCMAKE_Fortran_COMPILER=src/bin/lfortran -DWITH_RUNTIME_LIBRARY=Yes ..
-
-cmake --build . --target install
+    cmake --build . --target install
 
 ./src/lfortran/tests/test_lfortran
 ./src/bin/lfortran < ../src/bin/example_input.txt
