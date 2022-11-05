@@ -67,9 +67,7 @@ macro(RUN)
             target_compile_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
             target_link_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
-        endif()
-
-        if ((LFORTRAN_BACKEND STREQUAL "wasm"))
+        elseif ((LFORTRAN_BACKEND STREQUAL "wasm"))
             # wasm test
             execute_process(COMMAND lfortran --backend=wasm ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90 -o ${name})
 
@@ -86,11 +84,12 @@ macro(RUN)
             endif()
 
             add_test(${name} ${WASM_EXEC_RUNTIME} ${WASM_EXEC_FLAGS} ${CURRENT_BINARY_DIR}/${name}.js)
-        endif()
-
-        if (LFORTRAN_BACKEND STREQUAL "llvm2")
+        elseif (LFORTRAN_BACKEND STREQUAL "llvm2")
             target_compile_options(${name} PUBLIC --generate-object-code)
             target_link_options(${name} PUBLIC  --generate-object-code)
+        else ()
+            add_executable(${name} ${name}.f90 ${RUN_EXTRAFILES})
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         endif()
 
         if (RUN_LABELS)
