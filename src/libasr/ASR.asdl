@@ -219,7 +219,7 @@ expr
         -- Such as: (x, y+z), (3.0, 2.0) generally not known at compile time
     | ComplexConstructor(expr re, expr im, ttype type, expr? value)
     | NamedExpr(expr target, expr value, ttype type)
-    | DoLoopExpr(do_loop_head head, expr body, expr type, expr? value)
+    | DoLoopExpr(do_loop_head head, expr body, ttype type, expr? value)
     | FunctionCall(symbol name, symbol? original_name, call_arg* args,
             ttype type, expr? value, expr? dt)
     | StructTypeConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
