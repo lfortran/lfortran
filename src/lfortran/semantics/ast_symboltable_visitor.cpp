@@ -509,7 +509,6 @@ public:
         return r;
     }
     
-    
     void visit_Function(const AST::Function_t &x) {
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
