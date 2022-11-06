@@ -562,7 +562,7 @@ jobs:
 
           cmake --build . -j16 --target install
 
-          cmake . -DCMAKE_Fortran_COMPILER=lfortran \
+          cmake . -DCMAKE_Fortran_COMPILER="${CONDA_PREFIX}/bin/lfortran" \
             -DWITH_RUNTIME_LIBRARY=Yes
 
           cmake --build . -j16 --target install
