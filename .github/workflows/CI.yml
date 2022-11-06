@@ -166,7 +166,7 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
-	      -DWITH_RUNTIME_LIBRARY=No \
+              -DWITH_RUNTIME_LIBRARY=No \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -174,8 +174,8 @@ jobs:
 
             cmake --build . -j16 --target install
 
-	    cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
-	    	  -DWITH_RUNTIME_LIBRARY=Yes
+            cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
+              -DWITH_RUNTIME_LIBRARY=Yes
 
             cmake --build . -j16 --target install
 
@@ -215,7 +215,7 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
-  	      -DWITH_RUNTIME_LIBRARY=No \
+              -DWITH_RUNTIME_LIBRARY=No \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -223,8 +223,8 @@ jobs:
 
             cmake --build . -j16 --target install
 
-	    cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
-	    	  -DWITH_RUNTIME_LIBRARY=Yes
+            cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
+	    	      -DWITH_RUNTIME_LIBRARY=Yes
 
             cmake --build . -j16 --target install
 
@@ -262,7 +262,7 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
-   	      -DWITH_RUNTIME_LIBRARY=No \
+              -DWITH_RUNTIME_LIBRARY=No \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -270,8 +270,8 @@ jobs:
 
             cmake --build . -j16 --target install
 
-	    cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
-	    	  -DWITH_RUNTIME_LIBRARY=Yes
+	          cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
+              -DWITH_RUNTIME_LIBRARY=Yes
 
             cmake --build . -j16 --target install
 
@@ -309,7 +309,7 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
-  	      -DWITH_RUNTIME_LIBRARY=No \
+              -DWITH_RUNTIME_LIBRARY=No \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -317,8 +317,8 @@ jobs:
 
             cmake --build . -j16 --target install
 
-	    cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
-	    	  -DWITH_RUNTIME_LIBRARY=Yes
+            cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
+              -DWITH_RUNTIME_LIBRARY=Yes
 
             cmake --build . -j16 --target install
 
@@ -371,7 +371,7 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
-    	      -DWITH_RUNTIME_LIBRARY=No \
+              -DWITH_RUNTIME_LIBRARY=No \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -379,8 +379,8 @@ jobs:
 
             cmake --build . -j16 --target install
 
-	    cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
-	    	  -DWITH_RUNTIME_LIBRARY=Yes
+            cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
+              -DWITH_RUNTIME_LIBRARY=Yes
 
             cmake --build . -j16 --target install
 
@@ -478,7 +478,7 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
-	      -DWITH_RUNTIME_LIBRARY=No \
+              -DWITH_RUNTIME_LIBRARY=No \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -486,8 +486,8 @@ jobs:
 
             cmake --build . -j16 --target install
 
-	    cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
-	    	  -DWITH_RUNTIME_LIBRARY=Yes
+            cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
+              -DWITH_RUNTIME_LIBRARY=Yes
 
             cmake --build . -j16 --target install
 
@@ -554,16 +554,16 @@ jobs:
             -DCMAKE_BUILD_TYPE=Debug \
             -DWITH_LLVM=yes \
             -DWITH_XEUS=yes \
-	    -DWITH_RUNTIME_LIBRARY=No \
+            -DWITH_RUNTIME_LIBRARY=No \
             -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
             -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-	  cmake --build . -j16 --target install
+          cmake --build . -j16 --target install
 
-	  cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
-	      -DWITH_RUNTIME_LIBRARY=Yes
+          cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
+            -DWITH_RUNTIME_LIBRARY=Yes
 
           cmake --build . -j16 --target install
           ctest --output-on-failure
