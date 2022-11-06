@@ -9,7 +9,9 @@ os.environ['CXXFLAGS'] = "-Werror"
 echo "CONDA_PREFIX=$CONDA_PREFIX"
 
 ./build0.sh
-cmake -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$PWD -DCMAKE_BUILD_TYPE=Debug -DWITH_JSON=yes .
+cmake -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$PWD -DWITH_RUNTIME_LIBRARY=No -DCMAKE_BUILD_TYPE=Debug -DWITH_JSON=yes .
+cmake --build . --target install -j16
+cmake -DCMAKE_Fortran_COMPILER="${PWD}/bin/lfortran" -DWITH_RUNTIME_LIBRARY=Yes .
 cmake --build . --target install -j16
 ctest --output-on-failure
 
