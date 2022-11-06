@@ -1,5 +1,6 @@
 program implied_do_loop3
 
+	integer::i,j,k
 	real:: a(3) = (/(j*3,j=1,3)/)
 	real:: b(3) = (/(j*2,j=1,3)/)
 
