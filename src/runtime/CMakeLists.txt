@@ -85,4 +85,3 @@ install(
   DESTINATION share/lfortran/lib
   )
 
-# install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/ DESTINATION share/lfortran/lib)
