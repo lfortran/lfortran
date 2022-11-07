@@ -1,6 +1,10 @@
 # Installation
 
-All the instructions below work on Linux, macOS and Windows.
+All the instructions below work on Linux, macOS and Windows. The building process consists of two
+steps: first we build the compiler, second we build the runtime (written in Fortran). If you want
+to build a cross compiler you only need to enable support for the target architecture
+(e.g. `-DWITH_TARGET_AARCH64`) on the first step and pass a CMake toolchain file on the second step
+(we will provide them). See the cross compilation section for more instructions.
 
 ## Binaries
 
@@ -51,7 +55,13 @@ cd lfortran-0.9.0
 ```
 And build:
 ```
+# First we build the compiler
 cmake -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .
+make -j8
+make install
+
+# Now we build the runtime providing the compiler we just build
+cmake -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran -DWITH_RUNTIME_LIBRARY=Yes
 make -j8
 make install
 ```
@@ -85,8 +95,15 @@ Generate files that are needed for the build (this step depends on `re2c`, `biso
 ```
 Now the process is the same as installing from the source tarball. For example to build in Debug mode:
 ```
+# First we build the compiler
 cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .
 make -j8
+make install
+
+# Now we build the runtime providing the compiler we just build
+cmake -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran -DWITH_RUNTIME_LIBRARY=Yes
+make -j8
+make install
 ```
 
 Run tests:
@@ -195,10 +212,17 @@ cd lfortran
 
 * Run the following commands
 ```bash
+# First we build the compiler 
 conda activate lf
 ./build0.sh
 cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .\
 make -j8
+make install
+
+# Now we build the runtime providing the compiler we just build
+cmake -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran -DWITH_RUNTIME_LIBRARY=Yes
+make -j8
+make install
 ```
 
 * If everything compiles, you can use LFortran as follows
@@ -227,6 +251,7 @@ conda install xeus xtl nlohmann_json cppzmq
 and enable the kernel by `-DWITH_XEUS=yes` and install into `$CONDA_PREFIX`. For
 example:
 ```
+# First we build the compiler
 cmake \
     -DCMAKE_BUILD_TYPE=Debug \
     -DWITH_LLVM=yes \
@@ -234,6 +259,10 @@ cmake \
     -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
     -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
     .
+cmake --build . -j4 --target install
+
+# Now we build the runtime providing the compiler we just build
+cmake -DCMAKE_Fortran_COMPILER=lfortran -DWITH_RUNTIME_LIBRARY=Yes
 cmake --build . -j4 --target install
 ```
 To use it, install Jupyter (`conda install jupyter`) and test that the LFortran
@@ -353,3 +382,140 @@ and compile LFortran with the
 `-DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH_LFORTRAN;$CONDA_PREFIX"` cmake option.
 The `$CONDA_PREFIX` is there if you install some other dependencies (such as
 `llvm`) using Conda, otherwise you can remove it.
+
+## Cross compilation
+LFortran can work as a cross compiler. The instructions here are for the platforms known to work, other platforms might work too, specially if they are not too different (e.g. compiling to iOS from an arm64 Mac instead of an Intel one).
+
+Cross compilation can be complicated but LFortran makes it relatively simple. The main things you need to know are: 
+
+The "host" system is where you are running the compiler. The "target" system is where the generated binaries will be ran. For example if you are cross compiling from macOS to iOS, macOS is the host system and iOS is the target.
+
+LFortran can only cross compile platform independent code: Your software shouldn't rely on hardcoded platform specific paths like `/usr/lib/x86_64-linux-gnu`, which is a system directory specific to Linux x86_64 and won't be available on Linux arm64 systems. Similarly on iOS, Apple disables the `system()` syscall to run commands on a shell.
+
+LFortran can only cross compile Fortran code: If your application depends on auxiliary C or C++ code you will also need to cross compile that and make it available to LFortran during compilation.
+
+### Linux x86\_64 -> arm64
+These steps use the gcc cross compilation toolchain but clang should work too. To install gcc-aarch64-linux-gnu on Debian based systems use:
+
+```bash
+sudo apt install gcc make gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu g++-aarch64-linux-gnu
+```
+
+First we need to build lfortran as usual.
+
+```
+conda create -n lf-cross -c conda-forge llvmdev=11.0.1 bison=3.4 re2c python cmake make toml
+conda activate lf-cross
+
+# First we build the compiler
+./build0.sh
+mkdir build && cd build
+
+cmake -GNinja -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DWITH_TARGET_AARCH64=Yes \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/../inst ..
+
+ninja install
+
+# Now we build the runtime providing the compiler we just build
+cmake -GNinaj -DCMAKE_Fortran_COMPILER=../inst/bin/lfortran \
+              -DWITH_RUNTIME_LIBRARY=Yes
+
+ninja install
+```
+
+We now have a working cross compiler but we still need to build the runtime for the target system. You will need the cmake [toolchain](https://gist.github.com/meow464/00bd0b89567e9c621846b3b3a74b589e) file.
+
+```bash
+mkdir build_aarch64 && cd build_aarch6
+
+cmake -GNinja \
+      -DCMAKE_TOOLCHAIN_FILE=./aarch64-linux-gnu.toolchain.cmake\
+      -DCMAKE_BUILD_TYPE=Debug\
+      -DWITH_LLVM=yes\
+      -DCMAKE_INSTALL_PREFIX="$(pwd)/../inst_aarch64"\
+      -DCMAKE_Fortran_COMPILER="$(pwd)/../inst/bin/lfortran"\
+      -DWITH_ZLIB=NO\
+      -DWITH_RUNTIME_LIBRARY_ONLY=YES\
+      ..
+	  
+ninja install
+```
+
+Now we need to move our cross compiler and cross compiled runtime together:
+```bash
+cp  inst/bin/lfortran inst_aarch64/bin/lfortran
+```
+
+You can now cross compile Fortran binaries with:
+
+```bash
+LFORTRAN_CC=/usr/bin/aarch64-linux-gnu-gcc lfortran --static --link-with-gcc --target arm64-linux
+```
+
+`LFORTRAN_CC` should point to the gcc cross compiler, the path might vary from distro to distro. You don't need to use `--static` but then you will have to copy `liblfortran_runtime.so` to the appropriate location on the target system.
+
+### macOS x86\_64 -> iOS arm64
+You need to install Xcode from the App Store and `xcode-select --install`.
+
+First we need to build lfortran as usual.
+
+```bash
+conda create -n lf-cross -c conda-forge llvmdev=11.0.1 bison=3.4 re2c python cmake make toml
+conda activate lf-cross
+# First we build the compiler
+./build0.sh
+mkdir build && cd build
+
+cmake -GNinja -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DWITH_TARGET_AARCH64=Yes \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/../inst .. 
+
+ninja install
+
+# Now we build the runtime providing the compiler we just build
+cmake -DCMAKE_Fortran_COMPILER=../inst/bin/lfortran \
+      -DWITH_RUNTIME_LIBRARY=Yes ..
+
+ninja install
+```
+
+We now have a working cross compiler but we still need to build the runtime for the target system. You will need the cmake [toolchain](https://github.com/leetal/ios-cmake) file.
+
+```bash
+mkdir build_aarch64 && cd build_aarch64
+
+cmake -GNinja \
+      -DCMAKE_BUILD_TYPE=Debug \
+      -DWITH_LLVM=yes \
+      -DCMAKE_INSTALL_PREFIX=`pwd`/../iphone_inst \
+      -DWITH_ZLIB=No \
+      -DWITH_RUNTIME_LIBRARY_ONLY=Yes \
+      -DCMAKE_Fortran_COMPILER=../inst/bin/lfortran \
+      -DCMAKE_TOOLCHAIN_FILE=../ios.toolchain.cmake \
+      -DPLATFORM=OS64 \
+      -DENABLE_BITCODE=No ..
+
+ninja install
+```
+
+Now we need to move our cross compiler and cross compiled runtime together:
+```bash
+cp inst/bin/lfortran iphone_inst/bin/lfortran
+``` 
+
+You can now cross compile Fortran binaries with:
+```bash
+SDKROOT=$(xcrun --sdk iphoneos --show-sdk-path) ./iphone_inst/bin/lfortran --target arm64-apple-ios --generate-object-code -c my_library.f90 -o my_library.o
+```
+
+Now you only need to copy (drag and drop) `iphone_inst/share/lfortran/lib/liblfortran_runtime_static.a` and `my_library.o` to your Xcode project.
+
+Note that we specified `-c` in the command line to disable linking. Otherwise lfortran would try to make an executable file, and not a library, and that would conflict with the `main()` function in the iOS app.
+
+#### Troubleshooting
+If you receive the error `xcrun: error: SDK "iphoneos" cannot be located`, just run `sudo xcode-select --switch /Applications/Xcode.app`.
+
+If Xcode gives an error related to bitcode not being present on the lfrotran generated binary, simply disable it for the entire app. Apple [deprecated embedded bitcode](https://developer.apple.com/documentation/xcode-release-notes/xcode-14-release-notes) as of Xcode 14
