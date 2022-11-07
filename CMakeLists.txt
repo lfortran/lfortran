@@ -80,7 +80,7 @@ set(LFORTRAN_STATIC_BIN no CACHE BOOL "Build LFortran as a static binary")
 set(WITH_LFORTRAN_BINARY_MODFILES YES
     CACHE BOOL "Use binary modfiles")
 
-set(WITH_RUNTIME_LIBRARY YES
+set(WITH_RUNTIME_LIBRARY NO
     CACHE BOOL "Compile and install the runtime library")
 
 set(WITH_RUNTIME_LIBRARY_ONLY NO
