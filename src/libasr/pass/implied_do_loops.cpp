@@ -93,26 +93,26 @@ public:
         contains_array = left_array || right_array;
     }
 
-    void create_do_loop(ASR::ImpliedDoLoop_t* idoloop, ASR::Var_t* arr_var, ASR::expr_t* arr_idx=nullptr) {
+    void create_do_loop(const ASR::ImpliedDoLoop_t &idoloop, ASR::Var_t* arr_var, ASR::expr_t* arr_idx=nullptr) {
         ASR::do_loop_head_t head;
-        head.m_v = idoloop->m_var;
-        head.m_start = idoloop->m_start;
-        head.m_end = idoloop->m_end;
-        head.m_increment = idoloop->m_increment;
+        head.m_v = idoloop.m_var;
+        head.m_start = idoloop.m_start;
+        head.m_end = idoloop.m_end;
+        head.m_increment = idoloop.m_increment;
         head.loc = head.m_v->base.loc;
         Vec<ASR::stmt_t*> doloop_body;
         doloop_body.reserve(al, 1);
-        ASR::ttype_t *_type = LFortran::ASRUtils::expr_type(idoloop->m_start);
+        ASR::ttype_t *_type = LFortran::ASRUtils::expr_type(idoloop.m_start);
         ASR::expr_t* const_1 = LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_var->base.base.loc, 1, _type));
         ASR::expr_t *const_n, *offset, *num_grps, *grp_start;
         const_n = offset = num_grps = grp_start = nullptr;
         if( arr_idx == nullptr ) {
-            const_n = LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_var->base.base.loc, idoloop->n_values, _type));
-            offset = LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.base.loc, idoloop->m_var, ASR::binopType::Sub, idoloop->m_start, _type, nullptr));
+            const_n = LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_var->base.base.loc, idoloop.n_values, _type));
+            offset = LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.base.loc, idoloop.m_var, ASR::binopType::Sub, idoloop.m_start, _type, nullptr));
             num_grps = LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.base.loc, offset, ASR::binopType::Mul, const_n, _type, nullptr));
             grp_start = LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.base.loc, num_grps, ASR::binopType::Add, const_1, _type, nullptr));
         }
-        for( size_t i = 0; i < idoloop->n_values; i++ ) {
+        for( size_t i = 0; i < idoloop.n_values; i++ ) {
             Vec<ASR::array_index_t> args;
             ASR::array_index_t ai;
             ai.loc = arr_var->base.base.loc;
@@ -137,10 +137,10 @@ public:
                                                               args.p, args.size(),
                                                               array_ref_type, ASR::arraystorageType::RowMajor,
                                                               nullptr));
-            if( idoloop->m_values[i]->type == ASR::exprType::ImpliedDoLoop ) {
+            if( idoloop.m_values[i]->type == ASR::exprType::ImpliedDoLoop ) {
                 throw LCompilersException("Pass for nested ImpliedDoLoop nodes isn't implemented yet."); // idoloop->m_values[i]->base.loc
             }
-            ASR::stmt_t* doloop_stmt = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, arr_var->base.base.loc, array_ref, idoloop->m_values[i], nullptr));
+            ASR::stmt_t* doloop_stmt = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, arr_var->base.base.loc, array_ref, idoloop.m_values[i], nullptr));
             doloop_body.push_back(al, doloop_stmt);
             if( arr_idx != nullptr ) {
                 ASR::expr_t* increment = LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.base.loc, arr_idx, ASR::binopType::Add, const_1, LFortran::ASRUtils::expr_type(arr_idx), nullptr));
@@ -152,7 +152,7 @@ public:
         pass_result.push_back(al, doloop);
     }
 
-    void visit_ImpliedDoLoop( ASR::ImpliedDoLoop_t* idoloop ){
+    void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {
         // create a function that just calls a regular loop.
 
         SymbolTable *parent_scope = current_scope;
@@ -163,11 +163,41 @@ public:
 
         Vec<ASR::expr_t*> args;
         args.reserve(al, 1);
-        ASR::ttype_t* type = LFortran::ASRUtils::expr_type(idoloop->m_start);
+        ASR::ttype_t* type = LFortran::ASRUtils::expr_type(x.m_start);
 
         // Create an empty array of the same type as the idoloop->m_start
-        
+        ASR::asr_t* temp = ASR::make_ArrayConstant_t(al, x.base.base.loc, nullptr,
+            0, type, ASR::arraystorageType::ColMajor);
+        ASR::Var_t* arr_var = ASR::down_cast<ASR::Var_t>(temp);
+        ASR::expr_t* arr_var_expr = LFortran::ASRUtils::EXPR((ASR::asr_t*)arr_var);
+        args.push_back(al, arr_var_expr);
 
+        // create a doloop body
+        Vec<ASR::stmt_t*> doloop_body;
+        doloop_body.reserve(al, 1);
+        // make a copy of ASR::ImpliedDoLoop_t 
+        create_do_loop(x, arr_var);
+        // push the last element of pass_result to doloop_body
+        doloop_body.push_back(al, pass_result[pass_result.size()-1]);
+        
+        // TODO:: assign a return type
+        ASR::expr_t* return_type = nullptr;
+
+        ASR::asr_t* func = ASR::make_Function_t(
+            al, x.base.base.loc,
+            /* a_symtab */ current_scope,
+            /* a_name */ s2c(al, func_name),
+            /* a_args */ args.p,
+            /* n_args */ args.size(),
+            /* a_body */ doloop_body.p,
+            /* n_body */ doloop_body.size(),
+            /* a_return_var */ return_type,
+            ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface,
+            nullptr, false, false, false, false, false, /* a_type_parameters */ nullptr,
+            /* n_type_parameters */ 0, nullptr, 0, false);
+        
+        // push the function to pass_result
+        pass_result.push_back(al, LFortran::ASRUtils::STMT(func));
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
@@ -201,7 +231,7 @@ public:
                 ASR::expr_t* curr_init = arr_init->m_args[k];
                 if( ASR::is_a<ASR::ImpliedDoLoop_t>(*curr_init) ) {
                     ASR::ImpliedDoLoop_t* idoloop = ASR::down_cast<ASR::ImpliedDoLoop_t>(curr_init);
-                    create_do_loop(idoloop, arr_var, idx_var);
+                    create_do_loop(*idoloop, arr_var, idx_var);
                 } else {
                     Vec<ASR::array_index_t> args;
                     ASR::array_index_t ai;
