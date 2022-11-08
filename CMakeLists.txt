@@ -92,10 +92,6 @@ set(WITH_WHEREAMI yes
 set(WITH_ZLIB yes
     CACHE BOOL "Compile with ZLIB Library")
 
-if (WITH_RUNTIME_LIBRARY_ONLY AND NOT WITH_RUNTIME_LIBRARY)
-  message(FATAL_ERROR "Invalid set of options: WITH_RUNTIME_LIBRARY_ONLY=Yes but WITH_RUNTIME_LIBRARY=No. Please change one of them.")
-endif()
-
 # Build to wasm
 set(LFORTRAN_BUILD_TO_WASM no 
     CACHE BOOL "Compile LFortran To WASM")
