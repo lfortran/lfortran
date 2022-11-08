@@ -152,6 +152,24 @@ public:
         pass_result.push_back(al, doloop);
     }
 
+    void visit_ImpliedDoLoop( ASR::ImpliedDoLoop_t* idoloop ){
+        // create a function that just calls a regular loop.
+
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        std::string func_name = "idoloop_Function";
+        func_name = to_lower(func_name);
+
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 1);
+        ASR::ttype_t* type = LFortran::ASRUtils::expr_type(idoloop->m_start);
+
+        // Create an empty array of the same type as the idoloop->m_start
+        
+
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         if( (ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
             ASR::is_a<ASR::GetPointer_t>(*x.m_value)) ||
@@ -248,6 +266,7 @@ public:
 void pass_replace_implied_do_loops(Allocator &al, ASR::TranslationUnit_t &unit,
                                    const LCompilers::PassOptions& pass_options) {
     std::string rl_path = pass_options.runtime_library_dir;
+    std::cout<<"pass_replace_implied_do_loops"<<std::endl;
     ImpliedDoLoopVisitor v(al, unit, rl_path);
     v.visit_TranslationUnit(unit);
 }
