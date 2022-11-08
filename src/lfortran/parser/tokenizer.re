@@ -464,6 +464,8 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'real' {KW(REAL) }
             'recursive' { KW(RECURSIVE) }
             'reduce' { KW(REDUCE) }
+            'requirement' { KW(REQUIREMENT) }
+            'requires' { KW(REQUIRES) }
             'result' { KW(RESULT) }
             'return' { KW(RETURN) }
             'rewind' { KW(REWIND) }

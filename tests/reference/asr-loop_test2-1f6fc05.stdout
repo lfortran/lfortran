@@ -196,6 +196,7 @@
                                     (Var 2 j) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (ArrayItem 
@@ -210,6 +211,7 @@
                                     (Var 2 l1) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 ()
@@ -237,6 +239,7 @@
                                     (Var 2 j) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (ArrayItem 
@@ -245,6 +248,7 @@
                                     (Var 2 j) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 ()
@@ -300,6 +304,7 @@
                                     (Var 2 l2) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (Var 2 zero) 
@@ -320,6 +325,7 @@
                                         (Var 2 l2) 
                                         ())] 
                                         (Real 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (RealBinOp 
@@ -332,6 +338,7 @@
                                             (Var 2 l2) 
                                             ())] 
                                             (Real 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         Add 
@@ -348,6 +355,7 @@
                                                 (Var 2 j) 
                                                 ())] 
                                                 (Real 4 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             Mul 
@@ -363,6 +371,7 @@
                                                 (Var 2 j) 
                                                 ())] 
                                                 (Real 4 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             (Real 4 []) 
@@ -388,6 +397,7 @@
                                     (Var 2 l1) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (ArrayItem 
@@ -399,6 +409,7 @@
                                     (Var 2 l2) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 ()

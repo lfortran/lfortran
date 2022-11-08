@@ -264,13 +264,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 for (auto &item : build_order) {
                     LFORTRAN_ASSERT(x.m_global_scope->get_scope().find(item) !=
                                     x.m_global_scope->get_scope().end());
-                    if (startswith(item, "lfortran_intrinsic")) {
-                        ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
-                        if (ASR::is_a<ASR::Module_t>(*mod)) {
-                            ASR::Module_t *m =
-                                ASR::down_cast<ASR::Module_t>(mod);
-                            declare_all_functions(*(m->m_symtab));
-                        }
+                    ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
+                    if (ASR::is_a<ASR::Module_t>(*mod)) {
+                        ASR::Module_t *m =
+                            ASR::down_cast<ASR::Module_t>(mod);
+                        declare_all_functions(*(m->m_symtab));
                     }
                 }
 
@@ -296,10 +294,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             for (auto &item : build_order) {
                 LFORTRAN_ASSERT(x.m_global_scope->get_scope().find(item) !=
                                 x.m_global_scope->get_scope().end());
-                if (startswith(item, "lfortran_intrinsic")) {
-                    ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
-                    this->visit_symbol(*mod);
-                }
+                ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
+                this->visit_symbol(*mod);
             }
         }
 
@@ -1429,9 +1425,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 wasm::emit_i32_sub(m_code_section, m_al);
                 size_t jmin, jmax;
 
-                // TODO: add this flag to ASR for each array:
-                bool column_major = true;
-                if (column_major) {
+                if (x.m_storage_format == ASR::arraystorageType::ColMajor) {
                     // Column-major order
                     jmin = 0;
                     jmax = i;

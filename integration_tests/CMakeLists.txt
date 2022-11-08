@@ -62,13 +62,15 @@ macro(RUN)
     endif()
 
     if (ADD_TEST)
-        add_executable(${name} ${name}.f90 ${RUN_EXTRAFILES})
-        if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86") OR (LFORTRAN_BACKEND STREQUAL "wasm"))
+        if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86"))
+            add_executable(${name} ${name}.f90 ${RUN_EXTRAFILES})
             target_compile_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
             target_link_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
-        endif()
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+        elseif ((LFORTRAN_BACKEND STREQUAL "wasm"))
+            # wasm test
+            execute_process(COMMAND lfortran --backend=wasm ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90 -o ${name})
 
-        if ((LFORTRAN_BACKEND STREQUAL "wasm"))
             find_program(WASM_EXEC_RUNTIME node)
             execute_process(COMMAND "${WASM_EXEC_RUNTIME}" --version
                             OUTPUT_VARIABLE WASM_EXEC_VERSION
@@ -82,13 +84,14 @@ macro(RUN)
             endif()
 
             add_test(${name} ${WASM_EXEC_RUNTIME} ${WASM_EXEC_FLAGS} ${CURRENT_BINARY_DIR}/${name}.js)
-        else()
-            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
-        endif()
-
-        if (LFORTRAN_BACKEND STREQUAL "llvm2")
+        elseif (LFORTRAN_BACKEND STREQUAL "llvm2")
+            add_executable(${name} ${name}.f90 ${RUN_EXTRAFILES})
             target_compile_options(${name} PUBLIC --generate-object-code)
             target_link_options(${name} PUBLIC  --generate-object-code)
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+        else ()
+            add_executable(${name} ${name}.f90 ${RUN_EXTRAFILES})
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         endif()
 
         if (RUN_LABELS)
@@ -338,12 +341,12 @@ RUN(NAME parameter_03 LABELS gfortran llvm wasm)
 RUN(NAME parameter_04 LABELS gfortran llvm wasm) # selected_real,int_kind symboltable
 RUN(NAME parameter_05 LABELS gfortran llvm wasm) # Implicit IntegerToReal
 
-RUN(NAME modules_01 LABELS gfortran llvm)
-RUN(NAME modules_02 LABELS gfortran llvm)
+RUN(NAME modules_01 LABELS gfortran llvm wasm)
+RUN(NAME modules_02 LABELS gfortran llvm wasm)
 RUN(NAME modules_03 LABELS gfortran)
 RUN(NAME modules_04 LABELS gfortran)
 RUN(NAME modules_05 LABELS gfortran)
-RUN(NAME modules_06 LABELS gfortran llvm)
+RUN(NAME modules_06 LABELS gfortran llvm wasm)
 RUN(NAME modules_07 LABELS gfortran llvm EXTRAFILES modules_07_module.f90)
 RUN(NAME modules_22 LABELS gfortran llvm EXTRAFILES modules_22_module.f90)
 RUN(NAME modules_23 LABELS gfortran llvm EXTRAFILES modules_23_module.f90)
@@ -351,10 +354,10 @@ RUN(NAME modules_08 LABELS gfortran llvm EXTRAFILES
         modules_08_a.f90 modules_08_b.f90)
 RUN(NAME modules_09 LABELS gfortran llvm EXTRAFILES
         modules_09_a.f90 modules_09_b.f90)
-RUN(NAME modules_10 LABELS gfortran llvm)
+RUN(NAME modules_10 LABELS gfortran llvm wasm)
 RUN(NAME modules_11 LABELS gfortran llvm)
 RUN(NAME modules_12 LABELS gfortran)
-RUN(NAME modules_13 LABELS gfortran llvm)
+RUN(NAME modules_13 LABELS gfortran llvm wasm)
 RUN(NAME modules_14 LABELS gfortran llvm EXTRAFILES modules_14_a.f90)
 RUN(NAME modules_15 LABELS gfortran llvm EXTRAFILES
         modules_15b.f90 modules_15c.c)
@@ -436,7 +439,8 @@ RUN(NAME complex_05 LABELS gfortran llvm)
 RUN(NAME complex_06 LABELS gfortran llvm)
 RUN(NAME complex_07 LABELS gfortran) # cmplx
 RUN(NAME complex_08 LABELS gfortran) # conjg
-RUN(NAME complex_09 LABELS gfortran) # conjg
+RUN(NAME complex_09 LABELS gfortran)
+RUN(NAME complex_10 LABELS gfortran llvm) # conjg
 RUN(NAME complex_sub_test LABELS gfortran llvm)
 RUN(NAME complex_mul_test LABELS gfortran llvm)
 RUN(NAME complex_div_test LABELS gfortran llvm)
@@ -584,3 +588,7 @@ RUN(NAME conv_complex2real LABELS gfortran llvm)
 RUN(NAME template_add LABELS llvm)
 
 RUN(NAME statement1 LABELS gfortran llvm)
+
+RUN(NAME implied_do_loops1 LABELS gfortran)
+RUN(NAME implied_do_loops2 LABELS gfortran)
+RUN(NAME implied_do_loops3 LABELS gfortran)

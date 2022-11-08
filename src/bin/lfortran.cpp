@@ -246,6 +246,8 @@ int prompt(bool verbose)
 {
     Terminal term(true, false);
     std::cout << "Interactive Fortran. Experimental prototype, not ready for end users." << std::endl;
+    std::string version = LFORTRAN_VERSION;
+    std::cout << "LFortran version: " << version << std::endl;
     std::cout << "  * Use Ctrl-D to exit" << std::endl;
     std::cout << "  * Use Enter to submit" << std::endl;
     std::cout << "  * Use Alt-Enter or Ctrl-N to make a new line" << std::endl;
@@ -254,6 +256,7 @@ int prompt(bool verbose)
 
     Allocator al(64*1024*1024);
     CompilerOptions cu;
+    cu.runtime_library_dir = LFortran::get_runtime_library_dir();
     LFortran::FortranEvaluator e(cu);
 
     std::vector<std::string> history;
@@ -1328,6 +1331,7 @@ namespace wasm {
 #define INITIALIZE_VARS CompilerOptions compiler_options; \
                         compiler_options.use_colors = true; \
                         compiler_options.indent = true; \
+                        compiler_options.runtime_library_dir = LFortran::get_runtime_library_dir(); \
                         LFortran::FortranEvaluator fe(compiler_options); \
                         LFortran::LocationManager lm; \
                         LFortran::diag::Diagnostics diagnostics; \

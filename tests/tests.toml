@@ -469,6 +469,13 @@ wat = true
 julia = true
 
 [[test]]
+filename = "../integration_tests/doloop_04.f90"
+asr = true
+llvm = true
+pass = "do_loops"
+
+
+[[test]]
 filename = "../integration_tests/doloop_02.f90"
 asr = true
 llvm = true
@@ -2576,3 +2583,15 @@ ast_no_prescan = true
 filename = "no_prescan_include2.f90"
 ast = true
 ast_no_prescan = true
+
+[[test]]
+filename = "../integration_tests/implied_do_loops1.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/implied_do_loops2.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/implied_do_loops3.f90"
+asr = true

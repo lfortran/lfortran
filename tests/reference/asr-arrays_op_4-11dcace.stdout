@@ -476,6 +476,7 @@
                                                                     (Var 4 k) 
                                                                     ())] 
                                                                     (Logical 4 []) 
+                                                                    ColMajor 
                                                                     ()
                                                                 ) 
                                                                 NEqv 
@@ -511,6 +512,7 @@
                                                                     (Var 4 k) 
                                                                     ())] 
                                                                     (Logical 4 []) 
+                                                                    ColMajor 
                                                                     ()
                                                                 ) 
                                                                 NEqv 
@@ -546,6 +548,7 @@
                                                                     (Var 4 k) 
                                                                     ())] 
                                                                     (Logical 4 []) 
+                                                                    ColMajor 
                                                                     ()
                                                                 ) 
                                                                 NEqv 
@@ -581,6 +584,7 @@
                                                                     (Var 4 k) 
                                                                     ())] 
                                                                     (Logical 4 []) 
+                                                                    ColMajor 
                                                                     ()
                                                                 ) 
                                                                 NEqv 
@@ -677,6 +681,7 @@
                                         (Var 2 k) 
                                         ())] 
                                         (Logical 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (FunctionCall 
@@ -714,6 +719,7 @@
                                         (Var 2 k) 
                                         ())] 
                                         (Logical 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (FunctionCall 

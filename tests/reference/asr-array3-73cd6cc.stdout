@@ -49,7 +49,8 @@
                                 (IntegerConstant 2 (Integer 4 []))
                                 (IntegerConstant 3 (Integer 4 []))] 
                                 (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                (IntegerConstant 3 (Integer 4 [])))])
+                                (IntegerConstant 3 (Integer 4 [])))]) 
+                                ColMajor
                             ) 
                             IntegerToReal 
                             (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
@@ -66,7 +67,8 @@
                                 (IntegerConstant 2 (Integer 4 []))
                                 (IntegerConstant 3 (Integer 4 []))] 
                                 (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                (IntegerConstant 3 (Integer 4 [])))])
+                                (IntegerConstant 3 (Integer 4 [])))]) 
+                                ColMajor
                             ) 
                             IntegerToReal 
                             (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
