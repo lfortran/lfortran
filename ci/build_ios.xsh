@@ -7,7 +7,7 @@ git clone https://github.com/leetal/ios-cmake -b 4.3.0
 
 ./build0.sh
 
-make build
+mkdir build
 cd build
 
 # build lfortran
