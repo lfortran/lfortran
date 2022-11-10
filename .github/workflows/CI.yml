@@ -46,6 +46,12 @@ jobs:
             echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
             echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
 
+      - name: Build (iOS)
+        shell: bash -l {0}
+        if: contains(matrix.os, 'macos')
+        run: |
+            xonsh ci/build_ios.xsh
+
       - name: Build (Linux / macOS)
         shell: bash -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
@@ -59,12 +65,6 @@ jobs:
             call micromamba activate lf
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\build_tmp.xsh
-
-      - name: Build (iOS)
-        shell: bash -l {0}
-        if: contains(matrix.os, 'macos')
-        run: |
-            xonsh ci/build_ios.xsh
 
       - name: Test (Linux / macOS)
         shell: bash -l {0}
