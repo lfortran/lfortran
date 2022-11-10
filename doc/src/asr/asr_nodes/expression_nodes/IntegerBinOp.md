@@ -17,7 +17,7 @@ IntegerBinOp(expr left, binop op, expr right, ttype type, expr? value)
 
 ### Return values
 
-None, as it is an expression type.
+The return value is the expression that the IntegerBinOp represents.
 
 ## Description
 
@@ -32,11 +32,6 @@ If an binary expression is applying binary operator on integer operands,
 The binary operations accept two arguments of the same type. **IntegerBinOp**
 only accepts integers.
 
-## Utility Functions/Method and Types
-
-- `ASR::make_IntegerBinOp_t(...)`
-- `Lfortran::ASRUtils::EXPR`
-
 ## Types
 
 Only accepts integers.
@@ -46,12 +41,32 @@ Only accepts integers.
 Following example code creates LFortran expression from ASR's `IntegerBinOp`:
 
 ```fortran
-switch( x.class_type ) {
-	case ASR::exprType::IntegerBinOp:
-	op_el_wise = LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-	                                      al, x.base.base.loc, ref_1,
-										  (ASR::binopType)x.m_op, ref_2, x.m_type,
-										  nullptr));
+(2+3)*5
+```
+
+ASR:
+
+```fortran
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+
+        })
+    [(IntegerBinOp
+        (IntegerBinOp
+            (IntegerConstant 2 (Integer 4 []))
+            Add
+            (IntegerConstant 3 (Integer 4 []))
+            (Integer 4 [])
+            (IntegerConstant 5 (Integer 4 []))
+        )
+        Mul
+        (IntegerConstant 5 (Integer 4 []))
+        (Integer 4 [])
+        (IntegerConstant 25 (Integer 4 []))
+    )]
+)
 ```
 
 ## See Also
