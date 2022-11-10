@@ -106,6 +106,7 @@
                                         (Var 2 j) 
                                         ())] 
                                         (Integer 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     NotEq 
@@ -118,6 +119,7 @@
                                         (Var 2 i) 
                                         ())] 
                                         (Integer 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (Logical 4 []) 

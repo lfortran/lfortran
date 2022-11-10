@@ -193,7 +193,6 @@
                                     (Var 3 b)
                                     (Var 3 scalar)
                                     (Var 3 c)] 
-                                    [] 
                                     [(= 
                                         (Var 3 n) 
                                         (ArraySize 
@@ -216,6 +215,7 @@
                                                 (Var 3 i) 
                                                 ())] 
                                                 (Real 4 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             (RealBinOp 
@@ -225,6 +225,7 @@
                                                     (Var 3 i) 
                                                     ())] 
                                                     (Real 4 []) 
+                                                    ColMajor 
                                                     ()
                                                 ) 
                                                 Add 
@@ -237,6 +238,7 @@
                                                         (Var 3 i) 
                                                         ())] 
                                                         (Real 4 []) 
+                                                        ColMajor 
                                                         ()
                                                     ) 
                                                     (Real 4 []) 
@@ -256,6 +258,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             
@@ -297,6 +303,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Real 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Cast 
@@ -317,6 +324,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Real 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Cast 

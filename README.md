@@ -1,8 +1,6 @@
 # LFortran
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gl/lfortran%2Fweb%2Flfortran-binder/master?filepath=Demo.ipynb)
 [![project chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://lfortran.zulipchat.com/)
-[![pipeline status](https://gitlab.com/lfortran/lfortran/badges/master/pipeline.svg)](https://gitlab.com/lfortran/lfortran/-/commits/master)
 
 LFortran is a modern open-source (BSD licensed) interactive Fortran compiler
 built on top of LLVM. It can execute user's code interactively to allow
@@ -11,6 +9,8 @@ binaries with the goal to run user's code on modern architectures such as
 multi-core CPUs and GPUs.
 
 Website: https://lfortran.org/
+
+Try online: https://dev.lfortran.org/
 
 # Documentation
 
@@ -44,10 +44,11 @@ Note: We moved to the above GitHub repository from GitLab on July 18, 2022.
 # Donations
 
 You can support LFortran's development by donating to NumFOCUS or Open
-Collective:
+Collective as well as GitHub Sponsors:
 
 * https://numfocus.org/donate-to-lfortran
 * https://opencollective.com/lfortran
+* https://github.com/sponsors/lfortran
 
 All donations will be used strictly to fund LFortran development, by supporting
 tasks such as paying developers to implement features, sprints, improved
@@ -59,3 +60,7 @@ contributions will be tax-deductible.
 
 If you want to discuss another way to fund or help with the development, feel
 free to contact Ondřej Čertík (ondrej@certik.us).
+
+# Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=lfortran/lfortran&type=Date)](https://star-history.com/#lfortran/lfortran&Date)

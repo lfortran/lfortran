@@ -72,6 +72,12 @@ void main2() {
     x = std::pow(a + b, 2);
     x = (a + b)*(std::pow(a, 2) - a*b + std::pow(b, 2));
     x = (a - b)*(a + b)*(std::pow(a, 2) + std::pow(b, 2));
+    x = 1/(a*b);
+    x = 1/a*b;
+    x = 1/a*b;
+    x = 1/(a*b + 1);
+    x = 1/a*b + 1;
+    x = 1/a*b + 1;
     x = 2 - (-2);
     x = a - ((-b) - c);
     x = a - (-2)*b;

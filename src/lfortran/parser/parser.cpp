@@ -6,8 +6,10 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/diagnostics.h>
+#include <libasr/string_utils.h>
 #include <lfortran/parser/parser_exception.h>
 #include <lfortran/parser/fixedform_tokenizer.h>
+#include <lfortran/utils.h>
 
 #include <lfortran/pickle.h>
 
@@ -136,7 +138,7 @@ bool is_digit(unsigned char ch) {
 
 enum LineType {
     Comment, Statement, LabeledStatement, Continuation, EndOfFile,
-    ContinuationTab, StatementTab
+    ContinuationTab, StatementTab, Include,
 };
 
 // Determines the type of line in the fixed-form prescanner
@@ -183,6 +185,8 @@ LineType determine_line_type(const unsigned char *pos)
         }
         if (col <= 6) {
             return LineType::LabeledStatement;
+        } else if (std::string(pos, pos + 7) == "include") {
+            return LineType::Include;
         } else {
             return LineType::Statement;
         }
@@ -198,7 +202,8 @@ void skip_rest_of_line(const std::string &s, size_t &pos)
 }
 
 // Parses string, including possible continuation lines
-void parse_string(std::string &out, const std::string &s, size_t &pos)
+void parse_string(std::string &out, const std::string &s, size_t &pos,
+    bool fixed_form)
 {
     char quote = s[pos];
     LFORTRAN_ASSERT(quote == '"' || quote == '\'');
@@ -207,7 +212,7 @@ void parse_string(std::string &out, const std::string &s, size_t &pos)
     while (pos < s.size() && ! (s[pos] == quote && s[pos+1] != quote)) {
         if (s[pos] == '\n') {
             pos++;
-            pos += 6;
+            if (fixed_form) pos += 6;
             continue;
         }
         if (s[pos] == quote && s[pos+1] == quote) {
@@ -242,7 +247,7 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
 {
     while (pos < s.size() && s[pos] != '\n') {
         if (s[pos] == '"' || s[pos] == '\'') {
-            parse_string(out, s, pos);
+            parse_string(out, s, pos, true);
         } else if (s[pos] == '!') {
             skip_rest_of_line(s, pos);
             out += '\n';
@@ -275,8 +280,52 @@ bool check_newlines(const std::string &s, const std::vector<uint32_t> &newlines)
     return true;
 }
 
-std::string fix_continuation(const std::string &s, LocationManager &lm,
-        bool fixed_form)
+void process_include(std::string& out, const std::string& s,
+                     LocationManager& lm, size_t& pos, bool fixed_form,
+                     const std::string &root_dir)
+{
+    std::string include_filename;
+    parse_string(include_filename, s, pos, false);
+    include_filename = include_filename.substr(1, include_filename.size() - 2);
+    if (is_relative_path(include_filename)) {
+        include_filename = join_paths({root_dir, include_filename});
+    }
+
+    std::string include;
+    if (!read_file(include_filename, include)) {
+        throw LCompilersException("Include file '" + include_filename
+            + "' cannot be opened");
+    }
+
+    LocationManager lm_tmp;
+    lm_tmp.in_filename = include_filename;
+    include = prescan(include, lm_tmp, fixed_form, root_dir);
+
+    // Possible it goes here
+    // lm.out_start.push_back(out.size());
+    out += include;
+    while (pos < s.size() && s[pos] != '\n') pos++;
+    lm.out_start.push_back(out.size());
+    lm.in_start.push_back(pos);
+}
+
+bool is_include(const std::string &s, uint32_t pos) {
+    while (pos < s.size() && s[pos] == ' ') pos++;
+    if (pos + 6 < s.size() && s.substr(pos, 7) == "include") {
+        pos += 7;
+        while (pos < s.size() && s[pos] == ' ') pos++;
+        if (pos < s.size() && ((s[pos] == '"') || (s[pos] == '\''))) {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        return false;
+    }
+}
+
+std::string prescan(const std::string &s, LocationManager &lm,
+        bool fixed_form, const std::string &root_dir)
 {
     if (fixed_form) {
         // `pos` is the position in the original code `s`
@@ -359,6 +408,17 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
+                case LineType::Include: {
+                    while (pos < s.size() && s[pos] == ' ') pos++;
+                    LFORTRAN_ASSERT(s.substr(pos, 7) == "include");
+                    pos += 7;
+                    while (pos < s.size() && s[pos] == ' ') pos++;
+                    if ((s[pos] == '"') || (s[pos] == '\'')) {
+                        process_include(out, s, lm, pos, fixed_form,
+                            root_dir);
+                    }
+                    break;
+                }
                 case LineType::EndOfFile : {
                     break;
                 }
@@ -375,8 +435,17 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
         lm.in_start.push_back(0);
         std::string out;
         size_t pos = 0;
-        bool in_comment = false;
+        bool in_comment = false, newline = true;
         while (pos < s.size()) {
+            if (newline && is_include(s, pos)) {
+                while (pos < s.size() && s[pos] == ' ') pos++;
+                LFORTRAN_ASSERT(pos + 6 < s.size() && s.substr(pos, 7) == "include")
+                pos += 7;
+                while (pos < s.size() && s[pos] == ' ') pos++;
+                LFORTRAN_ASSERT(pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')));
+                process_include(out, s, lm, pos, fixed_form, root_dir);
+            }
+            newline = false;
             if (s[pos] == '!') in_comment = true;
             if (in_comment && s[pos] == '\n') in_comment = false;
             if (!in_comment && s[pos] == '&') {
@@ -400,7 +469,10 @@ std::string fix_continuation(const std::string &s, LocationManager &lm,
                     lm.in_start.push_back(pos);
                 }
             } else {
-                if (s[pos] == '\n') lm.in_newlines.push_back(pos);
+                if (s[pos] == '\n') {
+                    lm.in_newlines.push_back(pos);
+                    newline = true;
+                }
             }
             out += s[pos];
             pos++;
@@ -640,6 +712,8 @@ std::string token2text(const int token)
         T(KW_REAL, "real")
         T(KW_RECURSIVE, "recursive")
         T(KW_REDUCE, "reduce")
+        T(KW_REQUIREMENT, "requirement")
+        T(KW_REQUIRES, "requires")
         T(KW_RESULT, "result")
         T(KW_RETURN, "return")
         T(KW_REWIND, "rewind")

@@ -196,6 +196,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Real 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (RealBinOp 
@@ -222,6 +223,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Real 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (RealBinOp 
@@ -234,6 +236,7 @@
                                         (Var 2 i) 
                                         ())] 
                                         (Real 4 []) 
+                                        ColMajor 
                                         ()
                                     ))] 
                                     (Real 4 []) 
@@ -262,6 +265,7 @@
                                                 (Var 2 i) 
                                                 ())] 
                                                 (Real 4 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             Div 
@@ -318,6 +322,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Real 4 []) 
+                                ColMajor 
                                 ()
                             )
                             (ArrayItem 
@@ -326,6 +331,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Real 4 []) 
+                                ColMajor 
                                 ()
                             )] 
                             () 
@@ -341,6 +347,7 @@
                         ()
                     )
                     (GoToTarget 
+                        999 
                         999
                     )
                     (FileOpen 
@@ -373,6 +380,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Real 4 []) 
+                                ColMajor 
                                 ()
                             )
                             (ArrayItem 
@@ -381,6 +389,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Real 4 []) 
+                                ColMajor 
                                 ()
                             )]
                         )]
@@ -411,6 +420,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Real 4 []) 
+                                ColMajor 
                                 ()
                             )
                             (ArrayItem 
@@ -419,6 +429,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Real 4 []) 
+                                ColMajor 
                                 ()
                             )] 
                             () 

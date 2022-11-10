@@ -25,7 +25,6 @@
                         }) 
                     f 
                     [(Var 2 a)] 
-                    [] 
                     [(Print 
                         () 
                         [(Var 2 a)] 
@@ -40,6 +39,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 ), 
             main:
@@ -72,6 +75,7 @@
                             ()
                         )
                         (GoToTarget 
+                            10 
                             10
                         )] 
                         [(Print 
@@ -85,6 +89,7 @@
                         )]
                     )
                     (GoToTarget 
+                        50 
                         50
                     )
                     (SubroutineCall 
@@ -119,6 +124,7 @@
                             )
                         ) 
                         [(GoTo 
+                            50 
                             50
                         )] 
                         []

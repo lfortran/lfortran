@@ -52,6 +52,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Var 2 i) 

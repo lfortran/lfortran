@@ -2,7 +2,33 @@
     (SymbolTable
         1
         {
-            a:
+            nested_02:
+                (Program 
+                    (SymbolTable
+                        5
+                        {
+                            b:
+                                (ExternalSymbol 
+                                    5 
+                                    b 
+                                    2 b 
+                                    nested_02_a 
+                                    [] 
+                                    b 
+                                    Public
+                                )
+                            
+                        }) 
+                    nested_02 
+                    [nested_02_a] 
+                    [(SubroutineCall 
+                        5 b 
+                        () 
+                        [] 
+                        ()
+                    )]
+                ), 
+            nested_02_a:
                 (Module 
                     (SymbolTable
                         2
@@ -21,7 +47,6 @@
                                                         }) 
                                                     c 
                                                     [] 
-                                                    [] 
                                                     [(Print 
                                                         () 
                                                         [(IntegerConstant 5 (Integer 4 []))] 
@@ -36,12 +61,15 @@
                                                     .false. 
                                                     .false. 
                                                     .false. 
+                                                    .false. 
+                                                    .false. 
+                                                    [] 
+                                                    [] 
                                                     .false.
                                                 )
                                             
                                         }) 
                                     b 
-                                    [] 
                                     [] 
                                     [(Print 
                                         () 
@@ -66,40 +94,18 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             
                         }) 
-                    a 
+                    nested_02_a 
                     [] 
                     .false. 
                     .false.
-                ), 
-            nested_02:
-                (Program 
-                    (SymbolTable
-                        5
-                        {
-                            b:
-                                (ExternalSymbol 
-                                    5 
-                                    b 
-                                    2 b 
-                                    a 
-                                    [] 
-                                    b 
-                                    Public
-                                )
-                            
-                        }) 
-                    nested_02 
-                    [a] 
-                    [(SubroutineCall 
-                        5 b 
-                        () 
-                        [] 
-                        ()
-                    )]
                 )
             
         }) 

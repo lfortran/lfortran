@@ -87,7 +87,6 @@
                                         }) 
                                     print_subrout 
                                     [(Var 3 x)] 
-                                    [] 
                                     [(Print 
                                         () 
                                         [(Var 3 x)] 
@@ -102,6 +101,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             x:
@@ -134,6 +137,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Var 2 i) 
@@ -162,6 +166,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (IntegerBinOp 
@@ -171,6 +176,7 @@
                                     (Var 2 i) 
                                     ())] 
                                     (Integer 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 Add 
@@ -194,6 +200,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             ()
@@ -218,6 +225,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             ()

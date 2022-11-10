@@ -464,6 +464,8 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'real' {KW(REAL) }
             'recursive' { KW(RECURSIVE) }
             'reduce' { KW(REDUCE) }
+            'requirement' { KW(REQUIREMENT) }
+            'requires' { KW(REQUIRES) }
             'result' { KW(RESULT) }
             'return' { KW(RETURN) }
             'rewind' { KW(REWIND) }
@@ -654,10 +656,6 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
 
             // Macros are ignored for now:
             "#" [^\n\x00]* newline { line_num++; cur_line=cur; continue; }
-
-            // Include statements are ignored for now
-            'include' whitespace string1 { continue; }
-            'include' whitespace string2 { continue; }
 
             string1 { token_str(yylval.string); RET(TK_STRING) }
             string2 { token_str(yylval.string); RET(TK_STRING) }

@@ -226,7 +226,6 @@
                                         }) 
                                     reduce_sum 
                                     [(Var 4 c)] 
-                                    [] 
                                     [(= 
                                         (Var 4 r) 
                                         (Cast 
@@ -305,6 +304,7 @@
                                                             (Var 4 k) 
                                                             ())] 
                                                             (Complex 4 []) 
+                                                            ColMajor 
                                                             ()
                                                         ) 
                                                         (Complex 4 []) 
@@ -323,6 +323,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             sum:
@@ -448,7 +452,6 @@
                                     [(Var 3 a)
                                     (Var 3 b)
                                     (Var 3 c)] 
-                                    [] 
                                     [(Allocate 
                                         [(3 c_copy 
                                         [((ArrayBound 
@@ -717,6 +720,7 @@
                                                         (Var 3 k) 
                                                         ())] 
                                                         (Complex 4 []) 
+                                                        ColMajor 
                                                         ()
                                                     ) 
                                                     (Cast 
@@ -728,6 +732,7 @@
                                                                     (Var 3 i) 
                                                                     ())] 
                                                                     (Integer 4 []) 
+                                                                    ColMajor 
                                                                     ()
                                                                 ) 
                                                                 IntegerToReal 
@@ -744,6 +749,7 @@
                                                                 (Var 3 k) 
                                                                 ())] 
                                                                 (Real 4 []) 
+                                                                ColMajor 
                                                                 ()
                                                             ) 
                                                             (Real 4 []) 
@@ -768,6 +774,7 @@
                                                         (Var 3 k) 
                                                         ())] 
                                                         (Complex 4 []) 
+                                                        ColMajor 
                                                         ()
                                                     ) 
                                                     (Cast 
@@ -779,6 +786,7 @@
                                                                     (Var 3 i) 
                                                                     ())] 
                                                                     (Integer 4 []) 
+                                                                    ColMajor 
                                                                     ()
                                                                 ) 
                                                                 IntegerToReal 
@@ -795,6 +803,7 @@
                                                                 (Var 3 k) 
                                                                 ())] 
                                                                 (Real 4 []) 
+                                                                ColMajor 
                                                                 ()
                                                             ) 
                                                             (Real 4 []) 
@@ -823,6 +832,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             
@@ -984,6 +997,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Integer 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (Var 2 i) 
@@ -1034,6 +1048,7 @@
                                     (Var 2 j) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (Cast 
@@ -1217,6 +1232,7 @@
                                     (Var 2 i) 
                                     ())] 
                                     (Integer 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 NotEq 
@@ -1275,6 +1291,7 @@
                                         (Var 2 j) 
                                         ())] 
                                         (Real 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     NotEq 
@@ -1365,6 +1382,7 @@
                                             (Var 2 k) 
                                             ())] 
                                             (Complex 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         NotEq 

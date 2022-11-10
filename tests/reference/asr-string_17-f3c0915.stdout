@@ -63,7 +63,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 string_type 
                                                         []
                                                     ) 
@@ -76,12 +76,11 @@
                                         }) 
                                     len_string 
                                     [(Var 4 string)] 
-                                    [] 
                                     [(If 
                                         (FunctionCall 
                                             4 allocated 
                                             () 
-                                            [((DerivedRef 
+                                            [((StructInstanceMember 
                                                 (Var 4 string) 
                                                 3 raw 
                                                 (Character 1 -2 () []) 
@@ -96,7 +95,7 @@
                                             (FunctionCall 
                                                 4 len 
                                                 () 
-                                                [((DerivedRef 
+                                                [((StructInstanceMember 
                                                     (Var 4 string) 
                                                     3 raw 
                                                     (Character 1 -2 () []) 
@@ -122,6 +121,10 @@
                                     .true. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             maybe:
@@ -168,7 +171,7 @@
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Derived 
+                                                    (Struct 
                                                         2 string_type 
                                                         []
                                                     ) 
@@ -181,12 +184,11 @@
                                         }) 
                                     maybe 
                                     [(Var 5 string)] 
-                                    [] 
                                     [(If 
                                         (FunctionCall 
                                             5 allocated 
                                             () 
-                                            [((DerivedRef 
+                                            [((StructInstanceMember 
                                                 (Var 5 string) 
                                                 3 raw 
                                                 (Character 1 -2 () []) 
@@ -198,7 +200,7 @@
                                         ) 
                                         [(= 
                                             (Var 5 maybe_string) 
-                                            (DerivedRef 
+                                            (StructInstanceMember 
                                                 (Var 5 string) 
                                                 3 raw 
                                                 (Character 1 -2 () []) 
@@ -223,10 +225,14 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             string_type:
-                                (DerivedType 
+                                (StructType 
                                     (SymbolTable
                                         3
                                         {

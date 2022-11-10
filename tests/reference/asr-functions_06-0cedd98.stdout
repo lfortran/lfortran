@@ -2,7 +2,136 @@
     (SymbolTable
         1
         {
-            a:
+            functions_06:
+                (Program 
+                    (SymbolTable
+                        30
+                        {
+                            int_return:
+                                (ExternalSymbol 
+                                    30 
+                                    int_return 
+                                    2 int_return 
+                                    functions_06_m 
+                                    [] 
+                                    int_return 
+                                    Public
+                                ), 
+                            len:
+                                (ExternalSymbol 
+                                    30 
+                                    len 
+                                    6 len 
+                                    lfortran_intrinsic_builtin 
+                                    [] 
+                                    len 
+                                    Private
+                                ), 
+                            real_return:
+                                (ExternalSymbol 
+                                    30 
+                                    real_return 
+                                    2 real_return 
+                                    functions_06_m 
+                                    [] 
+                                    real_return 
+                                    Public
+                                ), 
+                            string:
+                                (Variable 
+                                    30 
+                                    string 
+                                    Local 
+                                    (StringConstant 
+                                        "  abc" 
+                                        (Character 1 5 () [])
+                                    ) 
+                                    () 
+                                    Save 
+                                    (Character 1 5 () []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            trim_wrapper:
+                                (ExternalSymbol 
+                                    30 
+                                    trim_wrapper 
+                                    2 trim_wrapper 
+                                    functions_06_m 
+                                    [] 
+                                    trim_wrapper 
+                                    Public
+                                )
+                            
+                        }) 
+                    functions_06 
+                    [functions_06_m] 
+                    [(Print 
+                        () 
+                        [(FunctionCall 
+                            30 trim_wrapper 
+                            () 
+                            [((Var 30 string))] 
+                            (Character 1 -3 (FunctionCall 
+                                30 len 
+                                () 
+                                [((Var 30 string))] 
+                                (Integer 4 []) 
+                                () 
+                                ()
+                            ) []) 
+                            () 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(FunctionCall 
+                            30 int_return 
+                            () 
+                            [((Var 30 string))] 
+                            (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                            (FunctionCall 
+                                30 len 
+                                () 
+                                [((Var 30 string))] 
+                                (Integer 4 []) 
+                                () 
+                                ()
+                            ))]) 
+                            () 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )
+                    (Print 
+                        () 
+                        [(FunctionCall 
+                            30 real_return 
+                            () 
+                            [((Var 30 string))] 
+                            (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
+                            (FunctionCall 
+                                30 len 
+                                () 
+                                [((Var 30 string))] 
+                                (Integer 4 []) 
+                                () 
+                                ()
+                            ))]) 
+                            () 
+                            ()
+                        )] 
+                        () 
+                        ()
+                    )]
+                ), 
+            functions_06_m:
                 (Module 
                     (SymbolTable
                         2
@@ -76,7 +205,6 @@
                                         }) 
                                     int_return 
                                     [(Var 4 s)] 
-                                    [] 
                                     [(DoLoop 
                                         ((Var 4 i) 
                                         (IntegerConstant 1 (Integer 4 [])) 
@@ -96,6 +224,7 @@
                                                 (Var 4 i) 
                                                 ())] 
                                                 (Integer 4 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             (IntegerConstant 2 (Integer 4 [])) 
@@ -110,6 +239,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             real_return:
@@ -181,7 +314,6 @@
                                         }) 
                                     real_return 
                                     [(Var 29 s)] 
-                                    [] 
                                     [(DoLoop 
                                         ((Var 29 i) 
                                         (IntegerConstant 1 (Integer 4 [])) 
@@ -201,6 +333,7 @@
                                                 (Var 29 i) 
                                                 ())] 
                                                 (Real 4 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             (RealConstant 
@@ -218,6 +351,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             trim_wrapper:
@@ -294,7 +431,6 @@
                                         }) 
                                     trim_wrapper 
                                     [(Var 3 s)] 
-                                    [] 
                                     [(= 
                                         (Var 3 r) 
                                         (FunctionCall 
@@ -322,144 +458,19 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             
                         }) 
-                    a 
+                    functions_06_m 
                     [lfortran_intrinsic_builtin
                     lfortran_intrinsic_string] 
                     .false. 
                     .false.
-                ), 
-            functions_06:
-                (Program 
-                    (SymbolTable
-                        30
-                        {
-                            int_return:
-                                (ExternalSymbol 
-                                    30 
-                                    int_return 
-                                    2 int_return 
-                                    a 
-                                    [] 
-                                    int_return 
-                                    Public
-                                ), 
-                            len:
-                                (ExternalSymbol 
-                                    30 
-                                    len 
-                                    6 len 
-                                    lfortran_intrinsic_builtin 
-                                    [] 
-                                    len 
-                                    Private
-                                ), 
-                            real_return:
-                                (ExternalSymbol 
-                                    30 
-                                    real_return 
-                                    2 real_return 
-                                    a 
-                                    [] 
-                                    real_return 
-                                    Public
-                                ), 
-                            string:
-                                (Variable 
-                                    30 
-                                    string 
-                                    Local 
-                                    (StringConstant 
-                                        "  abc" 
-                                        (Character 1 5 () [])
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Character 1 5 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
-                                    .false.
-                                ), 
-                            trim_wrapper:
-                                (ExternalSymbol 
-                                    30 
-                                    trim_wrapper 
-                                    2 trim_wrapper 
-                                    a 
-                                    [] 
-                                    trim_wrapper 
-                                    Public
-                                )
-                            
-                        }) 
-                    functions_06 
-                    [a] 
-                    [(Print 
-                        () 
-                        [(FunctionCall 
-                            30 trim_wrapper 
-                            () 
-                            [((Var 30 string))] 
-                            (Character 1 -3 (FunctionCall 
-                                30 len 
-                                () 
-                                [((Var 30 string))] 
-                                (Integer 4 []) 
-                                () 
-                                ()
-                            ) []) 
-                            () 
-                            ()
-                        )] 
-                        () 
-                        ()
-                    )
-                    (Print 
-                        () 
-                        [(FunctionCall 
-                            30 int_return 
-                            () 
-                            [((Var 30 string))] 
-                            (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
-                            (FunctionCall 
-                                30 len 
-                                () 
-                                [((Var 30 string))] 
-                                (Integer 4 []) 
-                                () 
-                                ()
-                            ))]) 
-                            () 
-                            ()
-                        )] 
-                        () 
-                        ()
-                    )
-                    (Print 
-                        () 
-                        [(FunctionCall 
-                            30 real_return 
-                            () 
-                            [((Var 30 string))] 
-                            (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
-                            (FunctionCall 
-                                30 len 
-                                () 
-                                [((Var 30 string))] 
-                                (Integer 4 []) 
-                                () 
-                                ()
-                            ))]) 
-                            () 
-                            ()
-                        )] 
-                        () 
-                        ()
-                    )]
                 ), 
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 

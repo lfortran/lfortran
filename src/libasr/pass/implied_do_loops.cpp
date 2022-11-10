@@ -135,7 +135,8 @@ public:
             ASR::expr_t* array_ref = LFortran::ASRUtils::EXPR(ASR::make_ArrayItem_t(al, arr_var->base.base.loc,
                                                               ASRUtils::EXPR((ASR::asr_t*)arr_var),
                                                               args.p, args.size(),
-                                                              array_ref_type, nullptr));
+                                                              array_ref_type, ASR::arraystorageType::RowMajor,
+                                                              nullptr));
             if( idoloop->m_values[i]->type == ASR::exprType::ImpliedDoLoop ) {
                 throw LCompilersException("Pass for nested ImpliedDoLoop nodes isn't implemented yet."); // idoloop->m_values[i]->base.loc
             }
@@ -199,7 +200,8 @@ public:
                     ASR::expr_t* array_ref = LFortran::ASRUtils::EXPR(ASR::make_ArrayItem_t(al, arr_var->base.base.loc,
                                                                         ASRUtils::EXPR((ASR::asr_t*)arr_var),
                                                                         args.p, args.size(),
-                                                                        array_ref_type, nullptr));
+                                                                        array_ref_type, ASR::arraystorageType::RowMajor,
+                                                                        nullptr));
                     ASR::stmt_t* assign_stmt = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, arr_var->base.base.loc, array_ref, arr_init->m_args[k], nullptr));
                     pass_result.push_back(al, assign_stmt);
                     ASR::expr_t* increment = LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.base.loc, idx_var, ASR::binopType::Add, const_1, LFortran::ASRUtils::expr_type(idx_var), nullptr));
@@ -248,7 +250,6 @@ void pass_replace_implied_do_loops(Allocator &al, ASR::TranslationUnit_t &unit,
     std::string rl_path = pass_options.runtime_library_dir;
     ImpliedDoLoopVisitor v(al, unit, rl_path);
     v.visit_TranslationUnit(unit);
-    LFORTRAN_ASSERT(asr_verify(unit));
 }
 
 

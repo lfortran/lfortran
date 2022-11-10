@@ -101,7 +101,6 @@
                     (Var 2 b)
                     (Var 2 scalar)
                     (Var 2 c)] 
-                    [] 
                     [(= 
                         (Var 2 n) 
                         (ArraySize 
@@ -124,6 +123,7 @@
                                 (Var 2 i) 
                                 ())] 
                                 (Real 4 []) 
+                                ColMajor 
                                 ()
                             ) 
                             (RealBinOp 
@@ -133,6 +133,7 @@
                                     (Var 2 i) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 Add 
@@ -145,6 +146,7 @@
                                         (Var 2 i) 
                                         ())] 
                                         (Real 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (Real 4 []) 
@@ -164,6 +166,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             

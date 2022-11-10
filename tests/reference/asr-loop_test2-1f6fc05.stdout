@@ -99,7 +99,12 @@
                                     () 
                                     () 
                                     Default 
-                                    (Real 4 []) 
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 3 (Integer 4 [])))
+                                    ((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 4 (Integer 4 [])))
+                                    ((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 5 (Integer 4 [])))]) 
                                     Source 
                                     Public 
                                     Required 
@@ -113,7 +118,12 @@
                                     () 
                                     () 
                                     Default 
-                                    (Real 4 []) 
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 3 (Integer 4 [])))
+                                    ((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 4 (Integer 4 [])))
+                                    ((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 5 (Integer 4 [])))]) 
                                     Source 
                                     Public 
                                     Required 
@@ -127,7 +137,10 @@
                                     () 
                                     () 
                                     Default 
-                                    (Real 4 []) 
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 3 (Integer 4 [])))
+                                    ((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 4 (Integer 4 [])))]) 
                                     Source 
                                     Public 
                                     Required 
@@ -141,7 +154,8 @@
                                     () 
                                     () 
                                     Default 
-                                    (Real 4 []) 
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                    (IntegerConstant 5 (Integer 4 [])))]) 
                                     Source 
                                     Public 
                                     Required 
@@ -165,7 +179,6 @@
                         }) 
                     f 
                     [] 
-                    [] 
                     [(DoLoop 
                         ((Var 2 l1) 
                         (IntegerConstant 1 (Integer 4 [])) 
@@ -183,6 +196,7 @@
                                     (Var 2 j) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (ArrayItem 
@@ -197,11 +211,13 @@
                                     (Var 2 l1) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 ()
                             )
                             (GoToTarget 
+                                110 
                                 110
                             )]
                         )
@@ -223,6 +239,7 @@
                                     (Var 2 j) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (ArrayItem 
@@ -231,15 +248,18 @@
                                     (Var 2 j) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 ()
                             )
                             (GoToTarget 
+                                120 
                                 120
                             )]
                         )
                         (GoToTarget 
+                            140 
                             140
                         )]
                     )
@@ -284,6 +304,7 @@
                                     (Var 2 l2) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (Var 2 zero) 
@@ -304,6 +325,7 @@
                                         (Var 2 l2) 
                                         ())] 
                                         (Real 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (RealBinOp 
@@ -316,6 +338,7 @@
                                             (Var 2 l2) 
                                             ())] 
                                             (Real 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         Add 
@@ -332,6 +355,7 @@
                                                 (Var 2 j) 
                                                 ())] 
                                                 (Real 4 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             Mul 
@@ -347,6 +371,7 @@
                                                 (Var 2 j) 
                                                 ())] 
                                                 (Real 4 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             (Real 4 []) 
@@ -358,6 +383,7 @@
                                     ()
                                 )
                                 (GoToTarget 
+                                    210 
                                     210
                                 )]
                             )
@@ -371,6 +397,7 @@
                                     (Var 2 l1) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (ArrayItem 
@@ -382,15 +409,18 @@
                                     (Var 2 l2) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 ()
                             )
                             (GoToTarget 
+                                220 
                                 220
                             )]
                         )
                         (GoToTarget 
+                            230 
                             230
                         )]
                     )
@@ -403,6 +433,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             

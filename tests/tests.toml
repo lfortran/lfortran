@@ -469,6 +469,13 @@ wat = true
 julia = true
 
 [[test]]
+filename = "../integration_tests/doloop_04.f90"
+asr = true
+llvm = true
+pass = "do_loops"
+
+
+[[test]]
 filename = "../integration_tests/doloop_02.f90"
 asr = true
 llvm = true
@@ -491,6 +498,12 @@ asr = true
 [[test]]
 filename = "../integration_tests/doloop_05.f90"
 ast_f90 = true
+julia = true
+
+[[test]]
+filename = "../integration_tests/doloop_08.f90"
+c = true
+cpp = true
 julia = true
 
 [[test]]
@@ -528,6 +541,14 @@ asr = true
 [[test]]
 filename = "../integration_tests/subroutines_07.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/data_01.f90"
+ast = true
+
+[[test]]
+filename = "../integration_tests/data_02.f90"
+ast = true
 
 [[test]]
 filename = "scopes1.f90"
@@ -1047,10 +1068,12 @@ asr = true
 filename = "../integration_tests/block_02.f90"
 ast = true
 ast_f90 = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/block_03.f90"
 asr = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/associate_01.f90"
@@ -1152,6 +1175,8 @@ ast_f90 = true
 asr = true
 llvm = true
 julia = true
+c = true
+cpp = true
 
 [[test]]
 filename = "../integration_tests/case_02.f90"
@@ -1160,6 +1185,8 @@ ast_f90 = true
 asr = true
 llvm = true
 julia = true
+c = true
+cpp = true
 
 [[test]]
 filename = "../integration_tests/case_03.f90"
@@ -1168,6 +1195,8 @@ ast_f90 = true
 asr = true
 llvm = true
 julia = true
+c = true
+cpp = true
 
 [[test]]
 filename = "../integration_tests/case_04.f90"
@@ -1180,12 +1209,20 @@ ast = true
 ast_f90 = true
 asr = true
 julia = true
+c = true
+cpp = true
 
 [[test]]
 filename = "../integration_tests/case_06.f90"
 asr = true
 pass = "dead_code_removal"
 julia = true
+c = true
+cpp = true
+
+[[test]]
+filename = "../integration_tests/include_01.f90"
+ast = true
 
 [[test]]
 filename = "../integration_tests/program_02.f90"
@@ -1781,6 +1818,11 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "../integration_tests/goto_04.f90"
+asr = true
+julia = true
+
+[[test]]
 filename = "if1.f90"
 ast = true
 ast_f90 = true
@@ -2267,6 +2309,22 @@ filename = "allow_implicit_interface.f90"
 asr_implicit_interface = true
 
 [[test]]
+filename = "implicit_interface2.f90"
+asr_implicit_interface = true
+
+[[test]]
+filename = "implicit_interface3.f90"
+asr_implicit_interface_and_typing = true
+
+[[test]]
+filename = "implicit_interface4.f90"
+asr_implicit_interface_and_typing = true
+
+[[test]]
+filename = "allow_implicit_interface2.f90"
+asr_implicit_interface_and_typing = true
+
+[[test]]
 filename = "dimension_attr2.f90"
 asr_implicit_typing = true
 
@@ -2362,6 +2420,10 @@ filename = "fixed_form/double_complex1.f"
 ast = true
 
 [[test]]
+filename = "fixed_form/include1.f"
+ast = true
+
+[[test]]
 filename = "fixed_form/real8_1.f"
 ast = true
 
@@ -2427,4 +2489,109 @@ asr_implicit_interface = true
 [[test]]
 filename = "fixed_form_goto_select.f"
 ast = true
+asr = true
+
+[[test]]
+filename = "implicit2.f90"
+asr = true
+
+[[test]]
+filename = "errors/implicit3.f90"
+asr = true
+
+[[test]]
+filename = "implicit3.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit4.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit5.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit6.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit7.f90"
+asr = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit8.f90"
+asr = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit9.f90"
+asr = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit10.f90"
+asr = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "implicit11.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "fixed_form/assign_to1.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/assign_to2.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/assign_to3.f"
+ast = true
+
+[[test]]
+filename = "../integration_tests/assign_to1.f90"
+ast = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "../integration_tests/assign_to2.f90"
+ast = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "../integration_tests/conv_complex2real.f90"
+asr = true
+
+[[test]]
+filename = "implicit12.f90"
+asr = true
+asr_implicit_typing = true
+
+[[test]]
+filename = "../integration_tests/statement1.f90"
+asr = true
+
+[[test]]
+filename = "no_prescan_include1.f90"
+ast = true
+ast_no_prescan = true
+
+[[test]]
+filename = "no_prescan_include2.f90"
+ast = true
+ast_no_prescan = true
+
+[[test]]
+filename = "../integration_tests/implied_do_loops1.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/implied_do_loops2.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/implied_do_loops3.f90"
 asr = true

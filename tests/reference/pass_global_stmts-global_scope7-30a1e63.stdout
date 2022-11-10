@@ -25,7 +25,6 @@
                         }) 
                     f 
                     [] 
-                    [] 
                     [(= 
                         (Var 2 f1) 
                         (IntegerBinOp 
@@ -56,6 +55,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 ), 
             x:

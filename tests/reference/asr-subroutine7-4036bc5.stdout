@@ -40,7 +40,6 @@
                     f 
                     [(Var 2 a)
                     (Var 2 b)] 
-                    [] 
                     [(= 
                         (Var 2 a) 
                         (IntegerBinOp 
@@ -71,6 +70,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             

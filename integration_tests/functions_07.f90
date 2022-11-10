@@ -1,4 +1,4 @@
-module a
+module functions_07_a
 implicit none
 
 contains
@@ -10,8 +10,8 @@ contains
 
 end module
 
-module b
-use a
+module functions_07_b
+use functions_07_a
 implicit none
 
 contains
@@ -23,8 +23,8 @@ contains
 
 end module
 
-module c
-use b
+module functions_07_c
+use functions_07_b
 implicit none
 
 contains
@@ -37,7 +37,7 @@ contains
 end module
 
 program functions_07
-use c
+use functions_07_c
 implicit none
 
     real :: p = 5, q

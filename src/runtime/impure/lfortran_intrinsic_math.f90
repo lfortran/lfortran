@@ -11,6 +11,14 @@ interface aimag
     module procedure caimag, zaimag
 end interface
 
+interface imag
+    module procedure caimag
+end interface
+
+interface dimag
+    module procedure zaimag
+end interface
+
 interface sqrt
     module procedure ssqrt, dsqrt, csqrt, zsqrt
 end interface
@@ -1233,11 +1241,13 @@ end function
 function conjgz32(x) result(r)
 complex(sp) :: x
 complex(sp) :: r
+r = real(x) - aimag(x)*(0,1)
 end function
 
 function conjgz64(x) result(r)
 complex(dp) :: x
 complex(dp) :: r
+r = real(x, dp) - aimag(x)*(0,1)
 end function
 
 function dotproductr32r32(x, y) result(r)

@@ -1,6 +1,6 @@
 (TranslationUnit 
     [(Module 
-        add_m 
+        template_add_m 
         (TriviaNode 
             [] 
             [(EndOfLine)
@@ -36,52 +36,27 @@
                 (EndOfLine)]
             )
         )
-        (Template 
-            add_t 
-            [T] 
-            [(Declaration 
-                () 
-                [(SimpleAttribute 
-                    AttrPrivate
-                )] 
-                [] 
-                ()
-            )
-            (Declaration 
-                () 
-                [(SimpleAttribute 
-                    AttrPublic
-                )] 
-                [(add 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
-                (TriviaNode 
-                    [] 
-                    [(EndOfLine)
-                    (EndOfLine)]
-                )
-            )
-            (DerivedType 
+        (Requirement 
+            R 
+            [T
+            F] 
+            [(DerivedType 
                 T 
                 [] 
                 (TriviaNode 
-                    [] 
-                    [(EndOfLine)
-                    (EndOfLine)]
+                    [(Semicolon)] 
+                    []
                 ) 
                 [] 
                 [] 
                 []
             )] 
             [(Function 
-                add_generic 
+                F 
                 [(x)
                 (y)] 
                 [] 
-                () 
+                z 
                 () 
                 () 
                 [] 
@@ -94,7 +69,9 @@
                         T 
                         None
                     ) 
-                    [] 
+                    [(AttrIntent 
+                        In
+                    )] 
                     [(x 
                     [] 
                     [] 
@@ -106,36 +83,141 @@
                     [] 
                     () 
                     None 
-                    ())
-                    (add_generic 
+                    ())] 
+                    ()
+                )
+                (Declaration 
+                    (AttrType 
+                        TypeType 
+                        [] 
+                        T 
+                        None
+                    ) 
+                    [] 
+                    [(z 
                     [] 
                     [] 
                     () 
                     None 
                     ())] 
-                    (TriviaNode 
+                    ()
+                )] 
+                [] 
+                []
+            )]
+        )
+        (Template 
+            add_t 
+            [T
+            F] 
+            [(Requires 
+                R 
+                [T
+                F]
+            )
+            (Declaration 
+                () 
+                [(SimpleAttribute 
+                    AttrPrivate
+                )] 
+                [] 
+                ()
+            )
+            (Declaration 
+                () 
+                [(SimpleAttribute 
+                    AttrPublic
+                )] 
+                [(add_generic 
+                [] 
+                [] 
+                () 
+                None 
+                ())] 
+                ()
+            )] 
+            [(Function 
+                add_generic 
+                [(x)
+                (y)] 
+                [] 
+                z 
+                () 
+                () 
+                [] 
+                [] 
+                [] 
+                [(Declaration 
+                    (AttrType 
+                        TypeType 
                         [] 
-                        [(EndOfLine)
-                        (EndOfLine)]
-                    )
+                        T 
+                        None
+                    ) 
+                    [(AttrIntent 
+                        In
+                    )] 
+                    [(x 
+                    [] 
+                    [] 
+                    () 
+                    None 
+                    ())
+                    (y 
+                    [] 
+                    [] 
+                    () 
+                    None 
+                    ())] 
+                    ()
+                )
+                (Declaration 
+                    (AttrType 
+                        TypeType 
+                        [] 
+                        T 
+                        None
+                    ) 
+                    [] 
+                    [(z 
+                    [] 
+                    [] 
+                    () 
+                    None 
+                    ())] 
+                    ()
                 )] 
                 [(= 
                     0 
-                    add_generic 
-                    (+ x y) 
-                    (TriviaNode 
+                    z 
+                    (FuncCallOrArray 
+                        F 
                         [] 
-                        [(EndOfLine)
-                        (EndOfLine)]
-                    )
+                        [(() 
+                        x 
+                        ())
+                        (() 
+                        y 
+                        ())] 
+                        [] 
+                        []
+                    ) 
+                    ()
                 )] 
                 []
             )]
         )] 
-        [(Subroutine 
-            test_template 
-            [] 
-            [] 
+        [(Function 
+            func_arg_real 
+            [(x)
+            (y)] 
+            [(AttrType 
+                TypeReal 
+                [] 
+                () 
+                None
+            )] 
+            z 
             () 
             (TriviaNode 
                 [] 
@@ -145,14 +227,103 @@
             [] 
             [] 
             [] 
-            [(Instantiate 
-                add_t 
-                [(AttrType 
+            [(Declaration 
+                (AttrType 
                     TypeReal 
                     [] 
                     () 
                     None
+                ) 
+                [(AttrIntent 
+                    In
                 )] 
+                [(x 
+                [] 
+                [] 
+                () 
+                None 
+                ())
+                (y 
+                [] 
+                [] 
+                () 
+                None 
+                ())] 
+                ()
+            )] 
+            [(= 
+                0 
+                z 
+                (+ x y) 
+                ()
+            )] 
+            []
+        )
+        (Function 
+            func_arg_int 
+            [(x)
+            (y)] 
+            [(AttrType 
+                TypeInteger 
+                [] 
+                () 
+                None
+            )] 
+            z 
+            () 
+            (TriviaNode 
+                [] 
+                [(EndOfLine)
+                (EndOfLine)]
+            ) 
+            [] 
+            [] 
+            [] 
+            [(Declaration 
+                (AttrType 
+                    TypeInteger 
+                    [] 
+                    () 
+                    None
+                ) 
+                [(AttrIntent 
+                    In
+                )] 
+                [(x 
+                [] 
+                [] 
+                () 
+                None 
+                ())
+                (y 
+                [] 
+                [] 
+                () 
+                None 
+                ())] 
+                ()
+            )] 
+            [(= 
+                0 
+                z 
+                (+ x y) 
+                ()
+            )] 
+            []
+        )
+        (Subroutine 
+            test_template 
+            [] 
+            [] 
+            () 
+            () 
+            [] 
+            [] 
+            [] 
+            [(Instantiate 
+                add_t 
+                [real
+                func_arg_real] 
                 [(UseSymbol 
                     add_generic 
                     add_real
@@ -204,12 +375,8 @@
             )
             (Instantiate 
                 add_t 
-                [(AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
-                    None
-                )] 
+                [integer
+                func_arg_int] 
                 [(UseSymbol 
                     add_generic 
                     add_integer
@@ -341,21 +508,17 @@
                 [] 
                 () 
                 () 
-                (TriviaNode 
-                    [] 
-                    [(EndOfLine)
-                    (EndOfLine)]
-                )
+                ()
             )] 
             []
         )]
     )
     (Program 
-        use_template_module 
+        template_add 
         () 
         [(Use 
             [] 
-            add_m 
+            template_add_m 
             [] 
             .false. 
             ()

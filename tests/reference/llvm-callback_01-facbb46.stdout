@@ -3,7 +3,7 @@ source_filename = "LFortran"
 
 @0 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2 = private unnamed_addr constant [5 x i8] c"%f%s\00", align 1
+@2 = private unnamed_addr constant [9 x i8] c"%13.8e%s\00", align 1
 
 define float @__module_callback_01_cb(float (float*)* %f, float* %a, float* %b) {
 .entry:
@@ -23,6 +23,19 @@ return:                                           ; preds = %.entry
   ret float %7
 }
 
+declare float @f(float*)
+
+define void @__module_callback_01_foo(float* %c, float* %d) {
+.entry:
+  %0 = call float @__module_callback_01_cb(float (float*)* @__module_callback_01_f, float* %c, float* %d)
+  %1 = fpext float %0 to double
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @2, i32 0, i32 0), double %1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
+}
+
 define float @__module_callback_01_f(float* %x) {
 .entry:
   %f = alloca float, align 4
@@ -34,17 +47,6 @@ define float @__module_callback_01_f(float* %x) {
 return:                                           ; preds = %.entry
   %2 = load float, float* %f, align 4
   ret float %2
-}
-
-define void @__module_callback_01_foo(float* %c, float* %d) {
-.entry:
-  %0 = call float @__module_callback_01_cb(float (float*)* @__module_callback_01_f, float* %c, float* %d)
-  %1 = fpext float %0 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), double %1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
-  br label %return
-
-return:                                           ; preds = %.entry
-  ret void
 }
 
 declare void @_lfortran_printf(i8*, ...)

@@ -66,7 +66,7 @@
                             ) 
                             LtE 
                             (IntegerConstant 10 (Integer 4 [])) 
-                            (Integer 4 []) 
+                            (Logical 4 []) 
                             ()
                         ) 
                         [(= 
@@ -146,7 +146,7 @@
                             ) 
                             GtE 
                             (IntegerConstant 1 (Integer 4 [])) 
-                            (Integer 4 []) 
+                            (Logical 4 []) 
                             ()
                         ) 
                         [(= 
@@ -222,7 +222,7 @@
                             ) 
                             LtE 
                             (IntegerConstant 9 (Integer 4 [])) 
-                            (Integer 4 []) 
+                            (Logical 4 []) 
                             ()
                         ) 
                         [(= 
@@ -302,7 +302,7 @@
                             ) 
                             GtE 
                             (IntegerConstant 1 (Integer 4 [])) 
-                            (Integer 4 []) 
+                            (Logical 4 []) 
                             ()
                         ) 
                         [(= 
@@ -378,7 +378,7 @@
                             ) 
                             LtE 
                             (IntegerConstant 10 (Integer 4 [])) 
-                            (Integer 4 []) 
+                            (Logical 4 []) 
                             ()
                         ) 
                         [(= 
@@ -450,7 +450,7 @@
                             ) 
                             LtE 
                             (IntegerConstant 10 (Integer 4 [])) 
-                            (Integer 4 []) 
+                            (Logical 4 []) 
                             ()
                         ) 
                         [(= 
@@ -530,7 +530,7 @@
                             ) 
                             GtE 
                             (IntegerConstant 1 (Integer 4 [])) 
-                            (Integer 4 []) 
+                            (Logical 4 []) 
                             ()
                         ) 
                         [(= 
@@ -606,7 +606,7 @@
                             ) 
                             LtE 
                             (IntegerConstant 1 (Integer 4 [])) 
-                            (Integer 4 []) 
+                            (Logical 4 []) 
                             ()
                         ) 
                         [(= 
@@ -686,7 +686,7 @@
                             ) 
                             GtE 
                             (IntegerConstant 1 (Integer 4 [])) 
-                            (Integer 4 []) 
+                            (Logical 4 []) 
                             ()
                         ) 
                         [(= 
@@ -762,7 +762,7 @@
                             ) 
                             LtE 
                             (IntegerConstant 0 (Integer 4 [])) 
-                            (Integer 4 []) 
+                            (Logical 4 []) 
                             ()
                         ) 
                         [(= 
@@ -842,7 +842,7 @@
                             ) 
                             GtE 
                             (IntegerConstant 1 (Integer 4 [])) 
-                            (Integer 4 []) 
+                            (Logical 4 []) 
                             ()
                         ) 
                         [(= 

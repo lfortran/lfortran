@@ -2,7 +2,10 @@ add_executable(lfortran lfortran.cpp)
 target_include_directories(lfortran PRIVATE "tpl")
 target_link_libraries(lfortran lfortran_lib)
 if (LFORTRAN_STATIC_BIN)
-    if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
+        OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
+        OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
+
         # Link statically on Linux with gcc or clang
         if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
                 CMAKE_CXX_COMPILER_ID MATCHES Clang)
@@ -11,7 +14,10 @@ if (LFORTRAN_STATIC_BIN)
     endif()
 endif()
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
+    OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
+    OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
+
     target_link_options(lfortran PRIVATE "LINKER:--export-dynamic")
 endif()
 

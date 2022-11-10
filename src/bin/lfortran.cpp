@@ -246,6 +246,8 @@ int prompt(bool verbose)
 {
     Terminal term(true, false);
     std::cout << "Interactive Fortran. Experimental prototype, not ready for end users." << std::endl;
+    std::string version = LFORTRAN_VERSION;
+    std::cout << "LFortran version: " << version << std::endl;
     std::cout << "  * Use Ctrl-D to exit" << std::endl;
     std::cout << "  * Use Enter to submit" << std::endl;
     std::cout << "  * Use Alt-Enter or Ctrl-N to make a new line" << std::endl;
@@ -254,6 +256,7 @@ int prompt(bool verbose)
 
     Allocator al(64*1024*1024);
     CompilerOptions cu;
+    cu.runtime_library_dir = LFortran::get_runtime_library_dir();
     LFortran::FortranEvaluator e(cu);
 
     std::vector<std::string> history;
@@ -290,7 +293,12 @@ int prompt(bool verbose)
                 continue;
             }
         } catch (const LFortran::LCompilersException &e) {
-            std::cout << "Other LFortran exception: " << e.msg() << std::endl;
+            std::cerr << "Internal Compiler Error: Unhandled exception" << std::endl;
+            std::vector<LFortran::StacktraceItem> d = e.stacktrace_addresses();
+            get_local_addresses(d);
+            get_local_info(d);
+            std::cerr << stacktrace2str(d, LFortran::stacktrace_depth);
+            std::cerr << e.name() + ": " << e.msg() << std::endl;
             continue;
         }
 
@@ -368,8 +376,8 @@ int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
     std::string input = read_file(infile);
     LFortran::LocationManager lm;
     lm.in_filename = infile;
-    std::string prescan = LFortran::fix_continuation(input, lm,
-        compiler_options.fixed_form);
+    std::string prescan = LFortran::prescan(input, lm,
+        compiler_options.fixed_form, LFortran::parent_path(lm.in_filename));
     std::cout << prescan << std::endl;
     return 0;
 }
@@ -385,7 +393,8 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
     LFortran::diag::Diagnostics diagnostics;
     LFortran::LocationManager lm;
     if (compiler_options.prescan || compiler_options.fixed_form) {
-        input = fix_continuation(input, lm, compiler_options.fixed_form);
+        input = prescan(input, lm,
+            compiler_options.fixed_form, LFortran::parent_path(infile));
     }
     auto res = LFortran::tokens(al, input, diagnostics, &stypes, &locations,
         compiler_options.fixed_form);
@@ -559,9 +568,14 @@ int emit_asr(const std::string &infile,
 
     Allocator al(64*1024*1024);
     LCompilers::PassOptions pass_options;
+    pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
+    pass_options.mod_files_dir = compiler_options.mod_files_dir;
+    pass_options.include_dirs = compiler_options.include_dirs;
+
     pass_options.always_run = true;
     pass_options.run_fun = "f";
-    pass_manager.apply_passes(al, asr, pass_options);
+
+    pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     std::cout << LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
             with_intrinsic_modules) << std::endl;
     return 0;
@@ -605,7 +619,7 @@ int emit_c(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-int emit_julia(const std::string &infile, CompilerOptions &compiler_options) 
+int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
 
@@ -624,7 +638,8 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
+int save_mod_files(const LFortran::ASR::TranslationUnit_t &u,
+		   const LFortran::CompilerOptions &compiler_options)
 {
     for (auto &item : u.m_global_scope->get_scope()) {
         if (LFortran::ASR::is_a<LFortran::ASR::Module_t>(*item.second)) {
@@ -646,19 +661,20 @@ int save_mod_files(const LFortran::ASR::TranslationUnit_t &u)
                 symtab, nullptr, 0);
             LFortran::ASR::TranslationUnit_t *tu =
                 LFortran::ASR::down_cast2<LFortran::ASR::TranslationUnit_t>(asr);
-            LFORTRAN_ASSERT(LFortran::asr_verify(*tu));
+            LFortran::diag::Diagnostics diagnostics;
+            LFORTRAN_ASSERT(LFortran::asr_verify(*tu, true, diagnostics));
 
             std::string modfile_binary = LFortran::save_modfile(*tu);
 
             m->m_symtab->parent = orig_symtab;
 
-            LFORTRAN_ASSERT(LFortran::asr_verify(u));
+            LFORTRAN_ASSERT(LFortran::asr_verify(u, true, diagnostics));
 
-
-            std::string modfile = std::string(m->m_name) + ".mod";
+	    std::filesystem::path filename { std::string(m->m_name) + ".mod" };
+            std::filesystem::path fullpath = compiler_options.mod_files_dir / filename;
             {
                 std::ofstream out;
-                out.open(modfile, std::ofstream::out | std::ofstream::binary);
+		out.open(fullpath, std::ofstream::out | std::ofstream::binary);
                 out << modfile_binary;
             }
         }
@@ -740,7 +756,7 @@ int compile_to_object_file(const std::string &infile,
 
     // Save .mod files
     {
-        int err = save_mod_files(*asr);
+        int err = save_mod_files(*asr, compiler_options);
         if (err) return err;
     }
 
@@ -1027,7 +1043,7 @@ int compile_to_object_file_cpp(const std::string &infile,
 
     // Save .mod files
     {
-        int err = save_mod_files(*asr);
+        int err = save_mod_files(*asr, compiler_options);
         if (err) return err;
     }
 
@@ -1186,6 +1202,16 @@ int link_executable(const std::vector<std::string> &infiles,
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
                 return 10;
             }
+            if (outfile == "a.out" && compiler_options.arg_o == "") {
+                err = system("a.out");
+                if (err != 0) {
+                    if (0 < err && err < 256) {
+                        return err;
+                    } else {
+                        return 1;
+                    }
+                }
+            }
         } else {
             std::string CC;
             std::string base_path = "\"" + runtime_library_dir + "\"";
@@ -1200,10 +1226,6 @@ int link_executable(const std::vector<std::string> &infiles,
 
             char *env_CC = std::getenv("LFORTRAN_CC");
             if (env_CC) CC = env_CC;
-
-            if (compiler_options.target != "" && link_with_gcc) {
-                options = " --target " + compiler_options.target;
-            }
 
             if (compiler_options.target != "" && !link_with_gcc) {
                 options = " -target " + compiler_options.target;
@@ -1226,6 +1248,16 @@ int link_executable(const std::vector<std::string> &infiles,
             if (err) {
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
                 return 10;
+            }
+            if (outfile == "a.out" && compiler_options.arg_o == "") {
+                err = system("./a.out");
+                if (err != 0) {
+                    if (0 < err && err < 256) {
+                        return err;
+                    } else {
+                        return 1;
+                    }
+                }
             }
         }
         return 0;
@@ -1299,6 +1331,7 @@ namespace wasm {
 #define INITIALIZE_VARS CompilerOptions compiler_options; \
                         compiler_options.use_colors = true; \
                         compiler_options.indent = true; \
+                        compiler_options.runtime_library_dir = LFortran::get_runtime_library_dir(); \
                         LFortran::FortranEvaluator fe(compiler_options); \
                         LFortran::LocationManager lm; \
                         LFortran::diag::Diagnostics diagnostics; \
@@ -1391,7 +1424,9 @@ int main(int argc, char *argv[])
         int dirname_length;
         LFortran::get_executable_path(LFortran::binary_executable_path, dirname_length);
 
+        // TODO: This is now in compiler options and can be removed
         std::string runtime_library_dir = LFortran::get_runtime_library_dir();
+
         std::string rtlib_header_dir = LFortran::get_runtime_library_header_dir();
         Backend backend;
 
@@ -1400,11 +1435,8 @@ int main(int argc, char *argv[])
         bool arg_v = false;
         bool arg_E = false;
         bool arg_g = false;
-        std::string arg_J;
-        std::vector<std::string> arg_I;
         std::vector<std::string> arg_l;
         std::vector<std::string> arg_L;
-        std::string arg_o;
         std::vector<std::string> arg_files;
         bool arg_version = false;
         bool show_prescan = false;
@@ -1415,6 +1447,7 @@ int main(int argc, char *argv[])
         bool show_ast_f90 = false;
         std::string arg_pass;
         bool arg_no_color = false;
+        bool arg_no_prescan = false;
         bool show_llvm = false;
         bool show_cpp = false;
         bool show_c = false;
@@ -1442,6 +1475,7 @@ int main(int argc, char *argv[])
         std::string arg_pywrap_array_order="f";
 
         CompilerOptions compiler_options;
+        compiler_options.runtime_library_dir = LFortran::get_runtime_library_dir();
 
         LCompilers::PassManager lfortran_pass_manager;
 
@@ -1451,13 +1485,13 @@ int main(int argc, char *argv[])
         app.add_option("files", arg_files, "Source files");
         app.add_flag("-S", arg_S, "Emit assembly, do not assemble or link");
         app.add_flag("-c", arg_c, "Compile and assemble, do not link");
-        app.add_option("-o", arg_o, "Specify the file to place the output into");
+        app.add_option("-o", compiler_options.arg_o, "Specify the file to place the output into");
         app.add_flag("-v", arg_v, "Be more verbose");
         app.add_flag("-E", arg_E, "Preprocess only; do not compile, assemble or link");
         app.add_option("-l", arg_l, "Link library option");
         app.add_option("-L", arg_L, "Library path option");
-        app.add_option("-I", arg_I, "Include path")->allow_extra_args(false);
-        app.add_option("-J", arg_J, "Where to save mod files");
+        app.add_option("-I", compiler_options.include_dirs, "Include path");
+        app.add_option("-J", compiler_options.mod_files_dir, "Where to save mod files");
         app.add_flag("-g", arg_g, "Compile with debugging information");
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", arg_version, "Display compiler version information");
@@ -1465,6 +1499,7 @@ int main(int argc, char *argv[])
         // LFortran specific options
         app.add_flag("--cpp", compiler_options.c_preprocessor, "Enable C preprocessing");
         app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing");
+        app.add_flag("--no-prescan", arg_no_prescan, "Turn off prescan");
         app.add_flag("--show-prescan", show_prescan, "Show tokens for the given file and exit");
         app.add_flag("--show-tokens", show_tokens, "Show tokens for the given file and exit");
         app.add_flag("--show-ast", show_ast, "Show AST for the given file and exit");
@@ -1490,6 +1525,7 @@ int main(int argc, char *argv[])
         app.add_option("--backend", arg_backend, "Select a backend (llvm, cpp, x86, wasm)")->capture_default_str();
         app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
         app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
+        app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
         app.add_flag("--fast", compiler_options.fast, "Best performance (disable strict standard compliance)");
         app.add_flag("--link-with-gcc", link_with_gcc, "Calls GCC for linking instead of clang");
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
@@ -1544,6 +1580,7 @@ int main(int argc, char *argv[])
                 case (LFortran::Platform::macOS_ARM) : std::cout << "macOS ARM"; break;
                 case (LFortran::Platform::Windows) : std::cout << "Windows"; break;
                 case (LFortran::Platform::FreeBSD) : std::cout << "FreeBSD"; break;
+                case (LFortran::Platform::OpenBSD) : std::cout << "OpenBSD"; break;
             }
             std::cout << std::endl;
 #ifdef HAVE_LFORTRAN_LLVM
@@ -1563,6 +1600,7 @@ int main(int argc, char *argv[])
         }
 
         compiler_options.use_colors = !arg_no_color;
+        compiler_options.prescan = !arg_no_prescan;
 
         if (fmt) {
             if (CLI::NonexistentPath(arg_fmt_file).empty())
@@ -1629,8 +1667,8 @@ int main(int argc, char *argv[])
         std::string basename;
         basename = remove_extension(arg_file);
         basename = remove_path(basename);
-        if (arg_o.size() > 0) {
-            outfile = arg_o;
+        if (compiler_options.arg_o.size() > 0) {
+            outfile = compiler_options.arg_o;
         } else if (arg_S) {
             outfile = basename + ".s";
         } else if (arg_c) {

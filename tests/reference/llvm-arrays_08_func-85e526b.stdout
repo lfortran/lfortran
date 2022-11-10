@@ -11,7 +11,7 @@ source_filename = "LFortran"
 @4 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @5 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
 
-define void @copy_from_to_a_b(i32* %a, i32* %"1a", i32* %"2a", i32* %b, i32* %"1b", i32* %"2b") {
+define void @copy_from_to_a_b(i32* %a, i32* %__1a, i32* %__2a, i32* %b, i32* %__1b, i32* %__2b) {
 .entry:
   %i = alloca i32, align 4
   store i32 0, i32* %i, align 4
@@ -20,7 +20,7 @@ define void @copy_from_to_a_b(i32* %a, i32* %"1a", i32* %"2a", i32* %b, i32* %"1
 loop.head:                                        ; preds = %loop.body, %.entry
   %0 = load i32, i32* %i, align 4
   %1 = add i32 %0, 1
-  %2 = load i32, i32* %"2a", align 4
+  %2 = load i32, i32* %__2a, align 4
   %3 = mul i32 1, %2
   %4 = icmp sle i32 %1, %3
   br i1 %4, label %loop.body, label %loop.end
@@ -30,16 +30,16 @@ loop.body:                                        ; preds = %loop.head
   %6 = add i32 %5, 1
   store i32 %6, i32* %i, align 4
   %7 = load i32, i32* %i, align 4
-  %8 = load i32, i32* %"1b", align 4
-  %9 = load i32, i32* %"2b", align 4
+  %8 = load i32, i32* %__1b, align 4
+  %9 = load i32, i32* %__2b, align 4
   %10 = sub i32 %7, %8
   %11 = mul i32 1, %10
   %12 = add i32 0, %11
   %13 = mul i32 1, %9
   %14 = getelementptr inbounds i32, i32* %b, i32 %12
   %15 = load i32, i32* %i, align 4
-  %16 = load i32, i32* %"1a", align 4
-  %17 = load i32, i32* %"2a", align 4
+  %16 = load i32, i32* %__1a, align 4
+  %17 = load i32, i32* %__2a, align 4
   %18 = sub i32 %15, %16
   %19 = mul i32 1, %18
   %20 = add i32 0, %19
@@ -56,7 +56,7 @@ return:                                           ; preds = %loop.end
   ret void
 }
 
-define i1 @verify_a_b(i32* %a, i32* %"1a", i32* %"2a", i32* %b, i32* %"1b", i32* %"2b") {
+define i1 @verify_a_b(i32* %a, i32* %__1a, i32* %__2a, i32* %b, i32* %__1b, i32* %__2b) {
 .entry:
   %i = alloca i32, align 4
   %r = alloca i1, align 1
@@ -67,7 +67,7 @@ define i1 @verify_a_b(i32* %a, i32* %"1a", i32* %"2a", i32* %b, i32* %"1b", i32*
 loop.head:                                        ; preds = %loop.body, %.entry
   %0 = load i32, i32* %i, align 4
   %1 = add i32 %0, 1
-  %2 = load i32, i32* %"2a", align 4
+  %2 = load i32, i32* %__2a, align 4
   %3 = mul i32 1, %2
   %4 = icmp sle i32 %1, %3
   br i1 %4, label %loop.body, label %loop.end
@@ -78,8 +78,8 @@ loop.body:                                        ; preds = %loop.head
   store i32 %6, i32* %i, align 4
   %7 = load i1, i1* %r, align 1
   %8 = load i32, i32* %i, align 4
-  %9 = load i32, i32* %"1a", align 4
-  %10 = load i32, i32* %"2a", align 4
+  %9 = load i32, i32* %__1a, align 4
+  %10 = load i32, i32* %__2a, align 4
   %11 = sub i32 %8, %9
   %12 = mul i32 1, %11
   %13 = add i32 0, %12
@@ -87,8 +87,8 @@ loop.body:                                        ; preds = %loop.head
   %15 = getelementptr inbounds i32, i32* %a, i32 %13
   %16 = load i32, i32* %15, align 4
   %17 = load i32, i32* %i, align 4
-  %18 = load i32, i32* %"1b", align 4
-  %19 = load i32, i32* %"2b", align 4
+  %18 = load i32, i32* %__1b, align 4
+  %19 = load i32, i32* %__2b, align 4
   %20 = sub i32 %17, %18
   %21 = mul i32 1, %20
   %22 = add i32 0, %21

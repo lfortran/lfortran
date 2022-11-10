@@ -287,12 +287,13 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
                 a.from_str_view(s.name);
                 char *name = a.c_str(al);
                 ASR::asr_t *asr = ASR::make_Function_t(al, loc,
-                    proc_symtab, name, nullptr, 0,
+                    proc_symtab, name,
                     nullptr, 0,
                     nullptr, 0,
                     nullptr, // return var
                     ASR::abiType::GFortranModule, ASR::Public,
-                    ASR::Interface, nullptr, false, false, false, false);
+                    ASR::Interface, nullptr, false, false, false,
+                    false, false, nullptr, 0, nullptr, 0, false);
                 s.p.proc = down_cast<ASR::symbol_t>(asr);
                 std::string sym_name = s.name;
                 if (parent_scope->get_symbol(sym_name) != nullptr) {
@@ -360,7 +361,8 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
     asr = ASR::make_TranslationUnit_t(al, loc,
         parent_scope, nullptr, 0);
     ASR::TranslationUnit_t *tu = down_cast2<ASR::TranslationUnit_t>(asr);
-    LFORTRAN_ASSERT(asr_verify(*tu));
+    diag::Diagnostics diagnostics;
+    LFORTRAN_ASSERT(asr_verify(*tu, true, diagnostics));
     return tu;
 
     //std::cout << format_item(mod);

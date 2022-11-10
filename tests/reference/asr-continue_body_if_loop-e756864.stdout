@@ -78,6 +78,7 @@
                                     (Var 2 j) 
                                     ())] 
                                     (Real 4 []) 
+                                    ColMajor 
                                     ()
                                 ) 
                                 (Real 4 []) 
@@ -102,11 +103,13 @@
                                 ()
                             ) 
                             [(GoTo 
+                                2 
                                 2
                             )] 
                             []
                         )
                         (GoToTarget 
+                            1 
                             1
                         )]
                     )
@@ -114,6 +117,7 @@
                         ()
                     )
                     (GoToTarget 
+                        2 
                         2
                     )]
                 )

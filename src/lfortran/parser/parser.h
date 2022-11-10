@@ -53,8 +53,8 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
 // Converts token number to text
 std::string token2text(const int token);
 
-std::string fix_continuation(const std::string &s, LocationManager &lm,
-        bool fixed_form);
+std::string prescan(const std::string &s, LocationManager &lm,
+        bool fixed_form, const std::string &root_dir);
 
 } // namespace LFortran
 

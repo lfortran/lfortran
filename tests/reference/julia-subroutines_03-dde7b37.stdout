@@ -17,7 +17,7 @@ function main()
     println(j)
     if j ≠ 4
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     __j_ref__= Ref(j)
     f(i, __j_ref__, k, l)
@@ -25,7 +25,7 @@ function main()
     println(j)
     if j ≠ 4
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     __j_ref__= Ref(j)
     f(i, __j_ref__, k, l)
@@ -33,7 +33,7 @@ function main()
     println(j)
     if j ≠ 4
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     __j_ref__= Ref(j)
     f(i, __j_ref__, k, l)
@@ -41,7 +41,7 @@ function main()
     println(j)
     if j ≠ 4
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
 end
 

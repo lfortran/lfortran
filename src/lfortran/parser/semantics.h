@@ -330,13 +330,6 @@ decl_attribute_t** ATTRCOMMON(Allocator &al,
         varsym.p, varsym.n, \
         trivia_cast(trivia))
 
-#define VAR_DECL_DATA(x, trivia, l) make_Declaration_t(p.m_a, l, \
-        nullptr, VEC_CAST(x, decl_attribute), x.size(), \
-        nullptr, 0, trivia_cast(trivia))
-#define DATA(objects, values, l) make_AttrData_t(p.m_a, l, \
-        EXPRS(objects), objects.size(), \
-        EXPRS(values), values.size())
-
 ast_t* data_implied_do(Allocator &al, Location &loc,
         Vec<ast_t*> obj_list,
         ast_t* type,
@@ -1032,6 +1025,7 @@ ast_t* builtin3(Allocator &al,
 #define FLUSH(args0, l) builtin1(p.m_a, args0, l, make_Flush_t)
 #define ENDFILE(args0, l) builtin1(p.m_a, args0, l, make_Endfile_t)
 
+#define INCLUDE(arg, l) make_Include_t(p.m_a, l, 0, arg.c_str(p.m_a), nullptr)
 #define INQUIRE0(args0, l) builtin2(p.m_a, args0, empty_vecast(), l, \
             make_Inquire_t)
 #define INQUIRE(args0, args, l) builtin2(p.m_a, args0, args, l, make_Inquire_t)
@@ -1113,6 +1107,13 @@ void pos_to_linecol(const std::string &s, uint64_t position,
 }
 
 #define FORMAT(s, l) make_Format_t(p.m_a, l, 0, s.c_str(p.m_a), nullptr)
+
+#define DATASTMT(x, l) make_DataStmt_t(p.m_a, l, \
+        0, VEC_CAST(x, data_stmt_set), x.size(), nullptr)
+#define DATA(objects, values, l) make_DataStmtSet_t(p.m_a, l, \
+        EXPRS(objects), objects.size(), \
+        EXPRS(values), values.size())
+
 
 #define STOP(l) make_Stop_t(p.m_a, l, 0, nullptr, nullptr, nullptr)
 #define STOP1(stop_code, l) make_Stop_t(p.m_a, l, 0, EXPR(stop_code), nullptr, nullptr)
@@ -1912,16 +1913,16 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         /*unit_decl2_t** a_decl*/ DECLS(decl), /*size_t n_decl*/ decl.size(), \
         /*program_unit_t** a_contains*/ CONTAINS(contains), /*size_t n_contains*/ contains.size())
 
-#define BLOCKDATA(trivia, use, implicit, decl, l) make_BlockData_t(p.m_a, l, \
+#define BLOCKDATA(trivia, use, implicit, decl, stmt, l) make_BlockData_t(p.m_a, l, \
         nullptr, trivia_cast(trivia), \
         USES(use), use.size(), \
         VEC_CAST(implicit, implicit_statement), implicit.size(), \
-        DECLS(decl), decl.size())
-#define BLOCKDATA1(name, trivia, use, implicit, decl, l) make_BlockData_t( \
+        DECLS(decl), decl.size(), STMTS(stmt), stmt.size())
+#define BLOCKDATA1(name, trivia, use, implicit, decl, stmt, l) make_BlockData_t( \
         p.m_a, l, name2char(name), trivia_cast(trivia), \
         USES(use), use.size(), \
         VEC_CAST(implicit, implicit_statement), implicit.size(), \
-        DECLS(decl), decl.size())
+        DECLS(decl), decl.size(), STMTS(stmt), stmt.size())
 
 #define INTERFACE_HEADER(l) make_InterfaceHeader_t(p.m_a, l)
 #define INTERFACE_HEADER_NAME(id, l) make_InterfaceHeaderName_t(p.m_a, l, \
@@ -1971,11 +1972,17 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         make_Template_t(p.m_a, l, name2char(name), \
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
         /*unit_decl2_t** a_decl*/ DECLS(decl), /*size_t n_decl*/ decl.size(), \
-        /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size() \
-        )
-#define INSTANTIATE(name, types, syms, l) \
+        /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size())
+#define REQUIREMENT(name, namelist, decl, funcs, l) \
+        make_Requirement_t(p.m_a, l, name2char(name), \
+        REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
+        DECLS(decl), decl.size(), CONTAINS(funcs), funcs.size())
+#define REQUIRES(name, namelist, l) \
+        make_Requires_t(p.m_a, l, name2char(name), \
+        REDUCE_ARGS(p.m_a, namelist), namelist.size())
+#define INSTANTIATE(name, args, syms, l) \
         make_Instantiate_t(p.m_a, l, name2char(name), \
-        VEC_CAST(types, decl_attribute), types.size(), \
+        REDUCE_ARGS(p.m_a, args), args.size(), \
         USE_SYMBOLS(syms), syms.size())
 
 #define DERIVED_TYPE_PROC(attr, syms, trivia, l) make_DerivedTypeProc_t(p.m_a, l, \
@@ -2093,8 +2100,10 @@ void set_m_trivia(stmt_t *s, trivia_t *trivia) {
         TRIVIA_SET(Flush)
         TRIVIA_SET(ForAllSingle)
         TRIVIA_SET(Format)
+        TRIVIA_SET(DataStmt)
         TRIVIA_SET(FormTeam)
         TRIVIA_SET(GoTo)
+        TRIVIA_SET(Include)
         TRIVIA_SET(Inquire)
         TRIVIA_SET(Nullify)
         TRIVIA_SET(Open)

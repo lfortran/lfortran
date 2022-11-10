@@ -91,6 +91,8 @@ integration_tests/test-llvm/*
 integration_tests/test-cpp/*
 integration_tests/test-x86/*
 integration_tests/test-wasm/*
+integration_tests/test-gfortran/*
+integration_tests/test-llvm2/*
 
 ### https://raw.github.com/github/gitignore/218a941be92679ce67d0484547e3e142b2f5f6f0/Global/macOS.gitignore
 
@@ -180,6 +182,16 @@ extsrc/
 tmp/
 tmpdebug/
 gentests/
+*.tlog
+*.filters
+*.obj
+*.exe
+*.exp
+*.lib
+*.vcxproj
+*.recipe
+*.sln
+*.dll
 
 ## Ninja
 build.ninja

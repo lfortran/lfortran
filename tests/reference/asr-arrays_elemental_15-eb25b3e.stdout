@@ -98,7 +98,6 @@
                                         }) 
                                     elemental_cos 
                                     [] 
-                                    [] 
                                     [(DoLoop 
                                         ((Var 7 i) 
                                         (IntegerConstant 1 (Integer 4 [])) 
@@ -119,6 +118,7 @@
                                                     (Var 7 j) 
                                                     ())] 
                                                     (Real 8 []) 
+                                                    ColMajor 
                                                     ()
                                                 ) 
                                                 (Cast 
@@ -192,6 +192,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             elemental_sin:
@@ -333,7 +337,6 @@
                                         }) 
                                     elemental_sin 
                                     [] 
-                                    [] 
                                     [(DoLoop 
                                         ((Var 6 i) 
                                         (IntegerConstant 1 (Integer 4 [])) 
@@ -346,6 +349,7 @@
                                                 (Var 6 i) 
                                                 ())] 
                                                 (Real 8 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             (Cast 
@@ -414,6 +418,7 @@
                                                         (Var 6 k) 
                                                         ())] 
                                                         (Real 8 []) 
+                                                        ColMajor 
                                                         ()
                                                     ) 
                                                     (Cast 
@@ -503,6 +508,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             elemental_trig_identity:
@@ -716,7 +725,6 @@
                                         }) 
                                     elemental_trig_identity 
                                     [] 
-                                    [] 
                                     [(= 
                                         (Var 8 eps) 
                                         (Cast 
@@ -769,6 +777,7 @@
                                                             (Var 8 l) 
                                                             ())] 
                                                             (Real 8 []) 
+                                                            ColMajor 
                                                             ()
                                                         ) 
                                                         (Cast 
@@ -924,6 +933,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 65536 (Integer 4 [])) 
@@ -957,6 +967,7 @@
                                                             (Var 8 i) 
                                                             ())] 
                                                             (Real 8 []) 
+                                                            ColMajor 
                                                             ()
                                                         ) 
                                                         Sub 
@@ -998,6 +1009,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             verify1d:
@@ -1123,7 +1138,6 @@
                                     [(Var 3 array)
                                     (Var 3 result)
                                     (Var 3 size)] 
-                                    [] 
                                     [(= 
                                         (Var 3 eps) 
                                         (Cast 
@@ -1163,6 +1177,7 @@
                                                                     (Var 3 i) 
                                                                     ())] 
                                                                     (Real 8 []) 
+                                                                    ColMajor 
                                                                     ()
                                                                 ))] 
                                                                 (Real 8 []) 
@@ -1180,6 +1195,7 @@
                                                             (Var 3 i) 
                                                             ())] 
                                                             (Real 8 []) 
+                                                            ColMajor 
                                                             ()
                                                         ) 
                                                         (Real 8 []) 
@@ -1208,6 +1224,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             verify2d:
@@ -1366,7 +1386,6 @@
                                     (Var 5 result)
                                     (Var 5 size1)
                                     (Var 5 size2)] 
-                                    [] 
                                     [(= 
                                         (Var 5 eps) 
                                         (Cast 
@@ -1412,6 +1431,7 @@
                                                                         (Var 5 j) 
                                                                         ())] 
                                                                         (Real 8 []) 
+                                                                        ColMajor 
                                                                         ()
                                                                     ))] 
                                                                     (Real 8 []) 
@@ -1441,6 +1461,7 @@
                                                                 (Var 5 j) 
                                                                 ())] 
                                                                 (Real 8 []) 
+                                                                ColMajor 
                                                                 ()
                                                             ) 
                                                             (Real 8 []) 
@@ -1470,6 +1491,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             verifynd:
@@ -1661,7 +1686,6 @@
                                     (Var 4 size1)
                                     (Var 4 size2)
                                     (Var 4 size3)] 
-                                    [] 
                                     [(= 
                                         (Var 4 eps) 
                                         (Cast 
@@ -1715,6 +1739,7 @@
                                                                             (Var 4 k) 
                                                                             ())] 
                                                                             (Real 8 []) 
+                                                                            ColMajor 
                                                                             ()
                                                                         ))] 
                                                                         (Real 8 []) 
@@ -1747,6 +1772,7 @@
                                                                     (Var 4 k) 
                                                                     ())] 
                                                                     (Real 8 []) 
+                                                                    ColMajor 
                                                                     ()
                                                                 ) 
                                                                 (Real 8 []) 
@@ -1777,6 +1803,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

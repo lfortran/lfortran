@@ -22,6 +22,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
     tokens = is_included("tokens")
     ast = is_included("ast")
     ast_indent = is_included("ast_indent")
+    ast_no_prescan = is_included("ast_no_prescan")
     ast_f90 = is_included("ast_f90")
     ast_cpp = is_included("ast_cpp")
     ast_cpp_hip = is_included("ast_cpp_hip")
@@ -29,6 +30,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
     asr = is_included("asr")
     asr_implicit_typing = is_included("asr_implicit_typing")
     asr_implicit_interface = is_included("asr_implicit_interface")
+    asr_implicit_interface_and_typing = is_included("asr_implicit_interface_and_typing")
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
     mod_to_asr = is_included("mod_to_asr")
@@ -88,6 +90,16 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
             update_reference,
             extra_args)
 
+    if ast_no_prescan:
+        # Use free form with prescan disabled
+        run_test(
+            filename,
+            "ast_no_prescan",
+            "lfortran --indent --no-prescan --show-ast --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            extra_args)
+
     if ast_f90:
         if filename.endswith(".f"):
             # Use fixed form
@@ -134,6 +146,15 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
                 filename,
                 update_reference,
                 extra_args)
+
+    if asr_implicit_interface_and_typing:
+        run_test(
+            filename,
+            "asr",
+            "lfortran --indent --show-asr --implicit-typing --allow-implicit-interface --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            extra_args)
 
     if asr_implicit_typing:
         run_test(

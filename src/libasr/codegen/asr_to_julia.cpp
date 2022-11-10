@@ -187,7 +187,7 @@ public:
                              const std::string& right,
                              int left_precedence,
                              int right_precedence,
-                             bool is_sub = false)
+                             bool is_sub_div = false)
     {
         std::string out;
         if (is_right_associated_julia(left_precedence)) {
@@ -202,7 +202,7 @@ public:
         out += op;
         if (is_right_associated_julia(right_precedence)) {
             out += "(" + right + ")";
-        } else if (is_sub) {
+        } else if (is_sub_div) {
             if (right_precedence < last_expr_precedence) {
                 out += right;
             } else {
@@ -383,9 +383,9 @@ public:
                 } else {
                     sub = format_type(type_name, v.m_name, use_ref, init_default ? "\"\"" : "");
                 }
-            } else if (ASR::is_a<ASR::Derived_t>(*v.m_type)) {
+            } else if (ASR::is_a<ASR::Struct_t>(*v.m_type)) {
                 // TODO: handle this
-                ASR::Derived_t* t = ASR::down_cast<ASR::Derived_t>(v.m_type);
+                ASR::Struct_t* t = ASR::down_cast<ASR::Struct_t>(v.m_type);
                 std::string der_type_name = ASRUtils::symbol_name(t->m_derived_type);
                 if (is_array) {
                     generate_array_decl(sub,
@@ -617,6 +617,30 @@ public:
         indentation_level -= 2;
     }
 
+    void visit_BlockCall(const ASR::BlockCall_t& x)
+    {
+        LFORTRAN_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
+        ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        std::string decl, body;
+        std::string open_paranthesis = indent + "let\n";
+        std::string close_paranthesis = indent + "end\n";
+        indent += std::string(indentation_spaces, ' ');
+        indentation_level += 1;
+        for (auto& item : block->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+                decl += indent + this->convert_variable_decl(*v) + "\n";
+            }
+        }
+        for (size_t i = 0; i < block->n_body; i++) {
+            this->visit_stmt(*block->m_body[i]);
+            body += src;
+        }
+        src = open_paranthesis + decl + body + close_paranthesis;
+        indentation_level -= 1;
+    }
+
     void visit_Function(const ASR::Function_t& x)
     {
         if (std::string(x.m_name) == "size" && intrinsic_module) {
@@ -717,19 +741,6 @@ public:
                     }
                 }
                 src = var_name + ".extent(" + args + ")";
-            } else if (fn_name == "int") {
-                // TODO: implement this properly
-                // - Keep integers as they are
-                // - Convert real to integer (|A| < 1 => 0, |A| >= 1 => largest integer whose
-                // absolute value <= |A| with sign of A)
-                // - Take the real part of a complex number
-                LFORTRAN_ASSERT(x.n_args > 0);
-                visit_expr(*x.m_args[0].m_value);
-                src = "Int32(" + src + ")";
-            } else if (fn_name == "not") {
-                LFORTRAN_ASSERT(x.n_args > 0);
-                visit_expr(*x.m_args[0].m_value);
-                src = "!(" + src + ")";
             } else {
                 throw CodeGenError("Intrinsic function '" + fn_name + "' not implemented");
             }
@@ -861,7 +872,8 @@ public:
                                    + " operator not implemented yet");
         }
         src = format_binop(
-            left, op, right, left_precedence, right_precedence, x.m_op == ASR::binopType::Sub);
+            left, op, right, left_precedence, right_precedence,
+                x.m_op == ASR::binopType::Sub || x.m_op == ASR::binopType::Div);
     }
 
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t& x)
@@ -946,8 +958,8 @@ public:
                 std::string type_name = "String";
                 generate_array_decl(
                     out, std::string(v->m_name), type_name, _dims, nullptr, n_dims, true, true);
-            } else if (ASR::is_a<ASR::Derived_t>(*v->m_type)) {
-                ASR::Derived_t* t = ASR::down_cast<ASR::Derived_t>(v->m_type);
+            } else if (ASR::is_a<ASR::Struct_t>(*v->m_type)) {
+                ASR::Struct_t* t = ASR::down_cast<ASR::Struct_t>(v->m_type);
                 std::string der_type_name = ASRUtils::symbol_name(t->m_derived_type);
                 generate_array_decl(
                     out, std::string(v->m_name), der_type_name, _dims, nullptr, n_dims, true, true);
@@ -1138,7 +1150,7 @@ public:
     {
         std::string indent(indentation_level * indentation_spaces, ' ');
         src = indent + "println(Base.stderr, \"ERROR STOP\")\n";
-        src += indent + "exit(1);\n";
+        src += indent + "exit(1)\n";
     }
 
     void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t& /*x*/)
@@ -1177,7 +1189,6 @@ public:
                 throw CodeGenError("Do loop increment type not supported");
             }
         }
-
         out += lvname + " ∈ ";
         visit_expr(*a);
         out += src + ":" + (increment == 1 ? "" : (std::to_string(increment) + ":"));
@@ -1443,7 +1454,7 @@ public:
         last_expr_precedence = julia_prec::Base;
     }
 
-    void visit_DerivedRef(const ASR::DerivedRef_t& x)
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x)
     {
         std::string der_expr, member;
         this->visit_expr(*x.m_v);
@@ -1454,8 +1465,17 @@ public:
 
     void visit_Cast(const ASR::Cast_t& x)
     {
+        std::string broadcast;
+        if (x.m_arg->type == ASR::exprType::Var) {
+            ASR::Variable_t* value = ASRUtils::EXPR2VAR(x.m_arg);
+            if (ASRUtils::is_array(value->m_type))
+                broadcast = ".";
+        } else if (x.m_arg->type == ASR::exprType::ArrayConstant
+                   || x.m_arg->type == ASR::exprType::TupleConstant
+                   || x.m_arg->type == ASR::exprType::SetConstant) {
+            broadcast = ".";
+        }
         visit_expr(*x.m_arg);
-        std::string broadcast = ASRUtils::is_array(x.m_type) ? "." : "";
         switch (x.m_kind) {
             case (ASR::cast_kindType::IntegerToReal): {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
@@ -1474,7 +1494,8 @@ public:
             }
             case (ASR::cast_kindType::RealToInteger): {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                src = "Int" + std::to_string(dest_kind * 8) + broadcast + "(" + src + ")";
+                src = "trunc" + broadcast + "(Int" + std::to_string(dest_kind * 8) + ", " + src
+                      + ")";
                 break;
             }
             case (ASR::cast_kindType::RealToReal): {

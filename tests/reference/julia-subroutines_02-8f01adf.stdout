@@ -21,11 +21,11 @@ function main()
     println(i, " ", j)
     if i ≠ 1
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     if j ≠ 2
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     __j_ref__= Ref(j)
     g(i, __j_ref__)
@@ -33,11 +33,11 @@ function main()
     println(i, " ", j)
     if i ≠ 1
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     if j ≠ 0
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     __j_ref__= Ref(j)
     h(i, __j_ref__)
@@ -45,11 +45,11 @@ function main()
     println(i, " ", j)
     if i ≠ 1
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     if j ≠ 0
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
 end
 

@@ -202,7 +202,6 @@
                                         }) 
                                     test_1d_to_nd 
                                     [(Var 4 d)] 
-                                    [] 
                                     [(= 
                                         (Var 4 eps) 
                                         (Cast 
@@ -271,6 +270,7 @@
                                                 (Var 4 k) 
                                                 ())] 
                                                 (Real 8 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             (Cast 
@@ -309,6 +309,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 16 (Integer 4 [])) 
@@ -321,6 +322,7 @@
                                             (IntegerConstant 2 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 16 (Integer 4 [])) 
@@ -364,6 +366,7 @@
                                                                         (Var 4 j) 
                                                                         ())] 
                                                                         (Real 8 []) 
+                                                                        ColMajor 
                                                                         ()
                                                                     ) 
                                                                     Sub 
@@ -437,6 +440,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 16 (Integer 4 [])) 
@@ -449,6 +453,7 @@
                                             (IntegerConstant 2 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 16 (Integer 4 [])) 
@@ -461,6 +466,7 @@
                                             (IntegerConstant 3 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 16 (Integer 4 [])) 
@@ -513,6 +519,7 @@
                                                                                 (Var 4 k) 
                                                                                 ())] 
                                                                                 (Real 8 []) 
+                                                                                ColMajor 
                                                                                 ()
                                                                             ) 
                                                                             Sub 
@@ -604,6 +611,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             test_nd_to_1d:
@@ -801,7 +812,6 @@
                                         }) 
                                     test_nd_to_1d 
                                     [(Var 3 a)] 
-                                    [] 
                                     [(= 
                                         (Var 3 eps) 
                                         (Cast 
@@ -825,6 +835,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 256 (Integer 4 [])) 
@@ -900,6 +911,7 @@
                                                                     (Var 3 k) 
                                                                     ())] 
                                                                     (Real 8 []) 
+                                                                    ColMajor 
                                                                     ()
                                                                 ) 
                                                                 Sub 
@@ -981,6 +993,7 @@
                                                         (Var 3 k) 
                                                         ())] 
                                                         (Real 8 []) 
+                                                        ColMajor 
                                                         ()
                                                     ) 
                                                     (Cast 
@@ -1045,6 +1058,7 @@
                                             (IntegerConstant 1 (Integer 4 [])) 
                                             ())] 
                                             (Integer 4 []) 
+                                            ColMajor 
                                             ()
                                         ) 
                                         (IntegerConstant 4096 (Integer 4 [])) 
@@ -1162,6 +1176,7 @@
                                                                         (Var 3 l) 
                                                                         ())] 
                                                                         (Real 8 []) 
+                                                                        ColMajor 
                                                                         ()
                                                                     ) 
                                                                     Sub 
@@ -1233,6 +1248,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             test_reshape_with_argument:
@@ -1332,7 +1351,6 @@
                                         }) 
                                     test_reshape_with_argument 
                                     [] 
-                                    [] 
                                     [(DoLoop 
                                         ((Var 5 i) 
                                         (IntegerConstant 1 (Integer 4 [])) 
@@ -1353,6 +1371,7 @@
                                                     (Var 5 j) 
                                                     ())] 
                                                     (Real 8 []) 
+                                                    ColMajor 
                                                     ()
                                                 ) 
                                                 (Cast 
@@ -1496,6 +1515,7 @@
                                                 (Var 5 l) 
                                                 ())] 
                                                 (Real 8 []) 
+                                                ColMajor 
                                                 ()
                                             ) 
                                             (Cast 
@@ -1547,6 +1567,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

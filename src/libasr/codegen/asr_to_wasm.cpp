@@ -175,9 +175,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         auto func = ASR::make_Function_t(
             m_al, global_scope_loc, global_scope, s2c(m_al, import_func.name),
-            params.data(), params.size(), nullptr, 0, nullptr, 0, nullptr,
+            params.data(), params.size(), nullptr, 0, nullptr,
             ASR::abiType::Source, ASR::accessType::Public,
-            ASR::deftypeType::Implementation, nullptr, false, false, false, false);
+            ASR::deftypeType::Implementation, nullptr, false, false, false, false, false,
+            nullptr, 0, nullptr, 0, false);
         m_import_func_asr_map[import_func.name] = func;
 
         wasm::emit_import_fn(m_import_section, m_al, "js", import_func.name,
@@ -197,6 +198,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
              {}},
             {"flush_buf", {}, {}},
             {"set_exit_code", {{ASR::ttypeType::Integer, 4}}, {}}};
+
 
         for (auto ImportFunc : import_funcs) {
             import_function(ImportFunc);
@@ -221,6 +223,17 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                             emit_function_prototype(*fn);
                         }
                     }
+                }
+            } else if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t *fn =
+                    ASR::down_cast<ASR::Function_t>(item.second);
+                if (fn->m_abi == ASR::abiType::BindC &&
+                    fn->m_deftype == ASR::deftypeType::Interface &&
+                    !ASRUtils::is_intrinsic_function2(fn)) {
+                    wasm::emit_import_fn(m_import_section, m_al, "js",
+                                            fn->m_name, no_of_types);
+                    no_of_imports++;
+                    emit_function_prototype(*fn);
                 }
             }
         }
@@ -251,13 +264,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 for (auto &item : build_order) {
                     LFORTRAN_ASSERT(x.m_global_scope->get_scope().find(item) !=
                                     x.m_global_scope->get_scope().end());
-                    if (startswith(item, "lfortran_intrinsic")) {
-                        ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
-                        if (ASR::is_a<ASR::Module_t>(*mod)) {
-                            ASR::Module_t *m =
-                                ASR::down_cast<ASR::Module_t>(mod);
-                            declare_all_functions(*(m->m_symtab));
-                        }
+                    ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
+                    if (ASR::is_a<ASR::Module_t>(*mod)) {
+                        ASR::Module_t *m =
+                            ASR::down_cast<ASR::Module_t>(mod);
+                        declare_all_functions(*(m->m_symtab));
                     }
                 }
 
@@ -283,10 +294,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             for (auto &item : build_order) {
                 LFORTRAN_ASSERT(x.m_global_scope->get_scope().find(item) !=
                                 x.m_global_scope->get_scope().end());
-                if (startswith(item, "lfortran_intrinsic")) {
-                    ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
-                    this->visit_symbol(*mod);
-                }
+                ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
+                this->visit_symbol(*mod);
             }
         }
 
@@ -343,9 +352,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // Generate main program code
         auto main_func = ASR::make_Function_t(
             m_al, x.base.base.loc, x.m_symtab, s2c(m_al, "_lcompilers_main"),
-            nullptr, 0, nullptr, 0, x.m_body, x.n_body, nullptr,
+            nullptr, 0, x.m_body, x.n_body, nullptr,
             ASR::abiType::Source, ASR::accessType::Public,
-            ASR::deftypeType::Implementation, nullptr, false, false, false, false);
+            ASR::deftypeType::Implementation, nullptr, false, false, false, false, false,
+            nullptr, 0, nullptr, 0, false);
         emit_function_prototype(*((ASR::Function_t *)main_func));
         emit_function_body(*((ASR::Function_t *)main_func));
     }
@@ -866,6 +876,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     }
                     break;
                 };
+                case ASR::binopType::BitAnd: {
+                    wasm::emit_i32_and(m_code_section, m_al);
+                    break;
+                };
                 default: {
                     throw CodeGenError(
                         "ICE IntegerBinop kind 4: unknown operation");
@@ -909,6 +923,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                             "IntegerBinop kind 8: only x**2 implemented so far "
                             "for powers");
                     }
+                    break;
+                };
+                case ASR::binopType::BitAnd: {
+                    wasm::emit_i64_and(m_code_section, m_al);
                     break;
                 };
                 default: {
@@ -1403,13 +1421,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         for (uint32_t i = 0; i < x.n_args; i++) {
             if (x.m_args[i].m_right) {
                 this->visit_expr(*x.m_args[i].m_right);
-                wasm::emit_i32_const(m_code_section, m_al, 1);
+                this->visit_expr(*m_dims[i].m_start);
                 wasm::emit_i32_sub(m_code_section, m_al);
                 size_t jmin, jmax;
 
-                // TODO: add this flag to ASR for each array:
-                bool column_major = true;
-                if (column_major) {
+                if (x.m_storage_format == ASR::arraystorageType::ColMajor) {
                     // Column-major order
                     jmin = 0;
                     jmax = i;
@@ -2083,6 +2099,23 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         wasm::emit_branch(
             m_code_section, m_al,
             nesting_level - cur_loop_nesting_level);  // branch to start of loop
+    }
+
+    void visit_Assert(const ASR::Assert_t &x) {
+        this->visit_expr(*x.m_test);
+        wasm::emit_i32_eqz(m_code_section, m_al);
+        wasm::emit_b8(m_code_section, m_al, 0x04);  // emit if start
+        wasm::emit_b8(m_code_section, m_al, 0x40);  // empty block type
+        if (x.m_msg) {
+            std::string msg =
+                ASR::down_cast<ASR::StringConstant_t>(x.m_msg)->m_s;
+            print_msg("AssertionError: " + msg);
+        } else {
+            print_msg("AssertionError");
+        }
+        wasm::emit_i32_const(m_code_section, m_al, 1);  // non-zero exit code
+        exit();
+        wasm::emit_expr_end(m_code_section, m_al);  // emit if end
     }
 };
 

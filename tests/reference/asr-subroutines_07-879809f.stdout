@@ -228,7 +228,6 @@
                                     (Var 3 c)
                                     (Var 3 d)
                                     (Var 3 kind)] 
-                                    [] 
                                     [(= 
                                         (Var 3 b) 
                                         (IntegerBinOp 
@@ -260,6 +259,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             f_int:

@@ -1,0 +1,61 @@
+#include <inttypes.h>
+
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <lfortran_intrinsics.h>
+
+#define ASSERT(cond)                                                           \
+    {                                                                          \
+        if (!(cond)) {                                                         \
+            printf("%s%s", "ASSERT failed: ", __FILE__);                       \
+            printf("%s%s", "\nfunction ", __func__);                           \
+            printf("%s%d%s", "(), line number ", __LINE__, " at \n");          \
+            printf("%s%s", #cond, "\n");                                       \
+            exit(1);                                                           \
+        }                                                                      \
+    }
+#define ASSERT_MSG(cond, msg)                                                  \
+    {                                                                          \
+        if (!(cond)) {                                                         \
+            printf("%s%s", "ASSERT failed: ", __FILE__);                       \
+            printf("%s%s", "\nfunction ", __func__);                           \
+            printf("%s%d%s", "(), line number ", __LINE__, " at \n");          \
+            printf("%s%s", #cond, "\n");                                       \
+            printf("%s", "ERROR MESSAGE:\n");                                  \
+            printf("%s%s", msg, "\n");                                         \
+            exit(1);                                                           \
+        }                                                                      \
+    }
+
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, length;
+};
+// Forward declarations
+
+// Implementations
+int main(int argc, char* argv[])
+{
+    static int32_t a=1;
+    int32_t ap=1;
+    static int32_t b=2;
+    int32_t bp=2;
+    static float c=  1.00000000000000000e+00;
+    float cp=  1.00000000000000000e+00;
+    static float d=  2.00000000000000000e+00;
+    float dp=  2.00000000000000000e+00;
+    char * grade_fixed = (char*) malloc(40 * sizeof(char));
+    int32_t marks;
+    int32_t marks_fixed=94;
+    // FIXME: select case()
+    printf("%s%s%s\n", "Your grade is ", " ", grade_fixed);
+    marks = 94;
+    // FIXME: select case()
+    printf("%s%s%d\n", "Your marks are ", " ", marks);
+    // FIXME: select case()
+    printf("%s%s%d\n", "Your marks are ", " ", marks);
+    return 0;
+}

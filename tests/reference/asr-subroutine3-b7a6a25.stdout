@@ -25,7 +25,6 @@
                         }) 
                     f 
                     [] 
-                    [] 
                     [(= 
                         (Var 2 f) 
                         (IntegerConstant 42 (Integer 4 [])) 
@@ -39,6 +38,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             

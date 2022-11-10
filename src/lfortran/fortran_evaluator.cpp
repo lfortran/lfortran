@@ -15,6 +15,7 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/preprocessor.h>
 #include <lfortran/pickle.h>
+#include <libasr/utils.h>
 
 #ifdef HAVE_LFORTRAN_LLVM
 #include <libasr/codegen/evaluator.h>
@@ -184,7 +185,8 @@ Result<AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
         code = &tmp;
     }
     if (compiler_options.prescan || compiler_options.fixed_form) {
-        tmp = fix_continuation(*code, lm, compiler_options.fixed_form);
+        tmp = prescan(*code, lm, compiler_options.fixed_form,
+            parent_path(lm.in_filename));
         code = &tmp;
     }
     Result<AST::TranslationUnit_t*> res = parse(al, *code, diagnostics, compiler_options.fixed_form);
@@ -316,7 +318,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     Result<std::unique_ptr<LFortran::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
             e->get_context(), al, pass_manager,
-            compiler_options.platform, run_fn);
+            compiler_options, run_fn);
     if (res.ok) {
         m = std::move(res.result);
     } else {

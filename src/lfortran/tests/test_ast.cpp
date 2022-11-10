@@ -44,7 +44,7 @@ end program
     ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast,
         diagnostics, nullptr, false, compiler_options));
 
-    CHECK(asr_verify(*asr)); // Passes
+    CHECK(asr_verify(*asr, true, diagnostics)); // Passes
 
     // Extract the variable "x" from the "x = (2+3)*5" line:
     ASR::Program_t *prog = ASR::down_cast<ASR::Program_t>(asr->m_global_scope->get_symbol("expr2"));
@@ -54,7 +54,7 @@ end program
     v->m_v = &(prog->base); // Assign the wrong symbol to Var_t::m_v
 
     // This will be caught by the verifier
-    CHECK_THROWS_AS(asr_verify(*asr), LCompilersException);
+    CHECK(!asr_verify(*asr, true, diagnostics));
 }
 
 

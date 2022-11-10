@@ -9,7 +9,7 @@ function main()
     j = 1
     if j ≠ 1
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     __j_ref__= Ref(j)
     f(i, __j_ref__)
@@ -17,16 +17,16 @@ function main()
     println(i, " ", j)
     if i ≠ 1
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     if j ≠ 2
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     j = 1
     if j ≠ 1
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     __j_ref__= Ref(j)
     f(Int32(3), __j_ref__)
@@ -34,12 +34,12 @@ function main()
     println(j)
     if j ≠ 4
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     j = 1
     if j ≠ 1
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     __j_ref__= Ref(j)
     f(Int32(1 + 2), __j_ref__)
@@ -47,12 +47,12 @@ function main()
     println(j)
     if j ≠ 4
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     j = 1
     if j ≠ 1
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     __j_ref__= Ref(j)
     f(Int32(i + 2), __j_ref__)
@@ -60,7 +60,7 @@ function main()
     println(j)
     if j ≠ 4
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
 end
 

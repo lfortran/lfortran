@@ -12,7 +12,7 @@ function main()
     end
     if j ≠ 3
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     println(j)
     j = 0
@@ -24,7 +24,7 @@ function main()
     end
     if j ≠ 1
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     println(j)
     j = 0
@@ -36,7 +36,7 @@ function main()
     end
     if j ≠ 53
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     println(j)
 end

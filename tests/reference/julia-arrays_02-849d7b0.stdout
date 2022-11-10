@@ -225,11 +225,13 @@ end
 
 function conjgz32(x::ComplexF32)::ComplexF32
     local r::ComplexF32 = 0.0
+    r = complex(real(x)) - complex(caimag(x)) * ComplexF32(0, 1)
     return r
 end
 
 function conjgz64(x::ComplexF64)::ComplexF64
     local r::ComplexF64 = 0.0
+    r = complex(real(x)) - complex(zaimag(x)) * ComplexF32(0, 1)
     return r
 end
 
@@ -433,7 +435,7 @@ function dsqrt(x::Float64)::Float64
         r = x ^ (  1.00000000000000000e+00 / Float64(2))
     else
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     return r
 end
@@ -722,7 +724,7 @@ function ssqrt(x::Float32)::Float32
         r = x ^ (  1.00000000000000000e+00 / Float32(2))
     else
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
     return r
 end
@@ -883,7 +885,7 @@ function main()
     b = Float64(sum(a))
     if dabs(Float64(b -   6.00000000000000000e+00)) >   9.99999999999999980e-13
         println(Base.stderr, "ERROR STOP")
-        exit(1);
+        exit(1)
     end
 end
 

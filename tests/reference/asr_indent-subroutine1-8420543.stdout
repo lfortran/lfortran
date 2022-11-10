@@ -39,7 +39,6 @@
                         }) 
                     g 
                     [] 
-                    [] 
                     [(= 
                         (Var 2 x) 
                         (IntegerConstant 1 (Integer 4 [])) 
@@ -70,6 +69,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 ), 
             h:
@@ -109,7 +112,6 @@
                         }) 
                     h 
                     [] 
-                    [] 
                     [(= 
                         (Var 3 x) 
                         (IntegerConstant 1 (Integer 4 [])) 
@@ -140,6 +142,10 @@
                     .false. 
                     .false. 
                     .false. 
+                    .false. 
+                    .false. 
+                    [] 
+                    [] 
                     .false.
                 )
             

@@ -1,11 +1,9 @@
-c `--show-llvm` throws with
-c assert(Ty && "Invalid GetElementPtrInst indices for type!"); 
-c 
-c -> correct as we do not define lower/upper bounds for arrays here
-      subroutine f() 
+      subroutine f()
       integer nq, m
-      real wrk5, v
-      
+      real wrk5(5), v(3, 4, 5)
+      real ve(3, 4, 5),vev(3, 4)
+      real zero
+
       integer l1,j,l2
       integer indx
       DO 140 L1 = 1,NQ
@@ -18,8 +16,6 @@ c -> correct as we do not define lower/upper bounds for arrays here
   140 CONTINUE
 
       indx = 1
-      real ve,vev
-      real zero
       zero = 0.0d00
       DO 230 L1 = 1,NQ
          DO 220 L2 = 1,L1

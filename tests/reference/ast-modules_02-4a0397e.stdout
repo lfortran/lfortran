@@ -1,6 +1,6 @@
 (TranslationUnit 
     [(Module 
-        a_02 
+        modules_02_a 
         (TriviaNode 
             [] 
             [(EndOfLine)
@@ -42,7 +42,7 @@
         )]
     )
     (Module 
-        c_02 
+        modules_02_c 
         (TriviaNode 
             [] 
             [(EndOfLine)
@@ -112,14 +112,14 @@
         () 
         [(Use 
             [] 
-            a_02 
+            modules_02_a 
             [] 
             .false. 
             ()
         )
         (Use 
             [] 
-            c_02 
+            modules_02_c 
             [(UseSymbol 
                 d 
                 x
@@ -129,7 +129,7 @@
         )
         (Use 
             [] 
-            c_02 
+            modules_02_c 
             [(UseSymbol 
                 e 
                 ()

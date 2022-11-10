@@ -45,7 +45,6 @@
                                     f90_assert 
                                     [(Var 4 file)
                                     (Var 4 line)] 
-                                    [] 
                                     [(Print 
                                         () 
                                         [(StringConcat 
@@ -80,6 +79,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             fn:
@@ -134,7 +137,6 @@
                                     fn 
                                     [(Var 3 a)
                                     (Var 3 b)] 
-                                    [] 
                                     [(= 
                                         (Var 3 fn) 
                                         (IntegerCompare 
@@ -154,6 +156,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 )
                             

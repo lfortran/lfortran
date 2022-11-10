@@ -177,7 +177,6 @@
                                     check 
                                     [(Var 3 c)
                                     (Var 3 op_code)] 
-                                    [] 
                                     [(DoLoop 
                                         ((Var 3 i) 
                                         (ArrayBound 
@@ -291,6 +290,7 @@
                                                                     (Var 3 k) 
                                                                     ())] 
                                                                     (Complex 4 []) 
+                                                                    ColMajor 
                                                                     ()
                                                                 ) 
                                                                 NotEq 
@@ -401,6 +401,7 @@
                                                                     (Var 3 k) 
                                                                     ())] 
                                                                     (Complex 4 []) 
+                                                                    ColMajor 
                                                                     ()
                                                                 ) 
                                                                 NotEq 
@@ -468,6 +469,10 @@
                                     .false. 
                                     .false. 
                                     .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
                                     .false.
                                 ), 
                             i:
@@ -544,6 +549,7 @@
                                         (Var 2 k) 
                                         ())] 
                                         (Integer 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (IntegerBinOp 
@@ -574,6 +580,7 @@
                                         (Var 2 k) 
                                         ())] 
                                         (Integer 4 []) 
+                                        ColMajor 
                                         ()
                                     ) 
                                     (IntegerBinOp 
