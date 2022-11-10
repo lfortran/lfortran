@@ -48,7 +48,7 @@ jobs:
 
       - name: Build (Linux x86_64 -> arm64 cross compiler)
         shell: bash -l {0}
-        if: contains(matrix.os, 'macos')
+        if: contains(matrix.os, 'ubuntu')
         run: |
             xonsh ci/build_linux_x86_64_arm64_cross_compiler.xsh
 
