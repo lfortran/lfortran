@@ -12,15 +12,11 @@ cd build
 
 # build lfortran
 
-cmake -GNinja -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DWITH_TARGET_AARCH64=Yes \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/../inst ..
+cmake -GNinja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DWITH_TARGET_AARCH64=Yes -DCMAKE_INSTALL_PREFIX=`pwd`/../inst ..
 
 ninja install
 
-cmake -DCMAKE_Fortran_COMPILER=../inst/bin/lfortran \
-      -DWITH_RUNTIME_LIBRARY=Yes ..
+cmake -DCMAKE_Fortran_COMPILER=../inst/bin/lfortran -DWITH_RUNTIME_LIBRARY=Yes ..
 
 ninja install
 
@@ -28,15 +24,7 @@ ninja install
 mkdir build_aarch64 && cd build_aarch64
 
 cmake -GNinja \
-      -DCMAKE_BUILD_TYPE=Debug \
-      -DWITH_LLVM=yes \
-      -DCMAKE_INSTALL_PREFIX=`pwd`/../iphone_inst \
-      -DWITH_ZLIB=No \
-      -DWITH_RUNTIME_LIBRARY_ONLY=Yes \
-      -DCMAKE_Fortran_COMPILER=../inst/bin/lfortran \
-      -DCMAKE_TOOLCHAIN_FILE=../ios-cmake/ios.toolchain.cmake \
-      -DPLATFORM=OS64 \
-      -DENABLE_BITCODE=No ..
+      -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/../iphone_inst -DWITH_ZLIB=No -DWITH_RUNTIME_LIBRARY_ONLY=Yes -DCMAKE_Fortran_COMPILER=../inst/bin/lfortran -DCMAKE_TOOLCHAIN_FILE=../ios-cmake/ios.toolchain.cmake -DPLATFORM=OS64x -DENABLE_BITCODE=No ..
 
 ninja install
 
