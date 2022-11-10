@@ -46,6 +46,12 @@ jobs:
             echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
             echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
 
+      - name: Build (Linux x86_64 -> arm64 cross compiler)
+        shell: bash -l {0}
+        if: contains(matrix.os, 'macos')
+        run: |
+            xonsh ci/build_linux_x86_64_arm64_cross_compiler.xsh
+
       - name: Build (Linux / macOS)
         shell: bash -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
@@ -65,13 +71,6 @@ jobs:
         if: contains(matrix.os, 'macos')
         run: |
             xonsh ci/build_ios.xsh
-
-      - name: Build (Linux x86_64 -> arm64 cross compiler)
-        shell: bash -l {0}
-        if: contains(matrix.os, 'macos')
-        run: |
-            xonsh ci/build_linux_x86_64_arm64_cross_compiler.xsh
-
 
       - name: Test (Linux / macOS)
         shell: bash -l {0}
