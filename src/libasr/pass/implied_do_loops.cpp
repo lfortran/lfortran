@@ -153,21 +153,38 @@ public:
     }
 
     void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {
+    
         // create a function that just calls a regular loop.
 
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
-        std::string func_name = "idoloop_Function";
+        std::string func_name = "idoloop_Function"; //keep global counter for unique names
         func_name = to_lower(func_name);
 
-        Vec<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args; // start and end of the loop
         args.reserve(al, 1);
-        ASR::ttype_t* type = LFortran::ASRUtils::expr_type(x.m_start);
 
-        // Create an empty array of the same type as the idoloop->m_start
-        ASR::asr_t* temp = ASR::make_ArrayConstant_t(al, x.base.base.loc, nullptr,
-            0, type, ASR::arraystorageType::ColMajor);
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = x.base.base.loc;
+        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                                                        4, nullptr, 0));
+        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+        // currently hardcoding to 10 elements
+        ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                            4, int32_type));
+        dim.m_start = one;
+        dim.m_length = x_n_args;
+        dims.push_back(al, dim);
+        ASR::ttype_t* obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
+        ASR::expr_t* return_type = nullptr;
+        // Create an empty array 
+        Vec<ASR::expr_t*> array_body;
+        array_body.reserve(al,0);
+        ASR::expr_t* temp = LFortran::ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, x.base.base.loc, array_body.p,
+            array_body.size(), obj_type, ASR::arraystorageType::ColMajor));
         ASR::Var_t* arr_var = ASR::down_cast<ASR::Var_t>(temp);
         ASR::expr_t* arr_var_expr = LFortran::ASRUtils::EXPR((ASR::asr_t*)arr_var);
         args.push_back(al, arr_var_expr);
@@ -175,14 +192,10 @@ public:
         // create a doloop body
         Vec<ASR::stmt_t*> doloop_body;
         doloop_body.reserve(al, 1);
-        // make a copy of ASR::ImpliedDoLoop_t 
         create_do_loop(x, arr_var);
         // push the last element of pass_result to doloop_body
         doloop_body.push_back(al, pass_result[pass_result.size()-1]);
         
-        // TODO:: assign a return type
-        ASR::expr_t* return_type = nullptr;
-
         ASR::asr_t* func = ASR::make_Function_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
@@ -196,8 +209,11 @@ public:
             nullptr, false, false, false, false, false, /* a_type_parameters */ nullptr,
             /* n_type_parameters */ 0, nullptr, 0, false);
         
+        parent_scope->add_symbol(func_name, ASR::down_cast<ASR::symbol_t>(func));
+        current_scope = parent_scope;
         // push the function to pass_result
-        pass_result.push_back(al, LFortran::ASRUtils::STMT(func));
+        pass_result.push_back(al, LFortran::ASRUtils::STMT(func)); // Make print or assign statement return STMT but inside we must have a ImpliedDoLoop Expression.
+
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
