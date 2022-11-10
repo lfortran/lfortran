@@ -50,6 +50,7 @@ jobs:
         shell: bash -l {0}
         if: contains(matrix.os, 'ubuntu')
         run: |
+            sudo apt install gcc make gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu g++-aarch64-linux-gnu
             xonsh ci/build_linux_x86_64_arm64_cross_compiler.xsh
 
       - name: Build (Linux / macOS)
