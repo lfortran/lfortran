@@ -22,6 +22,6 @@ ninja install
 cd ..
 mkdir build_aarch64 && cd build_aarch64
 
-cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/aarch64-linux-gnu.toolchain.cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=../install_aarch64 -DCMAKE_Fortran_COMPILER=../install/bin/lfortran -DWITH_ZLIB=NO -DWITH_RUNTIME_LIBRARY_ONLY=YES ..
+cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/aarch64-linux-gnu.toolchain.cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=../inst_aarch64 -DCMAKE_Fortran_COMPILER=../inst/bin/lfortran -DWITH_ZLIB=NO -DWITH_RUNTIME_LIBRARY_ONLY=YES ..
 
 ninja install
