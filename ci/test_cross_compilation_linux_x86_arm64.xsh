@@ -2,7 +2,8 @@
 
 $RAISE_SUBPROC_ERROR = True
 trace on
-
+pwd
+ls
 # Run some simple compilation tests, works everywhere:
 inst_aarch64/bin/lfortran --version
 # Compile and link separately
