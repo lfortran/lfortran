@@ -119,6 +119,7 @@ struct IntrinsicProcedures {
             {"gamma", {m_math, &eval_gamma, true}},
             {"log_gamma", {m_math, &eval_log_gamma, true}},
             {"log10", {m_math, &eval_log10, true}},
+            {"dlog10", {m_math, &eval_dlog10, true}},
 
             //{"sin", {m_trig, &eval_sin, true}},
             {"sin", {m_math, &eval_sin, true}},
@@ -530,6 +531,7 @@ TRIG2(exp, zexp)
 
 TRIG2(log, alog)
 TRIG2(log, dlog)
+TRIG2(log10, dlog10)
 TRIG2(log, slog)
 TRIG2(log, clog)
 TRIG2(log, zlog)
