@@ -28,5 +28,6 @@ cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/aarch64-linux-gnu.toolc
 ninja install
 
 cd ..
+mkdir inst_aarch64/bin
 cp inst/bin/lfortran inst_aarch64/bin/lfortran
 
