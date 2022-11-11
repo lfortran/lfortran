@@ -159,7 +159,7 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
-        std::string func_name = "idoloop_Function"; //keep global counter for unique names
+        std::string func_name = "idoloop_Function_"+std::to_string(1); //keep global counter for unique names
         func_name = to_lower(func_name);
 
         Vec<ASR::expr_t*> args; // start and end of the loop
@@ -178,7 +178,8 @@ public:
         dim.m_start = one;
         dim.m_length = x_n_args;
         dims.push_back(al, dim);
-        ASR::ttype_t* obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
+        ASR::ttype_t* obj_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+        obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
         ASR::expr_t* return_type = nullptr;
         // Create an empty array 
         Vec<ASR::expr_t*> array_body;
