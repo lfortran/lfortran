@@ -115,8 +115,12 @@ struct Diagnostic {
 struct Diagnostics {
     std::vector<Diagnostic> diagnostics;
 
+    // Render nice error messages using all the information we have
     std::string render(const std::string &input,
             const LocationManager &lm, const CompilerOptions &compiler_options);
+
+    // Renders the error message using only the information in Diagnostics
+    std::string render2();
 
     // Returns true iff diagnostics contains at least one error message
     bool has_error() const;
