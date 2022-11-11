@@ -46,6 +46,20 @@ jobs:
             echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
             echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
 
+      - name: Build (Linux x86_64 -> arm64 cross compiler)
+        shell: bash -l {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+            sudo apt-get -y install gcc make gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu g++-aarch64-linux-gnu
+            xonsh ci/build_linux_x86_64_arm64_cross_compiler.xsh
+
+      - name: Test (Linux x86_64 -> arm64 cross compiler)
+        shell: bash -l {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+            sudo apt-get -y install qemu-user-static
+            xonsh ci/test_cross_compilation_linux_x86_arm64.xsh
+
       - name: Build (Linux / macOS)
         shell: bash -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
@@ -66,13 +80,6 @@ jobs:
         run: |
             xonsh ci/build_ios.xsh
 
-      - name: Build (Linux x86_64 -> arm64 cross compiler)
-        shell: bash -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            sudo apt-get -y install gcc make gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu g++-aarch64-linux-gnu
-            xonsh ci/build_linux_x86_64_arm64_cross_compiler.xsh
-
       - name: Test (Linux / macOS)
         shell: bash -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
@@ -86,6 +93,13 @@ jobs:
             call micromamba activate lf
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\test.xsh
+
+      - name: Test (Linux x86_64 -> arm64 cross compiler)
+        shell: bash -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            sudo apt-get -y install qemu-user-static
+            xonsh ci/test_cross_compilation_linux_x86_arm64.xsh
 
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload
