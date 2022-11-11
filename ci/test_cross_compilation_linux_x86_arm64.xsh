@@ -4,6 +4,7 @@ $RAISE_SUBPROC_ERROR = True
 trace on
 pwd
 ls
+ls /usr/bin/aarch64-linux-gnu-gcc
 LFORTRAN_CC=/usr/bin/aarch64-linux-gnu-gcc
 # Run some simple compilation tests, works everywhere:
 ./inst_aarch64/bin/lfortran --version
