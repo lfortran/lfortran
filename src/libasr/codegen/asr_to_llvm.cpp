@@ -1687,8 +1687,21 @@ public:
                 der_type_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_type->m_derived_type));
             }
             uint32_t v_h = get_hash((ASR::asr_t*)v);
-            LFORTRAN_ASSERT(llvm_symtab.find(v_h) != llvm_symtab.end());
-            array = llvm_symtab[v_h];
+            if (llvm_symtab.find(v_h) == llvm_symtab.end()) {
+                LFORTRAN_ASSERT(std::find(nested_globals.begin(),
+                        nested_globals.end(), v_h) != nested_globals.end());
+                auto finder = std::find(nested_globals.begin(),
+                        nested_globals.end(), v_h);
+                llvm::Constant *ptr = module->getOrInsertGlobal(nested_desc_name,
+                    nested_global_struct);
+                int idx = std::distance(nested_globals.begin(), finder);
+                std::vector<llvm::Value*> idx_vec = {
+                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
+                array = CreateLoad(CreateGEP(ptr, idx_vec));
+            } else {
+                array = llvm_symtab[v_h];
+            }
             is_argument = (v->m_intent == ASRUtils::intent_in)
                   || (v->m_intent == ASRUtils::intent_out)
                   || (v->m_intent == ASRUtils::intent_inout)
