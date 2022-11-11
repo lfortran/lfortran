@@ -189,8 +189,13 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     // Fix all external symbols
     fix_external_symbols(*tu, *symtab);
     if (run_verify) {
+#if defined(WITH_LFORTRAN_ASSERT)
         diag::Diagnostics diagnostics;
-        LFORTRAN_ASSERT(asr_verify(*tu, true, diagnostics));
+        if (!asr_verify(*tu, true, diagnostics)) {
+            std::cerr << diagnostics.render2();
+            throw LCompilersException("Verify failed");
+        };
+#endif
     }
     symtab->asr_owner = orig_asr_owner;
 

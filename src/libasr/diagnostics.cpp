@@ -98,6 +98,17 @@ std::string Diagnostics::render(const std::string &input,
     return out;
 }
 
+std::string render_diagnostic_short_nospan(const Diagnostic &d);
+
+std::string Diagnostics::render2() {
+    std::string out;
+    for (auto &d : this->diagnostics) {
+        out += render_diagnostic_short_nospan(d);
+        if (&d != &this->diagnostics.back()) out += "\n";
+    }
+    return out;
+}
+
 std::string get_line(std::string str, int n)
 {
     std::string line;
@@ -305,6 +316,13 @@ std::string render_diagnostic_short(const Diagnostic &d) {
     auto [message_type, primary, type] = diag_level_to_str(d, false);
     out << message_type << ": " << d.message << std::endl;
 
+    return out.str();
+}
+
+std::string render_diagnostic_short_nospan(const Diagnostic &d) {
+    std::stringstream out;
+    auto [message_type, primary, type] = diag_level_to_str(d, false);
+    out << message_type << ": " << d.message << std::endl;
     return out.str();
 }
 
