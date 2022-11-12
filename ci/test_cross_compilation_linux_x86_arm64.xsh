@@ -4,7 +4,7 @@ $RAISE_SUBPROC_ERROR = True
 trace on
 
 # Needed to run dynamically linked binaries with qemu user space emulation
-cp /usr/aarch64-linux-gnu/lib/ld-linux-aarch64.so.1 /lib/ld-linux-aarch64.so.1
+sudo cp /usr/aarch64-linux-gnu/lib/ld-linux-aarch64.so.1 /lib/ld-linux-aarch64.so.1
 
 $LFORTRAN_CC="/usr/bin/aarch64-linux-gnu-gcc"
 # Run some simple compilation tests, works everywhere:
