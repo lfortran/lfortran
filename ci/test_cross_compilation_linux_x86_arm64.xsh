@@ -12,13 +12,13 @@ $LFORTRAN_CC="/usr/bin/aarch64-linux-gnu-gcc"
 qemu-aarch64-static ./expr2
 
 # Compile C and Fortran
-./inst_aarch64/bin/lfortran --link-with-gcc --target arm64-linux --static -c integration_tests/modules_15b.f90 -o modules_15b.o
-./inst_aarch64/bin/lfortran --link-with-gcc --target arm64-linux --static -c integration_tests/modules_15.f90 -o modules_15.o
+./inst_aarch64/bin/lfortran --link-with-gcc --target arm64-linux -c integration_tests/modules_15b.f90 -o modules_15b.o
+./inst_aarch64/bin/lfortran --link-with-gcc --target arm64-linux -c integration_tests/modules_15.f90 -o modules_15.o
 
 # Linux
 /usr/bin/aarch64-linux-gnu-gcc -c integration_tests/modules_15c.c -o modules_15c.o
 
-./inst_aarch64/bin/lfortran --link-with-gcc --target arm64-linux --static modules_15.o modules_15b.o modules_15c.o -o modules_15
+./inst_aarch64/bin/lfortran --link-with-gcc --target arm64-linux modules_15.o modules_15b.o modules_15c.o -o modules_15
 qemu-aarch64-static ./modules_15
 
 
