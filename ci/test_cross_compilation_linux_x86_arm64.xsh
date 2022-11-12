@@ -3,6 +3,8 @@
 $RAISE_SUBPROC_ERROR = True
 trace on
 
+cp /usr/aarch64-linux-gnu/lib/ld-linux-aarch64.so.1 /lib/ld-linux-aarch64.so.1
+
 $LFORTRAN_CC="/usr/bin/aarch64-linux-gnu-gcc"
 # Run some simple compilation tests, works everywhere:
 ./inst_aarch64/bin/lfortran --version
