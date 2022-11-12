@@ -13,15 +13,14 @@ $LFORTRAN_CC="/usr/bin/aarch64-linux-gnu-gcc"
 qemu-aarch64-static ./expr2
 
 # Compile C and Fortran
-./inst_aarch64/bin/lfortran --target arm64-linux -c integration_tests/modules_15b.f90 -o modules_15b.o
-./inst_aarch64/bin/lfortran --target arm64-linux -c integration_tests/modules_15.f90 -o modules_15.o
+./inst_aarch64/bin/lfortran --target arm64-linux --link-with-gcc -c integration_tests/modules_15b.f90 -o modules_15b.o
+./inst_aarch64/bin/lfortran --target arm64-linux --link-with-gcc -c integration_tests/modules_15.f90 -o modules_15.o
 
 # Linux
-clang -target arm64-linux -c integration_tests/modules_15c.c -o modules_15c.o
+/usr/bin/aarch64-linux-gnu-gcc -c integration_tests/modules_15c.c -o modules_15c.o
 
-./inst_aarch64/bin/lfortran --target arm64-linux modules_15.o modules_15b.o modules_15c.o -o modules_15
+./inst_aarch64/bin/lfortran --target arm64-linux --link-with-gcc modules_15.o modules_15b.o modules_15c.o -o modules_15
 qemu-aarch64 -L /usr/aarch64-linux-gnu/ ./modules_15
-
 
 # Compile and link in one step
 ./inst_aarch64/bin/lfortran --target arm64-linux --link-with-gcc --static integration_tests/intrinsics_04s.f90 -o intrinsics_04s
