@@ -1243,7 +1243,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 cmd += s + " ";
             }
             cmd += + " -L"
-                + base_path + " -Wl,-rpath," + "/usr/aarch64-linux-gnu/lib/" + " -l" + runtime_lib + " -lm";
+                + base_path + " -Wl,-rpath," + base_path + " -l" + runtime_lib + " -lm";
             int err = system(cmd.c_str());
             if (err) {
                 std::cout << "The command '" + cmd + "' failed." << std::endl;

@@ -98,7 +98,7 @@ jobs:
         shell: bash -l {0}
         if: contains(matrix.os, 'ubuntu')
         run: |
-            sudo apt-get -y install qemu-user-static libc6-arm64-cross
+            sudo apt-get -y install qemu-user-static qemu-user libc6-arm64-cross
             xonsh ci/test_cross_compilation_linux_x86_arm64.xsh
 
   build_to_wasm_and_upload:
