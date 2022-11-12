@@ -30,6 +30,4 @@ ninja install
 cd ..
 mkdir inst_aarch64/bin
 cp inst/bin/lfortran inst_aarch64/bin/lfortran
-sudo cp inst_aarch64/share/lfortran/lib/liblfortran_runtime.so /usr/lib/
-sudo cp inst_aarch64/share/lfortran/lib/liblfortran_runtime_static.a /usr/lib/
 
