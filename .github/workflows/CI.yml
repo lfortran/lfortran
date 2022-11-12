@@ -50,7 +50,7 @@ jobs:
         shell: bash -l {0}
         if: contains(matrix.os, 'ubuntu')
         run: |
-            sudo apt-get -y install gcc make gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-arm64-cross
+            sudo apt-get -y install gcc make gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu g++-aarch64-linux-gnu
             xonsh ci/build_linux_x86_64_arm64_cross_compiler.xsh
 
       - name: Test (Linux x86_64 -> arm64 cross compiler)
