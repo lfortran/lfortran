@@ -8,8 +8,8 @@ $LFORTRAN_CC="/usr/bin/aarch64-linux-gnu-gcc"
 # Run some simple compilation tests, works everywhere:
 ./inst_aarch64/bin/lfortran --version
 # Compile and link separately
-./inst_aarch64/bin/lfortran --target arm64-linux --static -c examples/expr2.f90 -o expr2.o
-./inst_aarch64/bin/lfortran --target arm64-linux --static -o expr2 expr2.o
+./inst_aarch64/bin/lfortran --target arm64-linux --link-with-gcc --static -c examples/expr2.f90 -o expr2.o
+./inst_aarch64/bin/lfortran --target arm64-linux --link-with-gcc --static -o expr2 expr2.o
 qemu-aarch64-static ./expr2
 
 # Compile C and Fortran
@@ -24,10 +24,10 @@ qemu-aarch64 -L /usr/aarch64-linux-gnu/ ./modules_15
 
 
 # Compile and link in one step
-./inst_aarch64/bin/lfortran --target arm64-linux --static integration_tests/intrinsics_04s.f90 -o intrinsics_04s
+./inst_aarch64/bin/lfortran --target arm64-linux --link-with-gcc --static integration_tests/intrinsics_04s.f90 -o intrinsics_04s
 qemu-aarch64-static ./intrinsics_04s
 
-./inst_aarch64/bin/lfortran --target arm64-linux --static integration_tests/intrinsics_04.f90 -o intrinsics_04
+./inst_aarch64/bin/lfortran --target arm64-linux --link-with-gcc --static integration_tests/intrinsics_04.f90 -o intrinsics_04
 qemu-aarch64-static ./intrinsics_04
 
 
