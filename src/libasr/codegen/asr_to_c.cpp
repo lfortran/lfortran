@@ -204,13 +204,14 @@ public:
                                ASR::ttype_t* element_type, bool& is_fixed_size,
                                bool convert_to_1d=false)
     {
-        std::string dims;
+        std::string dims = "";
         size_t size = 1;
         std::string array_size = "";
         for (size_t i=0; i<n_dims; i++) {
             ASR::expr_t *length = m_dims[i].m_length;
             if (!length) {
-                dims += "*";
+                is_fixed_size = false;
+                return dims;
             } else {
                 visit_expr(*length);
                 array_size += "*" + src;
@@ -284,7 +285,11 @@ public:
                 if( !is_fixed_size ) {
                     sub += indent + format_type_c("*", type_name_copy, std::string(v_m_name) + "_data",
                                                 use_ref, dummy);
-                    sub += " = " + dims + ";\n";
+                    if( dims.size() > 0 ) {
+                        sub += " = " + dims + ";\n";
+                    } else {
+                        sub += ";\n";
+                    }
                 } else {
                     sub += indent + format_type_c(dims, type_name_copy, std::string(v_m_name) + "_data",
                                                 use_ref, dummy) + ";\n";
