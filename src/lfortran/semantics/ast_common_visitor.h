@@ -1304,7 +1304,7 @@ public:
                         );
                         dims.n = 0;
                     }
-                    process_dims(al, dims, s.m_dim, s.n_dim);
+                    process_dims(al, dims, s.m_dim, s.n_dim);  
                 }
                 ASR::ttype_t *type = determine_type(x.base.base.loc, x.m_vartype, is_pointer, dims);
 
@@ -1312,6 +1312,23 @@ public:
                 ASR::expr_t* value = nullptr;
                 if (s.m_initializer != nullptr) {
                     this->visit_expr(*s.m_initializer);
+                    if (AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
+                        AST::ArrayInitializer_t *temp_array =
+                            AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
+                        // For case  `integer, parameter :: x(*) = [1,2,3], get the compile time length of RHS array.
+                        Vec<ASR::dimension_t> dims;
+                        dims.reserve(al, 1);
+                        ASR::dimension_t dim;
+                        dim.loc = (temp_array->base).base.loc;
+                        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, (temp_array->base).base.loc,
+                                                                                    4, nullptr, 0));
+                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, (temp_array->base).base.loc, 1, int32_type));
+                        ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, (temp_array->base).base.loc, temp_array->n_args, int32_type));
+                        dim.m_start = one;
+                        dim.m_length = x_n_args;
+                        dims.push_back(al, dim);
+                        type = ASRUtils::duplicate_type(al, type, &dims);
+                    }
                     init_expr = LFortran::ASRUtils::EXPR(tmp);
                     ASR::ttype_t *init_type = LFortran::ASRUtils::expr_type(init_expr);
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &init_expr, init_type, type);
