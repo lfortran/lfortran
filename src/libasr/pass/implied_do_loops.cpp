@@ -173,14 +173,17 @@ public:
             end function
         */
 
-       // create a pure function as described above
+        // create a pure function as described above
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
-        std::string func_name = "idoloop_Function_"+std::to_string(1); //keep global counter for unique names
+        // get unique name for the function
+        std::string func_name = "idoloop_Function";
         func_name = to_lower(func_name);
+        std::string unique_name = current_scope->get_unique_name(func_name);
+        func_name = unique_name;
 
-        Vec<ASR::expr_t*> args; // start and end of the loop
+        Vec<ASR::expr_t*> args;
         args.reserve(al, 3);
 
         ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
@@ -201,19 +204,17 @@ public:
         dims.reserve(al, 1);
         ASR::dimension_t dim;
         dim.loc = x.base.base.loc;
-        dim.m_start = start;
+        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+        dim.m_start = one;
         dim.m_length = end;
         dims.push_back(al, dim);
         ASR::ttype_t* obj_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
         obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
 
         // Create an empty array
-        Vec<ASR::expr_t*> array_body;
-        array_body.reserve(al,0);
-        ASR::expr_t* temp = LFortran::ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, x.base.base.loc, array_body.p,
-            array_body.size(), obj_type, ASR::arraystorageType::ColMajor));
-        ASR::Var_t* arr_var = ASR::down_cast<ASR::Var_t>(temp);
-        ASR::expr_t* arr_var_expr = LFortran::ASRUtils::EXPR((ASR::asr_t*)arr_var);
+        LFortran::Location arr_var_loc = x.base.base.loc;
+        ASR::expr_t* arr_var_expr = PassUtils::create_auxiliary_variable(arr_var_loc, func_name, al, current_scope, obj_type);
+        ASR::Var_t* arr_var = ASR::down_cast<ASR::Var_t>(arr_var_expr);
 
         // create a doloop body
         Vec<ASR::stmt_t*> doloop_body;
@@ -237,9 +238,6 @@ public:
         
         parent_scope->add_symbol(func_name, ASR::down_cast<ASR::symbol_t>(func));
         current_scope = parent_scope;
-
-        // push the function to pass_result
-        pass_result.push_back(al, LFortran::ASRUtils::STMT(func)); 
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
