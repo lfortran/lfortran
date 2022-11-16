@@ -336,7 +336,6 @@ public:
 void pass_replace_implied_do_loops(Allocator &al, ASR::TranslationUnit_t &unit,
                                    const LCompilers::PassOptions& pass_options) {
     std::string rl_path = pass_options.runtime_library_dir;
-    std::cout<<"pass_replace_implied_do_loops"<<std::endl;
     ImpliedDoLoopVisitor v(al, unit, rl_path);
     v.visit_TranslationUnit(unit);
 }
