@@ -21,6 +21,7 @@ using LFortran::diag::Diagnostic;
 
 namespace LFortran {
 
+static int temp_value = 0;
 uint64_t static inline get_hash(ASR::asr_t *node)
 {
     return (uint64_t)node;
@@ -803,7 +804,7 @@ public:
     }
 
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
-        AST::dimension_t *m_dim, size_t n_dim) {
+        AST::dimension_t *m_dim, size_t n_dim, int &is_compile_time=temp_value) {
         LFORTRAN_ASSERT(dims.size() == 0);
         dims.reserve(al, n_dim);
         for (size_t i=0; i<n_dim; i++) {
@@ -821,6 +822,9 @@ public:
                                     LFortran::ASRUtils::EXPR(tmp));
             } else {
                 dim.m_length = nullptr;
+            }
+            if ( !dim.m_start && !dim.m_length ) {
+                is_compile_time = true;
             }
             dims.push_back(al, dim);
         }
@@ -1293,6 +1297,7 @@ public:
                         }
                     }
                 }
+                int is_compile_time = 0;
                 if (s.n_dim > 0) {
                     if (dims.size() > 0) {
                         // This happens for:
@@ -1304,7 +1309,7 @@ public:
                         );
                         dims.n = 0;
                     }
-                    process_dims(al, dims, s.m_dim, s.n_dim);  
+                    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time);
                 }
                 ASR::ttype_t *type = determine_type(x.base.base.loc, x.m_vartype, is_pointer, dims);
 
@@ -1312,22 +1317,22 @@ public:
                 ASR::expr_t* value = nullptr;
                 if (s.m_initializer != nullptr) {
                     this->visit_expr(*s.m_initializer);
-                    if (AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
+                    if (is_compile_time && AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
                         AST::ArrayInitializer_t *temp_array =
                             AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
                         // For case  `integer, parameter :: x(*) = [1,2,3], get the compile time length of RHS array.
-                        Vec<ASR::dimension_t> dims;
-                        dims.reserve(al, 1);
-                        ASR::dimension_t dim;
-                        dim.loc = (temp_array->base).base.loc;
+                        Vec<ASR::dimension_t> temp_dims;
+                        temp_dims.reserve(al, 1);
+                        ASR::dimension_t temp_dim;
+                        temp_dim.loc = (temp_array->base).base.loc;
                         ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, (temp_array->base).base.loc,
                                                                                     4, nullptr, 0));
                         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, (temp_array->base).base.loc, 1, int32_type));
                         ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, (temp_array->base).base.loc, temp_array->n_args, int32_type));
-                        dim.m_start = one;
-                        dim.m_length = x_n_args;
-                        dims.push_back(al, dim);
-                        type = ASRUtils::duplicate_type(al, type, &dims);
+                        temp_dim.m_start = one;
+                        temp_dim.m_length = x_n_args;
+                        temp_dims.push_back(al, temp_dim);
+                        type = ASRUtils::duplicate_type(al, type, &temp_dims);
                     }
                     init_expr = LFortran::ASRUtils::EXPR(tmp);
                     ASR::ttype_t *init_type = LFortran::ASRUtils::expr_type(init_expr);
