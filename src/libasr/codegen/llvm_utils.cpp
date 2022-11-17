@@ -304,7 +304,8 @@ namespace LFortran {
             case ASR::ttypeType::Real:
             case ASR::ttypeType::Character:
             case ASR::ttypeType::Logical:
-            case ASR::ttypeType::Complex: {
+            case ASR::ttypeType::Complex:
+            case ASR::ttypeType::CPtr: {
                 LLVM::CreateStore(*builder, src, dest);
                 break ;
             };
