@@ -1679,6 +1679,7 @@ public:
         }
         bool is_argument = false;
         llvm::Value* array = nullptr;
+        bool is_data_only = false;
         if( ASR::is_a<ASR::Var_t>(*x.m_v) ) {
             ASR::Variable_t *v = ASRUtils::EXPR2VAR(x.m_v);
             if( ASR::is_a<ASR::Struct_t>(*ASRUtils::get_contained_type(v->m_type)) ) {
@@ -1699,6 +1700,7 @@ public:
                 llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                 llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
                 array = CreateLoad(CreateGEP(ptr, idx_vec));
+                is_data_only = true;
             } else {
                 array = llvm_symtab[v_h];
             }
@@ -1758,7 +1760,8 @@ public:
             if (ASRUtils::expr_type(x.m_v)->type == ASR::ttypeType::Pointer) {
                 array = CreateLoad(array);
             }
-            bool is_data_only = is_argument && !ASRUtils::is_dimension_empty(m_dims, n_dims);
+            is_data_only = is_data_only || (is_argument &&
+                            !ASRUtils::is_dimension_empty(m_dims, n_dims));
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
             if( is_data_only ) {
@@ -1773,6 +1776,7 @@ public:
             }
             LFORTRAN_ASSERT(ASRUtils::extract_n_dims_from_ttype(
                 ASRUtils::expr_type(x.m_v)) > 0);
+
             tmp = arr_descr->get_single_element(array, indices, x.n_args,
                                                 is_data_only, llvm_diminfo.p);
         }
@@ -2742,6 +2746,9 @@ public:
                                     nested_global_struct);
                             int idx = std::distance(nested_globals.begin(),
                                     finder);
+                            if( is_array_type || is_malloc_array_type ) {
+                                target_var = CreateLoad(target_var);
+                            }
                             builder->CreateStore(target_var, llvm_utils->create_gep(ptr,
                                         idx));
                         }
