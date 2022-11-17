@@ -4056,6 +4056,50 @@ public:
             int idx = std::distance(nested_globals.begin(), finder);
             builder->CreateStore(target, llvm_utils->create_gep(ptr, idx));
         }
+        if (is_a<ASR::ArrayItem_t>(*x.m_target)) {
+            ASR::ArrayItem_t *asr_target0 = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+            if (is_a<ASR::Var_t>(*asr_target0->m_v)) {
+                ASR::Variable_t *asr_target = ASRUtils::EXPR2VAR(asr_target0->m_v);
+                h = get_hash((ASR::asr_t*)asr_target);
+                auto finder = std::find(nested_globals.begin(),
+                        nested_globals.end(), h);
+                if (finder != nested_globals.end()) {
+                    // This is used since array pass use array item visit
+                    llvm::Constant *ptr = module->getOrInsertGlobal(nested_desc_name,
+                    nested_global_struct);
+                    int idx = std::distance(nested_globals.begin(), finder);
+                    std::vector<llvm::Value*> idx_vec = {
+                    llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                    llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
+                    llvm::Value* array = CreateGEP(ptr, idx_vec);
+                    std::vector<llvm::Value*> indices;
+                    for( size_t r = 0; r < asr_target0->n_args; r++ ) {
+                        ASR::array_index_t curr_idx = asr_target0->m_args[r];
+                        uint64_t ptr_loads_copy = ptr_loads;
+                        ptr_loads = 2;
+                        this->visit_expr_wrapper(curr_idx.m_right, true);
+                        ptr_loads = ptr_loads_copy;
+                        indices.push_back(tmp);
+                    }
+                    ASR::dimension_t* m_dims;
+                    int n_dims = ASRUtils::extract_dimensions_from_ttype(
+                                    ASRUtils::expr_type(asr_target0->m_v), m_dims);
+                    Vec<llvm::Value*> llvm_diminfo;
+                    llvm_diminfo.reserve(al, 2 * asr_target0->n_args + 1);
+                    for( size_t idim = 0; idim < asr_target0->n_args; idim++ ) {
+                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                        llvm::Value* dim_start = tmp;
+                        this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                        llvm::Value* dim_size = tmp;
+                        llvm_diminfo.push_back(al, dim_start);
+                        llvm_diminfo.push_back(al, dim_size);
+                    }
+                    tmp = arr_descr->get_single_element(array, indices, asr_target0->n_args,
+                                                        true, llvm_diminfo.p);
+                    builder->CreateStore(target, tmp);
+                }
+            }
+        }
     }
 
     void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t& x) {
