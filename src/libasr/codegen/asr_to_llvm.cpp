@@ -4082,7 +4082,7 @@ public:
                         indices.push_back(tmp);
                     }
                     ASR::dimension_t* m_dims;
-                    int n_dims = ASRUtils::extract_dimensions_from_ttype(
+                    ASRUtils::extract_dimensions_from_ttype(
                                     ASRUtils::expr_type(asr_target0->m_v), m_dims);
                     Vec<llvm::Value*> llvm_diminfo;
                     llvm_diminfo.reserve(al, 2 * asr_target0->n_args + 1);
