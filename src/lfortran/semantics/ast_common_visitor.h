@@ -804,7 +804,7 @@ public:
     }
 
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
-        AST::dimension_t *m_dim, size_t n_dim, int &is_compile_time=temp_value) {
+        AST::dimension_t *m_dim, size_t n_dim, int &is_compile_time) {
         LFORTRAN_ASSERT(dims.size() == 0);
         dims.reserve(al, n_dim);
         for (size_t i=0; i<n_dim; i++) {
@@ -1149,10 +1149,11 @@ public:
                                 throw SemanticError("Cannot set dimension for undeclared variable", x.base.base.loc);
                             }
                         }
+                        int is_compile_time=0;
                         if (ASR::is_a<ASR::Variable_t>(*get_sym)) {
                             Vec<ASR::dimension_t> dims;
                             dims.reserve(al, 0);
-                            process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim);
+                            process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim, is_compile_time);
                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(get_sym);
                             if (!ASRUtils::ttype_set_dimensions(v->m_type, dims.data(), dims.size())) {
                                 throw SemanticError("Cannot set dimension for variable of non-numerical type", x.base.base.loc);
@@ -1176,6 +1177,7 @@ public:
             // Example
             // real(dp), private :: x, y(3), z
             for (size_t i=0; i<x.n_syms; i++) {
+                int is_compile_time = 0;
                 AST::var_sym_t &s = x.m_syms[i];
                 std::string sym = to_lower(s.m_name);
                 ASR::accessType s_access = dflt_access;
@@ -1290,14 +1292,13 @@ public:
                                         x.base.base.loc);
                             }
                             dims_attr_loc = ad->base.base.loc;
-                            process_dims(al, dims, ad->m_dim, ad->n_dim);
+                            process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time);
                         } else {
                             throw SemanticError("Attribute type not implemented yet",
                                     x.base.base.loc);
                         }
                     }
                 }
-                int is_compile_time = 0;
                 if (s.n_dim > 0) {
                     if (dims.size() > 0) {
                         // This happens for:
