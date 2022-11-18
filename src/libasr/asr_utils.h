@@ -1121,9 +1121,10 @@ static inline bool is_generic(ASR::ttype_t &x) {
 }
 
 static inline bool is_generic_function(ASR::symbol_t *x) {
-    switch (x->type) {
+    ASR::symbol_t* x2 = symbol_get_past_external(x);
+    switch (x2->type) {
         case ASR::symbolType::Function: {
-            ASR::Function_t *func_sym = ASR::down_cast<ASR::Function_t>(x);
+            ASR::Function_t *func_sym = ASR::down_cast<ASR::Function_t>(x2);
             return func_sym->n_type_params > 0 && !func_sym->m_is_restriction;
         }
         default: return false;
@@ -1131,9 +1132,10 @@ static inline bool is_generic_function(ASR::symbol_t *x) {
 }
 
 static inline bool is_restriction_function(ASR::symbol_t *x) {
-    switch (x->type) {
+    ASR::symbol_t* x2 = symbol_get_past_external(x);
+    switch (x2->type) {
         case ASR::symbolType::Function: {
-            ASR::Function_t *func_sym = ASR::down_cast<ASR::Function_t>(x);
+            ASR::Function_t *func_sym = ASR::down_cast<ASR::Function_t>(x2);
             return func_sym->m_is_restriction;
         }
         default: return false;
