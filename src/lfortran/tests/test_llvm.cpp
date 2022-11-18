@@ -376,7 +376,7 @@ end function)";
     LFortran::SymbolTable::reset_global_counter();
     LFortran::ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options));
-    CHECK(LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [(= (Var 2 f) (IntegerConstant 5 (Integer 4 [])) ())] (Var 2 f) Source Public Implementation () .false. .false. .false. .false. .false. [] [] .false.)}) [])");
+    CHECK(LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [] [(= (Var 2 f) (IntegerConstant 5 (Integer 4 [])) ())] (Var 2 f) Source Public Implementation () .false. .false. .false. .false. .false. [] [] .false.)}) [])");
 
     // ASR -> LLVM
     LFortran::LLVMEvaluator e;
@@ -388,7 +388,7 @@ end function)";
     co.platform = LFortran::get_platform();
     LFortran::Result<std::unique_ptr<LFortran::LLVMModule>>
         res = LFortran::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            lpm, co, "f");
+            lpm, co, "f", "");
     REQUIRE(res.ok);
     std::unique_ptr<LFortran::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
@@ -418,7 +418,7 @@ end function)";
     // AST -> ASR
     LFortran::ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options));
-    CHECK(LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [(= (Var 4 f) (IntegerConstant 4 (Integer 4 [])) ())] (Var 4 f) Source Public Implementation () .false. .false. .false. .false. .false. [] [] .false.)}) [])");
+    CHECK(LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [] [(= (Var 4 f) (IntegerConstant 4 (Integer 4 [])) ())] (Var 4 f) Source Public Implementation () .false. .false. .false. .false. .false. [] [] .false.)}) [])");
     // ASR -> LLVM
     LFortran::LLVMEvaluator e;
     LCompilers::PassManager lpm;
@@ -426,7 +426,7 @@ end function)";
     lpm.do_not_use_optimization_passes();
     LFortran::Result<std::unique_ptr<LFortran::LLVMModule>>
         res = LFortran::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            lpm, compiler_options, "f");
+            lpm, compiler_options, "f", "");
     REQUIRE(res.ok);
     std::unique_ptr<LFortran::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;

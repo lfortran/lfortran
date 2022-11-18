@@ -457,7 +457,7 @@ public:
                 if (arg.compare("real") == 0) {
                     type_arg = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
                 } else if (arg.compare("integer") == 0) {
-                    type_arg = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));                
+                    type_arg = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
                 } else {
                     throw SemanticError(
                         "The type " + arg + " is not yet handled for generic instantiation",
@@ -508,11 +508,11 @@ public:
             ASR::ttype_t *restriction_parameter = ASRUtils::expr_type(restriction->m_args[i]);
             ASR::ttype_t *arg_parameter = ASRUtils::expr_type(arg->m_args[i]);
             if (ASR::is_a<ASR::TypeParameter_t>(*restriction_parameter)) {
-                ASR::TypeParameter_t *restriction_tp 
+                ASR::TypeParameter_t *restriction_tp
                     = ASR::down_cast<ASR::TypeParameter_t>(restriction_parameter);
                 if (!ASRUtils::check_equal_type(subs[restriction_tp->m_param],
                                                 arg_parameter)) {
-                    throw SemanticError("Restriction type mismatch with provided " 
+                    throw SemanticError("Restriction type mismatch with provided "
                         "type arguments", loc);
                 }
             }
@@ -1213,7 +1213,7 @@ public:
         //create a new function, and add it to the symbol table
         std::string var_name = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func;
         auto v = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target);
-        
+
         Vec<ASR::expr_t*> args;
         args.reserve(al, v->n_args);
         for (size_t i=0; i<v->n_args; i++) {
@@ -1237,7 +1237,7 @@ public:
             args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 current_scope->get_symbol(arg_name))));
         }
-        
+
         // extract the type of var_name from symbol table
         ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
         ASR::ttype_t *type;
@@ -1267,7 +1267,7 @@ public:
         current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
         ASR::expr_t* to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
             ASR::down_cast<ASR::symbol_t>(return_var)));
-        
+
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
         this->visit_expr(*x.m_value);
@@ -1291,6 +1291,7 @@ public:
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, var_name),
+            nullptr, 0,
             /* a_args */ args.p,
             /* n_args */ args.size(),
             /* a_body */ body.p,
@@ -1308,7 +1309,7 @@ public:
             create_statement_function(x);
             tmp = nullptr;
             return;
-        } 
+        }
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = LFortran::ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_value);

@@ -290,6 +290,7 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
                     proc_symtab, name,
                     nullptr, 0,
                     nullptr, 0,
+                    nullptr, 0,
                     nullptr, // return var
                     ASR::abiType::GFortranModule, ASR::Public,
                     ASR::Interface, nullptr, false, false, false,
