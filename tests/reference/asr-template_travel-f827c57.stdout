@@ -171,11 +171,11 @@
             template_travel:
                 (Program 
                     (SymbolTable
-                        16
+                        17
                         {
                             add_real:
                                 (ExternalSymbol 
-                                    16 
+                                    17 
                                     add_real 
                                     2 add_real 
                                     math 
@@ -185,7 +185,7 @@
                                 ), 
                             avg_s_from_s:
                                 (ExternalSymbol 
-                                    16 
+                                    17 
                                     avg_s_from_s 
                                     5 avg_s_from_s 
                                     travel 
@@ -195,7 +195,7 @@
                                 ), 
                             avg_s_from_t:
                                 (ExternalSymbol 
-                                    16 
+                                    17 
                                     avg_s_from_t 
                                     5 avg_s_from_t 
                                     travel 
@@ -205,7 +205,7 @@
                                 ), 
                             d:
                                 (ExternalSymbol 
-                                    16 
+                                    17 
                                     d 
                                     5 d 
                                     travel 
@@ -215,7 +215,7 @@
                                 ), 
                             d_divided_by_s:
                                 (ExternalSymbol 
-                                    16 
+                                    17 
                                     d_divided_by_s 
                                     5 d_divided_by_s 
                                     travel 
@@ -225,7 +225,7 @@
                                 ), 
                             d_divided_by_t:
                                 (ExternalSymbol 
-                                    16 
+                                    17 
                                     d_divided_by_t 
                                     5 d_divided_by_t 
                                     travel 
@@ -235,7 +235,7 @@
                                 ), 
                             plus_d:
                                 (ExternalSymbol 
-                                    16 
+                                    17 
                                     plus_d 
                                     5 plus_d 
                                     travel 
@@ -245,7 +245,7 @@
                                 ), 
                             plus_t:
                                 (ExternalSymbol 
-                                    16 
+                                    17 
                                     plus_t 
                                     5 plus_t 
                                     travel 
@@ -255,7 +255,7 @@
                                 ), 
                             s:
                                 (ExternalSymbol 
-                                    16 
+                                    17 
                                     s 
                                     5 s 
                                     travel 
@@ -265,7 +265,7 @@
                                 ), 
                             slash_real:
                                 (ExternalSymbol 
-                                    16 
+                                    17 
                                     slash_real 
                                     2 slash_real 
                                     math 
@@ -275,7 +275,7 @@
                                 ), 
                             t:
                                 (ExternalSymbol 
-                                    16 
+                                    17 
                                     t 
                                     5 t 
                                     travel 
@@ -285,10 +285,10 @@
                                 ), 
                             test_template:
                                 (ExternalSymbol 
-                                    16 
+                                    17 
                                     test_template 
-                                    5 test_template 
-                                    travel 
+                                    15 test_template 
+                                    template_travel_m 
                                     [] 
                                     test_template 
                                     Private
@@ -296,20 +296,155 @@
                             
                         }) 
                     template_travel 
-                    [travel] 
+                    [template_travel_m] 
                     [(SubroutineCall 
-                        16 test_template 
+                        17 test_template 
                         () 
                         [] 
                         ()
                     )]
                 ), 
-            travel:
+            template_travel_m:
                 (Module 
                     (SymbolTable
-                        5
+                        15
                         {
                             __lfortran_generic_avg_s_from_t:
+                                (Function 
+                                    (SymbolTable
+                                        20
+                                        {
+                                            avg:
+                                                (Variable 
+                                                    20 
+                                                    avg 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            d1:
+                                                (Variable 
+                                                    20 
+                                                    d1 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            d2:
+                                                (Variable 
+                                                    20 
+                                                    d2 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            t1:
+                                                (Variable 
+                                                    20 
+                                                    t1 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            t2:
+                                                (Variable 
+                                                    20 
+                                                    t2 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    __lfortran_generic_avg_s_from_t 
+                                    [(Var 20 d1)
+                                    (Var 20 t1)
+                                    (Var 20 d2)
+                                    (Var 20 t2)] 
+                                    [(= 
+                                        (Var 20 avg) 
+                                        (FunctionCall 
+                                            15 slash_real 
+                                            () 
+                                            [((FunctionCall 
+                                                15 add_real 
+                                                () 
+                                                [((Var 20 d1))
+                                                ((Var 20 d2))] 
+                                                (Real 4 []) 
+                                                () 
+                                                ()
+                                            ))
+                                            ((FunctionCall 
+                                                15 add_real 
+                                                () 
+                                                [((Var 20 t1))
+                                                ((Var 20 t2))] 
+                                                (Real 4 []) 
+                                                () 
+                                                ()
+                                            ))] 
+                                            (Real 4 []) 
+                                            () 
+                                            ()
+                                        ) 
+                                        ()
+                                    )] 
+                                    (Var 20 avg) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                ), 
+                            add_real:
+                                (ExternalSymbol 
+                                    15 
+                                    add_real 
+                                    2 add_real 
+                                    math 
+                                    [] 
+                                    add_real 
+                                    Private
+                                ), 
+                            avg_real_s_from_s:
                                 (Function 
                                     (SymbolTable
                                         19
@@ -356,10 +491,10 @@
                                                     Required 
                                                     .false.
                                                 ), 
-                                            t1:
+                                            s1:
                                                 (Variable 
                                                     19 
-                                                    t1 
+                                                    s1 
                                                     In 
                                                     () 
                                                     () 
@@ -370,10 +505,10 @@
                                                     Required 
                                                     .false.
                                                 ), 
-                                            t2:
+                                            s2:
                                                 (Variable 
                                                     19 
-                                                    t2 
+                                                    s2 
                                                     In 
                                                     () 
                                                     () 
@@ -386,30 +521,32 @@
                                                 )
                                             
                                         }) 
-                                    __lfortran_generic_avg_s_from_t 
+                                    avg_real_s_from_s 
                                     [(Var 19 d1)
-                                    (Var 19 t1)
+                                    (Var 19 s1)
                                     (Var 19 d2)
-                                    (Var 19 t2)] 
+                                    (Var 19 s2)] 
                                     [(= 
                                         (Var 19 avg) 
                                         (FunctionCall 
-                                            5 slash_real 
+                                            15 __lfortran_generic_avg_s_from_t 
                                             () 
-                                            [((FunctionCall 
-                                                5 add_real 
+                                            [((Var 19 d1))
+                                            ((FunctionCall 
+                                                15 slash_real 
                                                 () 
                                                 [((Var 19 d1))
-                                                ((Var 19 d2))] 
+                                                ((Var 19 s1))] 
                                                 (Real 4 []) 
                                                 () 
                                                 ()
                                             ))
+                                            ((Var 19 d2))
                                             ((FunctionCall 
-                                                5 add_real 
+                                                15 slash_real 
                                                 () 
-                                                [((Var 19 t1))
-                                                ((Var 19 t2))] 
+                                                [((Var 19 d2))
+                                                ((Var 19 s2))] 
                                                 (Real 4 []) 
                                                 () 
                                                 ()
@@ -422,7 +559,7 @@
                                     )] 
                                     (Var 19 avg) 
                                     Source 
-                                    Public 
+                                    Private 
                                     Implementation 
                                     () 
                                     .false. 
@@ -434,17 +571,7 @@
                                     [] 
                                     .false.
                                 ), 
-                            add_real:
-                                (ExternalSymbol 
-                                    5 
-                                    add_real 
-                                    2 add_real 
-                                    math 
-                                    [] 
-                                    add_real 
-                                    Private
-                                ), 
-                            avg_real_s_from_s:
+                            avg_real_s_from_t:
                                 (Function 
                                     (SymbolTable
                                         18
@@ -491,136 +618,9 @@
                                                     Required 
                                                     .false.
                                                 ), 
-                                            s1:
-                                                (Variable 
-                                                    18 
-                                                    s1 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
-                                                    .false.
-                                                ), 
-                                            s2:
-                                                (Variable 
-                                                    18 
-                                                    s2 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
-                                                    .false.
-                                                )
-                                            
-                                        }) 
-                                    avg_real_s_from_s 
-                                    [(Var 18 d1)
-                                    (Var 18 s1)
-                                    (Var 18 d2)
-                                    (Var 18 s2)] 
-                                    [(= 
-                                        (Var 18 avg) 
-                                        (FunctionCall 
-                                            5 __lfortran_generic_avg_s_from_t 
-                                            () 
-                                            [((Var 18 d1))
-                                            ((FunctionCall 
-                                                5 slash_real 
-                                                () 
-                                                [((Var 18 d1))
-                                                ((Var 18 s1))] 
-                                                (Real 4 []) 
-                                                () 
-                                                ()
-                                            ))
-                                            ((Var 18 d2))
-                                            ((FunctionCall 
-                                                5 slash_real 
-                                                () 
-                                                [((Var 18 d2))
-                                                ((Var 18 s2))] 
-                                                (Real 4 []) 
-                                                () 
-                                                ()
-                                            ))] 
-                                            (Real 4 []) 
-                                            () 
-                                            ()
-                                        ) 
-                                        ()
-                                    )] 
-                                    (Var 18 avg) 
-                                    Source 
-                                    Private 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
-                                    .false.
-                                ), 
-                            avg_real_s_from_t:
-                                (Function 
-                                    (SymbolTable
-                                        17
-                                        {
-                                            avg:
-                                                (Variable 
-                                                    17 
-                                                    avg 
-                                                    ReturnVar 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
-                                                    .false.
-                                                ), 
-                                            d1:
-                                                (Variable 
-                                                    17 
-                                                    d1 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
-                                                    .false.
-                                                ), 
-                                            d2:
-                                                (Variable 
-                                                    17 
-                                                    d2 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
-                                                    .false.
-                                                ), 
                                             t1:
                                                 (Variable 
-                                                    17 
+                                                    18 
                                                     t1 
                                                     In 
                                                     () 
@@ -634,7 +634,7 @@
                                                 ), 
                                             t2:
                                                 (Variable 
-                                                    17 
+                                                    18 
                                                     t2 
                                                     In 
                                                     () 
@@ -649,29 +649,29 @@
                                             
                                         }) 
                                     avg_real_s_from_t 
-                                    [(Var 17 d1)
-                                    (Var 17 t1)
-                                    (Var 17 d2)
-                                    (Var 17 t2)] 
+                                    [(Var 18 d1)
+                                    (Var 18 t1)
+                                    (Var 18 d2)
+                                    (Var 18 t2)] 
                                     [(= 
-                                        (Var 17 avg) 
+                                        (Var 18 avg) 
                                         (FunctionCall 
-                                            5 slash_real 
+                                            15 slash_real 
                                             () 
                                             [((FunctionCall 
-                                                5 add_real 
+                                                15 add_real 
                                                 () 
-                                                [((Var 17 d1))
-                                                ((Var 17 d2))] 
+                                                [((Var 18 d1))
+                                                ((Var 18 d2))] 
                                                 (Real 4 []) 
                                                 () 
                                                 ()
                                             ))
                                             ((FunctionCall 
-                                                5 add_real 
+                                                15 add_real 
                                                 () 
-                                                [((Var 17 t1))
-                                                ((Var 17 t2))] 
+                                                [((Var 18 t1))
+                                                ((Var 18 t2))] 
                                                 (Real 4 []) 
                                                 () 
                                                 ()
@@ -682,7 +682,7 @@
                                         ) 
                                         ()
                                     )] 
-                                    (Var 17 avg) 
+                                    (Var 18 avg) 
                                     Source 
                                     Public 
                                     Implementation 
@@ -695,6 +695,254 @@
                                     [] 
                                     [] 
                                     .false.
+                                ), 
+                            avg_s_from_s:
+                                (ExternalSymbol 
+                                    15 
+                                    avg_s_from_s 
+                                    5 avg_s_from_s 
+                                    travel 
+                                    [] 
+                                    avg_s_from_s 
+                                    Private
+                                ), 
+                            avg_s_from_t:
+                                (ExternalSymbol 
+                                    15 
+                                    avg_s_from_t 
+                                    5 avg_s_from_t 
+                                    travel 
+                                    [] 
+                                    avg_s_from_t 
+                                    Private
+                                ), 
+                            d:
+                                (ExternalSymbol 
+                                    15 
+                                    d 
+                                    5 d 
+                                    travel 
+                                    [] 
+                                    d 
+                                    Private
+                                ), 
+                            d_divided_by_s:
+                                (ExternalSymbol 
+                                    15 
+                                    d_divided_by_s 
+                                    5 d_divided_by_s 
+                                    travel 
+                                    [] 
+                                    d_divided_by_s 
+                                    Private
+                                ), 
+                            d_divided_by_t:
+                                (ExternalSymbol 
+                                    15 
+                                    d_divided_by_t 
+                                    5 d_divided_by_t 
+                                    travel 
+                                    [] 
+                                    d_divided_by_t 
+                                    Private
+                                ), 
+                            plus_d:
+                                (ExternalSymbol 
+                                    15 
+                                    plus_d 
+                                    5 plus_d 
+                                    travel 
+                                    [] 
+                                    plus_d 
+                                    Private
+                                ), 
+                            plus_t:
+                                (ExternalSymbol 
+                                    15 
+                                    plus_t 
+                                    5 plus_t 
+                                    travel 
+                                    [] 
+                                    plus_t 
+                                    Private
+                                ), 
+                            s:
+                                (ExternalSymbol 
+                                    15 
+                                    s 
+                                    5 s 
+                                    travel 
+                                    [] 
+                                    s 
+                                    Private
+                                ), 
+                            slash_real:
+                                (ExternalSymbol 
+                                    15 
+                                    slash_real 
+                                    2 slash_real 
+                                    math 
+                                    [] 
+                                    slash_real 
+                                    Private
+                                ), 
+                            t:
+                                (ExternalSymbol 
+                                    15 
+                                    t 
+                                    5 t 
+                                    travel 
+                                    [] 
+                                    t 
+                                    Private
+                                ), 
+                            test_template:
+                                (Function 
+                                    (SymbolTable
+                                        16
+                                        {
+                                            s1:
+                                                (Variable 
+                                                    16 
+                                                    s1 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            s2:
+                                                (Variable 
+                                                    16 
+                                                    s2 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    test_template 
+                                    [] 
+                                    [(= 
+                                        (Var 16 s1) 
+                                        (FunctionCall 
+                                            15 avg_real_s_from_t 
+                                            () 
+                                            [((RealConstant 
+                                                1.000000 
+                                                (Real 4 [])
+                                            ))
+                                            ((RealConstant 
+                                                3.000000 
+                                                (Real 4 [])
+                                            ))
+                                            ((RealConstant 
+                                                1.500000 
+                                                (Real 4 [])
+                                            ))
+                                            ((RealConstant 
+                                                4.000000 
+                                                (Real 4 [])
+                                            ))] 
+                                            (Real 4 []) 
+                                            () 
+                                            ()
+                                        ) 
+                                        ()
+                                    )
+                                    (= 
+                                        (Var 16 s2) 
+                                        (FunctionCall 
+                                            15 avg_real_s_from_s 
+                                            () 
+                                            [((RealConstant 
+                                                1.100000 
+                                                (Real 4 [])
+                                            ))
+                                            ((RealConstant 
+                                                0.500000 
+                                                (Real 4 [])
+                                            ))
+                                            ((RealConstant 
+                                                2.000000 
+                                                (Real 4 [])
+                                            ))
+                                            ((RealConstant 
+                                                0.750000 
+                                                (Real 4 [])
+                                            ))] 
+                                            (Real 4 []) 
+                                            () 
+                                            ()
+                                        ) 
+                                        ()
+                                    )
+                                    (Print 
+                                        () 
+                                        [(StringConstant 
+                                            "s1=" 
+                                            (Character 1 3 () [])
+                                        )
+                                        (Var 16 s1)] 
+                                        () 
+                                        ()
+                                    )
+                                    (Print 
+                                        () 
+                                        [(StringConstant 
+                                            "s2=" 
+                                            (Character 1 3 () [])
+                                        )
+                                        (Var 16 s2)] 
+                                        () 
+                                        ()
+                                    )] 
+                                    () 
+                                    Source 
+                                    Private 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                )
+                            
+                        }) 
+                    template_travel_m 
+                    [math
+                    travel] 
+                    .false. 
+                    .false.
+                ), 
+            travel:
+                (Module 
+                    (SymbolTable
+                        5
+                        {
+                            add_real:
+                                (ExternalSymbol 
+                                    5 
+                                    add_real 
+                                    2 add_real 
+                                    math 
+                                    [] 
+                                    add_real 
+                                    Private
                                 ), 
                             avg_s_from_s:
                                 (Function 
@@ -1414,131 +1662,6 @@
                                     Source 
                                     Private 
                                     ()
-                                ), 
-                            test_template:
-                                (Function 
-                                    (SymbolTable
-                                        15
-                                        {
-                                            s1:
-                                                (Variable 
-                                                    15 
-                                                    s1 
-                                                    Local 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
-                                                    .false.
-                                                ), 
-                                            s2:
-                                                (Variable 
-                                                    15 
-                                                    s2 
-                                                    Local 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
-                                                    .false.
-                                                )
-                                            
-                                        }) 
-                                    test_template 
-                                    [] 
-                                    [(= 
-                                        (Var 15 s1) 
-                                        (FunctionCall 
-                                            5 avg_real_s_from_t 
-                                            () 
-                                            [((RealConstant 
-                                                1.000000 
-                                                (Real 4 [])
-                                            ))
-                                            ((RealConstant 
-                                                3.000000 
-                                                (Real 4 [])
-                                            ))
-                                            ((RealConstant 
-                                                1.500000 
-                                                (Real 4 [])
-                                            ))
-                                            ((RealConstant 
-                                                4.000000 
-                                                (Real 4 [])
-                                            ))] 
-                                            (Real 4 []) 
-                                            () 
-                                            ()
-                                        ) 
-                                        ()
-                                    )
-                                    (= 
-                                        (Var 15 s2) 
-                                        (FunctionCall 
-                                            5 avg_real_s_from_s 
-                                            () 
-                                            [((RealConstant 
-                                                1.100000 
-                                                (Real 4 [])
-                                            ))
-                                            ((RealConstant 
-                                                0.500000 
-                                                (Real 4 [])
-                                            ))
-                                            ((RealConstant 
-                                                2.000000 
-                                                (Real 4 [])
-                                            ))
-                                            ((RealConstant 
-                                                0.750000 
-                                                (Real 4 [])
-                                            ))] 
-                                            (Real 4 []) 
-                                            () 
-                                            ()
-                                        ) 
-                                        ()
-                                    )
-                                    (Print 
-                                        () 
-                                        [(StringConstant 
-                                            "s1=" 
-                                            (Character 1 3 () [])
-                                        )
-                                        (Var 15 s1)] 
-                                        () 
-                                        ()
-                                    )
-                                    (Print 
-                                        () 
-                                        [(StringConstant 
-                                            "s2=" 
-                                            (Character 1 3 () [])
-                                        )
-                                        (Var 15 s2)] 
-                                        () 
-                                        ()
-                                    )] 
-                                    () 
-                                    Source 
-                                    Private 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
-                                    .false.
                                 )
                             
                         }) 

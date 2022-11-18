@@ -75,6 +75,14 @@ module travel
         end function
     end template
 
+end module
+
+module template_travel_m
+
+    use math
+    use travel
+    implicit none
+
 contains
 
     subroutine test_template()
@@ -92,10 +100,9 @@ contains
 end module
 
 program template_travel
-use travel
+use template_travel_m
 implicit none
 
 call test_template()
 
 end program template_travel
-    

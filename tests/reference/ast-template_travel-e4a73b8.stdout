@@ -813,6 +813,39 @@
                 []
             )]
         )] 
+        []
+    )
+    (Module 
+        template_travel_m 
+        (TriviaNode 
+            [(EndOfLine)
+            (EndOfLine)] 
+            [(EndOfLine)
+            (EndOfLine)]
+        ) 
+        [(Use 
+            [] 
+            math 
+            [] 
+            .false. 
+            ()
+        )
+        (Use 
+            [] 
+            travel 
+            [] 
+            .false. 
+            ()
+        )] 
+        [(ImplicitNone 
+            [] 
+            (TriviaNode 
+                [] 
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+        )] 
+        [] 
         [(Subroutine 
             test_template 
             [] 
@@ -945,14 +978,10 @@
     )
     (Program 
         template_travel 
-        (TriviaNode 
-            [] 
-            [(EndOfLine)
-            (EndOfLine)]
-        ) 
+        () 
         [(Use 
             [] 
-            travel 
+            template_travel_m 
             [] 
             .false. 
             ()
