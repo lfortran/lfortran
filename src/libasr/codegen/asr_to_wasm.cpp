@@ -72,7 +72,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     SymbolFuncInfo *cur_sym_info;
     uint32_t nesting_level;
     uint32_t cur_loop_nesting_level;
-    bool is_prototype_only;
 
     Vec<uint8_t> m_type_section;
     Vec<uint8_t> m_import_section;
@@ -98,7 +97,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     ASRToWASMVisitor(Allocator &al, diag::Diagnostics &diagnostics)
         : m_al(al), diag(diagnostics) {
         intrinsic_module = false;
-        is_prototype_only = false;
         nesting_level = 0;
         cur_loop_nesting_level = 0;
         no_of_types = 0;
@@ -175,7 +173,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         auto func = ASR::make_Function_t(
             m_al, global_scope_loc, global_scope, s2c(m_al, import_func.name),
-            params.data(), params.size(), nullptr, 0, nullptr,
+            nullptr, 0, params.data(), params.size(), nullptr, 0, nullptr,
             ASR::abiType::Source, ASR::accessType::Public,
             ASR::deftypeType::Implementation, nullptr, false, false, false, false, false,
             nullptr, 0, nullptr, 0, false);
@@ -254,40 +252,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         emit_imports();
 
         {
-            // Pre-declare all functions first, then generate code
-            // Otherwise some function might not be found.
-            is_prototype_only = true;
-            {
-                // Process intrinsic modules in the right order
-                std::vector<std::string> build_order =
-                    ASRUtils::determine_module_dependencies(x);
-                for (auto &item : build_order) {
-                    LFORTRAN_ASSERT(x.m_global_scope->get_scope().find(item) !=
-                                    x.m_global_scope->get_scope().end());
-                    ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
-                    if (ASR::is_a<ASR::Module_t>(*mod)) {
-                        ASR::Module_t *m =
-                            ASR::down_cast<ASR::Module_t>(mod);
-                        declare_all_functions(*(m->m_symtab));
-                    }
-                }
-
-                // Process procedures first:
-                declare_all_functions(*x.m_global_scope);
-
-                // then the main program:
-                for (auto &item : x.m_global_scope->get_scope()) {
-                    if (ASR::is_a<ASR::Program_t>(*item.second)) {
-                        ASR::Program_t *p =
-                            ASR::down_cast<ASR::Program_t>(item.second);
-                        declare_all_functions(*(p->m_symtab));
-                    }
-                }
-            }
-            is_prototype_only = false;
-        }
-
-        {
             // Process intrinsic modules in the right order
             std::vector<std::string> build_order =
                 ASRUtils::determine_module_dependencies(x);
@@ -302,19 +266,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // Process procedures first:
         declare_all_functions(*x.m_global_scope);
 
-        // // Then do all the modules in the right order
-        // std::vector<std::string> build_order
-        //     = LFortran::ASRUtils::determine_module_dependencies(x);
-        // for (auto &item : build_order) {
-        //     LFORTRAN_ASSERT(x.m_global_scope->get_scope().find(item)
-        //         != x.m_global_scope->get_scope().end());
-        //     if (!startswith(item, "lfortran_intrinsic")) {
-        //         ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
-        //         visit_symbol(*mod);
-        //         // std::cout << "I am here -2: " << src << std::endl;
-        //     }
-        // }
-
         // then the main program:
         for (auto &item : x.m_global_scope->get_scope()) {
             if (ASR::is_a<ASR::Program_t>(*item.second)) {
@@ -323,13 +274,17 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
-    void declare_all_functions(const SymbolTable &symtab) {
-        for (auto &item : symtab.get_scope()) {
-            if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                ASR::Function_t *s =
-                    ASR::down_cast<ASR::Function_t>(item.second);
-                this->visit_Function(*s);
+    void declare_all_functions(SymbolTable &symtab) {
+        std::vector<std::string> func_order = ASRUtils::determine_function_definition_order(&symtab);
+
+        for (auto &item : func_order) {
+            ASR::symbol_t* sym = symtab.get_symbol(item);
+            if( !sym || ASR::is_a<ASR::ExternalSymbol_t>(*sym) ) {
+                continue;
             }
+
+            ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(sym);
+            this->visit_Function(*s);
         }
     }
 
@@ -352,7 +307,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // Generate main program code
         auto main_func = ASR::make_Function_t(
             m_al, x.base.base.loc, x.m_symtab, s2c(m_al, "_lcompilers_main"),
-            nullptr, 0, x.m_body, x.n_body, nullptr,
+            nullptr, 0, nullptr, 0, x.m_body, x.n_body, nullptr,
             ASR::abiType::Source, ASR::accessType::Public,
             ASR::deftypeType::Implementation, nullptr, false, false, false, false, false,
             nullptr, 0, nullptr, 0, false);
@@ -656,10 +611,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         if (is_unsupported_function(x)) {
             return;
         }
-        if (is_prototype_only) {
-            emit_function_prototype(x);
-            return;
-        }
+        emit_function_prototype(x);
         emit_function_body(x);
     }
 
@@ -2044,11 +1996,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         for (size_t i = 0; i < x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
-        if (x.n_orelse) {
-            wasm::emit_b8(m_code_section, m_al, 0x05);  // starting of else
-            for (size_t i = 0; i < x.n_orelse; i++) {
-                this->visit_stmt(*x.m_orelse[i]);
-            }
+        wasm::emit_b8(m_code_section, m_al, 0x05);  // starting of else
+        for (size_t i = 0; i < x.n_orelse; i++) {
+            this->visit_stmt(*x.m_orelse[i]);
         }
         nesting_level--;
         wasm::emit_expr_end(m_code_section, m_al);  // emit if end
@@ -2082,6 +2032,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             m_code_section, m_al,
             nesting_level -
                 cur_loop_nesting_level);  // emit_branch and label the loop
+        wasm::emit_b8(m_code_section, m_al, 0x05);  // starting of else
         wasm::emit_expr_end(m_code_section, m_al);  // end if
 
         nesting_level--;
@@ -2115,6 +2066,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         wasm::emit_i32_const(m_code_section, m_al, 1);  // non-zero exit code
         exit();
+        wasm::emit_b8(m_code_section, m_al, 0x05);  // starting of else
         wasm::emit_expr_end(m_code_section, m_al);  // emit if end
     }
 };

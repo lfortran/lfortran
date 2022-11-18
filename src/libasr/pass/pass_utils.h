@@ -41,7 +41,7 @@ namespace LFortran {
 
         ASR::stmt_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
                                   Allocator& al, ASR::TranslationUnit_t& unit,
-                                  LCompilers::PassOptions& pass_options,
+                                  const std::string &rl_path,
                                   SymbolTable*& current_scope,
                                   const std::function<void (const std::string &, const Location &)> err);
 
@@ -54,13 +54,12 @@ namespace LFortran {
             Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type);
 
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
-                             Allocator& al, ASR::TranslationUnit_t& unit, LCompilers::PassOptions& pass_options,
+                             Allocator& al, ASR::TranslationUnit_t& unit, std::string& rl_path,
                              SymbolTable*& current_scope,Location& loc,
                              const std::function<void (const std::string &, const Location &)> err);
 
         ASR::expr_t* get_sign_from_value(ASR::expr_t* arg0, ASR::expr_t* arg1,
-                                         Allocator& al, ASR::TranslationUnit_t& unit,
-                                         LCompilers::PassOptions& pass_options,
+                                         Allocator& al, ASR::TranslationUnit_t& unit, std::string& rl_path,
                                          SymbolTable*& current_scope, Location& loc,
                                          const std::function<void (const std::string &, const Location &)> err);
 
@@ -71,6 +70,10 @@ namespace LFortran {
 
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
                                          int comp=-1);
+
+        static inline bool is_aggregate_type(ASR::expr_t* var) {
+            return ASR::is_a<ASR::Struct_t>(*ASRUtils::expr_type(var));
+        }
 
         template <class Struct>
         class PassVisitor: public ASR::BaseWalkVisitor<Struct> {
@@ -181,6 +184,12 @@ namespace LFortran {
                     }
                 }
 
+                void visit_DoLoop(const ASR::DoLoop_t& x) {
+                    self().visit_do_loop_head(x.m_head);
+                    ASR::DoLoop_t& xx = const_cast<ASR::DoLoop_t&>(x);
+                    transform_stmts(xx.m_body, xx.n_body);
+                }
+
         };
 
         template <class Struct>
@@ -198,6 +207,37 @@ namespace LFortran {
                     PassUtils::PassVisitor<Struct>::visit_Function(x);
                 }
 
+        };
+
+        class UpdateDependenciesVisitor : public PassUtils::PassVisitor<UpdateDependenciesVisitor> {
+
+            private:
+
+                Vec<char*> dependencies;
+
+            public:
+
+                UpdateDependenciesVisitor(Allocator &al_)
+                : PassVisitor(al_, nullptr)
+                {}
+
+                void visit_Function(const ASR::Function_t& x) {
+                    ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
+                    dependencies.reserve(al, x.n_dependencies);
+                    PassUtils::PassVisitor<UpdateDependenciesVisitor>::visit_Function(x);
+                    xx.m_dependencies = dependencies.p;
+                    xx.n_dependencies = dependencies.size();
+                }
+
+                void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+                    dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                    PassUtils::PassVisitor<UpdateDependenciesVisitor>::visit_FunctionCall(x);
+                }
+
+                void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+                    dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                    PassUtils::PassVisitor<UpdateDependenciesVisitor>::visit_SubroutineCall(x);
+                }
         };
 
     }

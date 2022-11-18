@@ -310,7 +310,8 @@ namespace LFortran {
             }
             builder->CreateStore(prod, llvm_size);
             llvm::Value* first_ptr = get_pointer_to_data(arr);
-            llvm::Value* arr_first = builder->CreateAlloca(llvm_data_type, LLVM::CreateLoad(*builder, llvm_size));
+            llvm::Value* arr_first = builder->CreateAlloca(llvm_data_type,
+                                        LLVM::CreateLoad(*builder, llvm_size));
             builder->CreateStore(arr_first, first_ptr);
         }
 
@@ -509,8 +510,9 @@ namespace LFortran {
             return tmp;
         }
 
-        llvm::Value* SimpleCMODescriptor::reshape(llvm::Value* array, llvm::Type* llvm_data_type, llvm::Value* shape,
-                                                  ASR::ttype_t* asr_shape_type, llvm::Module* module) {
+        llvm::Value* SimpleCMODescriptor::reshape(llvm::Value* array, llvm::Type* llvm_data_type,
+                                                  llvm::Value* shape, ASR::ttype_t* asr_shape_type,
+                                                  llvm::Module* module) {
             llvm::Value* reshaped = builder->CreateAlloca(array->getType()->getContainedType(0), nullptr, "reshaped");
 
             // Deep copy data from array to reshaped.
@@ -568,14 +570,17 @@ namespace LFortran {
         }
 
         // Shallow copies source array descriptor to destination descriptor
-        void SimpleCMODescriptor::copy_array(llvm::Value* src, llvm::Value* dest, llvm::Module* module,
-            ASR::ttype_t* asr_data_type, bool create_dim_des_array) {
+        void SimpleCMODescriptor::copy_array(llvm::Value* src, llvm::Value* dest,
+            llvm::Module* module, ASR::ttype_t* asr_data_type, bool create_dim_des_array,
+            bool reserve_memory) {
             llvm::Value* num_elements = this->get_array_size(src, nullptr, 4);
 
             llvm::Value* first_ptr = this->get_pointer_to_data(dest);
             llvm::Type* llvm_data_type = tkr2array[ASRUtils::get_type_code(asr_data_type, false, false)].second;
-            llvm::Value* arr_first = builder->CreateAlloca(llvm_data_type, num_elements);
-            builder->CreateStore(arr_first, first_ptr);
+            if( reserve_memory ) {
+                llvm::Value* arr_first = builder->CreateAlloca(llvm_data_type, num_elements);
+                builder->CreateStore(arr_first, first_ptr);
+            }
 
             llvm::Value* ptr2firstptr = this->get_pointer_to_data(src);
             llvm::DataLayout data_layout(module);
@@ -583,8 +588,8 @@ namespace LFortran {
             llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
             num_elements = builder->CreateMul(num_elements, llvm_size);
             builder->CreateMemCpy(LLVM::CreateLoad(*builder, first_ptr), llvm::MaybeAlign(),
-                                LLVM::CreateLoad(*builder, ptr2firstptr), llvm::MaybeAlign(),
-                                num_elements);
+                                  LLVM::CreateLoad(*builder, ptr2firstptr), llvm::MaybeAlign(),
+                                  num_elements);
 
             llvm::Value* src_offset_ptr = LLVM::CreateLoad(*builder, llvm_utils->create_gep(src, 1));
             builder->CreateStore(src_offset_ptr, llvm_utils->create_gep(dest, 1));

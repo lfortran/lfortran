@@ -64,6 +64,23 @@ std::vector<std::string> determine_module_dependencies(
     return order_deps(deps);
 }
 
+std::vector<std::string> determine_function_definition_order(
+        SymbolTable* symtab) {
+    std::map<std::string, std::vector<std::string>> func_dep_graph;
+    for( auto itr: symtab->get_scope() ) {
+        if( ASR::is_a<ASR::Function_t>(*itr.second) ) {
+            std::vector<std::string> deps;
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(itr.second);
+            for( size_t i = 0; i < func->n_dependencies; i++ ) {
+                std::string dep = func->m_dependencies[i];
+                deps.push_back(dep);
+            }
+            func_dep_graph[itr.first] = deps;
+        }
+    }
+    return ASRUtils::order_deps(func_dep_graph);
+}
+
 void extract_module_python(const ASR::TranslationUnit_t &m,
                 std::vector<std::pair<std::string, ASR::Module_t*>>& children_modules,
                 std::string module_name) {
@@ -97,7 +114,7 @@ ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
 ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const std::string &module_name,
                             const Location &loc, bool intrinsic,
-                            LCompilers::PassOptions& pass_options,
+                            const std::string &rl_path,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err) {
     LFORTRAN_ASSERT(symtab);
@@ -111,14 +128,14 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     }
     LFORTRAN_ASSERT(symtab->parent == nullptr);
     ASR::TranslationUnit_t *mod1 = find_and_load_module(al, module_name,
-            *symtab, intrinsic, pass_options);
+            *symtab, intrinsic, rl_path);
     if (mod1 == nullptr && !intrinsic) {
         // Module not found as a regular module. Try intrinsic module
         if (module_name == "iso_c_binding"
             ||module_name == "iso_fortran_env"
             ||module_name == "ieee_arithmetic") {
             mod1 = find_and_load_module(al, "lfortran_intrinsic_" + module_name,
-                *symtab, true, pass_options);
+                *symtab, true, rl_path);
         }
     }
     if (mod1 == nullptr) {
@@ -155,13 +172,13 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 bool is_intrinsic = startswith(item, "lfortran_intrinsic");
                 ASR::TranslationUnit_t *mod1 = find_and_load_module(al,
                         item,
-                        *symtab, is_intrinsic, pass_options);
+                        *symtab, is_intrinsic, rl_path);
                 if (mod1 == nullptr && !is_intrinsic) {
                     // Module not found as a regular module. Try intrinsic module
                     if (item == "iso_c_binding"
                         ||item == "iso_fortran_env") {
                         mod1 = find_and_load_module(al, "lfortran_intrinsic_" + item,
-                            *symtab, true, pass_options);
+                            *symtab, true, rl_path);
                     }
                 }
 
@@ -189,13 +206,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     // Fix all external symbols
     fix_external_symbols(*tu, *symtab);
     if (run_verify) {
-#if defined(WITH_LFORTRAN_ASSERT)
-        diag::Diagnostics diagnostics;
-        if (!asr_verify(*tu, true, diagnostics)) {
-            std::cerr << diagnostics.render2();
-            throw LCompilersException("Verify failed");
-        };
-#endif
+        LFORTRAN_ASSERT(asr_verify(*tu));
     }
     symtab->asr_owner = orig_asr_owner;
 
@@ -241,29 +252,20 @@ void set_intrinsic(ASR::TranslationUnit_t* trans_unit) {
 
 ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
-                                                LCompilers::PassOptions& pass_options) {
-    std::filesystem::path runtime_library_dir { pass_options.runtime_library_dir };
-    std::filesystem::path filename {msym + ".mod"};
-    std::vector<std::filesystem::path> mod_files_dirs;
-
-    mod_files_dirs.push_back( runtime_library_dir );
-    mod_files_dirs.push_back( pass_options.mod_files_dir );
-    mod_files_dirs.insert(mod_files_dirs.end(),
-                          pass_options.include_dirs.begin(),
-                          pass_options.include_dirs.end());
-
-    for (auto path : mod_files_dirs) {
-        std::string modfile;
-        std::filesystem::path full_path = path / filename;
-        if (read_file(full_path.string(), modfile)) {
-            ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false, symtab);
-            if (intrinsic) {
-                set_intrinsic(asr);
-            }
-            return asr;
-        }
+                                                const std::string &rl_path) {
+    std::string modfilename = msym + ".mod";
+    if (intrinsic) {
+        modfilename = rl_path + "/" + modfilename;
     }
-    return nullptr;
+
+    std::string modfile;
+    if (!read_file(modfilename, modfile)) return nullptr;
+    ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false,
+        symtab);
+    if (intrinsic) {
+        set_intrinsic(asr);
+    }
+    return asr;
 }
 
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,

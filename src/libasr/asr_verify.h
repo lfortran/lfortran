@@ -35,8 +35,8 @@ namespace LFortran {
     //
     //   LFORTRAN_ASSERT(asr_verify(*asr));
     //
-    bool asr_verify(const ASR::TranslationUnit_t &unit,
-        bool check_external, diag::Diagnostics &diagnostics);
+    bool asr_verify(const ASR::TranslationUnit_t &unit, bool
+            check_external=true);
 
 } // namespace LFortran
 

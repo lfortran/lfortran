@@ -38,8 +38,8 @@
 #include <libasr/pass/loop_vectorise.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
 #include <libasr/pass/pass_array_by_data.h>
-#include <libasr/pass/pass_list_concat.h>
-#include <libasr/asr_verify.h>
+#include <libasr/pass/pass_list_expr.h>
+#include <libasr/pass/subroutine_from_function.h>
 
 #include <map>
 #include <vector>
@@ -76,31 +76,23 @@ namespace LCompilers {
             {"select_case", &LFortran::pass_replace_select_case},
             {"loop_vectorise", &LFortran::pass_loop_vectorise},
             {"array_dim_intrinsics_update", &LFortran::pass_update_array_dim_intrinsic_calls},
-            {"pass_list_concat", &LFortran::pass_list_concat},
-            {"pass_array_by_data", &LFortran::pass_array_by_data}
+            {"pass_list_expr", &LFortran::pass_list_expr},
+            {"pass_array_by_data", &LFortran::pass_array_by_data},
+            {"subroutine_from_function", &LFortran::pass_create_subroutine_from_function}
         };
 
         bool is_fast;
         bool apply_default_passes;
 
         void _apply_passes(Allocator& al, LFortran::ASR::TranslationUnit_t* asr,
-                           std::vector<std::string>& passes, PassOptions &pass_options,
-                           LFortran::diag::Diagnostics &diagnostics) {
+                           std::vector<std::string>& passes, PassOptions pass_options) {
+            pass_options.runtime_library_dir = LFortran::get_runtime_library_dir();
             for (size_t i = 0; i < passes.size(); i++) {
-                // TODO: rework the whole pass manager: construct the passes
-                // ahead of time (not at the last minute), and remove this much
-                // earlier
-                // Note: this is not enough for rtlib, we also need to include
-                // it
-                if (rtlib && passes[i] == "unused_functions") continue;
                 _passes_db[passes[i]](al, *asr, pass_options);
-                LFORTRAN_ASSERT(LFortran::asr_verify(*asr, true, diagnostics));
             }
         }
 
         public:
-
-        bool rtlib=false;
 
         PassManager(): is_fast{false}, apply_default_passes{false} {
             _passes = {
@@ -108,8 +100,9 @@ namespace LCompilers {
                 "class_constructor",
                 "implied_do_loops",
                 "pass_array_by_data",
-                "pass_list_concat",
+                "pass_list_expr",
                 "arr_slice",
+                "subroutine_from_function",
                 "array_op",
                 "print_arr",
                 "print_list",
@@ -127,6 +120,7 @@ namespace LCompilers {
                 "implied_do_loops",
                 "pass_array_by_data",
                 "arr_slice",
+                "subroutine_from_function",
                 "array_op",
                 "print_arr",
                 "print_list",
@@ -177,19 +171,16 @@ namespace LCompilers {
         }
 
         void apply_passes(Allocator& al, LFortran::ASR::TranslationUnit_t* asr,
-                          PassOptions& pass_options,
-                          LFortran::diag::Diagnostics &diagnostics) {
+                          PassOptions& pass_options) {
             if( !_user_defined_passes.empty() ) {
                 pass_options.fast = true;
-                _apply_passes(al, asr, _user_defined_passes, pass_options,
-                    diagnostics);
+                _apply_passes(al, asr, _user_defined_passes, pass_options);
             } else if( apply_default_passes ) {
                 pass_options.fast = is_fast;
                 if( is_fast ) {
-                    _apply_passes(al, asr, _with_optimization_passes, pass_options,
-                        diagnostics);
+                    _apply_passes(al, asr, _with_optimization_passes, pass_options);
                 } else {
-                    _apply_passes(al, asr, _passes, pass_options, diagnostics);
+                    _apply_passes(al, asr, _passes, pass_options);
                 }
             }
         }

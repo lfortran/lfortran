@@ -37,22 +37,33 @@ bool present(Vec<char*> &v, const char* name) {
     return false;
 }
 
+bool present(char** const v, size_t n, const std::string name) {
+    for (size_t i = 0; i < n; i++) {
+        if (std::string(v[i]) == name) {
+            return true;
+        }
+    }
+    return false;
+}
+
 Platform get_platform()
 {
-#if defined(_WIN32)
+#ifdef _WIN32
     return Platform::Windows;
-#elif defined(__APPLE__)
-#    ifdef __aarch64__
-    return Platform::macOS_ARM;
-#    else
-    return Platform::macOS_Intel;
-#    endif
-#elif defined(__FreeBSD__)
-    return Platform::FreeBSD;
-#elif defined(__OpenBSD__)
-    return Platform::OpenBSD;
 #else
+#    ifdef __APPLE__
+#        ifdef __aarch64__
+    return Platform::macOS_ARM;
+#        else
+    return Platform::macOS_Intel;
+#        endif
+#    else
+#        ifdef __FreeBSD__
+    return Platform::FreeBSD;
+#        else
     return Platform::Linux;
+#        endif
+#    endif
 #endif
 }
 
