@@ -23,6 +23,7 @@ set(SRC
     codegen/asr_to_x86.cpp
     codegen/asr_to_wasm.cpp
     codegen/wasm_to_wat.cpp
+    codegen/wasm_to_x86.cpp
     codegen/wasm_utils.cpp
 
     pass/param_to_const.cpp
@@ -33,6 +34,7 @@ set(SRC
     pass/select_case.cpp
     pass/implied_do_loops.cpp
     pass/array_op.cpp
+    pass/subroutine_from_function.cpp
     pass/class_constructor.cpp
     pass/arr_slice.cpp
     pass/print_arr.cpp
@@ -50,7 +52,7 @@ set(SRC
     pass/instantiate_template.cpp
     pass/update_array_dim_intrinsic_calls.cpp
     pass/pass_array_by_data.cpp
-    pass/pass_list_concat.cpp
+    pass/pass_list_expr.cpp
 
     asr_verify.cpp
     asr_utils.cpp

@@ -129,6 +129,7 @@
                                             
                                         }) 
                                     logical_gets_integer 
+                                    [] 
                                     [(Var 3 tf)
                                     (Var 3 i)] 
                                     [(= 
@@ -192,6 +193,7 @@
                                             
                                         }) 
                                     logical_gets_integer_use 
+                                    [logical_gets_integer] 
                                     [(Var 4 tf)
                                     (Var 4 i)] 
                                     [(= 

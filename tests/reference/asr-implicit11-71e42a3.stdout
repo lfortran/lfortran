@@ -72,6 +72,8 @@
                             
                         }) 
                     f1 
+                    [dimag@zaimag
+                    dimag@zaimag] 
                     [(Var 2 z)
                     (Var 2 i)] 
                     [(= 
@@ -155,6 +157,7 @@
                             
                         }) 
                     f2 
+                    [] 
                     [(Var 3 z)
                     (Var 3 i)] 
                     [(= 

@@ -100,7 +100,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 
     // ASR -> LLVM
     Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
-        pass_manager, diagnostics);
+        pass_manager, diagnostics, lm.in_filename);
     std::unique_ptr<LFortran::LLVMModule> m;
     if (res3.ok) {
         m = std::move(res3.result);
@@ -285,7 +285,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
     if (!asr.ok) {
         return asr.error;
     }
-    Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, pass_manager, diagnostics);
+    Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, pass_manager, diagnostics, lm.in_filename);
     if (res.ok) {
 #ifdef HAVE_LFORTRAN_LLVM
         std::unique_ptr<LLVMModule> m = std::move(res.result);
@@ -307,7 +307,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     ASR::TranslationUnit_t &/*asr*/, LCompilers::PassManager &/*pass_manager*/,
     diag::Diagnostics &/*diagnostics*/
 #endif
-    )
+, const std::string &infile)
 {
 #ifdef HAVE_LFORTRAN_LLVM
     eval_count++;
@@ -318,7 +318,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     Result<std::unique_ptr<LFortran::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
             e->get_context(), al, pass_manager,
-            compiler_options, run_fn);
+            compiler_options, run_fn, infile);
     if (res.ok) {
         m = std::move(res.result);
     } else {

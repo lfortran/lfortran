@@ -54,6 +54,7 @@
                         i32.const 1
                         call 4
                         call 5
+                    else
                     end
                 end
             end

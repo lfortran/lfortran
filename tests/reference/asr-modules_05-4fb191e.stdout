@@ -57,6 +57,7 @@
                                             
                                         }) 
                                     print_vars 
+                                    [] 
                                     [(Var 3 a)
                                     (Var 3 b)] 
                                     [(Print 

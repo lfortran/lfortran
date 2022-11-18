@@ -41,20 +41,25 @@ struct CompilerOptions {
     bool generate_object_code = false;
     bool no_warnings = false;
     bool no_error_banner = false;
+    bool enable_bounds_checking = false;
     std::string error_format = "human";
     bool new_parser = false;
     bool implicit_typing = false;
     bool implicit_interface = false;
     bool rtlib = false;
     std::string target = "";
-    Platform platform;
     std::string arg_o = "";
+    bool emit_debug_info = false;
+    bool emit_debug_line_column = false;
+    std::string import_path = "";
+    Platform platform;
 
     CompilerOptions () : platform{get_platform()} {};
 };
 
 bool read_file(const std::string &filename, std::string &text);
 bool present(Vec<char*> &v, const char* name);
+bool present(char** const v, size_t n, const std::string name);
 int initialize();
 
 } // LFortran

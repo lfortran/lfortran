@@ -7,6 +7,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/utils.h>
 #include <libasr/modfile.h>
+#include <libasr/pass/pass_utils.h>
 
 namespace LFortran {
 
@@ -62,6 +63,23 @@ std::vector<std::string> determine_module_dependencies(
         }
     }
     return order_deps(deps);
+}
+
+std::vector<std::string> determine_function_definition_order(
+        SymbolTable* symtab) {
+    std::map<std::string, std::vector<std::string>> func_dep_graph;
+    for( auto itr: symtab->get_scope() ) {
+        if( ASR::is_a<ASR::Function_t>(*itr.second) ) {
+            std::vector<std::string> deps;
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(itr.second);
+            for( size_t i = 0; i < func->n_dependencies; i++ ) {
+                std::string dep = func->m_dependencies[i];
+                deps.push_back(dep);
+            }
+            func_dep_graph[itr.first] = deps;
+        }
+    }
+    return ASRUtils::order_deps(func_dep_graph);
 }
 
 void extract_module_python(const ASR::TranslationUnit_t &m,
@@ -188,6 +206,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
 
     // Fix all external symbols
     fix_external_symbols(*tu, *symtab);
+    PassUtils::UpdateDependenciesVisitor v(al);
+    v.visit_TranslationUnit(*tu);
     if (run_verify) {
 #if defined(WITH_LFORTRAN_ASSERT)
         diag::Diagnostics diagnostics;

@@ -1535,8 +1535,8 @@ public:
                 SymbolTable *parent_scope = current_scope;
                 current_scope = al.make_new<SymbolTable>(parent_scope);
                 ASR::asr_t* dtype = ASR::make_StructType_t(al, loc, current_scope,
-                                                s2c(al, to_lower(derived_type_name)), nullptr, 0,
-                                                ASR::abiType::Source, dflt_access, nullptr);
+                                                s2c(al, to_lower(derived_type_name)), nullptr, 0, nullptr, 0,
+                                                ASR::abiType::Source, dflt_access, false, nullptr, nullptr);
                 v = ASR::down_cast<ASR::symbol_t>(dtype);
                 parent_scope->add_symbol(derived_type_name, v);
                 current_scope = parent_scope;
@@ -2786,6 +2786,7 @@ public:
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, sym_name),
+            nullptr, 0,
             /* a_args */ args.p,
             /* n_args */ args.size(),
             /* a_body */ nullptr,
@@ -2838,7 +2839,7 @@ public:
                                             a_var, a_start, a_end, a_increment,
                                             LFortran::ASRUtils::expr_type(a_start), nullptr);
     }
-    
+
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         SymbolTable *scope = current_scope;
         std::string var_name = to_lower(x.m_func);
@@ -3020,7 +3021,7 @@ public:
                 if (f->m_is_restriction) {
                     if (!is_template) {
                         throw SemanticError("A requirement function must be called from a tempalte",
-                                            x.base.base.loc);  
+                                            x.base.base.loc);
                     }
                     bool requirement_found = false;
                     std::string f_name = f->m_name;

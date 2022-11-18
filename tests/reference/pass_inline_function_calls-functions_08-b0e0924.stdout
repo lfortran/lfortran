@@ -203,6 +203,7 @@
                                             
                                         }) 
                                     f 
+                                    [f] 
                                     [(Var 4 a)] 
                                     [(= 
                                         (Var 4 a_f_real) 
@@ -384,6 +385,7 @@
                                             
                                         }) 
                                     f_real 
+                                    [f] 
                                     [(Var 5 a)] 
                                     [(= 
                                         (Var 5 a_f) 

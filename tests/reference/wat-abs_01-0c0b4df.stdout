@@ -50,6 +50,7 @@
             i32.const 1
             call 6
             unreachable
+        else
         end
         f32.const 1.500000
         local.set 0
@@ -67,6 +68,7 @@
             i32.const 1
             call 6
             unreachable
+        else
         end
         i32.const 0
         call 6

@@ -81,7 +81,7 @@ define i32 @main() {
   br i1 %31, label %then, label %else
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @0, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @0, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont
 
@@ -94,7 +94,7 @@ ifcont:                                           ; preds = %else, %then
   br i1 %33, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @1, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @1, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont3
 
@@ -156,7 +156,7 @@ loop.end:                                         ; preds = %loop.head
   br i1 %72, label %then4, label %else5
 
 then4:                                            ; preds = %loop.end
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @2, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @2, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont6
 
@@ -183,7 +183,7 @@ ifcont6:                                          ; preds = %else5, %then4
   br i1 %88, label %then7, label %else8
 
 then7:                                            ; preds = %ifcont6
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @3, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @3, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont9
 
@@ -210,7 +210,7 @@ ifcont9:                                          ; preds = %else8, %then7
   br i1 %104, label %then10, label %else11
 
 then10:                                           ; preds = %ifcont9
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @4, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @4, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont12
 
@@ -273,7 +273,7 @@ loop.end15:                                       ; preds = %loop.head13
   br i1 %144, label %then16, label %else17
 
 then16:                                           ; preds = %loop.end15
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @5, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @5, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont18
 
@@ -300,7 +300,7 @@ ifcont18:                                         ; preds = %else17, %then16
   br i1 %160, label %then19, label %else20
 
 then19:                                           ; preds = %ifcont18
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @6, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @6, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont21
 
@@ -327,7 +327,7 @@ ifcont21:                                         ; preds = %else20, %then19
   br i1 %176, label %then22, label %else23
 
 then22:                                           ; preds = %ifcont21
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @7, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @7, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont24
 
@@ -354,7 +354,7 @@ ifcont24:                                         ; preds = %else23, %then22
   br i1 %192, label %then25, label %else26
 
 then25:                                           ; preds = %ifcont24
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @8, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @8, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont27
 
@@ -431,7 +431,7 @@ loop.end30:                                       ; preds = %loop.head28
   br i1 %246, label %then31, label %else32
 
 then31:                                           ; preds = %loop.end30
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @9, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @9, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont33
 
@@ -458,7 +458,7 @@ ifcont33:                                         ; preds = %else32, %then31
   br i1 %262, label %then34, label %else35
 
 then34:                                           ; preds = %ifcont33
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @10, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @10, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont36
 
@@ -485,7 +485,7 @@ ifcont36:                                         ; preds = %else35, %then34
   br i1 %278, label %then37, label %else38
 
 then37:                                           ; preds = %ifcont36
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @11, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @11, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont39
 
@@ -590,7 +590,7 @@ ifcont39:                                         ; preds = %else38, %then37
   br i1 %371, label %then40, label %else41
 
 then40:                                           ; preds = %ifcont39
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @12, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @12, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont42
 
@@ -647,7 +647,7 @@ ifcont42:                                         ; preds = %else41, %then40
   br i1 %416, label %then43, label %else44
 
 then43:                                           ; preds = %ifcont42
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @13, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @13, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont45
 
@@ -658,6 +658,6 @@ ifcont45:                                         ; preds = %else44, %then43
   ret i32 0
 }
 
-declare void @_lfortran_printf(i8*, ...)
+declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)

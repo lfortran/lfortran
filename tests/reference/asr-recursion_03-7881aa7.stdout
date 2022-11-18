@@ -113,6 +113,7 @@
                                                     f 
                                                     [] 
                                                     [] 
+                                                    [] 
                                                     (Var 6 f) 
                                                     Source 
                                                     Public 
@@ -158,6 +159,9 @@
                                             
                                         }) 
                                     solver 
+                                    [f
+                                    sub1
+                                    f] 
                                     [(Var 5 f)
                                     (Var 5 iter)] 
                                     [(Print 
@@ -256,6 +260,7 @@
                                                     f 
                                                     [] 
                                                     [] 
+                                                    [] 
                                                     (Var 4 f) 
                                                     Source 
                                                     Public 
@@ -301,6 +306,7 @@
                                             
                                         }) 
                                     solver_caller 
+                                    [solver] 
                                     [(Var 3 f)
                                     (Var 3 iter)] 
                                     [(= 
@@ -357,6 +363,7 @@
                                                             
                                                         }) 
                                                     getx 
+                                                    [] 
                                                     [] 
                                                     [(Print 
                                                         () 
@@ -460,6 +467,8 @@
                                             
                                         }) 
                                     sub1 
+                                    [getx
+                                    solver_caller] 
                                     [(Var 7 y)
                                     (Var 7 iter)] 
                                     [(= 

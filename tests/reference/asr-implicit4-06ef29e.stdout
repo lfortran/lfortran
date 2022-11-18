@@ -139,6 +139,7 @@
                             
                         }) 
                     idd_random_transf 
+                    [] 
                     [(Var 2 x)
                     (Var 2 y)
                     (Var 2 w)] 

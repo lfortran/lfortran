@@ -59,6 +59,7 @@
                                             
                                         }) 
                                     copy_from_to 
+                                    [] 
                                     [(Var 3 a)
                                     (Var 3 b)] 
                                     [(DoLoop 
@@ -201,6 +202,7 @@
                                             
                                         }) 
                                     verify 
+                                    [] 
                                     [(Var 4 a)
                                     (Var 4 b)] 
                                     [(= 

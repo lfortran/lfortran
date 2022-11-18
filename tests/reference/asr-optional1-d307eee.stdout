@@ -41,6 +41,7 @@
                                             
                                         }) 
                                     optional_argument 
+                                    [present] 
                                     [(Var 3 name)] 
                                     [(If 
                                         (FunctionCall 
@@ -92,7 +93,8 @@
                             
                         }) 
                     optmod 
-                    [lfortran_intrinsic_builtin] 
+                    [lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin] 
                     .false. 
                     .false.
                 )

@@ -79,7 +79,7 @@ public:
         diag::Diagnostics &diagnostics);
     Result<std::unique_ptr<LLVMModule>> get_llvm3(ASR::TranslationUnit_t &asr,
         LCompilers::PassManager& pass_manager,
-        diag::Diagnostics &diagnostics);
+        diag::Diagnostics &diagnostics, const std::string &infile);
     Result<std::string> get_asm(const std::string &code,
         LocationManager &lm,
         LCompilers::PassManager& pass_manager,

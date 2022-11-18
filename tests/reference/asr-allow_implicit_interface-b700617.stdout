@@ -65,6 +65,7 @@
                                             
                                         }) 
                                     alnorm 
+                                    [] 
                                     [(Var 225 alnorm_arg_0)
                                     (Var 225 alnorm_arg_1)] 
                                     [] 
@@ -146,6 +147,7 @@
                                             
                                         }) 
                                     dgetrf 
+                                    [] 
                                     [(Var 226 dgetrf_arg_0)
                                     (Var 226 dgetrf_arg_1)
                                     (Var 226 dgetrf_arg_2)] 
@@ -311,6 +313,9 @@
                             
                         }) 
                     prho 
+                    [exp@dexp
+                    alnorm
+                    dgetrf] 
                     [] 
                     [(= 
                         (Var 2 prho) 

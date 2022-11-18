@@ -201,6 +201,8 @@
                                             
                                         }) 
                                     test_1d_to_nd 
+                                    [abs@dabs
+                                    abs@dabs] 
                                     [(Var 4 d)] 
                                     [(= 
                                         (Var 4 eps) 
@@ -811,6 +813,8 @@
                                             
                                         }) 
                                     test_nd_to_1d 
+                                    [abs@dabs
+                                    abs@dabs] 
                                     [(Var 3 a)] 
                                     [(= 
                                         (Var 3 eps) 
@@ -1350,6 +1354,8 @@
                                             
                                         }) 
                                     test_reshape_with_argument 
+                                    [test_nd_to_1d
+                                    test_1d_to_nd] 
                                     [] 
                                     [(DoLoop 
                                         ((Var 5 i) 

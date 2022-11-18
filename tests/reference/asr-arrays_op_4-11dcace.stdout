@@ -184,6 +184,7 @@
                                             
                                         }) 
                                     modulo2 
+                                    [] 
                                     [(Var 3 x)] 
                                     [(= 
                                         (Var 3 r) 
@@ -339,6 +340,8 @@
                                             
                                         }) 
                                     verify 
+                                    [modulo2
+                                    modulo2] 
                                     [(Var 4 c)
                                     (Var 4 op_code)] 
                                     [(DoLoop 
