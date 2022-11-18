@@ -224,7 +224,7 @@ public:
     std::unique_ptr<LLVMDictInterface> dict_api_sc;
     std::unique_ptr<LLVMArrUtils::Descriptor> arr_descr;
 
-    uint64_t ptr_loads;
+    int64_t ptr_loads;
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
 
@@ -1264,7 +1264,7 @@ public:
         llvm::Type* const_list_type = list_api->get_list_type(llvm_el_type, type_code, type_size);
         llvm::Value* const_list = builder->CreateAlloca(const_list_type, nullptr, "const_list");
         list_api->list_init(type_code, const_list, *module, x.n_args, x.n_args);
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 1;
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*x.m_args[i]);
@@ -1294,7 +1294,7 @@ public:
         llvm_utils->dict_api->dict_init(key_type_code, value_type_code, const_dict, module.get(), x.n_keys);
         uint64_t ptr_loads_key = LLVM::is_llvm_struct(x_dict->m_key_type) ? 0 : 2;
         uint64_t ptr_loads_value = LLVM::is_llvm_struct(x_dict->m_value_type) ? 0 : 2;
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         for( size_t i = 0; i < x.n_keys; i++ ) {
             ptr_loads = ptr_loads_key;
             visit_expr(*x.m_keys[i]);
@@ -1327,7 +1327,7 @@ public:
         llvm::Type* const_tuple_type = tuple_api->get_tuple_type(type_code, llvm_el_types);
         llvm::Value* const_tuple = builder->CreateAlloca(const_tuple_type, nullptr, "const_tuple");
         std::vector<llvm::Value*> init_values;
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 2;
         for( size_t i = 0; i < x.n_elements; i++ ) {
             this->visit_expr(*x.m_elements[i]);
@@ -1361,7 +1361,7 @@ public:
 
     void visit_ListAppend(const ASR::ListAppend_t& x) {
         ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(x.m_a));
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_a);
         llvm::Value* plist = tmp;
@@ -1375,7 +1375,7 @@ public:
     }
 
     void visit_UnionRef(const ASR::UnionRef_t& x) {
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_v);
         ptr_loads = ptr_loads_copy;
@@ -1400,7 +1400,7 @@ public:
     void visit_ListItem(const ASR::ListItem_t& x) {
         ASR::ttype_t* el_type = ASRUtils::get_contained_type(
                                         ASRUtils::expr_type(x.m_a));
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_a);
         llvm::Value* plist = tmp;
@@ -1418,7 +1418,7 @@ public:
     void visit_DictItem(const ASR::DictItem_t& x) {
         ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(
                                     ASRUtils::expr_type(x.m_a));
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_a);
         llvm::Value* pdict = tmp;
@@ -1436,7 +1436,7 @@ public:
     void visit_DictPop(const ASR::DictPop_t& x) {
         ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(
                                     ASRUtils::expr_type(x.m_a));
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_a);
         llvm::Value* pdict = tmp;
@@ -1455,7 +1455,7 @@ public:
         if (x.m_value) {
             this->visit_expr(*x.m_value);
         } else {
-            uint64_t ptr_loads_copy = ptr_loads;
+            int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
             this->visit_expr(*x.m_arg);
             ptr_loads = ptr_loads_copy;
@@ -1470,7 +1470,7 @@ public:
             return ;
         }
 
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_arg);
         ptr_loads = ptr_loads_copy;
@@ -1483,7 +1483,7 @@ public:
     void visit_ListInsert(const ASR::ListInsert_t& x) {
         ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(
                                     ASRUtils::expr_type(x.m_a));
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_a);
         llvm::Value* plist = tmp;
@@ -1503,7 +1503,7 @@ public:
     void visit_DictInsert(const ASR::DictInsert_t& x) {
         ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(
                                     ASRUtils::expr_type(x.m_a));
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_a);
         llvm::Value* pdict = tmp;
@@ -1524,7 +1524,7 @@ public:
 
     void visit_ListRemove(const ASR::ListRemove_t& x) {
         ASR::ttype_t* asr_el_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_a));
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_a);
         llvm::Value* plist = tmp;
@@ -1537,7 +1537,7 @@ public:
     }
 
     void visit_ListClear(const ASR::ListClear_t& x) {
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_a);
         llvm::Value* plist = tmp;
@@ -1552,7 +1552,7 @@ public:
     }
 
     void visit_TupleItem(const ASR::TupleItem_t& x) {
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_a);
         ptr_loads = ptr_loads_copy;
@@ -1627,7 +1627,7 @@ public:
             std::vector<llvm::Value*> indices;
             for( size_t r = 0; r < x.n_args; r++ ) {
                 ASR::array_index_t curr_idx = x.m_args[r];
-                uint64_t ptr_loads_copy = ptr_loads;
+                int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 2;
                 this->visit_expr_wrapper(curr_idx.m_right, true);
                 ptr_loads = ptr_loads_copy;
@@ -1798,11 +1798,11 @@ public:
         }
         der_type_name = "";
         ASR::ttype_t* x_m_v_type = ASRUtils::expr_type(x.m_v);
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         if( ASR::is_a<ASR::UnionRef_t>(*x.m_v) ) {
             ptr_loads = 0;
         } else {
-            ptr_loads = ptr_loads_copy - ASR::is_a<ASR::Pointer_t>(*x_m_v_type);
+            ptr_loads = 2 - ASR::is_a<ASR::Pointer_t>(*x_m_v_type);
         }
         this->visit_expr(*x.m_v);
         ptr_loads = ptr_loads_copy;
@@ -3411,7 +3411,7 @@ public:
     }
 
     void visit_CLoc(const ASR::CLoc_t& x) {
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_arg);
         ptr_loads = ptr_loads_copy;
@@ -3460,7 +3460,7 @@ public:
     }
 
     void visit_GetPointer(const ASR::GetPointer_t& x) {
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_arg);
         ptr_loads = ptr_loads_copy;
@@ -3469,7 +3469,7 @@ public:
     }
 
     void visit_PointerToCPtr(const ASR::PointerToCPtr_t& x) {
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_arg);
         ptr_loads = ptr_loads_copy;
@@ -3491,7 +3491,7 @@ public:
             reduce_loads = cptr_var->m_intent == ASRUtils::intent_in;
         }
         if( ASRUtils::is_array(ASRUtils::expr_type(fptr)) ) {
-            uint64_t ptr_loads_copy = ptr_loads;
+            int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 1 - reduce_loads;
             this->visit_expr(*cptr);
             llvm::Value* llvm_cptr = tmp;
@@ -3541,7 +3541,7 @@ public:
                 builder->CreateStore(builder->CreateAdd(builder->CreateSub(new_ub, new_lb), i32_one), desi_size);
             }
         } else {
-            uint64_t ptr_loads_copy = ptr_loads;
+            int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 1 - reduce_loads;
             this->visit_expr(*cptr);
             llvm::Value* llvm_cptr = tmp;
@@ -3581,7 +3581,7 @@ public:
         bool is_target_struct = ASR::is_a<ASR::Struct_t>(*asr_target_type);
         bool is_value_struct = ASR::is_a<ASR::Struct_t>(*asr_value_type);
         if( is_target_list && is_value_list ) {
-            uint64_t ptr_loads_copy = ptr_loads;
+            int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
             this->visit_expr(*x.m_target);
             llvm::Value* target_list = tmp;
@@ -3595,7 +3595,7 @@ public:
                                     value_asr_list, *module);
             return ;
         } else if( is_target_tuple && is_value_tuple ) {
-            uint64_t ptr_loads_copy = ptr_loads;
+            int64_t ptr_loads_copy = ptr_loads;
             if( ASR::is_a<ASR::TupleConstant_t>(*x.m_target) &&
                 !ASR::is_a<ASR::TupleConstant_t>(*x.m_value) ) {
                 ptr_loads = 0;
@@ -3649,7 +3649,7 @@ public:
             }
             return ;
         } else if( is_target_dict && is_value_dict ) {
-            uint64_t ptr_loads_copy = ptr_loads;
+            int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
             this->visit_expr(*x.m_value);
             llvm::Value* value_dict = tmp;
@@ -3662,7 +3662,7 @@ public:
                                     value_dict_type, module.get());
             return ;
         } else if( is_target_struct && is_value_struct ) {
-            uint64_t ptr_loads_copy = ptr_loads;
+            int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
             this->visit_expr(*x.m_value);
             llvm::Value* value_struct = tmp;
@@ -3727,7 +3727,7 @@ public:
                 }
             } else if( ASR::is_a<ASR::ListItem_t>(*x.m_target) ) {
                 ASR::ListItem_t* asr_target0 = ASR::down_cast<ASR::ListItem_t>(x.m_target);
-                uint64_t ptr_loads_copy = ptr_loads;
+                int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
                 this->visit_expr(*asr_target0->m_a);
                 ptr_loads = ptr_loads_copy;
@@ -4739,7 +4739,7 @@ public:
         uint32_t x_h = get_hash((ASR::asr_t*)x);
         LFORTRAN_ASSERT(llvm_symtab.find(x_h) != llvm_symtab.end());
         llvm::Value* x_v = llvm_symtab[x_h];
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         tmp = x_v;
         while( ptr_loads_copy-- ) {
             tmp = CreateLoad(tmp);
@@ -5284,7 +5284,7 @@ public:
             end = builder->CreateGlobalStringPtr("\n");
         }
         for (size_t i=0; i<x.n_values; i++) {
-            uint64_t ptr_loads_copy = ptr_loads;
+            int64_t ptr_loads_copy = ptr_loads;
             int reduce_loads = 0;
             ptr_loads = 2;
             if( ASR::is_a<ASR::Var_t>(*x.m_values[i]) ) {
@@ -5641,7 +5641,7 @@ public:
                 }
             } else {
                 ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
-                uint64_t ptr_loads_copy = ptr_loads;
+                int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = !LLVM::is_llvm_struct(arg_type);
                 this->visit_expr_wrapper(x.m_args[i].m_value);
                 if( x_abi == ASR::abiType::BindC &&
@@ -6098,7 +6098,7 @@ public:
         }
         int output_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         int dim_kind = 4;
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 2 - // Sync: instead of 2 - , should this be ptr_loads_copy -
                     (ASRUtils::expr_type(x.m_v)->type ==
                      ASR::ttypeType::Pointer);
@@ -6130,7 +6130,7 @@ public:
             tmp = llvm::ConstantInt::get(context, llvm::APInt(kind * 8, bound_value));
             return ;
         }
-        uint64_t ptr_loads_copy = ptr_loads;
+        int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 2 - // Sync: instead of 2 - , should this be ptr_loads_copy -
                     (ASRUtils::expr_type(x.m_v)->type ==
                      ASR::ttypeType::Pointer);
