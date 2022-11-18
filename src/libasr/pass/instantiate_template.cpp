@@ -28,7 +28,8 @@ public:
         {}
 
     ASR::asr_t* instantiate_Function(ASR::Function_t *x) {
-        current_scope = al.make_new<SymbolTable>(x->m_symtab->parent);
+        //current_scope = al.make_new<SymbolTable>(x->m_symtab->parent);
+        current_scope = al.make_new<SymbolTable>(func_scope);
 
         Vec<ASR::expr_t*> args;
         args.reserve(al, x->n_args);
@@ -125,7 +126,8 @@ public:
             x->m_static, nullptr, 0, nullptr, 0, false);
 
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
-        x->m_symtab->parent->add_symbol(new_func_name, t);
+        //x->m_symtab->parent->add_symbol(new_func_name, t);
+        func_scope->add_symbol(new_func_name, t);
 
         return result;
     }
@@ -403,6 +405,16 @@ public:
 ASR::symbol_t* pass_instantiate_generic_function(Allocator &al, std::map<std::string, ASR::ttype_t*> subs,
         std::map<std::string, ASR::symbol_t*> rt_subs, SymbolTable *current_scope,
         std::string new_func_name, ASR::Function_t *func) {
+    FunctionInstantiator tf(al, subs, rt_subs, current_scope, new_func_name);
+    ASR::asr_t *new_function = tf.instantiate_Function(func);
+    return ASR::down_cast<ASR::symbol_t>(new_function);
+}
+
+ASR::symbol_t* pass_instantiate_generic_symbol(Allocator &al, std::map<std::string, ASR::ttype_t*> subs,
+        std::map<std::string, ASR::symbol_t*> rt_subs, SymbolTable *current_scope,
+        std::string new_func_name, ASR::symbol_t *sym) {
+    ASR::symbol_t* sym2 = ASRUtils::symbol_get_past_external(sym);
+    ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(sym2);
     FunctionInstantiator tf(al, subs, rt_subs, current_scope, new_func_name);
     ASR::asr_t *new_function = tf.instantiate_Function(func);
     return ASR::down_cast<ASR::symbol_t>(new_function);

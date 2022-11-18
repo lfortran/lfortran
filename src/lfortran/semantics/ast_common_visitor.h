@@ -677,13 +677,16 @@ public:
     bool is_instantiate = false;
     bool is_current_procedure_templated = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
-    // used for requirement type parameters
+
+    // fields for generics
     std::vector<ASR::asr_t*> current_requirement_type_parameters;
     std::vector<ASR::asr_t*> current_requirement_functions;
     std::map<std::string, std::map<std::string, ASR::asr_t*>> requirement_map;
     std::map<std::string, ASR::asr_t*> called_requirement;
     std::map<std::string, std::map<std::string, ASR::asr_t*>> template_asr_map;
     std::map<std::string, std::map<int, std::string>> template_arg_map;
+    std::vector<ASR::symbol_t*> rt_vec;
+
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
 
@@ -3019,7 +3022,7 @@ public:
                 ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(v);
                 if (f->m_is_restriction) {
                     if (!is_template) {
-                        throw SemanticError("A requirement function must be called from a tempalte",
+                        throw SemanticError("A requirement function must be called from a template",
                                             x.base.base.loc);  
                     }
                     bool requirement_found = false;
@@ -3029,7 +3032,7 @@ public:
                         requirement_found = true;
                     }
                     if (!requirement_found) {
-                        throw SemanticError("The template did not declare this requirement funciton",
+                        throw SemanticError("The template did not declare this requirement function",
                                             x.base.base.loc);
                     }
                 }

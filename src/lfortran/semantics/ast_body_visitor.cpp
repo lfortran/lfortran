@@ -427,7 +427,7 @@ public:
 
     void visit_Instantiate(const AST::Instantiate_t &x){
         is_instantiate = true;
-        std::string template_name = std::string(x.m_name);
+        std::string template_name = x.m_name;
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 0);
 
@@ -467,25 +467,37 @@ public:
             // Handle function restrictions
             } else if (ASR::is_a<ASR::symbol_t>(*template_param)) {
                 ASR::Function_t *restriction = ASR::down_cast2<ASR::Function_t>(template_param);
-                ASR::symbol_t *func_arg = current_scope->resolve_symbol(arg);
-                if (!func_arg) {
+                ASR::symbol_t *f_arg = current_scope->resolve_symbol(arg);
+                if (!f_arg) {
                     throw SemanticError("The function argument " + arg + " is not found",
                         x.base.base.loc);
                 }
-                if (!ASR::is_a<ASR::Function_t>(*func_arg)) {
+                ASR::symbol_t *f_arg2 = ASRUtils::symbol_get_past_external(f_arg);
+                if (!ASR::is_a<ASR::Function_t>(*f_arg2)) {
                     throw SemanticError(
                         "The argument for " + current_template_arg[i] + " must be a function",
                         x.base.base.loc);
                 }
-                check_restriction(subs, restriction_subs, restriction, func_arg, x.base.base.loc);
+                check_restriction(subs, restriction_subs, restriction, f_arg, x.base.base.loc);
             }
         }
 
-        for(size_t i = 0; i < x.n_symbols; i++){
+        for (size_t i = 0; i < x.n_symbols; i++){
             AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
-            ASR::symbol_t* s = resolve_symbol(x.base.base.loc, use_symbol->m_remote_sym);
-            pass_instantiate_generic_function(al, subs, restriction_subs, current_scope,
-                use_symbol->m_local_rename, ASR::down_cast<ASR::Function_t>(s));
+            std::string generic_name = to_lower(use_symbol->m_remote_sym);
+            ASR::symbol_t* s = resolve_symbol(x.base.base.loc, generic_name);
+            // Handle ExternalSymbol
+            ASR::symbol_t* s2 = ASRUtils::symbol_get_past_external(s);
+            // TODO: Improve error message
+            if (!ASR::is_a<ASR::Function_t>(*s2)) {
+              throw SemanticError("Only functions can be instantiated", x.base.base.loc);
+            }
+            std::string new_f_name = to_lower(use_symbol->m_local_rename);
+            // TODO: this function should accept symbol_t, not Function_t
+            //pass_instantiate_generic_function(al, subs, restriction_subs, current_scope,
+            //    new_f_name, ASR::down_cast<ASR::Function_t>(s));
+            pass_instantiate_generic_symbol(al, subs, restriction_subs, current_scope,
+                new_f_name, s);
         }
 
         is_instantiate = false;
@@ -495,7 +507,8 @@ public:
             std::map<std::string, ASR::symbol_t*>& restriction_subs,
             ASR::Function_t* restriction, ASR::symbol_t *sym_arg, const Location& loc) {
         std::string restriction_name = restriction->m_name;
-        ASR::Function_t *arg = ASR::down_cast<ASR::Function_t>(sym_arg);
+        ASR::symbol_t *sym_arg2 = ASRUtils::symbol_get_past_external(sym_arg);
+        ASR::Function_t *arg = ASR::down_cast<ASR::Function_t>(sym_arg2);
         std::string arg_name = arg->m_name;
         if (restriction->n_args != arg->n_args) {
             // TODO: use diagnostics showing both the restriction and the argument
