@@ -110,6 +110,7 @@
                                             
                                         }) 
                                     asquare 
+                                    [] 
                                     [(Var 3 a)
                                     (Var 3 b)
                                     (Var 3 c)] 
@@ -261,6 +262,7 @@
                                             
                                         }) 
                                     check 
+                                    [] 
                                     [(Var 4 c)] 
                                     [(DoLoop 
                                         ((Var 4 i) 

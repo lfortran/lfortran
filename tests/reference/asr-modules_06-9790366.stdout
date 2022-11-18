@@ -29,6 +29,7 @@
                                             
                                         }) 
                                     a 
+                                    [b] 
                                     [] 
                                     [(= 
                                         (Var 5 a) 
@@ -75,7 +76,8 @@
                             
                         }) 
                     modules_06_a 
-                    [modules_06_b] 
+                    [modules_06_b
+                    modules_06_b] 
                     .false. 
                     .false.
                 ), 
@@ -106,6 +108,7 @@
                                             
                                         }) 
                                     b 
+                                    [] 
                                     [] 
                                     [(= 
                                         (Var 3 b) 

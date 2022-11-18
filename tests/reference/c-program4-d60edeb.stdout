@@ -33,9 +33,6 @@ struct dimension_descriptor
 {
     int32_t lower_bound, length;
 };
-// Forward declarations
-float func1(float a, float b);
-float func2(float a, float b);
 
 // Implementations
 float func1(float a, float b)

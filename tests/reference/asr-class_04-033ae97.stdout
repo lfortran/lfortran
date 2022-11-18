@@ -29,9 +29,12 @@
                                             
                                         }) 
                                     bar_a 
+                                    [] 
                                     [a] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     ()
                                 ), 
                             bar_b:
@@ -56,9 +59,12 @@
                                             
                                         }) 
                                     bar_b 
+                                    [] 
                                     [b] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     2 bar_a
                                 ), 
                             bar_c:
@@ -83,9 +89,12 @@
                                             
                                         }) 
                                     bar_c 
+                                    [] 
                                     [c] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     2 bar_b
                                 ), 
                             foo:
@@ -130,9 +139,12 @@
                                             
                                         }) 
                                     foo_a 
+                                    [bar_a] 
                                     [m_bar_a] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     ()
                                 ), 
                             foo_b:
@@ -160,9 +172,12 @@
                                             
                                         }) 
                                     foo_b 
+                                    [bar_b] 
                                     [m_bar_b] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     2 foo_a
                                 ), 
                             foo_c:
@@ -190,9 +205,12 @@
                                             
                                         }) 
                                     foo_c 
+                                    [bar_c] 
                                     [m_bar_c] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     2 foo_b
                                 )
                             

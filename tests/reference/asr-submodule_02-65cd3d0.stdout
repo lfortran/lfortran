@@ -51,10 +51,13 @@
                                             
                                         }) 
                                     point 
+                                    [] 
                                     [x
                                     y] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     ()
                                 ), 
                             point_dist_func:
@@ -113,6 +116,7 @@
                                             
                                         }) 
                                     point_dist_func 
+                                    [] 
                                     [(Var 7 a)
                                     (Var 7 b)] 
                                     [] 
@@ -186,6 +190,7 @@
                                             
                                         }) 
                                     point_dist_subrout 
+                                    [] 
                                     [(Var 8 a)
                                     (Var 8 b)
                                     (Var 8 distance)] 
@@ -312,6 +317,7 @@
                                             
                                         }) 
                                     point_dist_func 
+                                    [sqrt@ssqrt] 
                                     [(Var 10 a)
                                     (Var 10 b)] 
                                     [(= 
@@ -482,6 +488,7 @@
                                             
                                         }) 
                                     point_dist_subrout 
+                                    [sqrt@ssqrt] 
                                     [(Var 11 a)
                                     (Var 11 b)
                                     (Var 11 distance)] 
@@ -590,7 +597,9 @@
                             
                         }) 
                     points_a 
-                    [lfortran_intrinsic_math] 
+                    [lfortran_intrinsic_math
+                    lfortran_intrinsic_math
+                    lfortran_intrinsic_math] 
                     .false. 
                     .false.
                 ), 

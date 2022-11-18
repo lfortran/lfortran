@@ -71,6 +71,7 @@
                                             
                                         }) 
                                     add_log_file 
+                                    [log_io_error] 
                                     [(Var 4 self)
                                     (Var 4 filename)
                                     (Var 4 unit)] 
@@ -163,6 +164,7 @@
                                             
                                         }) 
                                     log_io_error 
+                                    [] 
                                     [(Var 5 self)
                                     (Var 5 code)
                                     (Var 5 filename)
@@ -207,8 +209,11 @@
                                         }) 
                                     logger_type 
                                     [] 
+                                    [] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     ()
                                 )
                             

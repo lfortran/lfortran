@@ -68,6 +68,7 @@
                                             
                                         }) 
                                     char_string 
+                                    [len_string] 
                                     [(Var 5 string)] 
                                     [] 
                                     (Var 5 character_string) 
@@ -130,6 +131,7 @@
                                             
                                         }) 
                                     len_string 
+                                    [] 
                                     [(Var 4 string)] 
                                     [] 
                                     (Var 4 length) 
@@ -168,9 +170,12 @@
                                             
                                         }) 
                                     string_type 
+                                    [] 
                                     [raw] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     ()
                                 )
                             
@@ -259,6 +264,7 @@
                                             
                                         }) 
                                     compute_lps 
+                                    [len] 
                                     [(Var 7 string)] 
                                     [] 
                                     (Var 7 lps_array) 
@@ -321,6 +327,8 @@
                                             
                                         }) 
                                     compute_lps_use 
+                                    [compute_lps
+                                    len] 
                                     [(Var 32 string)] 
                                     [(Print 
                                         () 
@@ -416,6 +424,8 @@
                                             
                                         }) 
                                     compute_lps_use1 
+                                    [char@char_string
+                                    len_string] 
                                     [(Var 33 string)] 
                                     [(Print 
                                         () 
@@ -556,6 +566,10 @@
                                             
                                         }) 
                                     padl_char_default 
+                                    [len
+                                    padl_char_pad_with
+                                    imax
+                                    len] 
                                     [(Var 36 string)
                                     (Var 36 output_length)] 
                                     [(= 
@@ -727,6 +741,8 @@
                                             
                                         }) 
                                     padl_char_pad_with 
+                                    [max@imax
+                                    len] 
                                     [(Var 37 string)
                                     (Var 37 output_length)
                                     (Var 37 pad_with)] 
@@ -841,6 +857,13 @@
                                             
                                         }) 
                                     padl_string_default 
+                                    [padl_char_pad_with
+                                    char@char_string
+                                    len_string
+                                    imax
+                                    len
+                                    char@char_string
+                                    len_string] 
                                     [(Var 34 string)
                                     (Var 34 output_length)] 
                                     [(= 
@@ -1035,6 +1058,13 @@
                                             
                                         }) 
                                     padl_string_pad_with 
+                                    [padl_char_pad_with
+                                    char@char_string
+                                    len_string
+                                    imax
+                                    len
+                                    char@char_string
+                                    len_string] 
                                     [(Var 35 string)
                                     (Var 35 output_length)
                                     (Var 35 pad_with)] 
@@ -1131,7 +1161,34 @@
                         }) 
                     stdlib_strings 
                     [stdlib_string_type
-                    lfortran_intrinsic_builtin] 
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_math2
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    stdlib_string_type
+                    stdlib_string_type
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_math2
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_math2
+                    lfortran_intrinsic_builtin
+                    stdlib_string_type
+                    stdlib_string_type
+                    lfortran_intrinsic_math2
+                    lfortran_intrinsic_builtin
+                    stdlib_string_type
+                    stdlib_string_type
+                    stdlib_string_type
+                    stdlib_string_type
+                    lfortran_intrinsic_math2
+                    lfortran_intrinsic_builtin
+                    stdlib_string_type
+                    stdlib_string_type] 
                     .false. 
                     .false.
                 ), 

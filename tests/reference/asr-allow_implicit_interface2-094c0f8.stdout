@@ -43,6 +43,7 @@
                                             
                                         }) 
                                     fcn 
+                                    [] 
                                     [(Var 3 fcn_arg_0)
                                     (Var 3 fcn_arg_1)] 
                                     [] 
@@ -105,6 +106,7 @@
                             
                         }) 
                     fdjac1 
+                    [fcn] 
                     [(Var 2 fcn)
                     (Var 2 n)
                     (Var 2 x)

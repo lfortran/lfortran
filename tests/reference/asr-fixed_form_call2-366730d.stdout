@@ -71,6 +71,7 @@
                                             
                                         }) 
                                     prinf 
+                                    [] 
                                     [(Var 3 prinf_arg_0)
                                     (Var 3 prinf_arg_1)] 
                                     [] 
@@ -91,6 +92,8 @@
                             
                         }) 
                     idd_frm 
+                    [prinf
+                    prinf] 
                     [(Var 2 m)] 
                     [(= 
                         (Var 2 a) 

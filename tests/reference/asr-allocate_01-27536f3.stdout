@@ -225,6 +225,7 @@
                                             
                                         }) 
                                     reduce_sum 
+                                    [] 
                                     [(Var 4 c)] 
                                     [(= 
                                         (Var 4 r) 
@@ -449,6 +450,7 @@
                                             
                                         }) 
                                     sum 
+                                    [] 
                                     [(Var 3 a)
                                     (Var 3 b)
                                     (Var 3 c)] 

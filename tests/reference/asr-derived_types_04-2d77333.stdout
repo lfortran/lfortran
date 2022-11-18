@@ -46,6 +46,7 @@
                                             
                                         }) 
                                     all_abstract 
+                                    [] 
                                     [(Var 4 self)] 
                                     [] 
                                     (Var 4 all) 
@@ -92,9 +93,12 @@
                                             
                                         }) 
                                     bitset_type 
+                                    [] 
                                     [num_bits] 
                                     Source 
                                     Private 
+                                    .false. 
+                                    () 
                                     ()
                                 )
                             

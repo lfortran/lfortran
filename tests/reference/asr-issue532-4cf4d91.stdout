@@ -78,6 +78,7 @@
                                             
                                         }) 
                                     imodulo 
+                                    [sfloor] 
                                     [(Var 4 x)
                                     (Var 4 y)] 
                                     [(= 
@@ -153,6 +154,7 @@
                                             
                                         }) 
                                     sfloor 
+                                    [] 
                                     [(Var 3 x)] 
                                     [(= 
                                         (Var 3 r) 

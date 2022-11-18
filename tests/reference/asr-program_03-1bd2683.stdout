@@ -43,6 +43,7 @@
                                             
                                         }) 
                                     add_z 
+                                    [] 
                                     [(Var 5 x)] 
                                     [(= 
                                         (Var 5 y) 
@@ -110,6 +111,7 @@
                                                             
                                                         }) 
                                                     fun 
+                                                    [] 
                                                     [(Var 4 x)] 
                                                     [] 
                                                     (Var 4 fun) 
@@ -157,6 +159,7 @@
                                             
                                         }) 
                                     apply 
+                                    [fun] 
                                     [(Var 3 fun)
                                     (Var 3 x)] 
                                     [(= 

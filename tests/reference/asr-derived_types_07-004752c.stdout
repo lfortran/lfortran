@@ -85,6 +85,7 @@
                                             
                                         }) 
                                     final_logger 
+                                    [] 
                                     [(Var 4 self)] 
                                     [] 
                                     () 
@@ -155,11 +156,14 @@
                                             
                                         }) 
                                     logger_type 
+                                    [] 
                                     [add_blank_line
                                     log_units
                                     max_width] 
                                     Source 
                                     Private 
+                                    .false. 
+                                    () 
                                     ()
                                 )
                             

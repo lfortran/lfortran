@@ -97,6 +97,8 @@
                                             
                                         }) 
                                     elemental_cos 
+                                    [cos@dcos
+                                    verify2d] 
                                     [] 
                                     [(DoLoop 
                                         ((Var 7 i) 
@@ -336,6 +338,11 @@
                                             
                                         }) 
                                     elemental_sin 
+                                    [sin@dsin
+                                    sin@dsin
+                                    verify1d
+                                    sin@dsin
+                                    verifynd] 
                                     [] 
                                     [(DoLoop 
                                         ((Var 6 i) 
@@ -724,6 +731,9 @@
                                             
                                         }) 
                                     elemental_trig_identity 
+                                    [sin@dsin
+                                    cos@dcos
+                                    abs@dabs] 
                                     [] 
                                     [(= 
                                         (Var 8 eps) 
@@ -1135,6 +1145,9 @@
                                             
                                         }) 
                                     verify1d 
+                                    [abs@dabs
+                                    sin@dsin
+                                    sin@dsin] 
                                     [(Var 3 array)
                                     (Var 3 result)
                                     (Var 3 size)] 
@@ -1382,6 +1395,8 @@
                                             
                                         }) 
                                     verify2d 
+                                    [abs@dabs
+                                    cos@dcos] 
                                     [(Var 5 array)
                                     (Var 5 result)
                                     (Var 5 size1)
@@ -1681,6 +1696,8 @@
                                             
                                         }) 
                                     verifynd 
+                                    [abs@dabs
+                                    sin@dsin] 
                                     [(Var 4 array)
                                     (Var 4 result)
                                     (Var 4 size1)

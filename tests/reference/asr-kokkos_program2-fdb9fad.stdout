@@ -189,6 +189,7 @@
                                             
                                         }) 
                                     triad 
+                                    [] 
                                     [(Var 3 a)
                                     (Var 3 b)
                                     (Var 3 scalar)

@@ -347,6 +347,7 @@
                                             
                                         }) 
                                     bin_add 
+                                    [] 
                                     [(Var 4 log1)
                                     (Var 4 log2)] 
                                     [(If 
@@ -454,6 +455,7 @@
                                             
                                         }) 
                                     logical_and 
+                                    [] 
                                     [(Var 3 log1)
                                     (Var 3 log2)] 
                                     [(= 
