@@ -5,6 +5,8 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/semantic_exception.h>
 
+#include <lfortran/pickle.h>
+
 namespace LFortran {
 
 class FunctionInstantiator : public ASR::BaseExprStmtDuplicator<FunctionInstantiator>
@@ -234,8 +236,9 @@ public:
         ASR::expr_t* value = duplicate_expr(x->m_value);
         ASR::expr_t* dt = duplicate_expr(x->m_dt);
         std::string call_name = ASRUtils::symbol_name(x->m_name);
-        //for (ASR::Function_t* rt: rts) {
-        //    if (call_name.compare(rt->m_name) == 0) {
+        /*
+        for (ASR::Function_t* rt: rts) {
+            if (call_name.compare(rt->m_name) == 0) {
                 if (rt_subs.find(call_name) == rt_subs.end()) {
                     if (call_name.compare("add") == 0) {
                         ASR::expr_t* left_arg = duplicate_expr(x->m_args[0].m_value);
@@ -264,9 +267,17 @@ public:
                     LFORTRAN_ASSERT(false); // should never happen
                 }
                 name = rt_subs[call_name];
-        //    }
-        //}
-        // TODO: Nested generic function call
+            }
+        }
+        */
+        if (ASRUtils::is_restriction_function(name)) {
+            name = rt_subs[call_name];
+        } else if (ASRUtils::is_generic_function(name)) {
+            std::string nested_func_name = "__lfortran_generic_" + sym_name;
+            FunctionInstantiator nested_tf(al, subs, rt_subs, func_scope, nested_func_name);
+            ASR::asr_t* nested_generic_func = nested_tf.instantiate_Function(ASR::down_cast<ASR::Function_t>(name));
+            name = ASR::down_cast<ASR::symbol_t>(nested_generic_func);
+        }
         return ASR::make_FunctionCall_t(al, x->base.base.loc, name, x->m_original_name,
             args.p, args.size(), type, value, dt);
     }

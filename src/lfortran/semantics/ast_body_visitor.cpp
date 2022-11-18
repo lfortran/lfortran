@@ -1119,6 +1119,8 @@ public:
         current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
+        Vec<ASR::symbol_t*> rts;
+        rts.reserve(al, rt_vec.size());
         transform_stmts(body, x.n_body, x.m_body);
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
         if( impl_del != nullptr ) {
@@ -1126,6 +1128,8 @@ public:
         }
         v->m_body = body.p;
         v->n_body = body.size();
+        v->m_restrictions = rts.p;
+        v->n_restrictions = rts.size();
 
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);

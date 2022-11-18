@@ -3035,6 +3035,7 @@ public:
                         throw SemanticError("The template did not declare this requirement function",
                                             x.base.base.loc);
                     }
+                    rt_vec.push_back(v);
                 }
             }
             tmp = create_FunctionCallWithASTNode(x, v, args);
