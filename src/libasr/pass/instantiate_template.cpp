@@ -5,8 +5,6 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/semantic_exception.h>
 
-#include <lfortran/pickle.h>
-
 namespace LFortran {
 
 class FunctionInstantiator : public ASR::BaseExprStmtDuplicator<FunctionInstantiator>
