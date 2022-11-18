@@ -174,6 +174,7 @@ public:
         return result;
     }
 
+    /*
     ASR::asr_t* duplicate_Assignment(ASR::Assignment_t *x) {
         ASR::expr_t *target = duplicate_expr(x->m_target);
         ASR::ttype_t *target_type = substitute_type(ASRUtils::expr_type(x->m_target));
@@ -185,6 +186,14 @@ public:
                     ASRUtils::duplicate_type(al, target_type)));
             }
         }
+        ASR::stmt_t *overloaded = duplicate_stmt(x->m_overloaded);
+        return ASR::make_Assignment_t(al, x->base.base.loc, target, value, overloaded);
+    }
+    */
+
+    ASR::asr_t* duplicate_Assignment(ASR::Assignment_t *x) {
+        ASR::expr_t *target = duplicate_expr(x->m_target);
+        ASR::expr_t *value = duplicate_expr(x->m_value);
         ASR::stmt_t *overloaded = duplicate_stmt(x->m_overloaded);
         return ASR::make_Assignment_t(al, x->base.base.loc, target, value, overloaded);
     }
@@ -272,8 +281,10 @@ public:
             name = rt_subs[call_name];
         } else if (ASRUtils::is_generic_function(name)) {
             std::string nested_func_name = "__lfortran_generic_" + sym_name;
+            ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(name2);
             FunctionInstantiator nested_tf(al, subs, rt_subs, func_scope, nested_func_name);
-            ASR::asr_t* nested_generic_func = nested_tf.instantiate_Function(ASR::down_cast<ASR::Function_t>(name));
+            ASR::asr_t* nested_generic_func = nested_tf.instantiate_Function(func);
             name = ASR::down_cast<ASR::symbol_t>(nested_generic_func);
         }
         return ASR::make_FunctionCall_t(al, x->base.base.loc, name, x->m_original_name,
