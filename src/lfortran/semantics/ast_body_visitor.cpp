@@ -486,17 +486,13 @@ public:
             AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
             std::string generic_name = to_lower(use_symbol->m_remote_sym);
             ASR::symbol_t* s = resolve_symbol(x.base.base.loc, generic_name);
-            // Handle ExternalSymbol
             ASR::symbol_t* s2 = ASRUtils::symbol_get_past_external(s);
             // TODO: Improve error message
             if (!ASR::is_a<ASR::Function_t>(*s2)) {
               throw SemanticError("Only functions can be instantiated", x.base.base.loc);
             }
             std::string new_f_name = to_lower(use_symbol->m_local_rename);
-            // TODO: this function should accept symbol_t, not Function_t
-            //pass_instantiate_generic_function(al, subs, restriction_subs, current_scope,
-            //    new_f_name, ASR::down_cast<ASR::Function_t>(s));
-            pass_instantiate_generic_symbol(al, subs, restriction_subs, current_scope,
+            pass_instantiate_generic_function(al, subs, restriction_subs, current_scope,
                 new_f_name, s);
         }
 
@@ -507,12 +503,11 @@ public:
             std::map<std::string, ASR::symbol_t*>& restriction_subs,
             ASR::Function_t* restriction, ASR::symbol_t *sym_arg, const Location& loc) {
         std::string restriction_name = restriction->m_name;
-        ASR::symbol_t *sym_arg2 = ASRUtils::symbol_get_past_external(sym_arg);
-        ASR::Function_t *arg = ASR::down_cast<ASR::Function_t>(sym_arg2);
+        ASR::Function_t *arg = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(sym_arg));
         std::string arg_name = arg->m_name;
         if (restriction->n_args != arg->n_args) {
             // TODO: use diagnostics showing both the restriction and the argument
-            std::string msg = "The argument " + arg_name
+            std::string msg = "The argument " + arg_name;
                 + " has different number of arguments with the restriction "
                 + restriction_name;
             throw SemanticError(msg, loc);
