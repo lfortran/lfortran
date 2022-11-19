@@ -1679,6 +1679,7 @@ public:
         }
         bool is_argument = false;
         llvm::Value* array = nullptr;
+        bool is_data_only = false;
         if( ASR::is_a<ASR::Var_t>(*x.m_v) ) {
             ASR::Variable_t *v = ASRUtils::EXPR2VAR(x.m_v);
             if( ASR::is_a<ASR::Struct_t>(*ASRUtils::get_contained_type(v->m_type)) ) {
@@ -1687,8 +1688,22 @@ public:
                 der_type_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_type->m_derived_type));
             }
             uint32_t v_h = get_hash((ASR::asr_t*)v);
-            LFORTRAN_ASSERT(llvm_symtab.find(v_h) != llvm_symtab.end());
-            array = llvm_symtab[v_h];
+            if (llvm_symtab.find(v_h) == llvm_symtab.end()) {
+                LFORTRAN_ASSERT(std::find(nested_globals.begin(),
+                        nested_globals.end(), v_h) != nested_globals.end());
+                auto finder = std::find(nested_globals.begin(),
+                        nested_globals.end(), v_h);
+                llvm::Constant *ptr = module->getOrInsertGlobal(nested_desc_name,
+                    nested_global_struct);
+                int idx = std::distance(nested_globals.begin(), finder);
+                std::vector<llvm::Value*> idx_vec = {
+                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
+                array = CreateLoad(CreateGEP(ptr, idx_vec));
+                is_data_only = true;
+            } else {
+                array = llvm_symtab[v_h];
+            }
             is_argument = (v->m_intent == ASRUtils::intent_in)
                   || (v->m_intent == ASRUtils::intent_out)
                   || (v->m_intent == ASRUtils::intent_inout)
@@ -1745,7 +1760,8 @@ public:
             if (ASRUtils::expr_type(x.m_v)->type == ASR::ttypeType::Pointer) {
                 array = CreateLoad(array);
             }
-            bool is_data_only = is_argument && !ASRUtils::is_dimension_empty(m_dims, n_dims);
+            is_data_only = is_data_only || (is_argument &&
+                            !ASRUtils::is_dimension_empty(m_dims, n_dims));
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
             if( is_data_only ) {
@@ -1760,6 +1776,7 @@ public:
             }
             LFORTRAN_ASSERT(ASRUtils::extract_n_dims_from_ttype(
                 ASRUtils::expr_type(x.m_v)) > 0);
+
             tmp = arr_descr->get_single_element(array, indices, x.n_args,
                                                 is_data_only, llvm_diminfo.p);
         }
@@ -2729,6 +2746,9 @@ public:
                                     nested_global_struct);
                             int idx = std::distance(nested_globals.begin(),
                                     finder);
+                            if( is_array_type || is_malloc_array_type ) {
+                                target_var = CreateLoad(target_var);
+                            }
                             builder->CreateStore(target_var, llvm_utils->create_gep(ptr,
                                         idx));
                         }
@@ -4035,6 +4055,50 @@ public:
                     nested_global_struct);
             int idx = std::distance(nested_globals.begin(), finder);
             builder->CreateStore(target, llvm_utils->create_gep(ptr, idx));
+        }
+        if (is_a<ASR::ArrayItem_t>(*x.m_target)) {
+            ASR::ArrayItem_t *asr_target0 = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+            if (is_a<ASR::Var_t>(*asr_target0->m_v)) {
+                ASR::Variable_t *asr_target = ASRUtils::EXPR2VAR(asr_target0->m_v);
+                h = get_hash((ASR::asr_t*)asr_target);
+                auto finder = std::find(nested_globals.begin(),
+                        nested_globals.end(), h);
+                if (finder != nested_globals.end()) {
+                    // This is used since array pass use array item visit
+                    llvm::Constant *ptr = module->getOrInsertGlobal(nested_desc_name,
+                    nested_global_struct);
+                    int idx = std::distance(nested_globals.begin(), finder);
+                    std::vector<llvm::Value*> idx_vec = {
+                    llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                    llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
+                    llvm::Value* array = CreateGEP(ptr, idx_vec);
+                    std::vector<llvm::Value*> indices;
+                    for( size_t r = 0; r < asr_target0->n_args; r++ ) {
+                        ASR::array_index_t curr_idx = asr_target0->m_args[r];
+                        uint64_t ptr_loads_copy = ptr_loads;
+                        ptr_loads = 2;
+                        this->visit_expr_wrapper(curr_idx.m_right, true);
+                        ptr_loads = ptr_loads_copy;
+                        indices.push_back(tmp);
+                    }
+                    ASR::dimension_t* m_dims;
+                    ASRUtils::extract_dimensions_from_ttype(
+                                    ASRUtils::expr_type(asr_target0->m_v), m_dims);
+                    Vec<llvm::Value*> llvm_diminfo;
+                    llvm_diminfo.reserve(al, 2 * asr_target0->n_args + 1);
+                    for( size_t idim = 0; idim < asr_target0->n_args; idim++ ) {
+                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                        llvm::Value* dim_start = tmp;
+                        this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                        llvm::Value* dim_size = tmp;
+                        llvm_diminfo.push_back(al, dim_start);
+                        llvm_diminfo.push_back(al, dim_size);
+                    }
+                    tmp = arr_descr->get_single_element(array, indices, asr_target0->n_args,
+                                                        true, llvm_diminfo.p);
+                    builder->CreateStore(target, tmp);
+                }
+            }
         }
     }
 
