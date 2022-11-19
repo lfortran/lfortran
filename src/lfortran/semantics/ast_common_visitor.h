@@ -803,8 +803,9 @@ public:
     }
 
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
-        AST::dimension_t *m_dim, size_t n_dim) {
+        AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time) {
         LFORTRAN_ASSERT(dims.size() == 0);
+        is_compile_time = false;
         dims.reserve(al, n_dim);
         for (size_t i=0; i<n_dim; i++) {
             ASR::dimension_t dim;
@@ -821,6 +822,9 @@ public:
                                     LFortran::ASRUtils::EXPR(tmp));
             } else {
                 dim.m_length = nullptr;
+            }
+            if ( !dim.m_start && !dim.m_length ) {
+                is_compile_time = true;
             }
             dims.push_back(al, dim);
         }
@@ -1145,10 +1149,11 @@ public:
                                 throw SemanticError("Cannot set dimension for undeclared variable", x.base.base.loc);
                             }
                         }
+                        bool is_compile_time = false;
                         if (ASR::is_a<ASR::Variable_t>(*get_sym)) {
                             Vec<ASR::dimension_t> dims;
                             dims.reserve(al, 0);
-                            process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim);
+                            process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim, is_compile_time);
                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(get_sym);
                             if (!ASRUtils::ttype_set_dimensions(v->m_type, dims.data(), dims.size())) {
                                 throw SemanticError("Cannot set dimension for variable of non-numerical type", x.base.base.loc);
@@ -1172,6 +1177,7 @@ public:
             // Example
             // real(dp), private :: x, y(3), z
             for (size_t i=0; i<x.n_syms; i++) {
+                bool is_compile_time = false;
                 AST::var_sym_t &s = x.m_syms[i];
                 std::string sym = to_lower(s.m_name);
                 ASR::accessType s_access = dflt_access;
@@ -1286,7 +1292,7 @@ public:
                                         x.base.base.loc);
                             }
                             dims_attr_loc = ad->base.base.loc;
-                            process_dims(al, dims, ad->m_dim, ad->n_dim);
+                            process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time);
                         } else {
                             throw SemanticError("Attribute type not implemented yet",
                                     x.base.base.loc);
@@ -1304,7 +1310,7 @@ public:
                         );
                         dims.n = 0;
                     }
-                    process_dims(al, dims, s.m_dim, s.n_dim);
+                    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time);
                 }
                 ASR::ttype_t *type = determine_type(x.base.base.loc, x.m_vartype, is_pointer, dims);
 
@@ -1312,6 +1318,23 @@ public:
                 ASR::expr_t* value = nullptr;
                 if (s.m_initializer != nullptr) {
                     this->visit_expr(*s.m_initializer);
+                    if (is_compile_time && AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
+                        AST::ArrayInitializer_t *temp_array =
+                            AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
+                        // For case  `integer, parameter :: x(*) = [1,2,3], get the compile time length of RHS array.
+                        Vec<ASR::dimension_t> temp_dims;
+                        temp_dims.reserve(al, 1);
+                        ASR::dimension_t temp_dim;
+                        temp_dim.loc = (temp_array->base).base.loc;
+                        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, (temp_array->base).base.loc,
+                                                                                    4, nullptr, 0));
+                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, (temp_array->base).base.loc, 1, int32_type));
+                        ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, (temp_array->base).base.loc, temp_array->n_args, int32_type));
+                        temp_dim.m_start = one;
+                        temp_dim.m_length = x_n_args;
+                        temp_dims.push_back(al, temp_dim);
+                        type = ASRUtils::duplicate_type(al, type, &temp_dims);
+                    }
                     init_expr = LFortran::ASRUtils::EXPR(tmp);
                     ASR::ttype_t *init_type = LFortran::ASRUtils::expr_type(init_expr);
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &init_expr, init_type, type);
