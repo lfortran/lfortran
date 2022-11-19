@@ -803,8 +803,9 @@ public:
     }
 
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
-        AST::dimension_t *m_dim, size_t n_dim, int &is_compile_time) {
+        AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time) {
         LFORTRAN_ASSERT(dims.size() == 0);
+        is_compile_time = false;
         dims.reserve(al, n_dim);
         for (size_t i=0; i<n_dim; i++) {
             ASR::dimension_t dim;
@@ -1148,7 +1149,7 @@ public:
                                 throw SemanticError("Cannot set dimension for undeclared variable", x.base.base.loc);
                             }
                         }
-                        int is_compile_time=0;
+                        bool is_compile_time = false;
                         if (ASR::is_a<ASR::Variable_t>(*get_sym)) {
                             Vec<ASR::dimension_t> dims;
                             dims.reserve(al, 0);
@@ -1176,7 +1177,7 @@ public:
             // Example
             // real(dp), private :: x, y(3), z
             for (size_t i=0; i<x.n_syms; i++) {
-                int is_compile_time = 0;
+                bool is_compile_time = false;
                 AST::var_sym_t &s = x.m_syms[i];
                 std::string sym = to_lower(s.m_name);
                 ASR::accessType s_access = dflt_access;
