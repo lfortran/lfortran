@@ -4982,7 +4982,34 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        throw CodeGenError("ComplexConstructor with runtime arguments not implemented yet.");
+        this->visit_expr_wrapper(x.m_re, true);
+        llvm::Value *re_val = tmp;
+        this->visit_expr_wrapper(x.m_im, true);
+        llvm::Value *im_val = tmp;
+
+        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        llvm::Value *re2, *im2;
+        llvm::Type *type;
+        switch( a_kind ) {
+            case 4: {
+                // somehow extract re_val and im_val to a number(double or float)
+                type = complex_type_4;
+                break;
+            }
+            case 8: {
+                // somehow extract re_val and im_val to a number(double or float)
+                type = complex_type_8;
+                break;
+            }
+            default: {
+                throw CodeGenError("kind type is not supported");
+            }
+        }
+        std::cout<<"log, kind:>> "<< a_kind <<std::endl;
+        tmp = complex_from_floats(re2, im2, type);
+
+
+        // throw CodeGenError("ComplexConstructor with runtime arguments not implemented yet.");
     }
 
     void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
