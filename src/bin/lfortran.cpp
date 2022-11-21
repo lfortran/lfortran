@@ -774,7 +774,7 @@ int compile_to_object_file(const std::string &infile,
     std::unique_ptr<LFortran::LLVMModule> m;
     diagnostics.diagnostics.clear();
     LFortran::Result<std::unique_ptr<LFortran::LLVMModule>>
-        res = fe.get_llvm3(*asr, lpm, diagnostics);
+        res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
     std::cerr << diagnostics.render(input, lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
@@ -889,7 +889,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         diagnostics.diagnostics.clear();
         auto t1 = std::chrono::high_resolution_clock::now();
         LFortran::Result<int>
-            result = LFortran::asr_to_x86(*asr, al, outfile, time_report);
+            result = LFortran::asr_to_x86(*asr, al, outfile, time_report, diagnostics);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_asr_to_x86 = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 

@@ -43,6 +43,7 @@
                                             
                                         }) 
                                     f90_assert 
+                                    [] 
                                     [(Var 4 file)
                                     (Var 4 line)] 
                                     [(Print 
@@ -135,6 +136,7 @@
                                             
                                         }) 
                                     fn 
+                                    [] 
                                     [(Var 3 a)
                                     (Var 3 b)] 
                                     [(= 

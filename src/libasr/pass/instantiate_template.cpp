@@ -16,6 +16,7 @@ public:
     std::map<std::string, ASR::symbol_t*> rt_subs;
     std::string new_func_name;
     std::vector<ASR::Function_t*> rts;
+    std::set<std::string> dependencies;
 
     FunctionInstantiator(Allocator &al, std::map<std::string, ASR::ttype_t*> subs,
             std::map<std::string, ASR::symbol_t*> rt_subs, SymbolTable *func_scope,
@@ -28,6 +29,7 @@ public:
         {}
 
     ASR::asr_t* instantiate_Function(ASR::Function_t *x) {
+        dependencies.clear();
         current_scope = al.make_new<SymbolTable>(func_scope);
 
         Vec<ASR::expr_t*> args;
@@ -114,9 +116,16 @@ public:
         bool func_pure = x->m_pure;
         bool func_module = x->m_module;
 
+        Vec<char*> deps_vec;
+        deps_vec.reserve(al, dependencies.size());
+        for( auto& dep: dependencies ) {
+            deps_vec.push_back(al, s2c(al, dep));
+        }
+
         ASR::asr_t *result = ASR::make_Function_t(
             al, x->base.base.loc,
             current_scope, s2c(al, new_func_name),
+            deps_vec.p, deps_vec.size(),
             args.p, args.size(),
             body.p, body.size(),
             new_return_var_ref,

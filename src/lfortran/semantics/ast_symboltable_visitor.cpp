@@ -464,6 +464,7 @@ public:
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, to_lower(sym_name)),
+            nullptr, 0,
             /* a_args */ args.p,
             /* n_args */ args.size(),
             /* a_body */ nullptr,
@@ -508,7 +509,7 @@ public:
         }
         return r;
     }
-    
+
     void visit_Function(const AST::Function_t &x) {
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
@@ -656,7 +657,7 @@ public:
                                 type_param = true;
                                 // TODO: if current_requirement_type_parameters can be replaced with
                                 // std::vector<ASR::ttype_t*> then use duplicate instead
-                                type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, param->m_param, 
+                                type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, param->m_param,
                                                                                 param->m_dims, param->n_dims));
                             }
                         }
@@ -667,7 +668,7 @@ public:
                                 if (ASR::is_a<ASR::ttype_t>(*req_asr)) {
                                     ASR::TypeParameter_t *param = ASR::down_cast2<ASR::TypeParameter_t>(req_asr);
                                     type_param = true;
-                                    type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, param->m_param, 
+                                    type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, param->m_param,
                                                                                     param->m_dims, param->n_dims));
                                 }
                             }
@@ -761,6 +762,7 @@ public:
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, to_lower(sym_name)),
+            nullptr, 0,
             /* a_args */ args.p,
             /* n_args */ args.size(),
             /* a_body */ nullptr,
@@ -838,9 +840,26 @@ public:
             current_requirement_type_parameters.push_back(
                 ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0));
         }
+        Vec<char*> struct_dependencies;
+        struct_dependencies.reserve(al, 1);
+        for( auto& item: current_scope->get_scope() ) {
+            ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
+            char* aggregate_type_name = nullptr;
+            if( ASR::is_a<ASR::Struct_t>(*var_type) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Struct_t>(var_type)->m_derived_type;
+                aggregate_type_name = ASRUtils::symbol_name(sym);
+            } else if( ASR::is_a<ASR::Class_t>(*var_type) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Class_t>(var_type)->m_class_type;
+                aggregate_type_name = ASRUtils::symbol_name(sym);
+            }
+            if( aggregate_type_name ) {
+                struct_dependencies.push_back(al, aggregate_type_name);
+            }
+        }
         tmp = ASR::make_StructType_t(al, x.base.base.loc, current_scope,
-            s2c(al, to_lower(x.m_name)), data_member_names.p, data_member_names.size(),
-            ASR::abiType::Source, dflt_access, parent_sym);
+            s2c(al, to_lower(x.m_name)), struct_dependencies.p, struct_dependencies.size(),
+            data_member_names.p, data_member_names.size(),
+            ASR::abiType::Source, dflt_access, false, nullptr, parent_sym);
             parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         is_derived_type = false;

@@ -86,6 +86,7 @@
                                             
                                         }) 
                                     print_subrout 
+                                    [] 
                                     [(Var 3 x)] 
                                     [(Print 
                                         () 

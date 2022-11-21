@@ -269,6 +269,7 @@
                         }) 
                     a 
                     [] 
+                    [] 
                     [(= 
                         (ArrayItem 
                             (Var 2 y) 

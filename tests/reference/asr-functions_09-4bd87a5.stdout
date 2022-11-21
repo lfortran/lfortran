@@ -101,6 +101,7 @@
                                             
                                         }) 
                                     simps38_weights_dp 
+                                    [] 
                                     [(Var 3 x)] 
                                     [] 
                                     (Var 3 w) 
@@ -140,6 +141,7 @@
                                             
                                         }) 
                                     simps38_weights_dp_use 
+                                    [simps38_weights_dp] 
                                     [(Var 4 x1)] 
                                     [(Print 
                                         () 

@@ -123,9 +123,12 @@
                                             
                                         }) 
                                     circle 
+                                    [] 
                                     [radius] 
                                     Source 
                                     Private 
+                                    .false. 
+                                    () 
                                     ()
                                 ), 
                             circle_area:
@@ -167,6 +170,7 @@
                                             
                                         }) 
                                     circle_area 
+                                    [] 
                                     [(Var 4 this)] 
                                     [(= 
                                         (Var 4 area) 
@@ -251,6 +255,7 @@
                                             
                                         }) 
                                     circle_print 
+                                    [area] 
                                     [(Var 5 this)] 
                                     [(= 
                                         (Var 5 area) 

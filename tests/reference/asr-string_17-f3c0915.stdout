@@ -75,6 +75,8 @@
                                             
                                         }) 
                                     len_string 
+                                    [allocated
+                                    len] 
                                     [(Var 4 string)] 
                                     [(If 
                                         (FunctionCall 
@@ -183,6 +185,8 @@
                                             
                                         }) 
                                     maybe 
+                                    [len_string
+                                    allocated] 
                                     [(Var 5 string)] 
                                     [(If 
                                         (FunctionCall 
@@ -253,15 +257,21 @@
                                             
                                         }) 
                                     string_type 
+                                    [] 
                                     [raw] 
                                     Source 
                                     Private 
+                                    .false. 
+                                    () 
                                     ()
                                 )
                             
                         }) 
                     string_module 
-                    [lfortran_intrinsic_builtin] 
+                    [lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin] 
                     .false. 
                     .false.
                 )

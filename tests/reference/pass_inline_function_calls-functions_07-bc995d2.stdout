@@ -271,6 +271,7 @@
                                             
                                         }) 
                                     f_a 
+                                    [] 
                                     [(Var 3 u)] 
                                     [(= 
                                         (Var 3 v) 
@@ -386,6 +387,7 @@
                                             
                                         }) 
                                     f_b 
+                                    [] 
                                     [(Var 5 x)] 
                                     [(= 
                                         (Var 5 u_f_a) 
@@ -437,7 +439,8 @@
                             
                         }) 
                     functions_07_b 
-                    [functions_07_a] 
+                    [functions_07_a
+                    functions_07_a] 
                     .false. 
                     .false.
                 ), 
@@ -558,6 +561,7 @@
                                             
                                         }) 
                                     f_c 
+                                    [] 
                                     [(Var 7 w)] 
                                     [(= 
                                         (Var 7 x_f_b) 
@@ -628,7 +632,8 @@
                             
                         }) 
                     functions_07_c 
-                    [functions_07_b] 
+                    [functions_07_b
+                    functions_07_b] 
                     .false. 
                     .false.
                 )

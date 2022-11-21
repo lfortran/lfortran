@@ -281,6 +281,7 @@
                                             
                                         }) 
                                     initialize_subrout 
+                                    [] 
                                     [(Var 5 sh)
                                     (Var 5 color)
                                     (Var 5 filled)
@@ -376,10 +377,13 @@
                                             
                                         }) 
                                     rectangle 
+                                    [] 
                                     [length
                                     width] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     2 shape
                                 ), 
                             shape:
@@ -454,12 +458,15 @@
                                             
                                         }) 
                                     shape 
+                                    [] 
                                     [color
                                     filled
                                     x
                                     y] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     ()
                                 )
                             

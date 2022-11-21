@@ -120,6 +120,10 @@
                             
                         }) 
                     dcstep 
+                    [max@dmax_3args
+                    abs@dabs
+                    abs@dabs
+                    abs@dabs] 
                     [] 
                     [(= 
                         (Var 2 s) 

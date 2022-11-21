@@ -204,6 +204,8 @@
                                             
                                         }) 
                                     int_return 
+                                    [len
+                                    len] 
                                     [(Var 4 s)] 
                                     [(DoLoop 
                                         ((Var 4 i) 
@@ -313,6 +315,8 @@
                                             
                                         }) 
                                     real_return 
+                                    [len
+                                    len] 
                                     [(Var 29 s)] 
                                     [(DoLoop 
                                         ((Var 29 i) 
@@ -430,6 +434,9 @@
                                             
                                         }) 
                                     trim_wrapper 
+                                    [len
+                                    trim
+                                    len_trim] 
                                     [(Var 3 s)] 
                                     [(= 
                                         (Var 3 r) 
@@ -468,6 +475,19 @@
                         }) 
                     functions_06_m 
                     [lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_string
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_string
                     lfortran_intrinsic_string] 
                     .false. 
                     .false.

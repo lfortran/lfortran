@@ -175,7 +175,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         auto func = ASR::make_Function_t(
             m_al, global_scope_loc, global_scope, s2c(m_al, import_func.name),
-            params.data(), params.size(), nullptr, 0, nullptr,
+            nullptr, 0, params.data(), params.size(), nullptr, 0, nullptr,
             ASR::abiType::Source, ASR::accessType::Public,
             ASR::deftypeType::Implementation, nullptr, false, false, false, false, false,
             nullptr, 0, nullptr, 0, false);
@@ -352,7 +352,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // Generate main program code
         auto main_func = ASR::make_Function_t(
             m_al, x.base.base.loc, x.m_symtab, s2c(m_al, "_lcompilers_main"),
-            nullptr, 0, x.m_body, x.n_body, nullptr,
+            nullptr, 0, nullptr, 0, x.m_body, x.n_body, nullptr,
             ASR::abiType::Source, ASR::accessType::Public,
             ASR::deftypeType::Implementation, nullptr, false, false, false, false, false,
             nullptr, 0, nullptr, 0, false);
@@ -2044,11 +2044,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         for (size_t i = 0; i < x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
-        if (x.n_orelse) {
-            wasm::emit_b8(m_code_section, m_al, 0x05);  // starting of else
-            for (size_t i = 0; i < x.n_orelse; i++) {
-                this->visit_stmt(*x.m_orelse[i]);
-            }
+        wasm::emit_b8(m_code_section, m_al, 0x05);  // starting of else
+        for (size_t i = 0; i < x.n_orelse; i++) {
+            this->visit_stmt(*x.m_orelse[i]);
         }
         nesting_level--;
         wasm::emit_expr_end(m_code_section, m_al);  // emit if end
@@ -2082,6 +2080,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             m_code_section, m_al,
             nesting_level -
                 cur_loop_nesting_level);  // emit_branch and label the loop
+        wasm::emit_b8(m_code_section, m_al, 0x05);  // starting of else
         wasm::emit_expr_end(m_code_section, m_al);  // end if
 
         nesting_level--;
@@ -2115,6 +2114,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         wasm::emit_i32_const(m_code_section, m_al, 1);  // non-zero exit code
         exit();
+        wasm::emit_b8(m_code_section, m_al, 0x05);  // starting of else
         wasm::emit_expr_end(m_code_section, m_al);  // emit if end
     }
 };

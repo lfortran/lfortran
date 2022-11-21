@@ -140,6 +140,7 @@
                             
                         }) 
                     square 
+                    [] 
                     [(Var 3 b)] 
                     [(= 
                         (Var 3 result) 

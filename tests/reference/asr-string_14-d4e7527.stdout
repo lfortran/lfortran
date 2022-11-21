@@ -124,6 +124,7 @@
                                             
                                         }) 
                                     read_formatted 
+                                    [] 
                                     [(Var 5 string)
                                     (Var 5 unit)
                                     (Var 5 iotype)
@@ -169,9 +170,12 @@
                                             
                                         }) 
                                     string_type 
+                                    [] 
                                     [raw] 
                                     Source 
                                     Private 
+                                    .false. 
+                                    () 
                                     ()
                                 ), 
                             write_formatted:
@@ -270,6 +274,7 @@
                                             
                                         }) 
                                     write_formatted 
+                                    [] 
                                     [(Var 4 string)
                                     (Var 4 unit)
                                     (Var 4 iotype)

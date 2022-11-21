@@ -175,6 +175,7 @@
                                             
                                         }) 
                                     check 
+                                    [] 
                                     [(Var 3 c)
                                     (Var 3 op_code)] 
                                     [(DoLoop 

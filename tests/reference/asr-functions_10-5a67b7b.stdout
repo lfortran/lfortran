@@ -83,6 +83,7 @@
                                             
                                         }) 
                                     mergei32 
+                                    [] 
                                     [(Var 3 a)
                                     (Var 3 b)
                                     (Var 3 m)] 
@@ -168,6 +169,7 @@
                                             
                                         }) 
                                     merger32 
+                                    [] 
                                     [(Var 4 a)
                                     (Var 4 b)
                                     (Var 4 m)] 
@@ -253,6 +255,7 @@
                                             
                                         }) 
                                     merger64 
+                                    [] 
                                     [(Var 5 a)
                                     (Var 5 b)
                                     (Var 5 m)] 

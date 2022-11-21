@@ -43,6 +43,7 @@
                                             
                                         }) 
                                     f 
+                                    [] 
                                     [(Var 3 a)
                                     (Var 3 b)] 
                                     [(= 
@@ -106,6 +107,7 @@
                                             
                                         }) 
                                     g 
+                                    [] 
                                     [(Var 4 a)
                                     (Var 4 b)] 
                                     [(= 
@@ -169,6 +171,7 @@
                                             
                                         }) 
                                     h 
+                                    [g] 
                                     [(Var 5 a)
                                     (Var 5 b)] 
                                     [(SubroutineCall 

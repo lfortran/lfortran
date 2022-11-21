@@ -57,6 +57,7 @@
                                             
                                         }) 
                                     assign_string_char 
+                                    [] 
                                     [(Var 4 lhs)
                                     (Var 4 rhs)] 
                                     [(= 
@@ -105,9 +106,12 @@
                                             
                                         }) 
                                     string_type 
+                                    [] 
                                     [raw] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     ()
                                 ), 
                             trim_string:
@@ -152,6 +156,7 @@
                                             
                                         }) 
                                     trim_string 
+                                    [assign_string_char] 
                                     [(Var 5 string)] 
                                     [(= 
                                         (Var 5 trimmed_string) 
@@ -283,6 +288,7 @@
                                             
                                         }) 
                                     chomp_string 
+                                    [] 
                                     [(Var 7 string)] 
                                     [] 
                                     (Var 7 chomped_string) 

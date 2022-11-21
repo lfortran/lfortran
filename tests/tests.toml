@@ -2605,3 +2605,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/implied_do_loops3.f90"
 asr = true
+
+[[test]]
+filename = "array10.f90"
+asr = true

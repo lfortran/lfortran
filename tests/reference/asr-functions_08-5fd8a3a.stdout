@@ -119,6 +119,7 @@
                                             
                                         }) 
                                     f 
+                                    [f_real] 
                                     [(Var 4 a)] 
                                     [(= 
                                         (Var 4 b) 
@@ -191,6 +192,7 @@
                                             
                                         }) 
                                     f_real 
+                                    [f] 
                                     [(Var 5 a)] 
                                     [(If 
                                         (RealCompare 

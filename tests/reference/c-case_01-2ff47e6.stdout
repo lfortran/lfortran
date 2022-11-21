@@ -34,7 +34,6 @@ struct dimension_descriptor
 {
     int32_t lower_bound, length;
 };
-// Forward declarations
 
 // Implementations
 int main(int argc, char* argv[])

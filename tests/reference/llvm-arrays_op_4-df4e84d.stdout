@@ -189,7 +189,7 @@ then:                                             ; preds = %loop.body4
   br i1 %119, label %then6, label %else
 
 then6:                                            ; preds = %then
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @0, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @0, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont
 
@@ -248,7 +248,7 @@ then8:                                            ; preds = %else7
   br i1 %161, label %then9, label %else10
 
 then9:                                            ; preds = %then8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @1, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @1, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont11
 
@@ -308,7 +308,7 @@ then13:                                           ; preds = %else12
   br i1 %204, label %then14, label %else15
 
 then14:                                           ; preds = %then13
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @2, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @2, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont16
 
@@ -367,7 +367,7 @@ then18:                                           ; preds = %else17
   br i1 %246, label %then19, label %else20
 
 then19:                                           ; preds = %then18
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @3, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @3, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont21
 
@@ -405,7 +405,7 @@ return:                                           ; preds = %loop.end28
   ret void
 }
 
-declare void @_lfortran_printf(i8*, ...)
+declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
 

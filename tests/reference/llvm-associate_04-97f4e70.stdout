@@ -143,7 +143,7 @@ define i32 @main() {
   br i1 %30, label %then, label %else
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @7, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @7, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont
 
@@ -155,5 +155,7 @@ ifcont:                                           ; preds = %else, %then
 }
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
