@@ -14,12 +14,12 @@ declare void @__module_lfortran_intrinsic_builtin_move_alloc(i32*, i32*)
 
 define i32 @main() {
 .entry:
-  %ia0 = alloca i32, align 4
-  store i32 48, i32* %ia0, align 4
-  %ia5 = alloca i32, align 4
-  store i32 53, i32* %ia5, align 4
-  %ia9 = alloca i32, align 4
-  store i32 57, i32* %ia9, align 4
+  %ia0 = alloca i32
+  store i32 48, i32* %ia0
+  %ia5 = alloca i32
+  store i32 53, i32* %ia5
+  %ia9 = alloca i32
+  store i32 57, i32* %ia9
   br i1 false, label %then, label %else
 
 then:                                             ; preds = %.entry

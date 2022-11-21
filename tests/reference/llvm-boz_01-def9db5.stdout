@@ -14,15 +14,15 @@ declare void @__module_lfortran_intrinsic_builtin_move_alloc(i32*, i32*)
 
 define i32 @main() {
 .entry:
-  %boz_1 = alloca i32, align 4
-  %boz_2 = alloca i32, align 4
-  %boz_3 = alloca i32, align 4
-  store i32 93, i32* %boz_1, align 4
-  store i32 1255, i32* %boz_2, align 4
-  store i32 2748, i32* %boz_3, align 4
-  %0 = load i32, i32* %boz_1, align 4
-  %1 = load i32, i32* %boz_2, align 4
-  %2 = load i32, i32* %boz_3, align 4
+  %boz_1 = alloca i32
+  %boz_2 = alloca i32
+  %boz_3 = alloca i32
+  store i32 93, i32* %boz_1
+  store i32 1255, i32* %boz_2
+  store i32 2748, i32* %boz_3
+  %0 = load i32, i32* %boz_1
+  %1 = load i32, i32* %boz_2
+  %2 = load i32, i32* %boz_3
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([13 x i8], [13 x i8]* @2, i32 0, i32 0), i32 %0, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 %1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
   ret i32 0
 }

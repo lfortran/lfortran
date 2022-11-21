@@ -141,6 +141,7 @@
                                             
                                         }) 
                                     __lfortran_generic_add_generic 
+                                    [func_arg_real] 
                                     [(Var 11 x)
                                     (Var 11 y)] 
                                     [(= 
@@ -229,6 +230,7 @@
                                             
                                         }) 
                                     add_generic 
+                                    [f] 
                                     [(Var 5 x)
                                     (Var 5 y)] 
                                     [(= 
@@ -314,6 +316,7 @@
                                             
                                         }) 
                                     add_real 
+                                    [__lfortran_generic_add_generic] 
                                     [(Var 10 x)
                                     (Var 10 y)] 
                                     [(= 
@@ -402,6 +405,7 @@
                                             
                                         }) 
                                     call_add_generic 
+                                    [add_generic] 
                                     [(Var 6 x)
                                     (Var 6 y)] 
                                     [(= 
@@ -496,6 +500,7 @@
                                             
                                         }) 
                                     f 
+                                    [] 
                                     [(Var 4 x)
                                     (Var 4 y)] 
                                     [] 
@@ -566,6 +571,7 @@
                                             
                                         }) 
                                     func_arg_real 
+                                    [] 
                                     [(Var 7 x)
                                     (Var 7 y)] 
                                     [(= 
@@ -602,8 +608,11 @@
                                         }) 
                                     t 
                                     [] 
+                                    [] 
                                     Source 
                                     Private 
+                                    .false. 
+                                    () 
                                     ()
                                 ), 
                             test_template:
@@ -690,6 +699,9 @@
                                             
                                         }) 
                                     test_template 
+                                    [add_real
+                                    abs@sabs
+                                    add_real] 
                                     [] 
                                     [(= 
                                         (Var 8 x) 
@@ -782,7 +794,8 @@
                             
                         }) 
                     template_nested_m 
-                    [lfortran_intrinsic_math] 
+                    [lfortran_intrinsic_math
+                    lfortran_intrinsic_math] 
                     .false. 
                     .false.
                 )

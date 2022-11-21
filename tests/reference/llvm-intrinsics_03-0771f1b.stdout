@@ -30,14 +30,14 @@ declare void @_lfortran_cpu_time(double*)
 
 define double @__module_lfortran_intrinsic_math_dcos(double* %x) {
 .entry:
-  %r = alloca double, align 8
-  %0 = load double, double* %x, align 8
+  %r = alloca double
+  %0 = load double, double* %x
   %1 = call double @_lfortran_dcos(double %0)
-  store double %1, double* %r, align 8
+  store double %1, double* %r
   br label %return
 
 return:                                           ; preds = %.entry
-  %2 = load double, double* %r, align 8
+  %2 = load double, double* %r
   ret double %2
 }
 
@@ -78,14 +78,14 @@ declare void @_lfortran_i64sys_clock(i64*, i64*, i64*)
 
 define float @__module_lfortran_intrinsic_math_scos(float* %x) {
 .entry:
-  %r = alloca float, align 4
-  %0 = load float, float* %x, align 4
+  %r = alloca float
+  %0 = load float, float* %x
   %1 = call float @_lfortran_scos(float %0)
-  store float %1, float* %r, align 4
+  store float %1, float* %r
   br label %return
 
 return:                                           ; preds = %.entry
-  %2 = load float, float* %r, align 4
+  %2 = load float, float* %r
   ret float %2
 }
 
@@ -104,49 +104,49 @@ declare void @_lfortran_sp_rand_num(float*)
 
 define double @__module_lfortran_intrinsic_math2_dabs(double* %x) {
 .entry:
-  %r = alloca double, align 8
-  %0 = load double, double* %x, align 8
+  %r = alloca double
+  %0 = load double, double* %x
   %1 = fcmp uge double %0, 0.000000e+00
   br i1 %1, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %2 = load double, double* %x, align 8
-  store double %2, double* %r, align 8
+  %2 = load double, double* %x
+  store double %2, double* %r
   br label %ifcont
 
 else:                                             ; preds = %.entry
-  %3 = load double, double* %x, align 8
+  %3 = load double, double* %x
   %4 = fsub double 0.000000e+00, %3
-  store double %4, double* %r, align 8
+  store double %4, double* %r
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
-  %5 = load double, double* %r, align 8
+  %5 = load double, double* %r
   ret double %5
 }
 
 define i32 @main() {
 .entry:
-  %call_arg_value = alloca double, align 8
-  %a = alloca double, align 8
-  %r1 = alloca double, align 8
-  %r2 = alloca double, align 8
-  %x = alloca float, align 4
-  store float 0xBFEFE8D5A0000000, float* %x, align 4
-  %0 = load float, float* %x, align 4
+  %call_arg_value = alloca double
+  %a = alloca double
+  %r1 = alloca double
+  %r2 = alloca double
+  %x = alloca float
+  store float 0xBFEFE8D5A0000000, float* %x
+  %0 = load float, float* %x
   %1 = fpext float %0 to double
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @3, i32 0, i32 0), double %1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
-  store double 4.200000e+00, double* %a, align 8
+  store double 4.200000e+00, double* %a
   %2 = call double @__module_lfortran_intrinsic_math_dcos(double* %a)
-  store double %2, double* %r1, align 8
-  store double 0xBFDF606EEC8AC71E, double* %r2, align 8
-  %3 = load double, double* %r1, align 8
-  %4 = load double, double* %r2, align 8
+  store double %2, double* %r1
+  store double 0xBFDF606EEC8AC71E, double* %r2
+  %3 = load double, double* %r1
+  %4 = load double, double* %r2
   %5 = fsub double %3, %4
-  store double %5, double* %call_arg_value, align 8
+  store double %5, double* %call_arg_value
   %6 = call double @__module_lfortran_intrinsic_math2_dabs(double* %call_arg_value)
   %7 = fcmp ugt double %6, 1.000000e-15
   br i1 %7, label %then, label %else
