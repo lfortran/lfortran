@@ -186,6 +186,7 @@ RUN(NAME subroutines_03 LABELS gfortran llvm wasm)
 RUN(NAME subroutines_04 LABELS gfortran llvm wasm)
 RUN(NAME subroutines_06 LABELS gfortran)
 RUN(NAME subroutines_07 LABELS gfortran)
+RUN(NAME subroutines_08 LABELS gfortran llvm wasm)
 
 RUN(NAME functions_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME functions_02 LABELS gfortran llvm wasm)

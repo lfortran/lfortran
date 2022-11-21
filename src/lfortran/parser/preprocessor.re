@@ -144,15 +144,16 @@ void get_newlines(const std::string &s, std::vector<uint32_t> &newlines) {
 void interval_end(LocationManager &lm, size_t output_len,
                 size_t input_len, size_t input_interval_len,
                 uint32_t interval_type) {
-    lm.out_start0.push_back(output_len);
-    lm.in_start0.push_back(input_len);
-    lm.in_size0.push_back(input_interval_len);
-    lm.interval_type0.push_back(interval_type);
+    lm.files.back().out_start0.push_back(output_len);
+    lm.files.back().in_start0.push_back(input_len);
+    lm.files.back().in_size0.push_back(input_interval_len);
+    lm.files.back().interval_type0.push_back(interval_type);
 }
 
 void interval_end_type_0(LocationManager &lm, size_t output_len,
                 size_t input_len) {
-    size_t input_interval_len = output_len-lm.out_start0[lm.out_start0.size()-1];
+    size_t input_interval_len = output_len - lm.files.back().out_start0[
+        lm.files.back().out_start0.size() - 1];
     interval_end(lm, output_len, input_len, input_interval_len, 0);
 }
 
@@ -173,13 +174,13 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
     unsigned char *string_start=(unsigned char*)(&input[0]);
     unsigned char *cur = string_start;
     std::string output;
-    lm.preprocessor = true;
-    get_newlines(input, lm.in_newlines0);
-    lm.out_start0.push_back(0);
-    lm.in_start0.push_back(0);
+    lm.files.back().preprocessor = true;
+    get_newlines(input, lm.files.back().in_newlines0);
+    lm.files.back().out_start0.push_back(0);
+    lm.files.back().in_start0.push_back(0);
     std::vector<IfDef> ifdef_stack;
     bool branch_enabled = true;
-    macro_definitions["__FILE__"].expansion = "\"" + lm.in_filename + "\"";
+    macro_definitions["__FILE__"].expansion = "\"" + lm.files.back().in_filename + "\"";
     for (;;) {
         unsigned char *tok = cur;
         unsigned char *mar;
@@ -351,7 +352,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 std::string filename = token(t1, t2);
                 // Construct a filename relative to the current file
                 // TODO: make this multiplatform
-                std::string base_dir = lm.in_filename;
+                std::string base_dir = lm.files.back().in_filename;
                 std::string::size_type n = base_dir.rfind("/");
                 if (n != std::string::npos) {
                     base_dir = base_dir.substr(0, n);
@@ -402,12 +403,13 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                     } else {
                         if (t == "__LINE__") {
                             uint32_t line;
-                            if (lm.current_line == 0) {
+                            if (lm.files.back().current_line == 0) {
                                 uint32_t pos = cur-string_start;
                                 uint32_t col;
-                                lm.pos_to_linecol(pos, line, col);
+                                std::string filename;
+                                lm.pos_to_linecol(pos, line, col, filename);
                             } else {
-                                line = lm.current_line;
+                                line = lm.files.back().current_line;
                             }
                             expansion = std::to_string(line);
                         } else {
@@ -424,8 +426,9 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
 
                         uint32_t pos = cur-string_start;
                         uint32_t line, col;
-                        lm.pos_to_linecol(pos, line, col);
-                        lm_tmp.current_line = line;
+                        std::string filename;
+                        lm.pos_to_linecol(pos, line, col, filename);
+                        lm_tmp.files.back().current_line = line;
 
                         expansion = run(expansion2, lm_tmp, macro_definitions);
                         i++;
@@ -457,26 +460,27 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
             }
         */
     }
-    lm.out_start0.push_back(output.size());
-    lm.in_start0.push_back(input.size());
+    lm.files.back().out_start0.push_back(output.size());
+    lm.files.back().in_start0.push_back(input.size());
     // The just created interval ID:
-    size_t N = lm.out_start0.size()-2;
-    lm.in_size0.push_back(lm.out_start0[N+1]-lm.out_start0[N]);
-    lm.interval_type0.push_back(0);
+    size_t N = lm.files.back().out_start0.size()-2;
+    lm.files.back().in_size0.push_back(
+        lm.files.back().out_start0[N+1] - lm.files.back().out_start0[N]);
+    lm.files.back().interval_type0.push_back(0);
 
     // Uncomment for debugging
     /*
     std::cout << "in_start0: ";
-    for (auto A : lm.in_start0) { std::cout << A << " "; }
+    for (auto A : lm.files.back().in_start0) { std::cout << A << " "; }
     std::cout << std::endl;
     std::cout << "in_size0: ";
-    for (auto A : lm.in_size0) { std::cout << A << " "; }
+    for (auto A : lm.files.back().in_size0) { std::cout << A << " "; }
     std::cout << std::endl;
     std::cout << "interval_type0: ";
-    for (auto A : lm.interval_type0) { std::cout << A << " "; }
+    for (auto A : lm.files.back().interval_type0) { std::cout << A << " "; }
     std::cout << std::endl;
     std::cout << "out_start0: ";
-    for (auto A : lm.out_start0) { std::cout << A << " "; }
+    for (auto A : lm.files.back().out_start0) { std::cout << A << " "; }
     std::cout << std::endl;
     */
 

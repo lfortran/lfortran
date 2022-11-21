@@ -166,7 +166,9 @@ public:
     {
         std::string sub;
         bool use_ref = (v.m_intent == LFortran::ASRUtils::intent_out ||
-                        v.m_intent == LFortran::ASRUtils::intent_inout);
+                        v.m_intent == LFortran::ASRUtils::intent_inout ||
+                        v.m_intent == LFortran::ASRUtils::intent_unspecified
+                        );
         bool is_array = ASRUtils::is_array(v.m_type);
         bool dummy = LFortran::ASRUtils::is_arg_dummy(v.m_intent);
         ASR::ttype_t* v_m_type = v.m_type;

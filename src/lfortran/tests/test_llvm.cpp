@@ -559,7 +559,11 @@ TEST_CASE("FortranEvaluator 6") {
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
     lpm.do_not_use_optimization_passes();
-    lm.in_filename = "input";
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = "input.f90";
+        lm.files.push_back(fl);
+    }
     LFortran::diag::Diagnostics diagnostics;
 
     LFortran::Result<FortranEvaluator::EvalResult>

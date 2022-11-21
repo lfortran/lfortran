@@ -121,6 +121,13 @@ namespace LFortran
             if (startswith(code, "%%showast")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
+                {
+                    LocationManager::FileLocations fl;
+                    fl.in_filename = "input";
+                    std::ofstream out("input");
+                    out << code0;
+                    lm.files.push_back(fl);
+                }
                 diag::Diagnostics diagnostics;
                 Result<std::string>
                     res = e.get_ast(code0, lm, diagnostics);
@@ -131,7 +138,7 @@ namespace LFortran
                     result["payload"] = nl::json::array();
                     result["user_expressions"] = nl::json::object();
                 } else {
-                    std::string msg = diagnostics.render(code0, lm, cu);
+                    std::string msg = diagnostics.render(lm, cu);
                     publish_stream("stderr", msg);
                     result["status"] = "error";
                     result["ename"] = "CompilerError";
@@ -143,6 +150,13 @@ namespace LFortran
             if (startswith(code, "%%showasr")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
+                {
+                    LocationManager::FileLocations fl;
+                    fl.in_filename = "input";
+                    std::ofstream out("input");
+                    out << code0;
+                    lm.files.push_back(fl);
+                }
                 diag::Diagnostics diagnostics;
                 Result<std::string>
                 res = e.get_asr(code0, lm, diagnostics);
@@ -153,7 +167,7 @@ namespace LFortran
                     result["payload"] = nl::json::array();
                     result["user_expressions"] = nl::json::object();
                 } else {
-                    std::string msg = diagnostics.render(code0, lm, cu);
+                    std::string msg = diagnostics.render(lm, cu);
                     publish_stream("stderr", msg);
                     result["status"] = "error";
                     result["ename"] = "CompilerError";
@@ -165,6 +179,13 @@ namespace LFortran
             if (startswith(code, "%%showllvm")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
+                {
+                    LocationManager::FileLocations fl;
+                    fl.in_filename = "input";
+                    std::ofstream out("input");
+                    out << code0;
+                    lm.files.push_back(fl);
+                }
                 LCompilers::PassManager lpm;
                 lpm.use_default_passes();
                 lpm.do_not_use_optimization_passes();
@@ -178,7 +199,7 @@ namespace LFortran
                     result["payload"] = nl::json::array();
                     result["user_expressions"] = nl::json::object();
                 } else {
-                    std::string msg = diagnostics.render(code0, lm, cu);
+                    std::string msg = diagnostics.render(lm, cu);
                     publish_stream("stderr", msg);
                     result["status"] = "error";
                     result["ename"] = "CompilerError";
@@ -190,6 +211,13 @@ namespace LFortran
             if (startswith(code, "%%showasm")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
+                {
+                    LocationManager::FileLocations fl;
+                    fl.in_filename = "input";
+                    std::ofstream out("input");
+                    out << code0;
+                    lm.files.push_back(fl);
+                }
                 LCompilers::PassManager lpm;
                 lpm.use_default_passes();
                 lpm.do_not_use_optimization_passes();
@@ -203,7 +231,7 @@ namespace LFortran
                     result["payload"] = nl::json::array();
                     result["user_expressions"] = nl::json::object();
                 } else {
-                    std::string msg = diagnostics.render(code0, lm, cu);
+                    std::string msg = diagnostics.render(lm, cu);
                     publish_stream("stderr", msg);
                     result["status"] = "error";
                     result["ename"] = "CompilerError";
@@ -215,6 +243,13 @@ namespace LFortran
             if (startswith(code, "%%showcpp")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
+                {
+                    LocationManager::FileLocations fl;
+                    fl.in_filename = "input";
+                    std::ofstream out("input");
+                    out << code0;
+                    lm.files.push_back(fl);
+                }
                 diag::Diagnostics diagnostics;
                 Result<std::string>
                 res = e.get_cpp(code0, lm, diagnostics, 1);
@@ -225,7 +260,7 @@ namespace LFortran
                     result["payload"] = nl::json::array();
                     result["user_expressions"] = nl::json::object();
                 } else {
-                    std::string msg = diagnostics.render(code0, lm, cu);
+                    std::string msg = diagnostics.render(lm, cu);
                     publish_stream("stderr", msg);
                     result["status"] = "error";
                     result["ename"] = "CompilerError";
@@ -237,6 +272,13 @@ namespace LFortran
             if (startswith(code, "%%showfmt")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
+                {
+                    LocationManager::FileLocations fl;
+                    fl.in_filename = "input";
+                    std::ofstream out("input");
+                    out << code0;
+                    lm.files.push_back(fl);
+                }
                 diag::Diagnostics diagnostics;
                 Result<std::string>
                 res = e.get_fmt(code0, lm, diagnostics);
@@ -247,7 +289,7 @@ namespace LFortran
                     result["payload"] = nl::json::array();
                     result["user_expressions"] = nl::json::object();
                 } else {
-                    std::string msg = diagnostics.render(code0, lm, cu);
+                    std::string msg = diagnostics.render(lm, cu);
                     publish_stream("stderr", msg);
                     result["status"] = "error";
                     result["ename"] = "CompilerError";
@@ -260,6 +302,13 @@ namespace LFortran
             RedirectStdout s(std_out);
             code0 = code;
             LocationManager lm;
+            {
+                LocationManager::FileLocations fl;
+                fl.in_filename = "input";
+                std::ofstream out("input");
+                out << code0;
+                lm.files.push_back(fl);
+            }
             LCompilers::PassManager lpm;
             lpm.use_default_passes();
             lpm.do_not_use_optimization_passes();
@@ -269,7 +318,7 @@ namespace LFortran
             if (res.ok) {
                 r = res.result;
             } else {
-                std::string msg = diagnostics.render(code0, lm, cu);
+                std::string msg = diagnostics.render(lm, cu);
                 publish_stream("stderr", msg);
                 nl::json result;
                 result["status"] = "error";

@@ -51,7 +51,13 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate2(const std::stri
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
     lpm.do_not_use_optimization_passes();
-    lm.in_filename = "input";
+    {
+        LocationManager::FileLocations fl;
+        fl.in_filename = "input";
+        std::ofstream out("input");
+        out << code;
+        lm.files.push_back(fl);
+    }
     diag::Diagnostics diagnostics;
     return evaluate(code, false, lm, lpm, diagnostics);
 }
@@ -100,7 +106,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 
     // ASR -> LLVM
     Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
-        pass_manager, diagnostics, lm.in_filename);
+        pass_manager, diagnostics, lm.files.back().in_filename);
     std::unique_ptr<LFortran::LLVMModule> m;
     if (res3.ok) {
         m = std::move(res3.result);
@@ -186,7 +192,7 @@ Result<AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
     }
     if (compiler_options.prescan || compiler_options.fixed_form) {
         tmp = prescan(*code, lm, compiler_options.fixed_form,
-            parent_path(lm.in_filename));
+            parent_path(lm.files.back().in_filename));
         code = &tmp;
     }
     Result<AST::TranslationUnit_t*> res = parse(al, *code, diagnostics, compiler_options.fixed_form);
@@ -285,7 +291,8 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
     if (!asr.ok) {
         return asr.error;
     }
-    Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, pass_manager, diagnostics, lm.in_filename);
+    Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, pass_manager,
+        diagnostics, lm.files.back().in_filename);
     if (res.ok) {
 #ifdef HAVE_LFORTRAN_LLVM
         std::unique_ptr<LLVMModule> m = std::move(res.result);
