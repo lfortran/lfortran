@@ -5,10 +5,13 @@
 
 #include <fstream>
 
-#include <bin/tpl/whereami/whereami.h>
 #include <libasr/exception.h>
 #include <libasr/utils.h>
 #include <libasr/string_utils.h>
+
+#ifdef HAVE_WHEREAMI
+#include <bin/tpl/whereami/whereami.h>
+#endif
 
 namespace LCompilers {
 
