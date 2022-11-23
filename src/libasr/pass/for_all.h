@@ -1,14 +1,14 @@
-#ifndef LFORTRAN_PASS_FOR_ALL
-#define LFORTRAN_PASS_FOR_ALL
+#ifndef LIBASR_PASS_FOR_ALL
+#define LIBASR_PASS_FOR_ALL
 
 #include <libasr/asr.h>
 #include <libasr/utils.h>
 
-namespace LFortran {
+namespace LCompilers {
 
     void pass_replace_forall(Allocator &al, ASR::TranslationUnit_t &unit,
                              const LCompilers::PassOptions& pass_options);
 
-} // namespace LFortran
+} // namespace LCompilers
 
-#endif // LFORTRAN_PASS_FOR_ALL
+#endif // LIBASR_PASS_FOR_ALL

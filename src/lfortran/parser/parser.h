@@ -11,8 +11,7 @@
 #include <lfortran/parser/fixedform_tokenizer.h>
 
 
-namespace LFortran
-{
+namespace LCompilers::LFortran {
 
 class Parser
 {
@@ -56,6 +55,6 @@ std::string token2text(const int token);
 std::string prescan(const std::string &s, LocationManager &lm,
         bool fixed_form, const std::string &root_dir);
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran
 
 #endif

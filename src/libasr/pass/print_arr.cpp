@@ -7,7 +7,7 @@
 #include <libasr/pass/print_arr.h>
 
 
-namespace LFortran {
+namespace LCompilers {
 
 using ASR::down_cast;
 using ASR::is_a;
@@ -46,7 +46,7 @@ public:
             Vec<ASR::expr_t*> idx_vars;
             PassUtils::create_idx_vars(idx_vars, n_dims, x.base.base.loc, al, current_scope);
             ASR::stmt_t* doloop = nullptr;
-            ASR::stmt_t* empty_print_endl = LFortran::ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
+            ASR::stmt_t* empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
                                                 nullptr, nullptr, 0, nullptr, nullptr));
             for( int i = n_dims - 1; i >= 0; i-- ) {
                 ASR::do_loop_head_t head;
@@ -62,14 +62,14 @@ public:
                     Vec<ASR::expr_t*> print_args;
                     print_args.reserve(al, 1);
                     print_args.push_back(al, ref);
-                    ASR::stmt_t* print_stmt = LFortran::ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc, nullptr,
+                    ASR::stmt_t* print_stmt = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc, nullptr,
                                                                  print_args.p, print_args.size(), nullptr, nullptr));
                     doloop_body.push_back(al, print_stmt);
                 } else {
                     doloop_body.push_back(al, doloop);
                     doloop_body.push_back(al, empty_print_endl);
                 }
-                doloop = LFortran::ASRUtils::STMT(ASR::make_DoLoop_t(al, x.base.base.loc, head, doloop_body.p, doloop_body.size()));
+                doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, x.base.base.loc, head, doloop_body.p, doloop_body.size()));
             }
             pass_result.push_back(al, doloop);
             pass_result.push_back(al, empty_print_endl);
@@ -86,4 +86,4 @@ void pass_replace_print_arr(Allocator &al, ASR::TranslationUnit_t &unit,
 }
 
 
-} // namespace LFortran
+} // namespace LCompilers

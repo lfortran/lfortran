@@ -10,7 +10,7 @@
 #include <utility>
 
 
-namespace LFortran {
+namespace LCompilers {
 
 using ASR::down_cast;
 
@@ -401,4 +401,4 @@ void pass_list_expr(Allocator &al, ASR::TranslationUnit_t &unit,
 }
 
 
-} // namespace LFortran
+} // namespace LCompilers

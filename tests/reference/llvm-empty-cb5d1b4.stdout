@@ -1,2 +1,2 @@
-; ModuleID = 'LFortran'
-source_filename = "LFortran"
+; ModuleID = 'LCompilers'
+source_filename = "LCompilers"

@@ -5,15 +5,15 @@
 
 #include <lfortran/ast_to_json.h>
 
-using LFortran::AST::expr_t;
-using LFortran::AST::Name_t;
-using LFortran::AST::Num_t;
-using LFortran::AST::BinOp_t;
-using LFortran::AST::operatorType;
-using LFortran::AST::BaseWalkVisitor;
+using LCompilers::LFortran::AST::expr_t;
+using LCompilers::LFortran::AST::Name_t;
+using LCompilers::LFortran::AST::Num_t;
+using LCompilers::LFortran::AST::BinOp_t;
+using LCompilers::LFortran::AST::operatorType;
+using LCompilers::LFortran::AST::BaseWalkVisitor;
 
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
 namespace {
     std::string op2str(const operatorType type)

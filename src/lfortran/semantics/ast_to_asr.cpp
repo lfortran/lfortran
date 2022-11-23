@@ -19,7 +19,7 @@
 
 #include <lfortran/pickle.h>
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
 Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
@@ -54,7 +54,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
     PassUtils::UpdateDependenciesVisitor dep_visitor_symtab(al);
     dep_visitor_symtab.visit_TranslationUnit(*tu);
-#if defined(WITH_LFORTRAN_ASSERT)
+#if defined(WITH_LCOMPILERS_ASSERT)
         if (!asr_verify(*tu, true, diagnostics)) {
             return Error();
         };
@@ -70,7 +70,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         }
         PassUtils::UpdateDependenciesVisitor dep_visitor_body(al);
         dep_visitor_body.visit_TranslationUnit(*tu);
-#if defined(WITH_LFORTRAN_ASSERT)
+#if defined(WITH_LCOMPILERS_ASSERT)
         if (!asr_verify(*tu, true, diagnostics)) {
             return Error();
         };
@@ -79,4 +79,4 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     return tu;
 }
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran

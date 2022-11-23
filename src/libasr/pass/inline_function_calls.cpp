@@ -11,7 +11,7 @@
 #include <utility>
 
 
-namespace LFortran {
+namespace LCompilers {
 
 using ASR::down_cast;
 using ASR::is_a;
@@ -320,7 +320,7 @@ public:
                 break;
             }
             ASR::symbol_t* variable = exprs_to_be_visited[i].second;
-            ASR::expr_t* var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, variable->base.loc, variable));
+            ASR::expr_t* var = ASRUtils::EXPR(ASR::make_Var_t(al, variable->base.loc, variable));
             ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, var->base.loc, var, value, nullptr));
             pass_result_local.push_back(al, assign_stmt);
         }
@@ -465,4 +465,4 @@ void pass_inline_function_calls(Allocator &al, ASR::TranslationUnit_t &unit,
 }
 
 
-} // namespace LFortran
+} // namespace LCompilers

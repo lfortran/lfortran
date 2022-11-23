@@ -4,7 +4,7 @@
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
     std::string serialize(const AST::ast_t &ast);
     std::string serialize(const AST::TranslationUnit_t &unit);

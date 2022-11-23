@@ -1,5 +1,5 @@
-#ifndef LFORTRAN_STRING_UTILS_H
-#define LFORTRAN_STRING_UTILS_H
+#ifndef LIBASR_STRING_UTILS_H
+#define LIBASR_STRING_UTILS_H
 
 #include <string>
 #include <vector>
@@ -7,8 +7,7 @@
 
 #include <libasr/alloc.h>
 
-namespace LFortran
-{
+namespace LCompilers {
 
 
 bool startswith(const std::string &s, const std::string &e);
@@ -34,6 +33,6 @@ bool is_relative_path(const std::string &path);
 // Joins paths (paths can be empty)
 std::string join_paths(const std::vector<std::string> &paths);
 
-} // namespace LFortran
+} // namespace LCompilers
 
-#endif // LFORTRAN_STRING_UTILS_H
+#endif // LIBASR_STRING_UTILS_H

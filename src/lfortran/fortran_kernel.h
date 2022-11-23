@@ -3,9 +3,9 @@
 
 #include <libasr/config.h>
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
-#ifdef HAVE_LFORTRAN_XEUS
+#ifdef HAVE_LCOMPILERS_XEUS
     int run_kernel(const std::string &connection_filename);
 #endif
 

@@ -1,11 +1,10 @@
-#ifndef LFORTRAN_PARSER_LOCATION_H
-#define LFORTRAN_PARSER_LOCATION_H
+#ifndef LIBASR_PARSER_LOCATION_H
+#define LIBASR_PARSER_LOCATION_H
 
 #include <cstdint>
 #include <vector>
 
-namespace LFortran
-{
+namespace LCompilers {
 
 struct Location
 {
@@ -208,7 +207,7 @@ struct LocationManager {
 };
 
 
-} // namespace LFortran
+} // namespace LCompilers
 
 
 #endif

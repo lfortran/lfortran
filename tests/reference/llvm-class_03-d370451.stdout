@@ -1,5 +1,5 @@
-; ModuleID = 'LFortran'
-source_filename = "LFortran"
+; ModuleID = 'LCompilers'
+source_filename = "LCompilers"
 
 %person = type { i32, i8*, i8*, i8* }
 %employee = type { i8*, i32, %person }

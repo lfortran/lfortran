@@ -8,19 +8,19 @@
 #include <libasr/bwriter.h>
 
 
-namespace LFortran {
+namespace LCompilers {
 
-const std::string lfortran_modfile_type_string = "LFortran Modfile";
+const std::string lfortran_modfile_type_string = "LCompilers Modfile";
 
 inline void save_asr(const ASR::TranslationUnit_t &m, std::string& asr_string) {
-    #ifdef WITH_LFORTRAN_BINARY_MODFILES
+    #ifdef WITH_LCOMPILERS_BINARY_MODFILES
     BinaryWriter b;
 #else
     TextWriter b;
 #endif
     // Header
     b.write_string(lfortran_modfile_type_string);
-    b.write_string(LFORTRAN_VERSION);
+    b.write_string(LCOMPILERS_VERSION);
 
     // AST section: Original module source code:
     // Currently empty.
@@ -53,9 +53,9 @@ inline void save_asr(const ASR::TranslationUnit_t &m, std::string& asr_string) {
     Comments below show some possible future improvements to the mod format.
 */
 std::string save_modfile(const ASR::TranslationUnit_t &m) {
-    LFORTRAN_ASSERT(m.m_global_scope->get_scope().size()== 1);
+    LCOMPILERS_ASSERT(m.m_global_scope->get_scope().size()== 1);
     for (auto &a : m.m_global_scope->get_scope()) {
-        LFORTRAN_ASSERT(ASR::is_a<ASR::Module_t>(*a.second));
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*a.second));
         if ((bool&)a) { } // Suppress unused warning in Release mode
     }
 
@@ -71,18 +71,18 @@ std::string save_pycfile(const ASR::TranslationUnit_t &m) {
 }
 
 inline void load_serialised_asr(const std::string &s, std::string& asr_binary) {
-#ifdef WITH_LFORTRAN_BINARY_MODFILES
+#ifdef WITH_LCOMPILERS_BINARY_MODFILES
     BinaryReader b(s);
 #else
     TextReader b(s);
 #endif
     std::string file_type = b.read_string();
     if (file_type != lfortran_modfile_type_string) {
-        throw LCompilersException("LFortran Modfile format not recognized");
+        throw LCompilersException("LCompilers Modfile format not recognized");
     }
     std::string version = b.read_string();
-    if (version != LFORTRAN_VERSION) {
-        throw LCompilersException("Incompatible format: LFortran Modfile was generated using version '" + version + "', but current LFortran version is '" + LFORTRAN_VERSION + "'");
+    if (version != LCOMPILERS_VERSION) {
+        throw LCompilersException("Incompatible format: LCompilers Modfile was generated using version '" + version + "', but current LCompilers version is '" + LCOMPILERS_VERSION + "'");
     }
     asr_binary = b.read_string();
 }
@@ -107,4 +107,4 @@ ASR::TranslationUnit_t* load_pycfile(Allocator &al, const std::string &s,
     return tu;
 }
 
-} // namespace LFortran
+} // namespace LCompilers

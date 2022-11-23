@@ -5,7 +5,7 @@
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
     // Pickle a token
     std::string pickle(int token, const YYSTYPE &yystype, bool colors=false);

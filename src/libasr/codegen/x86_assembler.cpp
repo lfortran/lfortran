@@ -1,14 +1,14 @@
 #ifdef __unix__
-#define LFORTRAN_LINUX
+#define LIBASR_LINUX
 #endif
 
-#ifdef LFORTRAN_LINUX
+#ifdef LIBASR_LINUX
 #include <sys/stat.h>
 #endif
 
 #include <libasr/codegen/x86_assembler.h>
 
-namespace LFortran {
+namespace LCompilers {
 
 void X86Assembler::save_binary(const std::string &filename) {
     {
@@ -16,7 +16,7 @@ void X86Assembler::save_binary(const std::string &filename) {
         out.open(filename);
         out.write((const char*) m_code.p, m_code.size());
     }
-#ifdef LFORTRAN_LINUX
+#ifdef LIBASR_LINUX
     std::string mode = "0755";
     int mod = strtol(mode.c_str(), 0, 8);
     if (chmod(filename.c_str(),mod) < 0) {
@@ -89,8 +89,8 @@ void emit_exit(X86Assembler &a, const std::string &name,
 {
     a.add_label(name);
     // void exit(int status);
-    a.asm_mov_r32_imm32(LFortran::X86Reg::eax, 1); // sys_exit
-    a.asm_mov_r32_imm32(LFortran::X86Reg::ebx, exit_code); // exit code
+    a.asm_mov_r32_imm32(X86Reg::eax, 1); // sys_exit
+    a.asm_mov_r32_imm32(X86Reg::ebx, exit_code); // exit code
     a.asm_int_imm8(0x80); // syscall
 }
 
@@ -98,7 +98,7 @@ void emit_exit2(X86Assembler &a, const std::string &name)
 {
     a.add_label(name);
     // void exit();
-    a.asm_mov_r32_imm32(LFortran::X86Reg::eax, 1); // sys_exit
+    a.asm_mov_r32_imm32(X86Reg::eax, 1); // sys_exit
     a.asm_pop_r32(X86Reg::ebx); // exit code on stack, move to register
     a.asm_int_imm8(0x80); // syscall
 }
@@ -114,10 +114,10 @@ void emit_print(X86Assembler &a, const std::string &msg_label,
     uint32_t size)
 {
     // ssize_t write(int fd, const void *buf, size_t count);
-    a.asm_mov_r32_imm32(LFortran::X86Reg::eax, 4); // sys_write
-    a.asm_mov_r32_imm32(LFortran::X86Reg::ebx, 1); // fd (stdout)
-    a.asm_mov_r32_label(LFortran::X86Reg::ecx, msg_label); // buf
-    a.asm_mov_r32_imm32(LFortran::X86Reg::edx, size); // count
+    a.asm_mov_r32_imm32(X86Reg::eax, 4); // sys_write
+    a.asm_mov_r32_imm32(X86Reg::ebx, 1); // fd (stdout)
+    a.asm_mov_r32_label(X86Reg::ecx, msg_label); // buf
+    a.asm_mov_r32_imm32(X86Reg::edx, size); // count
     a.asm_int_imm8(0x80);
 }
 
@@ -133,6 +133,21 @@ void emit_print_int(X86Assembler &a, const std::string &name)
     X86Reg base = X86Reg::ebp;
     // mov eax, [ebp+8]  // argument "i"
     a.asm_mov_r32_m32(X86Reg::eax, &base, nullptr, 1, 8);
+
+    a.asm_mov_r32_r32(X86Reg::ecx, X86Reg::eax); // make a copy in ecx
+    a.asm_mov_r32_imm32(X86Reg::ebx, 0);
+    a.asm_cmp_r32_r32(X86Reg::eax, X86Reg::ebx);
+    a.asm_jge_label(".print_int_"); // if num >= 0 then print it
+
+    // print "-" and then negate the integer
+    emit_print(a, "string-", 1U);
+    // ecx value changed during print so fetch back
+    a.asm_mov_r32_m32(X86Reg::ecx, &base, nullptr, 1, 8);
+    a.asm_neg_r32(X86Reg::ecx);
+
+    a.add_label(".print_int_");
+
+    a.asm_mov_r32_r32(X86Reg::eax, X86Reg::ecx); // fetch the val in ecx back to eax
     a.asm_xor_r32_r32(X86Reg::esi, X86Reg::esi);
 
     a.add_label(".loop");
@@ -183,6 +198,8 @@ void emit_print_int(X86Assembler &a, const std::string &name)
     a.asm_mov_r32_r32(X86Reg::esp, X86Reg::ebp);
     a.asm_pop_r32(X86Reg::ebp);
     a.asm_ret();
+
+    emit_data_string(a, "string-", "-"); // - symbol for printing negative ints
 }
 
-} // namespace LFortran
+} // namespace LCompilers
