@@ -254,7 +254,7 @@ int prompt(bool verbose)
 {
     Terminal term(true, false);
     std::cout << "Interactive Fortran. Experimental prototype, not ready for end users." << std::endl;
-    std::string version = LCOMPILERS_VERSION;
+    std::string version = LFORTRAN_VERSION;
     std::cout << "LFortran version: " << version << std::endl;
     std::cout << "  * Use Ctrl-D to exit" << std::endl;
     std::cout << "  * Use Enter to submit" << std::endl;
@@ -1684,7 +1684,7 @@ int main(int argc, char *argv[])
         CLI11_PARSE(app, argc, argv);
 
         if (arg_version) {
-            std::string version = LCOMPILERS_VERSION;
+            std::string version = LFORTRAN_VERSION;
             std::cout << "LFortran version: " << version << std::endl;
             std::cout << "Platform: ";
             switch (compiler_options.platform) {

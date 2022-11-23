@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     CLI11_PARSE(app, argc, argv);
 
     if (arg_version) {
-        std::string version = LCOMPILERS_VERSION;
+        std::string version = LFORTRAN_VERSION;
         std::cout << "LFortran version: " << version << std::endl;
         return 0;
     }
