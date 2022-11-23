@@ -1,0 +1,1716 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            math:
+                (Module 
+                    (SymbolTable
+                        2
+                        {
+                            add_real:
+                                (Function 
+                                    (SymbolTable
+                                        3
+                                        {
+                                            total:
+                                                (Variable 
+                                                    3 
+                                                    total 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            x:
+                                                (Variable 
+                                                    3 
+                                                    x 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            y:
+                                                (Variable 
+                                                    3 
+                                                    y 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    add_real 
+                                    [] 
+                                    [(Var 3 x)
+                                    (Var 3 y)] 
+                                    [(= 
+                                        (Var 3 total) 
+                                        (RealBinOp 
+                                            (Var 3 x) 
+                                            Add 
+                                            (Var 3 y) 
+                                            (Real 4 []) 
+                                            ()
+                                        ) 
+                                        ()
+                                    )] 
+                                    (Var 3 total) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                ), 
+                            slash_real:
+                                (Function 
+                                    (SymbolTable
+                                        4
+                                        {
+                                            total:
+                                                (Variable 
+                                                    4 
+                                                    total 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            x:
+                                                (Variable 
+                                                    4 
+                                                    x 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            y:
+                                                (Variable 
+                                                    4 
+                                                    y 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    slash_real 
+                                    [] 
+                                    [(Var 4 x)
+                                    (Var 4 y)] 
+                                    [(= 
+                                        (Var 4 total) 
+                                        (RealBinOp 
+                                            (Var 4 x) 
+                                            Div 
+                                            (Var 4 y) 
+                                            (Real 4 []) 
+                                            ()
+                                        ) 
+                                        ()
+                                    )] 
+                                    (Var 4 total) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                )
+                            
+                        }) 
+                    math 
+                    [] 
+                    .false. 
+                    .false.
+                ), 
+            template_travel:
+                (Program 
+                    (SymbolTable
+                        17
+                        {
+                            add_real:
+                                (ExternalSymbol 
+                                    17 
+                                    add_real 
+                                    2 add_real 
+                                    math 
+                                    [] 
+                                    add_real 
+                                    Private
+                                ), 
+                            avg_s_from_s:
+                                (ExternalSymbol 
+                                    17 
+                                    avg_s_from_s 
+                                    5 avg_s_from_s 
+                                    travel 
+                                    [] 
+                                    avg_s_from_s 
+                                    Private
+                                ), 
+                            avg_s_from_t:
+                                (ExternalSymbol 
+                                    17 
+                                    avg_s_from_t 
+                                    5 avg_s_from_t 
+                                    travel 
+                                    [] 
+                                    avg_s_from_t 
+                                    Private
+                                ), 
+                            d:
+                                (ExternalSymbol 
+                                    17 
+                                    d 
+                                    5 d 
+                                    travel 
+                                    [] 
+                                    d 
+                                    Private
+                                ), 
+                            d_divided_by_s:
+                                (ExternalSymbol 
+                                    17 
+                                    d_divided_by_s 
+                                    5 d_divided_by_s 
+                                    travel 
+                                    [] 
+                                    d_divided_by_s 
+                                    Private
+                                ), 
+                            d_divided_by_t:
+                                (ExternalSymbol 
+                                    17 
+                                    d_divided_by_t 
+                                    5 d_divided_by_t 
+                                    travel 
+                                    [] 
+                                    d_divided_by_t 
+                                    Private
+                                ), 
+                            plus_d:
+                                (ExternalSymbol 
+                                    17 
+                                    plus_d 
+                                    5 plus_d 
+                                    travel 
+                                    [] 
+                                    plus_d 
+                                    Private
+                                ), 
+                            plus_t:
+                                (ExternalSymbol 
+                                    17 
+                                    plus_t 
+                                    5 plus_t 
+                                    travel 
+                                    [] 
+                                    plus_t 
+                                    Private
+                                ), 
+                            s:
+                                (ExternalSymbol 
+                                    17 
+                                    s 
+                                    5 s 
+                                    travel 
+                                    [] 
+                                    s 
+                                    Private
+                                ), 
+                            slash_real:
+                                (ExternalSymbol 
+                                    17 
+                                    slash_real 
+                                    2 slash_real 
+                                    math 
+                                    [] 
+                                    slash_real 
+                                    Private
+                                ), 
+                            t:
+                                (ExternalSymbol 
+                                    17 
+                                    t 
+                                    5 t 
+                                    travel 
+                                    [] 
+                                    t 
+                                    Private
+                                ), 
+                            test_template:
+                                (ExternalSymbol 
+                                    17 
+                                    test_template 
+                                    15 test_template 
+                                    template_travel_m 
+                                    [] 
+                                    test_template 
+                                    Private
+                                )
+                            
+                        }) 
+                    template_travel 
+                    [template_travel_m] 
+                    [(SubroutineCall 
+                        17 test_template 
+                        () 
+                        [] 
+                        ()
+                    )]
+                ), 
+            template_travel_m:
+                (Module 
+                    (SymbolTable
+                        15
+                        {
+                            __lfortran_generic_avg_s_from_t:
+                                (Function 
+                                    (SymbolTable
+                                        20
+                                        {
+                                            avg:
+                                                (Variable 
+                                                    20 
+                                                    avg 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            d1:
+                                                (Variable 
+                                                    20 
+                                                    d1 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            d2:
+                                                (Variable 
+                                                    20 
+                                                    d2 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            t1:
+                                                (Variable 
+                                                    20 
+                                                    t1 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            t2:
+                                                (Variable 
+                                                    20 
+                                                    t2 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    __lfortran_generic_avg_s_from_t 
+                                    [slash_real
+                                    add_real
+                                    add_real] 
+                                    [(Var 20 d1)
+                                    (Var 20 t1)
+                                    (Var 20 d2)
+                                    (Var 20 t2)] 
+                                    [(= 
+                                        (Var 20 avg) 
+                                        (FunctionCall 
+                                            15 slash_real 
+                                            () 
+                                            [((FunctionCall 
+                                                15 add_real 
+                                                () 
+                                                [((Var 20 d1))
+                                                ((Var 20 d2))] 
+                                                (Real 4 []) 
+                                                () 
+                                                ()
+                                            ))
+                                            ((FunctionCall 
+                                                15 add_real 
+                                                () 
+                                                [((Var 20 t1))
+                                                ((Var 20 t2))] 
+                                                (Real 4 []) 
+                                                () 
+                                                ()
+                                            ))] 
+                                            (Real 4 []) 
+                                            () 
+                                            ()
+                                        ) 
+                                        ()
+                                    )] 
+                                    (Var 20 avg) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                ), 
+                            add_real:
+                                (ExternalSymbol 
+                                    15 
+                                    add_real 
+                                    2 add_real 
+                                    math 
+                                    [] 
+                                    add_real 
+                                    Private
+                                ), 
+                            avg_real_s_from_s:
+                                (Function 
+                                    (SymbolTable
+                                        19
+                                        {
+                                            avg:
+                                                (Variable 
+                                                    19 
+                                                    avg 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            d1:
+                                                (Variable 
+                                                    19 
+                                                    d1 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            d2:
+                                                (Variable 
+                                                    19 
+                                                    d2 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            s1:
+                                                (Variable 
+                                                    19 
+                                                    s1 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            s2:
+                                                (Variable 
+                                                    19 
+                                                    s2 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    avg_real_s_from_s 
+                                    [__lfortran_generic_avg_s_from_t
+                                    slash_real
+                                    slash_real] 
+                                    [(Var 19 d1)
+                                    (Var 19 s1)
+                                    (Var 19 d2)
+                                    (Var 19 s2)] 
+                                    [(= 
+                                        (Var 19 avg) 
+                                        (FunctionCall 
+                                            15 __lfortran_generic_avg_s_from_t 
+                                            () 
+                                            [((Var 19 d1))
+                                            ((FunctionCall 
+                                                15 slash_real 
+                                                () 
+                                                [((Var 19 d1))
+                                                ((Var 19 s1))] 
+                                                (Real 4 []) 
+                                                () 
+                                                ()
+                                            ))
+                                            ((Var 19 d2))
+                                            ((FunctionCall 
+                                                15 slash_real 
+                                                () 
+                                                [((Var 19 d2))
+                                                ((Var 19 s2))] 
+                                                (Real 4 []) 
+                                                () 
+                                                ()
+                                            ))] 
+                                            (Real 4 []) 
+                                            () 
+                                            ()
+                                        ) 
+                                        ()
+                                    )] 
+                                    (Var 19 avg) 
+                                    Source 
+                                    Private 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                ), 
+                            avg_real_s_from_t:
+                                (Function 
+                                    (SymbolTable
+                                        18
+                                        {
+                                            avg:
+                                                (Variable 
+                                                    18 
+                                                    avg 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            d1:
+                                                (Variable 
+                                                    18 
+                                                    d1 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            d2:
+                                                (Variable 
+                                                    18 
+                                                    d2 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            t1:
+                                                (Variable 
+                                                    18 
+                                                    t1 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            t2:
+                                                (Variable 
+                                                    18 
+                                                    t2 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    avg_real_s_from_t 
+                                    [slash_real
+                                    add_real
+                                    add_real] 
+                                    [(Var 18 d1)
+                                    (Var 18 t1)
+                                    (Var 18 d2)
+                                    (Var 18 t2)] 
+                                    [(= 
+                                        (Var 18 avg) 
+                                        (FunctionCall 
+                                            15 slash_real 
+                                            () 
+                                            [((FunctionCall 
+                                                15 add_real 
+                                                () 
+                                                [((Var 18 d1))
+                                                ((Var 18 d2))] 
+                                                (Real 4 []) 
+                                                () 
+                                                ()
+                                            ))
+                                            ((FunctionCall 
+                                                15 add_real 
+                                                () 
+                                                [((Var 18 t1))
+                                                ((Var 18 t2))] 
+                                                (Real 4 []) 
+                                                () 
+                                                ()
+                                            ))] 
+                                            (Real 4 []) 
+                                            () 
+                                            ()
+                                        ) 
+                                        ()
+                                    )] 
+                                    (Var 18 avg) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                ), 
+                            avg_s_from_s:
+                                (ExternalSymbol 
+                                    15 
+                                    avg_s_from_s 
+                                    5 avg_s_from_s 
+                                    travel 
+                                    [] 
+                                    avg_s_from_s 
+                                    Private
+                                ), 
+                            avg_s_from_t:
+                                (ExternalSymbol 
+                                    15 
+                                    avg_s_from_t 
+                                    5 avg_s_from_t 
+                                    travel 
+                                    [] 
+                                    avg_s_from_t 
+                                    Private
+                                ), 
+                            d:
+                                (ExternalSymbol 
+                                    15 
+                                    d 
+                                    5 d 
+                                    travel 
+                                    [] 
+                                    d 
+                                    Private
+                                ), 
+                            d_divided_by_s:
+                                (ExternalSymbol 
+                                    15 
+                                    d_divided_by_s 
+                                    5 d_divided_by_s 
+                                    travel 
+                                    [] 
+                                    d_divided_by_s 
+                                    Private
+                                ), 
+                            d_divided_by_t:
+                                (ExternalSymbol 
+                                    15 
+                                    d_divided_by_t 
+                                    5 d_divided_by_t 
+                                    travel 
+                                    [] 
+                                    d_divided_by_t 
+                                    Private
+                                ), 
+                            plus_d:
+                                (ExternalSymbol 
+                                    15 
+                                    plus_d 
+                                    5 plus_d 
+                                    travel 
+                                    [] 
+                                    plus_d 
+                                    Private
+                                ), 
+                            plus_t:
+                                (ExternalSymbol 
+                                    15 
+                                    plus_t 
+                                    5 plus_t 
+                                    travel 
+                                    [] 
+                                    plus_t 
+                                    Private
+                                ), 
+                            s:
+                                (ExternalSymbol 
+                                    15 
+                                    s 
+                                    5 s 
+                                    travel 
+                                    [] 
+                                    s 
+                                    Private
+                                ), 
+                            slash_real:
+                                (ExternalSymbol 
+                                    15 
+                                    slash_real 
+                                    2 slash_real 
+                                    math 
+                                    [] 
+                                    slash_real 
+                                    Private
+                                ), 
+                            t:
+                                (ExternalSymbol 
+                                    15 
+                                    t 
+                                    5 t 
+                                    travel 
+                                    [] 
+                                    t 
+                                    Private
+                                ), 
+                            test_template:
+                                (Function 
+                                    (SymbolTable
+                                        16
+                                        {
+                                            s1:
+                                                (Variable 
+                                                    16 
+                                                    s1 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            s2:
+                                                (Variable 
+                                                    16 
+                                                    s2 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    test_template 
+                                    [avg_real_s_from_t
+                                    avg_real_s_from_s] 
+                                    [] 
+                                    [(= 
+                                        (Var 16 s1) 
+                                        (FunctionCall 
+                                            15 avg_real_s_from_t 
+                                            () 
+                                            [((RealConstant 
+                                                1.000000 
+                                                (Real 4 [])
+                                            ))
+                                            ((RealConstant 
+                                                3.000000 
+                                                (Real 4 [])
+                                            ))
+                                            ((RealConstant 
+                                                1.500000 
+                                                (Real 4 [])
+                                            ))
+                                            ((RealConstant 
+                                                4.000000 
+                                                (Real 4 [])
+                                            ))] 
+                                            (Real 4 []) 
+                                            () 
+                                            ()
+                                        ) 
+                                        ()
+                                    )
+                                    (= 
+                                        (Var 16 s2) 
+                                        (FunctionCall 
+                                            15 avg_real_s_from_s 
+                                            () 
+                                            [((RealConstant 
+                                                1.100000 
+                                                (Real 4 [])
+                                            ))
+                                            ((RealConstant 
+                                                0.500000 
+                                                (Real 4 [])
+                                            ))
+                                            ((RealConstant 
+                                                2.000000 
+                                                (Real 4 [])
+                                            ))
+                                            ((RealConstant 
+                                                0.750000 
+                                                (Real 4 [])
+                                            ))] 
+                                            (Real 4 []) 
+                                            () 
+                                            ()
+                                        ) 
+                                        ()
+                                    )
+                                    (Print 
+                                        () 
+                                        [(StringConstant 
+                                            "s1=" 
+                                            (Character 1 3 () [])
+                                        )
+                                        (Var 16 s1)] 
+                                        () 
+                                        ()
+                                    )
+                                    (Print 
+                                        () 
+                                        [(StringConstant 
+                                            "s2=" 
+                                            (Character 1 3 () [])
+                                        )
+                                        (Var 16 s2)] 
+                                        () 
+                                        ()
+                                    )] 
+                                    () 
+                                    Source 
+                                    Private 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                )
+                            
+                        }) 
+                    template_travel_m 
+                    [math
+                    travel
+                    math
+                    math
+                    math
+                    math
+                    math
+                    math
+                    math
+                    math] 
+                    .false. 
+                    .false.
+                ), 
+            travel:
+                (Module 
+                    (SymbolTable
+                        5
+                        {
+                            add_real:
+                                (ExternalSymbol 
+                                    5 
+                                    add_real 
+                                    2 add_real 
+                                    math 
+                                    [] 
+                                    add_real 
+                                    Private
+                                ), 
+                            avg_s_from_s:
+                                (Function 
+                                    (SymbolTable
+                                        14
+                                        {
+                                            avg:
+                                                (Variable 
+                                                    14 
+                                                    avg 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        s 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            d1:
+                                                (Variable 
+                                                    14 
+                                                    d1 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        d 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            d2:
+                                                (Variable 
+                                                    14 
+                                                    d2 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        d 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            s1:
+                                                (Variable 
+                                                    14 
+                                                    s1 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        s 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            s2:
+                                                (Variable 
+                                                    14 
+                                                    s2 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        s 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    avg_s_from_s 
+                                    [avg_s_from_t
+                                    d_divided_by_s
+                                    d_divided_by_s] 
+                                    [(Var 14 d1)
+                                    (Var 14 s1)
+                                    (Var 14 d2)
+                                    (Var 14 s2)] 
+                                    [(= 
+                                        (Var 14 avg) 
+                                        (FunctionCall 
+                                            5 avg_s_from_t 
+                                            () 
+                                            [((Var 14 d1))
+                                            ((FunctionCall 
+                                                5 d_divided_by_s 
+                                                () 
+                                                [((Var 14 d1))
+                                                ((Var 14 s1))] 
+                                                (TypeParameter 
+                                                    t 
+                                                    []
+                                                ) 
+                                                () 
+                                                ()
+                                            ))
+                                            ((Var 14 d2))
+                                            ((FunctionCall 
+                                                5 d_divided_by_s 
+                                                () 
+                                                [((Var 14 d2))
+                                                ((Var 14 s2))] 
+                                                (TypeParameter 
+                                                    t 
+                                                    []
+                                                ) 
+                                                () 
+                                                ()
+                                            ))] 
+                                            (TypeParameter 
+                                                s 
+                                                []
+                                            ) 
+                                            () 
+                                            ()
+                                        ) 
+                                        ()
+                                    )] 
+                                    (Var 14 avg) 
+                                    Source 
+                                    Private 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [(TypeParameter 
+                                        d 
+                                        []
+                                    )
+                                    (TypeParameter 
+                                        s 
+                                        []
+                                    )
+                                    (TypeParameter 
+                                        t 
+                                        []
+                                    )] 
+                                    [] 
+                                    .false.
+                                ), 
+                            avg_s_from_t:
+                                (Function 
+                                    (SymbolTable
+                                        13
+                                        {
+                                            avg:
+                                                (Variable 
+                                                    13 
+                                                    avg 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        s 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            d1:
+                                                (Variable 
+                                                    13 
+                                                    d1 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        d 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            d2:
+                                                (Variable 
+                                                    13 
+                                                    d2 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        d 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            t1:
+                                                (Variable 
+                                                    13 
+                                                    t1 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        t 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            t2:
+                                                (Variable 
+                                                    13 
+                                                    t2 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        t 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    avg_s_from_t 
+                                    [d_divided_by_t
+                                    plus_d
+                                    plus_t] 
+                                    [(Var 13 d1)
+                                    (Var 13 t1)
+                                    (Var 13 d2)
+                                    (Var 13 t2)] 
+                                    [(= 
+                                        (Var 13 avg) 
+                                        (FunctionCall 
+                                            5 d_divided_by_t 
+                                            () 
+                                            [((FunctionCall 
+                                                5 plus_d 
+                                                () 
+                                                [((Var 13 d1))
+                                                ((Var 13 d2))] 
+                                                (TypeParameter 
+                                                    d 
+                                                    []
+                                                ) 
+                                                () 
+                                                ()
+                                            ))
+                                            ((FunctionCall 
+                                                5 plus_t 
+                                                () 
+                                                [((Var 13 t1))
+                                                ((Var 13 t2))] 
+                                                (TypeParameter 
+                                                    t 
+                                                    []
+                                                ) 
+                                                () 
+                                                ()
+                                            ))] 
+                                            (TypeParameter 
+                                                s 
+                                                []
+                                            ) 
+                                            () 
+                                            ()
+                                        ) 
+                                        ()
+                                    )] 
+                                    (Var 13 avg) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [(TypeParameter 
+                                        d 
+                                        []
+                                    )
+                                    (TypeParameter 
+                                        s 
+                                        []
+                                    )
+                                    (TypeParameter 
+                                        t 
+                                        []
+                                    )] 
+                                    [] 
+                                    .false.
+                                ), 
+                            d:
+                                (StructType 
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        }) 
+                                    d 
+                                    [] 
+                                    [] 
+                                    Source 
+                                    Private 
+                                    .false. 
+                                    () 
+                                    ()
+                                ), 
+                            d_divided_by_s:
+                                (Function 
+                                    (SymbolTable
+                                        12
+                                        {
+                                            d:
+                                                (Variable 
+                                                    12 
+                                                    d 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        s 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            n:
+                                                (Variable 
+                                                    12 
+                                                    n 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        d 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            quotient:
+                                                (Variable 
+                                                    12 
+                                                    quotient 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        t 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    d_divided_by_s 
+                                    [] 
+                                    [(Var 12 n)
+                                    (Var 12 d)] 
+                                    [] 
+                                    (Var 12 quotient) 
+                                    Source 
+                                    Private 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [(TypeParameter 
+                                        d 
+                                        []
+                                    )
+                                    (TypeParameter 
+                                        t 
+                                        []
+                                    )
+                                    (TypeParameter 
+                                        s 
+                                        []
+                                    )] 
+                                    [] 
+                                    .true.
+                                ), 
+                            d_divided_by_t:
+                                (Function 
+                                    (SymbolTable
+                                        11
+                                        {
+                                            d:
+                                                (Variable 
+                                                    11 
+                                                    d 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        t 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            n:
+                                                (Variable 
+                                                    11 
+                                                    n 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        d 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            quotient:
+                                                (Variable 
+                                                    11 
+                                                    quotient 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        s 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    d_divided_by_t 
+                                    [] 
+                                    [(Var 11 n)
+                                    (Var 11 d)] 
+                                    [] 
+                                    (Var 11 quotient) 
+                                    Source 
+                                    Private 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [(TypeParameter 
+                                        d 
+                                        []
+                                    )
+                                    (TypeParameter 
+                                        t 
+                                        []
+                                    )
+                                    (TypeParameter 
+                                        s 
+                                        []
+                                    )] 
+                                    [] 
+                                    .true.
+                                ), 
+                            plus_d:
+                                (Function 
+                                    (SymbolTable
+                                        9
+                                        {
+                                            l:
+                                                (Variable 
+                                                    9 
+                                                    l 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        d 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            r:
+                                                (Variable 
+                                                    9 
+                                                    r 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        d 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            total:
+                                                (Variable 
+                                                    9 
+                                                    total 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        d 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    plus_d 
+                                    [] 
+                                    [(Var 9 l)
+                                    (Var 9 r)] 
+                                    [] 
+                                    (Var 9 total) 
+                                    Source 
+                                    Private 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [(TypeParameter 
+                                        d 
+                                        []
+                                    )
+                                    (TypeParameter 
+                                        t 
+                                        []
+                                    )
+                                    (TypeParameter 
+                                        s 
+                                        []
+                                    )] 
+                                    [] 
+                                    .true.
+                                ), 
+                            plus_t:
+                                (Function 
+                                    (SymbolTable
+                                        10
+                                        {
+                                            l:
+                                                (Variable 
+                                                    10 
+                                                    l 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        t 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            r:
+                                                (Variable 
+                                                    10 
+                                                    r 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        t 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            total:
+                                                (Variable 
+                                                    10 
+                                                    total 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (TypeParameter 
+                                                        t 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Private 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    plus_t 
+                                    [] 
+                                    [(Var 10 l)
+                                    (Var 10 r)] 
+                                    [] 
+                                    (Var 10 total) 
+                                    Source 
+                                    Private 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [(TypeParameter 
+                                        d 
+                                        []
+                                    )
+                                    (TypeParameter 
+                                        t 
+                                        []
+                                    )
+                                    (TypeParameter 
+                                        s 
+                                        []
+                                    )] 
+                                    [] 
+                                    .true.
+                                ), 
+                            s:
+                                (StructType 
+                                    (SymbolTable
+                                        8
+                                        {
+                                            
+                                        }) 
+                                    s 
+                                    [] 
+                                    [] 
+                                    Source 
+                                    Private 
+                                    .false. 
+                                    () 
+                                    ()
+                                ), 
+                            slash_real:
+                                (ExternalSymbol 
+                                    5 
+                                    slash_real 
+                                    2 slash_real 
+                                    math 
+                                    [] 
+                                    slash_real 
+                                    Private
+                                ), 
+                            t:
+                                (StructType 
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        }) 
+                                    t 
+                                    [] 
+                                    [] 
+                                    Source 
+                                    Private 
+                                    .false. 
+                                    () 
+                                    ()
+                                )
+                            
+                        }) 
+                    travel 
+                    [math] 
+                    .false. 
+                    .false.
+                )
+            
+        }) 
+    []
+)

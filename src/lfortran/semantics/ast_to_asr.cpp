@@ -17,6 +17,7 @@
 #include <lfortran/utils.h>
 #include <libasr/pass/pass_utils.h>
 
+#include <lfortran/pickle.h>
 
 namespace LFortran {
 
