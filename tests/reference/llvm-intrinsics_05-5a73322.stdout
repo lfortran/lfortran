@@ -68,14 +68,14 @@ declare void @_lfortran_i64sys_clock(i64*, i64*, i64*)
 
 define float @__module_lfortran_intrinsic_math_scosh(float* %x) {
 .entry:
-  %r = alloca float
-  %0 = load float, float* %x
+  %r = alloca float, align 4
+  %0 = load float, float* %x, align 4
   %1 = call float @_lfortran_scosh(float %0)
-  store float %1, float* %r
+  store float %1, float* %r, align 4
   br label %return
 
 return:                                           ; preds = %.entry
-  %2 = load float, float* %r
+  %2 = load float, float* %r, align 4
   ret float %2
 }
 
@@ -94,14 +94,14 @@ declare void @_lfortran_sp_rand_num(float*)
 
 define float @__module_lfortran_intrinsic_math_ssinh(float* %x) {
 .entry:
-  %r = alloca float
-  %0 = load float, float* %x
+  %r = alloca float, align 4
+  %0 = load float, float* %x, align 4
   %1 = call float @_lfortran_ssinh(float %0)
-  store float %1, float* %r
+  store float %1, float* %r, align 4
   br label %return
 
 return:                                           ; preds = %.entry
-  %2 = load float, float* %r
+  %2 = load float, float* %r, align 4
   ret float %2
 }
 
@@ -109,14 +109,14 @@ declare float @_lfortran_ssinh(float)
 
 define float @__module_lfortran_intrinsic_math_stanh(float* %x) {
 .entry:
-  %r = alloca float
-  %0 = load float, float* %x
+  %r = alloca float, align 4
+  %0 = load float, float* %x, align 4
   %1 = call float @_lfortran_stanh(float %0)
-  store float %1, float* %r
+  store float %1, float* %r, align 4
   br label %return
 
 return:                                           ; preds = %.entry
-  %2 = load float, float* %r
+  %2 = load float, float* %r, align 4
   ret float %2
 }
 
@@ -124,17 +124,17 @@ declare float @_lfortran_stanh(float)
 
 define i32 @main() {
 .entry:
-  %x = alloca float
-  store float 0x3FF2CD9FC0000000, float* %x
-  %0 = load float, float* %x
+  %x = alloca float, align 4
+  store float 0x3FF2CD9FC0000000, float* %x, align 4
+  %0 = load float, float* %x, align 4
   %1 = fpext float %0 to double
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @3, i32 0, i32 0), double %1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
-  store float 0x3FF8B07560000000, float* %x
-  %2 = load float, float* %x
+  store float 0x3FF8B07560000000, float* %x, align 4
+  %2 = load float, float* %x, align 4
   %3 = fpext float %2 to double
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @6, i32 0, i32 0), double %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
-  store float 0x3FE85EFAC0000000, float* %x
-  %4 = load float, float* %x
+  store float 0x3FE85EFAC0000000, float* %x, align 4
+  %4 = load float, float* %x, align 4
   %5 = fpext float %4 to double
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @9, i32 0, i32 0), double %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
   ret i32 0

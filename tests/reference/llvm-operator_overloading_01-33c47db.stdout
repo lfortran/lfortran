@@ -44,30 +44,30 @@ source_filename = "LFortran"
 
 define i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %log1, i1* %log2) {
 .entry:
-  %bin_add = alloca i32
-  %0 = load i1, i1* %log1
-  %1 = load i1, i1* %log2
+  %bin_add = alloca i32, align 4
+  %0 = load i1, i1* %log1, align 1
+  %1 = load i1, i1* %log2, align 1
   %2 = and i1 %0, %1
   br i1 %2, label %then, label %else
 
 then:                                             ; preds = %.entry
-  store i32 2, i32* %bin_add
+  store i32 2, i32* %bin_add, align 4
   br label %ifcont3
 
 else:                                             ; preds = %.entry
-  %3 = load i1, i1* %log1
+  %3 = load i1, i1* %log1, align 1
   %4 = xor i1 %3, true
-  %5 = load i1, i1* %log2
+  %5 = load i1, i1* %log2, align 1
   %6 = xor i1 %5, true
   %7 = and i1 %4, %6
   br i1 %7, label %then1, label %else2
 
 then1:                                            ; preds = %else
-  store i32 0, i32* %bin_add
+  store i32 0, i32* %bin_add, align 4
   br label %ifcont
 
 else2:                                            ; preds = %else
-  store i32 1, i32* %bin_add
+  store i32 1, i32* %bin_add, align 4
   br label %ifcont
 
 ifcont:                                           ; preds = %else2, %then1
@@ -77,30 +77,30 @@ ifcont3:                                          ; preds = %ifcont, %then
   br label %return
 
 return:                                           ; preds = %ifcont3
-  %8 = load i32, i32* %bin_add
+  %8 = load i32, i32* %bin_add, align 4
   ret i32 %8
 }
 
 define i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %log1, i1* %log2) {
 .entry:
-  %logical_and = alloca i1
-  %0 = load i1, i1* %log1
-  %1 = load i1, i1* %log2
+  %logical_and = alloca i1, align 1
+  %0 = load i1, i1* %log1, align 1
+  %1 = load i1, i1* %log2, align 1
   %2 = and i1 %0, %1
-  store i1 %2, i1* %logical_and
+  store i1 %2, i1* %logical_and, align 1
   br label %return
 
 return:                                           ; preds = %.entry
-  %3 = load i1, i1* %logical_and
+  %3 = load i1, i1* %logical_and, align 1
   ret i1 %3
 }
 
 define i32 @main() {
 .entry:
-  %f = alloca i1
-  store i1 false, i1* %f
-  %t = alloca i1
-  store i1 true, i1* %t
+  %f = alloca i1, align 1
+  store i1 false, i1* %f, align 1
+  %t = alloca i1, align 1
+  store i1 true, i1* %t, align 1
   %0 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %t, i1* %t)
   %1 = icmp eq i1 %0, false
   %2 = select i1 %1, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @4, i32 0, i32 0)

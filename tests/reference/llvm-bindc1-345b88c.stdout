@@ -15,10 +15,10 @@ declare void @__module_lfortran_intrinsic_iso_c_binding_c_f_pointer(%c_ptr*, i32
 
 define i32 @main() {
 .entry:
-  %p = alloca void*
-  %x = alloca i32*
-  %0 = load i32*, i32** %x
+  %p = alloca void*, align 8
+  %x = alloca i32*, align 8
+  %0 = load i32*, i32** %x, align 8
   %1 = bitcast i32* %0 to void*
-  store void* %1, void** %p
+  store void* %1, void** %p, align 8
   ret i32 0
 }

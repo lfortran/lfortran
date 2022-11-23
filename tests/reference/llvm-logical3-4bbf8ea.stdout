@@ -85,12 +85,12 @@ source_filename = "LFortran"
 
 define i32 @main() {
 .entry:
-  %a = alloca i1
-  %b = alloca i1
-  store i1 true, i1* %a
-  store i1 false, i1* %b
-  %0 = load i1, i1* %a
-  %1 = load i1, i1* %b
+  %a = alloca i1, align 1
+  %b = alloca i1, align 1
+  store i1 true, i1* %a, align 1
+  store i1 false, i1* %b, align 1
+  %0 = load i1, i1* %a, align 1
+  %1 = load i1, i1* %b, align 1
   %2 = and i1 %0, %1
   br i1 %2, label %then, label %else
 
@@ -105,8 +105,8 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %3 = load i1, i1* %a
-  %4 = load i1, i1* %b
+  %3 = load i1, i1* %a, align 1
+  %4 = load i1, i1* %b, align 1
   %5 = or i1 %3, %4
   br i1 %5, label %then1, label %else2
 
@@ -121,8 +121,8 @@ else2:                                            ; preds = %ifcont
   br label %ifcont3
 
 ifcont3:                                          ; preds = %else2, %then1
-  %6 = load i1, i1* %a
-  %7 = load i1, i1* %b
+  %6 = load i1, i1* %a, align 1
+  %7 = load i1, i1* %b, align 1
   %8 = xor i1 %6, %7
   br i1 %8, label %then4, label %else5
 
@@ -137,10 +137,10 @@ else5:                                            ; preds = %ifcont3
   br label %ifcont6
 
 ifcont6:                                          ; preds = %else5, %then4
-  store i1 false, i1* %a
-  store i1 true, i1* %b
-  %9 = load i1, i1* %a
-  %10 = load i1, i1* %b
+  store i1 false, i1* %a, align 1
+  store i1 true, i1* %b, align 1
+  %9 = load i1, i1* %a, align 1
+  %10 = load i1, i1* %b, align 1
   %11 = and i1 %9, %10
   %12 = xor i1 %11, true
   br i1 %12, label %then7, label %else8
@@ -156,8 +156,8 @@ else8:                                            ; preds = %ifcont6
   br label %ifcont9
 
 ifcont9:                                          ; preds = %else8, %then7
-  %13 = load i1, i1* %b
-  %14 = load i1, i1* %a
+  %13 = load i1, i1* %b, align 1
+  %14 = load i1, i1* %a, align 1
   %15 = xor i1 %13, %14
   br i1 %15, label %then10, label %else11
 
@@ -172,8 +172,8 @@ else11:                                           ; preds = %ifcont9
   br label %ifcont12
 
 ifcont12:                                         ; preds = %else11, %then10
-  %16 = load i1, i1* %b
-  %17 = load i1, i1* %a
+  %16 = load i1, i1* %b, align 1
+  %17 = load i1, i1* %a, align 1
   %18 = xor i1 %16, %17
   %19 = xor i1 %18, true
   br i1 %19, label %then13, label %else14
@@ -189,10 +189,10 @@ else14:                                           ; preds = %ifcont12
   br label %ifcont15
 
 ifcont15:                                         ; preds = %else14, %then13
-  store i1 true, i1* %a
-  store i1 true, i1* %b
-  %20 = load i1, i1* %a
-  %21 = load i1, i1* %b
+  store i1 true, i1* %a, align 1
+  store i1 true, i1* %b, align 1
+  %20 = load i1, i1* %a, align 1
+  %21 = load i1, i1* %b, align 1
   %22 = and i1 %20, %21
   br i1 %22, label %then16, label %else17
 
@@ -207,8 +207,8 @@ else17:                                           ; preds = %ifcont15
   br label %ifcont18
 
 ifcont18:                                         ; preds = %else17, %then16
-  %23 = load i1, i1* %a
-  %24 = load i1, i1* %b
+  %23 = load i1, i1* %a, align 1
+  %24 = load i1, i1* %b, align 1
   %25 = or i1 %23, %24
   br i1 %25, label %then19, label %else20
 
@@ -223,8 +223,8 @@ else20:                                           ; preds = %ifcont18
   br label %ifcont21
 
 ifcont21:                                         ; preds = %else20, %then19
-  %26 = load i1, i1* %a
-  %27 = load i1, i1* %b
+  %26 = load i1, i1* %a, align 1
+  %27 = load i1, i1* %b, align 1
   %28 = xor i1 %26, %27
   br i1 %28, label %then22, label %else23
 

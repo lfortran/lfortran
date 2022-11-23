@@ -19,9 +19,9 @@ source_filename = "LFortran"
 
 define void @f(i32* %a, i32* %b) {
 .entry:
-  %0 = load i32, i32* %a
+  %0 = load i32, i32* %a, align 4
   %1 = add i32 %0, 1
-  store i32 %1, i32* %b
+  store i32 %1, i32* %b, align 4
   br label %return
 
 return:                                           ; preds = %.entry
@@ -30,9 +30,9 @@ return:                                           ; preds = %.entry
 
 define void @g(i32* %a, i32* %b) {
 .entry:
-  %0 = load i32, i32* %a
+  %0 = load i32, i32* %a, align 4
   %1 = sub i32 %0, 1
-  store i32 %1, i32* %b
+  store i32 %1, i32* %b, align 4
   br label %return
 
 return:                                           ; preds = %.entry
@@ -50,15 +50,15 @@ return:                                           ; preds = %.entry
 
 define i32 @main() {
 .entry:
-  %i = alloca i32
-  %j = alloca i32
-  store i32 1, i32* %i
-  store i32 1, i32* %j
+  %i = alloca i32, align 4
+  %j = alloca i32, align 4
+  store i32 1, i32* %i, align 4
+  store i32 1, i32* %j, align 4
   call void @f(i32* %i, i32* %j)
-  %0 = load i32, i32* %i
-  %1 = load i32, i32* %j
+  %0 = load i32, i32* %i, align 4
+  %1 = load i32, i32* %j, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @2, i32 0, i32 0), i32 %0, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 %1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
-  %2 = load i32, i32* %i
+  %2 = load i32, i32* %i, align 4
   %3 = icmp ne i32 %2, 1
   br i1 %3, label %then, label %else
 
@@ -71,7 +71,7 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %4 = load i32, i32* %j
+  %4 = load i32, i32* %j, align 4
   %5 = icmp ne i32 %4, 2
   br i1 %5, label %then1, label %else2
 
@@ -85,10 +85,10 @@ else2:                                            ; preds = %ifcont
 
 ifcont3:                                          ; preds = %else2, %then1
   call void @g(i32* %i, i32* %j)
-  %6 = load i32, i32* %i
-  %7 = load i32, i32* %j
+  %6 = load i32, i32* %i, align 4
+  %7 = load i32, i32* %j, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @7, i32 0, i32 0), i32 %6, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0), i32 %7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
-  %8 = load i32, i32* %i
+  %8 = load i32, i32* %i, align 4
   %9 = icmp ne i32 %8, 1
   br i1 %9, label %then4, label %else5
 
@@ -101,7 +101,7 @@ else5:                                            ; preds = %ifcont3
   br label %ifcont6
 
 ifcont6:                                          ; preds = %else5, %then4
-  %10 = load i32, i32* %j
+  %10 = load i32, i32* %j, align 4
   %11 = icmp ne i32 %10, 0
   br i1 %11, label %then7, label %else8
 
@@ -115,10 +115,10 @@ else8:                                            ; preds = %ifcont6
 
 ifcont9:                                          ; preds = %else8, %then7
   call void @h(i32* %i, i32* %j)
-  %12 = load i32, i32* %i
-  %13 = load i32, i32* %j
+  %12 = load i32, i32* %i, align 4
+  %13 = load i32, i32* %j, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @12, i32 0, i32 0), i32 %12, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i32 %13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0))
-  %14 = load i32, i32* %i
+  %14 = load i32, i32* %i, align 4
   %15 = icmp ne i32 %14, 1
   br i1 %15, label %then10, label %else11
 
@@ -131,7 +131,7 @@ else11:                                           ; preds = %ifcont9
   br label %ifcont12
 
 ifcont12:                                         ; preds = %else11, %then10
-  %16 = load i32, i32* %j
+  %16 = load i32, i32* %j, align 4
   %17 = icmp ne i32 %16, 0
   br i1 %17, label %then13, label %else14
 

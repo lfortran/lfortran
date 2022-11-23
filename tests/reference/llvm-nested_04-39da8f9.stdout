@@ -20,44 +20,44 @@ source_filename = "LFortran"
 
 define i32 @__module_nested_04_a_b(i32* %x) {
 .entry:
-  %call_arg_value = alloca i32
-  %b = alloca i32
-  %y = alloca i32
-  %yy = alloca float
-  store float 0x401A666660000000, float* %yy
-  store float* %yy, float** getelementptr inbounds (%b_nstd_types, %b_nstd_types* @b_nstd_strct, i32 0, i32 1)
-  %0 = load i32, i32* %x
-  store i32 %0, i32* %y
-  store i32* %y, i32** getelementptr inbounds (%b_nstd_types, %b_nstd_types* @b_nstd_strct, i32 0, i32 0)
+  %call_arg_value = alloca i32, align 4
+  %b = alloca i32, align 4
+  %y = alloca i32, align 4
+  %yy = alloca float, align 4
+  store float 0x401A666660000000, float* %yy, align 4
+  store float* %yy, float** getelementptr inbounds (%b_nstd_types, %b_nstd_types* @b_nstd_strct, i32 0, i32 1), align 8
+  %0 = load i32, i32* %x, align 4
+  store i32 %0, i32* %y, align 4
+  store i32* %y, i32** getelementptr inbounds (%b_nstd_types, %b_nstd_types* @b_nstd_strct, i32 0, i32 0), align 8
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @12, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
-  store i32 6, i32* %call_arg_value
+  store i32 6, i32* %call_arg_value, align 4
   %1 = call i32 @__module_nested_04_a_c(i32* %call_arg_value)
-  store i32 %1, i32* %b
+  store i32 %1, i32* %b, align 4
   br label %return
 
 return:                                           ; preds = %.entry
-  %2 = load i32, i32* %b
+  %2 = load i32, i32* %b, align 4
   ret i32 %2
 }
 
 define i32 @__module_nested_04_a_c(i32* %z) {
 .entry:
-  %c = alloca i32
-  %0 = load i32, i32* %z
+  %c = alloca i32, align 4
+  %0 = load i32, i32* %z, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i32 %0, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
-  %1 = load i32*, i32** getelementptr inbounds (%b_nstd_types, %b_nstd_types* @b_nstd_strct, i32 0, i32 0)
-  %2 = load i32, i32* %1
+  %1 = load i32*, i32** getelementptr inbounds (%b_nstd_types, %b_nstd_types* @b_nstd_strct, i32 0, i32 0), align 8
+  %2 = load i32, i32* %1, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i32 %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
-  %3 = load float*, float** getelementptr inbounds (%b_nstd_types, %b_nstd_types* @b_nstd_strct, i32 0, i32 1)
-  %4 = load float, float* %3
+  %3 = load float*, float** getelementptr inbounds (%b_nstd_types, %b_nstd_types* @b_nstd_strct, i32 0, i32 1), align 8
+  %4 = load float, float* %3, align 4
   %5 = fpext float %4 to double
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @8, i32 0, i32 0), double %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
-  %6 = load i32, i32* %z
-  store i32 %6, i32* %c
+  %6 = load i32, i32* %z, align 4
+  store i32 %6, i32* %c, align 4
   br label %return
 
 return:                                           ; preds = %.entry
-  %7 = load i32, i32* %c
+  %7 = load i32, i32* %c, align 4
   ret i32 %7
 }
 
@@ -65,10 +65,10 @@ declare void @_lfortran_printf(i8*, ...)
 
 define i32 @main() {
 .entry:
-  %call_arg_value = alloca i32
-  %test = alloca i32
-  store i32 5, i32* %call_arg_value
+  %call_arg_value = alloca i32, align 4
+  %test = alloca i32, align 4
+  store i32 5, i32* %call_arg_value, align 4
   %0 = call i32 @__module_nested_04_a_b(i32* %call_arg_value)
-  store i32 %0, i32* %test
+  store i32 %0, i32* %test, align 4
   ret i32 0
 }

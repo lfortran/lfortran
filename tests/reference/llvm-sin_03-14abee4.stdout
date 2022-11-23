@@ -40,14 +40,14 @@ declare void @_lfortran_dp_rand_num(double*)
 
 define double @__module_lfortran_intrinsic_math_dsin(double* %x) {
 .entry:
-  %r = alloca double
-  %0 = load double, double* %x
+  %r = alloca double, align 8
+  %0 = load double, double* %x, align 8
   %1 = call double @_lfortran_dsin(double %0)
-  store double %1, double* %r
+  store double %1, double* %r, align 8
   br label %return
 
 return:                                           ; preds = %.entry
-  %2 = load double, double* %r
+  %2 = load double, double* %r, align 8
   ret double %2
 }
 
@@ -88,9 +88,9 @@ declare void @_lfortran_sp_rand_num(float*)
 
 define i32 @main() {
 .entry:
-  %x = alloca double
-  store double 0x3FEFEB7A9B2C6D8B, double* %x
-  %0 = load double, double* %x
+  %x = alloca double, align 8
+  store double 0x3FEFEB7A9B2C6D8B, double* %x, align 8
+  %0 = load double, double* %x, align 8
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([10 x i8], [10 x i8]* @3, i32 0, i32 0), double %0, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
   ret i32 0
 }

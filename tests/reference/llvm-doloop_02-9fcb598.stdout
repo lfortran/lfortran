@@ -16,37 +16,37 @@ source_filename = "LFortran"
 
 define i32 @main() {
 .entry:
-  %a = alloca i32
-  %b = alloca i32
-  %i = alloca i32
-  %j = alloca i32
-  store i32 0, i32* %j
-  store i32 1, i32* %a
-  store i32 10, i32* %b
-  %0 = load i32, i32* %a
+  %a = alloca i32, align 4
+  %b = alloca i32, align 4
+  %i = alloca i32, align 4
+  %j = alloca i32, align 4
+  store i32 0, i32* %j, align 4
+  store i32 1, i32* %a, align 4
+  store i32 10, i32* %b, align 4
+  %0 = load i32, i32* %a, align 4
   %1 = sub i32 %0, 1
-  store i32 %1, i32* %i
+  store i32 %1, i32* %i, align 4
   br label %loop.head
 
 loop.head:                                        ; preds = %loop.body, %.entry
-  %2 = load i32, i32* %i
+  %2 = load i32, i32* %i, align 4
   %3 = add i32 %2, 1
-  %4 = load i32, i32* %b
+  %4 = load i32, i32* %b, align 4
   %5 = icmp sle i32 %3, %4
   br i1 %5, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %6 = load i32, i32* %i
+  %6 = load i32, i32* %i, align 4
   %7 = add i32 %6, 1
-  store i32 %7, i32* %i
-  %8 = load i32, i32* %j
-  %9 = load i32, i32* %i
+  store i32 %7, i32* %i, align 4
+  %8 = load i32, i32* %j, align 4
+  %9 = load i32, i32* %i, align 4
   %10 = add i32 %8, %9
-  store i32 %10, i32* %j
+  store i32 %10, i32* %j, align 4
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
-  %11 = load i32, i32* %j
+  %11 = load i32, i32* %j, align 4
   %12 = icmp ne i32 %11, 55
   br i1 %12, label %then, label %else
 
@@ -59,50 +59,50 @@ else:                                             ; preds = %loop.end
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %13 = load i32, i32* %j
+  %13 = load i32, i32* %j, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i32 %13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
-  store i32 0, i32* %a
-  store i32 0, i32* %i
+  store i32 0, i32* %a, align 4
+  store i32 0, i32* %i, align 4
   br label %loop.head1
 
 loop.head1:                                       ; preds = %loop.end5, %ifcont
-  %14 = load i32, i32* %i
+  %14 = load i32, i32* %i, align 4
   %15 = add i32 %14, 1
   %16 = icmp sle i32 %15, 10
   br i1 %16, label %loop.body2, label %loop.end6
 
 loop.body2:                                       ; preds = %loop.head1
-  %17 = load i32, i32* %i
+  %17 = load i32, i32* %i, align 4
   %18 = add i32 %17, 1
-  store i32 %18, i32* %i
-  store i32 0, i32* %j
+  store i32 %18, i32* %i, align 4
+  store i32 0, i32* %j, align 4
   br label %loop.head3
 
 loop.head3:                                       ; preds = %loop.body4, %loop.body2
-  %19 = load i32, i32* %j
+  %19 = load i32, i32* %j, align 4
   %20 = add i32 %19, 1
   %21 = icmp sle i32 %20, 10
   br i1 %21, label %loop.body4, label %loop.end5
 
 loop.body4:                                       ; preds = %loop.head3
-  %22 = load i32, i32* %j
+  %22 = load i32, i32* %j, align 4
   %23 = add i32 %22, 1
-  store i32 %23, i32* %j
-  %24 = load i32, i32* %a
-  %25 = load i32, i32* %i
+  store i32 %23, i32* %j, align 4
+  %24 = load i32, i32* %a, align 4
+  %25 = load i32, i32* %i, align 4
   %26 = sub i32 %25, 1
   %27 = mul i32 %26, 10
   %28 = add i32 %24, %27
-  %29 = load i32, i32* %j
+  %29 = load i32, i32* %j, align 4
   %30 = add i32 %28, %29
-  store i32 %30, i32* %a
+  store i32 %30, i32* %a, align 4
   br label %loop.head3
 
 loop.end5:                                        ; preds = %loop.head3
   br label %loop.head1
 
 loop.end6:                                        ; preds = %loop.head1
-  %31 = load i32, i32* %a
+  %31 = load i32, i32* %a, align 4
   %32 = icmp ne i32 %31, 5050
   br i1 %32, label %then7, label %else8
 
@@ -115,47 +115,47 @@ else8:                                            ; preds = %loop.end6
   br label %ifcont9
 
 ifcont9:                                          ; preds = %else8, %then7
-  %33 = load i32, i32* %a
+  %33 = load i32, i32* %a, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i32 %33, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
-  store i32 0, i32* %a
-  store i32 0, i32* %i
+  store i32 0, i32* %a, align 4
+  store i32 0, i32* %i, align 4
   br label %loop.head10
 
 loop.head10:                                      ; preds = %loop.end14, %ifcont9
-  %34 = load i32, i32* %i
+  %34 = load i32, i32* %i, align 4
   %35 = add i32 %34, 1
   %36 = icmp sle i32 %35, 10
   br i1 %36, label %loop.body11, label %loop.end15
 
 loop.body11:                                      ; preds = %loop.head10
-  %37 = load i32, i32* %i
+  %37 = load i32, i32* %i, align 4
   %38 = add i32 %37, 1
-  store i32 %38, i32* %i
-  store i32 0, i32* %j
+  store i32 %38, i32* %i, align 4
+  store i32 0, i32* %j, align 4
   br label %loop.head12
 
 loop.head12:                                      ; preds = %loop.body13, %loop.body11
-  %39 = load i32, i32* %j
+  %39 = load i32, i32* %j, align 4
   %40 = add i32 %39, 1
-  %41 = load i32, i32* %i
+  %41 = load i32, i32* %i, align 4
   %42 = icmp sle i32 %40, %41
   br i1 %42, label %loop.body13, label %loop.end14
 
 loop.body13:                                      ; preds = %loop.head12
-  %43 = load i32, i32* %j
+  %43 = load i32, i32* %j, align 4
   %44 = add i32 %43, 1
-  store i32 %44, i32* %j
-  %45 = load i32, i32* %a
-  %46 = load i32, i32* %j
+  store i32 %44, i32* %j, align 4
+  %45 = load i32, i32* %a, align 4
+  %46 = load i32, i32* %j, align 4
   %47 = add i32 %45, %46
-  store i32 %47, i32* %a
+  store i32 %47, i32* %a, align 4
   br label %loop.head12
 
 loop.end14:                                       ; preds = %loop.head12
   br label %loop.head10
 
 loop.end15:                                       ; preds = %loop.head10
-  %48 = load i32, i32* %a
+  %48 = load i32, i32* %a, align 4
   %49 = icmp ne i32 %48, 220
   br i1 %49, label %then16, label %else17
 
@@ -168,7 +168,7 @@ else17:                                           ; preds = %loop.end15
   br label %ifcont18
 
 ifcont18:                                         ; preds = %else17, %then16
-  %50 = load i32, i32* %a
+  %50 = load i32, i32* %a, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i32 %50, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
   ret i32 0
 }
