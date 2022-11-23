@@ -1241,13 +1241,13 @@ end function
 function conjgz32(x) result(r)
 complex(sp) :: x
 complex(sp) :: r
-r = cmplx(real(x), -aimag(x), sp)
+r = real(x) - aimag(x)*(0,1)
 end function
 
 function conjgz64(x) result(r)
 complex(dp) :: x
 complex(dp) :: r
-r = cmplx(real(x), -aimag(x), dp)
+r = real(x, dp) - aimag(x)*(0,1)
 end function
 
 function dotproductr32r32(x, y) result(r)
