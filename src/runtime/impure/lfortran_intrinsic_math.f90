@@ -1241,7 +1241,7 @@ end function
 function conjgz32(x) result(r)
 complex(sp) :: x
 complex(sp) :: r
-r = cmplx(real(x), -aimag(x))
+r = cmplx(real(x), -aimag(x), sp)
 end function
 
 function conjgz64(x) result(r)

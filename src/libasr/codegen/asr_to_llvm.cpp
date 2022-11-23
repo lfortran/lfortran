@@ -4993,14 +4993,14 @@ public:
         llvm::Type *type;
         switch( c_kind ) {
             case 4: {
-                re2=re_val;
-                im2=im_val;
+                re2 = builder->CreateFPTrunc(re_val, llvm::Type::getFloatTy(context));
+                im2 = builder->CreateFPTrunc(im_val, llvm::Type::getFloatTy(context));
                 type = complex_type_4;
                 break;
             }
             case 8: {
-                re2 = builder->CreateFPExt(tmp, llvm::Type::getDoubleTy(re_val->getContext()));
-                im2 = builder->CreateFPExt(tmp, llvm::Type::getDoubleTy(im_val->getContext()));
+                re2 = builder->CreateFPExt(re_val, llvm::Type::getDoubleTy(context));
+                im2 = builder->CreateFPExt(im_val, llvm::Type::getDoubleTy(context));
                 type = complex_type_8;
                 break;
             }
