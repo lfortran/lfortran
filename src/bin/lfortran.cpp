@@ -1447,7 +1447,6 @@ namespace wasm {
                             std::ofstream out("input"); \
                             out << input; \
                             lm.files.push_back(fl); \
-                            lm.init_simple(std::string(input)); \
                             lm.file_ends.push_back(strlen(input)); \
                         }
 
