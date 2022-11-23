@@ -4987,17 +4987,20 @@ public:
         this->visit_expr_wrapper(x.m_im, true);
         llvm::Value *im_val = tmp;
 
-        // int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        int c_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
 
-        int a_kind = down_cast<ASR::Complex_t>(x.m_type)->m_kind;
-
+        llvm::Value *re2, *im2;
         llvm::Type *type;
-        switch( a_kind ) {
+        switch( c_kind ) {
             case 4: {
+                re2=re_val;
+                im2=im_val;
                 type = complex_type_4;
                 break;
             }
             case 8: {
+                re2 = builder->CreateFPExt(tmp, llvm::Type::getDoubleTy(re_val->getContext()));
+                im2 = builder->CreateFPExt(tmp, llvm::Type::getDoubleTy(im_val->getContext()));
                 type = complex_type_8;
                 break;
             }
@@ -5005,9 +5008,7 @@ public:
                 throw CodeGenError("kind type is not supported");
             }
         }
-        std::cout<<"kind:>> "<<a_kind<<std::endl;
-
-        tmp = complex_from_floats(re_val, im_val, type);
+        tmp = complex_from_floats(re2, im2, type);
     }
 
     void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
