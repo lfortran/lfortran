@@ -309,6 +309,7 @@ expr
     | IntegerBitLen(expr a, ttype type, expr? value)
     | Ichar(expr arg, ttype type, expr? value)
     | Iachar(expr arg, ttype type, expr? value)
+    | Verify(expr string, expr set, expr? back, ttype type, expr? value)
 
     | SizeOfType(ttype arg, ttype type, expr? value)
 

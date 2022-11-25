@@ -2549,6 +2549,27 @@ public:
         return ASR::make_ArrayMatMul_t(al, x.base.base.loc, matrix_a, matrix_b, ret_type, nullptr);
     }
 
+    void create_ScanVerify_util(const AST::FuncCallOrArray_t& x,
+         ASR::expr_t*& string, ASR::expr_t*& set, ASR::expr_t*& back,
+         ASR::ttype_t*& type, std::string func_name) {
+         ASR::expr_t* kind = nullptr;
+         std::vector<ASR::expr_t*> args;
+         std::vector<std::string> kwarg_names = {"back", "kind"};
+         handle_intrinsic_node_args(x, args, kwarg_names, 2, 4, func_name);
+         string = args[0], set = args[1], back = args[2], kind = args[3];
+         int64_t kind_value = handle_kind(kind);
+         type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_value, nullptr, 0));
+     }
+
+     ASR::asr_t* create_Verify(const AST::FuncCallOrArray_t& x) {
+         ASR::expr_t *string, *set, *back;
+         ASR::ttype_t *type;
+         string = nullptr, set = nullptr, back = nullptr;
+         type = nullptr;
+         create_ScanVerify_util(x, string, set, back, type, "verify");
+         return ASR::make_Verify_t(al, x.base.base.loc, string, set, back, type, nullptr);
+     }
+
     ASR::asr_t* create_ArrayPack(const AST::FuncCallOrArray_t& x) {
         std::vector<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"vector"};
@@ -2768,6 +2789,8 @@ public:
                 tmp = create_Ichar(x);
             } else if( var_name == "iachar" ) {
                 tmp = create_Iachar(x);
+            } else if( var_name == "verify" ) {
+                tmp = create_Verify(x);
             } else {
                 LCompilersException("create_" + var_name + " not implemented yet.");
             }
