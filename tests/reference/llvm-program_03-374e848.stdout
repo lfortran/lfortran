@@ -1,5 +1,5 @@
-; ModuleID = 'LFortran'
-source_filename = "LFortran"
+; ModuleID = 'LCompilers'
+source_filename = "LCompilers"
 
 %closuretest_nstd_types = type { i32* }
 %closuretest_vals = type { i32 }

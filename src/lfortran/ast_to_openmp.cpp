@@ -2,15 +2,15 @@
 
 #include <lfortran/ast_to_openmp.h>
 
-using LFortran::AST::expr_t;
-using LFortran::AST::Name_t;
-using LFortran::AST::Num_t;
-using LFortran::AST::BinOp_t;
-using LFortran::AST::operatorType;
-using LFortran::AST::BaseVisitor;
+using LCompilers::LFortran::AST::expr_t;
+using LCompilers::LFortran::AST::Name_t;
+using LCompilers::LFortran::AST::Num_t;
+using LCompilers::LFortran::AST::BinOp_t;
+using LCompilers::LFortran::AST::operatorType;
+using LCompilers::LFortran::AST::BaseVisitor;
 
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
 namespace {
 
@@ -306,7 +306,7 @@ public:
             // Determine proper canonical printing of kinds
             // TODO: Move this part into a separate AST pass
             kind_item_t k[2];
-            LFORTRAN_ASSERT(x.n_kind <= 2);
+            LCOMPILERS_ASSERT(x.n_kind <= 2);
             for (size_t i=0; i<x.n_kind; i++) {
                 k[i] = x.m_kind[i];
             }
@@ -402,7 +402,7 @@ public:
     {
         switch (type) {
             case (AST::kind_item_typeType::Value) :
-                LFORTRAN_ASSERT(value != nullptr);
+                LCOMPILERS_ASSERT(value != nullptr);
                 this->visit_expr(*value);
                 return s;
             case (AST::kind_item_typeType::Colon) :
@@ -602,7 +602,7 @@ public:
         std::string r = "";
         if (red)
         {
-            LFORTRAN_ASSERT(red->n_vars == 1)
+            LCOMPILERS_ASSERT(red->n_vars == 1)
             r.append("!$OMP DO REDUCTION(");
             //This will need expanded
             if (red->m_op == AST::reduce_opType::ReduceAdd) {

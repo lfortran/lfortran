@@ -1,5 +1,5 @@
-; ModuleID = 'LFortran'
-source_filename = "LFortran"
+; ModuleID = 'LCompilers'
+source_filename = "LCompilers"
 
 %c_ptr = type { i32 }
 %array = type { i32*, i32, %dimension_descriptor*, i1, i32 }

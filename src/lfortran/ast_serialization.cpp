@@ -9,13 +9,13 @@
 #include <libasr/bwriter.h>
 #include <libasr/string_utils.h>
 
-using LFortran::ASRUtils::symbol_parent_symtab;
-using LFortran::ASRUtils::symbol_name;
+using LCompilers::ASRUtils::symbol_parent_symtab;
+using LCompilers::ASRUtils::symbol_name;
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
 class ASTSerializationVisitor :
-#ifdef WITH_LFORTRAN_BINARY_MODFILES
+#ifdef WITH_LCOMPILERS_BINARY_MODFILES
         public BinaryWriter,
 #else
         public TextWriter,
@@ -44,7 +44,7 @@ std::string serialize(const AST::TranslationUnit_t &unit) {
 }
 
 class ASTDeserializationVisitor :
-#ifdef WITH_LFORTRAN_BINARY_MODFILES
+#ifdef WITH_LCOMPILERS_BINARY_MODFILES
     public BinaryReader,
 #else
     public TextReader,
@@ -53,7 +53,7 @@ class ASTDeserializationVisitor :
 {
 public:
     ASTDeserializationVisitor(Allocator &al, const std::string &s) :
-#ifdef WITH_LFORTRAN_BINARY_MODFILES
+#ifdef WITH_LCOMPILERS_BINARY_MODFILES
         BinaryReader(s),
 #else
         TextReader(s),
@@ -67,7 +67,7 @@ public:
 
     char* read_cstring() {
         std::string s = read_string();
-        LFortran::Str cs;
+        LCompilers::Str cs;
         cs.from_str_view(s);
         char* p = cs.c_str(al);
         return p;
@@ -80,4 +80,4 @@ AST::ast_t* deserialize_ast(Allocator &al, const std::string &s) {
 }
 
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran

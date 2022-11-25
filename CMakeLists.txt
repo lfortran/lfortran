@@ -69,15 +69,15 @@ else()
 endif()
 
 
-# LFORTRAN_ASSERT
-set(WITH_LFORTRAN_ASSERT ${WITH_LFORTRAN_ASSERT_DEFAULT}
-    CACHE BOOL "Enable LFORTRAN_ASSERT macro")
+# LCOMPILERS_ASSERT
+set(WITH_LCOMPILERS_ASSERT ${WITH_LFORTRAN_ASSERT_DEFAULT}
+    CACHE BOOL "Enable LCOMPILERS_ASSERT macro")
 
 # LFORTRAN_STATIC_BIN
 set(LFORTRAN_STATIC_BIN no CACHE BOOL "Build LFortran as a static binary")
 
-# WITH_LFORTRAN_BINARY_MODFILES
-set(WITH_LFORTRAN_BINARY_MODFILES YES
+# WITH_LCOMPILERS_BINARY_MODFILES
+set(WITH_LCOMPILERS_BINARY_MODFILES YES
     CACHE BOOL "Use binary modfiles")
 
 set(WITH_RUNTIME_LIBRARY YES
@@ -90,9 +90,9 @@ set(WITH_ZLIB yes
     CACHE BOOL "Compile with ZLIB Library")
 
 # Build to wasm
-set(LFORTRAN_BUILD_TO_WASM no 
+set(LFORTRAN_BUILD_TO_WASM no
     CACHE BOOL "Compile LFortran To WASM")
-    
+
 if (LFORTRAN_BUILD_TO_WASM)
     set(HAVE_BUILD_TO_WASM yes)
     SET(WITH_WHEREAMI no)
@@ -160,7 +160,7 @@ if (WITH_LLVM)
         list(APPEND LFORTRAN_LLVM_COMPONENTS webassemblyasmparser webassemblycodegen webassemblydesc webassemblydisassembler webassemblyinfo)
         add_definitions("-DHAVE_TARGET_WASM=1")
     endif()
-    
+
     llvm_map_components_to_libnames(llvm_libs ${LFORTRAN_LLVM_COMPONENTS})
     unset(LFORTRAN_LLVM_COMPONENTS)
 
@@ -182,14 +182,14 @@ if (WITH_LLVM)
         target_link_directories(p::llvm BEFORE INTERFACE ${mypath})
         message(STATUS "ZLIB LIBRARY PATH: ${mypath}")
     endif()
-    set(HAVE_LFORTRAN_LLVM yes)
+    set(HAVE_LCOMPILERS_LLVM yes)
 endif()
 
 # XEUS (Fortran kernel)
 set(WITH_XEUS no CACHE BOOL "Build with XEUS support")
 if (WITH_XEUS)
     find_package(xeus 2.4.1 REQUIRED)
-    set(HAVE_LFORTRAN_XEUS yes)
+    set(HAVE_LCOMPILERS_XEUS yes)
 
     # Generate kernel.json with correct paths
     configure_file (
@@ -213,12 +213,12 @@ if (WITH_JSON)
     find_package(RapidJSON REQUIRED)
 endif()
 
-set(HAVE_LFORTRAN_DEMANGLE yes
+set(HAVE_LCOMPILERS_DEMANGLE yes
     CACHE BOOL "Build with C++ name demangling support (cxxabi.h)")
 
 if (MSVC)
     # MSVC doesn't have cxxabi.h
-    set(HAVE_LFORTRAN_DEMANGLE no)
+    set(HAVE_LCOMPILERS_DEMANGLE no)
 endif()
 
 # fmt (`conda install fmt`)
@@ -251,25 +251,25 @@ if (WITH_STACKTRACE)
         set(WITH_LINKH yes)
         set(WITH_BFD yes)
     endif()
-    set(HAVE_LFORTRAN_STACKTRACE yes)
+    set(HAVE_LCOMPILERS_STACKTRACE yes)
 endif()
 if (WITH_BFD)
     find_package(BFD REQUIRED)
-    set(HAVE_LFORTRAN_BFD yes)
+    set(HAVE_LCOMPILERS_BFD yes)
 endif()
 if (WITH_DWARFDUMP)
-    set(HAVE_LFORTRAN_DWARFDUMP yes)
+    set(HAVE_LCOMPILERS_DWARFDUMP yes)
 endif()
 if (WITH_LINKH)
     find_package(LINKH REQUIRED)
-    set(HAVE_LFORTRAN_LINK yes)
+    set(HAVE_LCOMPILERS_LINK yes)
 endif()
 if (WITH_MACHO)
     find_package(MACHO REQUIRED)
-    set(HAVE_LFORTRAN_MACHO yes)
+    set(HAVE_LCOMPILERS_MACHO yes)
 endif()
 if (WITH_UNWIND)
-    set(HAVE_LFORTRAN_UNWIND yes)
+    set(HAVE_LCOMPILERS_UNWIND yes)
 endif()
 
 enable_testing()
@@ -290,7 +290,7 @@ else ()
     message("C++ compiler flags    : ${CMAKE_CXX_FLAGS_RELEASE}")
 endif ()
 message("Installation prefix: ${CMAKE_INSTALL_PREFIX}")
-message("WITH_LFORTRAN_ASSERT: ${WITH_LFORTRAN_ASSERT}")
+message("WITH_LCOMPILERS_ASSERT: ${WITH_LCOMPILERS_ASSERT}")
 message("LFORTRAN_STATIC_BIN: ${LFORTRAN_STATIC_BIN}")
 message("LFORTRAN_BUILD_TO_WASM: ${LFORTRAN_BUILD_TO_WASM}")
 message("WITH_STACKTRACE: ${WITH_STACKTRACE}")
@@ -299,12 +299,12 @@ message("WITH_BFD: ${WITH_BFD}")
 message("WITH_DWARFDUMP: ${WITH_DWARFDUMP}")
 message("WITH_LINKH: ${WITH_LINKH}")
 message("WITH_MACHO: ${WITH_MACHO}")
-message("HAVE_LFORTRAN_DEMANGLE: ${HAVE_LFORTRAN_DEMANGLE}")
+message("HAVE_LCOMPILERS_DEMANGLE: ${HAVE_LCOMPILERS_DEMANGLE}")
 message("WITH_LLVM: ${WITH_LLVM}")
 message("WITH_XEUS: ${WITH_XEUS}")
 message("WITH_JSON: ${WITH_JSON}")
 message("WITH_FMT: ${WITH_FMT}")
-message("WITH_LFORTRAN_BINARY_MODFILES: ${WITH_LFORTRAN_BINARY_MODFILES}")
+message("WITH_LCOMPILERS_BINARY_MODFILES: ${WITH_LCOMPILERS_BINARY_MODFILES}")
 message("WITH_RUNTIME_LIBRARY: ${WITH_RUNTIME_LIBRARY}")
 message("WITH_WHEREAMI: ${WITH_WHEREAMI}")
 message("WITH_ZLIB: ${WITH_ZLIB}")

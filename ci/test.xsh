@@ -41,7 +41,7 @@ src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
 # Run all tests (does not work on Windows yet):
 cmake --version
 if not $IS_WIN:
-    ./run_tests.py
+    ./run_tests.py -b llvm llvm2
 
     cd integration_tests
     mkdir build-lfortran-llvm
@@ -51,5 +51,3 @@ if not $IS_WIN:
     make
     ctest -L llvm
     cd ..
-
-    ./run_tests.py -b llvm2

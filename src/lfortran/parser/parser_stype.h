@@ -7,8 +7,7 @@
 #include <libasr/containers.h>
 #include <libasr/bigint.h>
 
-namespace LFortran
-{
+namespace LCompilers::LFortran {
 
 struct VarType {
     Location loc;
@@ -96,10 +95,10 @@ static_assert(std::is_trivial<YYSTYPE>::value);
 // would reduce performance.
 static_assert(sizeof(YYSTYPE) == sizeof(Vec<AST::ast_t*>));
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran
 
 
-typedef struct LFortran::Location YYLTYPE;
+typedef struct LCompilers::Location YYLTYPE;
 #define YYLTYPE_IS_DECLARED 1
 #define YYLTYPE_IS_TRIVIAL 0
 

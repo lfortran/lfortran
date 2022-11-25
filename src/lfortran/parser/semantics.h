@@ -17,14 +17,14 @@
 #include <lfortran/parser/parser_exception.h>
 
 // This is only used in parser.tab.cc, nowhere else, so we simply include
-// everything from LFortran::AST to save typing:
-using namespace LFortran::AST;
-using LFortran::Location;
-using LFortran::Vec;
-using LFortran::FnArg;
-using LFortran::CoarrayArg;
-using LFortran::VarType;
-using LFortran::ArgStarKw;
+// everything from LCompilers::LFortran::AST to save typing:
+using namespace LCompilers::LFortran::AST;
+using LCompilers::Location;
+using LCompilers::Vec;
+using LCompilers::LFortran::FnArg;
+using LCompilers::LFortran::CoarrayArg;
+using LCompilers::LFortran::VarType;
+using LCompilers::LFortran::ArgStarKw;
 
 
 static inline expr_t* EXPR(const ast_t *f)
@@ -67,7 +67,7 @@ template <typename T, astType type>
 static inline T** vec_cast(const Vec<ast_t*> &x) {
     T **s = (T**)x.p;
     for (size_t i=0; i < x.size(); i++) {
-        LFORTRAN_ASSERT((s[i]->base.type == type))
+        LCOMPILERS_ASSERT((s[i]->base.type == type))
     }
     return s;
 }
@@ -190,8 +190,9 @@ static inline equi_t* EQUIVALENCE1(Allocator &al, Location &loc,
     return r;
 }
 
-static inline LFortran::IntSuffix divide_int_by_2(const LFortran::IntSuffix &n) {
-    LFortran::IntSuffix n2 = n;
+static inline LCompilers::LFortran::IntSuffix divide_int_by_2(
+        const LCompilers::LFortran::IntSuffix &n) {
+    LCompilers::LFortran::IntSuffix n2 = n;
     n2.int_n.n /= 2;
     return n2;
 }
@@ -383,7 +384,7 @@ ast_t* data_implied_do(Allocator &al, Location &loc,
 static inline var_sym_t* VARSYM(Allocator &al, Location &l,
         char* name, dimension_t* dim, size_t n_dim,
         codimension_t* codim, size_t n_codim, expr_t* init,
-        LFortran::AST::symbolType sym, decl_attribute_t* x)
+        LCompilers::LFortran::AST::symbolType sym, decl_attribute_t* x)
 {
     var_sym_t *r = al.allocate<var_sym_t>(1);
     r->loc = l;
@@ -477,7 +478,7 @@ static inline Vec<FnArg> empty1()
 }
 
 static inline VarType* VARTYPE0_(Allocator &al,
-        const LFortran::Str &s, const Vec<kind_item_t> kind, Location &l)
+        const LCompilers::Str &s, const Vec<kind_item_t> kind, Location &l)
 {
     VarType *r = al.allocate<VarType>(1);
     r->loc = l;
@@ -488,7 +489,7 @@ static inline VarType* VARTYPE0_(Allocator &al,
 }
 
 static inline VarType* VARTYPE4_(Allocator &al,
-        const LFortran::Str &s, const ast_t *id, Location &l)
+        const LCompilers::Str &s, const ast_t *id, Location &l)
 {
     VarType *r = al.allocate<VarType>(1);
     r->loc = l;
@@ -628,14 +629,15 @@ static inline char** REDUCE_ARGS(Allocator &al, const Vec<ast_t*> args)
 static inline reduce_opType convert_id_to_reduce_type(
         const Location &loc, const ast_t *id)
 {
-        std::string s_id = down_cast2<Name_t>(id)->m_id;
-        if (s_id == "MIN" ) {
-                return reduce_opType::ReduceMIN;
-        } else if (s_id == "MAX") {
-                return reduce_opType::ReduceMAX;
-        } else {
-                throw LFortran::parser_local::ParserError("Unsupported operation in reduction", loc);
-        }
+    std::string s_id = down_cast2<Name_t>(id)->m_id;
+    if (s_id == "MIN" ) {
+        return reduce_opType::ReduceMIN;
+    } else if (s_id == "MAX") {
+        return reduce_opType::ReduceMAX;
+    } else {
+        throw LCompilers::LFortran::parser_local::ParserError(
+            "Unsupported operation in reduction", loc);
+    }
 }
 
 #define TYPE ast_t*
@@ -655,7 +657,9 @@ static inline reduce_opType convert_id_to_reduce_type(
 
 ast_t* parenthesis(Allocator &al, Location &loc, expr_t *op) {
     switch (op->type) {
-        case LFortran::AST::exprType::Name: { return make_Parenthesis_t(al, loc, op); }
+        case LCompilers::LFortran::AST::exprType::Name: {
+            return make_Parenthesis_t(al, loc, op);
+        }
         default : { return (ast_t*)op; }
     }
 }
@@ -761,12 +765,12 @@ ast_t* implied_do3(Allocator &al, Location &loc,
 #define IMPLIED_DO_LOOP6(ex1, ex2, ex_list, i, low, high, incr, l) \
     implied_do3(p.m_a, l, ex1, ex2, ex_list, i, low, high, incr)
 
-char *str2str_null(Allocator &al, const LFortran::Str &s) {
+char *str2str_null(Allocator &al, const LCompilers::Str &s) {
     if (s.p == nullptr) {
-        LFORTRAN_ASSERT(s.n == 0)
+        LCOMPILERS_ASSERT(s.n == 0)
         return nullptr;
     } else {
-        LFORTRAN_ASSERT(s.n > 0)
+        LCOMPILERS_ASSERT(s.n > 0)
         return s.c_str(al);
     }
 }
@@ -858,12 +862,12 @@ ast_t* ALLOCATE_STMT0(Allocator &al,
 #define ALLOCATE_STMT(args, l) ALLOCATE_STMT0(p.m_a, args, l)
 #define DEALLOCATE_STMT(args, l) DEALLOCATE_STMT1(p.m_a, args, l)
 
-char* def_op_to_str(Allocator &al, const LFortran::Str &s) {
-    LFORTRAN_ASSERT(s.p[0] == '.');
-    LFORTRAN_ASSERT(s.p[s.size()-1] == '.');
+char* def_op_to_str(Allocator &al, const LCompilers::Str &s) {
+    LCOMPILERS_ASSERT(s.p[0] == '.');
+    LCOMPILERS_ASSERT(s.p[s.size()-1] == '.');
     std::string s0 = s.str();
     s0 = s0.substr(1, s.size()-2);
-    LFortran::Str s2;
+    LCompilers::Str s2;
     s2.from_str_view(s0);
     return s2.c_str(al);
 }
@@ -935,13 +939,13 @@ void extract_args1(Allocator &al,
     for (auto &item : args0) {
         if (item.keyword) {
             keyword_t kw;
-            LFORTRAN_ASSERT(item.kw.m_value != nullptr);
+            LCOMPILERS_ASSERT(item.kw.m_value != nullptr);
             kw.loc = item.kw.loc;
             kw.m_value = item.kw.m_value;
             kw.m_arg = item.kw.m_arg;
             v2.push_back(al, kw);
         } else {
-            LFORTRAN_ASSERT(item.arg.m_value != nullptr);
+            LCOMPILERS_ASSERT(item.arg.m_value != nullptr);
             v.push_back(al, item.arg.m_value);
         }
     }
@@ -1047,7 +1051,7 @@ void CONVERT_FNARRAYARG_FNARG(Allocator &al,
     Vec<fnarg_t> v;
     v.reserve(al, args.size());
     for (auto &item : args) {
-        LFORTRAN_ASSERT(!item.keyword);
+        LCOMPILERS_ASSERT(!item.keyword);
         v.push_back(al, item.arg);
     }
     s.m_args = v.p;
@@ -1240,7 +1244,7 @@ Vec<ast_t*> empty_sync(Allocator &al) {
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size())
 
-char *str_or_null(Allocator &al, const LFortran::Str &s) {
+char *str_or_null(Allocator &al, const LCompilers::Str &s) {
     if (s.size() == 0) {
         return nullptr;
     } else {
@@ -1329,7 +1333,7 @@ for (size_t i=0; i<decl_stmts.size(); i++) {
     if (is_a<unit_decl2_t>(*decl_stmts[i])) {
         decl.push_back(al, decl_stmts[i]);
     } else {
-        LFORTRAN_ASSERT(is_a<stmt_t>(*decl_stmts[i]))
+        LCOMPILERS_ASSERT(is_a<stmt_t>(*decl_stmts[i]))
         stmt.push_back(al, decl_stmts[i]);
     }
 }
@@ -1369,8 +1373,8 @@ return make_Program_t(al, a_loc,
         ((If_t*)stmt)->m_stmt_name = name2char(id_first); \
         std::string first = name2char(id_first), \
                     last  = name2char(id_last); \
-        if (LFortran::to_lower(first) != LFortran::to_lower(last)) { \
-            throw LFortran::LCompilersException("statement name is inconsistent"); \
+        if (LCompilers::to_lower(first) != LCompilers::to_lower(last)) { \
+            throw LCompilers::LCompilersException("statement name is inconsistent"); \
         }
 
 #define LABEL(stmt, label) ((Print_t*)stmt)->m_label = label
@@ -1458,7 +1462,8 @@ return make_Program_t(al, a_loc,
 #define PLIST_ADD(l, x) l.push_back(p.m_a, *x)
 static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
         ast_t *repeat, ast_t *e) {
-    int64_t n = LFortran::AST::down_cast2<LFortran::AST::Num_t>(repeat)->m_n;
+    int64_t n = LCompilers::LFortran::AST::down_cast2
+        <LCompilers::LFortran::AST::Num_t>(repeat)->m_n;
     for (int64_t i=0; i<n; i++) {
         v.push_back(al, e);
     }
@@ -1471,7 +1476,7 @@ static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr)
 
 void add_ws_warning(const Location &loc,
-        LFortran::diag::Diagnostics &diagnostics, bool fixed_form,
+        LCompilers::diag::Diagnostics &diagnostics, bool fixed_form,
         int end_token) {
     if (!fixed_form) {
         if (end_token == yytokentype::KW_ENDDO) {
@@ -1505,7 +1510,8 @@ void add_ws_warning(const Location &loc,
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr); \
         if (label == 0) { \
-            throw LFortran::parser_local::ParserError("Zero is not a valid statement label", l); \
+            throw LCompilers::LFortran::parser_local::ParserError( \
+                "Zero is not a valid statement label", l); \
         }
 
 #define DO3_LABEL(label, i, a, b, c, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, \
@@ -1513,7 +1519,8 @@ void add_ws_warning(const Location &loc,
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr); \
         if (label == 0) { \
-            throw LFortran::parser_local::ParserError("Zero is not a valid statement label", l); \
+            throw LCompilers::LFortran::parser_local::ParserError( \
+                "Zero is not a valid statement label", l); \
         }
 #define DO3(i, a, b, c, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
         name2char(i), EXPR(a), EXPR(b), EXPR(c), \
@@ -1693,8 +1700,8 @@ void add_ws_warning(const Location &loc,
         nullptr, \
         0)
 
-LFortran::Str Str_from_string(Allocator &al, const std::string &s) {
-        LFortran::Str r;
+LCompilers::Str Str_from_string(Allocator &al, const std::string &s) {
+        LCompilers::Str r;
         r.from_str(al, s);
         return r;
 }
@@ -1751,13 +1758,14 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
 #define FUNCCALLORARRAY4(mem, id, args, subargs, l) FUNCCALLORARRAY0(p.m_a, id, \
         mem, args, subargs, l)
 
-ast_t* SUBSTRING_(Allocator &al, const LFortran::Str &str,
+ast_t* SUBSTRING_(Allocator &al, const LCompilers::Str &str,
         const Vec<FnArg> &args, Location &l) {
     Vec<fnarg_t> v;
     v.reserve(al, args.size());
     for (auto &item : args) {
         if(item.keyword) {
-            throw LFortran::parser_local::ParserError("Keyword Assignment is not allowed in Character Substring", l);
+            throw LCompilers::LFortran::parser_local::ParserError( \
+                "Keyword Assignment is not allowed in Character Substring", l);
         }
         v.push_back(al, item.arg);
     }
@@ -2078,7 +2086,8 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         name2char(id), ARGS(p.m_a, l, args), args.size(), \
         EXPR_OPT(return), bind_opt(bind), nullptr)
 
-#define TRIVIA_SET(x) case LFortran::AST::stmtType::x: { down_cast<x##_t>(s)->m_trivia = trivia; break; }
+#define TRIVIA_SET(x) case LCompilers::LFortran::AST::stmtType::x: { \
+            down_cast<x##_t>(s)->m_trivia = trivia; break; }
 
 void set_m_trivia(stmt_t *s, trivia_t *trivia) {
     switch (s->type) {
@@ -2132,7 +2141,7 @@ void set_m_trivia(stmt_t *s, trivia_t *trivia) {
         TRIVIA_SET(SelectType)
         TRIVIA_SET(Where)
         TRIVIA_SET(WhileLoop)
-        default : { throw LFortran::LCompilersException("Not implemented"); }
+        default : { throw LCompilers::LCompilersException("Not implemented"); }
     }
 }
 

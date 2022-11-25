@@ -1,5 +1,5 @@
-#ifndef LFORTRAN_LLVM_UTILS_H
-#define LFORTRAN_LLVM_UTILS_H
+#ifndef LIBASR_LLVM_UTILS_H
+#define LIBASR_LLVM_UTILS_H
 
 #include <memory>
 
@@ -10,7 +10,7 @@
 #include <map>
 #include <tuple>
 
-namespace LFortran {
+namespace LCompilers {
 
     namespace LLVMArrUtils {
         class Descriptor;
@@ -568,6 +568,6 @@ namespace LFortran {
 
     };
 
-} // LFortran
+} // namespace LCompilers
 
-#endif // LFORTRAN_LLVM_UTILS_H
+#endif // LIBASR_LLVM_UTILS_H

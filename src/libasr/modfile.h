@@ -1,9 +1,9 @@
-#ifndef LFORTRAN_MODFILE_H
-#define LFORTRAN_MODFILE_H
+#ifndef LIBASR_MODFILE_H
+#define LIBASR_MODFILE_H
 
 #include <libasr/asr.h>
 
-namespace LFortran {
+namespace LCompilers {
 
     // Save a module to a modfile
     std::string save_modfile(const ASR::TranslationUnit_t &m);
@@ -17,6 +17,6 @@ namespace LFortran {
     ASR::TranslationUnit_t* load_pycfile(Allocator &al, const std::string &s,
         bool load_symtab_id);
 
-}
+} // namespace LCompilers
 
-#endif // LFORTRAN_MODFILE_H
+#endif // LIBASR_MODFILE_H

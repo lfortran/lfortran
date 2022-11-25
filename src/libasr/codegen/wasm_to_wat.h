@@ -1,9 +1,9 @@
-#ifndef LFORTRAN_WASM_TO_WAT_H
-#define LFORTRAN_WASM_TO_WAT_H
+#ifndef LIBASR_WASM_TO_WAT_H
+#define LIBASR_WASM_TO_WAT_H
 
 #include <libasr/wasm_visitor.h>
 
-namespace LFortran {
+namespace LCompilers {
 
 namespace WASM_INSTS_VISITOR {
 
@@ -286,6 +286,6 @@ class WATVisitor : public BaseWASMVisitor<WATVisitor> {
 Result<std::string> wasm_to_wat(Vec<uint8_t> &wasm_bytes, Allocator &al,
                                 diag::Diagnostics &diagnostics);
 
-}  // namespace LFortran
+}  // namespace LCompilers
 
-#endif  // LFORTRAN_WASM_TO_WAT_H
+#endif  // LIBASR_WASM_TO_WAT_H

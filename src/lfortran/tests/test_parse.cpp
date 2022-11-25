@@ -9,21 +9,22 @@
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/bigint.h>
 
-using LFortran::parse;
-using LFortran::TRY;
-using LFortran::Result;
-using LFortran::AST::ast_t;
-using LFortran::AST::expr_t;
-using LFortran::AST::Name_t;
-using LFortran::AST::BaseWalkVisitor;
+using LCompilers::LFortran::parse;
+using LCompilers::TRY;
+using LCompilers::Result;
+using LCompilers::LFortran::lex_int;
+using LCompilers::LFortran::AST::ast_t;
+using LCompilers::LFortran::AST::expr_t;
+using LCompilers::LFortran::AST::Name_t;
+using LCompilers::LFortran::AST::BaseWalkVisitor;
 
-using LFortran::BigInt::is_int_ptr;
-using LFortran::BigInt::ptr_to_int;
-using LFortran::BigInt::int_to_ptr;
-using LFortran::BigInt::string_to_largeint;
-using LFortran::BigInt::largeint_to_string;
-using LFortran::BigInt::MAX_SMALL_INT;
-using LFortran::BigInt::MIN_SMALL_INT;
+using LCompilers::BigInt::is_int_ptr;
+using LCompilers::BigInt::ptr_to_int;
+using LCompilers::BigInt::int_to_ptr;
+using LCompilers::BigInt::string_to_largeint;
+using LCompilers::BigInt::largeint_to_string;
+using LCompilers::BigInt::MAX_SMALL_INT;
+using LCompilers::BigInt::MIN_SMALL_INT;
 
 // Print any vector like iterable to a string
 template <class T>
@@ -73,8 +74,8 @@ class TokenizerError0 {
 };
 
 std::vector<int> tokens(Allocator &al, const std::string &input) {
-    LFortran::diag::Diagnostics diagnostics;
-    auto res = LFortran::tokens(al, input, diagnostics, nullptr, nullptr, false);
+    LCompilers::diag::Diagnostics diagnostics;
+    auto res = LCompilers::LFortran::tokens(al, input, diagnostics, nullptr, nullptr, false);
     if (res.ok) {
         return res.result;
     } else {
@@ -95,9 +96,9 @@ TEST_CASE("Test longer parser (N = 500)") {
     }
     Allocator al(1024*1024);
     //std::cout << "Parse" << std::endl;
-    LFortran::diag::Diagnostics diagnostics;
+    LCompilers::diag::Diagnostics diagnostics;
     //auto t1 = std::chrono::high_resolution_clock::now();
-    auto result = LFortran::TRY(parse(al, text, diagnostics))->m_items[0];
+    auto result = LCompilers::TRY(parse(al, text, diagnostics))->m_items[0];
     //auto t2 = std::chrono::high_resolution_clock::now();
     //std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
     //                .count() << "ms" << std::endl;
@@ -113,7 +114,7 @@ TEST_CASE("Test longer parser (N = 500)") {
 TEST_CASE("Test lex_int") {
     unsigned char *s;
     uint64_t u;
-    LFortran::Str suffix;
+    LCompilers::Str suffix;
 
     // Test ints
     s = (unsigned char*)"15";
@@ -209,7 +210,7 @@ TEST_CASE("Test Big Int") {
 
     /* Big int tests */
     Allocator al(1024);
-    LFortran::Str s;
+    LCompilers::Str s;
     char *cs;
 
     s.from_str(al, "123");
@@ -225,9 +226,9 @@ TEST_CASE("Test Big Int") {
     CHECK(std::string(cs) == "123567890123456789012345678901234567890");
 }
 
-TEST_CASE("Test LFortran::Vec") {
+TEST_CASE("Test LCompilers::Vec") {
     Allocator al(1024);
-    LFortran::Vec<int> v;
+    LCompilers::Vec<int> v;
 
     v.reserve(al, 2);
     CHECK(v.size() == 0);
@@ -294,9 +295,9 @@ TEST_CASE("Test LFortran::Vec") {
     CHECK(sv[4] == 5);
 }
 
-TEST_CASE("LFortran::Vec iterators") {
+TEST_CASE("LCompilers::Vec iterators") {
     Allocator al(1024);
-    LFortran::Vec<int> v;
+    LCompilers::Vec<int> v;
 
     v.reserve(al, 2);
     v.push_back(al, 1);
@@ -340,9 +341,9 @@ TEST_CASE("LFortran::Vec iterators") {
     CHECK(i == 10);
 }
 
-TEST_CASE("Test LFortran::Str") {
+TEST_CASE("Test LCompilers::Str") {
     Allocator al(1024);
-    LFortran::Str s;
+    LCompilers::Str s;
     const char *data = "Some string.";
 
     s.p = const_cast<char*>(data);
@@ -365,7 +366,7 @@ TEST_CASE("Test LFortran::Str") {
     CHECK(copy[2] == '\x00');
 }
 
-TEST_CASE("Test LFortran::Allocator") {
+TEST_CASE("Test LCompilers::Allocator") {
     Allocator al(32);
     // Size is what we asked (32) plus alignment (8) = 40
     CHECK(al.size_total() == 40);
@@ -388,7 +389,7 @@ TEST_CASE("Test LFortran::Allocator") {
     CHECK(al.size_total() == 1032);
 }
 
-TEST_CASE("Test LFortran::Allocator 2") {
+TEST_CASE("Test LCompilers::Allocator 2") {
     Allocator al(32);
     int *p = al.allocate<int>();
     p[0] = 5;
@@ -410,8 +411,8 @@ TEST_CASE("Tokenizer") {
     Allocator al(1024);
     std::string s;
     std::vector<int> ref;
-    std::vector<LFortran::YYSTYPE> stypes;
-    LFortran::diag::Diagnostics diagnostics;
+    std::vector<LCompilers::LFortran::YYSTYPE> stypes;
+    LCompilers::diag::Diagnostics diagnostics;
 
     s = R"(subroutine
     x = y
@@ -510,7 +511,7 @@ TEST_CASE("Tokenizer") {
     s = "2*18446744073709551616"; // 2**64, too large, will throw an exception
     stypes.clear();
     CHECK(TRY(tokens(al, s, diagnostics, &stypes, nullptr, false)) == ref);
-    LFortran::BigInt::BigInt n = stypes[2].int_suffix.int_n;
+    LCompilers::BigInt::BigInt n = stypes[2].int_suffix.int_n;
     CHECK(n.is_large());
     CHECK(n.str() == "18446744073709551616");
 
@@ -1260,7 +1261,7 @@ TEST_CASE("Tokenizer") {
     CHECK(tokens(al, s) == ref);
 }
 
-#define cast(type, p) (LFortran::AST::type##_t*) (p)
+#define cast(type, p) (LCompilers::LFortran::AST::type##_t*) (p)
 
 TEST_CASE("Location") {
     std::string input = R"(subroutine f
@@ -1269,8 +1270,8 @@ TEST_CASE("Location") {
     end subroutine)";
 
     Allocator al(1024*1024);
-    LFortran::diag::Diagnostics diagnostics;
-    LFortran::AST::ast_t* result = LFortran::TRY(parse(al, input, diagnostics))->m_items[0];
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::LFortran::AST::ast_t* result = LCompilers::TRY(parse(al, input, diagnostics))->m_items[0];
     CHECK(result->loc.first == 0);
     CHECK(result->loc.last == 56);
     auto sub = cast(Subroutine, result);
@@ -1313,13 +1314,13 @@ TEST_CASE("Location") {
 TEST_CASE("Errors") {
     Allocator al(1024*1024);
     std::string input;
-    LFortran::diag::Diagnostics diagnostics;
+    LCompilers::diag::Diagnostics diagnostics;
 
     input = "(2+3+";
-    Result<LFortran::AST::TranslationUnit_t*> res = parse(al, input, diagnostics);
+    Result<LCompilers::LFortran::AST::TranslationUnit_t*> res = parse(al, input, diagnostics);
     CHECK(res.ok == false);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
-    CHECK(diagnostics.diagnostics[0].stage == LFortran::diag::Stage::Parser);
+    CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Parser);
     CHECK(diagnostics.diagnostics[0].labels[0].spans[0].loc.first == 5);
     CHECK(diagnostics.diagnostics[0].labels[0].spans[0].loc.last == 5);
     diagnostics.diagnostics.clear();
@@ -1332,7 +1333,7 @@ TEST_CASE("Errors") {
     res = parse(al, input, diagnostics);
     CHECK(res.ok == false);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
-    CHECK(diagnostics.diagnostics[0].stage == LFortran::diag::Stage::Parser);
+    CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Parser);
     CHECK(diagnostics.diagnostics[0].labels[0].spans[0].loc.first == 38);
     CHECK(diagnostics.diagnostics[0].labels[0].spans[0].loc.last == 38);
     diagnostics.diagnostics.clear();
@@ -1344,7 +1345,7 @@ TEST_CASE("Errors") {
     res = parse(al, input, diagnostics);
     CHECK(res.ok == false);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
-    CHECK(diagnostics.diagnostics[0].stage == LFortran::diag::Stage::Parser);
+    CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Parser);
     CHECK(diagnostics.diagnostics[0].labels[0].spans[0].loc.first == 35);
     CHECK(diagnostics.diagnostics[0].labels[0].spans[0].loc.last == 35);
     diagnostics.diagnostics.clear();
@@ -1356,7 +1357,7 @@ TEST_CASE("Errors") {
     res = parse(al, input, diagnostics);
     CHECK(res.ok == false);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
-    CHECK(diagnostics.diagnostics[0].stage == LFortran::diag::Stage::Parser);
+    CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Parser);
     CHECK(diagnostics.diagnostics[0].labels[0].spans[0].loc.first == 23);
     CHECK(diagnostics.diagnostics[0].labels[0].spans[0].loc.last == 25);
     diagnostics.diagnostics.clear();
@@ -1365,7 +1366,7 @@ TEST_CASE("Errors") {
     res = parse(al, input, diagnostics);
     CHECK(res.ok == false);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
-    CHECK(diagnostics.diagnostics[0].stage == LFortran::diag::Stage::Parser);
+    CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Parser);
     CHECK(diagnostics.diagnostics[0].labels[0].spans[0].loc.first == 10);
     CHECK(diagnostics.diagnostics[0].labels[0].spans[0].loc.last == 10);
     diagnostics.diagnostics.clear();
@@ -1374,7 +1375,7 @@ TEST_CASE("Errors") {
     res = parse(al, input, diagnostics);
     CHECK(res.ok == false);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
-    CHECK(diagnostics.diagnostics[0].stage == LFortran::diag::Stage::Parser);
+    CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Parser);
     CHECK(diagnostics.diagnostics[0].labels[0].spans[0].loc.first == 6);
     CHECK(diagnostics.diagnostics[0].labels[0].spans[0].loc.last == 13);
     diagnostics.diagnostics.clear();
@@ -1383,7 +1384,7 @@ TEST_CASE("Errors") {
     res = parse(al, input, diagnostics);
     CHECK(res.ok == false);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
-    CHECK(diagnostics.diagnostics[0].stage == LFortran::diag::Stage::Tokenizer);
+    CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Tokenizer);
     CHECK(diagnostics.diagnostics[0].labels[0].spans[0].loc.first == 2);
     CHECK(diagnostics.diagnostics[0].labels[0].spans[0].loc.last == 2);
     diagnostics.diagnostics.clear();

@@ -5,15 +5,14 @@
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/bigint.h>
 
-namespace LFortran
-{
+namespace LCompilers::LFortran {
 
 void Tokenizer::set_string(const std::string &str)
 {
     // The input string must be NULL terminated, otherwise the tokenizer will
     // not detect the end of string. After C++11, the std::string is guaranteed
     // to end with \0, but we check this here just in case.
-    LFORTRAN_ASSERT(str[str.size()] == '\0');
+    LCOMPILERS_ASSERT(str[str.size()] == '\0');
     cur = (unsigned char *)(&str[0]);
     string_start = cur;
     cur_line = cur;
@@ -613,7 +612,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                     } else {
                         token_loc(loc);
                         std::string t = token();
-                        throw LFortran::parser_local::TokenizerError("Integer '" + t + "' too large",
+                        throw parser_local::TokenizerError("Integer '" + t + "' too large",
                             loc);
                     }
                 } else {
@@ -724,7 +723,7 @@ void lex_format(unsigned char *&cur, Location &loc,
             * {
                 token_loc(loc);
                 std::string t = token(tok, cur);
-                throw LFortran::parser_local::TokenizerError("Token '" + t
+                throw parser_local::TokenizerError("Token '" + t
                     + "' is not recognized in `format` statement", loc);
             }
             '(' {
@@ -752,13 +751,13 @@ void lex_format(unsigned char *&cur, Location &loc,
                 continue;
             }
             ')' {
-                LFORTRAN_ASSERT(num_paren == 1);
+                LCOMPILERS_ASSERT(num_paren == 1);
                 return;
             }
             end {
                 token_loc(loc);
                 std::string t = token(tok, cur);
-                throw LFortran::parser_local::TokenizerError(
+                throw parser_local::TokenizerError(
                     "End of file not expected in `format` statement '" + t + "'", loc);
             }
             whitespace { continue; }
@@ -772,4 +771,4 @@ void lex_format(unsigned char *&cur, Location &loc,
     }
 }
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran
