@@ -550,19 +550,13 @@ public:
     ASR::expr_t* right_value = LFortran::ASRUtils::expr_value(right);
     if (left_value != nullptr && right_value != nullptr) {
         ASR::ttype_t* left_value_type = ASRUtils::expr_type(left_value);
-        ASR::ttype_t* right_value_type = ASRUtils::expr_type(right_value);
-        ASR::Character_t *left_value_type2 = ASR::down_cast<ASR::Character_t>(left_value_type);
-        ASR::Character_t *right_value_type2 = ASR::down_cast<ASR::Character_t>(right_value_type);
-        ASR::ttype_t *dest_value_type = ASR::down_cast<ASR::ttype_t>(ASR::make_Character_t(al, x.base.base.loc, left_value_type2->m_kind,
-            left_value_type2->m_len + right_value_type2->m_len, nullptr, nullptr, 0));
-        char* left_value = ASR::down_cast<ASR::StringConstant_t>(
-                                 LFortran::ASRUtils::expr_value(left))
-                                 ->m_s;
-        char* right_value = ASR::down_cast<ASR::StringConstant_t>(
-                                  LFortran::ASRUtils::expr_value(right))
-                                  ->m_s;
+        ASR::Character_t* left_value_type2 = ASR::down_cast<ASR::Character_t>(left_value_type);
+        char* left_value_ = ASR::down_cast<ASR::StringConstant_t>(left_value)->m_s;
+        char* right_value_ = ASR::down_cast<ASR::StringConstant_t>(right_value)->m_s;
+        ASR::ttype_t *dest_value_type = ASR::down_cast<ASR::ttype_t>(ASR::make_Character_t(al, x.base.base.loc,
+            left_value_type2->m_kind, strlen(left_value_) + strlen(right_value_), nullptr, nullptr, 0));
         char* result;
-        std::string result_s = std::string(left_value)+std::string(right_value);
+        std::string result_s = std::string(left_value_) + std::string(right_value_);
         Str s; s.from_str_view(result_s);
         result = s.c_str(al);
         LFORTRAN_ASSERT((int64_t)strlen(result) == ASR::down_cast<ASR::Character_t>(dest_value_type)->m_len)
