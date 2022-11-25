@@ -546,8 +546,15 @@ public:
 
     ASR::expr_t *value = nullptr;
     // Assign evaluation to `value` if possible, otherwise leave nullptr
-    if (LFortran::ASRUtils::expr_value(left) != nullptr &&
-        LFortran::ASRUtils::expr_value(right) != nullptr) {
+    ASR::expr_t* left_value = LFortran::ASRUtils::expr_value(left);
+    ASR::expr_t* right_value = LFortran::ASRUtils::expr_value(right);
+    if (left_value != nullptr && right_value != nullptr) {
+        ASR::ttype_t* left_value_type = ASRUtils::expr_type(left_value);
+        ASR::ttype_t* right_value_type = ASRUtils::expr_type(right_value);
+        ASR::Character_t *left_value_type2 = ASR::down_cast<ASR::Character_t>(left_value_type);
+        ASR::Character_t *right_value_type2 = ASR::down_cast<ASR::Character_t>(right_value_type);
+        ASR::ttype_t *dest_value_type = ASR::down_cast<ASR::ttype_t>(ASR::make_Character_t(al, x.base.base.loc, left_value_type2->m_kind,
+            left_value_type2->m_len + right_value_type2->m_len, nullptr, nullptr, 0));
         char* left_value = ASR::down_cast<ASR::StringConstant_t>(
                                  LFortran::ASRUtils::expr_value(left))
                                  ->m_s;
@@ -558,9 +565,9 @@ public:
         std::string result_s = std::string(left_value)+std::string(right_value);
         Str s; s.from_str_view(result_s);
         result = s.c_str(al);
-        LFORTRAN_ASSERT((int64_t)strlen(result) == ASR::down_cast<ASR::Character_t>(dest_type)->m_len)
+        LFORTRAN_ASSERT((int64_t)strlen(result) == ASR::down_cast<ASR::Character_t>(dest_value_type)->m_len)
         value = ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(
-            al, x.base.base.loc, result, dest_type));
+            al, x.base.base.loc, result, dest_value_type));
       }
     asr = ASR::make_StringConcat_t(al, x.base.base.loc, left, right, dest_type,
                             value);
