@@ -1642,6 +1642,7 @@ public:
         bool is_item = true;
         Vec<ASR::array_index_t> args;
         args.reserve(al, n_args);
+        ASR::expr_t* v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
         for (size_t i=0; i<n_args; i++) {
             ASR::array_index_t ai;
             ai.loc = loc;
@@ -1656,6 +1657,14 @@ public:
                 this->visit_expr(*(m_args[i].m_end));
                 m_end = LFortran::ASRUtils::EXPR(tmp);
                 ai.loc = m_end->base.loc;
+            } else {
+                if( ASR::is_a<ASR::Character_t>(*ASRUtils::symbol_type(v)) ) {
+                    m_end = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc,
+                                v_Var, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0)),
+                                nullptr));
+                } else {
+                    m_end = ASRUtils::get_bound(v_Var, i + 1, "ubound", al);
+                }
             }
             if (m_args[i].m_step != nullptr) {
                 this->visit_expr(*(m_args[i].m_step));
@@ -1740,7 +1749,6 @@ public:
             }
         }
 
-        ASR::expr_t* v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
         if( is_item ) {
             Vec<ASR::dimension_t> empty_dims;
             empty_dims.reserve(al, 1);
@@ -3166,8 +3174,11 @@ public:
             tmp = create_FunctionCallWithASTNode(x, v, args);
         } else {
             switch (f2->type) {
-            case(ASR::symbolType::Variable):
-                tmp = create_ArrayRef(x.base.base.loc, x.m_args, x.n_args, v, f2); break;
+            case(ASR::symbolType::Variable): {
+                // TODO: Make create_StringRef for character (non-array) variables.
+                tmp = create_ArrayRef(x.base.base.loc, x.m_args, x.n_args, v, f2);
+                break;
+            }
             case(ASR::symbolType::StructType):
                 tmp = create_DerivedTypeConstructor(x.base.base.loc, x.m_args, x.n_args, v); break;
             case(ASR::symbolType::ClassProcedure):
