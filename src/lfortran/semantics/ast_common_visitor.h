@@ -2679,8 +2679,8 @@ public:
                 tmp = create_ArrayReshape(x);
             } else if( var_name == "ichar" ) {
                 tmp = create_Ichar(x);
-            }  else {
-                LCompilersException("create_" + var_name + " not implemented yet.");
+            } else {
+                throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
             return nullptr;
         }
