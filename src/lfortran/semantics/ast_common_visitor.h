@@ -2659,7 +2659,9 @@ public:
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
                                 4, nullptr, 0));
         int64_t intrinsic_id = 0;
-        return ASR::make_IntrinsicFunction_t(al, x.base.base.loc, args.p, args.n, intrinsic_id, type, nullptr);
+        int64_t overload_id = 0;
+        return ASR::make_IntrinsicFunction_t(al, x.base.base.loc,
+            args.p, args.n, intrinsic_id, overload_id, type, nullptr);
     }
 
     ASR::asr_t* create_cos(const AST::FuncCallOrArray_t& x) {
@@ -2667,7 +2669,9 @@ public:
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
                                 4, nullptr, 0));
         int64_t intrinsic_id = 1;
-        return ASR::make_IntrinsicFunction_t(al, x.base.base.loc, args.p, args.n, intrinsic_id, type, nullptr);
+        int64_t overload_id = 0;
+        return ASR::make_IntrinsicFunction_t(al, x.base.base.loc,
+            args.p, args.n, intrinsic_id, overload_id, type, nullptr);
     }
 
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
