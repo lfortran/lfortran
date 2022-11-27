@@ -26,6 +26,7 @@
 #include <libasr/pass/arr_slice.h>
 #include <libasr/pass/flip_sign.h>
 #include <libasr/pass/div_to_mul.h>
+#include <libasr/pass/intrinsic_function.h>
 #include <libasr/pass/fma.h>
 #include <libasr/pass/loop_unroll.h>
 #include <libasr/pass/sign_from_value.h>
@@ -79,7 +80,8 @@ namespace LCompilers {
             {"array_dim_intrinsics_update", &LFortran::pass_update_array_dim_intrinsic_calls},
             {"pass_list_expr", &LFortran::pass_list_expr},
             {"pass_array_by_data", &LFortran::pass_array_by_data},
-            {"subroutine_from_function", &LFortran::pass_create_subroutine_from_function}
+            {"subroutine_from_function", &LFortran::pass_create_subroutine_from_function},
+            {"intrinsic_function", &LFortran::pass_replace_intrinsic_function}
         };
 
         bool is_fast;
@@ -107,6 +109,7 @@ namespace LCompilers {
         PassManager(): is_fast{false}, apply_default_passes{false} {
             _passes = {
                 "global_stmts",
+                "intrinsic_function",
                 "class_constructor",
                 "implied_do_loops",
                 "pass_array_by_data",
@@ -126,6 +129,7 @@ namespace LCompilers {
 
             _with_optimization_passes = {
                 "global_stmts",
+                "intrinsic_function",
                 "class_constructor",
                 "implied_do_loops",
                 "pass_array_by_data",
