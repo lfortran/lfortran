@@ -2658,7 +2658,7 @@ public:
         Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
                                 4, nullptr, 0));
-        int64_t intrinsic_id = 0;
+        int64_t intrinsic_id = static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sin);
         int64_t overload_id = 0;
         return ASR::make_IntrinsicFunction_t(al, x.base.base.loc,
             args.p, args.n, intrinsic_id, overload_id, type, nullptr);
@@ -2668,7 +2668,7 @@ public:
         Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
                                 4, nullptr, 0));
-        int64_t intrinsic_id = 1;
+        int64_t intrinsic_id = static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Cos);
         int64_t overload_id = 0;
         return ASR::make_IntrinsicFunction_t(al, x.base.base.loc,
             args.p, args.n, intrinsic_id, overload_id, type, nullptr);
@@ -2678,7 +2678,7 @@ public:
         Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
                                 4, nullptr, 0));
-        int64_t intrinsic_id = 2;
+        int64_t intrinsic_id = static_cast<int64_t>(ASRUtils::IntrinsicFunctions::LogGamma);
         int64_t overload_id = 0;
         return ASR::make_IntrinsicFunction_t(al, x.base.base.loc,
             args.p, args.n, intrinsic_id, overload_id, type, nullptr);

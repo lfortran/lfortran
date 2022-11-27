@@ -15,6 +15,14 @@ namespace LFortran  {
 
     namespace ASRUtils  {
 
+enum class IntrinsicFunctions : int64_t {
+    Sin,
+    Cos,
+    Gamma,
+    LogGamma,
+    // ...
+};
+
 static inline  double extract_real(const char *s) {
     // TODO: this is inefficient. We should
     // convert this in the tokenizer where we know most information
