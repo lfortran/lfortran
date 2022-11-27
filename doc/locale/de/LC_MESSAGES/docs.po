@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-10-12 11:25+0000\n"
+"PO-Revision-Date: 2022-11-26 08:48+0000\n"
 "Last-Translator: Ralf Wuthenow <Ralfi.Burghardt@googlemail.com>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/de/>\n"
@@ -129,11 +129,11 @@ msgstr "Um Beizutragen solltest du folgendes vorbereitet haben:"
 
 #: ../../doc/src/contributing.md:12
 msgid "Your username + email"
-msgstr "Ihr Benutzername + E-Mail"
+msgstr "Dein Benutzername + E-Mail"
 
 #: ../../doc/src/contributing.md:13
 msgid "Your `~/.gitconfig`"
-msgstr "Ihre `~/.gitconfig`"
+msgstr "Deine `~/.gitconfig`"
 
 #: ../../doc/src/contributing.md:14
 msgid "Your shell prompt to display the current branch name"
@@ -231,6 +231,11 @@ msgid ""
 " clicking on the link, write a title and a concise description then click"
 " the \"Create\" button. Yay you are now all set."
 msgstr ""
+"Der Befehl pushed den neuen Branch `fix1` in dein remote Repository "
+"`REMOTE_NAME`, welches du zuvor erstellt hast. Zusätzlich wird ein Link "
+"angezeigt, welcher geklickt werden kann um einen neuen merge request zu "
+"starten. Nach dem Klicken, schreibe einen Titel und eine kurze Beschreibung, "
+"anschließend klicke auf den \"Create\"-Button. Du bist nun fertig."
 
 #: ../../doc/src/contributing.md:66
 msgid "Add New Features"
@@ -241,6 +246,9 @@ msgid ""
 "The example below shows the steps it would take to create a caret binary "
 "operator **^** which computes the average value of the two operands."
 msgstr ""
+"Das folgende Beispiel zeigt die Schritte die erforderlich sind um den "
+"binären Operator **^** zu erstellen, welcher den Mittelwert der beiden "
+"Operanden berechnet."
 
 #: ../../doc/src/contributing.md:70
 msgid "Create New Token(s)"
@@ -251,26 +259,31 @@ msgid ""
 "We extend the *tokenizer.re* as well as *parser.yy* to add the new token "
 "**^**. We also tell LFortran how to print the new token in *parser.cpp*."
 msgstr ""
+"Wir erweitern den *tokenizer.re* und den *parser.yy* um den Token **^**. Wir "
+"werden außerdem LFortran in *parser.cpp* sagen, wie der neue Token "
+"ausgegeben werden soll."
 
 #: ../../doc/src/contributing.md:75
 msgid ":fontawesome-solid-code: *src/lfortran/parser/tokenizer.re*"
-msgstr ""
+msgstr ":fontawesome-solid-code: *src/lfortran/parser/tokenizer.re*"
 
 #: ../../doc/src/contributing.md:80
 msgid ":fontawesome-solid-code: *src/lfortran/parser/parser.yy*"
-msgstr ""
+msgstr ":fontawesome-solid-code: *src/lfortran/parser/parser.yy*"
 
 #: ../../doc/src/contributing.md:85
 msgid ":fontawesome-solid-code: *src/lfortran/parser/parser.cpp*"
-msgstr ""
+msgstr ":fontawesome-solid-code: *src/lfortran/parser/parser.cpp*"
 
 #: ../../doc/src/contributing.md:94
 msgid "The added code is tested with `lfortran --show-tokens examples2/expr2.f90`"
 msgstr ""
+"Der hinzugefügte Code wird mit `lfortran --show-tokens examples2/expr2.f90` "
+"getestet"
 
 #: ../../doc/src/contributing.md:96
 msgid "Parse the New Token"
-msgstr ""
+msgstr "Parsen des neuen Tokens"
 
 #: ../../doc/src/contributing.md:98
 msgid ""
@@ -280,50 +293,61 @@ msgid ""
 "*semantics.h*.Finally we extend *pickle.cpp* so that the new operator can"
 " print itself."
 msgstr ""
+"Nun muss der neue Operator geparsed werden. Wir fügen ihn zum AST hinzu, "
+"indem wir den BinOp um den Caret-Operator erweitern und die *AST.asdl* -"
+"Datei anpassen. Anschließend fügen wir ihn in *parse.yy* hinzu um den neuen "
+"AST in *semantics.h* richtig zu parsen und zu generieren. Abschließend "
+"erweitern wir *pickle.cpp*, sodass der neue Operator sich selbst ausgeben "
+"kann."
 
 #: ../../doc/src/contributing.md:102
 msgid ":fontawesome-solid-code:*grammar/AST.asdl*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*grammar/AST.asdl*"
 
 #: ../../doc/src/contributing.md:107
 msgid ":fontawesome-solid-code:*src/lfortran/parser/parser.yy*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/parser/parser.yy*"
 
 #: ../../doc/src/contributing.md:116
 msgid ":fontawesome-solid-code:*src/lfortran/parser/semantics.h*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/parser/semantics.h*"
 
 #: ../../doc/src/contributing.md:121
 msgid ":fontawesome-solid-code:*src/lfortran/pickle.cpp*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/pickle.cpp*"
 
 #: ../../doc/src/contributing.md:132
 msgid "The section is tested with `lfortran --show-ast examples/expr2.f90`"
 msgstr ""
+"Der Abschnitt lässt sich mit `lfortran --show-ast examples/expr2.f90` testen"
 
 #: ../../doc/src/contributing.md:134
 msgid "Implement the Semantics of the New Token"
-msgstr ""
+msgstr "Implementieren der Semantik des neuen Tokens"
 
 #: ../../doc/src/contributing.md:136
 msgid ""
 "We first extend the ASR in *ASR.asdl* and add ^ as a BinOp operator "
 "option."
 msgstr ""
+"Zuerst erweitern wir den ASR in *ASR.asdl* und fügen ^ als eine BinOp-"
+"operator Option hinzu."
 
 #: ../../doc/src/contributing.md:138
 msgid ":fontawesome-solid-code:*src/libasr/ASR.asdl*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/libasr/ASR.asdl*"
 
 #: ../../doc/src/contributing.md:142
 msgid ":fontawesome-solid-code:*src/lfortran/semantics/ast_common_visitor.h*"
-msgstr ""
+msgstr ":fontawesome-solid-code:*src/lfortran/semantics/ast_common_visitor.h*"
 
 #: ../../doc/src/contributing.md:179
 msgid ""
 "Then we transform it from AST to ASR by extending "
 "*src/lfortran/semantics/ast_common_visitor.h*."
 msgstr ""
+"Anschließend wandeln wir ihn vom AST zum ASR um, indem wir *src/lfortran/"
+"semantics/ast_common_visitor.h* ergänzen."
 
 #: ../../doc/src/contributing.md:181
 msgid ""
@@ -331,14 +355,19 @@ msgid ""
 " as `e = (2+3)^5` which is evaluated at compile time. An expression such "
 "as `e = x^5` is evaluated at run time only."
 msgstr ""
+"Zusätzlich fügen wir ihn in die \"Compile time evaluation\" hinzu, die durch "
+"Ausdrücke wie z.B. `e = (2+3)^5` ausgelöst wird. Ein Ausdruck wie "
+"beispielsweise `e = x^5` wird nur zur Laufzeit evaluiert."
 
 #: ../../doc/src/contributing.md:183
 msgid "The section is tested with `lfortran --show-asr examples/expr2.f90`"
 msgstr ""
+"Dieser Abschnitt lässt sich mit `lfortran --show-asr examples/expr2.f90` "
+"testen"
 
 #: ../../doc/src/contributing.md:184
 msgid "Implement the New Token in LLVM"
-msgstr ""
+msgstr "Implementierung des neuen Tokens in LLVM"
 
 #: ../../doc/src/contributing.md:186
 msgid ""
@@ -346,26 +375,34 @@ msgid ""
 " operator. We first add the two numbers then divide by two. :fontawesome-"
 "solid-code:*src/lfortran/codegen/asr_to_llvm.cpp*"
 msgstr ""
+"Zur Implementierung in LLVM erweitern wir die BinOp-Übersetzung um die "
+"Verarbeitung des neuen Operators. Wir addieren im ersten Schritt die beiden "
+"Zahlen und dividieren diese anschließend durch zwei. :fontawesome-solid-"
+"code:*src/lfortran/codegen/asr_to_llvm.cpp*"
 
 #: ../../doc/src/contributing.md:217
 msgid "The section is tested with `lfortran --show-llvm examples/expr2.f90`"
 msgstr ""
+"Dieser Abschnitt lässt sich mit `lfortran --show-llvm examples/expr2.f90` "
+"testen"
 
 #: ../../doc/src/contributing.md:219
 msgid "Now when LLVM works, we can test the final executable by:"
 msgstr ""
+"Wenn LLVM nun funktioniert, können wir die endgültige ausführbare Datei "
+"testen, indem wir:"
 
 #: ../../doc/src/contributing.md:224
 msgid "And it should print 6."
-msgstr ""
+msgstr "Und es sollte 6 ausgegeben werden."
 
 #: ../../doc/src/contributing.md:226
 msgid "It also works interactively:"
-msgstr ""
+msgstr "Es funktioniert auch interaktiv:"
 
 #: ../../doc/src/contributing.md:242
 msgid "Reach Out"
-msgstr ""
+msgstr "Kontakt aufnehmen"
 
 #: ../../doc/src/contributing.md:244
 msgid ""
@@ -373,6 +410,9 @@ msgid ""
 "[mailinglist](https://groups.io/g/lfortran) or a "
 "[chat](https://lfortran.zulipchat.com/)."
 msgstr ""
+"Wenn du Fragen hast oder Hilfe brauchst, wende dich bitte an unsere "
+"[Mailinglist](https://groups.io/g/lfortran) oder and den "
+"[Chat](https://lfortran.zulipchat.com/)."
 
 #: ../../doc/src/contributing.md:248
 msgid ""
@@ -381,6 +421,11 @@ msgid ""
 "by its terms. See "
 "[CODE_OF_CONDUCT.md](https://github.com/lfortran/lfortran/blob/main/CODE_OF_CONDUCT.md)."
 msgstr ""
+"Bitte beachte, dass von allen Teilnehmern an diesem Projekt erwartet wird, "
+"dass sie unseren Verhaltenskodex befolgen. Mit der Teilnahme an diesem "
+"Projekt erklärst du dich damit einverstanden, diese Bedingungen einzuhalten. "
+"Siehe [CODE_OF_CONDUCT.md](https://github.com/lfortran/lfortran/blob/main/"
+"CODE_OF_CONDUCT.md)."
 
 #: ../../doc/src/contributing.md:252
 msgid ""
@@ -389,6 +434,9 @@ msgid ""
 "[license](https://github.com/lfortran/lfortran/blob/main/LICENSE) unless "
 "explicitly noted otherwise."
 msgstr ""
+"Durch das Einreichen eines Beitrags stimmst du der Lizenzierung deines "
+"Beitrags unter LFortrans BSD [Lizenz](https://github.com/lfortran/lfortran/"
+"blob/main/LICENSE) zu, es sei denn, es ist ausdrücklich anders vermerkt."
 
 #: ../../doc/src/design.md:1
 msgid "LFortran Design"
@@ -621,6 +669,9 @@ msgid ""
 "multiline/single line if statement distinction, case sensitivity of "
 "keywords."
 msgstr ""
+"Informationen, die beim Parsen des Quelltextes in den AST verloren gehen: "
+"Leerzeichen, Unterscheidung zwischen mehrzeiligen und einzeiligen if-"
+"Anweisungen, Groß- und Kleinschreibung von Schlüsselwörtern."
 
 #: ../../doc/src/design.md:87
 msgid ""
@@ -631,6 +682,12 @@ msgid ""
 "order), as ASR only represents the aggregated type information in the "
 "symbol table."
 msgstr ""
+"Informationen, die beim Übergang von AST zu ASR verloren gehen: detaillierte "
+"Syntax, wie Variablen definiert wurden, und die Reihenfolge der Typattribute "
+"(ob die Arraydimension das Attribut `dimension` oder Klammern bei der "
+"Variablen verwendet; oder wie viele Variablen es pro Deklarationszeile gibt "
+"oder ihre Reihenfolge), da ASR nur die aggregierten Typinformationen in der "
+"Symboltabelle darstellt."
 
 #: ../../doc/src/design.md:90
 msgid ""
@@ -647,12 +704,26 @@ msgid ""
 "example a function references a module, a module references the global "
 "scope)."
 msgstr ""
+"ASR ist der einfachste Weg, Fortran-Code zu erzeugen, da man sich nicht um "
+"die detaillierte Syntax (wie in AST) kümmern muss, wie und wo Dinge "
+"deklariert werden. Man spezifiziert die Symboltabelle für ein Modul, dann "
+"gibt man für jedes Symbol (Funktionen, globale Variablen, Typen, ...) die "
+"lokalen Variablen an, und wenn es sich um ein Interface handelt, muss man "
+"angeben, wo man eine Implementierung finden kann, andernfalls wird ein Body "
+"mit Statements bereitgestellt, diese Knoten sind fast die gleichen wie in "
+"AST, außer dass jede Variable nur ein Verweis auf ein Symbol in der "
+"Symboltabelle ist (also kann man konstruktionsbedingt keine undefinierten "
+"Variablen haben). Die Symboltabelle für jeden Knoten, wie z. B. Funktion "
+"oder Modul, verweist auch auf seine Eltern (z. B. verweist eine Funktion auf "
+"ein Modul, ein Modul auf den globalen Bereich)."
 
 #: ../../doc/src/design.md:102
 msgid ""
 "The ASR can be directly converted to an AST without gathering any other "
 "information. And the AST directly to Fortran source code."
 msgstr ""
+"Der ASR kann direkt in einen AST umgewandelt werden, ohne dass weitere "
+"Informationen erfasst werden müssen. Und der AST direkt in Fortran-Quellcode."
 
 #: ../../doc/src/design.md:105
 msgid ""
@@ -660,10 +731,13 @@ msgid ""
 "is enforced by checks in the ASR C++ constructors (in Debug build). When "
 "an ASR is used, one can assume it is valid."
 msgstr ""
+"Die ASR stellt immer einen semantisch gültigen Fortran-Code dar.  Dies wird "
+"durch Überprüfungen in den ASR-C++-Konstruktoren (im Debug-Build) erzwungen. "
+"Wenn eine ASR eingesetzt wird, kann man davon ausgehen, dass sie gültig ist."
 
 #: ../../doc/src/design.md:109
 msgid "Fortran 2008"
-msgstr ""
+msgstr "Fortran 2008"
 
 #: ../../doc/src/design.md:111
 msgid ""
@@ -672,18 +746,22 @@ msgid ""
 "collection of _program units_ (either all in one file, or in separate "
 "files), where each _program unit_ is one of:"
 msgstr ""
+"Fortran 2008 [Standard](https://j3-fortran.org/doc/year/10/10-007.pdf) "
+"Kapitel 2 \"Fortran concepts\" left fest, dass Fortran Code eine Sammlung "
+"aus _program units_ ist. (entweder alle in einer Datei oder in separaten "
+"Dateien), wobei jede _program unit_ eine der folgenden ist:"
 
 #: ../../doc/src/design.md:116 ../../doc/src/design.md:131
 msgid "main program"
-msgstr ""
+msgstr "Hauptprogramm (main program)"
 
 #: ../../doc/src/design.md:117 ../../doc/src/design.md:132
 msgid "module or submodule"
-msgstr ""
+msgstr "Modul oder Submodul"
 
 #: ../../doc/src/design.md:118 ../../doc/src/design.md:133
 msgid "function or subroutine"
-msgstr ""
+msgstr "Funktion oder Subroutine"
 
 #: ../../doc/src/design.md:120
 msgid ""
@@ -691,10 +769,14 @@ msgid ""
 " initial values for data objects in named _common blocks_, but we do not "
 "recommend the use of _common blocks_ (use modules instead)."
 msgstr ""
+"Beachte: Es kann auch eine _block data_-Programmeinheit sein, die verwendet "
+"wird, um Anfangswerte für Datenobjekte in benannten _common blocks_ "
+"bereitzustellen, aber wir empfehlen die Verwendung von _common blocks_ nicht "
+"(verwende stattdessen Module)."
 
 #: ../../doc/src/design.md:124
 msgid "LFortran Extension"
-msgstr ""
+msgstr "LFortran-Erweiterung"
 
 #: ../../doc/src/design.md:126
 msgid ""
@@ -703,22 +785,27 @@ msgid ""
 "statements, declarations, use statements and expressions. We define "
 "_global scope_ as a collection of the following items:"
 msgstr ""
+"Wir erweitern die Fortran-Sprache, indem wir einen _global scope_, welcher "
+"nicht nur die Liste der _program units_ (wie in F2008) ist, sondern auch "
+"include-Anweisungen, Deklarationen, use-Anweisungen und Ausdrücke enthalten "
+"kann.Wir definieren den _global scope_ als eine Sammlung der folgenden "
+"Elemente:"
 
 #: ../../doc/src/design.md:134
 msgid "use statement"
-msgstr ""
+msgstr "use Statement"
 
 #: ../../doc/src/design.md:135
 msgid "declaration"
-msgstr ""
+msgstr "Deklarationen (declaration)"
 
 #: ../../doc/src/design.md:136
 msgid "statement"
-msgstr ""
+msgstr "Anweisung (statement)"
 
 #: ../../doc/src/design.md:137
 msgid "expression"
-msgstr ""
+msgstr "Ausdruck (expression)"
 
 #: ../../doc/src/design.md:139
 msgid ""
@@ -729,6 +816,13 @@ msgid ""
 "at the top level of _global scope_. Types must be fully specified inside "
 "main programs, modules, functions and subroutines, just like in F2008."
 msgstr ""
+"Zusätzlich wird, wenn eine Variable in einer Zuweisung (wie beispielsweise `"
+"x = 5+3`) nicht definiert ist, der Typ der Variablen aus der rechten Seite "
+"abgeleitet (z. B. wäre `x` in `x = 5+3` vom Typ `integer` und `y` in `y = 5."
+"_dp` vom Typ `real(dp)`). Diese Regel gilt nur auf der obersten Ebene des "
+"_global scope_. Innerhalb von Hauptprogrammen, Modulen, Funktionen und "
+"Unterprogrammen müssen die Typen vollständig angegeben werden, genau wie in "
+"F2008."
 
 #: ../../doc/src/design.md:146
 msgid ""
@@ -737,24 +831,34 @@ msgid ""
 "functions, subroutines, statements and expressions at the top level of "
 "_global scope_ use and operate on this symbol table."
 msgstr ""
+"Der _global scope_ hat seine eigene Symboltabelle. Das Hauptprogramm und das "
+"Modul/Submodul sehen keine Symbole aus dieser Symboltabelle. Aber "
+"Funktionen, Unterprogramme, Anweisungen und Ausdrücke auf der obersten Ebene "
+"des _global scope_ verwenden und operieren mit dieser Symboltabelle."
 
 #: ../../doc/src/design.md:151
 msgid ""
 "The _global scope_ has the following symbols predefined in the symbol "
 "table:"
 msgstr ""
+"Für den _global scope_ sind die folgenden Symbole in der Symboltabelle "
+"vordefiniert:"
 
 #: ../../doc/src/design.md:153
 msgid ""
 "the usual standard set of Fortran functions (such as `size`, `sin`, "
 "`cos`, ...)"
 msgstr ""
+"den üblichen Standardsatz von Fortran-Funktionen (wie `size`, `sin`, `cos`, "
+"...)"
 
 #: ../../doc/src/design.md:155
 msgid ""
 "the `dp` double precision symbol, so that one can use `5._dp` for double "
 "precision."
 msgstr ""
+"das Symbol `dp` für doppelte Genauigkeit, so dass man `5._dp` für doppelte "
+"Genauigkeit verwenden kann."
 
 #: ../../doc/src/design.md:158
 msgid ""
@@ -768,6 +872,16 @@ msgid ""
 "arguments returning the expression, compiled, loaded, executed and the "
 "return value is returned to the user."
 msgstr ""
+"Jedes Element im _global scope_ wird wie folgt interpretiert: Das "
+"Hauptprogramm wird in eine ausführbare Datei mit demselben Namen kompiliert "
+"und ausgeführt; Module, Funktionen und Unterprogramme werden kompiliert und "
+"geladen; use-Anweisungen und Deklarationen fügen die Symbole mit dem "
+"richtigen Typ in die Symboltabelle des _global scope_ ein, erzeugen aber "
+"keinen Code; Anweisungen werden in eine anonyme Unterroutine ohne Argumente "
+"übertragen, kompiliert, geladen und ausgeführt; Ausdrücke werden in eine "
+"anonyme Funktion, die den ursprünglichen Ausdruck zurückgibt, ohne Argumente "
+"übertragen kompiliert, geladen, ausgeführt und der Rückgabewert wird an den "
+"Benutzer zurückgegeben."
 
 #: ../../doc/src/design.md:168
 msgid ""
@@ -779,30 +893,38 @@ msgid ""
 "subroutines or functions and by adding type declarations) and compile it "
 "with `lfortran` or any other Fortran compiler."
 msgstr ""
+"Der _global scope_ wird immer Element für Element interpretiert, wie im "
+"vorherigen Absatz beschrieben. Er ist dazu gedacht, interaktive Nutzung, "
+"Experimente und das Schreiben einfacher Skripte zu ermöglichen. Code im "
+"_global scope_ muss mit `lfortran` interpretiert werden. Für komplexeren "
+"(produktiven) Code wird empfohlen, ihn in Module und Programme umzuwandeln ("
+"indem man lose Anweisungen in Unterprogramme oder Funktionen umwandelt und "
+"Typdeklarationen hinzufügt) und ihn mit `lfortran` oder einem anderen "
+"Fortran-Compiler zu kompilieren."
 
 #: ../../doc/src/design.md:176
 msgid "Here are some examples of valid code in _global scope_:"
-msgstr ""
+msgstr "Hier sind einige Beispiele für gültigen Code im _global scope_:"
 
 #: ../../doc/src/design.md:178
 msgid "Example 1"
-msgstr ""
+msgstr "Beispiel 1"
 
 #: ../../doc/src/design.md:185
 msgid "Example 2"
-msgstr ""
+msgstr "Beispiel 2"
 
 #: ../../doc/src/design.md:197
 msgid "Example 3"
-msgstr ""
+msgstr "Beispiel 3"
 
 #: ../../doc/src/design.md:209
 msgid "Example 4"
-msgstr ""
+msgstr "Beispiel 4"
 
 #: ../../doc/src/design.md:217
 msgid "Design Considerations"
-msgstr ""
+msgstr "Design Entscheidungen"
 
 #: ../../doc/src/design.md:219
 msgid ""
@@ -813,6 +935,11 @@ msgid ""
 "inside functions, subroutines, modules or programs this relaxation does "
 "not apply."
 msgstr ""
+"Die LFortran-Erweiterung von Fortran wurde so gewählt, dass die Zahl der "
+"Änderungen möglichst gering ist. Insbesondere wurden nur auf der obersten "
+"Ebene des _global scope_ einige der Fortran-Regeln gelockert (z.B. die "
+"optionale Angabe von Typen), um eine einfache und schnelle interaktive "
+"Nutzung zu ermöglichen."
 
 #: ../../doc/src/design.md:225
 msgid ""
@@ -821,16 +948,22 @@ msgid ""
 "Fortran code using programs and modules, so that it can be compiled by "
 "any Fortran compiler."
 msgstr ""
+"Die Anzahl der Änderungen wurde so gering wie möglich gehalten, um die "
+"Umwandlung von _global scope_-Code in standardkonformen Fortran-Code mit "
+"Hilfe von Programmen und Modulen so einfach wie möglich zu gestalten, so "
+"dass er von jedem Fortran-Compiler kompiliert werden kann."
 
 #: ../../doc/src/developer_tutorial.ipynb:9
 msgid "Developer Tutorial"
-msgstr ""
+msgstr "Tutorial für Entwickler"
 
 #: ../../doc/src/developer_tutorial.ipynb:11
 msgid ""
 "This is a tutorial for anybody who wants to either develop LFortran or "
 "build tools on top."
 msgstr ""
+"Dies ist ein Tutorial für alle, die entweder LFortran entwickeln oder darauf "
+"aufbauende Werkzeuge erstellen wollen."
 
 #: ../../doc/src/developer_tutorial.ipynb:14
 msgid "Introduction"
