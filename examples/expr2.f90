@@ -4,6 +4,6 @@ implicit none
 real :: x
 
 x = (2+3)*5
-print *, cos(sin(x))
+print *, log_gamma(x)
 
 end program
