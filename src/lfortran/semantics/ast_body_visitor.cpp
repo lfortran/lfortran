@@ -427,7 +427,7 @@ public:
 
     void visit_Instantiate(const AST::Instantiate_t &x){
         is_instantiate = true;
-        std::string template_name = std::string(x.m_name);
+        std::string template_name = x.m_name;
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 0);
 
@@ -457,7 +457,7 @@ public:
                 if (arg.compare("real") == 0) {
                     type_arg = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
                 } else if (arg.compare("integer") == 0) {
-                    type_arg = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));                
+                    type_arg = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
                 } else {
                     throw SemanticError(
                         "The type " + arg + " is not yet handled for generic instantiation",
@@ -467,25 +467,33 @@ public:
             // Handle function restrictions
             } else if (ASR::is_a<ASR::symbol_t>(*template_param)) {
                 ASR::Function_t *restriction = ASR::down_cast2<ASR::Function_t>(template_param);
-                ASR::symbol_t *func_arg = current_scope->resolve_symbol(arg);
-                if (!func_arg) {
+                ASR::symbol_t *f_arg = current_scope->resolve_symbol(arg);
+                if (!f_arg) {
                     throw SemanticError("The function argument " + arg + " is not found",
                         x.base.base.loc);
                 }
-                if (!ASR::is_a<ASR::Function_t>(*func_arg)) {
+                ASR::symbol_t *f_arg2 = ASRUtils::symbol_get_past_external(f_arg);
+                if (!ASR::is_a<ASR::Function_t>(*f_arg2)) {
                     throw SemanticError(
                         "The argument for " + current_template_arg[i] + " must be a function",
                         x.base.base.loc);
                 }
-                check_restriction(subs, restriction_subs, restriction, func_arg, x.base.base.loc);
+                check_restriction(subs, restriction_subs, restriction, f_arg, x.base.base.loc);
             }
         }
 
-        for(size_t i = 0; i < x.n_symbols; i++){
+        for (size_t i = 0; i < x.n_symbols; i++){
             AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
-            ASR::symbol_t* s = resolve_symbol(x.base.base.loc, use_symbol->m_remote_sym);
+            std::string generic_name = to_lower(use_symbol->m_remote_sym);
+            ASR::symbol_t* s = resolve_symbol(x.base.base.loc, generic_name);
+            ASR::symbol_t* s2 = ASRUtils::symbol_get_past_external(s);
+            // TODO: Improve error message
+            if (!ASR::is_a<ASR::Function_t>(*s2)) {
+              throw SemanticError("Only functions can be instantiated", x.base.base.loc);
+            }
+            std::string new_f_name = to_lower(use_symbol->m_local_rename);
             pass_instantiate_generic_function(al, subs, restriction_subs, current_scope,
-                use_symbol->m_local_rename, ASR::down_cast<ASR::Function_t>(s));
+                new_f_name, s);
         }
 
         is_instantiate = false;
@@ -495,11 +503,11 @@ public:
             std::map<std::string, ASR::symbol_t*>& restriction_subs,
             ASR::Function_t* restriction, ASR::symbol_t *sym_arg, const Location& loc) {
         std::string restriction_name = restriction->m_name;
-        ASR::Function_t *arg = ASR::down_cast<ASR::Function_t>(sym_arg);
+        ASR::Function_t *arg = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(sym_arg));
         std::string arg_name = arg->m_name;
         if (restriction->n_args != arg->n_args) {
             // TODO: use diagnostics showing both the restriction and the argument
-            std::string msg = "The argument " + arg_name
+            std::string msg = "The argument " + arg_name;
                 + " has different number of arguments with the restriction "
                 + restriction_name;
             throw SemanticError(msg, loc);
@@ -508,11 +516,11 @@ public:
             ASR::ttype_t *restriction_parameter = ASRUtils::expr_type(restriction->m_args[i]);
             ASR::ttype_t *arg_parameter = ASRUtils::expr_type(arg->m_args[i]);
             if (ASR::is_a<ASR::TypeParameter_t>(*restriction_parameter)) {
-                ASR::TypeParameter_t *restriction_tp 
+                ASR::TypeParameter_t *restriction_tp
                     = ASR::down_cast<ASR::TypeParameter_t>(restriction_parameter);
                 if (!ASRUtils::check_equal_type(subs[restriction_tp->m_param],
                                                 arg_parameter)) {
-                    throw SemanticError("Restriction type mismatch with provided " 
+                    throw SemanticError("Restriction type mismatch with provided "
                         "type arguments", loc);
                 }
             }
@@ -1106,6 +1114,8 @@ public:
         current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
+        Vec<ASR::symbol_t*> rts;
+        rts.reserve(al, rt_vec.size());
         transform_stmts(body, x.n_body, x.m_body);
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
         if( impl_del != nullptr ) {
@@ -1113,6 +1123,8 @@ public:
         }
         v->m_body = body.p;
         v->n_body = body.size();
+        v->m_restrictions = rts.p;
+        v->n_restrictions = rts.size();
 
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
@@ -1213,7 +1225,7 @@ public:
         //create a new function, and add it to the symbol table
         std::string var_name = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func;
         auto v = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target);
-        
+
         Vec<ASR::expr_t*> args;
         args.reserve(al, v->n_args);
         for (size_t i=0; i<v->n_args; i++) {
@@ -1237,7 +1249,7 @@ public:
             args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 current_scope->get_symbol(arg_name))));
         }
-        
+
         // extract the type of var_name from symbol table
         ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
         ASR::ttype_t *type;
@@ -1267,7 +1279,7 @@ public:
         current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
         ASR::expr_t* to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
             ASR::down_cast<ASR::symbol_t>(return_var)));
-        
+
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
         this->visit_expr(*x.m_value);
@@ -1291,6 +1303,7 @@ public:
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, var_name),
+            nullptr, 0,
             /* a_args */ args.p,
             /* n_args */ args.size(),
             /* a_body */ body.p,
@@ -1308,7 +1321,7 @@ public:
             create_statement_function(x);
             tmp = nullptr;
             return;
-        } 
+        }
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = LFortran::ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_value);

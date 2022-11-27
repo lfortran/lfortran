@@ -67,10 +67,13 @@
                                             
                                         }) 
                                     complextype 
+                                    [] 
                                     [r
                                     i] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     ()
                                 ), 
                             integer_add_subrout:
@@ -143,6 +146,7 @@
                                             
                                         }) 
                                     integer_add_subrout 
+                                    [] 
                                     [(Var 4 this)
                                     (Var 4 r)
                                     (Var 4 i)
@@ -292,6 +296,7 @@
                                             
                                         }) 
                                     real_add_subrout 
+                                    [] 
                                     [(Var 5 this)
                                     (Var 5 r)
                                     (Var 5 i)

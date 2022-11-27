@@ -5,6 +5,7 @@
 #include <libasr/containers.h>
 #include <libasr/codegen/asr_to_cpp.h>
 #include <libasr/codegen/asr_to_c_cpp.h>
+#include <libasr/codegen/c_utils.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
@@ -213,8 +214,9 @@ public:
     {
         std::string sub;
         bool use_ref = (v.m_intent == LFortran::ASRUtils::intent_out ||
-
-                        v.m_intent == LFortran::ASRUtils::intent_inout);
+                        v.m_intent == LFortran::ASRUtils::intent_inout ||
+                        v.m_intent == LFortran::ASRUtils::intent_unspecified
+                        );
         bool is_array = ASRUtils::is_array(v.m_type);
         bool dummy = LFortran::ASRUtils::is_arg_dummy(v.m_intent);
         if (ASRUtils::is_pointer(v.m_type)) {

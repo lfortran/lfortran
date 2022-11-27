@@ -76,6 +76,7 @@
                                                             
                                                         }) 
                                                     f 
+                                                    [] 
                                                     [(Var 4 x)
                                                     (Var 4 res)] 
                                                     [] 
@@ -110,6 +111,8 @@
                                             
                                         }) 
                                     cb 
+                                    [f
+                                    f] 
                                     [(Var 3 res)
                                     (Var 3 a)
                                     (Var 3 b)
@@ -246,6 +249,7 @@
                                                             
                                                         }) 
                                                     f 
+                                                    [] 
                                                     [(Var 6 x)
                                                     (Var 6 res)] 
                                                     [(= 
@@ -312,6 +316,7 @@
                                             
                                         }) 
                                     foo 
+                                    [cb] 
                                     [(Var 5 c)
                                     (Var 5 d)
                                     (Var 5 res)] 

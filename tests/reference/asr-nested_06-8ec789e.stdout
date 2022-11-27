@@ -50,6 +50,7 @@
                                                         }) 
                                                     c 
                                                     [] 
+                                                    [] 
                                                     [(Print 
                                                         () 
                                                         [(IntegerConstant 5 (Integer 4 []))] 
@@ -93,6 +94,7 @@
                                             
                                         }) 
                                     b 
+                                    [c] 
                                     [(Var 3 x)] 
                                     [(Print 
                                         () 

@@ -39,6 +39,7 @@
                         }) 
                     f 
                     [] 
+                    [] 
                     [(= 
                         (Var 1 x) 
                         (IntegerConstant 6 (Integer 4 [])) 

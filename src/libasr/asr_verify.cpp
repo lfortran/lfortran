@@ -2,6 +2,7 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
+#include <libasr/utils.h>
 
 namespace {
     class VerifyAbort
@@ -46,6 +47,11 @@ private:
     // points to them (i.e., that nothing points to some symbol table that
     // is not part of this ASR).
     std::map<uint64_t,SymbolTable*> id_symtab_map;
+    std::vector<std::string> function_dependencies;
+    std::vector<std::string> module_dependencies;
+
+    std::set<std::pair<uint64_t, std::string>> const_assigned;
+
 public:
     VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
         diagnostics{diagnostics} {}
@@ -199,6 +205,8 @@ public:
     }
 
     void visit_Module(const Module_t &x) {
+        module_dependencies.clear();
+        module_dependencies.reserve(x.n_dependencies);
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
@@ -225,10 +233,40 @@ public:
             require(valid_name(x.m_dependencies[i]),
                 "A module dependency must be a valid string");
         }
+        for( auto& dep: module_dependencies ) {
+            require(present(x.m_dependencies, x.n_dependencies, dep),
+                    "Module " + std::string(x.m_name) +
+                    " dependencies must contain " + dep +
+                    " because a function present in it is getting called in "
+                    + std::string(x.m_name) + ".");
+        }
         current_symtab = parent_symtab;
     }
 
+    void visit_Assignment(const Assignment_t& x) {
+        ASR::expr_t* target = x.m_target;
+        if( ASR::is_a<ASR::Var_t>(*target) ) {
+            ASR::Var_t* target_Var = ASR::down_cast<ASR::Var_t>(target);
+            ASR::ttype_t* target_type = nullptr;
+            if( ASR::is_a<ASR::Variable_t>(*target_Var->m_v) ||
+                ASR::is_a<ASR::ExternalSymbol_t>(*target_Var->m_v)) {
+                target_type = ASRUtils::expr_type(target);
+            }
+            if( target_type && ASR::is_a<ASR::Const_t>(*target_type) ) {
+                std::string variable_name = ASRUtils::symbol_name(target_Var->m_v);
+                require(const_assigned.find(std::make_pair(current_symtab->counter,
+                    variable_name)) == const_assigned.end(),
+                    "Assignment target with " + ASRUtils::type_to_str_python(target_type)
+                    + " cannot be re-assigned.");
+                const_assigned.insert(std::make_pair(current_symtab->counter, variable_name));
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);
+    }
+
     void visit_Function(const Function_t &x) {
+        function_dependencies.clear();
+        function_dependencies.reserve(x.n_dependencies);
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
@@ -254,6 +292,22 @@ public:
         if (x.m_return_var) {
             visit_expr(*x.m_return_var);
         }
+        // Check if there are unnecessary dependencies
+        // present in the dependency list of the function
+        for( size_t i = 0; i < x.n_dependencies; i++ ) {
+            std::string found_dep = x.m_dependencies[i];
+            require(std::find(function_dependencies.begin(), function_dependencies.end(), found_dep) != function_dependencies.end(),
+                    "Function " + std::string(x.m_name) + " doesn't depend on " + found_dep +
+                    " but is found in its dependency list.");
+        }
+
+        // Check if all the dependencies found are
+        // present in the dependency list of the function
+        for( auto& found_dep: function_dependencies ) {
+            require(present(x.m_dependencies, x.n_dependencies, found_dep),
+                    "Function " + std::string(x.m_name) + " depends on " + found_dep +
+                    " but isn't found in its dependency list.");
+        }
         current_symtab = parent_symtab;
     }
 
@@ -272,14 +326,54 @@ public:
         require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        std::vector<std::string> struct_dependencies;
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
+            if( ASR::is_a<ASR::ClassProcedure_t>(*a.second) ||
+                ASR::is_a<ASR::GenericProcedure_t>(*a.second) ) {
+                continue ;
+            }
+            ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a.second));
+            char* aggregate_type_name = nullptr;
+            if( ASR::is_a<ASR::Struct_t>(*var_type) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Struct_t>(var_type)->m_derived_type;
+                aggregate_type_name = ASRUtils::symbol_name(sym);
+            } else if( ASR::is_a<ASR::Enum_t>(*var_type) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Enum_t>(var_type)->m_enum_type;
+                aggregate_type_name = ASRUtils::symbol_name(sym);
+            } else if( ASR::is_a<ASR::Union_t>(*var_type) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Union_t>(var_type)->m_union_type;
+                aggregate_type_name = ASRUtils::symbol_name(sym);
+            }
+            if( aggregate_type_name ) {
+                struct_dependencies.push_back(std::string(aggregate_type_name));
+                require(present(x.m_dependencies, x.n_dependencies, std::string(aggregate_type_name)),
+                    std::string(x.m_name) + " depends on " + std::string(aggregate_type_name)
+                    + " but it isn't found in its dependency list.");
+            }
+        }
+        for( size_t i = 0; i < x.n_dependencies; i++ ) {
+            require(std::find(struct_dependencies.begin(), struct_dependencies.end(),
+                    std::string(x.m_dependencies[i])) != struct_dependencies.end(),
+                std::string(x.m_dependencies[i]) + " is not a dependency of " + std::string(x.m_name)
+                + " but it is present in its dependency list.");
         }
         current_symtab = parent_symtab;
     }
 
     void visit_StructType(const StructType_t& x) {
         visit_StructTypeEnumTypeUnionType(x);
+        if( !x.m_alignment ) {
+            return ;
+        }
+        ASR::expr_t* aligned_expr_value = ASRUtils::expr_value(x.m_alignment);
+        std::string msg = "Alignment should always evaluate to a constant expressions.";
+        require(aligned_expr_value, msg);
+        int64_t alignment_int;
+        require(ASRUtils::extract_value(aligned_expr_value, alignment_int), msg);
+        require(alignment_int != 0 && (alignment_int & (alignment_int - 1)) == 0,
+                "Alignment " + std::to_string(alignment_int) +
+                " is not a positive power of 2.");
     }
 
     void visit_EnumType(const EnumType_t& x) {
@@ -462,6 +556,11 @@ public:
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function");
             }
         }
+        function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
+        if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) ) {
+            ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
+            module_dependencies.push_back(std::string(x_m_name->m_module_name));
+        }
         for (size_t i=0; i<x.n_args; i++) {
             if( x.m_args[i].m_value ) {
                 visit_expr(*(x.m_args[i].m_value));
@@ -555,6 +654,11 @@ public:
     void visit_FunctionCall(const FunctionCall_t &x) {
         require(x.m_name,
             "FunctionCall::m_name must be present");
+        function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
+        if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) ) {
+            ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
+            module_dependencies.push_back(std::string(x_m_name->m_module_name));
+        }
         if (x.m_dt) {
             SymbolTable *symtab = get_dt_symtab(x.m_dt);
             require(symtab_in_scope(symtab, x.m_name),

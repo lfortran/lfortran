@@ -129,6 +129,7 @@
                                             
                                         }) 
                                     matveca 
+                                    [] 
                                     [(Var 3 matveca_arg_0)
                                     (Var 3 matveca_arg_1)
                                     (Var 3 matveca_arg_2)
@@ -254,6 +255,7 @@
                             
                         }) 
                     variable01 
+                    [matveca] 
                     [] 
                     [(SubroutineCall 
                         2 matveca 

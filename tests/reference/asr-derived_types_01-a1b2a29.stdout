@@ -392,6 +392,7 @@
                                             
                                         }) 
                                     set 
+                                    [] 
                                     [(Var 5 a)] 
                                     [(= 
                                         (StructInstanceMember 
@@ -466,10 +467,13 @@
                                             
                                         }) 
                                     x 
+                                    [] 
                                     [r
                                     i] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     ()
                                 ), 
                             y:
@@ -511,10 +515,13 @@
                                             
                                         }) 
                                     y 
+                                    [x] 
                                     [c
                                     d] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     ()
                                 )
                             
@@ -578,10 +585,13 @@
                                             
                                         }) 
                                     z 
+                                    [y] 
                                     [k
                                     l] 
                                     Source 
                                     Public 
+                                    .false. 
+                                    () 
                                     ()
                                 )
                             

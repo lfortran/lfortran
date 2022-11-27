@@ -255,8 +255,8 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
         } else if (s[pos] == ' ') {
             // Skip white space in a fixed-form parser
             pos++;
-            lm.out_start.push_back(out.size());
-            lm.in_start.push_back(pos);
+            lm.files.back().out_start.push_back(out.size());
+            lm.files.back().in_start.push_back(pos);
         } else {
             // Copy the character, but covert to lowercase
             out += tolower(s[pos]);
@@ -298,15 +298,19 @@ void process_include(std::string& out, const std::string& s,
     }
 
     LocationManager lm_tmp;
-    lm_tmp.in_filename = include_filename;
+    {
+        LocationManager::FileLocations fl;
+        fl.in_filename = include_filename;
+        lm_tmp.files.push_back(fl);
+    }
     include = prescan(include, lm_tmp, fixed_form, root_dir);
 
     // Possible it goes here
-    // lm.out_start.push_back(out.size());
+    // lm.files.back().out_start.push_back(out.size());
     out += include;
     while (pos < s.size() && s[pos] != '\n') pos++;
-    lm.out_start.push_back(out.size());
-    lm.in_start.push_back(pos);
+    lm.files.back().out_start.push_back(out.size());
+    lm.files.back().in_start.push_back(pos);
 }
 
 bool is_include(const std::string &s, uint32_t pos) {
@@ -330,9 +334,9 @@ std::string prescan(const std::string &s, LocationManager &lm,
     if (fixed_form) {
         // `pos` is the position in the original code `s`
         // `out` is the final code (outcome)
-        lm.get_newlines(s, lm.in_newlines);
-        lm.out_start.push_back(0);
-        lm.in_start.push_back(0);
+        lm.get_newlines(s, lm.files.back().in_newlines);
+        lm.files.back().out_start.push_back(0);
+        lm.files.back().in_start.push_back(0);
         std::string out;
         size_t pos = 0;
         /* Note:
@@ -361,23 +365,23 @@ std::string prescan(const std::string &s, LocationManager &lm,
                 case LineType::Comment : {
                     // Skip
                     skip_rest_of_line(s, pos);
-                    lm.out_start.push_back(out.size());
-                    lm.in_start.push_back(pos);
+                    lm.files.back().out_start.push_back(out.size());
+                    lm.files.back().in_start.push_back(pos);
                     break;
                 }
                 case LineType::Statement : {
                     // Copy from column 7
                     pos += 6;
-                    lm.out_start.push_back(out.size());
-                    lm.in_start.push_back(pos);
+                    lm.files.back().out_start.push_back(out.size());
+                    lm.files.back().in_start.push_back(pos);
                     copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
                 case LineType::StatementTab : {
                     // Copy from column 2
                     pos += 1;
-                    lm.out_start.push_back(out.size());
-                    lm.in_start.push_back(pos);
+                    lm.files.back().out_start.push_back(out.size());
+                    lm.files.back().in_start.push_back(pos);
                     copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
@@ -385,8 +389,8 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     // Copy the label
                     copy_label(out, s, pos);
                     // Copy from column 7
-                    lm.out_start.push_back(out.size());
-                    lm.in_start.push_back(pos);
+                    lm.files.back().out_start.push_back(out.size());
+                    lm.files.back().in_start.push_back(pos);
                     copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
@@ -394,8 +398,8 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     // Append from column 7 to previous line
                     out = out.substr(0, out.size()-1); // Remove the last '\n'
                     pos += 6;
-                    lm.out_start.push_back(out.size());
-                    lm.in_start.push_back(pos);
+                    lm.files.back().out_start.push_back(out.size());
+                    lm.files.back().in_start.push_back(pos);
                     copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
@@ -403,8 +407,8 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     // Append from column 3 to previous line
                     out = out.substr(0, out.size()-1); // Remove the last '\n'
                     pos += 2;
-                    lm.out_start.push_back(out.size());
-                    lm.in_start.push_back(pos);
+                    lm.files.back().out_start.push_back(out.size());
+                    lm.files.back().in_start.push_back(pos);
                     copy_rest_of_line(out, s, pos, lm);
                     break;
                 }
@@ -425,14 +429,14 @@ std::string prescan(const std::string &s, LocationManager &lm,
             };
             if (lt == LineType::EndOfFile) break;
         }
-        lm.in_start.push_back(pos);
-        lm.out_start.push_back(out.size());
+        lm.files.back().in_start.push_back(pos);
+        lm.files.back().out_start.push_back(out.size());
         return out;
     } else {
         // `pos` is the position in the original code `s`
         // `out` is the final code (outcome)
-        lm.out_start.push_back(0);
-        lm.in_start.push_back(0);
+        lm.files.back().out_start.push_back(0);
+        lm.files.back().in_start.push_back(0);
         std::string out;
         size_t pos = 0;
         bool in_comment = false, newline = true;
@@ -452,11 +456,11 @@ std::string prescan(const std::string &s, LocationManager &lm,
                 size_t pos2=pos+1;
                 bool ws_or_comment;
                 cont1(s, pos2, ws_or_comment);
-                if (ws_or_comment) lm.in_newlines.push_back(pos2-1);
+                if (ws_or_comment) lm.files.back().in_newlines.push_back(pos2-1);
                 if (ws_or_comment) {
                     while (ws_or_comment) {
                         cont1(s, pos2, ws_or_comment);
-                        if (ws_or_comment) lm.in_newlines.push_back(pos2-1);
+                        if (ws_or_comment) lm.files.back().in_newlines.push_back(pos2-1);
                     }
                     // `pos` will move by more than 1, close the old interval
     //                lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
@@ -465,12 +469,12 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     if (s[pos] == '&') pos++;
                     // Start a new interval (just the starts, the size will be
                     // filled in later)
-                    lm.out_start.push_back(out.size());
-                    lm.in_start.push_back(pos);
+                    lm.files.back().out_start.push_back(out.size());
+                    lm.files.back().in_start.push_back(pos);
                 }
             } else {
                 if (s[pos] == '\n') {
-                    lm.in_newlines.push_back(pos);
+                    lm.files.back().in_newlines.push_back(pos);
                     newline = true;
                 }
             }
@@ -480,12 +484,12 @@ std::string prescan(const std::string &s, LocationManager &lm,
         // set the size of the last interval
     //    lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
 
-        LFORTRAN_ASSERT(check_newlines(s, lm.in_newlines))
+        LFORTRAN_ASSERT(check_newlines(s, lm.files.back().in_newlines))
 
         // Add the position of EOF as the last \n, whether or not the original
         // file has it
-        lm.in_start.push_back(pos);
-        lm.out_start.push_back(out.size());
+        lm.files.back().in_start.push_back(pos);
+        lm.files.back().out_start.push_back(out.size());
         return out;
     }
 }

@@ -171,7 +171,7 @@ then:                                             ; preds = %loop.body4
   br i1 %106, label %then5, label %else
 
 then5:                                            ; preds = %then
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @0, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @0, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont
 
@@ -281,7 +281,7 @@ then7:                                            ; preds = %else6
   br i1 %181, label %then8, label %else9
 
 then8:                                            ; preds = %then7
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @1, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @1, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont10
 
@@ -317,7 +317,7 @@ declare void @_lfortran_complex_mul_32(%complex_4*, %complex_4*, %complex_4*, ..
 
 declare void @_lfortran_complex_add_32(%complex_4*, %complex_4*, %complex_4*, ...)
 
-declare void @_lfortran_printf(i8*, ...)
+declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
 

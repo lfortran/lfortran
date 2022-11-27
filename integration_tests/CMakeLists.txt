@@ -186,6 +186,7 @@ RUN(NAME subroutines_03 LABELS gfortran llvm wasm)
 RUN(NAME subroutines_04 LABELS gfortran llvm wasm)
 RUN(NAME subroutines_06 LABELS gfortran)
 RUN(NAME subroutines_07 LABELS gfortran)
+RUN(NAME subroutines_08 LABELS gfortran llvm wasm)
 
 RUN(NAME functions_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME functions_02 LABELS gfortran llvm wasm)
@@ -256,6 +257,8 @@ RUN(NAME arrays_10 LABELS gfortran)
 RUN(NAME arrays_11 LABELS gfortran llvm cpp)
 RUN(NAME arrays_12 LABELS gfortran) # constant arrays
 RUN(NAME arrays_13 LABELS gfortran llvm) # constant arrays
+RUN(NAME arrays_14 LABELS gfortran llvm)
+RUN(NAME arrays_15 LABELS gfortran llvm)
 RUN(NAME arrays_inputs_15 LABELS gfortran llvm) # constant arrays
 RUN(NAME arrays_16_func LABELS gfortran llvm)
 
@@ -586,6 +589,8 @@ RUN(NAME assign_to2 LABELS gfortran llvm)
 RUN(NAME conv_complex2real LABELS gfortran llvm)
 
 RUN(NAME template_add LABELS llvm)
+RUN(NAME template_nested LABELS llvm)
+RUN(NAME template_travel LABELS llvm)
 
 RUN(NAME statement1 LABELS gfortran llvm)
 

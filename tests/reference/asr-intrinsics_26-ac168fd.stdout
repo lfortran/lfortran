@@ -143,6 +143,7 @@
                                             
                                         }) 
                                     all_set 
+                                    [btest@btest32] 
                                     [(Var 3 x)
                                     (Var 3 num_bits)] 
                                     [(= 
@@ -206,7 +207,8 @@
                             
                         }) 
                     stdlib_bitsets_64 
-                    [lfortran_intrinsic_bit] 
+                    [lfortran_intrinsic_bit
+                    lfortran_intrinsic_bit] 
                     .false. 
                     .false.
                 )

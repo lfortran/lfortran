@@ -43,6 +43,7 @@
                 i32.add
                 local.set 3
                 br 1
+            else
             end
         end
         local.get 3
@@ -56,6 +57,7 @@
             i32.const 1
             call 6
             unreachable
+        else
         end
         local.get 3
         call 0
@@ -103,9 +105,11 @@
                         i32.add
                         local.set 0
                         br 1
+                    else
                     end
                 end
                 br 1
+            else
             end
         end
         local.get 0
@@ -119,6 +123,7 @@
             i32.const 1
             call 6
             unreachable
+        else
         end
         local.get 0
         call 0
@@ -160,9 +165,11 @@
                         i32.add
                         local.set 0
                         br 1
+                    else
                     end
                 end
                 br 1
+            else
             end
         end
         local.get 0
@@ -176,6 +183,7 @@
             i32.const 1
             call 6
             unreachable
+        else
         end
         local.get 0
         call 0

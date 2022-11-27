@@ -47,9 +47,10 @@ define void @__module_class_circle2__xx_lcompilers_changed_main_xx() {
 .entry:
   %c = alloca %circle, align 8
   %0 = getelementptr %circle, %circle* %c, i32 0, i32 0
-  store float 1.000000e+00, float* %0, align 4
   %1 = getelementptr %circle, %circle* %c, i32 0, i32 0
-  store float 1.500000e+00, float* %1, align 4
+  store float 1.000000e+00, float* %1, align 4
+  %2 = getelementptr %circle, %circle* %c, i32 0, i32 0
+  store float 1.500000e+00, float* %2, align 4
   call void @__module_class_circle2_circle_print(%circle* %c)
   br label %return
 

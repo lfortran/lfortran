@@ -117,10 +117,18 @@ int emit_tokens2(const std::string &input, std::vector<std::string>
     LFortran::diag::Diagnostics diagnostics;
     auto res = LFortran::tokens(al, input, diagnostics, &stypes, nullptr, false);
     LFortran::LocationManager lm;
-    lm.in_filename = "input";
-    lm.init_simple(input);
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = "input";
+        // `input` is only used for error rendering
+        std::ofstream out("input");
+        out << input;
+        lm.files.push_back(fl);
+        lm.init_simple(input);
+        lm.file_ends.push_back(input.size());
+    }
     LFortran::CompilerOptions cu;
-    std::cerr << diagnostics.render(input, lm, cu);
+    std::cerr << diagnostics.render(lm, cu);
     if (res.ok) {
         toks = res.result;
     } else {
@@ -282,10 +290,18 @@ int prompt(bool verbose)
             LCompilers::PassManager lpm;
             lpm.use_default_passes();
             lpm.do_not_use_optimization_passes();
-            lm.in_filename = "input";
+            {
+                LFortran::LocationManager::FileLocations fl;
+                fl.in_filename = "input";
+                // `input` is only used for error rendering
+                std::ofstream out("input");
+                out << input;
+                lm.files.push_back(fl);
+                lm.file_ends.push_back(input.size());
+            }
             LFortran::Result<LFortran::FortranEvaluator::EvalResult>
             res = e.evaluate(input, verbose, lm, lpm, diagnostics);
-            std::cerr << diagnostics.render(input, lm, cu);
+            std::cerr << diagnostics.render(lm, cu);
             if (res.ok) {
                 r = res.result;
             } else {
@@ -375,9 +391,14 @@ int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
     LFortran::LocationManager lm;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     std::string prescan = LFortran::prescan(input, lm,
-        compiler_options.fixed_form, LFortran::parent_path(lm.in_filename));
+        compiler_options.fixed_form, LFortran::parent_path(lm.files.back().in_filename));
     std::cout << prescan << std::endl;
     return 0;
 }
@@ -392,15 +413,20 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
     std::vector<LFortran::Location> locations;
     LFortran::diag::Diagnostics diagnostics;
     LFortran::LocationManager lm;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+    }
     if (compiler_options.prescan || compiler_options.fixed_form) {
         input = prescan(input, lm,
             compiler_options.fixed_form, LFortran::parent_path(infile));
     }
     auto res = LFortran::tokens(al, input, diagnostics, &stypes, &locations,
         compiler_options.fixed_form);
-    lm.in_filename = infile;
     lm.init_simple(input);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+    lm.file_ends.push_back(input.size());
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         toks = res.result;
         LFORTRAN_ASSERT(toks.size() == stypes.size())
@@ -425,9 +451,14 @@ int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
     LFortran::FortranEvaluator fe(compiler_options);
     LFortran::LocationManager lm;
     LFortran::diag::Diagnostics diagnostics;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     LFortran::Result<std::string> r = fe.get_ast(input, lm, diagnostics);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (r.ok) {
         std::cout << r.result << std::endl;
         return 0;
@@ -443,10 +474,15 @@ int emit_ast_f90(const std::string &infile, CompilerOptions &compiler_options)
     LFortran::FortranEvaluator fe(compiler_options);
     LFortran::LocationManager lm;
     LFortran::diag::Diagnostics diagnostics;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     LFortran::Result<LFortran::AST::TranslationUnit_t*> r
             = fe.get_ast2(input, lm, diagnostics);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (r.ok) {
         std::cout << LFortran::ast_to_src(*r.result,
             compiler_options.use_colors);
@@ -465,10 +501,15 @@ int format(const std::string &infile, bool inplace, bool color, int indent,
     LFortran::FortranEvaluator fe(compiler_options);
     LFortran::LocationManager lm;
     LFortran::diag::Diagnostics diagnostics;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     LFortran::Result<LFortran::AST::TranslationUnit_t*>
         r = fe.get_ast2(input, lm, diagnostics);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (!r.ok) {
         LFORTRAN_ASSERT(diagnostics.has_error())
         return 2;
@@ -504,11 +545,16 @@ int python_wrapper(const std::string &infile, std::string array_order,
 
     // Src -> AST -> ASR
     LFortran::LocationManager lm;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     LFortran::diag::Diagnostics diagnostics;
     LFortran::Result<LFortran::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (result.ok) {
         asr = result.result;
     } else {
@@ -555,11 +601,16 @@ int emit_asr(const std::string &infile,
 
     LFortran::FortranEvaluator fe(compiler_options);
     LFortran::LocationManager lm;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     LFortran::diag::Diagnostics diagnostics;
     LFortran::Result<LFortran::ASR::TranslationUnit_t*>
         r = fe.get_asr2(input, lm, diagnostics);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (!r.ok) {
         LFORTRAN_ASSERT(diagnostics.has_error())
         return 2;
@@ -588,9 +639,14 @@ int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
     LFortran::FortranEvaluator fe(compiler_options);
     LFortran::LocationManager lm;
     LFortran::diag::Diagnostics diagnostics;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     LFortran::Result<std::string> cpp = fe.get_cpp(input, lm, diagnostics, 1);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (cpp.ok) {
         std::cout << cpp.result;
         return 0;
@@ -607,9 +663,14 @@ int emit_c(const std::string &infile, CompilerOptions &compiler_options)
     LFortran::FortranEvaluator fe(compiler_options);
     LFortran::LocationManager lm;
     LFortran::diag::Diagnostics diagnostics;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     LFortran::Result<std::string> cpp = fe.get_c(input, lm, diagnostics, 1);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (cpp.ok) {
         std::cout << cpp.result;
         return 0;
@@ -626,9 +687,14 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
     LFortran::FortranEvaluator fe(compiler_options);
     LFortran::LocationManager lm;
     LFortran::diag::Diagnostics diagnostics;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     LFortran::Result<std::string> julia = fe.get_julia(input, lm, diagnostics);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (julia.ok) {
         std::cout << julia.result;
         return 0;
@@ -691,11 +757,16 @@ int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
 
     LFortran::FortranEvaluator fe(compiler_options);
     LFortran::LocationManager lm;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     LFortran::diag::Diagnostics diagnostics;
     LFortran::Result<std::string> llvm
         = fe.get_llvm(input, lm, pass_manager, diagnostics);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (llvm.ok) {
         std::cout << llvm.result;
         return 0;
@@ -714,9 +785,14 @@ int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
     // TODO: Remove this and accept pass manager in emit_asm
     LCompilers::PassManager lpm;
     LFortran::diag::Diagnostics diagnostics;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     LFortran::Result<std::string> r = fe.get_asm(input, lm, lpm, diagnostics);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (r.ok) {
         std::cout << r.result;
         return 0;
@@ -742,11 +818,16 @@ int compile_to_object_file(const std::string &infile,
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
     lpm.do_not_use_optimization_passes();
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     LFortran::diag::Diagnostics diagnostics;
     LFortran::Result<LFortran::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (result.ok) {
         asr = result.result;
     } else {
@@ -774,8 +855,8 @@ int compile_to_object_file(const std::string &infile,
     std::unique_ptr<LFortran::LLVMModule> m;
     diagnostics.diagnostics.clear();
     LFortran::Result<std::unique_ptr<LFortran::LLVMModule>>
-        res = fe.get_llvm3(*asr, lpm, diagnostics);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+        res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
     } else {
@@ -812,9 +893,14 @@ int emit_wat(const std::string &infile, CompilerOptions &compiler_options)
     LFortran::FortranEvaluator fe(compiler_options);
     LFortran::LocationManager lm;
     LFortran::diag::Diagnostics diagnostics;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     LFortran::Result<std::string> r = fe.get_wat(input, lm, diagnostics);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (r.ok) {
         std::cout << r.result;
         return 0;
@@ -849,7 +935,12 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
 
     // Src -> AST
     LFortran::LocationManager lm;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     {
         auto t1 = std::chrono::high_resolution_clock::now();
         LFortran::Result<LFortran::AST::TranslationUnit_t*>
@@ -857,7 +948,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         auto t2 = std::chrono::high_resolution_clock::now();
         time_src_to_ast = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
-        std::cerr << diagnostics.render(input, lm, compiler_options);
+        std::cerr << diagnostics.render(lm, compiler_options);
         if (result.ok) {
             ast = result.result;
         } else {
@@ -875,7 +966,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         auto t2 = std::chrono::high_resolution_clock::now();
         time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
-        std::cerr << diagnostics.render(input, lm, compiler_options);
+        std::cerr << diagnostics.render(lm, compiler_options);
         if (result.ok) {
             asr = result.result;
         } else {
@@ -889,11 +980,11 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         diagnostics.diagnostics.clear();
         auto t1 = std::chrono::high_resolution_clock::now();
         LFortran::Result<int>
-            result = LFortran::asr_to_x86(*asr, al, outfile, time_report);
+            result = LFortran::asr_to_x86(*asr, al, outfile, time_report, diagnostics);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_asr_to_x86 = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
-        std::cerr << diagnostics.render(input, lm, compiler_options);
+        std::cerr << diagnostics.render(lm, compiler_options);
         if (result.ok) {
             // pass
         } else {
@@ -945,7 +1036,12 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
 
     // Src -> AST
     LFortran::LocationManager lm;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     {
         auto t1 = std::chrono::high_resolution_clock::now();
         LFortran::Result<LFortran::AST::TranslationUnit_t*>
@@ -953,7 +1049,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         auto t2 = std::chrono::high_resolution_clock::now();
         time_src_to_ast = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
-        std::cerr << diagnostics.render(input, lm, compiler_options);
+        std::cerr << diagnostics.render(lm, compiler_options);
         if (result.ok) {
             ast = result.result;
         } else {
@@ -971,7 +1067,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         auto t2 = std::chrono::high_resolution_clock::now();
         time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
-        std::cerr << diagnostics.render(input, lm, compiler_options);
+        std::cerr << diagnostics.render(lm, compiler_options);
         if (result.ok) {
             asr = result.result;
         } else {
@@ -989,7 +1085,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         auto t2 = std::chrono::high_resolution_clock::now();
         time_asr_to_wasm = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
-        std::cerr << diagnostics.render(input, lm, compiler_options);
+        std::cerr << diagnostics.render(lm, compiler_options);
         if (result.ok) {
             // pass
         } else {
@@ -1029,11 +1125,16 @@ int compile_to_object_file_cpp(const std::string &infile,
 
     // Src -> AST -> ASR
     LFortran::LocationManager lm;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     LFortran::diag::Diagnostics diagnostics;
     LFortran::Result<LFortran::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (result.ok) {
         asr = result.result;
     } else {
@@ -1081,7 +1182,7 @@ int compile_to_object_file_cpp(const std::string &infile,
     diagnostics.diagnostics.clear();
     LFortran::Result<std::string> res
         = fe.get_cpp2(*asr, diagnostics, 1);
-    std::cerr << diagnostics.render(input, lm, compiler_options);
+    std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         src = res.result;
     } else {
@@ -1316,7 +1417,12 @@ int emit_c_preprocessor(const std::string &infile, CompilerOptions &compiler_opt
 
     LFortran::CPreprocessor cpp(compiler_options);
     LFortran::LocationManager lm;
-    lm.in_filename = infile;
+    {
+        LFortran::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
     std::string s = cpp.run(input, lm, cpp.macro_definitions);
     std::cout << s;
     return 0;
@@ -1335,7 +1441,14 @@ namespace wasm {
                         LFortran::FortranEvaluator fe(compiler_options); \
                         LFortran::LocationManager lm; \
                         LFortran::diag::Diagnostics diagnostics; \
-                        lm.in_filename = "input";
+                        { \
+                            LFortran::LocationManager::FileLocations fl; \
+                            fl.in_filename = "input"; \
+                            std::ofstream out("input"); \
+                            out << input; \
+                            lm.files.push_back(fl); \
+                            lm.file_ends.push_back(strlen(input)); \
+                        }
 
 
 
@@ -1346,7 +1459,7 @@ extern "C" { // using extern "C" to prevent function name mangling
 EMSCRIPTEN_KEEPALIVE char* emit_ast_from_source(char *input) {
     INITIALIZE_VARS;
     LFortran::Result<std::string> r = fe.get_ast(input, lm, diagnostics);
-    out = diagnostics.render(input, lm, compiler_options);
+    out = diagnostics.render(lm, compiler_options);
     if (r.ok) { out += r.result; }
     return &out[0];
 }
@@ -1354,7 +1467,7 @@ EMSCRIPTEN_KEEPALIVE char* emit_ast_from_source(char *input) {
 EMSCRIPTEN_KEEPALIVE char* emit_asr_from_source(char *input) {
     INITIALIZE_VARS;
     LFortran::Result<std::string> r = fe.get_asr(input, lm, diagnostics);
-    out = diagnostics.render(input, lm, compiler_options);
+    out = diagnostics.render(lm, compiler_options);
     if (r.ok) { out += r.result; }
     return &out[0];
 }
@@ -1362,7 +1475,7 @@ EMSCRIPTEN_KEEPALIVE char* emit_asr_from_source(char *input) {
 EMSCRIPTEN_KEEPALIVE char* emit_wat_from_source(char *input) {
     INITIALIZE_VARS;
     LFortran::Result<std::string> r = fe.get_wat(input, lm, diagnostics);
-    out = diagnostics.render(input, lm, compiler_options);
+    out = diagnostics.render(lm, compiler_options);
     if (r.ok) { out += r.result; }
     return &out[0];
 }
@@ -1370,7 +1483,7 @@ EMSCRIPTEN_KEEPALIVE char* emit_wat_from_source(char *input) {
 EMSCRIPTEN_KEEPALIVE char* emit_cpp_from_source(char *input) {
     INITIALIZE_VARS;
     LFortran::Result<std::string> r = fe.get_cpp(input, lm, diagnostics, 1);
-    out = diagnostics.render(input, lm, compiler_options);
+    out = diagnostics.render(lm, compiler_options);
     if (r.ok) { out += r.result; }
     return &out[0];
 }
@@ -1378,7 +1491,7 @@ EMSCRIPTEN_KEEPALIVE char* emit_cpp_from_source(char *input) {
 EMSCRIPTEN_KEEPALIVE char* emit_c_from_source(char *input) {
     INITIALIZE_VARS;
     LFortran::Result<std::string> r = fe.get_c(input, lm, diagnostics, 1);
-    out = diagnostics.render(input, lm, compiler_options);
+    out = diagnostics.render(lm, compiler_options);
     if (r.ok) { out += r.result; }
     return &out[0];
 }
@@ -1386,7 +1499,7 @@ EMSCRIPTEN_KEEPALIVE char* emit_c_from_source(char *input) {
 // EMSCRIPTEN_KEEPALIVE char* emit_py_from_source(char *input) {
 //     INITIALIZE_VARS;
 //     LFortran::Result<std::string> r = fe.get_py(input, lm, diagnostics);
-//     out = diagnostics.render(input, lm, compiler_options);
+//     out = diagnostics.render(lm, compiler_options);
 //     if (r.ok) { out += r.result; }
 //     return &out[0];
 // }
@@ -1402,7 +1515,7 @@ EMSCRIPTEN_KEEPALIVE char* emit_wasm_from_source(char *input) {
     }
     else{
         out = "1"; // non-zero exit code
-        out += "," + diagnostics.render(input, lm, compiler_options);
+        out += "," + diagnostics.render(lm, compiler_options);
     }
     return &out[0];
 }

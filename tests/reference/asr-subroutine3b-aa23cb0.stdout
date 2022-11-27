@@ -25,6 +25,7 @@
                         }) 
                     f 
                     [] 
+                    [] 
                     [(= 
                         (Var 2 f) 
                         (IntegerConstant 42 (Integer 4 [])) 
@@ -67,6 +68,7 @@
                         }) 
                     g 
                     [] 
+                    [] 
                     [(= 
                         (Var 3 g) 
                         (IntegerConstant 42 (Integer 4 [])) 
@@ -108,6 +110,7 @@
                             
                         }) 
                     h 
+                    [] 
                     [] 
                     [(= 
                         (Var 4 h) 

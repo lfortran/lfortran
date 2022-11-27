@@ -150,6 +150,7 @@
                                             
                                         }) 
                                     add_generic 
+                                    [f] 
                                     [(Var 5 x)
                                     (Var 5 y)] 
                                     [(= 
@@ -235,6 +236,7 @@
                                             
                                         }) 
                                     add_integer 
+                                    [func_arg_int] 
                                     [(Var 11 x)
                                     (Var 11 y)] 
                                     [(= 
@@ -314,6 +316,7 @@
                                             
                                         }) 
                                     add_real 
+                                    [func_arg_real] 
                                     [(Var 10 x)
                                     (Var 10 y)] 
                                     [(= 
@@ -402,6 +405,7 @@
                                             
                                         }) 
                                     f 
+                                    [] 
                                     [(Var 4 x)
                                     (Var 4 y)] 
                                     [] 
@@ -472,6 +476,7 @@
                                             
                                         }) 
                                     func_arg_int 
+                                    [] 
                                     [(Var 7 x)
                                     (Var 7 y)] 
                                     [(= 
@@ -549,6 +554,7 @@
                                             
                                         }) 
                                     func_arg_real 
+                                    [] 
                                     [(Var 6 x)
                                     (Var 6 y)] 
                                     [(= 
@@ -585,8 +591,11 @@
                                         }) 
                                     t 
                                     [] 
+                                    [] 
                                     Source 
                                     Private 
+                                    .false. 
+                                    () 
                                     ()
                                 ), 
                             test_template:
@@ -673,6 +682,11 @@
                                             
                                         }) 
                                     test_template 
+                                    [add_real
+                                    abs@sabs
+                                    add_real
+                                    add_integer
+                                    add_integer] 
                                     [] 
                                     [(= 
                                         (Var 8 x) 
@@ -814,7 +828,8 @@
                             
                         }) 
                     template_add_m 
-                    [lfortran_intrinsic_math] 
+                    [lfortran_intrinsic_math
+                    lfortran_intrinsic_math] 
                     .false. 
                     .false.
                 )

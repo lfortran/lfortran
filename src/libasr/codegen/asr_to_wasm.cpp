@@ -175,7 +175,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         auto func = ASR::make_Function_t(
             m_al, global_scope_loc, global_scope, s2c(m_al, import_func.name),
-            params.data(), params.size(), nullptr, 0, nullptr,
+            nullptr, 0, params.data(), params.size(), nullptr, 0, nullptr,
             ASR::abiType::Source, ASR::accessType::Public,
             ASR::deftypeType::Implementation, nullptr, false, false, false, false, false,
             nullptr, 0, nullptr, 0, false);
@@ -352,7 +352,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // Generate main program code
         auto main_func = ASR::make_Function_t(
             m_al, x.base.base.loc, x.m_symtab, s2c(m_al, "_lcompilers_main"),
-            nullptr, 0, x.m_body, x.n_body, nullptr,
+            nullptr, 0, nullptr, 0, x.m_body, x.n_body, nullptr,
             ASR::abiType::Source, ASR::accessType::Public,
             ASR::deftypeType::Implementation, nullptr, false, false, false, false, false,
             nullptr, 0, nullptr, 0, false);
@@ -547,7 +547,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             m_var_name_idx_map[get_hash((ASR::asr_t *)arg)] =
                 s->no_of_variables++;
             if (arg->m_intent == ASR::intentType::Out ||
-                arg->m_intent == ASR::intentType::InOut) {
+                arg->m_intent == ASR::intentType::InOut ||
+                arg->m_intent == ASR::intentType::Unspecified) {
                 s->referenced_vars.push_back(m_al, arg);
             }
         }
@@ -564,7 +565,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             for (size_t i = 0; i < x.n_args; i++) {
                 ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
                 if (arg->m_intent == ASR::intentType::Out ||
-                    arg->m_intent == ASR::intentType::InOut) {
+                    arg->m_intent == ASR::intentType::InOut ||
+                    arg->m_intent == ASR::intentType::Unspecified) {
                     emit_var_type(m_type_section, arg);
                 }
             }
@@ -1624,14 +1626,15 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         //     sym_name = "_xx_lcompilers_changed_exit_xx";
         // }
 
-        Vec<ASR::Variable_t *> intent_out_passed_vars;
-        intent_out_passed_vars.reserve(m_al, s->n_args);
+        Vec<ASR::expr_t *> vars_passed_by_refs;
+        vars_passed_by_refs.reserve(m_al, s->n_args);
         if (x.n_args == s->n_args) {
             for (size_t i = 0; i < x.n_args; i++) {
                 ASR::Variable_t *arg = ASRUtils::EXPR2VAR(s->m_args[i]);
-                if (arg->m_intent == ASRUtils::intent_out) {
-                    intent_out_passed_vars.push_back(
-                        m_al, ASRUtils::EXPR2VAR(x.m_args[i].m_value));
+                if (arg->m_intent == ASRUtils::intent_out ||
+                    arg->m_intent == ASRUtils::intent_inout ||
+                    arg->m_intent == ASRUtils::intent_unspecified) {
+                    vars_passed_by_refs.push_back(m_al, x.m_args[i].m_value);
                 }
                 visit_expr(*x.m_args[i].m_value);
             }
@@ -1645,13 +1648,24 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         m_func_name_idx_map.end())
         wasm::emit_call(m_code_section, m_al,
                         m_func_name_idx_map[get_hash((ASR::asr_t *)s)]->index);
-        for (auto return_var : intent_out_passed_vars) {
-            LFORTRAN_ASSERT(
+        for (auto return_expr : vars_passed_by_refs) {
+            if (ASR::is_a<ASR::Var_t>(*return_expr)) {
+                auto return_var = ASRUtils::EXPR2VAR(return_expr);
+                LFORTRAN_ASSERT(
                 m_var_name_idx_map.find(get_hash((ASR::asr_t *)return_var)) !=
                 m_var_name_idx_map.end());
-            wasm::emit_set_local(
-                m_code_section, m_al,
-                m_var_name_idx_map[get_hash((ASR::asr_t *)return_var)]);
+                wasm::emit_set_local(
+                    m_code_section, m_al,
+                    m_var_name_idx_map[get_hash((ASR::asr_t *)return_var)]);
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*return_expr)) {
+                // emit_memory_store(ASRUtils::EXPR(return_var));
+
+                throw CodeGenError(
+                    "Passing array elements as arguments (with intent out, "
+                    "inout, unspecified) to Subroutines is not yet supported");
+            } else {
+                LFORTRAN_ASSERT(false);
+            }
         }
     }
 
@@ -2044,11 +2058,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         for (size_t i = 0; i < x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
-        if (x.n_orelse) {
-            wasm::emit_b8(m_code_section, m_al, 0x05);  // starting of else
-            for (size_t i = 0; i < x.n_orelse; i++) {
-                this->visit_stmt(*x.m_orelse[i]);
-            }
+        wasm::emit_b8(m_code_section, m_al, 0x05);  // starting of else
+        for (size_t i = 0; i < x.n_orelse; i++) {
+            this->visit_stmt(*x.m_orelse[i]);
         }
         nesting_level--;
         wasm::emit_expr_end(m_code_section, m_al);  // emit if end
@@ -2082,6 +2094,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             m_code_section, m_al,
             nesting_level -
                 cur_loop_nesting_level);  // emit_branch and label the loop
+        wasm::emit_b8(m_code_section, m_al, 0x05);  // starting of else
         wasm::emit_expr_end(m_code_section, m_al);  // end if
 
         nesting_level--;
@@ -2115,6 +2128,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         wasm::emit_i32_const(m_code_section, m_al, 1);  // non-zero exit code
         exit();
+        wasm::emit_b8(m_code_section, m_al, 0x05);  // starting of else
         wasm::emit_expr_end(m_code_section, m_al);  // emit if end
     }
 };

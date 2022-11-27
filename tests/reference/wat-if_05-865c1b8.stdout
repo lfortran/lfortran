@@ -27,6 +27,7 @@
             i32.const 17
             call 4
             call 5
+        else
         end
         local.get 1
         if
@@ -34,6 +35,7 @@
             i32.const 17
             call 4
             call 5
+        else
         end
         local.get 0
         if
@@ -72,6 +74,7 @@
                 i32.const 15
                 call 4
                 call 5
+            else
             end
         end
         local.get 1

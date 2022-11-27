@@ -50,6 +50,7 @@ y2 = 3.6_dp
 print *, abs(-0.5), abs(-0.5_dp), s1, d1, abs(-x), abs(-y)
 print *, exp(0.5), exp(0.5_dp), s2, d2, exp(x), exp(y)
 print *, log(0.5), log(0.5_dp), s3, d3, log(x), log(y)
+print *, dlog10(0.5_dp), dlog10(y2)
 print *, erf(0.5), erf(0.5_dp), s4, d4, erf(x), erf(y)
 print *, erfc(0.5), erfc(0.5_dp), s5, d5, erfc(x), erfc(y)
 print *, sqrt(0.5), sqrt(0.5_dp), s6, d6, sqrt(x), sqrt(y)

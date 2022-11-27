@@ -18,6 +18,16 @@ ast = true
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_nested.f90"
+ast = true
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_travel.f90"
+ast = true
+asr = true
+
+[[test]]
 filename = "subroutine2.f90"
 ast = true
 julia = true
@@ -2594,4 +2604,8 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/implied_do_loops3.f90"
+asr = true
+
+[[test]]
+filename = "array10.f90"
 asr = true
