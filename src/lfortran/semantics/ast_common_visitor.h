@@ -2654,6 +2654,22 @@ public:
         return ASR::make_Ichar_t(al, x.base.base.loc, arg, type, ichar_value);
     }
 
+    ASR::asr_t* create_sin(const AST::FuncCallOrArray_t& x) {
+        Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
+                                4, nullptr, 0));
+        int64_t intrinsic_id = 0;
+        return ASR::make_IntrinsicFunction_t(al, x.base.base.loc, args.p, args.n, intrinsic_id, type, nullptr);
+    }
+
+    ASR::asr_t* create_cos(const AST::FuncCallOrArray_t& x) {
+        Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
+                                4, nullptr, 0));
+        int64_t intrinsic_id = 1;
+        return ASR::make_IntrinsicFunction_t(al, x.base.base.loc, args.p, args.n, intrinsic_id, type, nullptr);
+    }
+
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
@@ -2679,6 +2695,10 @@ public:
                 tmp = create_ArrayReshape(x);
             } else if( var_name == "ichar" ) {
                 tmp = create_Ichar(x);
+            } else if( var_name == "sin" ) {
+                tmp = create_sin(x);
+            } else if( var_name == "cos" ) {
+                tmp = create_cos(x);
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
