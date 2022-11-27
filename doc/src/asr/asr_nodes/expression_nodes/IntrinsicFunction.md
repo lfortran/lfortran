@@ -7,19 +7,21 @@ An intrinsic function. An **expr** node.
 ### Syntax
 
 ```
-IntrinsicFunction(expr* args, int intrinsic_id, ttype type, expr? value)
+IntrinsicFunction(expr* args, int intrinsic_id, int overload_id,
+    ttype type, expr? value)
 ```
 
 ### Arguments
 
-`args` represents all arguments passed to the function. `intrinsic_id` is the
-unique ID of the intrinsic function signature
-`type` represents the type of the output and `value` is an optional compile
-time value.
+* `args` represents all arguments passed to the function
+* `intrinsic_id` is the unique ID of the generic intrinsic function
+* `overload_id` is the ID of the signature within the given generic function
+* `type` represents the type of the output
+* `value` is an optional compile time value
 
 ### Return values
 
-The return value is the expression that the IntrinsicFunction represents.
+The return value is the expression that the `IntrinsicFunction` represents.
 
 ## Description
 
@@ -33,8 +35,11 @@ deterministic (no reads from global variables). They are also elemental: can be
 vectorized over any argument(s). They can be used inside parallel code and
 cached.
 
-The `intrinsic_id` determines the function uniquely, including the signature,
-so `IntegerAbs` and `RealAbs` have to different IDs.
+The `intrinsic_id` determines the generic function uniquely (`Sin` and `Abs`
+have different number, but `IntegerAbs` and `RealAbs` share the number) and
+`overload_id` uniquely determines the signature starting from 0 for each
+generic function (e.g., `IntegerAbs`, `RealAbs` and `ComplexAbs` can have
+`overload_id` equal to 0, 1 and 2, and `RealSin`, `ComplexSin` can be 0, 1).
 
 Backend use cases: Some architectures have special hardware instructions for
 operations like Sqrt or Sin and if they are faster than a software
@@ -86,10 +91,14 @@ ASR:
 
         })
     [(IntrinsicFunction
-        [(RealConstant 0.5 (Integer 4 []))]
-        SinReal4
+        [(RealConstant
+            0.500000
+            (Real 4 [])
+        )]
+        0
+        0
         (Real 4 [])
-        (RealConstant 0.479425538604203 (Integer 4 []))
+        (RealConstant 0.479426 (Real 4 []))
     )]
 )
 ```
