@@ -159,11 +159,29 @@ public:
                 LFORTRAN_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_pointer(dest_type)))
                 LFORTRAN_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(*convert_can)))
                 value = ASRUtils::expr_value(*convert_can);
-                LFORTRAN_ASSERT(ASR::is_a<ASR::RealConstant_t>(*value))
-                ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
-                double rval = r->m_r;
-                value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                    rval, dest_type2);
+                if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+                    ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
+                    double rval = r->m_r;
+                    value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
+                        rval, dest_type2);
+                } else {
+                    // Constant array of reals
+                    LFORTRAN_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value))
+                    ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                    Vec<ASR::expr_t*> body;
+                    ASR::expr_t* _tmp;
+                    body.reserve(al, arr->n_args);
+                    for (size_t i=0; i<arr->n_args; i++) {
+                        LFORTRAN_ASSERT(ASR::is_a<ASR::RealConstant_t>(*arr->m_args[i]));
+                        ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(arr->m_args[i]);
+                        double rval = r->m_r;
+                        _tmp = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
+                            rval, dest_type2);
+                        body.push_back(al, _tmp);
+                    }
+                    value = (ASR::expr_t *)ASR::make_ArrayConstant_t(al, a_loc, body.p,
+                        body.size(), dest_type2, ASR::arraystorageType::ColMajor);
+                }
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToComplex) {
             if (ASRUtils::expr_value(*convert_can)) {
