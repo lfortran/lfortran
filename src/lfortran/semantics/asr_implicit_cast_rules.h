@@ -148,9 +148,25 @@ public:
                   value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
                                                                  rval, dest_type2);
                 } else {
-                  // TODO: Handle cases where this is say, a constant Array
-                  // See https://gitlab.com/lfortran/lfortran/-/merge_requests/1162#note_647992506
-                  value = nullptr; // Reset
+                    // Constant array of integers to reals
+                    LFORTRAN_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value))
+                    ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                    Vec<ASR::expr_t*> body;
+                    ASR::expr_t* _tmp;
+                    body.reserve(al, arr->n_args);
+                    int r_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
+                    ASR::ttype_t *r_type = ASRUtils::TYPE(ASR::make_Real_t(al, a_loc,
+                                                    r_kind, nullptr, 0));
+                    for (size_t i=0; i<arr->n_args; i++) {
+                        LFORTRAN_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*arr->m_args[i]));
+                        ASR::IntegerConstant_t *r = ASR::down_cast<ASR::IntegerConstant_t>(arr->m_args[i]);
+                        double rval = static_cast<double>(r->m_n);
+                        _tmp = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
+                            rval, r_type);
+                        body.push_back(al, _tmp);
+                    }
+                    value = (ASR::expr_t *)ASR::make_ArrayConstant_t(al, a_loc, body.p,
+                        body.size(), dest_type2, ASR::arraystorageType::ColMajor);
                 }
             }
 
@@ -170,13 +186,16 @@ public:
                     ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(value);
                     Vec<ASR::expr_t*> body;
                     ASR::expr_t* _tmp;
+                    int r_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
+                    ASR::ttype_t *r_type = ASRUtils::TYPE(ASR::make_Real_t(al, a_loc,
+                                                    r_kind, nullptr, 0));
                     body.reserve(al, arr->n_args);
                     for (size_t i=0; i<arr->n_args; i++) {
                         LFORTRAN_ASSERT(ASR::is_a<ASR::RealConstant_t>(*arr->m_args[i]));
                         ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(arr->m_args[i]);
                         double rval = r->m_r;
                         _tmp = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                            rval, dest_type2);
+                            rval, r_type);
                         body.push_back(al, _tmp);
                     }
                     value = (ASR::expr_t *)ASR::make_ArrayConstant_t(al, a_loc, body.p,
