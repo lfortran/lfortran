@@ -1535,7 +1535,6 @@ public:
                 throw CodeGenError("Cast kind " + std::to_string(x.m_kind) + " not implemented",
                                    x.base.base.loc);
         }
-        last_expr_precedence = julia_prec::Base;
     }
 
     void visit_IntegerCompare(const ASR::IntegerCompare_t& x)
