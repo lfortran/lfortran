@@ -39,32 +39,28 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
     void replace_IntrinsicFunction(ASR::IntrinsicFunction_t* x) {
         switch (x->m_intrinsic_id) {
             case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::LogGamma)) : {
-                for (size_t i=0; i < x->n_args; i++) {
-                    // TODO: handle the case if the argument changes
-                    replace_expr(x->m_args[i]);
-                }
-                /*
-                // FIXME!
+                LFORTRAN_ASSERT(x->n_args == 1)
+                // Replace any IntrinsicFunctions in the argument first:
+                current_expr_copy = current_expr;
+                current_expr = &(x->m_args[0]);
+                replace_expr(x->m_args[0]);
+                ASR::expr_t *arg = *current_expr; // Use the converted arg
+                current_expr = current_expr_copy;
+                // TODO: here we must get access to the pure ASR implementation
+                // of LogGamma, as provided by the frontend, let's say
+                // it is assigned to this symbol:
                 ASR::symbol_t* new_func_sym = nullptr;
 
                 Vec<ASR::call_arg_t> new_args;
                 new_args.reserve(al, x->n_args);
-
                 ASR::expr_t* new_call = ASRUtils::EXPR(ASR::make_FunctionCall_t(al,
                                             x->base.base.loc, new_func_sym, new_func_sym,
                                             new_args.p, new_args.size(), x->m_type, nullptr,
                                             nullptr));
-                */
 
-                ASR::expr_t* new_call = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                                            x->base.base.loc, 4.0, x->m_type));
+                // For now we will just return the argument directly:
+                new_call = arg;
                 *current_expr = new_call;
-                // TODO: here we must get access to the pure ASR implementation
-                // of LogGamma, as provided by the frontend, let's say
-                // it is assigned to this "fc":
-                // ASR::FunctionCall_t *fc = ...;
-                // TODO: Return "fc" instead of "self" here
-                //throw LCompilersException("TODO: change IntrinsicFunction to FunctionCall");
                 break;
             }
             default : {
