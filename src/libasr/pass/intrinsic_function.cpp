@@ -43,6 +43,7 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
                     // TODO: handle the case if the argument changes
                     replace_expr(x->m_args[i]);
                 }
+                /*
                 // FIXME!
                 ASR::symbol_t* new_func_sym = nullptr;
 
@@ -53,6 +54,10 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
                                             x->base.base.loc, new_func_sym, new_func_sym,
                                             new_args.p, new_args.size(), x->m_type, nullptr,
                                             nullptr));
+                */
+
+                ASR::expr_t* new_call = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
+                                            x->base.base.loc, 4.0, x->m_type));
                 *current_expr = new_call;
                 // TODO: here we must get access to the pure ASR implementation
                 // of LogGamma, as provided by the frontend, let's say
