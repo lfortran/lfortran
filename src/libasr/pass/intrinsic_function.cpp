@@ -41,11 +41,11 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
             case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::LogGamma)) : {
                 LFORTRAN_ASSERT(x->n_args == 1)
                 // Replace any IntrinsicFunctions in the argument first:
-                current_expr_copy = current_expr;
+                ASR::expr_t** current_expr_copy_ = current_expr;
                 current_expr = &(x->m_args[0]);
                 replace_expr(x->m_args[0]);
                 ASR::expr_t *arg = *current_expr; // Use the converted arg
-                current_expr = current_expr_copy;
+                current_expr = current_expr_copy_;
                 // TODO: here we must get access to the pure ASR implementation
                 // of LogGamma, as provided by the frontend, let's say
                 // it is assigned to this symbol:
