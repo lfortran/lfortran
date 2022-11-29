@@ -1490,12 +1490,14 @@ public:
                         throw CodeGenError("Cast IntegerToReal: Unsupported Kind "
                                            + std::to_string(dest_kind));
                 }
+                last_expr_precedence = julia_prec::Base;
                 break;
             }
             case (ASR::cast_kindType::RealToInteger): {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 src = "trunc" + broadcast + "(Int" + std::to_string(dest_kind * 8) + ", " + src
                       + ")";
+                last_expr_precedence = julia_prec::Base;
                 break;
             }
             case (ASR::cast_kindType::RealToReal): {
@@ -1513,22 +1515,27 @@ public:
             }
             case (ASR::cast_kindType::IntegerToComplex): {
                 src = "complex" + broadcast + "(" + src + ")";
+                last_expr_precedence = julia_prec::Base;
                 break;
             }
             case (ASR::cast_kindType::ComplexToReal): {
                 src = "real" + broadcast + "(" + src + ")";
+                last_expr_precedence = julia_prec::Base;
                 break;
             }
             case (ASR::cast_kindType::RealToComplex): {
                 src = "complex" + broadcast + "(" + src + ")";
+                last_expr_precedence = julia_prec::Base;
                 break;
             }
             case (ASR::cast_kindType::LogicalToInteger): {
                 src = "Int32" + broadcast + "(" + src + ")";
+                last_expr_precedence = julia_prec::Base;
                 break;
             }
             case (ASR::cast_kindType::IntegerToLogical): {
                 src = "Bool" + broadcast + "(" + src + ")";
+                last_expr_precedence = julia_prec::Base;
                 break;
             }
             default:

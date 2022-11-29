@@ -978,11 +978,13 @@ R"(#include <stdio.h>
                     case 8: src = "(double)(" + src + ")"; break;
                     default: throw CodeGenError("Cast IntegerToReal: Unsupported Kind " + std::to_string(dest_kind));
                 }
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::RealToInteger) : {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 src = "(int" + std::to_string(dest_kind * 8) + "_t)(" + src + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::RealToReal) : {
@@ -1005,6 +1007,7 @@ R"(#include <stdio.h>
                 } else {
                     src = "std::complex<double>(" + src + ")";
                 }
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::ComplexToReal) : {
@@ -1014,6 +1017,7 @@ R"(#include <stdio.h>
                 } else {
                     src = "std::real(" + src + ")";
                 }
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::RealToComplex) : {
@@ -1023,10 +1027,12 @@ R"(#include <stdio.h>
                 } else {
                     src = "std::complex<double>(" + src + ")";
                 }
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::LogicalToInteger) : {
                 src = "(int)(" + src + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::LogicalToCharacter) : {
@@ -1044,18 +1050,22 @@ R"(#include <stdio.h>
                     case 8: src = "(double)(" + src + ")"; break;
                     default: throw CodeGenError("Cast LogicalToReal: Unsupported Kind " + std::to_string(dest_kind));
                 }
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::RealToLogical) : {
                 src = "(bool)(" + src + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::CharacterToLogical) : {
                 src = "(bool)(strlen(" + src + ") > 0)";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::ComplexToLogical) : {
                 src = "(bool)(" + src + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::IntegerToCharacter) : {
@@ -1074,6 +1084,7 @@ R"(#include <stdio.h>
                 } else {
                     src = "std::to_string(" + src + ")";
                 }
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::CharacterToInteger) : {
@@ -1082,6 +1093,7 @@ R"(#include <stdio.h>
                 } else {
                     src = "std::stoi(" + src + ")";
                 }
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::RealToCharacter) : {
@@ -1097,6 +1109,7 @@ R"(#include <stdio.h>
                 } else {
                     src = "std::to_string(" + src + ")";
                 }
+                last_expr_precedence = 2;
                 break;
             }
             default : throw CodeGenError("Cast kind " + std::to_string(x.m_kind) + " not implemented",
