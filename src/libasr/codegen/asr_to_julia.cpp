@@ -1503,11 +1503,13 @@ public:
             case (ASR::cast_kindType::RealToReal): {
                 // In Julia, we do not need to cast float to float explicitly:
                 // src = src;
+                // last_expr_precedence = last_expr_precedence;
                 break;
             }
             case (ASR::cast_kindType::IntegerToInteger): {
                 // In Julia, we do not need to cast int <-> long long explicitly:
                 // src = src;
+                // last_expr_precedence = last_expr_precedence;
                 break;
             }
             case (ASR::cast_kindType::ComplexToComplex): {

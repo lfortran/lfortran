@@ -990,14 +990,18 @@ R"(#include <stdio.h>
             case (ASR::cast_kindType::RealToReal) : {
                 // In C++, we do not need to cast float to float explicitly:
                 // src = src;
+                // last_expr_precedence = last_expr_precedence;
                 break;
             }
             case (ASR::cast_kindType::IntegerToInteger) : {
                 // In C++, we do not need to cast int <-> long long explicitly:
                 // src = src;
+                // last_expr_precedence = last_expr_precedence;
                 break;
             }
             case (ASR::cast_kindType::ComplexToComplex) : {
+                // src = src;
+                // last_expr_precedence = last_expr_precedence;
                 break;
             }
             case (ASR::cast_kindType::IntegerToComplex) : {
@@ -1036,11 +1040,13 @@ R"(#include <stdio.h>
                 break;
             }
             case (ASR::cast_kindType::LogicalToCharacter) : {
-                src = src + " ? \"True\" : \"False\"";
+                src = "(" + src + " ? \"True\" : \"False\")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::IntegerToLogical) : {
                 src = "(bool)(" + src + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::LogicalToReal) : {
