@@ -1344,7 +1344,23 @@ public:
 
                 ASR::expr_t* init_expr = nullptr;
                 ASR::expr_t* value = nullptr;
-                if (s.m_initializer != nullptr) {
+                if (s.m_initializer != nullptr
+                        && sym_type->m_type == AST::decl_typeType::TypeType) {
+                    if (AST::is_a<AST::FuncCallOrArray_t>(*s.m_initializer)) {
+                        AST::FuncCallOrArray_t* func_call =
+                            AST::down_cast<AST::FuncCallOrArray_t>(s.m_initializer);
+                        ASR::symbol_t *sym_found = current_scope->resolve_symbol(
+                            func_call->m_func);
+                        if (sym_found == nullptr) {
+                            std::string type_name(func_call->m_func);
+                            throw SemanticError("Derived type `" + type_name +
+                                "()` is not defined", func_call->base.base.loc);
+                        }
+                    } else {
+                        throw SemanticError("Only function call is allowed for now",
+                            x.base.base.loc);
+                    }
+                } else if (s.m_initializer != nullptr) {
                     this->visit_expr(*s.m_initializer);
                     if (is_compile_time && AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
                         AST::ArrayInitializer_t *temp_array =
