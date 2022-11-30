@@ -14,32 +14,38 @@ To build the documentation you will need the following dependencies
 - [nbsphinx](https://nbsphinx.readthedocs.io/en/latest/) for converting notebooks
 - LFortran with jupyter kernel for the notebook conversion
 
-You can install all required dependencies using the mamba package manager with
-the following enviroment file:
+You can install all required dependencies using the mamba package manager as
+shown in the next section.
+
+
+## Building the documentation
+
+First create and load the Conda environment:
 
 ```console
+cd doc
 mamba env create -f environment.yml
 conda activate lfortran_docs
 ```
 
-## Building the documentation
-
 To build the documentation run the `build.py` script:
 
 ```
-python3 doc/build.py
+python build.py
 ```
 
 To view the rendered pages start a http server:
 
 ```
-python3 -m http.server -d doc/site
+python -m http.server -d site
 ```
+
+And go to: http://localhost:8000/en/
 
 You can also pass the language as an argument to only build part of the site
 
 ```
-python3 doc/build.py en de
+python build.py en de
 ```
 
 ## Updating the documentation
@@ -50,7 +56,7 @@ If you add new files in Markdown (`md`) or Notebook (`ipynb`) format, make sure 
 To update the translation files after an addition to the docs, run
 
 ```
-python3 doc/intl.py
+python intl.py
 ```
 
 New translations can be added in `doc/src/_static/languages.json`.
