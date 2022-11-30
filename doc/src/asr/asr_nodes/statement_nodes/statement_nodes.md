@@ -1,6 +1,9 @@
 # ASR Statement Nodes
 
 ```{toctree}
+---
+maxdepth: 1
+---
 allocate.md
 assert.md
 assign.md
