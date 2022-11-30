@@ -1502,16 +1502,23 @@ public:
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeCharacter) {
             int a_len = -10;
+            int a_kind = 1;
             ASR::expr_t *len_expr = nullptr;
             TypeMissingData* char_data = al.make_new<TypeMissingData>();
             char_data->sym_name = sym;
-            // TODO: take into account m_kind->m_id and all kind items
-            if (sym_type->m_kind != nullptr) {
-                switch (sym_type->m_kind->m_type) {
+            LFORTRAN_ASSERT(sym_type->n_kind < 3) // TODO
+            for (size_t i = 0; i < sym_type->n_kind; i++) {
+                // TODO: Allow len or/and kind only once (else throw SyntaxError)
+                if (sym_type->m_kind[i].m_id != nullptr
+                        && to_lower(sym_type->m_kind[i].m_id) == "kind") {
+                    // TODO: take into account m_kind->m_id and all kind items
+                    continue;
+                }
+                switch (sym_type->m_kind[i].m_type) {
                     case (AST::kind_item_typeType::Value) : {
-                        LFORTRAN_ASSERT(sym_type->m_kind->m_value != nullptr);
-                        if( sym_type->m_kind->m_value->type == AST::exprType::FuncCallOrArray ) {
-                            char_data->expr = sym_type->m_kind->m_value;
+                        LFORTRAN_ASSERT(sym_type->m_kind[i].m_value != nullptr);
+                        if( sym_type->m_kind[i].m_value->type == AST::exprType::FuncCallOrArray ) {
+                            char_data->expr = sym_type->m_kind[i].m_value;
                             char_data->scope = current_scope;
                             char_data->sym_type = current_symbol;
                             AST::FuncCallOrArray_t* call =
@@ -1534,7 +1541,7 @@ public:
                                 a_len = 1;
                             }
                         } else {
-                            this->visit_expr(*sym_type->m_kind->m_value);
+                            this->visit_expr(*sym_type->m_kind[i].m_value);
                             ASR::expr_t* len_expr0 = LFortran::ASRUtils::EXPR(tmp);
                             a_len = ASRUtils::extract_len<SemanticError>(len_expr0, loc);
                             if (a_len == -3) {
@@ -1544,22 +1551,23 @@ public:
                         break;
                     }
                     case (AST::kind_item_typeType::Star) : {
-                        LFORTRAN_ASSERT(sym_type->m_kind->m_value == nullptr);
+                        LFORTRAN_ASSERT(sym_type->m_kind[i].m_value == nullptr);
                         a_len = -1;
                         break;
                     }
                     case (AST::kind_item_typeType::Colon) : {
-                        LFORTRAN_ASSERT(sym_type->m_kind->m_value == nullptr);
+                        LFORTRAN_ASSERT(sym_type->m_kind[i].m_value == nullptr);
                         a_len = -2;
                         break;
                     }
                 }
-            } else {
+            }
+            if (sym_type->m_kind == nullptr) {
                 a_len = 1; // The default len of "character :: x" is 1
             }
             LFORTRAN_ASSERT(a_len != -10)
-            type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, a_len, len_expr,
-                dims.p, dims.size()));
+            type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, loc, a_kind,
+                a_len, len_expr, dims.p, dims.size()));
             if( char_data->scope != nullptr ) {
                 char_data->type = type;
                 type_info.push_back(char_data);
