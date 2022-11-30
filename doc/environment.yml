@@ -1,0 +1,11 @@
+name: lfortran_docs
+channels:
+  - conda-forge
+dependencies:
+  - lfortran
+  - myst-parser
+  - nbsphinx
+  - sphinx
+  - sphinx-intl
+  - sphinx-copybutton
+  - sphinx-material
