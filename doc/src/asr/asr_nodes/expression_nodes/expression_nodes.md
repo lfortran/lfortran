@@ -1,5 +1,8 @@
 # ASR Expression Nodes
 
 ```{toctree}
-expression_nodes/IntegerBinOp
+---
+maxdepth: 1
+---
+IntegerBinOp
 ```
