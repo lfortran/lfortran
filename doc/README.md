@@ -14,20 +14,12 @@ To build the documentation you will need the following dependencies
 - [nbsphinx](https://nbsphinx.readthedocs.io/en/latest/) for converting notebooks
 - LFortran with jupyter kernel for the notebook conversion
 
-You can install all required dependencies using the mamba package manager with the following enviroment file.
+You can install all required dependencies using the mamba package manager with
+the following enviroment file:
 
-```yaml
-# environment.yml
-channels:
-  - conda-forge
-dependencies:
-  - lfortran
-  - myst-parser
-  - nbsphinx
-  - sphinx
-  - sphinx-intl
-  - sphinx-copybutton
-  - sphinx-material
+```console
+mamba env create -f environment.yml
+conda activate lfortran_docs
 ```
 
 ## Building the documentation
