@@ -156,6 +156,22 @@ public:
         if (use_colors) {
             s.append(color(fg::reset));
         }
+        if(indent) {
+            inc_indent();
+            s.append("\n" + indtd);
+        } else {
+            s.append(" ");
+        }
+        s.append("[");
+        for (size_t i=0; i<x.n_member; i++) {
+            this->visit_struct_member(x.m_member[i]);
+            if (i < x.n_member-1) s.append(" ");
+        }
+        s.append("]");
+        if(indent) {
+            dec_indent();
+            s.append("\n" + indtd);
+        }
     }
     void visit_Num(const Num_t &x) {
         if (use_colors) {
