@@ -2779,6 +2779,19 @@ public:
                 v = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
+                if (ASRUtils::is_array(var_type)) {
+                    // For arrays like A(n, m) we use A(*) in BindC, so that
+                    // the C ABI is just a pointer
+                    var_type = ASRUtils::duplicate_type_without_dims(al, var_type, x.base.base.loc);
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 1);
+                    ASR::dimension_t dim;
+                    dim.loc = x.base.base.loc;
+                    dim.m_start = nullptr;
+                    dim.m_length = nullptr;
+                    dims.push_back(al, dim);
+                    ASRUtils::ttype_set_dimensions(var_type, dims.p, dims.size());
+                }
                 v = ASR::down_cast<ASR::symbol_t>(
                     ASR::make_Variable_t(al, x.base.base.loc,
                     current_scope, s2c(al, arg_name), LFortran::ASRUtils::intent_unspecified, nullptr, nullptr,
