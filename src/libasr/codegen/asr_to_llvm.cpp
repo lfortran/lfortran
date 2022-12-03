@@ -5849,6 +5849,11 @@ public:
                                 }
                         } else if ( x_abi == ASR::abiType::BindC ) {
                             if( arr_descr->is_array(ASRUtils::get_contained_type(arg->m_type)) ) {
+                                // TODO: we need a dedicated and robust
+                                // function that determines from ASR only
+                                // if a given array is represented by
+                                // a descriptor or with just a pointer.
+                                // Until then we use the following heuristic:
                                 bool arg_is_using_descriptor = true;
                                 if (LLVMArrUtils::is_explicit_shape(arg)) {
                                     if (arg->m_intent != intent_local) {
