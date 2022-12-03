@@ -7,9 +7,11 @@ Python, MATLAB or Julia) as well as compile to binaries with the goal to run
 user's code on modern architectures such as multi-core CPUs and GPUs.
 
 Website:
-[https://lfortran.org/](https://lfortran.org/)  
+[https://lfortran.org/](https://lfortran.org/)
+
 Main repository:
-[https://github.com/lfortran/lfortran](https://github.com/lfortran/lfortran)  
+[https://github.com/lfortran/lfortran](https://github.com/lfortran/lfortran)
+
 Try online using Binder:
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gl/lfortran%2Fweb%2Flfortran-binder/master?filepath=Demo.ipynb)
 
@@ -169,11 +171,11 @@ intrinsics/misc
 ```{toctree}
 :caption: LFortran ASR Nodes
 :hidden:
-asr/asr_nodes/cast_kind_nodes
-asr/asr_nodes/expression_nodes
-asr/asr_nodes/misc_nodes
-asr/asr_nodes/statement_nodes
-asr/asr_nodes/statement_nodes/fileio_nodes
-asr/asr_nodes/symbol_nodes
-asr/asr_nodes/type_nodes
+asr/asr_nodes/cast_kind_nodes/cast_kind.md
+asr/asr_nodes/expression_nodes/expression_nodes.md
+asr/asr_nodes/kinds_nodes/kinds.md
+asr/asr_nodes/statement_nodes/statement_nodes.md
+asr/asr_nodes/symbol_nodes/symbol.md
+asr/asr_nodes/symbol_nodes/program.md
+asr/asr_nodes/type_nodes/ttype.md
 ```
