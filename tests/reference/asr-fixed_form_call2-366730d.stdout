@@ -49,7 +49,7 @@
                                                     () 
                                                     Default 
                                                     (Character 1 6 () []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -63,7 +63,7 @@
                                                     () 
                                                     Default 
                                                     (Integer 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -76,7 +76,7 @@
                                     (Var 3 prinf_arg_1)] 
                                     [] 
                                     () 
-                                    Source 
+                                    BindC 
                                     Public 
                                     Interface 
                                     () 
