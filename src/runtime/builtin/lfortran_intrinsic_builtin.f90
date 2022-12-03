@@ -99,6 +99,13 @@ interface
     integer, intent(in) :: i
     end function
 
+    subroutine get_command_argument(number, value, length, status)
+    integer, intent(in) :: number
+    character(len=*), optional, intent(out) :: value
+    integer, intent(out) :: length
+    integer, intent(out) :: status
+    end subroutine
+
 end interface
 
 end module

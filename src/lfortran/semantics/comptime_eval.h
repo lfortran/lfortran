@@ -74,6 +74,7 @@ struct IntrinsicProcedures {
             {"any", {m_builtin, &not_implemented, false}},
             {"is_iostat_eor", {m_builtin, &not_implemented, false}},
             {"is_iostat_end", {m_builtin, &not_implemented, false}},
+            {"get_command_argument", {m_builtin, &not_implemented, false}},
 
             // Require evaluated arguments
             {"aimag", {m_math, &eval_aimag, true}},
