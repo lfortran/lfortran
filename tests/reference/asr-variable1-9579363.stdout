@@ -11,7 +11,7 @@
                                 (Variable 
                                     2 
                                     m 
-                                    Local 
+                                    Unspecified 
                                     () 
                                     () 
                                     Default 
@@ -156,7 +156,7 @@
                                 (Variable 
                                     2 
                                     n 
-                                    Local 
+                                    Unspecified 
                                     () 
                                     () 
                                     Default 
@@ -256,7 +256,8 @@
                         }) 
                     variable01 
                     [matveca] 
-                    [] 
+                    [(Var 2 m)
+                    (Var 2 n)] 
                     [(SubroutineCall 
                         2 matveca 
                         () 
