@@ -2,11 +2,11 @@
     "basename": "asr-variable1-9579363",
     "cmd": "lfortran --indent --show-asr --allow-implicit-interface --no-color {infile} -o {outfile}",
     "infile": "tests/variable1.f90",
-    "infile_hash": "5b6d695576e5238912fcc34c5b3ca73acd415e72e7a349c1ed66c97b",
+    "infile_hash": "3c85fb2081cc769c834a0275f205cd79f767550a1cfa6e14eee6d48b",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-variable1-9579363.stdout",
-    "stdout_hash": "966100764fdc5dce19fa95b34993f86b4aff86a172682d1ccba754f4",
+    "stdout_hash": "0d40c0967915fc13ea4a0535da1eb28b716c6ca8effe8ca7f500645b",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
