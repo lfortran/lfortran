@@ -1,4 +1,4 @@
-if (NOT WITH_RUNTIME_LIBRARY_ONLY)
+if (NOT WITH_RUNTIME_LIBRARY AND NOT WITH_RUNTIME_LIBRARY_ONLY)
   add_subdirectory(libasr)
   add_subdirectory(tests)
   add_subdirectory(lfortran)

@@ -2,11 +2,9 @@ set(SRC
     ../../../src/libasr/runtime/lfortran_intrinsics.c
 )
 
-if (WITH_RUNTIME_LIBRARY OR WITH_RUNTIME_LIBRARY_ONLY)
-    add_library(lfortran_runtime SHARED ${SRC})
-    set_target_properties(lfortran_runtime PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ..)
-endif()
+add_library(lfortran_runtime SHARED ${SRC})
+set_target_properties(lfortran_runtime PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY ..)
 
 add_library(lfortran_runtime_static STATIC ${SRC})
 set_target_properties(lfortran_runtime_static PROPERTIES
@@ -18,13 +16,11 @@ install(TARGETS lfortran_runtime_static
     LIBRARY DESTINATION share/lfortran/lib
 )
 
-if(WITH_RUNTIME_LIBRARY OR WITH_RUNTIME_LIBRARY_ONLY)
-    install(TARGETS lfortran_runtime
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        ARCHIVE DESTINATION share/lfortran/lib
-        LIBRARY DESTINATION share/lfortran/lib
-    )
-endif()
+install(TARGETS lfortran_runtime
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  ARCHIVE DESTINATION share/lfortran/lib
+  LIBRARY DESTINATION share/lfortran/lib
+  )
 
 # Install the header
 install(
