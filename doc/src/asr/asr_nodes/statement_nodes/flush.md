@@ -22,7 +22,7 @@ an error occurs.
 
 `iomsg` contains an explanatory message if an I/O error occurs.
 
-`iostat` contains
+`iostat` contains return value of the operation, the status code.
 
 ### Return values
 
