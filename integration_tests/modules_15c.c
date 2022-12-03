@@ -84,6 +84,16 @@ double f_int_doublearray(int n, double *b) {
     return s;
 }
 
+float f_int_floatarray_star(int n, float *b) {
+    int i;
+    float s;
+    s = 0;
+    for (i=0; i < n; i++) {
+        s += b[i];
+    }
+    return s;
+}
+
 // --------------------------------------------------------------------
 
 void sub_int_float(int *a, float *b, int *r) {
