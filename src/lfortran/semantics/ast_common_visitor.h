@@ -2585,6 +2585,15 @@ public:
          type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_value, nullptr, 0));
      }
 
+     ASR::asr_t* create_Scan(const AST::FuncCallOrArray_t& x) {
+        ASR::expr_t *string, *set, *back;
+        ASR::ttype_t *type;
+        string = nullptr, set = nullptr, back = nullptr;
+        type = nullptr;
+        create_ScanVerify_util(x, string, set, back, type, "scan");
+        return ASR::make_Scan_t(al, x.base.base.loc, string, set, back, type, nullptr);
+    }
+
      ASR::asr_t* create_Verify(const AST::FuncCallOrArray_t& x) {
          ASR::expr_t *string, *set, *back;
          ASR::ttype_t *type;
@@ -2815,6 +2824,8 @@ public:
                 tmp = create_Iachar(x);
             } else if( var_name == "verify" ) {
                 tmp = create_Verify(x);
+            } else if( var_name == "scan" ) {
+                tmp = create_Scan(x);
             } else {
                 LCompilersException("create_" + var_name + " not implemented yet.");
             }
