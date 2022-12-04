@@ -106,6 +106,9 @@ interface
     integer, optional, intent(out) :: status
     end subroutine
 
+    integer function command_argument_count() result(r)
+    end function
+
 end interface
 
 end module
