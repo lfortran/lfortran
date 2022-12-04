@@ -1023,6 +1023,10 @@ public:
                            a_body_vec.size(), def_body.p, def_body.size());
     }
 
+    void visit_SelectType(const AST::SelectType_t& /*x*/) {
+        tmp = nullptr;
+    }
+
     void visit_Submodule(const AST::Submodule_t &x) {
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
