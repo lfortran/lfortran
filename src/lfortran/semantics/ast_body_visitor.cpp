@@ -904,7 +904,8 @@ public:
                                         tmp_expr->base.loc);
                 } else {
                     ASR::Variable_t* tmp_v = ASR::down_cast<ASR::Variable_t>(tmp_sym);
-                    if( tmp_v->m_storage != ASR::storage_typeType::Allocatable ) {
+                    if( tmp_v->m_storage != ASR::storage_typeType::Allocatable &&
+                        tmp_v->m_storage != ASR::storage_typeType::Save ) {
                         // If it is not allocatable, it can also be a pointer
                         if (ASR::is_a<ASR::Pointer_t>(*tmp_v->m_type)) {
                             // OK

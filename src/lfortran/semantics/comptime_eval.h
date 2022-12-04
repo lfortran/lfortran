@@ -114,6 +114,7 @@ struct IntrinsicProcedures {
             {"erf", {m_math, &eval_erf, true}},
             {"erfc", {m_math, &eval_erfc, true}},
             {"abs", {m_math, &eval_abs, true}},
+            {"iabs", {m_math, &eval_abs, true}},
             {"sqrt", {m_math, &eval_sqrt, true}},
             {"dsqrt", {m_math, &eval_dsqrt, true}},
             {"datan", {m_math, &eval_datan, true}},

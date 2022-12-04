@@ -2678,7 +2678,7 @@ public:
                 type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(array));
             } else {
                 new_dims.reserve(al, n_dims - 1);
-                for( size_t i = 0; i < n_dims - 1; i++ ) {
+                for( int i = 0; i < n_dims - 1; i++ ) {
                     ASR::dimension_t new_dim;
                     new_dim.loc = x.base.base.loc;
                     new_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
