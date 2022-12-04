@@ -1796,6 +1796,11 @@ wat = true
 julia = true
 
 [[test]]
+filename = "../integration_tests/expr_11.f90"
+c = true
+julia = true
+
+[[test]]
 filename = "../integration_tests/modules_11.f90"
 ast = true
 asr = true
