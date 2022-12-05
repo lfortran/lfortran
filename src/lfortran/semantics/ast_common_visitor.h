@@ -2779,11 +2779,24 @@ public:
                 v = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
+                if (ASRUtils::is_array(var_type)) {
+                    // For arrays like A(n, m) we use A(*) in BindC, so that
+                    // the C ABI is just a pointer
+                    var_type = ASRUtils::duplicate_type_without_dims(al, var_type, x.base.base.loc);
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 1);
+                    ASR::dimension_t dim;
+                    dim.loc = x.base.base.loc;
+                    dim.m_start = nullptr;
+                    dim.m_length = nullptr;
+                    dims.push_back(al, dim);
+                    ASRUtils::ttype_set_dimensions(var_type, dims.p, dims.size());
+                }
                 v = ASR::down_cast<ASR::symbol_t>(
                     ASR::make_Variable_t(al, x.base.base.loc,
                     current_scope, s2c(al, arg_name), LFortran::ASRUtils::intent_unspecified, nullptr, nullptr,
                     ASR::storage_typeType::Default, var_type,
-                    ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+                    ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                     false));
                 current_scope->add_symbol(arg_name, v);
             }
@@ -2801,7 +2814,7 @@ public:
             ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
                 current_scope, s2c(al, return_var_name), LFortran::ASRUtils::intent_return_var, nullptr, nullptr,
                 ASR::storage_typeType::Default, type,
-                ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+                ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
             to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
@@ -2818,7 +2831,7 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ to_return,
-            ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface,
+            ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false, /* a_type_parameters */ nullptr,
             /* n_type_parameters */ 0, nullptr, 0, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
@@ -3047,7 +3060,7 @@ public:
                 if (f->m_is_restriction) {
                     if (!is_template) {
                         throw SemanticError("A requirement function must be called from a template",
-                                            x.base.base.loc);  
+                                            x.base.base.loc);
                     }
                     bool requirement_found = false;
                     std::string f_name = f->m_name;

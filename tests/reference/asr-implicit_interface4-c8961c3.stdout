@@ -19,7 +19,7 @@
                                     [(Var 2 f)] 
                                     [] 
                                     () 
-                                    Source 
+                                    BindC 
                                     Public 
                                     Interface 
                                     () 
@@ -46,7 +46,7 @@
                                                     () 
                                                     Default 
                                                     (Integer 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -60,7 +60,7 @@
                                                     () 
                                                     Default 
                                                     (Real 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -74,7 +74,7 @@
                                                     () 
                                                     Default 
                                                     (Real 8 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -88,7 +88,7 @@
                                     (Var 3 f_arg_2)] 
                                     [] 
                                     () 
-                                    Source 
+                                    BindC 
                                     Public 
                                     Interface 
                                     () 
