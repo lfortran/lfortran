@@ -1468,9 +1468,29 @@ EMSCRIPTEN_KEEPALIVE char* emit_ast_from_source(char *input) {
     return &out[0];
 }
 
+EMSCRIPTEN_KEEPALIVE char* emit_ast_json_from_source(char *input) {
+    INITIALIZE_VARS;
+    compiler_options.json = true;
+    LFortran::FortranEvaluator fe2(compiler_options);
+    LFortran::Result<std::string> r = fe2.get_ast(input, lm, diagnostics);
+    out = diagnostics.render(lm, compiler_options);
+    if (r.ok) { out += r.result; }
+    return &out[0];
+}
+
 EMSCRIPTEN_KEEPALIVE char* emit_asr_from_source(char *input) {
     INITIALIZE_VARS;
     LFortran::Result<std::string> r = fe.get_asr(input, lm, diagnostics);
+    out = diagnostics.render(lm, compiler_options);
+    if (r.ok) { out += r.result; }
+    return &out[0];
+}
+
+EMSCRIPTEN_KEEPALIVE char* emit_asr_json_from_source(char *input) {
+    INITIALIZE_VARS;
+    compiler_options.json = true;
+    LFortran::FortranEvaluator fe2(compiler_options);
+    LFortran::Result<std::string> r = fe2.get_asr(input, lm, diagnostics);
     out = diagnostics.render(lm, compiler_options);
     if (r.ok) { out += r.result; }
     return &out[0];
