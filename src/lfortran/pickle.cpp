@@ -1,7 +1,6 @@
 #include <string>
 
 #include <lfortran/pickle.h>
-#include <lfortran/pickle.h>
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/asr_utils.h>
@@ -192,6 +191,26 @@ std::string pickle(AST::TranslationUnit_t &ast, bool colors,bool indent) {
     return v.get_str();
 }
 
+/********************** Pickle Json *******************/
+class ASTJsonVisitor :
+    public LFortran::AST::JsonBaseVisitor<ASTJsonVisitor>
+{
+public:
+    std::string get_str() {
+        return s;
+    }
+};
+
+std::string pickle_json(LFortran::AST::ast_t &ast) {
+    ASTJsonVisitor v;
+    v.visit_ast(ast);
+    return v.get_str();
+}
+
+std::string pickle_json(LFortran::AST::TranslationUnit_t &ast) {
+    return pickle_json((LFortran::AST::ast_t &)ast);
+}
+
 /* -----------------------------------------------------------------------*/
 // ASR
 
@@ -274,4 +293,45 @@ std::string pickle(LFortran::ASR::TranslationUnit_t &asr, bool colors, bool inde
     return pickle((ASR::asr_t &)asr, colors, indent, show_intrinsic_modules);
 }
 
+/********************** Pickle Json *******************/
+class ASRJsonVisitor :
+    public LFortran::ASR::JsonBaseVisitor<ASRJsonVisitor>
+{
+public:
+    std::string get_str() {
+        return s;
+    }
+
+    void visit_symbol(const ASR::symbol_t &x) {
+        s.append("\"");
+        s.append(LFortran::ASRUtils::symbol_name(&x));
+        s.append(" (SymbolTable");
+        s.append(LFortran::ASRUtils::symbol_parent_symtab(&x)->get_counter());
+        s.append(")\"");
+    }
+
+    void visit_Module(const ASR::Module_t &x) {
+        s.append("{");
+        inc_indent(); s.append("\n" + indtd);
+        s.append("\"node\": \"Module\",");
+        s.append("\n" + indtd);
+        s.append("\"fields\": {");
+        inc_indent(); s.append("\n" + indtd);
+        s.append("\"name\": \"" + std::string(x.m_name) + "\"");
+        dec_indent(); s.append("\n" + indtd);
+        s.append("}");
+        dec_indent(); s.append("\n" + indtd);
+        s.append("}");
+    }
+};
+
+std::string pickle_json(LFortran::ASR::asr_t &asr) {
+    ASRJsonVisitor v;
+    v.visit_asr(asr);
+    return v.get_str();
+}
+
+std::string pickle_json(LFortran::ASR::TranslationUnit_t &asr) {
+    return pickle_json((LFortran::ASR::asr_t &)asr);
+}
 }
