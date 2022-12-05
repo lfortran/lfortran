@@ -301,6 +301,20 @@ public:
     std::string get_str() {
         return s;
     }
+
+    void visit_Module(const ASR::Module_t &x) {
+        s.append("{");
+        inc_indent(); s.append("\n" + indtd);
+        s.append("\"node\": \"Module\",");
+        s.append("\n" + indtd);
+        s.append("\"fields\": {");
+        inc_indent(); s.append("\n" + indtd);
+        s.append("\"name\": \"" + std::string(x.m_name) + "\"");
+        dec_indent(); s.append("\n" + indtd);
+        s.append("}");
+        dec_indent(); s.append("\n" + indtd);
+        s.append("}");
+    }
 };
 
 std::string pickle_json(LFortran::ASR::asr_t &asr) {
