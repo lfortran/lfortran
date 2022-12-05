@@ -302,6 +302,14 @@ public:
         return s;
     }
 
+    void visit_symbol(const ASR::symbol_t &x) {
+        s.append("\"");
+        s.append(LFortran::ASRUtils::symbol_name(&x));
+        s.append(" (SymbolTable");
+        s.append(LFortran::ASRUtils::symbol_parent_symtab(&x)->get_counter());
+        s.append(")\"");
+    }
+
     void visit_Module(const ASR::Module_t &x) {
         s.append("{");
         inc_indent(); s.append("\n" + indtd);
