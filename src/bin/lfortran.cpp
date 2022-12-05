@@ -627,8 +627,12 @@ int emit_asr(const std::string &infile,
     pass_options.run_fun = "f";
 
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
-    std::cout << LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
-            with_intrinsic_modules) << std::endl;
+    if (compiler_options.json) {
+        std::cout << LFortran::pickle_json(*asr) << std::endl;
+    } else {
+        std::cout << LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
+                with_intrinsic_modules) << std::endl;
+    }
     return 0;
 }
 
@@ -1621,6 +1625,7 @@ int main(int argc, char *argv[])
         app.add_flag("--show-ast-f90", show_ast_f90, "Show Fortran from AST for the given file and exit");
         app.add_flag("--no-color", arg_no_color, "Turn off colored AST/ASR");
         app.add_flag("--indent", compiler_options.indent, "Indented print ASR/AST");
+        app.add_flag("--json", compiler_options.json, "Print ASR/AST Json format");
         app.add_option("--pass", arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)");
         app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
         app.add_flag("--show-cpp", show_cpp, "Show C++ translation source for the given file and exit");
