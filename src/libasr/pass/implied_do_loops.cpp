@@ -152,6 +152,59 @@ public:
         pass_result.push_back(al, doloop);
     }
 
+    void transform_implied_do_loop(ASR::ImpliedDoLoop_t* idoloop, Vec<ASR::expr_t*> &new_values) {
+        /*
+            Transforms print *, (i*2, i=1, 6)
+            to
+            do i = 1, 6
+                print *, i*2
+            end do
+        */
+        ASR::do_loop_head_t head;
+        head.m_v = idoloop->m_var;
+        head.m_start = idoloop->m_start;
+        head.m_end = idoloop->m_end;
+        head.m_increment = idoloop->m_increment;
+        head.loc = head.m_v->base.loc;
+        Vec<ASR::stmt_t*> doloop_body;
+        doloop_body.reserve(al, 1);
+        ASR::ttype_t *_type = LFortran::ASRUtils::expr_type(idoloop->m_start);
+        ASR::asr_t* print_ = ASR::make_Print_t(al, idoloop->base.base.loc, nullptr, idoloop->m_values, idoloop->n_values, nullptr, nullptr);
+        ASR::expr_t* print_expr = LFortran::ASRUtils::EXPR(print_);
+        ASR::stmt_t* doloop_stmt = LFortran::ASRUtils::STMT(print_);
+        new_values.push_back(al, print_expr);
+        doloop_body.push_back(al, doloop_stmt);
+        ASR::stmt_t* doloop = LFortran::ASRUtils::STMT(ASR::make_DoLoop_t(al, idoloop->base.base.loc, head, doloop_body.p, doloop_body.size()));
+        pass_result.push_back(al, doloop);
+    }
+
+    void visit_Print(const ASR::Print_t &x) {
+        // iterate over the x.m_values and check if there is an ImpliedDoLoop, if it is then replace it with a DoLoop
+        ASR::asr_t *tmp;
+        Vec<ASR::expr_t*> new_values;
+        new_values.reserve(al, x.n_values);
+        
+        for (size_t i=0; i<x.n_values; i++) {
+            visit_expr(*x.m_values[i]);
+            std::cout<<"here1"<<std::endl;
+            if(tmp==nullptr) {
+                std::cout<<"here1.1"<<std::endl;
+                new_values.push_back(al, nullptr);
+                continue;
+            }
+            ASR::expr_t *expr = LFortran::ASRUtils::EXPR(tmp);
+            std::cout<<"here2"<<std::endl;
+            // if expr is an ImpliedDoLoop then replace it with a DoLoop
+            if (expr->type == ASR::exprType::ImpliedDoLoop) {
+                ASR::ImpliedDoLoop_t *idoloop = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+                //logic for transforming ImpliedDoLoop to DoLoop
+                transform_implied_do_loop(idoloop, new_values);
+            } else {
+                new_values.push_back(al, expr);
+            }
+        }
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         if( (ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
             ASR::is_a<ASR::GetPointer_t>(*x.m_value)) ||
