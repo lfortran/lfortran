@@ -21,7 +21,7 @@
                                                     () 
                                                     Default 
                                                     (Integer 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -35,7 +35,7 @@
                                                     () 
                                                     Default 
                                                     (Real 8 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -47,7 +47,7 @@
                                     [(Var 3 f_arg_0)] 
                                     [] 
                                     (Var 3 f_return_var_name) 
-                                    Source 
+                                    BindC 
                                     Public 
                                     Interface 
                                     () 
@@ -74,7 +74,7 @@
                                                     () 
                                                     Default 
                                                     (Integer 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -88,7 +88,7 @@
                                                     () 
                                                     Default 
                                                     (Real 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -102,7 +102,7 @@
                                                     () 
                                                     Default 
                                                     (Real 8 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -115,7 +115,7 @@
                                     (Var 4 g_arg_1)] 
                                     [] 
                                     (Var 4 g_return_var_name) 
-                                    Source 
+                                    BindC 
                                     Public 
                                     Interface 
                                     () 

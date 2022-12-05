@@ -29,7 +29,7 @@
                                                     () 
                                                     Default 
                                                     (Real 8 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -43,7 +43,7 @@
                                                     () 
                                                     Default 
                                                     (Logical 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -57,7 +57,7 @@
                                                     () 
                                                     Default 
                                                     (Real 8 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -70,7 +70,7 @@
                                     (Var 225 alnorm_arg_1)] 
                                     [] 
                                     (Var 225 alnorm_return_var_name) 
-                                    Source 
+                                    BindC 
                                     Public 
                                     Interface 
                                     () 
@@ -111,7 +111,7 @@
                                                     () 
                                                     Default 
                                                     (Real 8 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -125,7 +125,7 @@
                                                     () 
                                                     Default 
                                                     (Real 8 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -139,7 +139,7 @@
                                                     () 
                                                     Default 
                                                     (Real 8 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -153,7 +153,7 @@
                                     (Var 226 dgetrf_arg_2)] 
                                     [] 
                                     () 
-                                    Source 
+                                    BindC 
                                     Public 
                                     Interface 
                                     () 
