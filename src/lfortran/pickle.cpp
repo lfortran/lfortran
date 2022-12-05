@@ -1,7 +1,6 @@
 #include <string>
 
 #include <lfortran/pickle.h>
-#include <lfortran/pickle.h>
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/asr_utils.h>
