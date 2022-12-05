@@ -5976,7 +5976,15 @@ public:
                                 }
                         } else if ( x_abi == ASR::abiType::BindC ) {
                             if( arr_descr->is_array(ASRUtils::get_contained_type(arg->m_type)) ) {
-                                tmp = CreateLoad(arr_descr->get_pointer_to_data(tmp));
+                                bool arg_is_using_descriptor = true;
+                                if (LLVMArrUtils::is_explicit_shape(arg)) {
+                                    if (arg->m_intent != intent_local) {
+                                        arg_is_using_descriptor = false;
+                                    }
+                                }
+                                if (arg_is_using_descriptor) {
+                                    tmp = CreateLoad(arr_descr->get_pointer_to_data(tmp));
+                                }
                             } else {
                                 if (orig_arg->m_abi == ASR::abiType::BindC
                                     && orig_arg->m_value_attr) {
