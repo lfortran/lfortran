@@ -192,6 +192,26 @@ std::string pickle(AST::TranslationUnit_t &ast, bool colors,bool indent) {
     return v.get_str();
 }
 
+/********************** Pickle Json *******************/
+class ASTJsonVisitor :
+    public LFortran::AST::JsonBaseVisitor<ASTJsonVisitor>
+{
+public:
+    std::string get_str() {
+        return s;
+    }
+};
+
+std::string pickle_json(LFortran::AST::ast_t &ast) {
+    ASTJsonVisitor v;
+    v.visit_ast(ast);
+    return v.get_str();
+}
+
+std::string pickle_json(LFortran::AST::TranslationUnit_t &ast) {
+    return pickle_json((LFortran::AST::ast_t &)ast);
+}
+
 /* -----------------------------------------------------------------------*/
 // ASR
 
@@ -274,4 +294,23 @@ std::string pickle(LFortran::ASR::TranslationUnit_t &asr, bool colors, bool inde
     return pickle((ASR::asr_t &)asr, colors, indent, show_intrinsic_modules);
 }
 
+/********************** Pickle Json *******************/
+class ASRJsonVisitor :
+    public LFortran::ASR::JsonBaseVisitor<ASRJsonVisitor>
+{
+public:
+    std::string get_str() {
+        return s;
+    }
+};
+
+std::string pickle_json(LFortran::ASR::asr_t &asr) {
+    ASRJsonVisitor v;
+    v.visit_asr(asr);
+    return v.get_str();
+}
+
+std::string pickle_json(LFortran::ASR::TranslationUnit_t &asr) {
+    return pickle_json((LFortran::ASR::asr_t &)asr);
+}
 }
