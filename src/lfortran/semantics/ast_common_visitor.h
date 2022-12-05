@@ -2783,7 +2783,7 @@ public:
                     ASR::make_Variable_t(al, x.base.base.loc,
                     current_scope, s2c(al, arg_name), LFortran::ASRUtils::intent_unspecified, nullptr, nullptr,
                     ASR::storage_typeType::Default, var_type,
-                    ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+                    ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                     false));
                 current_scope->add_symbol(arg_name, v);
             }
@@ -2801,7 +2801,7 @@ public:
             ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
                 current_scope, s2c(al, return_var_name), LFortran::ASRUtils::intent_return_var, nullptr, nullptr,
                 ASR::storage_typeType::Default, type,
-                ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+                ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
             to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
@@ -2818,7 +2818,7 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ to_return,
-            ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface,
+            ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false, /* a_type_parameters */ nullptr,
             /* n_type_parameters */ 0, nullptr, 0, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
@@ -3047,7 +3047,7 @@ public:
                 if (f->m_is_restriction) {
                     if (!is_template) {
                         throw SemanticError("A requirement function must be called from a template",
-                                            x.base.base.loc);  
+                                            x.base.base.loc);
                     }
                     bool requirement_found = false;
                     std::string f_name = f->m_name;
