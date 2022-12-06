@@ -13,6 +13,7 @@
                                 (Variable 
                                     2 
                                     ia0 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 iachar 
@@ -37,6 +38,7 @@
                                 (Variable 
                                     2 
                                     ia5 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 iachar 
@@ -61,6 +63,7 @@
                                 (Variable 
                                     2 
                                     ia9 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 iachar 

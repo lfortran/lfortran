@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     3 
                                                     x 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -30,6 +31,7 @@
                                                 (Variable 
                                                     3 
                                                     y 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 

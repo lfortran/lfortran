@@ -21,6 +21,7 @@
                                 (Variable 
                                     5 
                                     x1 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -72,6 +73,7 @@
                                                 (Variable 
                                                     3 
                                                     w 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -87,6 +89,7 @@
                                                 (Variable 
                                                     3 
                                                     x 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -127,6 +130,7 @@
                                                 (Variable 
                                                     4 
                                                     x1 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 

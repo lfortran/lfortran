@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     a 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -35,6 +36,7 @@
                                                 (Variable 
                                                     3 
                                                     a 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -54,6 +56,7 @@
                                                 (Variable 
                                                     3 
                                                     b 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -73,6 +76,7 @@
                                                 (Variable 
                                                     3 
                                                     c 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -92,6 +96,7 @@
                                                 (Variable 
                                                     3 
                                                     d 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -159,6 +164,7 @@
                                 (Variable 
                                     2 
                                     b 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -178,6 +184,7 @@
                                 (Variable 
                                     2 
                                     c 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -202,6 +209,7 @@
                                                 (Variable 
                                                     4 
                                                     c 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -221,6 +229,7 @@
                                                 (Variable 
                                                     4 
                                                     i 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -235,6 +244,7 @@
                                                 (Variable 
                                                     4 
                                                     j 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -249,6 +259,7 @@
                                                 (Variable 
                                                     4 
                                                     k 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -386,6 +397,7 @@
                                 (Variable 
                                     2 
                                     d 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -405,6 +417,7 @@
                                 (Variable 
                                     2 
                                     i 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -419,6 +432,7 @@
                                 (Variable 
                                     2 
                                     j 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -433,6 +447,7 @@
                                 (Variable 
                                     2 
                                     k 
+                                    [] 
                                     Local 
                                     () 
                                     () 

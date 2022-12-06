@@ -41,6 +41,7 @@
                                 (Variable 
                                     31 
                                     string 
+                                    [] 
                                     Local 
                                     (StringConstant 
                                         "  abc" 
@@ -145,6 +146,7 @@
                                                 (Variable 
                                                     4 
                                                     i 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -169,6 +171,7 @@
                                                 (Variable 
                                                     4 
                                                     r 
+                                                    [s] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -191,6 +194,7 @@
                                                 (Variable 
                                                     4 
                                                     s 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -256,6 +260,7 @@
                                                 (Variable 
                                                     30 
                                                     i 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -280,6 +285,7 @@
                                                 (Variable 
                                                     30 
                                                     r 
+                                                    [s] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -302,6 +308,7 @@
                                                 (Variable 
                                                     30 
                                                     s 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -390,6 +397,7 @@
                                                 (Variable 
                                                     3 
                                                     r 
+                                                    [s] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -411,6 +419,7 @@
                                                 (Variable 
                                                     3 
                                                     s 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -435,8 +444,8 @@
                                         }) 
                                     trim_wrapper 
                                     [len
-                                    trim
-                                    len_trim] 
+                                    len_trim
+                                    trim] 
                                     [(Var 3 s)] 
                                     [(= 
                                         (Var 3 r) 
@@ -477,17 +486,6 @@
                     [lfortran_intrinsic_builtin
                     lfortran_intrinsic_builtin
                     lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_string
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_string
                     lfortran_intrinsic_string] 
                     .false. 
                     .false.

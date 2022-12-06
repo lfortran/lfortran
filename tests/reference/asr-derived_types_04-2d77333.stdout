@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     4 
                                                     all 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -30,6 +31,7 @@
                                                 (Variable 
                                                     4 
                                                     self 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -80,6 +82,7 @@
                                                 (Variable 
                                                     3 
                                                     num_bits 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 

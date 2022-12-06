@@ -45,6 +45,7 @@
                                                 (Variable 
                                                     4 
                                                     length 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -59,6 +60,7 @@
                                                 (Variable 
                                                     4 
                                                     string 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -148,6 +150,7 @@
                                                 (Variable 
                                                     5 
                                                     maybe_string 
+                                                    [string] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -169,6 +172,7 @@
                                                 (Variable 
                                                     5 
                                                     string 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -244,6 +248,7 @@
                                                 (Variable 
                                                     3 
                                                     raw 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -268,10 +273,7 @@
                             
                         }) 
                     string_module 
-                    [lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin] 
+                    [lfortran_intrinsic_builtin] 
                     .false. 
                     .false.
                 )

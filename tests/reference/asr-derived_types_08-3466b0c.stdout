@@ -21,6 +21,7 @@
                                 (Variable 
                                     6 
                                     rect 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -58,6 +59,7 @@
                                 (Variable 
                                     6 
                                     shp 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -209,6 +211,7 @@
                                                 (Variable 
                                                     5 
                                                     color 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -223,6 +226,7 @@
                                                 (Variable 
                                                     5 
                                                     filled 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -237,6 +241,7 @@
                                                 (Variable 
                                                     5 
                                                     sh 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -254,6 +259,7 @@
                                                 (Variable 
                                                     5 
                                                     x 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -268,6 +274,7 @@
                                                 (Variable 
                                                     5 
                                                     y 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -350,6 +357,7 @@
                                                 (Variable 
                                                     4 
                                                     length 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -364,6 +372,7 @@
                                                 (Variable 
                                                     4 
                                                     width 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -395,6 +404,7 @@
                                                 (Variable 
                                                     3 
                                                     color 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -409,6 +419,7 @@
                                                 (Variable 
                                                     3 
                                                     filled 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -431,6 +442,7 @@
                                                 (Variable 
                                                     3 
                                                     x 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -445,6 +457,7 @@
                                                 (Variable 
                                                     3 
                                                     y 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 

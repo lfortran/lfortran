@@ -41,6 +41,7 @@
                                 (Variable 
                                     2 
                                     eps 
+                                    [] 
                                     Local 
                                     (RealConstant 
                                         0.000001 
@@ -58,6 +59,7 @@
                                 (Variable 
                                     2 
                                     pi 
+                                    [] 
                                     Local 
                                     (RealConstant 
                                         3.140000 
@@ -78,6 +80,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     (RealConstant 
                                         3.140000 
@@ -95,6 +98,7 @@
                                 (Variable 
                                     2 
                                     y 
+                                    [] 
                                     Local 
                                     (IntegerConstant 2 (Integer 4 [])) 
                                     () 

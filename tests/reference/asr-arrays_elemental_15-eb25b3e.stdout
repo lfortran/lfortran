@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     7 
                                                     array2d 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -43,6 +44,7 @@
                                                 (Variable 
                                                     7 
                                                     cos2d 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -70,6 +72,7 @@
                                                 (Variable 
                                                     7 
                                                     i 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -84,6 +87,7 @@
                                                 (Variable 
                                                     7 
                                                     j 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -209,6 +213,7 @@
                                                 (Variable 
                                                     6 
                                                     array1d 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -224,6 +229,7 @@
                                                 (Variable 
                                                     6 
                                                     arraynd 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -243,6 +249,7 @@
                                                 (Variable 
                                                     6 
                                                     i 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -257,6 +264,7 @@
                                                 (Variable 
                                                     6 
                                                     j 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -271,6 +279,7 @@
                                                 (Variable 
                                                     6 
                                                     k 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -295,6 +304,7 @@
                                                 (Variable 
                                                     6 
                                                     sin1d 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -320,6 +330,7 @@
                                                 (Variable 
                                                     6 
                                                     sinnd 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -339,9 +350,7 @@
                                         }) 
                                     elemental_sin 
                                     [sin@dsin
-                                    sin@dsin
                                     verify1d
-                                    sin@dsin
                                     verifynd] 
                                     [] 
                                     [(DoLoop 
@@ -550,6 +559,7 @@
                                                 (Variable 
                                                     8 
                                                     arraynd 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -591,6 +601,7 @@
                                                 (Variable 
                                                     8 
                                                     eps 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -605,6 +616,7 @@
                                                 (Variable 
                                                     8 
                                                     i 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -619,6 +631,7 @@
                                                 (Variable 
                                                     8 
                                                     j 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -633,6 +646,7 @@
                                                 (Variable 
                                                     8 
                                                     k 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -647,6 +661,7 @@
                                                 (Variable 
                                                     8 
                                                     l 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -661,6 +676,7 @@
                                                 (Variable 
                                                     8 
                                                     newshape 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -676,6 +692,7 @@
                                                 (Variable 
                                                     8 
                                                     observed 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -697,6 +714,7 @@
                                                 (Variable 
                                                     8 
                                                     observed1d 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -731,9 +749,9 @@
                                             
                                         }) 
                                     elemental_trig_identity 
-                                    [sin@dsin
+                                    [abs@dabs
                                     cos@dcos
-                                    abs@dabs] 
+                                    sin@dsin] 
                                     [] 
                                     [(= 
                                         (Var 8 eps) 
@@ -1054,6 +1072,7 @@
                                                 (Variable 
                                                     3 
                                                     array 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -1069,6 +1088,7 @@
                                                 (Variable 
                                                     3 
                                                     eps 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -1083,6 +1103,7 @@
                                                 (Variable 
                                                     3 
                                                     i 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -1097,6 +1118,7 @@
                                                 (Variable 
                                                     3 
                                                     result 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -1132,6 +1154,7 @@
                                                 (Variable 
                                                     3 
                                                     size 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -1146,7 +1169,6 @@
                                         }) 
                                     verify1d 
                                     [abs@dabs
-                                    sin@dsin
                                     sin@dsin] 
                                     [(Var 3 array)
                                     (Var 3 result)
@@ -1272,6 +1294,7 @@
                                                 (Variable 
                                                     5 
                                                     array 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -1309,6 +1332,7 @@
                                                 (Variable 
                                                     5 
                                                     eps 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -1323,6 +1347,7 @@
                                                 (Variable 
                                                     5 
                                                     i 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -1337,6 +1362,7 @@
                                                 (Variable 
                                                     5 
                                                     j 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -1351,6 +1377,7 @@
                                                 (Variable 
                                                     5 
                                                     result 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -1368,6 +1395,7 @@
                                                 (Variable 
                                                     5 
                                                     size1 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -1382,6 +1410,7 @@
                                                 (Variable 
                                                     5 
                                                     size2 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -1541,6 +1570,7 @@
                                                 (Variable 
                                                     4 
                                                     array 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -1560,6 +1590,7 @@
                                                 (Variable 
                                                     4 
                                                     eps 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -1574,6 +1605,7 @@
                                                 (Variable 
                                                     4 
                                                     i 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -1588,6 +1620,7 @@
                                                 (Variable 
                                                     4 
                                                     j 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -1602,6 +1635,7 @@
                                                 (Variable 
                                                     4 
                                                     k 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -1616,6 +1650,7 @@
                                                 (Variable 
                                                     4 
                                                     result 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -1655,6 +1690,7 @@
                                                 (Variable 
                                                     4 
                                                     size1 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -1669,6 +1705,7 @@
                                                 (Variable 
                                                     4 
                                                     size2 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -1683,6 +1720,7 @@
                                                 (Variable 
                                                     4 
                                                     size3 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 

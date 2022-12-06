@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     lw 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -25,6 +26,7 @@
                                 (Variable 
                                     2 
                                     m 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 
@@ -39,6 +41,7 @@
                                 (Variable 
                                     2 
                                     n 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 
@@ -58,6 +61,7 @@
                                                 (Variable 
                                                     3 
                                                     prinf_arg_0 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -72,6 +76,7 @@
                                                 (Variable 
                                                     3 
                                                     prinf_arg_1 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -86,6 +91,7 @@
                                                 (Variable 
                                                     3 
                                                     prinf_arg_2 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -122,6 +128,7 @@
                                 (Variable 
                                     2 
                                     w 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 
@@ -136,6 +143,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 
@@ -150,6 +158,7 @@
                                 (Variable 
                                     2 
                                     y 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 
@@ -163,8 +172,7 @@
                             
                         }) 
                     idd_frm 
-                    [prinf
-                    prinf] 
+                    [prinf] 
                     [(Var 2 m)
                     (Var 2 n)
                     (Var 2 w)

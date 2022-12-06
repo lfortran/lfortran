@@ -81,6 +81,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -95,6 +96,7 @@
                                 (Variable 
                                     2 
                                     z 
+                                    [] 
                                     Local 
                                     () 
                                     () 

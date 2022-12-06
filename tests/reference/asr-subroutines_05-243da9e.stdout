@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     3 
                                                     e 
+                                                    [x] 
                                                     Local 
                                                     () 
                                                     () 
@@ -36,6 +37,7 @@
                                                 (Variable 
                                                     3 
                                                     x 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -116,6 +118,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     () 
                                     () 

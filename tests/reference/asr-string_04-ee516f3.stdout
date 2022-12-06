@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     greetings 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -26,6 +27,7 @@
                                 (Variable 
                                     2 
                                     user_data 
+                                    [] 
                                     Local 
                                     () 
                                     () 

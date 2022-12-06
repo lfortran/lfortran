@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     3 
                                                     a 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -30,6 +31,7 @@
                                                 (Variable 
                                                     3 
                                                     b 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -44,6 +46,7 @@
                                                 (Variable 
                                                     3 
                                                     cb 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -63,6 +66,7 @@
                                                                 (Variable 
                                                                     4 
                                                                     f 
+                                                                    [] 
                                                                     ReturnVar 
                                                                     () 
                                                                     () 
@@ -77,6 +81,7 @@
                                                                 (Variable 
                                                                     4 
                                                                     x 
+                                                                    [] 
                                                                     In 
                                                                     () 
                                                                     () 
@@ -110,8 +115,7 @@
                                             
                                         }) 
                                     cb 
-                                    [f
-                                    f] 
+                                    [f] 
                                     [(Var 3 f)
                                     (Var 3 a)
                                     (Var 3 b)] 
@@ -175,6 +179,7 @@
                                                 (Variable 
                                                     5 
                                                     c 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -189,6 +194,7 @@
                                                 (Variable 
                                                     5 
                                                     d 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -208,6 +214,7 @@
                                                                 (Variable 
                                                                     6 
                                                                     f 
+                                                                    [] 
                                                                     ReturnVar 
                                                                     () 
                                                                     () 
@@ -222,6 +229,7 @@
                                                                 (Variable 
                                                                     6 
                                                                     x 
+                                                                    [] 
                                                                     In 
                                                                     () 
                                                                     () 

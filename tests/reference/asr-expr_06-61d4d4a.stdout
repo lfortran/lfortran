@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     (IntegerBinOp 
                                         (IntegerConstant 3 (Integer 4 [])) 

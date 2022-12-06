@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     f1 
+                                    [] 
                                     ReturnVar 
                                     () 
                                     () 
@@ -59,6 +60,7 @@
                 (Variable 
                     1 
                     x 
+                    [] 
                     Local 
                     () 
                     () 

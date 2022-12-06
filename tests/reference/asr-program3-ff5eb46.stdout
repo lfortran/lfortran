@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     3 
                                                     a 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -30,6 +31,7 @@
                                                 (Variable 
                                                     3 
                                                     b 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -44,6 +46,7 @@
                                                 (Variable 
                                                     3 
                                                     c 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -107,6 +110,7 @@
                                                 (Variable 
                                                     4 
                                                     a 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -121,6 +125,7 @@
                                                 (Variable 
                                                     4 
                                                     b 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -135,6 +140,7 @@
                                                 (Variable 
                                                     4 
                                                     c 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -180,6 +186,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -194,6 +201,7 @@
                                 (Variable 
                                     2 
                                     y 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -208,6 +216,7 @@
                                 (Variable 
                                     2 
                                     z 
+                                    [] 
                                     Local 
                                     () 
                                     () 

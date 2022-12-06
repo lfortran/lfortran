@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     a 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -26,6 +27,7 @@
                                 (Variable 
                                     2 
                                     b 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -41,6 +43,7 @@
                                 (Variable 
                                     2 
                                     i 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -55,6 +58,7 @@
                                 (Variable 
                                     2 
                                     size_a4 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -69,6 +73,7 @@
                                 (Variable 
                                     2 
                                     size_a8 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -83,6 +88,7 @@
                                 (Variable 
                                     2 
                                     size_b4 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -97,6 +103,7 @@
                                 (Variable 
                                     2 
                                     size_b8 
+                                    [] 
                                     Local 
                                     () 
                                     () 

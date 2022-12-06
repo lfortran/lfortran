@@ -21,6 +21,7 @@
                                 (Variable 
                                     5 
                                     f 
+                                    [] 
                                     Local 
                                     (LogicalConstant 
                                         .false. 
@@ -51,6 +52,7 @@
                                 (Variable 
                                     5 
                                     t 
+                                    [] 
                                     Local 
                                     (LogicalConstant 
                                         .true. 
@@ -306,6 +308,7 @@
                                                 (Variable 
                                                     4 
                                                     bin_add 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -320,6 +323,7 @@
                                                 (Variable 
                                                     4 
                                                     log1 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -334,6 +338,7 @@
                                                 (Variable 
                                                     4 
                                                     log2 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -414,6 +419,7 @@
                                                 (Variable 
                                                     3 
                                                     log1 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -428,6 +434,7 @@
                                                 (Variable 
                                                     3 
                                                     log2 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -442,6 +449,7 @@
                                                 (Variable 
                                                     3 
                                                     logical_and 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 

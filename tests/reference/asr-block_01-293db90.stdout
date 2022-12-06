@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     a 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -35,6 +36,7 @@
                                                                 (Variable 
                                                                     4 
                                                                     b 
+                                                                    [] 
                                                                     Local 
                                                                     () 
                                                                     () 
@@ -49,6 +51,7 @@
                                                                 (Variable 
                                                                     4 
                                                                     c 
+                                                                    [] 
                                                                     Local 
                                                                     () 
                                                                     () 
@@ -140,6 +143,7 @@
                                                 (Variable 
                                                     3 
                                                     n 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -168,6 +172,7 @@
                                 (Variable 
                                     2 
                                     b 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -182,6 +187,7 @@
                                 (Variable 
                                     2 
                                     d 
+                                    [] 
                                     Local 
                                     () 
                                     () 

@@ -11,6 +11,8 @@
                                 (Variable 
                                     2 
                                     a 
+                                    [i
+                                    j] 
                                     Local 
                                     (IntegerBinOp 
                                         (Var 2 i) 
@@ -31,6 +33,7 @@
                                 (Variable 
                                     2 
                                     b 
+                                    [l] 
                                     Local 
                                     (LogicalBinOp 
                                         (Var 2 l) 
@@ -60,6 +63,7 @@
                                 (Variable 
                                     2 
                                     c 
+                                    [] 
                                     Local 
                                     (ComplexConstructor 
                                         (RealConstant 
@@ -93,6 +97,7 @@
                                 (Variable 
                                     2 
                                     i 
+                                    [] 
                                     Local 
                                     (Cast 
                                         (RealConstant 
@@ -115,6 +120,7 @@
                                 (Variable 
                                     2 
                                     j 
+                                    [] 
                                     Local 
                                     (Cast 
                                         (RealConstant 
@@ -137,6 +143,7 @@
                                 (Variable 
                                     2 
                                     l 
+                                    [a] 
                                     Local 
                                     (IntegerCompare 
                                         (Var 2 a) 
@@ -163,6 +170,7 @@
                                 (Variable 
                                     2 
                                     r 
+                                    [] 
                                     Local 
                                     (RealConstant 
                                         4.000000 
@@ -183,6 +191,7 @@
                                 (Variable 
                                     2 
                                     r_minus 
+                                    [r] 
                                     Local 
                                     (RealUnaryMinus 
                                         (Var 2 r) 
@@ -207,6 +216,8 @@
                                 (Variable 
                                     2 
                                     s 
+                                    [s1
+                                    s2] 
                                     Local 
                                     (StringConcat 
                                         (Var 2 s1) 
@@ -232,6 +243,7 @@
                                 (Variable 
                                     2 
                                     s1 
+                                    [] 
                                     Local 
                                     (StringConstant 
                                         "l" 
@@ -252,6 +264,7 @@
                                 (Variable 
                                     2 
                                     s2 
+                                    [] 
                                     Local 
                                     (StringConstant 
                                         "eft" 

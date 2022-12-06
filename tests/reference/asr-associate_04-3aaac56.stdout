@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     a 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -30,6 +31,7 @@
                                                 (Variable 
                                                     3 
                                                     v 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -46,6 +48,7 @@
                                                 (Variable 
                                                     3 
                                                     z 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -180,6 +183,7 @@
                                 (Variable 
                                     2 
                                     myreal 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -194,6 +198,7 @@
                                 (Variable 
                                     2 
                                     theta 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -208,6 +213,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -222,6 +228,7 @@
                                 (Variable 
                                     2 
                                     y 
+                                    [] 
                                     Local 
                                     () 
                                     () 

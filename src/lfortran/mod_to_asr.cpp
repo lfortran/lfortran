@@ -274,7 +274,7 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
                 char *name = a.c_str(al);
                 Location loc;
                 ASR::asr_t *asr = ASR::make_Variable_t(al, loc, nullptr,
-                    name, ASR::intentType::In, nullptr, nullptr,
+                    name, nullptr, 0, ASR::intentType::In, nullptr, nullptr,
                     ASR::storage_typeType::Default, s.v.type,
                     ASR::abiType::GFortranModule,
                     ASR::Public, ASR::presenceType::Required, false);

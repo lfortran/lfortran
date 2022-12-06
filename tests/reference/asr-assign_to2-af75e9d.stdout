@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     i 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -25,6 +26,7 @@
                                 (Variable 
                                     2 
                                     next 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -39,6 +41,7 @@
                                 (Variable 
                                     2 
                                     sum 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -53,6 +56,7 @@
                                 (Variable 
                                     2 
                                     zero 
+                                    [] 
                                     Local 
                                     () 
                                     () 

@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     3 
                                                     fcn_arg_0 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -30,6 +31,7 @@
                                                 (Variable 
                                                     3 
                                                     fcn_arg_1 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -65,6 +67,7 @@
                                 (Variable 
                                     2 
                                     n 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 
@@ -79,6 +82,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 
@@ -93,6 +97,7 @@
                                 (Variable 
                                     2 
                                     y 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 

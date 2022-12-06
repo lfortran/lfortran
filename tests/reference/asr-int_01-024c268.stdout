@@ -21,6 +21,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     (RealConstant 
                                         3.300000 
@@ -41,6 +42,7 @@
                                 (Variable 
                                     2 
                                     y 
+                                    [] 
                                     Local 
                                     (IntegerConstant 7 (Integer 4 [])) 
                                     (IntegerConstant 7 (Integer 4 [])) 
