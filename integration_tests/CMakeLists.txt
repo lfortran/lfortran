@@ -89,6 +89,10 @@ macro(RUN)
             target_compile_options(${name} PUBLIC --generate-object-code)
             target_link_options(${name} PUBLIC  --generate-object-code)
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+        elseif (LFORTRAN_BACKEND STREQUAL "llvmImplicit")
+            execute_process(COMMAND lfortran --implicit-typing --allow-implicit-interface
+                        ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90 -o ${name})
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         else ()
             add_executable(${name} ${name}.f90 ${RUN_EXTRAFILES})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
@@ -416,6 +420,8 @@ RUN(NAME interface_06 LABELS gfortran)
 RUN(NAME interface_07 LABELS gfortran llvm)
 RUN(NAME interface_09 LABELS gfortran)
 RUN(NAME interface_10 LABELS gfortran llvm)
+
+RUN(NAME implicit_interface_01 LABELS gfortran llvmImplicit)
 
 RUN(NAME generic_name_01 LABELS gfortran llvm)
 
