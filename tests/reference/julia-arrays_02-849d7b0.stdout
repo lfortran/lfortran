@@ -20,11 +20,6 @@ function bit_size(x::Int32)::Int32
     return bit_size
 end
 
-function iachar(c::String, kind::Int32)::Int32
-    local iachar::Int32 = 0
-    return iachar
-end
-
 function is_iostat_end(i::Int32)::Bool
     local r::Bool = false
     return r
