@@ -5934,7 +5934,20 @@ public:
                                 }
                         } else if ( x_abi == ASR::abiType::BindC ) {
                             if( arr_descr->is_array(ASRUtils::get_contained_type(arg->m_type)) ) {
-                                tmp = CreateLoad(arr_descr->get_pointer_to_data(tmp));
+                                // TODO: we need a dedicated and robust
+                                // function that determines from ASR only
+                                // if a given array is represented by
+                                // a descriptor or with just a pointer.
+                                // Until then we use the following heuristic:
+                                bool arg_is_using_descriptor = true;
+                                if (LLVMArrUtils::is_explicit_shape(arg)) {
+                                    if (arg->m_intent != intent_local) {
+                                        arg_is_using_descriptor = false;
+                                    }
+                                }
+                                if (arg_is_using_descriptor) {
+                                    tmp = CreateLoad(arr_descr->get_pointer_to_data(tmp));
+                                }
                             } else {
                                 if (orig_arg->m_abi == ASR::abiType::BindC
                                     && orig_arg->m_value_attr) {
@@ -6056,8 +6069,7 @@ public:
                 ptr_loads = !LLVM::is_llvm_struct(arg_type);
                 this->visit_expr_wrapper(x.m_args[i].m_value);
                 if( x_abi == ASR::abiType::BindC ) {
-                    if( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ||
-                        ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) ||
+                    if( ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) ||
                         (ASR::is_a<ASR::CPtr_t>(*arg_type) &&
                             ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value)) ) {
                         tmp = LLVM::CreateLoad(*builder, tmp);
@@ -6143,13 +6155,17 @@ public:
                                 && orig_arg->m_value_attr) {
                                 use_value = true;
                             }
+                            if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
+                                use_value = true;
+                            }
                             if (!use_value) {
                                 // Create alloca to get a pointer, but do it
                                 // at the beginning of the function to avoid
                                 // using alloca inside a loop, which would
                                 // run out of stack
-                                if( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ||
-                                    ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) ) {
+                                if( (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ||
+                                    ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value)) &&
+                                        value->getType()->isPointerTy()) {
                                     value = CreateLoad(value);
                                 }
                                 if( !ASR::is_a<ASR::CPtr_t>(*arg_type) ) {
