@@ -11,6 +11,8 @@
                                 (Variable 
                                     2 
                                     a 
+                                    [j
+                                    j] 
                                     Local 
                                     (ArrayConstant 
                                         [(ImpliedDoLoop 
@@ -39,6 +41,7 @@
                                 (Variable 
                                     2 
                                     j 
+                                    [] 
                                     Local 
                                     () 
                                     () 

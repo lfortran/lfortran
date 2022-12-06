@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     4 
                                                     file 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -30,6 +31,7 @@
                                                 (Variable 
                                                     4 
                                                     line 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -95,6 +97,7 @@
                                                 (Variable 
                                                     3 
                                                     a 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -109,6 +112,7 @@
                                                 (Variable 
                                                     3 
                                                     b 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -123,6 +127,7 @@
                                                 (Variable 
                                                     3 
                                                     fn 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 

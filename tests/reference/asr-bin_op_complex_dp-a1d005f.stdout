@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     u 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -25,6 +26,7 @@
                                 (Variable 
                                     2 
                                     v 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -39,6 +41,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -53,6 +56,7 @@
                                 (Variable 
                                     2 
                                     zero 
+                                    [] 
                                     Local 
                                     () 
                                     () 

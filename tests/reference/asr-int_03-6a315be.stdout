@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     ans 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -26,6 +27,7 @@
                                 (Variable 
                                     2 
                                     dp 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 kind 
@@ -50,6 +52,7 @@
                                 (Variable 
                                     2 
                                     i4 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -64,6 +67,7 @@
                                 (Variable 
                                     2 
                                     i8 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -88,6 +92,7 @@
                                 (Variable 
                                     2 
                                     w4 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -102,6 +107,7 @@
                                 (Variable 
                                     2 
                                     w8 
+                                    [] 
                                     Local 
                                     () 
                                     () 

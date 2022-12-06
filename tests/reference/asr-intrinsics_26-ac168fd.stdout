@@ -21,6 +21,7 @@
                                 (Variable 
                                     4 
                                     i 
+                                    [] 
                                     Local 
                                     (IntegerConstant 31 (Integer 4 [])) 
                                     () 
@@ -88,6 +89,7 @@
                                                 (Variable 
                                                     3 
                                                     num_bits 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -102,6 +104,7 @@
                                                 (Variable 
                                                     3 
                                                     pos 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -116,6 +119,7 @@
                                                 (Variable 
                                                     3 
                                                     res 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -130,6 +134,7 @@
                                                 (Variable 
                                                     3 
                                                     x 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -207,8 +212,7 @@
                             
                         }) 
                     stdlib_bitsets_64 
-                    [lfortran_intrinsic_bit
-                    lfortran_intrinsic_bit] 
+                    [lfortran_intrinsic_bit] 
                     .false. 
                     .false.
                 )

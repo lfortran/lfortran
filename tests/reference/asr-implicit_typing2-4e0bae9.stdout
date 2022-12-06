@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     a 
+                                    [n] 
                                     Local 
                                     () 
                                     () 
@@ -26,6 +27,7 @@
                                 (Variable 
                                     2 
                                     b 
+                                    [n] 
                                     Unspecified 
                                     () 
                                     () 
@@ -41,6 +43,7 @@
                                 (Variable 
                                     2 
                                     ifault 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 
@@ -55,6 +58,7 @@
                                 (Variable 
                                     2 
                                     n 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 
@@ -69,6 +73,7 @@
                                 (Variable 
                                     2 
                                     r 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 
@@ -128,6 +133,7 @@
                                 (Variable 
                                     3 
                                     a 
+                                    [n] 
                                     Local 
                                     () 
                                     () 
@@ -143,6 +149,7 @@
                                 (Variable 
                                     3 
                                     b 
+                                    [n] 
                                     Unspecified 
                                     () 
                                     () 
@@ -158,6 +165,7 @@
                                 (Variable 
                                     3 
                                     g 
+                                    [] 
                                     ReturnVar 
                                     () 
                                     () 
@@ -172,6 +180,7 @@
                                 (Variable 
                                     3 
                                     ifault 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 
@@ -186,6 +195,7 @@
                                 (Variable 
                                     3 
                                     n 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 
@@ -200,6 +210,7 @@
                                 (Variable 
                                     3 
                                     r 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 

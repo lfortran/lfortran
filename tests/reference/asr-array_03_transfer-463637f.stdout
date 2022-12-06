@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     (IntegerConstant 21432 (Integer 4 [])) 
                                     () 

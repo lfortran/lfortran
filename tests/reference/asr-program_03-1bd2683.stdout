@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     5 
                                                     x 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -30,6 +31,7 @@
                                                 (Variable 
                                                     5 
                                                     y 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -84,6 +86,7 @@
                                                                 (Variable 
                                                                     4 
                                                                     fun 
+                                                                    [] 
                                                                     ReturnVar 
                                                                     () 
                                                                     () 
@@ -98,6 +101,7 @@
                                                                 (Variable 
                                                                     4 
                                                                     x 
+                                                                    [] 
                                                                     Unspecified 
                                                                     () 
                                                                     () 
@@ -132,6 +136,7 @@
                                                 (Variable 
                                                     3 
                                                     x 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -146,6 +151,7 @@
                                                 (Variable 
                                                     3 
                                                     y 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -192,6 +198,7 @@
                                 (Variable 
                                     2 
                                     z 
+                                    [] 
                                     Local 
                                     () 
                                     () 

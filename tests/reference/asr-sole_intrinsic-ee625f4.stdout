@@ -39,6 +39,7 @@
                                 (Variable 
                                     2 
                                     f 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -53,6 +54,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     (ComplexConstructor 
                                         (RealConstant 
@@ -89,6 +91,7 @@
                                 (Variable 
                                     2 
                                     y 
+                                    [] 
                                     Local 
                                     () 
                                     () 

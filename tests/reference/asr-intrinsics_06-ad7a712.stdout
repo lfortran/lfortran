@@ -141,6 +141,7 @@
                                 (Variable 
                                     2 
                                     dp 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 kind 
@@ -175,6 +176,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     () 
                                     () 

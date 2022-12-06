@@ -18,6 +18,7 @@
                                                 (Variable 
                                                     3 
                                                     name 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -93,8 +94,7 @@
                             
                         }) 
                     optmod 
-                    [lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin] 
+                    [lfortran_intrinsic_builtin] 
                     .false. 
                     .false.
                 )

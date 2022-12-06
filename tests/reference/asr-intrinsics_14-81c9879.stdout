@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     i1 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -25,6 +26,7 @@
                                 (Variable 
                                     2 
                                     k1 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 selected_int_kind 
@@ -46,6 +48,7 @@
                                 (Variable 
                                     2 
                                     k10 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 selected_char_kind 
@@ -70,6 +73,7 @@
                                 (Variable 
                                     2 
                                     k11 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 selected_real_kind 
@@ -91,6 +95,7 @@
                                 (Variable 
                                     2 
                                     k12 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 selected_real_kind 
@@ -112,6 +117,7 @@
                                 (Variable 
                                     2 
                                     k2 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 selected_int_kind 
@@ -133,6 +139,7 @@
                                 (Variable 
                                     2 
                                     k3 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 selected_int_kind 
@@ -154,6 +161,7 @@
                                 (Variable 
                                     2 
                                     k4 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 selected_int_kind 
@@ -175,6 +183,7 @@
                                 (Variable 
                                     2 
                                     k5 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 selected_int_kind 
@@ -196,6 +205,7 @@
                                 (Variable 
                                     2 
                                     k6 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 selected_real_kind 
@@ -217,6 +227,7 @@
                                 (Variable 
                                     2 
                                     k7 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 selected_real_kind 
@@ -238,6 +249,7 @@
                                 (Variable 
                                     2 
                                     k8 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 selected_real_kind 
@@ -259,6 +271,7 @@
                                 (Variable 
                                     2 
                                     k9 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 selected_real_kind 
@@ -280,6 +293,7 @@
                                 (Variable 
                                     2 
                                     s1 
+                                    [] 
                                     Local 
                                     () 
                                     () 

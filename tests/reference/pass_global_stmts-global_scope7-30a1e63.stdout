@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     f1 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -66,6 +67,7 @@
                 (Variable 
                     1 
                     x 
+                    [] 
                     Local 
                     (IntegerConstant 6 (Integer 4 [])) 
                     () 

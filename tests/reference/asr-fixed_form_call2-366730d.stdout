@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     a 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -25,6 +26,7 @@
                                 (Variable 
                                     2 
                                     m 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 
@@ -44,6 +46,7 @@
                                                 (Variable 
                                                     3 
                                                     prinf_arg_0 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -58,6 +61,7 @@
                                                 (Variable 
                                                     3 
                                                     prinf_arg_1 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -92,8 +96,7 @@
                             
                         }) 
                     idd_frm 
-                    [prinf
-                    prinf] 
+                    [prinf] 
                     [(Var 2 m)] 
                     [(= 
                         (Var 2 a) 

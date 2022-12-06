@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     c 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -35,6 +36,7 @@
                                                 (Variable 
                                                     3 
                                                     c 
+                                                    [] 
                                                     Out 
                                                     () 
                                                     () 
@@ -109,6 +111,7 @@
                                                 (Variable 
                                                     4 
                                                     r 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -123,6 +126,7 @@
                                                 (Variable 
                                                     4 
                                                     x 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -239,6 +243,7 @@
                                                 (Variable 
                                                     5 
                                                     c 
+                                                    [] 
                                                     Out 
                                                     () 
                                                     () 
@@ -345,6 +350,7 @@
                                 (Variable 
                                     2 
                                     r 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -359,6 +365,7 @@
                                 (Variable 
                                     2 
                                     stat 
+                                    [] 
                                     Local 
                                     () 
                                     () 

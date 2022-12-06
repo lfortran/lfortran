@@ -21,6 +21,7 @@
                                 (Variable 
                                     2 
                                     all_spaces 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 adjustl 
@@ -55,6 +56,7 @@
                                 (Variable 
                                     2 
                                     empty 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 adjustl 
@@ -99,6 +101,7 @@
                                 (Variable 
                                     2 
                                     simple 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 adjustl 
@@ -133,6 +136,7 @@
                                 (Variable 
                                     2 
                                     space_at_end 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 adjustl 
@@ -167,6 +171,7 @@
                                 (Variable 
                                     2 
                                     space_at_start 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 adjustl 
@@ -201,6 +206,7 @@
                                 (Variable 
                                     2 
                                     space_in_between 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 adjustl 
@@ -235,6 +241,7 @@
                                 (Variable 
                                     2 
                                     spaces_with_symbols 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 adjustl 

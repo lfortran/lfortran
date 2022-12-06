@@ -24,6 +24,7 @@
                                                 (Variable 
                                                     6 
                                                     x 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -38,6 +39,7 @@
                                                 (Variable 
                                                     6 
                                                     y 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -69,6 +71,7 @@
                                                 (Variable 
                                                     7 
                                                     a 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -86,6 +89,7 @@
                                                 (Variable 
                                                     7 
                                                     b 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -103,6 +107,7 @@
                                                 (Variable 
                                                     7 
                                                     distance 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -143,6 +148,7 @@
                                                 (Variable 
                                                     8 
                                                     a 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -160,6 +166,7 @@
                                                 (Variable 
                                                     8 
                                                     b 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -177,6 +184,7 @@
                                                 (Variable 
                                                     8 
                                                     distance 
+                                                    [] 
                                                     Out 
                                                     () 
                                                     () 
@@ -250,6 +258,7 @@
                                                 (Variable 
                                                     10 
                                                     a 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -267,6 +276,7 @@
                                                 (Variable 
                                                     10 
                                                     b 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -284,6 +294,7 @@
                                                 (Variable 
                                                     10 
                                                     distance 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -421,6 +432,7 @@
                                                 (Variable 
                                                     11 
                                                     a 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -438,6 +450,7 @@
                                                 (Variable 
                                                     11 
                                                     b 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -455,6 +468,7 @@
                                                 (Variable 
                                                     11 
                                                     distance 
+                                                    [] 
                                                     Out 
                                                     () 
                                                     () 
@@ -597,9 +611,7 @@
                             
                         }) 
                     points_a 
-                    [lfortran_intrinsic_math
-                    lfortran_intrinsic_math
-                    lfortran_intrinsic_math] 
+                    [lfortran_intrinsic_math] 
                     .false. 
                     .false.
                 ), 

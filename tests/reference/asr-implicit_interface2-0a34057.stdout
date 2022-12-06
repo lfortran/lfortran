@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     3 
                                                     f_arg_0 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -30,6 +31,7 @@
                                                 (Variable 
                                                     3 
                                                     f_return_var_name 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -69,6 +71,7 @@
                                                 (Variable 
                                                     4 
                                                     g_arg_0 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -83,6 +86,7 @@
                                                 (Variable 
                                                     4 
                                                     g_arg_1 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -97,6 +101,7 @@
                                                 (Variable 
                                                     4 
                                                     g_return_var_name 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 

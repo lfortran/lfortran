@@ -100,6 +100,7 @@
                                                 (Variable 
                                                     11 
                                                     x 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -114,6 +115,7 @@
                                                 (Variable 
                                                     11 
                                                     y 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -128,6 +130,7 @@
                                                 (Variable 
                                                     11 
                                                     z 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -180,6 +183,7 @@
                                                 (Variable 
                                                     5 
                                                     x 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -197,6 +201,7 @@
                                                 (Variable 
                                                     5 
                                                     y 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -214,6 +219,7 @@
                                                 (Variable 
                                                     5 
                                                     z 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -275,6 +281,7 @@
                                                 (Variable 
                                                     10 
                                                     x 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -289,6 +296,7 @@
                                                 (Variable 
                                                     10 
                                                     y 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -303,6 +311,7 @@
                                                 (Variable 
                                                     10 
                                                     z 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -355,6 +364,7 @@
                                                 (Variable 
                                                     6 
                                                     x 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -372,6 +382,7 @@
                                                 (Variable 
                                                     6 
                                                     y 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -389,6 +400,7 @@
                                                 (Variable 
                                                     6 
                                                     z 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -450,6 +462,7 @@
                                                 (Variable 
                                                     4 
                                                     x 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -467,6 +480,7 @@
                                                 (Variable 
                                                     4 
                                                     y 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -484,6 +498,7 @@
                                                 (Variable 
                                                     4 
                                                     z 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -530,6 +545,7 @@
                                                 (Variable 
                                                     7 
                                                     x 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -544,6 +560,7 @@
                                                 (Variable 
                                                     7 
                                                     y 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -558,6 +575,7 @@
                                                 (Variable 
                                                     7 
                                                     z 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -624,6 +642,7 @@
                                                 (Variable 
                                                     8 
                                                     a 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -658,6 +677,7 @@
                                                 (Variable 
                                                     8 
                                                     b 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -672,6 +692,7 @@
                                                 (Variable 
                                                     8 
                                                     x 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -686,6 +707,7 @@
                                                 (Variable 
                                                     8 
                                                     y 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -699,8 +721,7 @@
                                             
                                         }) 
                                     test_template 
-                                    [add_real
-                                    abs@sabs
+                                    [abs@sabs
                                     add_real] 
                                     [] 
                                     [(= 
@@ -794,8 +815,7 @@
                             
                         }) 
                     template_nested_m 
-                    [lfortran_intrinsic_math
-                    lfortran_intrinsic_math] 
+                    [lfortran_intrinsic_math] 
                     .false. 
                     .false.
                 )

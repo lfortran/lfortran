@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     a 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -25,6 +26,7 @@
                                 (Variable 
                                     2 
                                     b 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -39,6 +41,7 @@
                                 (Variable 
                                     2 
                                     c 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -58,6 +61,7 @@
                                                 (Variable 
                                                     3 
                                                     a 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -72,6 +76,7 @@
                                                 (Variable 
                                                     3 
                                                     b 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -86,6 +91,7 @@
                                                 (Variable 
                                                     3 
                                                     x 
+                                                    [] 
                                                     Local 
                                                     (IntegerConstant 2 (Integer 4 [])) 
                                                     () 
@@ -135,6 +141,7 @@
                                                 (Variable 
                                                     4 
                                                     a 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -149,6 +156,7 @@
                                                 (Variable 
                                                     4 
                                                     b 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -204,6 +212,7 @@
                                 (Variable 
                                     2 
                                     p 
+                                    [] 
                                     Local 
                                     (Cast 
                                         (IntegerConstant 5 (Integer 4 [])) 
@@ -226,6 +235,7 @@
                                 (Variable 
                                     2 
                                     q 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -245,6 +255,7 @@
                                                 (Variable 
                                                     5 
                                                     r 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -259,6 +270,7 @@
                                                 (Variable 
                                                     5 
                                                     x 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -273,6 +285,7 @@
                                                 (Variable 
                                                     5 
                                                     y 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -383,6 +396,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     (IntegerConstant 5 (Integer 4 [])) 
                                     () 
@@ -397,6 +411,7 @@
                                 (Variable 
                                     2 
                                     y 
+                                    [] 
                                     Local 
                                     () 
                                     () 

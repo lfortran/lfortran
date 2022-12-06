@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     a 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -25,6 +26,7 @@
                                 (Variable 
                                     2 
                                     b 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -39,6 +41,7 @@
                                 (Variable 
                                     2 
                                     dp 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 kind 
@@ -73,6 +76,7 @@
                                 (Variable 
                                     2 
                                     sp 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 kind 
@@ -97,6 +101,7 @@
                                 (Variable 
                                     2 
                                     sp2 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 kind 

@@ -11,6 +11,7 @@
                                 (Variable 
                                     6 
                                     f 
+                                    [] 
                                     Local 
                                     (LogicalConstant 
                                         .false. 
@@ -61,6 +62,7 @@
                                 (Variable 
                                     6 
                                     t 
+                                    [] 
                                     Local 
                                     (LogicalConstant 
                                         .true. 
@@ -340,6 +342,7 @@
                                                 (Variable 
                                                     3 
                                                     greater_than_inverse 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -354,6 +357,7 @@
                                                 (Variable 
                                                     3 
                                                     log1 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -368,6 +372,7 @@
                                                 (Variable 
                                                     3 
                                                     log2 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -450,6 +455,7 @@
                                                 (Variable 
                                                     4 
                                                     less_than_inverse 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -464,6 +470,7 @@
                                                 (Variable 
                                                     4 
                                                     log1 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -478,6 +485,7 @@
                                                 (Variable 
                                                     4 
                                                     log2 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -560,6 +568,7 @@
                                                 (Variable 
                                                     5 
                                                     less_than_overload_use 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -574,6 +583,7 @@
                                                 (Variable 
                                                     5 
                                                     log1 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -588,6 +598,7 @@
                                                 (Variable 
                                                     5 
                                                     log2 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 

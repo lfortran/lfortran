@@ -41,6 +41,7 @@
                                 (Variable 
                                     2 
                                     idx 
+                                    [] 
                                     Local 
                                     (IntegerConstant 1 (Integer 4 [])) 
                                     () 
@@ -55,6 +56,7 @@
                                 (Variable 
                                     2 
                                     newshape 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -70,6 +72,7 @@
                                 (Variable 
                                     2 
                                     queries 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -84,6 +87,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -103,6 +107,7 @@
                                 (Variable 
                                     2 
                                     xv 
+                                    [] 
                                     Local 
                                     () 
                                     () 

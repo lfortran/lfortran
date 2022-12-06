@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     c1 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -25,6 +26,7 @@
                                 (Variable 
                                     2 
                                     c2 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -39,6 +41,7 @@
                                 (Variable 
                                     2 
                                     i1 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -53,6 +56,7 @@
                                 (Variable 
                                     2 
                                     i2 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -67,6 +71,7 @@
                                 (Variable 
                                     2 
                                     i3 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -81,6 +86,7 @@
                                 (Variable 
                                     2 
                                     i4 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -115,6 +121,7 @@
                                 (Variable 
                                     2 
                                     r1 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -129,6 +136,7 @@
                                 (Variable 
                                     2 
                                     r2 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -233,6 +241,7 @@
                                 (Variable 
                                     2 
                                     ri3 
+                                    [i3] 
                                     Local 
                                     (FunctionCall 
                                         2 range@int8range 
@@ -254,6 +263,7 @@
                                 (Variable 
                                     2 
                                     ri4 
+                                    [i4] 
                                     Local 
                                     (FunctionCall 
                                         2 range@int16range 

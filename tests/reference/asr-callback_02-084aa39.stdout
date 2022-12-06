@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     3 
                                                     a 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -30,6 +31,7 @@
                                                 (Variable 
                                                     3 
                                                     b 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -49,6 +51,7 @@
                                                                 (Variable 
                                                                     4 
                                                                     res 
+                                                                    [] 
                                                                     Unspecified 
                                                                     () 
                                                                     () 
@@ -63,6 +66,7 @@
                                                                 (Variable 
                                                                     4 
                                                                     x 
+                                                                    [] 
                                                                     In 
                                                                     () 
                                                                     () 
@@ -98,6 +102,7 @@
                                                 (Variable 
                                                     3 
                                                     res 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -111,8 +116,7 @@
                                             
                                         }) 
                                     cb 
-                                    [f
-                                    f] 
+                                    [f] 
                                     [(Var 3 res)
                                     (Var 3 a)
                                     (Var 3 b)
@@ -189,6 +193,7 @@
                                                 (Variable 
                                                     5 
                                                     c 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -203,6 +208,7 @@
                                                 (Variable 
                                                     5 
                                                     d 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -222,6 +228,7 @@
                                                                 (Variable 
                                                                     6 
                                                                     res 
+                                                                    [] 
                                                                     Unspecified 
                                                                     () 
                                                                     () 
@@ -236,6 +243,7 @@
                                                                 (Variable 
                                                                     6 
                                                                     x 
+                                                                    [] 
                                                                     In 
                                                                     () 
                                                                     () 
@@ -289,6 +297,7 @@
                                                 (Variable 
                                                     5 
                                                     foo 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -303,6 +312,7 @@
                                                 (Variable 
                                                     5 
                                                     res 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -384,6 +394,7 @@
                                 (Variable 
                                     7 
                                     res 
+                                    [] 
                                     Local 
                                     (Cast 
                                         (IntegerConstant 0 (Integer 4 [])) 

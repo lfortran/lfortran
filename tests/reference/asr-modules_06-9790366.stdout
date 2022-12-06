@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     5 
                                                     a 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -76,8 +77,7 @@
                             
                         }) 
                     modules_06_a 
-                    [modules_06_b
-                    modules_06_b] 
+                    [modules_06_b] 
                     .false. 
                     .false.
                 ), 
@@ -95,6 +95,7 @@
                                                 (Variable 
                                                     3 
                                                     b 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
