@@ -259,6 +259,67 @@ public:
         tmp = ASR::make_FileClose_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_iomsg, a_err, a_status);
     }
 
+    void visit_Backspace(const AST::Backspace_t& x) {
+        ASR::expr_t *a_unit = nullptr, *a_iostat = nullptr;
+        ASR::expr_t *a_err = nullptr;
+        if( x.n_args > 1 ) {
+            throw SemanticError("Number of arguments cannot be more than 1 in Backspace statement.",
+                        x.base.base.loc);
+        }
+        if( x.n_args == 1 ) {
+            this->visit_expr(*x.m_args[0]);
+            a_unit = LFortran::ASRUtils::EXPR(tmp);
+        }
+        for( std::uint32_t i = 0; i < x.n_kwargs; i++ ) {
+            AST::keyword_t kwarg = x.m_kwargs[i];
+            std::string m_arg_str(kwarg.m_arg);
+            if( m_arg_str == std::string("unit") ) {
+                if( a_unit != nullptr ) {
+                    throw SemanticError(R"""(Duplicate value of `unit` found, `unit` "
+                        " has already been specified via argument or keyword arguments)""",
+                        x.base.base.loc);
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_unit = LFortran::ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_newunit_type = LFortran::ASRUtils::expr_type(a_unit);
+                if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_newunit_type))) {
+                        throw SemanticError("`unit` must be of type, Integer or IntegerPointer",
+                        x.base.base.loc);
+                }
+            } else if( m_arg_str == std::string("iostat") ) {
+                if( a_iostat != nullptr ) {
+                    throw SemanticError(R"""(Duplicate value of `iostat` found, unit has "
+                        " already been specified via arguments or keyword arguments)""",
+                        x.base.base.loc);
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_iostat = LFortran::ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_iostat_type = LFortran::ASRUtils::expr_type(a_iostat);
+                if( a_iostat->type != ASR::exprType::Var ||
+                    (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type))) ) {
+                        throw SemanticError("`iostat` must be a variable of type, Integer "
+                            " or IntegerPointer", x.base.base.loc);
+                }
+            } else if( m_arg_str == std::string("err") ) {
+                if( a_err != nullptr ) {
+                    throw SemanticError(R"""(Duplicate value of `err` found, `err` has "
+                        " already been specified via arguments or keyword arguments)""",
+                        x.base.base.loc);
+                }
+                if( kwarg.m_value->type != AST::exprType::Num ) {
+                    throw SemanticError("`err` must be a literal integer", x.base.base.loc);
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_err = LFortran::ASRUtils::EXPR(tmp);
+            }
+        }
+        if( a_unit == nullptr ) {
+            throw SemanticError("`unit` must be specified either in argument or keyword arguments.",
+                                x.base.base.loc);
+        }
+        tmp = ASR::make_FileBackspace_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_err);
+    }
+
     void create_read_write_ASR_node(const AST::stmt_t& read_write_stmt, AST::stmtType _type) {
         int64_t m_label = -1;
         AST::argstar_t* m_args = nullptr; size_t n_args = 0;
