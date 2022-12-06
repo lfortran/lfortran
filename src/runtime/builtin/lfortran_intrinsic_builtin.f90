@@ -100,6 +100,10 @@ interface
     integer, intent(in) :: i
     end function
 
+    logical function is_iostat_end(i) result(r)
+    integer, intent(in) :: i
+    end function
+
 end interface
 
 end module

@@ -241,7 +241,7 @@
                                 (ExternalSymbol 
                                     2 
                                     sign_from_value@signfromvaluei32i32 
-                                    226 signfromvaluei32i32 
+                                    227 signfromvaluei32i32 
                                     lfortran_intrinsic_optimization 
                                     [] 
                                     signfromvaluei32i32 
@@ -251,7 +251,7 @@
                                 (ExternalSymbol 
                                     2 
                                     sign_from_value@signfromvaluei64i64 
-                                    226 signfromvaluei64i64 
+                                    227 signfromvaluei64i64 
                                     lfortran_intrinsic_optimization 
                                     [] 
                                     signfromvaluei64i64 
@@ -261,7 +261,7 @@
                                 (ExternalSymbol 
                                     2 
                                     sign_from_value@signfromvaluer32r32 
-                                    226 signfromvaluer32r32 
+                                    227 signfromvaluer32r32 
                                     lfortran_intrinsic_optimization 
                                     [] 
                                     signfromvaluer32r32 
@@ -271,7 +271,7 @@
                                 (ExternalSymbol 
                                     2 
                                     sign_from_value@signfromvaluer64r64 
-                                    226 signfromvaluer64r64 
+                                    227 signfromvaluer64r64 
                                     lfortran_intrinsic_optimization 
                                     [] 
                                     signfromvaluer64r64 
@@ -581,7 +581,7 @@
                 (ExternalSymbol 
                     1 
                     sign_from_value 
-                    226 sign_from_value 
+                    227 sign_from_value 
                     lfortran_intrinsic_optimization 
                     [] 
                     sign_from_value 

@@ -28,6 +28,10 @@ ast = true
 asr = true
 
 [[test]]
+filename = "../integration_tests/test_backspace_01.f90"
+asr = true
+
+[[test]]
 filename = "subroutine2.f90"
 ast = true
 julia = true

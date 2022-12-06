@@ -11,7 +11,7 @@
                                 (ExternalSymbol 
                                     2 
                                     abs 
-                                    96 abs 
+                                    97 abs 
                                     lfortran_intrinsic_math 
                                     [] 
                                     abs 
@@ -21,7 +21,7 @@
                                 (ExternalSymbol 
                                     2 
                                     abs@sabs 
-                                    96 sabs 
+                                    97 sabs 
                                     lfortran_intrinsic_math 
                                     [] 
                                     sabs 
@@ -48,7 +48,7 @@
                                 (ExternalSymbol 
                                     2 
                                     flipsign@flipsigni32r32 
-                                    292 flipsigni32r32 
+                                    293 flipsigni32r32 
                                     lfortran_intrinsic_optimization 
                                     [] 
                                     flipsigni32r32 
@@ -216,7 +216,7 @@
                 (ExternalSymbol 
                     1 
                     flipsign 
-                    292 flipsign 
+                    293 flipsign 
                     lfortran_intrinsic_optimization 
                     [] 
                     flipsign 
