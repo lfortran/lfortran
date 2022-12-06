@@ -2682,6 +2682,28 @@ public:
         return ASR::make_Ichar_t(al, x.base.base.loc, arg, type, ichar_value);
     }
 
+    ASR::asr_t* create_Iachar(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"kind"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "iachar");
+        ASR::expr_t *arg = args[0], *kind = args[1];
+        int64_t kind_value = handle_kind(kind);
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                kind_value, nullptr, 0));
+        ASR::expr_t* iachar_value = nullptr;
+        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+        if( arg_value ) {
+            std::string arg_str;
+            bool is_const_value = ASRUtils::is_value_constant(arg_value, arg_str);
+            if( is_const_value ) {
+                int64_t ascii_code = arg_str[0];
+                iachar_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                ascii_code, type));
+            }
+        }
+        return ASR::make_Iachar_t(al, x.base.base.loc, arg, type, iachar_value);
+    }
+
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
@@ -2707,7 +2729,9 @@ public:
                 tmp = create_ArrayReshape(x);
             } else if( var_name == "ichar" ) {
                 tmp = create_Ichar(x);
-            }  else {
+            } else if( var_name == "iachar" ) {
+                tmp = create_Iachar(x);
+            } else {
                 LCompilersException("create_" + var_name + " not implemented yet.");
             }
             return nullptr;

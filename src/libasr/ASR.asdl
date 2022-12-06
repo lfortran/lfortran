@@ -308,6 +308,7 @@ expr
     | SetPop(expr a, ttype type, expr? value)
     | IntegerBitLen(expr a, ttype type, expr? value)
     | Ichar(expr arg, ttype type, expr? value)
+    | Iachar(expr arg, ttype type, expr? value)
 
     | SizeOfType(ttype arg, ttype type, expr? value)
 
