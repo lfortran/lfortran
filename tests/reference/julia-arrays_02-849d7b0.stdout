@@ -25,6 +25,11 @@ function iachar(c::String, kind::Int32)::Int32
     return iachar
 end
 
+function is_iostat_end(i::Int32)::Bool
+    local r::Bool = false
+    return r
+end
+
 function is_iostat_eor(i::Int32)::Bool
     local r::Bool = false
     return r
