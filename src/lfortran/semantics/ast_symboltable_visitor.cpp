@@ -181,11 +181,14 @@ public:
                 ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(itr.first);
                 if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
                     Vec<char*> func_deps;
-                    func_deps.reserve(al, itr.second.size());
-                    for( auto dep: itr.second ) {
-                        func_deps.push_back(al, s2c(al, dep));
-                    }
                     ASR::Function_t* asr_owner_func = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
+                    func_deps.from_pointer_n_copy(al, asr_owner_func->m_dependencies,
+                                                  asr_owner_func->n_dependencies);
+                    for( auto dep: itr.second ) {
+                        if( !present(func_deps.p, func_deps.size(), dep) ) {
+                            func_deps.push_back(al, s2c(al, dep));
+                        }
+                    }
                     asr_owner_func->m_dependencies = func_deps.p;
                     asr_owner_func->n_dependencies = func_deps.size();
                 }

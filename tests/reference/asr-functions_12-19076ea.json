@@ -1,0 +1,13 @@
+{
+    "basename": "asr-functions_12-19076ea",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/functions_12.f90",
+    "infile_hash": "b0c5ee3ef02b2ff06fd9e184908e08c2c7c2753dbca9c55205be065b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-functions_12-19076ea.stdout",
+    "stdout_hash": "13d424e1da911502d834bc65023a27fd8da81b69e56d8b8d2fe7f2e3",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
