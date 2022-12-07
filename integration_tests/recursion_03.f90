@@ -20,10 +20,13 @@ interface
 end interface
 !procedure(f_type) :: f
 integer, intent(in) :: iter
-print *, "before:", f()
+integer f_val
+f_val = f()
+print *, "before:", f_val
 solver = sub1(2, iter-1)
 !solver = sub1(2, iter-1) + f()
-print *, "after:", f()
+f_val = f()
+print *, "after:", f_val
 end function
 
 integer function sub1(y, iter)

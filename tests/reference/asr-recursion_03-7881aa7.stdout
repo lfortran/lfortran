@@ -130,6 +130,21 @@
                                                     [] 
                                                     .false.
                                                 ), 
+                                            f_val:
+                                                (Variable 
+                                                    5 
+                                                    f_val 
+                                                    [] 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
                                             iter:
                                                 (Variable 
                                                     5 
@@ -167,12 +182,8 @@
                                     sub1] 
                                     [(Var 5 f)
                                     (Var 5 iter)] 
-                                    [(Print 
-                                        () 
-                                        [(StringConstant 
-                                            "before:" 
-                                            (Character 1 7 () [])
-                                        )
+                                    [(= 
+                                        (Var 5 f_val) 
                                         (FunctionCall 
                                             5 f 
                                             () 
@@ -180,7 +191,16 @@
                                             (Integer 4 []) 
                                             () 
                                             ()
-                                        )] 
+                                        ) 
+                                        ()
+                                    )
+                                    (Print 
+                                        () 
+                                        [(StringConstant 
+                                            "before:" 
+                                            (Character 1 7 () [])
+                                        )
+                                        (Var 5 f_val)] 
                                         () 
                                         ()
                                     )
@@ -203,12 +223,8 @@
                                         ) 
                                         ()
                                     )
-                                    (Print 
-                                        () 
-                                        [(StringConstant 
-                                            "after:" 
-                                            (Character 1 6 () [])
-                                        )
+                                    (= 
+                                        (Var 5 f_val) 
                                         (FunctionCall 
                                             5 f 
                                             () 
@@ -216,7 +232,16 @@
                                             (Integer 4 []) 
                                             () 
                                             ()
-                                        )] 
+                                        ) 
+                                        ()
+                                    )
+                                    (Print 
+                                        () 
+                                        [(StringConstant 
+                                            "after:" 
+                                            (Character 1 6 () [])
+                                        )
+                                        (Var 5 f_val)] 
                                         () 
                                         ()
                                     )] 
