@@ -238,6 +238,46 @@ public:
         
         parent_scope->add_symbol(func_name, ASR::down_cast<ASR::symbol_t>(func));
         current_scope = parent_scope;
+
+        // create a call to the function
+        Vec<ASR::call_arg_t> call_args;
+        call_args.reserve(al, 3);;
+        ASR::call_arg_t start_call_arg;
+        start_call_arg.loc = x.m_start->base.loc;
+        start_call_arg.m_value = x.m_start;
+        call_args.push_back(al, start_call_arg);
+        ASR::call_arg_t end_call_arg;
+        end_call_arg.loc = x.m_end->base.loc;
+        end_call_arg.m_value = x.m_end;
+        call_args.push_back(al, end_call_arg);
+        if( x.m_increment != nullptr ) {
+            ASR::call_arg_t increment_call_arg;
+            increment_call_arg.loc = x.m_increment->base.loc;
+            increment_call_arg.m_value = x.m_increment;
+            call_args.push_back(al, increment_call_arg);
+        } else {
+            ASR::expr_t *increment_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+            ASR::call_arg_t increment_call_arg;
+            increment_call_arg.loc = increment_expr->base.loc;
+            increment_call_arg.m_value = increment_expr;
+            call_args.push_back(al, increment_call_arg);
+        }
+
+        ASR::symbol_t *final_sym = ASR::down_cast<ASR::symbol_t>(func);
+        ASR::ttype_t* ret_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+        ASR::asr_t* func_call = ASR::make_FunctionCall_t(al, x.base.base.loc,
+            final_sym, final_sym, call_args.p, call_args.size(), ret_type,
+            nullptr, nullptr);
+
+        // create an assignment
+        ASR::expr_t* func_call_expr = ASRUtils::EXPR(func_call);
+
+        
+        // push the assignment to pass_result
+        ASR::stmt_t* assign_stmt = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al,
+                                            x.base.base.loc, arr_var_expr, func_call_expr, nullptr));
+        pass_result.push_back(al, assign_stmt);
+
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
