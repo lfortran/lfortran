@@ -222,6 +222,8 @@ public:
         create_do_loop(x, arr_var);
         // push the last element of pass_result to doloop_body
         doloop_body.push_back(al, pass_result[pass_result.size()-1]);
+        // remove the last element of pass_result
+        pass_result.resize(al, pass_result.size()-1);
         
         ASR::asr_t* func = ASR::make_Function_t(
             al, x.base.base.loc,
@@ -264,9 +266,8 @@ public:
         }
 
         ASR::symbol_t *final_sym = ASR::down_cast<ASR::symbol_t>(func);
-        ASR::ttype_t* ret_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
         ASR::asr_t* func_call = ASR::make_FunctionCall_t(al, x.base.base.loc,
-            final_sym, final_sym, call_args.p, call_args.size(), ret_type,
+            final_sym, final_sym, call_args.p, call_args.size(), obj_type,
             nullptr, nullptr);
 
         // create an assignment
