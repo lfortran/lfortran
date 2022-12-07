@@ -1518,8 +1518,8 @@ class JsonVisitorVisitor(ASDLVisitor):
         self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
         self.emit(    's.append("{");', 2)
         self.emit(    'inc_indent(); s.append("\\n" + indtd);', 2)
-        self.emit(    's.append("\\"node\\": \\"%s\\",");' % name, 2)
-        self.emit(    's.append("\\n" + indtd);', 2)
+        self.emit(    's.append("\\"node\\": \\"%s\\"");' % name, 2)
+        self.emit(    's.append(",\\n" + indtd);', 2)
         self.emit(    's.append("\\"fields\\": {");', 2)
         if len(fields) > 0:
             self.emit('inc_indent(); s.append("\\n" + indtd);', 2)
@@ -1609,7 +1609,6 @@ class JsonVisitorVisitor(ASDLVisitor):
                     self.emit(        '};', level+2)
                     self.emit(    "}", level+1)
                     self.emit(    'dec_indent(); s.append("\\n" + indtd);', level+1)
-                    self.emit(    's.append("]");', level+1)
                     self.emit('}', level)
                     self.emit('s.append("]");', level)
                 else:
