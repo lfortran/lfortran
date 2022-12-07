@@ -1486,6 +1486,46 @@ public:
         tmp = builder->CreateCall(fn, {int_val});
     }
 
+    void visit_Ichar(const ASR::Ichar_t &x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        this->visit_expr(*x.m_arg);
+        llvm::Value *c = tmp;
+        std::string runtime_func_name = "_lfortran_ichar";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                llvm::Type::getInt32Ty(context), {
+                    llvm::Type::getInt8PtrTy(context)
+                }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        tmp = builder->CreateCall(fn, {c});
+    }
+
+    void visit_Iachar(const ASR::Iachar_t &x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        this->visit_expr(*x.m_arg);
+        llvm::Value *c = tmp;
+        std::string runtime_func_name = "_lfortran_iachar";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                llvm::Type::getInt32Ty(context), {
+                    llvm::Type::getInt8PtrTy(context)
+                }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        tmp = builder->CreateCall(fn, {c});
+    }
+
     void visit_ListAppend(const ASR::ListAppend_t& x) {
         ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(x.m_a));
         int64_t ptr_loads_copy = ptr_loads;

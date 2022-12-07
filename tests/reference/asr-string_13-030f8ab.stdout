@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin), 
             string_13:
                 (Program 
                     (SymbolTable
@@ -15,16 +13,13 @@
                                     ia0 
                                     [] 
                                     Local 
-                                    (FunctionCall 
-                                        2 iachar 
-                                        () 
-                                        [((StringConstant 
+                                    (Iachar 
+                                        (StringConstant 
                                             "0" 
                                             (Character 1 1 () [])
-                                        ))] 
+                                        ) 
                                         (Integer 4 []) 
-                                        (IntegerConstant 48 (Integer 4 [])) 
-                                        ()
+                                        (IntegerConstant 48 (Integer 4 []))
                                     ) 
                                     (IntegerConstant 48 (Integer 4 [])) 
                                     Parameter 
@@ -40,16 +35,13 @@
                                     ia5 
                                     [] 
                                     Local 
-                                    (FunctionCall 
-                                        2 iachar 
-                                        () 
-                                        [((StringConstant 
+                                    (Iachar 
+                                        (StringConstant 
                                             "5" 
                                             (Character 1 1 () [])
-                                        ))] 
+                                        ) 
                                         (Integer 4 []) 
-                                        (IntegerConstant 53 (Integer 4 [])) 
-                                        ()
+                                        (IntegerConstant 53 (Integer 4 []))
                                     ) 
                                     (IntegerConstant 53 (Integer 4 [])) 
                                     Parameter 
@@ -65,16 +57,13 @@
                                     ia9 
                                     [] 
                                     Local 
-                                    (FunctionCall 
-                                        2 iachar 
-                                        () 
-                                        [((StringConstant 
+                                    (Iachar 
+                                        (StringConstant 
                                             "9" 
                                             (Character 1 1 () [])
-                                        ))] 
+                                        ) 
                                         (Integer 4 []) 
-                                        (IntegerConstant 57 (Integer 4 [])) 
-                                        ()
+                                        (IntegerConstant 57 (Integer 4 []))
                                     ) 
                                     (IntegerConstant 57 (Integer 4 [])) 
                                     Parameter 
@@ -83,21 +72,11 @@
                                     Public 
                                     Required 
                                     .false.
-                                ), 
-                            iachar:
-                                (ExternalSymbol 
-                                    2 
-                                    iachar 
-                                    4 iachar 
-                                    lfortran_intrinsic_builtin 
-                                    [] 
-                                    iachar 
-                                    Private
                                 )
                             
                         }) 
                     string_13 
-                    [lfortran_intrinsic_builtin] 
+                    [] 
                     [(If 
                         (IntegerCompare 
                             (Var 2 ia0) 

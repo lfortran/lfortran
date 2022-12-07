@@ -291,11 +291,11 @@
                             compute_lps_use:
                                 (Function 
                                     (SymbolTable
-                                        33
+                                        32
                                         {
                                             l:
                                                 (Variable 
-                                                    33 
+                                                    32 
                                                     l 
                                                     [] 
                                                     ReturnVar 
@@ -310,7 +310,7 @@
                                                 ), 
                                             len:
                                                 (ExternalSymbol 
-                                                    33 
+                                                    32 
                                                     len 
                                                     9 len 
                                                     lfortran_intrinsic_builtin 
@@ -320,7 +320,7 @@
                                                 ), 
                                             string:
                                                 (Variable 
-                                                    33 
+                                                    32 
                                                     string 
                                                     [] 
                                                     In 
@@ -338,18 +338,18 @@
                                     compute_lps_use 
                                     [compute_lps
                                     len] 
-                                    [(Var 33 string)] 
+                                    [(Var 32 string)] 
                                     [(Print 
                                         () 
                                         [(FunctionCall 
                                             6 compute_lps 
                                             () 
-                                            [((Var 33 string))] 
+                                            [((Var 32 string))] 
                                             (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
                                             (FunctionCall 
-                                                33 len 
+                                                32 len 
                                                 () 
-                                                [((Var 33 string))] 
+                                                [((Var 32 string))] 
                                                 (Integer 4 []) 
                                                 () 
                                                 ()
@@ -360,7 +360,7 @@
                                         () 
                                         ()
                                     )] 
-                                    (Var 33 l) 
+                                    (Var 32 l) 
                                     Source 
                                     Public 
                                     Implementation 
@@ -377,11 +377,11 @@
                             compute_lps_use1:
                                 (Function 
                                     (SymbolTable
-                                        34
+                                        33
                                         {
                                             char@char_string:
                                                 (ExternalSymbol 
-                                                    34 
+                                                    33 
                                                     char@char_string 
                                                     2 char_string 
                                                     stdlib_string_type 
@@ -391,7 +391,7 @@
                                                 ), 
                                             l:
                                                 (Variable 
-                                                    34 
+                                                    33 
                                                     l 
                                                     [] 
                                                     ReturnVar 
@@ -406,7 +406,7 @@
                                                 ), 
                                             len_string:
                                                 (ExternalSymbol 
-                                                    34 
+                                                    33 
                                                     len_string 
                                                     2 len_string 
                                                     stdlib_string_type 
@@ -416,7 +416,7 @@
                                                 ), 
                                             string:
                                                 (Variable 
-                                                    34 
+                                                    33 
                                                     string 
                                                     [] 
                                                     In 
@@ -437,17 +437,17 @@
                                     compute_lps_use1 
                                     [char@char_string
                                     len_string] 
-                                    [(Var 34 string)] 
+                                    [(Var 33 string)] 
                                     [(Print 
                                         () 
                                         [(FunctionCall 
-                                            34 char@char_string 
+                                            33 char@char_string 
                                             6 char 
-                                            [((Var 34 string))] 
+                                            [((Var 33 string))] 
                                             (Character 1 -3 (FunctionCall 
-                                                34 len_string 
+                                                33 len_string 
                                                 2 len 
-                                                [((Var 34 string))] 
+                                                [((Var 33 string))] 
                                                 (Integer 4 []) 
                                                 () 
                                                 ()
@@ -458,7 +458,7 @@
                                         () 
                                         ()
                                     )] 
-                                    (Var 34 l) 
+                                    (Var 33 l) 
                                     Source 
                                     Public 
                                     Implementation 
@@ -503,13 +503,13 @@
                             padl_char_default:
                                 (Function 
                                     (SymbolTable
-                                        37
+                                        36
                                         {
                                             imax:
                                                 (ExternalSymbol 
-                                                    37 
+                                                    36 
                                                     imax 
-                                                    40 imax 
+                                                    39 imax 
                                                     lfortran_intrinsic_math2 
                                                     [] 
                                                     imax 
@@ -517,7 +517,7 @@
                                                 ), 
                                             len:
                                                 (ExternalSymbol 
-                                                    37 
+                                                    36 
                                                     len 
                                                     9 len 
                                                     lfortran_intrinsic_builtin 
@@ -527,7 +527,7 @@
                                                 ), 
                                             output_length:
                                                 (Variable 
-                                                    37 
+                                                    36 
                                                     output_length 
                                                     [] 
                                                     In 
@@ -542,7 +542,7 @@
                                                 ), 
                                             res:
                                                 (Variable 
-                                                    37 
+                                                    36 
                                                     res 
                                                     [string] 
                                                     ReturnVar 
@@ -550,9 +550,9 @@
                                                     () 
                                                     Default 
                                                     (Character 1 -3 (FunctionCall 
-                                                        37 len 
+                                                        36 len 
                                                         () 
-                                                        [((Var 37 string))] 
+                                                        [((Var 36 string))] 
                                                         (Integer 4 []) 
                                                         () 
                                                         ()
@@ -564,7 +564,7 @@
                                                 ), 
                                             string:
                                                 (Variable 
-                                                    37 
+                                                    36 
                                                     string 
                                                     [] 
                                                     In 
@@ -584,31 +584,31 @@
                                     imax
                                     len
                                     padl_char_pad_with] 
-                                    [(Var 37 string)
-                                    (Var 37 output_length)] 
+                                    [(Var 36 string)
+                                    (Var 36 output_length)] 
                                     [(= 
-                                        (Var 37 res) 
+                                        (Var 36 res) 
                                         (FunctionCall 
                                             6 padl_char_pad_with 
                                             6 padl 
-                                            [((Var 37 string))
-                                            ((Var 37 output_length))
+                                            [((Var 36 string))
+                                            ((Var 36 output_length))
                                             ((StringConstant 
                                                 " " 
                                                 (Character 1 1 () [])
                                             ))] 
                                             (Character 1 -3 (FunctionCall 
-                                                37 imax 
-                                                38 max 
+                                                36 imax 
+                                                37 max 
                                                 [((FunctionCall 
-                                                    37 len 
+                                                    36 len 
                                                     () 
-                                                    [((Var 37 string))] 
+                                                    [((Var 36 string))] 
                                                     (Integer 4 []) 
                                                     () 
                                                     ()
                                                 ))
-                                                ((Var 37 output_length))] 
+                                                ((Var 36 output_length))] 
                                                 (Integer 4 []) 
                                                 () 
                                                 ()
@@ -618,7 +618,7 @@
                                         ) 
                                         ()
                                     )] 
-                                    (Var 37 res) 
+                                    (Var 36 res) 
                                     Source 
                                     Public 
                                     Implementation 
@@ -635,11 +635,11 @@
                             padl_char_pad_with:
                                 (Function 
                                     (SymbolTable
-                                        38
+                                        37
                                         {
                                             len:
                                                 (ExternalSymbol 
-                                                    38 
+                                                    37 
                                                     len 
                                                     9 len 
                                                     lfortran_intrinsic_builtin 
@@ -649,9 +649,9 @@
                                                 ), 
                                             max:
                                                 (ExternalSymbol 
-                                                    38 
+                                                    37 
                                                     max 
-                                                    40 max 
+                                                    39 max 
                                                     lfortran_intrinsic_math2 
                                                     [] 
                                                     max 
@@ -659,9 +659,9 @@
                                                 ), 
                                             max@imax:
                                                 (ExternalSymbol 
-                                                    38 
+                                                    37 
                                                     max@imax 
-                                                    40 imax 
+                                                    39 imax 
                                                     lfortran_intrinsic_math2 
                                                     [] 
                                                     imax 
@@ -669,7 +669,7 @@
                                                 ), 
                                             output_length:
                                                 (Variable 
-                                                    38 
+                                                    37 
                                                     output_length 
                                                     [] 
                                                     In 
@@ -684,7 +684,7 @@
                                                 ), 
                                             pad_with:
                                                 (Variable 
-                                                    38 
+                                                    37 
                                                     pad_with 
                                                     [] 
                                                     In 
@@ -699,7 +699,7 @@
                                                 ), 
                                             res:
                                                 (Variable 
-                                                    38 
+                                                    37 
                                                     res 
                                                     [string
                                                     output_length] 
@@ -708,17 +708,17 @@
                                                     () 
                                                     Default 
                                                     (Character 1 -3 (FunctionCall 
-                                                        38 max@imax 
-                                                        38 max 
+                                                        37 max@imax 
+                                                        37 max 
                                                         [((FunctionCall 
-                                                            38 len 
+                                                            37 len 
                                                             () 
-                                                            [((Var 38 string))] 
+                                                            [((Var 37 string))] 
                                                             (Integer 4 []) 
                                                             () 
                                                             ()
                                                         ))
-                                                        ((Var 38 output_length))] 
+                                                        ((Var 37 output_length))] 
                                                         (Integer 4 []) 
                                                         () 
                                                         ()
@@ -730,7 +730,7 @@
                                                 ), 
                                             string:
                                                 (Variable 
-                                                    38 
+                                                    37 
                                                     string 
                                                     [] 
                                                     In 
@@ -745,7 +745,7 @@
                                                 ), 
                                             string_length:
                                                 (Variable 
-                                                    38 
+                                                    37 
                                                     string_length 
                                                     [] 
                                                     Local 
@@ -763,11 +763,11 @@
                                     padl_char_pad_with 
                                     [len
                                     max@imax] 
-                                    [(Var 38 string)
-                                    (Var 38 output_length)
-                                    (Var 38 pad_with)] 
+                                    [(Var 37 string)
+                                    (Var 37 output_length)
+                                    (Var 37 pad_with)] 
                                     [] 
-                                    (Var 38 res) 
+                                    (Var 37 res) 
                                     Source 
                                     Public 
                                     Implementation 
@@ -782,6 +782,194 @@
                                     .false.
                                 ), 
                             padl_string_default:
+                                (Function 
+                                    (SymbolTable
+                                        34
+                                        {
+                                            char@char_string:
+                                                (ExternalSymbol 
+                                                    34 
+                                                    char@char_string 
+                                                    2 char_string 
+                                                    stdlib_string_type 
+                                                    [] 
+                                                    char_string 
+                                                    Private
+                                                ), 
+                                            imax:
+                                                (ExternalSymbol 
+                                                    34 
+                                                    imax 
+                                                    39 imax 
+                                                    lfortran_intrinsic_math2 
+                                                    [] 
+                                                    imax 
+                                                    Private
+                                                ), 
+                                            len:
+                                                (ExternalSymbol 
+                                                    34 
+                                                    len 
+                                                    9 len 
+                                                    lfortran_intrinsic_builtin 
+                                                    [] 
+                                                    len 
+                                                    Private
+                                                ), 
+                                            len_string:
+                                                (ExternalSymbol 
+                                                    34 
+                                                    len_string 
+                                                    2 len_string 
+                                                    stdlib_string_type 
+                                                    [] 
+                                                    len_string 
+                                                    Private
+                                                ), 
+                                            output_length:
+                                                (Variable 
+                                                    34 
+                                                    output_length 
+                                                    [] 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            res:
+                                                (Variable 
+                                                    34 
+                                                    res 
+                                                    [] 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Struct 
+                                                        6 string_type 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            string:
+                                                (Variable 
+                                                    34 
+                                                    string 
+                                                    [] 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Struct 
+                                                        6 string_type 
+                                                        []
+                                                    ) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    padl_string_default 
+                                    [char@char_string
+                                    imax
+                                    len
+                                    len_string
+                                    padl_char_pad_with] 
+                                    [(Var 34 string)
+                                    (Var 34 output_length)] 
+                                    [(= 
+                                        (Var 34 res) 
+                                        (StructTypeConstructor 
+                                            6 string_type 
+                                            [(FunctionCall 
+                                                6 padl_char_pad_with 
+                                                6 padl 
+                                                [((FunctionCall 
+                                                    34 char@char_string 
+                                                    6 char 
+                                                    [((Var 34 string))] 
+                                                    (Character 1 -3 (FunctionCall 
+                                                        34 len_string 
+                                                        2 len 
+                                                        [((Var 34 string))] 
+                                                        (Integer 4 []) 
+                                                        () 
+                                                        ()
+                                                    ) []) 
+                                                    () 
+                                                    ()
+                                                ))
+                                                ((Var 34 output_length))
+                                                ((StringConstant 
+                                                    " " 
+                                                    (Character 1 1 () [])
+                                                ))] 
+                                                (Character 1 -3 (FunctionCall 
+                                                    34 imax 
+                                                    37 max 
+                                                    [((FunctionCall 
+                                                        34 len 
+                                                        () 
+                                                        [((FunctionCall 
+                                                            34 char@char_string 
+                                                            6 char 
+                                                            [((Var 34 string))] 
+                                                            (Character 1 -3 (FunctionCall 
+                                                                34 len_string 
+                                                                2 len 
+                                                                [((Var 34 string))] 
+                                                                (Integer 4 []) 
+                                                                () 
+                                                                ()
+                                                            ) []) 
+                                                            () 
+                                                            ()
+                                                        ))] 
+                                                        (Integer 4 []) 
+                                                        () 
+                                                        ()
+                                                    ))
+                                                    ((Var 34 output_length))] 
+                                                    (Integer 4 []) 
+                                                    () 
+                                                    ()
+                                                ) []) 
+                                                () 
+                                                ()
+                                            )] 
+                                            (Struct 
+                                                6 string_type 
+                                                []
+                                            ) 
+                                            ()
+                                        ) 
+                                        ()
+                                    )] 
+                                    (Var 34 res) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                ), 
+                            padl_string_pad_with:
                                 (Function 
                                     (SymbolTable
                                         35
@@ -800,7 +988,7 @@
                                                 (ExternalSymbol 
                                                     35 
                                                     imax 
-                                                    40 imax 
+                                                    39 imax 
                                                     lfortran_intrinsic_math2 
                                                     [] 
                                                     imax 
@@ -841,6 +1029,21 @@
                                                     Required 
                                                     .false.
                                                 ), 
+                                            pad_with:
+                                                (Variable 
+                                                    35 
+                                                    pad_with 
+                                                    [] 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Character 1 1 () []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
                                             res:
                                                 (Variable 
                                                     35 
@@ -879,14 +1082,15 @@
                                                 )
                                             
                                         }) 
-                                    padl_string_default 
+                                    padl_string_pad_with 
                                     [char@char_string
                                     imax
                                     len
                                     len_string
                                     padl_char_pad_with] 
                                     [(Var 35 string)
-                                    (Var 35 output_length)] 
+                                    (Var 35 output_length)
+                                    (Var 35 pad_with)] 
                                     [(= 
                                         (Var 35 res) 
                                         (StructTypeConstructor 
@@ -910,13 +1114,10 @@
                                                     ()
                                                 ))
                                                 ((Var 35 output_length))
-                                                ((StringConstant 
-                                                    " " 
-                                                    (Character 1 1 () [])
-                                                ))] 
+                                                ((Var 35 pad_with))] 
                                                 (Character 1 -3 (FunctionCall 
                                                     35 imax 
-                                                    38 max 
+                                                    37 max 
                                                     [((FunctionCall 
                                                         35 len 
                                                         () 
@@ -969,207 +1170,6 @@
                                     [] 
                                     .false.
                                 ), 
-                            padl_string_pad_with:
-                                (Function 
-                                    (SymbolTable
-                                        36
-                                        {
-                                            char@char_string:
-                                                (ExternalSymbol 
-                                                    36 
-                                                    char@char_string 
-                                                    2 char_string 
-                                                    stdlib_string_type 
-                                                    [] 
-                                                    char_string 
-                                                    Private
-                                                ), 
-                                            imax:
-                                                (ExternalSymbol 
-                                                    36 
-                                                    imax 
-                                                    40 imax 
-                                                    lfortran_intrinsic_math2 
-                                                    [] 
-                                                    imax 
-                                                    Private
-                                                ), 
-                                            len:
-                                                (ExternalSymbol 
-                                                    36 
-                                                    len 
-                                                    9 len 
-                                                    lfortran_intrinsic_builtin 
-                                                    [] 
-                                                    len 
-                                                    Private
-                                                ), 
-                                            len_string:
-                                                (ExternalSymbol 
-                                                    36 
-                                                    len_string 
-                                                    2 len_string 
-                                                    stdlib_string_type 
-                                                    [] 
-                                                    len_string 
-                                                    Private
-                                                ), 
-                                            output_length:
-                                                (Variable 
-                                                    36 
-                                                    output_length 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
-                                                    .false.
-                                                ), 
-                                            pad_with:
-                                                (Variable 
-                                                    36 
-                                                    pad_with 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Character 1 1 () []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
-                                                    .false.
-                                                ), 
-                                            res:
-                                                (Variable 
-                                                    36 
-                                                    res 
-                                                    [] 
-                                                    ReturnVar 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Struct 
-                                                        6 string_type 
-                                                        []
-                                                    ) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
-                                                    .false.
-                                                ), 
-                                            string:
-                                                (Variable 
-                                                    36 
-                                                    string 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Struct 
-                                                        6 string_type 
-                                                        []
-                                                    ) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
-                                                    .false.
-                                                )
-                                            
-                                        }) 
-                                    padl_string_pad_with 
-                                    [char@char_string
-                                    imax
-                                    len
-                                    len_string
-                                    padl_char_pad_with] 
-                                    [(Var 36 string)
-                                    (Var 36 output_length)
-                                    (Var 36 pad_with)] 
-                                    [(= 
-                                        (Var 36 res) 
-                                        (StructTypeConstructor 
-                                            6 string_type 
-                                            [(FunctionCall 
-                                                6 padl_char_pad_with 
-                                                6 padl 
-                                                [((FunctionCall 
-                                                    36 char@char_string 
-                                                    6 char 
-                                                    [((Var 36 string))] 
-                                                    (Character 1 -3 (FunctionCall 
-                                                        36 len_string 
-                                                        2 len 
-                                                        [((Var 36 string))] 
-                                                        (Integer 4 []) 
-                                                        () 
-                                                        ()
-                                                    ) []) 
-                                                    () 
-                                                    ()
-                                                ))
-                                                ((Var 36 output_length))
-                                                ((Var 36 pad_with))] 
-                                                (Character 1 -3 (FunctionCall 
-                                                    36 imax 
-                                                    38 max 
-                                                    [((FunctionCall 
-                                                        36 len 
-                                                        () 
-                                                        [((FunctionCall 
-                                                            36 char@char_string 
-                                                            6 char 
-                                                            [((Var 36 string))] 
-                                                            (Character 1 -3 (FunctionCall 
-                                                                36 len_string 
-                                                                2 len 
-                                                                [((Var 36 string))] 
-                                                                (Integer 4 []) 
-                                                                () 
-                                                                ()
-                                                            ) []) 
-                                                            () 
-                                                            ()
-                                                        ))] 
-                                                        (Integer 4 []) 
-                                                        () 
-                                                        ()
-                                                    ))
-                                                    ((Var 36 output_length))] 
-                                                    (Integer 4 []) 
-                                                    () 
-                                                    ()
-                                                ) []) 
-                                                () 
-                                                ()
-                                            )] 
-                                            (Struct 
-                                                6 string_type 
-                                                []
-                                            ) 
-                                            ()
-                                        ) 
-                                        ()
-                                    )] 
-                                    (Var 36 res) 
-                                    Source 
-                                    Public 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
-                                    .false.
-                                ), 
                             string_type:
                                 (ExternalSymbol 
                                     6 
@@ -1193,11 +1193,11 @@
             stdlib_strings_use:
                 (Program 
                     (SymbolTable
-                        107
+                        106
                         {
                             char:
                                 (ExternalSymbol 
-                                    107 
+                                    106 
                                     char 
                                     2 char 
                                     stdlib_string_type 
@@ -1207,7 +1207,7 @@
                                 ), 
                             char_string:
                                 (ExternalSymbol 
-                                    107 
+                                    106 
                                     char_string 
                                     2 char_string 
                                     stdlib_string_type 
@@ -1217,7 +1217,7 @@
                                 ), 
                             compute_lps:
                                 (ExternalSymbol 
-                                    107 
+                                    106 
                                     compute_lps 
                                     6 compute_lps 
                                     stdlib_strings 
@@ -1227,7 +1227,7 @@
                                 ), 
                             compute_lps_use:
                                 (ExternalSymbol 
-                                    107 
+                                    106 
                                     compute_lps_use 
                                     6 compute_lps_use 
                                     stdlib_strings 
@@ -1237,7 +1237,7 @@
                                 ), 
                             compute_lps_use1:
                                 (ExternalSymbol 
-                                    107 
+                                    106 
                                     compute_lps_use1 
                                     6 compute_lps_use1 
                                     stdlib_strings 
@@ -1247,7 +1247,7 @@
                                 ), 
                             len:
                                 (ExternalSymbol 
-                                    107 
+                                    106 
                                     len 
                                     2 len 
                                     stdlib_string_type 
@@ -1257,7 +1257,7 @@
                                 ), 
                             len_string:
                                 (ExternalSymbol 
-                                    107 
+                                    106 
                                     len_string 
                                     2 len_string 
                                     stdlib_string_type 
@@ -1267,7 +1267,7 @@
                                 ), 
                             padl:
                                 (ExternalSymbol 
-                                    107 
+                                    106 
                                     padl 
                                     6 padl 
                                     stdlib_strings 
@@ -1277,7 +1277,7 @@
                                 ), 
                             padl_char_default:
                                 (ExternalSymbol 
-                                    107 
+                                    106 
                                     padl_char_default 
                                     6 padl_char_default 
                                     stdlib_strings 
@@ -1287,7 +1287,7 @@
                                 ), 
                             padl_char_pad_with:
                                 (ExternalSymbol 
-                                    107 
+                                    106 
                                     padl_char_pad_with 
                                     6 padl_char_pad_with 
                                     stdlib_strings 
@@ -1297,7 +1297,7 @@
                                 ), 
                             padl_string_default:
                                 (ExternalSymbol 
-                                    107 
+                                    106 
                                     padl_string_default 
                                     6 padl_string_default 
                                     stdlib_strings 
@@ -1307,7 +1307,7 @@
                                 ), 
                             padl_string_pad_with:
                                 (ExternalSymbol 
-                                    107 
+                                    106 
                                     padl_string_pad_with 
                                     6 padl_string_pad_with 
                                     stdlib_strings 
@@ -1317,7 +1317,7 @@
                                 ), 
                             string_type:
                                 (ExternalSymbol 
-                                    107 
+                                    106 
                                     string_type 
                                     2 string_type 
                                     stdlib_string_type 

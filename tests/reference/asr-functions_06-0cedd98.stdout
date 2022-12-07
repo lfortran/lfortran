@@ -5,11 +5,11 @@
             functions_06:
                 (Program 
                     (SymbolTable
-                        31
+                        30
                         {
                             int_return:
                                 (ExternalSymbol 
-                                    31 
+                                    30 
                                     int_return 
                                     2 int_return 
                                     functions_06_m 
@@ -19,7 +19,7 @@
                                 ), 
                             len:
                                 (ExternalSymbol 
-                                    31 
+                                    30 
                                     len 
                                     6 len 
                                     lfortran_intrinsic_builtin 
@@ -29,7 +29,7 @@
                                 ), 
                             real_return:
                                 (ExternalSymbol 
-                                    31 
+                                    30 
                                     real_return 
                                     2 real_return 
                                     functions_06_m 
@@ -39,7 +39,7 @@
                                 ), 
                             string:
                                 (Variable 
-                                    31 
+                                    30 
                                     string 
                                     [] 
                                     Local 
@@ -57,7 +57,7 @@
                                 ), 
                             trim_wrapper:
                                 (ExternalSymbol 
-                                    31 
+                                    30 
                                     trim_wrapper 
                                     2 trim_wrapper 
                                     functions_06_m 
@@ -72,13 +72,13 @@
                     [(Print 
                         () 
                         [(FunctionCall 
-                            31 trim_wrapper 
+                            30 trim_wrapper 
                             () 
-                            [((Var 31 string))] 
+                            [((Var 30 string))] 
                             (Character 1 -3 (FunctionCall 
-                                31 len 
+                                30 len 
                                 () 
-                                [((Var 31 string))] 
+                                [((Var 30 string))] 
                                 (Integer 4 []) 
                                 () 
                                 ()
@@ -92,14 +92,14 @@
                     (Print 
                         () 
                         [(FunctionCall 
-                            31 int_return 
+                            30 int_return 
                             () 
-                            [((Var 31 string))] 
+                            [((Var 30 string))] 
                             (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
                             (FunctionCall 
-                                31 len 
+                                30 len 
                                 () 
-                                [((Var 31 string))] 
+                                [((Var 30 string))] 
                                 (Integer 4 []) 
                                 () 
                                 ()
@@ -113,14 +113,14 @@
                     (Print 
                         () 
                         [(FunctionCall 
-                            31 real_return 
+                            30 real_return 
                             () 
-                            [((Var 31 string))] 
+                            [((Var 30 string))] 
                             (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
                             (FunctionCall 
-                                31 len 
+                                30 len 
                                 () 
-                                [((Var 31 string))] 
+                                [((Var 30 string))] 
                                 (Integer 4 []) 
                                 () 
                                 ()
@@ -254,11 +254,11 @@
                             real_return:
                                 (Function 
                                     (SymbolTable
-                                        30
+                                        29
                                         {
                                             i:
                                                 (Variable 
-                                                    30 
+                                                    29 
                                                     i 
                                                     [] 
                                                     Local 
@@ -273,7 +273,7 @@
                                                 ), 
                                             len:
                                                 (ExternalSymbol 
-                                                    30 
+                                                    29 
                                                     len 
                                                     6 len 
                                                     lfortran_intrinsic_builtin 
@@ -283,7 +283,7 @@
                                                 ), 
                                             r:
                                                 (Variable 
-                                                    30 
+                                                    29 
                                                     r 
                                                     [s] 
                                                     ReturnVar 
@@ -292,9 +292,9 @@
                                                     Default 
                                                     (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
                                                     (FunctionCall 
-                                                        30 len 
+                                                        29 len 
                                                         () 
-                                                        [((Var 30 s))] 
+                                                        [((Var 29 s))] 
                                                         (Integer 4 []) 
                                                         () 
                                                         ()
@@ -306,7 +306,7 @@
                                                 ), 
                                             s:
                                                 (Variable 
-                                                    30 
+                                                    29 
                                                     s 
                                                     [] 
                                                     Unspecified 
@@ -324,14 +324,14 @@
                                     real_return 
                                     [len
                                     len] 
-                                    [(Var 30 s)] 
+                                    [(Var 29 s)] 
                                     [(DoLoop 
-                                        ((Var 30 i) 
+                                        ((Var 29 i) 
                                         (IntegerConstant 1 (Integer 4 [])) 
                                         (FunctionCall 
-                                            30 len 
+                                            29 len 
                                             () 
-                                            [((Var 30 s))] 
+                                            [((Var 29 s))] 
                                             (Integer 4 []) 
                                             () 
                                             ()
@@ -339,9 +339,9 @@
                                         ()) 
                                         [(= 
                                             (ArrayItem 
-                                                (Var 30 r) 
+                                                (Var 29 r) 
                                                 [(() 
-                                                (Var 30 i) 
+                                                (Var 29 i) 
                                                 ())] 
                                                 (Real 4 []) 
                                                 ColMajor 
@@ -354,7 +354,7 @@
                                             ()
                                         )]
                                     )] 
-                                    (Var 30 r) 
+                                    (Var 29 r) 
                                     Source 
                                     Public 
                                     Implementation 
@@ -387,7 +387,7 @@
                                                 (ExternalSymbol 
                                                     3 
                                                     len_trim 
-                                                    33 len_trim 
+                                                    32 len_trim 
                                                     lfortran_intrinsic_string 
                                                     [] 
                                                     len_trim 
@@ -434,7 +434,7 @@
                                                 (ExternalSymbol 
                                                     3 
                                                     trim 
-                                                    33 trim 
+                                                    32 trim 
                                                     lfortran_intrinsic_string 
                                                     [] 
                                                     trim 
