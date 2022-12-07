@@ -170,4 +170,16 @@ subroutine date_and_time(date, time, zone, values)
     integer, intent(out), optional :: values(8)
 end subroutine
 
+integer function scan_kind4(string, set, back) result(r)
+    character(len=*) :: string
+    character(len=*) :: set
+    logical, optional :: back
+end function
+
+integer(8) function scan_kind8(string, set, back) result(r)
+    character(len=*) :: string
+    character(len=*) :: set
+    logical, optional :: back
+end function
+
 end module

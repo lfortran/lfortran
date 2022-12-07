@@ -2874,10 +2874,58 @@ public:
         return ASR::make_Iachar_t(al, x.base.base.loc, arg, type, iachar_value);
     }
 
+    int64_t create_ScanVerify_util(const AST::FuncCallOrArray_t& x,
+        ASR::expr_t*& string, ASR::expr_t*& set, ASR::expr_t*& back,
+        ASR::ttype_t*& type, std::string func_name) {
+        ASR::expr_t* kind = nullptr;
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"back", "kind"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 2, 4, func_name);
+        string = args[0], set = args[1], back = args[2], kind = args[3];
+        int64_t kind_value = handle_kind(kind);
+        type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_value, nullptr, 0));
+        return kind_value;
+    }
+
+    ASR::asr_t* create_Scan(const AST::FuncCallOrArray_t& x) {
+        ASR::expr_t *string, *set, *back;
+        ASR::ttype_t *type;
+        string = nullptr, set = nullptr, back = nullptr;
+        type = nullptr;
+        int64_t kind_value = create_ScanVerify_util(x, string, set, back, type, "scan");
+        std::string function_name = "scan_kind" + std::to_string(kind_value);
+
+        ASR::call_arg_t string_arg, set_arg, back_arg;
+        string_arg.loc = string->base.loc;
+        string_arg.m_value = string;
+        if( set ) {
+            set_arg.loc = set->base.loc;
+        } else {
+            set_arg.loc = x.base.base.loc;
+        }
+        set_arg.m_value = set;
+        if( back ) {
+            back_arg.loc = back->base.loc;
+        } else {
+            back_arg.loc = x.base.base.loc;
+        }
+        back_arg.m_value = back;
+
+        Vec<ASR::call_arg_t> scan_args;
+        scan_args.reserve(al, 3);
+        scan_args.push_back(al, string_arg);
+        scan_args.push_back(al, set_arg);
+        scan_args.push_back(al, back_arg);
+        ASR::symbol_t* scan_function = resolve_intrinsic_function(x.base.base.loc, function_name);
+        return ASR::make_FunctionCall_t(al, x.base.base.loc, scan_function, nullptr, scan_args.p,
+            scan_args.size(), type, nullptr, nullptr);
+    }
+
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
-        if( intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ) {
+        if( intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
+            intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ) {
             is_function = false;
             if( var_name == "size" ) {
                 tmp = create_ArraySize(x);
@@ -2903,6 +2951,8 @@ public:
                 tmp = create_Iachar(x);
             } else if( var_name == "maxloc" ) {
                 tmp = create_ArrayMaxloc(x);
+            } else if( var_name == "scan" ) {
+                tmp = create_Scan(x);
             } else {
                 LCompilersException("create_" + var_name + " not implemented yet.");
             }

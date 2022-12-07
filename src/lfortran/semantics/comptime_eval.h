@@ -19,6 +19,7 @@ struct IntrinsicProceduresAsASRNodes {
     private:
 
         std::set<std::string> intrinsics_present_in_ASR;
+        std::set<std::string> kind_based_intrinsics;
 
     public:
 
@@ -26,10 +27,16 @@ struct IntrinsicProceduresAsASRNodes {
             intrinsics_present_in_ASR = {"size", "lbound", "ubound",
                 "transpose", "matmul", "pack", "transfer", "cmplx",
                 "dcmplx", "reshape", "ichar", "iachar", "maxloc"};
+
+            kind_based_intrinsics = {"scan", "verify"};
         }
 
         bool is_intrinsic_present_in_ASR(std::string& name) {
             return intrinsics_present_in_ASR.find(name) != intrinsics_present_in_ASR.end();
+        }
+
+        bool is_kind_based_selection_required(std::string& name) {
+            return kind_based_intrinsics.find(name) != kind_based_intrinsics.end();
         }
 
 };
@@ -169,6 +176,8 @@ struct IntrinsicProcedures {
             {"len_adjustl", {m_string, &not_implemented, false}},
             {"repeat", {m_string, &not_implemented, false}},
             {"new_line", {m_string, &eval_new_line, false}},
+            {"scan_kind4", {m_string, &not_implemented, false}},
+            {"scan_kind8", {m_string, &not_implemented, false}},
 
             // Subroutines
             {"cpu_time", {m_math, &not_implemented, false}},
