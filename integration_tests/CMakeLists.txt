@@ -424,6 +424,7 @@ RUN(NAME interface_10 LABELS gfortran llvm)
 RUN(NAME implicit_interface_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_02 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_03 LABELS gfortran llvmImplicit)
+RUN(NAME implicit_interface_04 LABELS gfortran llvmImplicit)
 
 RUN(NAME generic_name_01 LABELS gfortran llvm)
 
