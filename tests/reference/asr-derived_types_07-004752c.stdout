@@ -27,6 +27,7 @@
                                                 (Variable 
                                                     4 
                                                     iostat 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -41,6 +42,7 @@
                                                 (Variable 
                                                     4 
                                                     message 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -55,6 +57,7 @@
                                                 (Variable 
                                                     4 
                                                     self 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -72,6 +75,7 @@
                                                 (Variable 
                                                     4 
                                                     unit 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -111,6 +115,7 @@
                                                 (Variable 
                                                     3 
                                                     add_blank_line 
+                                                    [] 
                                                     Local 
                                                     (LogicalConstant 
                                                         .false. 
@@ -128,6 +133,7 @@
                                                 (Variable 
                                                     3 
                                                     log_units 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -143,6 +149,7 @@
                                                 (Variable 
                                                     3 
                                                     max_width 
+                                                    [] 
                                                     Local 
                                                     (IntegerConstant 0 (Integer 4 [])) 
                                                     () 

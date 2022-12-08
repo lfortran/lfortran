@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     prec1 
+                                    [] 
                                     Local 
                                     (IntegerConstant 4 (Integer 4 [])) 
                                     (IntegerConstant 4 (Integer 4 [])) 
@@ -25,6 +26,7 @@
                                 (Variable 
                                     2 
                                     prec2 
+                                    [] 
                                     Local 
                                     (IntegerConstant 8 (Integer 4 [])) 
                                     (IntegerConstant 8 (Integer 4 [])) 
@@ -39,6 +41,7 @@
                                 (Variable 
                                     2 
                                     u 
+                                    [] 
                                     Local 
                                     (RealConstant 
                                         1.050000 
@@ -56,6 +59,7 @@
                                 (Variable 
                                     2 
                                     v 
+                                    [] 
                                     Local 
                                     (Cast 
                                         (RealConstant 
@@ -81,6 +85,7 @@
                                 (Variable 
                                     2 
                                     zero 
+                                    [] 
                                     Local 
                                     (Cast 
                                         (RealConstant 

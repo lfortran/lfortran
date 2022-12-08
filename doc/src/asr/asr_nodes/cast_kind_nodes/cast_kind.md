@@ -6,7 +6,7 @@ Cast Kind nodes or cast kind types.
 
 ### Syntax
 
-```fortran
+```
 cast_kind
     = RealToInteger
     | IntegerToReal
@@ -88,7 +88,7 @@ end program
 
 ASR:
 
-```fortran
+```
 (TranslationUnit
     (SymbolTable
         1
@@ -182,7 +182,7 @@ end program
 
 ASR:
 
-```fortran
+```
 (TranslationUnit
     (SymbolTable
         1
@@ -275,7 +275,7 @@ end program
 
 ASR:
 
-```fortran
+```
 (TranslationUnit
     (SymbolTable
         1
@@ -398,7 +398,7 @@ end program logical4
 
 ASR:
 
-```fortran
+```
 (TranslationUnit
     (SymbolTable
         1

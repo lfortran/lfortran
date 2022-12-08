@@ -11,6 +11,8 @@
                                 (Variable 
                                     2 
                                     a 
+                                    [j
+                                    j] 
                                     Local 
                                     (Cast 
                                         (ArrayConstant 
@@ -51,6 +53,8 @@
                                 (Variable 
                                     2 
                                     b 
+                                    [j
+                                    j] 
                                     Local 
                                     (Cast 
                                         (ArrayConstant 
@@ -91,6 +95,7 @@
                                 (Variable 
                                     2 
                                     i 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -105,6 +110,7 @@
                                 (Variable 
                                     2 
                                     j 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -119,6 +125,7 @@
                                 (Variable 
                                     2 
                                     k 
+                                    [] 
                                     Local 
                                     () 
                                     () 

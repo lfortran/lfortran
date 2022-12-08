@@ -1161,3 +1161,11 @@ LFORTRAN_API void _lpython_close(int64_t fd)
         exit(1);
     }
 }
+
+LFORTRAN_API int32_t _lfortran_ichar(char *c) {
+    return (int32_t) c[0];
+}
+
+LFORTRAN_API int32_t _lfortran_iachar(char *c) {
+    return (int32_t) c[0];
+}

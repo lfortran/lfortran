@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     a1 
+                                    [] 
                                     Local 
                                     (RealConstant 
                                         3.300000 
@@ -31,6 +32,7 @@
                                 (Variable 
                                     2 
                                     a2 
+                                    [] 
                                     Local 
                                     (RealConstant 
                                         3.500000 
@@ -51,6 +53,7 @@
                                 (Variable 
                                     2 
                                     a3 
+                                    [] 
                                     Local 
                                     (RealConstant 
                                         3.700000 
@@ -71,6 +74,7 @@
                                 (Variable 
                                     2 
                                     b1 
+                                    [] 
                                     Local 
                                     (RealUnaryMinus 
                                         (RealConstant 
@@ -98,6 +102,7 @@
                                 (Variable 
                                     2 
                                     b2 
+                                    [] 
                                     Local 
                                     (RealUnaryMinus 
                                         (RealConstant 
@@ -125,6 +130,7 @@
                                 (Variable 
                                     2 
                                     b3 
+                                    [] 
                                     Local 
                                     (RealUnaryMinus 
                                         (RealConstant 
@@ -172,6 +178,7 @@
                                 (Variable 
                                     2 
                                     x1 
+                                    [a1] 
                                     Local 
                                     (FunctionCall 
                                         2 floor@sfloor_i32 
@@ -194,6 +201,7 @@
                                 (Variable 
                                     2 
                                     x2 
+                                    [a2] 
                                     Local 
                                     (FunctionCall 
                                         2 floor@sfloor_i32 
@@ -216,6 +224,7 @@
                                 (Variable 
                                     2 
                                     x3 
+                                    [a3] 
                                     Local 
                                     (FunctionCall 
                                         2 floor@sfloor_i32 
@@ -238,6 +247,7 @@
                                 (Variable 
                                     2 
                                     y1 
+                                    [b1] 
                                     Local 
                                     (FunctionCall 
                                         2 floor@sfloor_i32 
@@ -260,6 +270,7 @@
                                 (Variable 
                                     2 
                                     y2 
+                                    [b2] 
                                     Local 
                                     (FunctionCall 
                                         2 floor@sfloor_i32 
@@ -282,6 +293,7 @@
                                 (Variable 
                                     2 
                                     y3 
+                                    [b3] 
                                     Local 
                                     (FunctionCall 
                                         2 floor@sfloor_i32 

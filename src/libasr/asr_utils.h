@@ -111,6 +111,23 @@ static inline ASR::ttype_t* symbol_type(const ASR::symbol_t *f)
     return nullptr;
 }
 
+static inline ASR::abiType symbol_abi(const ASR::symbol_t *f)
+{
+    switch( f->type ) {
+        case ASR::symbolType::Variable: {
+            return ASR::down_cast<ASR::Variable_t>(f)->m_abi;
+        }
+        case ASR::symbolType::EnumType: {
+            return ASR::down_cast<ASR::EnumType_t>(f)->m_abi;
+        }
+        default: {
+            throw LCompilersException("Cannot return ABI of, " +
+                                    std::to_string(f->type) + " symbol.");
+        }
+    }
+    return ASR::abiType::Source;
+}
+
 static inline ASR::ttype_t* get_contained_type(ASR::ttype_t* asr_type) {
     switch( asr_type->type ) {
         case ASR::ttypeType::List: {
@@ -135,6 +152,20 @@ static inline ASR::ttype_t* get_contained_type(ASR::ttype_t* asr_type) {
         default: {
             return asr_type;
         }
+    }
+}
+
+static inline ASR::abiType expr_abi(ASR::expr_t* e) {
+    switch( e->type ) {
+        case ASR::exprType::Var: {
+            return ASRUtils::symbol_abi(ASR::down_cast<ASR::Var_t>(e)->m_v);
+        }
+        case ASR::exprType::StructInstanceMember: {
+            return ASRUtils::symbol_abi(ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m);
+        }
+        default:
+            throw LCompilersException("Cannot extract the ABI of " +
+                    std::to_string(e->type) + " expression.");
     }
 }
 
@@ -1127,6 +1158,9 @@ std::vector<std::string> determine_module_dependencies(
 std::vector<std::string> determine_function_definition_order(
          SymbolTable* symtab);
 
+std::vector<std::string> determine_variable_declaration_order(
+         SymbolTable* symtab);
+
 void extract_module_python(const ASR::TranslationUnit_t &m,
         std::vector<std::pair<std::string, ASR::Module_t*>>& children_modules,
         std::string module_name);
@@ -1154,6 +1188,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     ASR::binopType op, std::string& intrinsic_op_name,
                     SymbolTable* curr_scope, ASR::asr_t*& asr,
                     Allocator &al, const Location& loc,
+                    std::set<std::string>& current_function_dependencies,
+                    Vec<char*>& current_module_dependencies,
                     const std::function<void (const std::string &, const Location &)> err);
 
 bool is_op_overloaded(ASR::binopType op, std::string& intrinsic_op_name,
@@ -1163,6 +1199,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     ASR::cmpopType op, std::string& intrinsic_op_name,
                     SymbolTable* curr_scope, ASR::asr_t*& asr,
                     Allocator &al, const Location& loc,
+                    std::set<std::string>& current_function_dependencies,
+                    Vec<char*>& current_module_dependencies,
                     const std::function<void (const std::string &, const Location &)> err);
 
 bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
@@ -1171,6 +1209,8 @@ bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
 bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                SymbolTable* curr_scope, ASR::asr_t*& asr,
                                Allocator &al, const Location& loc,
+                               std::set<std::string>& current_function_dependencies,
+                               Vec<char*>& /*current_module_dependencies*/,
                                const std::function<void (const std::string &, const Location &)> err);
 
 void set_intrinsic(ASR::symbol_t* sym);
@@ -1381,6 +1421,19 @@ inline int extract_dimensions_from_ttype(ASR::ttype_t *x,
     return n_dims;
 }
 
+static inline bool is_fixed_size_array(ASR::dimension_t* m_dims, size_t n_dims) {
+    if( n_dims == 0 ) {
+        return false;
+    }
+    for( size_t i = 0; i < n_dims; i++ ) {
+        int64_t dim_size = -1;
+        if( !ASRUtils::extract_value(ASRUtils::expr_value(m_dims[i].m_length), dim_size) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
 inline int extract_n_dims_from_ttype(ASR::ttype_t *x) {
     ASR::dimension_t* m_dims_temp = nullptr;
     return extract_dimensions_from_ttype(x, m_dims_temp);
@@ -1452,6 +1505,17 @@ inline bool ttype_set_dimensions(ASR::ttype_t *x,
 inline bool is_array(ASR::ttype_t *x) {
     ASR::dimension_t* dims = nullptr;
     return extract_dimensions_from_ttype(x, dims) > 0;
+}
+
+static inline bool is_aggregate_type(ASR::ttype_t* asr_type) {
+    if( ASR::is_a<ASR::Const_t>(*asr_type) ) {
+        asr_type = ASR::down_cast<ASR::Const_t>(asr_type)->m_type;
+    }
+    return ASRUtils::is_array(asr_type) ||
+            !(ASR::is_a<ASR::Integer_t>(*asr_type) ||
+            ASR::is_a<ASR::Real_t>(*asr_type) ||
+            ASR::is_a<ASR::Complex_t>(*asr_type) ||
+            ASR::is_a<ASR::Logical_t>(*asr_type));
 }
 
 static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
@@ -1825,12 +1889,15 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
 
     Vec<ASR::call_arg_t>& orig_args;
 
+    std::set<std::string>& current_function_dependencies;
+
     public:
 
     ReplaceArgVisitor(Allocator& al_, SymbolTable* current_scope_,
-                      ASR::Function_t* orig_func_, Vec<ASR::call_arg_t>& orig_args_) :
+                      ASR::Function_t* orig_func_, Vec<ASR::call_arg_t>& orig_args_,
+                      std::set<std::string>& current_function_dependencies_) :
         al(al_), current_scope(current_scope_), orig_func(orig_func_),
-        orig_args(orig_args_)
+        orig_args(orig_args_), current_function_dependencies(current_function_dependencies_)
     {}
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
@@ -1886,6 +1953,7 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
             replace_expr(x->m_args[i].m_value);
             current_expr = current_expr_copy_;
         }
+        current_function_dependencies.insert(std::string(ASRUtils::symbol_name(new_es)));
         x->m_name = new_es;
     }
 
@@ -2194,6 +2262,38 @@ static inline ASR::EnumType_t* get_EnumType_from_symbol(ASR::symbol_t* s) {
     ASR::symbol_t* enum_type_cand = ASR::down_cast<ASR::symbol_t>(s_var->m_parent_symtab->asr_owner);
     LFORTRAN_ASSERT(ASR::is_a<ASR::EnumType_t>(*enum_type_cand));
     return ASR::down_cast<ASR::EnumType_t>(enum_type_cand);
+}
+
+class CollectIdentifiersFromASRExpression: public ASR::BaseWalkVisitor<CollectIdentifiersFromASRExpression> {
+    private:
+
+        Allocator& al;
+        Vec<char*>& identifiers;
+
+    public:
+
+        CollectIdentifiersFromASRExpression(Allocator& al_, Vec<char*>& identifiers_) :
+        al(al_), identifiers(identifiers_)
+        {}
+
+        void visit_Var(const ASR::Var_t& x) {
+            identifiers.push_back(al, ASRUtils::symbol_name(x.m_v));
+        }
+};
+
+static inline void collect_variable_dependencies(Allocator& al, Vec<char*>& deps_vec,
+    ASR::ttype_t* type=nullptr, ASR::expr_t* init_expr=nullptr,
+    ASR::expr_t* value=nullptr) {
+    ASRUtils::CollectIdentifiersFromASRExpression collector(al, deps_vec);
+    if( init_expr ) {
+        collector.visit_expr(*init_expr);
+    }
+    if( value ) {
+        collector.visit_expr(*value);
+    }
+    if( type ) {
+        collector.visit_ttype(*type);
+    }
 }
 
 } // namespace ASRUtils

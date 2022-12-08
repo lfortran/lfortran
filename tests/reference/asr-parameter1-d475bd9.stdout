@@ -51,6 +51,7 @@
                                 (Variable 
                                     2 
                                     p66 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -65,6 +66,7 @@
                                 (Variable 
                                     2 
                                     s 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -79,6 +81,7 @@
                                 (Variable 
                                     2 
                                     three 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -93,6 +96,7 @@
                                 (Variable 
                                     2 
                                     two 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -107,6 +111,7 @@
                                 (Variable 
                                     2 
                                     zero 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -120,10 +125,8 @@
                             
                         }) 
                     dcstep 
-                    [max@dmax_3args
-                    abs@dabs
-                    abs@dabs
-                    abs@dabs] 
+                    [abs@dabs
+                    max@dmax_3args] 
                     [] 
                     [(= 
                         (Var 2 s) 

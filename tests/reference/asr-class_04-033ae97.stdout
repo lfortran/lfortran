@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     3 
                                                     a 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -46,6 +47,7 @@
                                                 (Variable 
                                                     5 
                                                     b 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -76,6 +78,7 @@
                                                 (Variable 
                                                     6 
                                                     c 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -101,6 +104,7 @@
                                 (Variable 
                                     2 
                                     foo 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -123,6 +127,7 @@
                                                 (Variable 
                                                     4 
                                                     m_bar_a 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -156,6 +161,7 @@
                                                 (Variable 
                                                     7 
                                                     m_bar_b 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -189,6 +195,7 @@
                                                 (Variable 
                                                     8 
                                                     m_bar_c 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 

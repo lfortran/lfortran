@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     boz_1 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -25,6 +26,7 @@
                                 (Variable 
                                     2 
                                     boz_2 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -39,6 +41,7 @@
                                 (Variable 
                                     2 
                                     boz_3 
+                                    [] 
                                     Local 
                                     () 
                                     () 

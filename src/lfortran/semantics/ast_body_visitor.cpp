@@ -259,6 +259,67 @@ public:
         tmp = ASR::make_FileClose_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_iomsg, a_err, a_status);
     }
 
+    void visit_Backspace(const AST::Backspace_t& x) {
+        ASR::expr_t *a_unit = nullptr, *a_iostat = nullptr;
+        ASR::expr_t *a_err = nullptr;
+        if( x.n_args > 1 ) {
+            throw SemanticError("Number of arguments cannot be more than 1 in Backspace statement.",
+                        x.base.base.loc);
+        }
+        if( x.n_args == 1 ) {
+            this->visit_expr(*x.m_args[0]);
+            a_unit = LFortran::ASRUtils::EXPR(tmp);
+        }
+        for( std::uint32_t i = 0; i < x.n_kwargs; i++ ) {
+            AST::keyword_t kwarg = x.m_kwargs[i];
+            std::string m_arg_str(kwarg.m_arg);
+            if( m_arg_str == std::string("unit") ) {
+                if( a_unit != nullptr ) {
+                    throw SemanticError(R"""(Duplicate value of `unit` found, `unit` "
+                        " has already been specified via argument or keyword arguments)""",
+                        x.base.base.loc);
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_unit = LFortran::ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_newunit_type = LFortran::ASRUtils::expr_type(a_unit);
+                if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_newunit_type))) {
+                        throw SemanticError("`unit` must be of type, Integer or IntegerPointer",
+                        x.base.base.loc);
+                }
+            } else if( m_arg_str == std::string("iostat") ) {
+                if( a_iostat != nullptr ) {
+                    throw SemanticError(R"""(Duplicate value of `iostat` found, unit has "
+                        " already been specified via arguments or keyword arguments)""",
+                        x.base.base.loc);
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_iostat = LFortran::ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_iostat_type = LFortran::ASRUtils::expr_type(a_iostat);
+                if( a_iostat->type != ASR::exprType::Var ||
+                    (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type))) ) {
+                        throw SemanticError("`iostat` must be a variable of type, Integer "
+                            " or IntegerPointer", x.base.base.loc);
+                }
+            } else if( m_arg_str == std::string("err") ) {
+                if( a_err != nullptr ) {
+                    throw SemanticError(R"""(Duplicate value of `err` found, `err` has "
+                        " already been specified via arguments or keyword arguments)""",
+                        x.base.base.loc);
+                }
+                if( kwarg.m_value->type != AST::exprType::Num ) {
+                    throw SemanticError("`err` must be a literal integer", x.base.base.loc);
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_err = LFortran::ASRUtils::EXPR(tmp);
+            }
+        }
+        if( a_unit == nullptr ) {
+            throw SemanticError("`unit` must be specified either in argument or keyword arguments.",
+                                x.base.base.loc);
+        }
+        tmp = ASR::make_FileBackspace_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_err);
+    }
+
     void create_read_write_ASR_node(const AST::stmt_t& read_write_stmt, AST::stmtType _type) {
         int64_t m_label = -1;
         AST::argstar_t* m_args = nullptr; size_t n_args = 0;
@@ -494,6 +555,8 @@ public:
             std::string new_f_name = to_lower(use_symbol->m_local_rename);
             pass_instantiate_generic_function(al, subs, restriction_subs, current_scope,
                 new_f_name, s);
+            current_function_dependencies.erase(std::string(ASRUtils::symbol_name(s)));
+            current_function_dependencies.insert(new_f_name);
         }
 
         is_instantiate = false;
@@ -639,14 +702,13 @@ public:
             }
             std::string name = to_lower(x.m_syms[i].m_name);
             char *name_c = s2c(al, name);
+            Vec<char*> variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, tmp_type);
             ASR::asr_t *v = ASR::make_Variable_t(al, x.base.base.loc, new_scope,
-                                                 name_c, ASR::intentType::Local,
-                                                 nullptr, nullptr,
-                                                 tmp_storage,
-                                                 tmp_type,
-                                                 ASR::abiType::Source,
-                                                 ASR::accessType::Private,
-                                                 ASR::presenceType::Required,
+                                                 name_c, variable_dependencies_vec.p, variable_dependencies_vec.size(),
+                                                 ASR::intentType::Local, nullptr, nullptr, tmp_storage, tmp_type,
+                                                 ASR::abiType::Source, ASR::accessType::Private, ASR::presenceType::Required,
                                                  false);
             new_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(v));
             ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, v->loc, ASR::down_cast<ASR::symbol_t>(v)));
@@ -979,6 +1041,7 @@ public:
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Module_t *v = ASR::down_cast<ASR::Module_t>(t);
+        current_module_dependencies.n = 0;
         current_scope = v->m_symtab;
         current_module = v;
 
@@ -993,6 +1056,18 @@ public:
 
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
+        }
+
+        if( current_module_dependencies.size() > 0 ) {
+            Vec<char*> module_dependencies;
+            module_dependencies.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
+            for( size_t i = 0; i < current_module_dependencies.size(); i++ ) {
+                if( !present(module_dependencies, current_module_dependencies[i]) ) {
+                    module_dependencies.push_back(al, current_module_dependencies[i]);
+                }
+            }
+            v->m_dependencies = module_dependencies.p;
+            v->n_dependencies = module_dependencies.size();
         }
 
         current_scope = old_scope;
@@ -1082,14 +1157,22 @@ public:
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
+        current_function_dependencies.clear();
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
+        Vec<char*> func_deps;
+        func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
+        for( auto& itr: current_function_dependencies ) {
+            func_deps.push_back(al, s2c(al, itr));
+        }
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
         if( impl_del != nullptr ) {
             body.push_back(al, impl_del);
         }
         v->m_body = body.p;
         v->n_body = body.size();
+        v->m_dependencies = func_deps.p;
+        v->n_dependencies = func_deps.size();
 
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
@@ -1116,13 +1199,21 @@ public:
         body.reserve(al, x.n_body);
         Vec<ASR::symbol_t*> rts;
         rts.reserve(al, rt_vec.size());
+        current_function_dependencies.clear();
         transform_stmts(body, x.n_body, x.m_body);
+        Vec<char*> func_deps;
+        func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
+        for( auto& itr: current_function_dependencies ) {
+            func_deps.push_back(al, s2c(al, itr));
+        }
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
         if( impl_del != nullptr ) {
             body.push_back(al, impl_del);
         }
         v->m_body = body.p;
         v->n_body = body.size();
+        v->m_dependencies = func_deps.p;
+        v->n_dependencies = func_deps.size();
         v->m_restrictions = rts.p;
         v->n_restrictions = rts.size();
 
@@ -1149,7 +1240,11 @@ public:
             labels.insert(var_name);
             Str a_var_name_f;
             a_var_name_f.from_str(al, var_name);
+            Vec<char*> variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, int32_type);
             ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
+                                                            variable_dependencies_vec.p, variable_dependencies_vec.size(),
                                                             ASR::intentType::Local, nullptr, nullptr,
                                                             ASR::storage_typeType::Default, int32_type,
                                                             ASR::abiType::Source, ASR::Public, ASR::presenceType::Optional, false);
@@ -1240,8 +1335,13 @@ public:
             ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(tmp_var->m_v);
             std::string arg_name = variable->m_name;
             arg_name = to_lower(arg_name);
+            Vec<char*> variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, ASRUtils::expr_type(end));
             ASR::asr_t *arg_var = ASR::make_Variable_t(al, x.base.base.loc,
-                current_scope, s2c(al, arg_name), LFortran::ASRUtils::intent_in, nullptr, nullptr,
+                current_scope, s2c(al, arg_name),
+                variable_dependencies_vec.p, variable_dependencies_vec.size(),
+                LFortran::ASRUtils::intent_in, nullptr, nullptr,
                 ASR::storage_typeType::Default, ASRUtils::expr_type(end),
                 ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
                 false);
@@ -1271,8 +1371,13 @@ public:
 
         // Assign where to_return
         std::string return_var_name = var_name + "_return_var_name";
+        Vec<char*> variable_dependencies_vec;
+        variable_dependencies_vec.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
         ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
-            current_scope, s2c(al, return_var_name), ASRUtils::intent_return_var, nullptr, nullptr,
+            current_scope, s2c(al, return_var_name),
+            variable_dependencies_vec.p, variable_dependencies_vec.size(),
+            ASRUtils::intent_return_var, nullptr, nullptr,
             ASR::storage_typeType::Default, type,
             ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
             false);
@@ -1315,6 +1420,7 @@ public:
         parent_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
     }
+
     void visit_Assignment(const AST::Assignment_t &x) {
 
         if (is_statement_function(x)) {
@@ -1328,7 +1434,8 @@ public:
         ASR::expr_t *value = LFortran::ASRUtils::EXPR(tmp);
         ASR::stmt_t *overloaded_stmt = nullptr;
         if( LFortran::ASRUtils::use_overloaded_assignment(target, value,
-            current_scope, asr, al, x.base.base.loc,
+            current_scope, asr, al, x.base.base.loc, current_function_dependencies,
+            current_module_dependencies,
             [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }) ) {
             overloaded_stmt = LFortran::ASRUtils::STMT(asr);
         }
@@ -1612,6 +1719,7 @@ public:
                 throw SemanticError("Symbol type not supported", x.base.base.loc);
             }
         }
+        current_function_dependencies.insert(std::string(ASRUtils::symbol_name(final_sym)));
         tmp = ASR::make_SubroutineCall_t(al, x.base.base.loc,
                 final_sym, original_sym, args.p, args.size(), v_expr);
     }

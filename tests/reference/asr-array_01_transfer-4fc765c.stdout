@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     m 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -26,6 +27,7 @@
                                 (Variable 
                                     2 
                                     size 
+                                    [] 
                                     Local 
                                     (IntegerConstant 2 (Integer 4 [])) 
                                     () 

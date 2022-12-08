@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     a 
+                                    [] 
                                     Local 
                                     (IntegerConstant 10 (Integer 4 [])) 
                                     (IntegerConstant 10 (Integer 4 [])) 
@@ -25,6 +26,7 @@
                                 (Variable 
                                     2 
                                     b 
+                                    [] 
                                     Local 
                                     (IntegerUnaryMinus 
                                         (IntegerConstant 20 (Integer 4 [])) 
@@ -43,6 +45,7 @@
                                 (Variable 
                                     2 
                                     c 
+                                    [] 
                                     Local 
                                     (IntegerConstant 30 (Integer 4 [])) 
                                     (IntegerConstant 30 (Integer 4 [])) 
@@ -57,6 +60,7 @@
                                 (Variable 
                                     2 
                                     d 
+                                    [] 
                                     Local 
                                     (IntegerUnaryMinus 
                                         (IntegerConstant 40 (Integer 4 [])) 
@@ -75,6 +79,7 @@
                                 (Variable 
                                     2 
                                     e 
+                                    [] 
                                     Local 
                                     (IntegerConstant 0 (Integer 4 [])) 
                                     (IntegerConstant 0 (Integer 4 [])) 
@@ -89,6 +94,7 @@
                                 (Variable 
                                     2 
                                     f 
+                                    [] 
                                     Local 
                                     (IntegerConstant 50 (Integer 4 [])) 
                                     (IntegerConstant 50 (Integer 4 [])) 

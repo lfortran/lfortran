@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     c 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -30,6 +31,7 @@
                                 (Variable 
                                     2 
                                     string 
+                                    [] 
                                     Local 
                                     () 
                                     () 

@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     a 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -25,6 +26,7 @@
                                 (Variable 
                                     2 
                                     m 
+                                    [] 
                                     Unspecified 
                                     () 
                                     () 
@@ -44,12 +46,13 @@
                                                 (Variable 
                                                     3 
                                                     prinf_arg_0 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Character 1 6 () []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -58,12 +61,13 @@
                                                 (Variable 
                                                     3 
                                                     prinf_arg_1 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Integer 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -76,7 +80,7 @@
                                     (Var 3 prinf_arg_1)] 
                                     [] 
                                     () 
-                                    Source 
+                                    BindC 
                                     Public 
                                     Interface 
                                     () 
@@ -92,8 +96,7 @@
                             
                         }) 
                     idd_frm 
-                    [prinf
-                    prinf] 
+                    [prinf] 
                     [(Var 2 m)] 
                     [(= 
                         (Var 2 a) 

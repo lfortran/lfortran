@@ -55,6 +55,7 @@
                                 (Variable 
                                     2 
                                     priv 
+                                    [] 
                                     Local 
                                     (RealConstant 
                                         1.500000 
@@ -72,6 +73,7 @@
                                 (Variable 
                                     2 
                                     publ 
+                                    [] 
                                     Local 
                                     (RealConstant 
                                         2.500000 

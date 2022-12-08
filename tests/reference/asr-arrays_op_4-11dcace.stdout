@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     a 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -30,6 +31,7 @@
                                 (Variable 
                                     2 
                                     b 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -49,6 +51,7 @@
                                 (Variable 
                                     2 
                                     c 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -68,6 +71,7 @@
                                 (Variable 
                                     2 
                                     dim1 
+                                    [] 
                                     Local 
                                     (IntegerConstant 10 (Integer 4 [])) 
                                     () 
@@ -82,6 +86,7 @@
                                 (Variable 
                                     2 
                                     dim2 
+                                    [] 
                                     Local 
                                     (IntegerConstant 100 (Integer 4 [])) 
                                     () 
@@ -96,6 +101,7 @@
                                 (Variable 
                                     2 
                                     dim3 
+                                    [] 
                                     Local 
                                     (IntegerConstant 1 (Integer 4 [])) 
                                     () 
@@ -110,6 +116,7 @@
                                 (Variable 
                                     2 
                                     i 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -124,6 +131,7 @@
                                 (Variable 
                                     2 
                                     j 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -138,6 +146,7 @@
                                 (Variable 
                                     2 
                                     k 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -157,6 +166,7 @@
                                                 (Variable 
                                                     3 
                                                     r 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -171,6 +181,7 @@
                                                 (Variable 
                                                     3 
                                                     x 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -238,6 +249,7 @@
                                                 (Variable 
                                                     4 
                                                     c 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -257,6 +269,7 @@
                                                 (Variable 
                                                     4 
                                                     i 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -271,6 +284,7 @@
                                                 (Variable 
                                                     4 
                                                     j 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -285,6 +299,7 @@
                                                 (Variable 
                                                     4 
                                                     k 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -299,6 +314,7 @@
                                                 (Variable 
                                                     4 
                                                     op_code 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -313,6 +329,7 @@
                                                 (Variable 
                                                     4 
                                                     x 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -327,6 +344,7 @@
                                                 (Variable 
                                                     4 
                                                     y 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -340,8 +358,7 @@
                                             
                                         }) 
                                     verify 
-                                    [modulo2
-                                    modulo2] 
+                                    [modulo2] 
                                     [(Var 4 c)
                                     (Var 4 op_code)] 
                                     [(DoLoop 

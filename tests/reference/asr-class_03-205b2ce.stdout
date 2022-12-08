@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     4 
                                                     department 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -30,6 +31,7 @@
                                                 (Variable 
                                                     4 
                                                     hire_date 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -44,6 +46,7 @@
                                                 (Variable 
                                                     4 
                                                     person 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -79,6 +82,7 @@
                                                 (Variable 
                                                     3 
                                                     birthyear 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -93,6 +97,7 @@
                                                 (Variable 
                                                     3 
                                                     first 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -107,6 +112,7 @@
                                                 (Variable 
                                                     3 
                                                     last 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -121,6 +127,7 @@
                                                 (Variable 
                                                     3 
                                                     sgender 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -171,6 +178,7 @@
                                 (Variable 
                                     5 
                                     jack 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -188,6 +196,7 @@
                                 (Variable 
                                     5 
                                     jill 
+                                    [] 
                                     Local 
                                     () 
                                     () 

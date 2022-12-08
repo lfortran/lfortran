@@ -103,12 +103,12 @@ symbol
         ttype type, symbol? parent)
     | UnionType(symbol_table symtab, identifier name, identifier* dependencies,
         identifier* members, abi abi, access access, symbol? parent)
-    | Variable(symbol_table parent_symtab, identifier name, intent intent,
-        expr? symbolic_value, expr? value, storage_type storage, ttype type,
+    | Variable(symbol_table parent_symtab, identifier name, identifier* dependencies,
+        intent intent, expr? symbolic_value, expr? value, storage_type storage, ttype type,
         abi abi, access access, presence presence, bool value_attr)
     | ClassType(symbol_table symtab, identifier name, abi abi, access access)
-    | ClassProcedure(symbol_table parent_symtab, identifier name, identifier
-        proc_name, symbol proc, abi abi)
+    | ClassProcedure(symbol_table parent_symtab, identifier name, identifier proc_name,
+        symbol proc, abi abi)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
 
@@ -185,6 +185,7 @@ stmt
     | FileOpen(int label, expr? newunit, expr? filename, expr? status)
     | FileClose(int label, expr? unit, expr? iostat, expr? iomsg, expr? err, expr? status)
     | FileRead(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat, expr? id, expr* values)
+    | FileBackspace(int label, expr? unit, expr? iostat, expr? err)
     | FileRewind(int label, expr? unit, expr? iostat, expr? err)
     | FileInquire(int label, expr? unit, expr? file, expr? iostat, expr? err,
               expr? exist, expr? opened, expr? number, expr? named,
@@ -307,6 +308,7 @@ expr
     | SetPop(expr a, ttype type, expr? value)
     | IntegerBitLen(expr a, ttype type, expr? value)
     | Ichar(expr arg, ttype type, expr? value)
+    | Iachar(expr arg, ttype type, expr? value)
 
     | SizeOfType(ttype arg, ttype type, expr? value)
 

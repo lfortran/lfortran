@@ -31,6 +31,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
     asr_implicit_typing = is_included("asr_implicit_typing")
     asr_implicit_interface = is_included("asr_implicit_interface")
     asr_implicit_interface_and_typing = is_included("asr_implicit_interface_and_typing")
+    asr_implicit_interface_and_typing_with_llvm = is_included("asr_implicit_interface_and_typing_with_llvm")
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
     mod_to_asr = is_included("mod_to_asr")
@@ -155,6 +156,18 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
             filename,
             update_reference,
             extra_args)
+
+    if asr_implicit_interface_and_typing_with_llvm:
+        if no_llvm:
+            log.info(f"{filename} * llvm   SKIPPED as requested")
+        else:
+            run_test(
+                filename,
+                "llvm",
+                "lfortran --show-llvm --implicit-typing --allow-implicit-interface {infile} -o {outfile}",
+                filename,
+                update_reference,
+                extra_args)
 
     if asr_implicit_typing:
         run_test(

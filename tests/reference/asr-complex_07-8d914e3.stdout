@@ -41,6 +41,7 @@
                                 (Variable 
                                     2 
                                     c1 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -55,6 +56,7 @@
                                 (Variable 
                                     2 
                                     img_part 
+                                    [] 
                                     Local 
                                     (RealConstant 
                                         3.140000 
@@ -75,6 +77,7 @@
                                 (Variable 
                                     2 
                                     real_part 
+                                    [] 
                                     Local 
                                     (IntegerConstant 42 (Integer 4 [])) 
                                     (IntegerConstant 42 (Integer 4 [])) 
@@ -89,6 +92,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [real_part] 
                                     Local 
                                     (ComplexConstructor 
                                         (Var 2 real_part) 
@@ -111,6 +115,7 @@
                                 (Variable 
                                     2 
                                     x2 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -125,6 +130,7 @@
                                 (Variable 
                                     2 
                                     y 
+                                    [img_part] 
                                     Local 
                                     (ComplexConstructor 
                                         (Var 2 img_part) 
@@ -147,6 +153,7 @@
                                 (Variable 
                                     2 
                                     y2 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -161,6 +168,8 @@
                                 (Variable 
                                     2 
                                     z 
+                                    [real_part
+                                    img_part] 
                                     Local 
                                     (ComplexConstructor 
                                         (Var 2 real_part) 
@@ -180,6 +189,7 @@
                                 (Variable 
                                     2 
                                     z2 
+                                    [] 
                                     Local 
                                     () 
                                     () 

@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     i 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -25,6 +26,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -85,6 +87,7 @@
                                 (Variable 
                                     3 
                                     i 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -99,6 +102,7 @@
                                 (Variable 
                                     3 
                                     x 
+                                    [] 
                                     Local 
                                     () 
                                     () 

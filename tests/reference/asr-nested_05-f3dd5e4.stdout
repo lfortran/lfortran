@@ -91,6 +91,7 @@
                                                 (Variable 
                                                     3 
                                                     x 
+                                                    [] 
                                                     Local 
                                                     (IntegerConstant 6 (Integer 4 [])) 
                                                     () 
@@ -105,6 +106,7 @@
                                                 (Variable 
                                                     3 
                                                     y 
+                                                    [] 
                                                     Local 
                                                     (RealConstant 
                                                         5.500000 

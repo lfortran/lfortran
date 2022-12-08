@@ -19,7 +19,7 @@
                                     [(Var 2 f)] 
                                     [] 
                                     () 
-                                    Source 
+                                    BindC 
                                     Public 
                                     Interface 
                                     () 
@@ -41,12 +41,13 @@
                                                 (Variable 
                                                     3 
                                                     f_arg_0 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Integer 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -55,12 +56,13 @@
                                                 (Variable 
                                                     3 
                                                     f_arg_1 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Real 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -69,12 +71,13 @@
                                                 (Variable 
                                                     3 
                                                     f_arg_2 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Real 8 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -88,7 +91,7 @@
                                     (Var 3 f_arg_2)] 
                                     [] 
                                     () 
-                                    Source 
+                                    BindC 
                                     Public 
                                     Interface 
                                     () 
@@ -105,6 +108,7 @@
                                 (Variable 
                                     2 
                                     i 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -119,6 +123,7 @@
                                 (Variable 
                                     2 
                                     j 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -133,6 +138,7 @@
                                 (Variable 
                                     2 
                                     n 
+                                    [] 
                                     In 
                                     () 
                                     () 
@@ -146,8 +152,8 @@
                             
                         }) 
                     driver 
-                    [f
-                    driver2] 
+                    [driver2
+                    f] 
                     [(Var 2 f)
                     (Var 2 n)] 
                     [(SubroutineCall 

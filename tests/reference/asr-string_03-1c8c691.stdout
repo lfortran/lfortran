@@ -11,6 +11,7 @@
                                 (Variable 
                                     3 
                                     combined 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -35,6 +36,7 @@
                                 (Variable 
                                     3 
                                     last_name 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -49,6 +51,7 @@
                                 (Variable 
                                     3 
                                     posit 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -63,6 +66,7 @@
                                 (Variable 
                                     3 
                                     title 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -77,6 +81,7 @@
                                 (Variable 
                                     3 
                                     verb 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -172,6 +177,7 @@
                                 (Variable 
                                     2 
                                     intro 
+                                    [] 
                                     Local 
                                     (StringConstant 
                                         "I've " 

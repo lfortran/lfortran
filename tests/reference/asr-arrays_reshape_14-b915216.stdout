@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     4 
                                                     a 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -53,6 +54,7 @@
                                                 (Variable 
                                                     4 
                                                     b 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -68,6 +70,7 @@
                                                 (Variable 
                                                     4 
                                                     c 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -87,6 +90,7 @@
                                                 (Variable 
                                                     4 
                                                     d 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
@@ -102,6 +106,7 @@
                                                 (Variable 
                                                     4 
                                                     eps 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -116,6 +121,7 @@
                                                 (Variable 
                                                     4 
                                                     i 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -130,6 +136,7 @@
                                                 (Variable 
                                                     4 
                                                     j 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -144,6 +151,7 @@
                                                 (Variable 
                                                     4 
                                                     k 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -158,6 +166,7 @@
                                                 (Variable 
                                                     4 
                                                     l 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -172,6 +181,7 @@
                                                 (Variable 
                                                     4 
                                                     newshape 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -187,6 +197,7 @@
                                                 (Variable 
                                                     4 
                                                     newshape1 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -201,8 +212,7 @@
                                             
                                         }) 
                                     test_1d_to_nd 
-                                    [abs@dabs
-                                    abs@dabs] 
+                                    [abs@dabs] 
                                     [(Var 4 d)] 
                                     [(= 
                                         (Var 4 eps) 
@@ -628,6 +638,7 @@
                                                 (Variable 
                                                     3 
                                                     a 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -665,6 +676,7 @@
                                                 (Variable 
                                                     3 
                                                     b 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -680,6 +692,7 @@
                                                 (Variable 
                                                     3 
                                                     c 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -699,6 +712,7 @@
                                                 (Variable 
                                                     3 
                                                     d 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -714,6 +728,7 @@
                                                 (Variable 
                                                     3 
                                                     eps 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -728,6 +743,7 @@
                                                 (Variable 
                                                     3 
                                                     i 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -742,6 +758,7 @@
                                                 (Variable 
                                                     3 
                                                     j 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -756,6 +773,7 @@
                                                 (Variable 
                                                     3 
                                                     k 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -770,6 +788,7 @@
                                                 (Variable 
                                                     3 
                                                     l 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -784,6 +803,7 @@
                                                 (Variable 
                                                     3 
                                                     newshape 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -799,6 +819,7 @@
                                                 (Variable 
                                                     3 
                                                     newshape1 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -813,8 +834,7 @@
                                             
                                         }) 
                                     test_nd_to_1d 
-                                    [abs@dabs
-                                    abs@dabs] 
+                                    [abs@dabs] 
                                     [(Var 3 a)] 
                                     [(= 
                                         (Var 3 eps) 
@@ -1267,6 +1287,7 @@
                                                 (Variable 
                                                     5 
                                                     a 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -1284,6 +1305,7 @@
                                                 (Variable 
                                                     5 
                                                     d 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -1299,6 +1321,7 @@
                                                 (Variable 
                                                     5 
                                                     i 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -1313,6 +1336,7 @@
                                                 (Variable 
                                                     5 
                                                     j 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -1327,6 +1351,7 @@
                                                 (Variable 
                                                     5 
                                                     k 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -1341,6 +1366,7 @@
                                                 (Variable 
                                                     5 
                                                     l 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -1354,8 +1380,8 @@
                                             
                                         }) 
                                     test_reshape_with_argument 
-                                    [test_nd_to_1d
-                                    test_1d_to_nd] 
+                                    [test_1d_to_nd
+                                    test_nd_to_1d] 
                                     [] 
                                     [(DoLoop 
                                         ((Var 5 i) 

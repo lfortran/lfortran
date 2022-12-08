@@ -12,6 +12,7 @@
 
 #include <string>
 #include <unordered_set>
+#include <set>
 #include <map>
 
 using LFortran::diag::Level;
@@ -93,7 +94,9 @@ public:
   inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
                                    ASR::expr_t *&left, ASR::expr_t *&right,
                                    ASR::asr_t *&asr, std::string& intrinsic_op_name,
-                                   SymbolTable* curr_scope) {
+                                   SymbolTable* curr_scope,
+                                   std::set<std::string>& current_function_dependencies,
+                                   Vec<char*>& current_module_dependencies) {
     ASR::cmpopType asr_op;
     switch (x.m_op) {
         case (AST::cmpopType::Eq): {
@@ -132,7 +135,9 @@ public:
     ASR::expr_t *overloaded = nullptr;
     if ( ASRUtils::use_overloaded(left, right, asr_op,
         intrinsic_op_name, curr_scope, asr, al,
-        x.base.base.loc, [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }) ) {
+        x.base.base.loc, current_function_dependencies,
+        current_module_dependencies,
+        [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }) ) {
         overloaded = LFortran::ASRUtils::EXPR(asr);
     }
 
@@ -620,6 +625,7 @@ static ASR::asr_t* comptime_intrinsic_int(ASR::expr_t *A,
 
 struct TypeMissingData {
     SymbolTable* scope;
+    std::string sym_name;
     AST::expr_t* expr;
     int64_t sym_type;
     ASR::ttype_t* type;
@@ -691,6 +697,7 @@ public:
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
 
     Vec<char*> data_member_names;
+    std::set<std::string> current_function_dependencies;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
@@ -724,9 +731,12 @@ public:
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                 4, nullptr, 0));
         }
+        Vec<char*> variable_dependencies_vec;
+        variable_dependencies_vec.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, loc,
-            current_scope,
-            s2c(al, var_name), intent, nullptr, nullptr,
+            current_scope, s2c(al, var_name), variable_dependencies_vec.p,
+            variable_dependencies_vec.size(), intent, nullptr, nullptr,
             ASR::storage_typeType::Default, type,
             current_procedure_abi_type, ASR::Public,
             ASR::presenceType::Required, false));
@@ -737,9 +747,12 @@ public:
     ASR::symbol_t* declare_implicit_variable2(const Location &loc,
             const std::string &var_name, ASR::intentType intent,
             ASR::ttype_t *type) {
+        Vec<char*> variable_dependencies_vec;
+        variable_dependencies_vec.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, loc,
-            current_scope,
-            s2c(al, var_name), intent, nullptr, nullptr,
+            current_scope, s2c(al, var_name), variable_dependencies_vec.p,
+            variable_dependencies_vec.size(), intent, nullptr, nullptr,
             ASR::storage_typeType::Default, type,
             current_procedure_abi_type, ASR::Public,
             ASR::presenceType::Required, false));
@@ -942,6 +955,13 @@ public:
                         ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
                         v2->m_value = ASRUtils::EXPR(tmp);
                         v2->m_symbolic_value = ASRUtils::EXPR(tmp);
+                        Vec<char*> var_deps_vec;
+                        var_deps_vec.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                            v2->m_symbolic_value, v2->m_value);
+                        v2->m_dependencies = var_deps_vec.p;
+                        v2->n_dependencies = var_deps_vec.size();
+
                     } else {
                         throw SemanticError("There is one variable and multiple values, but the variable is not an array",
                             x.base.base.loc);
@@ -985,6 +1005,12 @@ public:
                         ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
                         ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
                         v2->m_value = expression_value;
+                        Vec<char*> var_deps_vec;
+                        var_deps_vec.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                            v2->m_symbolic_value, v2->m_value);
+                        v2->m_dependencies = var_deps_vec.p;
+                        v2->n_dependencies = var_deps_vec.size();
                     } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
                         if (current_body == nullptr) {
                             diag.semantic_warning_label(
@@ -1161,6 +1187,11 @@ public:
                             if (!ASRUtils::ttype_set_dimensions(v->m_type, dims.data(), dims.size())) {
                                 throw SemanticError("Cannot set dimension for variable of non-numerical type", x.base.base.loc);
                             }
+                            Vec<char*> variable_dependencies_vec;
+                            variable_dependencies_vec.reserve(al, 1);
+                            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, v->m_type, v->m_symbolic_value, v->m_value);
+                            v->m_dependencies = variable_dependencies_vec.p;
+                            v->n_dependencies = variable_dependencies_vec.size();
                         } else {
                             throw SemanticError("Cannot attribute non-variable type with dimension", x.base.base.loc);
                         }
@@ -1315,7 +1346,7 @@ public:
                     }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time);
                 }
-                ASR::ttype_t *type = determine_type(x.base.base.loc, x.m_vartype, is_pointer, dims);
+                ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer, dims);
 
                 ASR::expr_t* init_expr = nullptr;
                 ASR::expr_t* value = nullptr;
@@ -1386,9 +1417,13 @@ public:
                     }
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
+                    Vec<char*> variable_dependencies_vec;
+                    variable_dependencies_vec.reserve(al, 1);
+                    ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
                     ASR::asr_t *v = ASR::make_Variable_t(al, s.loc, current_scope,
-                            s2c(al, to_lower(s.m_name)), s_intent, init_expr, value, storage_type, type,
-                            current_procedure_abi_type, s_access, s_presence,
+                            s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
+                            variable_dependencies_vec.size(), s_intent, init_expr, value,
+                            storage_type, type, current_procedure_abi_type, s_access, s_presence,
                             value_attr);
                     current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                     if( is_derived_type ) {
@@ -1399,7 +1434,7 @@ public:
         }
     }
 
-    ASR::ttype_t* determine_type(const Location &loc, AST::decl_attribute_t* decl_attribute, bool is_pointer, Vec<ASR::dimension_t>& dims){
+    ASR::ttype_t* determine_type(const Location &loc, std::string& sym, AST::decl_attribute_t* decl_attribute, bool is_pointer, Vec<ASR::dimension_t>& dims){
         AST::AttrType_t *sym_type = AST::down_cast<AST::AttrType_t>(decl_attribute);
         ASR::ttype_t *type;
 
@@ -1459,6 +1494,7 @@ public:
             int a_len = -10;
             ASR::expr_t *len_expr = nullptr;
             TypeMissingData* char_data = al.make_new<TypeMissingData>();
+            char_data->sym_name = sym;
             // TODO: take into account m_kind->m_id and all kind items
             if (sym_type->m_kind != nullptr) {
                 switch (sym_type->m_kind->m_type) {
@@ -1752,7 +1788,7 @@ public:
         ASRUtils::ExprStmtDuplicator expr_duplicator(al);
         expr_duplicator.allow_procedure_calls = true;
         ASRUtils::ReplaceArgVisitor arg_replacer(al, current_scope, orig_func,
-                                                 orig_args);
+                                                 orig_args, current_function_dependencies);
         for( size_t i = 0; i < exprs.size(); i++ ) {
             ASR::expr_t* expri = exprs[i];
             if (expri) {
@@ -1924,6 +1960,7 @@ public:
                 }
             }
         }
+        current_function_dependencies.insert(std::string(ASRUtils::symbol_name(final_sym)));
         return ASR::make_FunctionCall_t(al, loc,
             final_sym, v, args.p, args.size(), return_type,
             value, nullptr);
@@ -1976,6 +2013,7 @@ public:
         } else {
             type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
         }
+        current_function_dependencies.insert(std::string(ASRUtils::symbol_name(v)));
         return ASR::make_FunctionCall_t(al, loc,
                 v, nullptr, args.p, args.size(), type, nullptr,
                 v_expr);
@@ -2010,6 +2048,7 @@ public:
                 type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
                 type = handle_return_type(type, loc, args, func);
             }
+            current_function_dependencies.insert(std::string(ASRUtils::symbol_name(final_sym)));
             return ASR::make_FunctionCall_t(al, loc,
                 final_sym, v, args.p, args.size(), type,
                 nullptr, nullptr);
@@ -2045,6 +2084,7 @@ public:
                 type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
                 type = handle_return_type(type, loc, args, func);
             }
+            current_function_dependencies.insert(std::string(ASRUtils::symbol_name(final_sym)));
             return ASR::make_FunctionCall_t(al, loc,
                 final_sym, v, args.p, args.size(), type,
                 nullptr, nullptr);
@@ -2075,6 +2115,7 @@ public:
                 }
             }
         }
+        current_function_dependencies.insert(std::string(ASRUtils::symbol_name(v)));
         return ASR::make_FunctionCall_t(al, loc, v, nullptr,
             args.p, args.size(), return_type, value, nullptr);
     }
@@ -2654,6 +2695,28 @@ public:
         return ASR::make_Ichar_t(al, x.base.base.loc, arg, type, ichar_value);
     }
 
+    ASR::asr_t* create_Iachar(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"kind"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "iachar");
+        ASR::expr_t *arg = args[0], *kind = args[1];
+        int64_t kind_value = handle_kind(kind);
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                kind_value, nullptr, 0));
+        ASR::expr_t* iachar_value = nullptr;
+        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+        if( arg_value ) {
+            std::string arg_str;
+            bool is_const_value = ASRUtils::is_value_constant(arg_value, arg_str);
+            if( is_const_value ) {
+                int64_t ascii_code = arg_str[0];
+                iachar_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                ascii_code, type));
+            }
+        }
+        return ASR::make_Iachar_t(al, x.base.base.loc, arg, type, iachar_value);
+    }
+
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
@@ -2679,7 +2742,9 @@ public:
                 tmp = create_ArrayReshape(x);
             } else if( var_name == "ichar" ) {
                 tmp = create_Ichar(x);
-            }  else {
+            } else if( var_name == "iachar" ) {
+                tmp = create_Iachar(x);
+            } else {
                 LCompilersException("create_" + var_name + " not implemented yet.");
             }
             return nullptr;
@@ -2779,11 +2844,28 @@ public:
                 v = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
+                if (ASRUtils::is_array(var_type)) {
+                    // For arrays like A(n, m) we use A(*) in BindC, so that
+                    // the C ABI is just a pointer
+                    var_type = ASRUtils::duplicate_type_without_dims(al, var_type, x.base.base.loc);
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 1);
+                    ASR::dimension_t dim;
+                    dim.loc = x.base.base.loc;
+                    dim.m_start = nullptr;
+                    dim.m_length = nullptr;
+                    dims.push_back(al, dim);
+                    ASRUtils::ttype_set_dimensions(var_type, dims.p, dims.size());
+                }
+                Vec<char*> variable_dependencies_vec;
+                variable_dependencies_vec.reserve(al, 1);
+                ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, var_type);
                 v = ASR::down_cast<ASR::symbol_t>(
                     ASR::make_Variable_t(al, x.base.base.loc,
-                    current_scope, s2c(al, arg_name), LFortran::ASRUtils::intent_unspecified, nullptr, nullptr,
-                    ASR::storage_typeType::Default, var_type,
-                    ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+                    current_scope, s2c(al, arg_name), variable_dependencies_vec.p,
+                    variable_dependencies_vec.size(), LFortran::ASRUtils::intent_unspecified,
+                    nullptr, nullptr, ASR::storage_typeType::Default, var_type,
+                    ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                     false));
                 current_scope->add_symbol(arg_name, v);
             }
@@ -2798,10 +2880,14 @@ public:
         ASR::expr_t *to_return = nullptr;
         if (add_return) {
             std::string return_var_name = sym_name + "_return_var_name";
+            Vec<char*> variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
             ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
-                current_scope, s2c(al, return_var_name), LFortran::ASRUtils::intent_return_var, nullptr, nullptr,
-                ASR::storage_typeType::Default, type,
-                ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+                current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
+                variable_dependencies_vec.size(), LFortran::ASRUtils::intent_return_var,
+                nullptr, nullptr, ASR::storage_typeType::Default, type,
+                ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
             to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
@@ -2818,7 +2904,7 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ to_return,
-            ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface,
+            ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false, /* a_type_parameters */ nullptr,
             /* n_type_parameters */ 0, nullptr, 0, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
@@ -3070,7 +3156,7 @@ public:
                 if (f->m_is_restriction) {
                     if (!is_template) {
                         throw SemanticError("A requirement function must be called from a template",
-                                            x.base.base.loc);  
+                                            x.base.base.loc);
                     }
                     bool requirement_found = false;
                     std::string f_name = f->m_name;
@@ -3227,7 +3313,9 @@ public:
         ASR::expr_t *overloaded = nullptr;
         if ( ASRUtils::use_overloaded(left, right, op,
             intrinsic_op_name, curr_scope, asr, al,
-            x.base.base.loc, [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }) ) {
+            x.base.base.loc, current_function_dependencies,
+            current_module_dependencies,
+            [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }) ) {
             overloaded = LFortran::ASRUtils::EXPR(asr);
         }
 
@@ -3422,7 +3510,9 @@ public:
         this->visit_expr(*x.m_right);
         ASR::expr_t *right = LFortran::ASRUtils::EXPR(tmp);
         CommonVisitorMethods::visit_Compare(al, x, left, right, tmp,
-                                            cmpop2str[x.m_op], current_scope);
+                                            cmpop2str[x.m_op], current_scope,
+                                            current_function_dependencies,
+                                            current_module_dependencies);
     }
 
     void visit_Parenthesis(const AST::Parenthesis_t &x) {

@@ -82,6 +82,23 @@ std::vector<std::string> determine_function_definition_order(
     return ASRUtils::order_deps(func_dep_graph);
 }
 
+std::vector<std::string> determine_variable_declaration_order(
+         SymbolTable* symtab) {
+    std::map<std::string, std::vector<std::string>> var_dep_graph;
+    for( auto itr: symtab->get_scope() ) {
+        if( ASR::is_a<ASR::Variable_t>(*itr.second) ) {
+            std::vector<std::string> deps;
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(itr.second);
+            for( size_t i = 0; i < var->n_dependencies; i++ ) {
+                std::string dep = var->m_dependencies[i];
+                deps.push_back(dep);
+            }
+            var_dep_graph[itr.first] = deps;
+        }
+    }
+    return ASRUtils::order_deps(var_dep_graph);
+}
+
 void extract_module_python(const ASR::TranslationUnit_t &m,
                 std::vector<std::pair<std::string, ASR::Module_t*>>& children_modules,
                 std::string module_name) {
@@ -353,6 +370,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     ASR::binopType op, std::string& intrinsic_op_name,
                     SymbolTable* curr_scope, ASR::asr_t*& asr,
                     Allocator &al, const Location& loc,
+                    std::set<std::string>& current_function_dependencies,
+                    Vec<char*>& current_module_dependencies,
                     const std::function<void (const std::string &, const Location &)> err) {
     ASR::ttype_t *left_type = LFortran::ASRUtils::expr_type(left);
     ASR::ttype_t *right_type = LFortran::ASRUtils::expr_type(right);
@@ -396,6 +415,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(a_args[0].m_value));
                             } else {
                                 return_type = ASRUtils::expr_type(func->m_return_var);
+                            }
+                            current_function_dependencies.insert(matched_func_name);
+                            if( ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ) {
+                                current_module_dependencies.push_back(al, ASR::down_cast<ASR::ExternalSymbol_t>(a_name)->m_module_name);
                             }
                             asr = ASR::make_FunctionCall_t(al, loc, a_name, sym,
                                                             a_args.p, 2,
@@ -462,6 +485,8 @@ bool is_op_overloaded(ASR::binopType op, std::string& intrinsic_op_name,
 bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                SymbolTable* curr_scope, ASR::asr_t*& asr,
                                Allocator &al, const Location& loc,
+                               std::set<std::string>& current_function_dependencies,
+                               Vec<char*>& current_module_dependencies,
                                const std::function<void (const std::string &, const Location &)> err) {
     ASR::ttype_t *target_type = LFortran::ASRUtils::expr_type(target);
     ASR::ttype_t *value_type = LFortran::ASRUtils::expr_type(value);
@@ -498,6 +523,10 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                     if( a_name == nullptr ) {
                         err("Unable to resolve matched subroutine for assignment overloading, " + matched_subrout_name, loc);
                     }
+                    current_function_dependencies.insert(matched_subrout_name);
+                    if( ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ) {
+                        current_module_dependencies.push_back(al, ASR::down_cast<ASR::ExternalSymbol_t>(a_name)->m_module_name);
+                    }
                     asr = ASR::make_SubroutineCall_t(al, loc, a_name, sym,
                                                      a_args.p, 2, nullptr);
                 }
@@ -511,6 +540,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     ASR::cmpopType op, std::string& intrinsic_op_name,
                     SymbolTable* curr_scope, ASR::asr_t*& asr,
                     Allocator &al, const Location& loc,
+                    std::set<std::string>& current_function_dependencies,
+                    Vec<char*>& current_module_dependencies,
                     const std::function<void (const std::string &, const Location &)> err) {
     ASR::ttype_t *left_type = LFortran::ASRUtils::expr_type(left);
     ASR::ttype_t *right_type = LFortran::ASRUtils::expr_type(right);
@@ -554,6 +585,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(a_args[0].m_value));
                             } else {
                                 return_type = ASRUtils::expr_type(func->m_return_var);
+                            }
+                            current_function_dependencies.insert(matched_func_name);
+                            if( ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ) {
+                                current_module_dependencies.push_back(al, ASR::down_cast<ASR::ExternalSymbol_t>(a_name)->m_module_name);
                             }
                             asr = ASR::make_FunctionCall_t(al, loc, a_name, sym,
                                                             a_args.p, 2,

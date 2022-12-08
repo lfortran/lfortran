@@ -31,6 +31,7 @@
                                                 (Variable 
                                                     5 
                                                     character_string 
+                                                    [string] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -52,6 +53,7 @@
                                                 (Variable 
                                                     5 
                                                     string 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -101,6 +103,7 @@
                                                 (Variable 
                                                     4 
                                                     length 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -115,6 +118,7 @@
                                                 (Variable 
                                                     4 
                                                     string 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -157,6 +161,7 @@
                                                 (Variable 
                                                     3 
                                                     raw 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -229,6 +234,7 @@
                                                 (Variable 
                                                     7 
                                                     lps_array 
+                                                    [string] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -251,6 +257,7 @@
                                                 (Variable 
                                                     7 
                                                     string 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -290,6 +297,7 @@
                                                 (Variable 
                                                     32 
                                                     l 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -314,6 +322,7 @@
                                                 (Variable 
                                                     32 
                                                     string 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -384,6 +393,7 @@
                                                 (Variable 
                                                     33 
                                                     l 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -408,6 +418,7 @@
                                                 (Variable 
                                                     33 
                                                     string 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -518,6 +529,7 @@
                                                 (Variable 
                                                     36 
                                                     output_length 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -532,6 +544,7 @@
                                                 (Variable 
                                                     36 
                                                     res 
+                                                    [string] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -553,6 +566,7 @@
                                                 (Variable 
                                                     36 
                                                     string 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -567,9 +581,9 @@
                                         }) 
                                     padl_char_default 
                                     [len
-                                    padl_char_pad_with
                                     imax
-                                    len] 
+                                    len
+                                    padl_char_pad_with] 
                                     [(Var 36 string)
                                     (Var 36 output_length)] 
                                     [(= 
@@ -657,6 +671,7 @@
                                                 (Variable 
                                                     37 
                                                     output_length 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -671,6 +686,7 @@
                                                 (Variable 
                                                     37 
                                                     pad_with 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -685,6 +701,8 @@
                                                 (Variable 
                                                     37 
                                                     res 
+                                                    [string
+                                                    output_length] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -714,6 +732,7 @@
                                                 (Variable 
                                                     37 
                                                     string 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -728,6 +747,7 @@
                                                 (Variable 
                                                     37 
                                                     string_length 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -741,8 +761,8 @@
                                             
                                         }) 
                                     padl_char_pad_with 
-                                    [max@imax
-                                    len] 
+                                    [len
+                                    max@imax] 
                                     [(Var 37 string)
                                     (Var 37 output_length)
                                     (Var 37 pad_with)] 
@@ -810,6 +830,7 @@
                                                 (Variable 
                                                     34 
                                                     output_length 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -824,6 +845,7 @@
                                                 (Variable 
                                                     34 
                                                     res 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -841,6 +863,7 @@
                                                 (Variable 
                                                     34 
                                                     string 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -857,13 +880,11 @@
                                             
                                         }) 
                                     padl_string_default 
-                                    [padl_char_pad_with
-                                    char@char_string
-                                    len_string
+                                    [char@char_string
                                     imax
                                     len
-                                    char@char_string
-                                    len_string] 
+                                    len_string
+                                    padl_char_pad_with] 
                                     [(Var 34 string)
                                     (Var 34 output_length)] 
                                     [(= 
@@ -997,6 +1018,7 @@
                                                 (Variable 
                                                     35 
                                                     output_length 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -1011,6 +1033,7 @@
                                                 (Variable 
                                                     35 
                                                     pad_with 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -1025,6 +1048,7 @@
                                                 (Variable 
                                                     35 
                                                     res 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -1042,6 +1066,7 @@
                                                 (Variable 
                                                     35 
                                                     string 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -1058,13 +1083,11 @@
                                             
                                         }) 
                                     padl_string_pad_with 
-                                    [padl_char_pad_with
-                                    char@char_string
-                                    len_string
+                                    [char@char_string
                                     imax
                                     len
-                                    char@char_string
-                                    len_string] 
+                                    len_string
+                                    padl_char_pad_with] 
                                     [(Var 35 string)
                                     (Var 35 output_length)
                                     (Var 35 pad_with)] 
@@ -1160,35 +1183,10 @@
                             
                         }) 
                     stdlib_strings 
-                    [stdlib_string_type
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_math2
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
+                    [lfortran_intrinsic_builtin
                     lfortran_intrinsic_builtin
                     stdlib_string_type
-                    stdlib_string_type
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_math2
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_math2
-                    lfortran_intrinsic_builtin
-                    stdlib_string_type
-                    stdlib_string_type
-                    lfortran_intrinsic_math2
-                    lfortran_intrinsic_builtin
-                    stdlib_string_type
-                    stdlib_string_type
-                    stdlib_string_type
-                    stdlib_string_type
-                    lfortran_intrinsic_math2
-                    lfortran_intrinsic_builtin
-                    stdlib_string_type
-                    stdlib_string_type] 
+                    lfortran_intrinsic_math2] 
                     .false. 
                     .false.
                 ), 

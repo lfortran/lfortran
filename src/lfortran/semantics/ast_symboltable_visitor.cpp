@@ -125,7 +125,11 @@ public:
         // To Be Implemented
     }
 
-    void fix_type_info() {
+    template <typename T>
+    void fix_type_info(T* x) {
+        current_module_dependencies.n = 0;
+        current_module_dependencies.reserve(al, 1);
+        std::map<ASR::asr_t*, std::set<std::string>> node2deps;
         for( TypeMissingData* data: type_info ) {
             if( data->sym_type == -1 ) {
                 continue;
@@ -134,7 +138,13 @@ public:
             if( data->sym_type == (int64_t) ASR::symbolType::Function ) {
                 SymbolTable* current_scope_copy = current_scope;
                 current_scope = data->scope;
+                current_function_dependencies.clear();
                 visit_expr(*data->expr);
+                if( !current_function_dependencies.empty() ) {
+                    for( auto& itr: current_function_dependencies ) {
+                        node2deps[current_scope->asr_owner].insert(itr);
+                    }
+                }
                 expr = ASRUtils::EXPR(tmp);
                 current_scope = current_scope_copy;
             }
@@ -153,7 +163,48 @@ public:
                     }
                 }
             }
+
+            ASR::symbol_t* sym = data->scope->get_symbol(data->sym_name);
+            if( sym && ASR::is_a<ASR::Variable_t>(*sym) ) {
+                ASR::Variable_t* sym_variable = ASR::down_cast<ASR::Variable_t>(sym);
+                Vec<char*> variable_dependencies_vec;
+                variable_dependencies_vec.reserve(al, 1);
+                ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, sym_variable->m_type,
+                    sym_variable->m_symbolic_value, sym_variable->m_value);
+                sym_variable->m_dependencies = variable_dependencies_vec.p;
+                sym_variable->n_dependencies = variable_dependencies_vec.size();
+            }
         }
+
+        for( auto& itr: node2deps ) {
+            if( ASR::is_a<ASR::symbol_t>(*itr.first) ) {
+                ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(itr.first);
+                if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
+                    Vec<char*> func_deps;
+                    ASR::Function_t* asr_owner_func = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
+                    func_deps.from_pointer_n_copy(al, asr_owner_func->m_dependencies,
+                                                  asr_owner_func->n_dependencies);
+                    for( auto dep: itr.second ) {
+                        if( !present(func_deps.p, func_deps.size(), dep) ) {
+                            func_deps.push_back(al, s2c(al, dep));
+                        }
+                    }
+                    asr_owner_func->m_dependencies = func_deps.p;
+                    asr_owner_func->n_dependencies = func_deps.size();
+                }
+            }
+        }
+
+        Vec<char*> x_deps_vec;
+        x_deps_vec.from_pointer_n_copy(al, x->m_dependencies, x->n_dependencies);
+        for( size_t i = 0; i < current_module_dependencies.size(); i++ ) {
+            if( !present(x_deps_vec, current_module_dependencies[i]) ) {
+                x_deps_vec.push_back(al, current_module_dependencies[i]);
+            }
+        }
+        x->m_dependencies = x_deps_vec.p;
+        x->n_dependencies = x_deps_vec.size();
+
         type_info.clear();
     }
 
@@ -207,14 +258,14 @@ public:
         // Add module dependencies
         R *m = ASR::down_cast2<R>(tmp);
         m->m_dependencies = current_module_dependencies.p;
-        m->n_dependencies = current_module_dependencies.n;
+        m->n_dependencies = current_module_dependencies.size();
         std::string sym_name = to_lower(x.m_name);
         if (parent_scope->get_symbol(sym_name) != nullptr) {
             throw SemanticError("Module already defined", tmp->loc);
         }
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
-        fix_type_info();
+        fix_type_info(m);
     }
 
     void visit_Module(const AST::Module_t &x) {
@@ -247,7 +298,7 @@ public:
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, to_lower(x.m_name)),
             current_module_dependencies.p,
-            current_module_dependencies.n,
+            current_module_dependencies.size(),
             /* a_body */ nullptr,
             /* n_body */ 0);
         std::string sym_name = to_lower(x.m_name);
@@ -256,7 +307,7 @@ public:
         }
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
-        fix_type_info();
+        fix_type_info(ASR::down_cast2<ASR::Program_t>(tmp));
     }
 
     void populate_implicit_dictionary(Location &a_loc, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
@@ -368,6 +419,7 @@ public:
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
+        current_function_dependencies.clear();
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
@@ -460,11 +512,16 @@ public:
             sym_name = sym_name + "~genericprocedure";
         }
 
+        Vec<char*> func_deps;
+        func_deps.reserve(al, current_function_dependencies.size());
+        for( auto& itr: current_function_dependencies ) {
+            func_deps.push_back(al, s2c(al, itr));
+        }
         tmp = ASR::make_Function_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, to_lower(sym_name)),
-            nullptr, 0,
+            func_deps.p, func_deps.size(),
             /* a_args */ args.p,
             /* n_args */ args.size(),
             /* a_body */ nullptr,
@@ -511,6 +568,7 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
+        current_function_dependencies.clear();
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
@@ -683,10 +741,14 @@ public:
                     throw SemanticError("Return type not supported",
                             x.base.base.loc);
             }
+            Vec<char*> variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
             // Add it as a local variable:
             return_var = ASR::make_Variable_t(al, x.base.base.loc,
-                current_scope, s2c(al, return_var_name), LFortran::ASRUtils::intent_return_var, nullptr, nullptr,
-                ASR::storage_typeType::Default, type,
+                current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
+                variable_dependencies_vec.size(), LFortran::ASRUtils::intent_return_var,
+                nullptr, nullptr, ASR::storage_typeType::Default, type,
                 current_procedure_abi_type, ASR::Public, ASR::presenceType::Required,
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
@@ -697,7 +759,14 @@ public:
             }
             // Extract the variable from the local scope
             return_var = (ASR::asr_t*) current_scope->get_symbol(return_var_name);
-            ASR::down_cast2<ASR::Variable_t>(return_var)->m_intent = LFortran::ASRUtils::intent_return_var;
+            ASR::Variable_t* return_variable = ASR::down_cast2<ASR::Variable_t>(return_var);
+            return_variable->m_intent = LFortran::ASRUtils::intent_return_var;
+            Vec<char*> variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, return_variable->m_type,
+                                                    return_variable->m_symbolic_value, return_variable->m_value);
+            return_variable->m_dependencies = variable_dependencies_vec.p;
+            return_variable->n_dependencies = variable_dependencies_vec.size();
         }
 
         ASR::asr_t *return_var_ref = ASR::make_Var_t(al, x.base.base.loc,
@@ -758,11 +827,16 @@ public:
             }
         }
 
+        Vec<char*> func_deps;
+        func_deps.reserve(al, current_function_dependencies.size());
+        for( auto& itr: current_function_dependencies ) {
+            func_deps.push_back(al, s2c(al, itr));
+        }
         tmp = ASR::make_Function_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, to_lower(sym_name)),
-            nullptr, 0,
+            func_deps.p, func_deps.size(),
             /* a_args */ args.p,
             /* n_args */ args.size(),
             /* a_body */ nullptr,

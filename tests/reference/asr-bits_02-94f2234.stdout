@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     all_ones 
+                                    [all_zeros] 
                                     Local 
                                     (IntegerBitNot 
                                         (Var 2 all_zeros) 
@@ -29,6 +30,7 @@
                                 (Variable 
                                     2 
                                     all_zeros 
+                                    [] 
                                     Local 
                                     (IntegerConstant 0 (Integer 8 [])) 
                                     (IntegerConstant 0 (Integer 8 [])) 
@@ -73,6 +75,7 @@
                                 (Variable 
                                     2 
                                     block_size 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 bit_size 

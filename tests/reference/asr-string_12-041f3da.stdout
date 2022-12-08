@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     digits 
+                                    [hex_digits] 
                                     Local 
                                     (ArraySection 
                                         (Var 2 hex_digits) 
@@ -38,6 +39,7 @@
                                 (Variable 
                                     2 
                                     fullhex_digits 
+                                    [] 
                                     Local 
                                     (StringConstant 
                                         "0123456789ABCDEFabcdef" 
@@ -58,6 +60,7 @@
                                 (Variable 
                                     2 
                                     hex_digits 
+                                    [fullhex_digits] 
                                     Local 
                                     (ArraySection 
                                         (Var 2 fullhex_digits) 
@@ -85,6 +88,7 @@
                                 (Variable 
                                     2 
                                     letters 
+                                    [] 
                                     Local 
                                     (StringConstant 
                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" 
@@ -105,6 +109,7 @@
                                 (Variable 
                                     2 
                                     lowercase 
+                                    [letters] 
                                     Local 
                                     (ArraySection 
                                         (Var 2 letters) 
@@ -132,6 +137,7 @@
                                 (Variable 
                                     2 
                                     lowerhex_digits 
+                                    [] 
                                     Local 
                                     (StringConstant 
                                         "0123456789abcdef" 
@@ -152,6 +158,7 @@
                                 (Variable 
                                     2 
                                     octal_digits 
+                                    [digits] 
                                     Local 
                                     (ArraySection 
                                         (Var 2 digits) 
@@ -179,6 +186,7 @@
                                 (Variable 
                                     2 
                                     uppercase 
+                                    [letters] 
                                     Local 
                                     (ArraySection 
                                         (Var 2 letters) 

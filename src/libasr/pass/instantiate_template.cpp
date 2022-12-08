@@ -53,7 +53,7 @@ public:
 
             // TODO: Copying variable can be abstracted into a function
             ASR::asr_t *v = ASR::make_Variable_t(al, loc, current_scope,
-                s2c(al, var_name), s_intent, init_expr, value, storage_type, arg_type,
+                s2c(al, var_name), nullptr, 0, s_intent, init_expr, value, storage_type, arg_type,
                 abi_type, s_access, s_presence, value_attr);
             current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));
 
@@ -69,7 +69,7 @@ public:
             ASR::ttype_t *return_param_type = ASRUtils::expr_type(x->m_return_var);
             ASR::ttype_t *return_type = substitute_type(return_param_type);
             ASR::asr_t *new_return_var = ASR::make_Variable_t(al, return_var->base.base.loc,
-                current_scope, s2c(al, return_var_name), return_var->m_intent, nullptr, nullptr,
+                current_scope, s2c(al, return_var_name), nullptr, 0, return_var->m_intent, nullptr, nullptr,
                 return_var->m_storage, return_type, return_var->m_abi, return_var->m_access,
                 return_var->m_presence, return_var->m_value_attr);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(new_return_var));
@@ -86,7 +86,7 @@ public:
                     ASR::Variable_t *var_sym = ASR::down_cast<ASR::Variable_t>(sym);
                     std::string var_sym_name = var_sym->m_name;
                     ASR::asr_t *new_var = ASR::make_Variable_t(al, var_sym->base.base.loc,
-                        current_scope, s2c(al, var_sym_name), var_sym->m_intent, nullptr, nullptr,
+                        current_scope, s2c(al, var_sym_name), nullptr, 0, var_sym->m_intent, nullptr, nullptr,
                         var_sym->m_storage, new_sym_type, var_sym->m_abi, var_sym->m_access,
                         var_sym->m_presence, var_sym->m_value_attr);
                     current_scope->add_symbol(var_sym_name, ASR::down_cast<ASR::symbol_t>(new_var));
@@ -243,6 +243,7 @@ public:
             ASR::asr_t* nested_generic_func = nested_tf.instantiate_Function(func);
             name = ASR::down_cast<ASR::symbol_t>(nested_generic_func);
         }
+        dependencies.insert(std::string(ASRUtils::symbol_name(name)));
         return ASR::make_FunctionCall_t(al, x->base.base.loc, name, x->m_original_name,
             args.p, args.size(), type, value, dt);
     }

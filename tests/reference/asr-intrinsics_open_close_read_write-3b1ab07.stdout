@@ -39,6 +39,7 @@
                                 (Variable 
                                     2 
                                     i 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -53,6 +54,7 @@
                                 (Variable 
                                     2 
                                     msg 
+                                    [] 
                                     Local 
                                     (StringConstant 
                                         "Some error occured" 
@@ -70,6 +72,7 @@
                                 (Variable 
                                     2 
                                     p 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -85,6 +88,7 @@
                                 (Variable 
                                     2 
                                     q 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -120,6 +124,7 @@
                                 (Variable 
                                     2 
                                     u 
+                                    [] 
                                     Local 
                                     (IntegerConstant 1 (Integer 4 [])) 
                                     () 
@@ -134,6 +139,7 @@
                                 (Variable 
                                     2 
                                     u_ptr 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -150,6 +156,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -165,6 +172,7 @@
                                 (Variable 
                                     2 
                                     y 
+                                    [] 
                                     Local 
                                     () 
                                     () 

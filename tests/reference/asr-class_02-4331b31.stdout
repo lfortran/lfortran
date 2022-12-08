@@ -58,6 +58,7 @@
                                                 (Variable 
                                                     3 
                                                     radius 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -88,6 +89,7 @@
                                                 (Variable 
                                                     4 
                                                     circle_area 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -102,6 +104,7 @@
                                                 (Variable 
                                                     4 
                                                     this 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -173,6 +176,7 @@
                                                 (Variable 
                                                     5 
                                                     area 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -187,6 +191,7 @@
                                                 (Variable 
                                                     5 
                                                     this 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -260,6 +265,7 @@
                                                 (Variable 
                                                     6 
                                                     c 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -331,6 +337,7 @@
                                 (Variable 
                                     2 
                                     pi 
+                                    [] 
                                     Local 
                                     (Cast 
                                         (RealConstant 

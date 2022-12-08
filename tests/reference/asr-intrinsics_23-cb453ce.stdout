@@ -61,6 +61,7 @@
                                 (Variable 
                                     2 
                                     i32 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 huge@i32huge 
@@ -82,6 +83,7 @@
                                 (Variable 
                                     2 
                                     i64 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 huge@i64huge 
@@ -103,6 +105,7 @@
                                 (Variable 
                                     2 
                                     y 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 huge@sphuge 
@@ -133,6 +136,7 @@
                                 (Variable 
                                     2 
                                     z 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 huge@dphuge 

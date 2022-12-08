@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     array 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -26,6 +27,7 @@
                                 (Variable 
                                     2 
                                     first 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -40,6 +42,7 @@
                                 (Variable 
                                     2 
                                     i 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -54,6 +57,7 @@
                                 (Variable 
                                     2 
                                     last 
+                                    [] 
                                     Local 
                                     () 
                                     () 

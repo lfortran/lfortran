@@ -24,12 +24,13 @@
                                                 (Variable 
                                                     225 
                                                     alnorm_arg_0 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Real 8 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -38,12 +39,13 @@
                                                 (Variable 
                                                     225 
                                                     alnorm_arg_1 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Logical 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -52,12 +54,13 @@
                                                 (Variable 
                                                     225 
                                                     alnorm_return_var_name 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Real 8 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -70,7 +73,7 @@
                                     (Var 225 alnorm_arg_1)] 
                                     [] 
                                     (Var 225 alnorm_return_var_name) 
-                                    Source 
+                                    BindC 
                                     Public 
                                     Interface 
                                     () 
@@ -87,6 +90,7 @@
                                 (Variable 
                                     2 
                                     b 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -106,12 +110,13 @@
                                                 (Variable 
                                                     226 
                                                     dgetrf_arg_0 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Real 8 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -120,12 +125,13 @@
                                                 (Variable 
                                                     226 
                                                     dgetrf_arg_1 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Real 8 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -134,12 +140,13 @@
                                                 (Variable 
                                                     226 
                                                     dgetrf_arg_2 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Real 8 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -153,7 +160,7 @@
                                     (Var 226 dgetrf_arg_2)] 
                                     [] 
                                     () 
-                                    Source 
+                                    BindC 
                                     Public 
                                     Interface 
                                     () 
@@ -190,6 +197,7 @@
                                 (Variable 
                                     2 
                                     one 
+                                    [] 
                                     Local 
                                     () 
                                     (RealConstant 
@@ -207,6 +215,7 @@
                                 (Variable 
                                     2 
                                     prho 
+                                    [] 
                                     ReturnVar 
                                     () 
                                     () 
@@ -221,6 +230,7 @@
                                 (Variable 
                                     2 
                                     six 
+                                    [] 
                                     Local 
                                     () 
                                     (RealConstant 
@@ -238,6 +248,7 @@
                                 (Variable 
                                     2 
                                     two 
+                                    [] 
                                     Local 
                                     () 
                                     (RealConstant 
@@ -255,6 +266,7 @@
                                 (Variable 
                                     2 
                                     u 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -269,6 +281,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -283,6 +296,7 @@
                                 (Variable 
                                     2 
                                     y 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -297,6 +311,7 @@
                                 (Variable 
                                     2 
                                     zero 
+                                    [] 
                                     Local 
                                     () 
                                     (RealConstant 
@@ -313,9 +328,9 @@
                             
                         }) 
                     prho 
-                    [exp@dexp
-                    alnorm
-                    dgetrf] 
+                    [alnorm
+                    dgetrf
+                    exp@dexp] 
                     [] 
                     [(= 
                         (Var 2 prho) 

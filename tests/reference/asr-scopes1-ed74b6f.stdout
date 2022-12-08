@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     3 
                                                     b 
+                                                    [] 
                                                     Out 
                                                     () 
                                                     () 
@@ -60,6 +61,7 @@
                                 (Variable 
                                     2 
                                     i 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -74,6 +76,7 @@
                                 (Variable 
                                     2 
                                     j 
+                                    [] 
                                     Local 
                                     () 
                                     () 

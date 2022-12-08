@@ -61,6 +61,7 @@
                                 (Variable 
                                     2 
                                     dp 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 kind 
@@ -95,6 +96,7 @@
                                 (Variable 
                                     2 
                                     pi 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 acos@sacos 
@@ -132,6 +134,7 @@
                                 (Variable 
                                     2 
                                     pi_dp 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 acos@dacos 
@@ -189,6 +192,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     (FunctionCall 
                                         2 cos@scos 
@@ -242,6 +246,7 @@
                                 (Variable 
                                     2 
                                     y 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -256,6 +261,7 @@
                                 (Variable 
                                     2 
                                     y2 
+                                    [] 
                                     Local 
                                     (IntegerConstant 3 (Integer 4 [])) 
                                     (IntegerConstant 3 (Integer 4 [])) 

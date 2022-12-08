@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     c 
+                                    [] 
                                     Local 
                                     (StringConstant 
                                         "BC" 
@@ -28,6 +29,7 @@
                                 (Variable 
                                     2 
                                     is_alpha 
+                                    [] 
                                     Local 
                                     () 
                                     () 

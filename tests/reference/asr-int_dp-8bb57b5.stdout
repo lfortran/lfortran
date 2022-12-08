@@ -11,6 +11,7 @@
                                 (Variable 
                                     2 
                                     u 
+                                    [] 
                                     Local 
                                     (IntegerConstant 2147483647 (Integer 4 [])) 
                                     () 
@@ -25,6 +26,7 @@
                                 (Variable 
                                     2 
                                     v 
+                                    [] 
                                     Local 
                                     (Cast 
                                         (IntegerConstant 2147483647 (Integer 4 [])) 

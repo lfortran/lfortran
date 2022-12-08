@@ -11,6 +11,7 @@
                                 (Variable 
                                     7 
                                     r 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -88,6 +89,7 @@
                                                                 (Variable 
                                                                     4 
                                                                     f 
+                                                                    [] 
                                                                     ReturnVar 
                                                                     () 
                                                                     () 
@@ -118,10 +120,26 @@
                                                     [] 
                                                     .false.
                                                 ), 
+                                            f_val:
+                                                (Variable 
+                                                    3 
+                                                    f_val 
+                                                    [] 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
                                             iter:
                                                 (Variable 
                                                     3 
                                                     iter 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -136,6 +154,7 @@
                                                 (Variable 
                                                     3 
                                                     solver 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -150,16 +169,11 @@
                                         }) 
                                     solver 
                                     [f
-                                    sub1
-                                    f] 
+                                    sub1] 
                                     [(Var 3 f)
                                     (Var 3 iter)] 
-                                    [(Print 
-                                        () 
-                                        [(StringConstant 
-                                            "before:" 
-                                            (Character 1 7 () [])
-                                        )
+                                    [(= 
+                                        (Var 3 f_val) 
                                         (FunctionCall 
                                             3 f 
                                             () 
@@ -167,7 +181,16 @@
                                             (Integer 4 []) 
                                             () 
                                             ()
-                                        )] 
+                                        ) 
+                                        ()
+                                    )
+                                    (Print 
+                                        () 
+                                        [(StringConstant 
+                                            "before:" 
+                                            (Character 1 7 () [])
+                                        )
+                                        (Var 3 f_val)] 
                                         () 
                                         ()
                                     )
@@ -190,12 +213,8 @@
                                         ) 
                                         ()
                                     )
-                                    (Print 
-                                        () 
-                                        [(StringConstant 
-                                            "after:" 
-                                            (Character 1 6 () [])
-                                        )
+                                    (= 
+                                        (Var 3 f_val) 
                                         (FunctionCall 
                                             3 f 
                                             () 
@@ -203,7 +222,16 @@
                                             (Integer 4 []) 
                                             () 
                                             ()
-                                        )] 
+                                        ) 
+                                        ()
+                                    )
+                                    (Print 
+                                        () 
+                                        [(StringConstant 
+                                            "after:" 
+                                            (Character 1 6 () [])
+                                        )
+                                        (Var 3 f_val)] 
                                         () 
                                         ()
                                     )] 
@@ -235,6 +263,7 @@
                                                                 (Variable 
                                                                     6 
                                                                     getx 
+                                                                    [] 
                                                                     ReturnVar 
                                                                     () 
                                                                     () 
@@ -283,6 +312,7 @@
                                                 (Variable 
                                                     5 
                                                     iter 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -297,6 +327,7 @@
                                                 (Variable 
                                                     5 
                                                     sub1 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -311,6 +342,7 @@
                                                 (Variable 
                                                     5 
                                                     tmp 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -325,6 +357,7 @@
                                                 (Variable 
                                                     5 
                                                     x 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -339,6 +372,7 @@
                                                 (Variable 
                                                     5 
                                                     y 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 

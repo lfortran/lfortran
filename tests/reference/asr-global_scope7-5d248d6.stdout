@@ -6,6 +6,7 @@
                 (Variable 
                     1 
                     x 
+                    [] 
                     Local 
                     (IntegerConstant 6 (Integer 4 [])) 
                     () 

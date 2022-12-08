@@ -33,10 +33,7 @@ namespace LFortran {
                     is_ok = false;
                     break;
                 }
-                if( (m_dims[r].m_length != nullptr &&
-                    m_dims[r].m_length->type != ASR::exprType::IntegerConstant) ||
-                    (m_dims[r].m_start != nullptr &&
-                    m_dims[r].m_start->type != ASR::exprType::IntegerConstant) ) {
+                if( m_dims[r].m_length == nullptr ) {
                     is_ok = false;
                     break;
                 }
@@ -646,6 +643,16 @@ namespace LFortran {
             llvm::Value* src_is_allocated_ptr = this->get_is_allocated_flag(src);
             builder->CreateStore(src_is_allocated_ptr, llvm_utils->create_gep(src, 3));
             builder->CreateStore(n_dims, this->get_rank(dest, true));
+        }
+
+        void SimpleCMODescriptor::copy_array_data_only(llvm::Value* src, llvm::Value* dest,
+            llvm::Module* module, ASR::ttype_t* asr_data_type, llvm::Value* num_elements) {
+            llvm::Type* llvm_data_type = tkr2array[ASRUtils::get_type_code(asr_data_type, false, false)].second;
+            llvm::DataLayout data_layout(module);
+            uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
+            llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+            num_elements = builder->CreateMul(num_elements, llvm_size);
+            builder->CreateMemCpy(src, llvm::MaybeAlign(), dest, llvm::MaybeAlign(), num_elements);
         }
 
     } // LLVMArrUtils

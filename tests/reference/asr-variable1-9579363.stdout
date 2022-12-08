@@ -11,7 +11,8 @@
                                 (Variable 
                                     2 
                                     m 
-                                    Local 
+                                    [] 
+                                    Unspecified 
                                     () 
                                     () 
                                     Default 
@@ -30,13 +31,14 @@
                                                 (Variable 
                                                     3 
                                                     matveca_arg_0 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Complex 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                                    (Var 2 m))]) 
-                                                    Source 
+                                                    (Complex 4 [(() 
+                                                    ())]) 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -45,12 +47,13 @@
                                                 (Variable 
                                                     3 
                                                     matveca_arg_1 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Integer 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -59,13 +62,14 @@
                                                 (Variable 
                                                     3 
                                                     matveca_arg_2 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
-                                                    (Complex 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                                    (Var 2 n))]) 
-                                                    Source 
+                                                    (Complex 4 [(() 
+                                                    ())]) 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -74,12 +78,13 @@
                                                 (Variable 
                                                     3 
                                                     matveca_arg_3 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Complex 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -88,12 +93,13 @@
                                                 (Variable 
                                                     3 
                                                     matveca_arg_4 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Complex 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -102,12 +108,13 @@
                                                 (Variable 
                                                     3 
                                                     matveca_arg_5 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Complex 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -116,12 +123,13 @@
                                                 (Variable 
                                                     3 
                                                     matveca_arg_6 
+                                                    [] 
                                                     Unspecified 
                                                     () 
                                                     () 
                                                     Default 
                                                     (Complex 4 []) 
-                                                    Source 
+                                                    BindC 
                                                     Public 
                                                     Required 
                                                     .false.
@@ -139,7 +147,7 @@
                                     (Var 3 matveca_arg_6)] 
                                     [] 
                                     () 
-                                    Source 
+                                    BindC 
                                     Public 
                                     Interface 
                                     () 
@@ -156,7 +164,8 @@
                                 (Variable 
                                     2 
                                     n 
-                                    Local 
+                                    [] 
+                                    Unspecified 
                                     () 
                                     () 
                                     Default 
@@ -170,6 +179,7 @@
                                 (Variable 
                                     2 
                                     p1 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -184,6 +194,7 @@
                                 (Variable 
                                     2 
                                     p2 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -198,6 +209,7 @@
                                 (Variable 
                                     2 
                                     p3 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -212,6 +224,7 @@
                                 (Variable 
                                     2 
                                     p4 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -226,6 +239,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [m] 
                                     Local 
                                     () 
                                     () 
@@ -241,6 +255,7 @@
                                 (Variable 
                                     2 
                                     y 
+                                    [n] 
                                     Local 
                                     () 
                                     () 
@@ -256,7 +271,8 @@
                         }) 
                     variable01 
                     [matveca] 
-                    [] 
+                    [(Var 2 m)
+                    (Var 2 n)] 
                     [(SubroutineCall 
                         2 matveca 
                         () 

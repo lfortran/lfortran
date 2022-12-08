@@ -208,6 +208,8 @@ LFORTRAN_API void _lfortran_dp_rand_num(double *x);
 LFORTRAN_API int64_t _lpython_open(char *path, char *flags);
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n);
 LFORTRAN_API void _lpython_close(int64_t fd);
+LFORTRAN_API int32_t _lfortran_ichar(char *c);
+LFORTRAN_API int32_t _lfortran_iachar(char *c);
 
 #ifdef __cplusplus
 }

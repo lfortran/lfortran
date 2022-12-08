@@ -27,6 +27,7 @@
                                                 (Variable 
                                                     4 
                                                     lhs 
+                                                    [] 
                                                     InOut 
                                                     () 
                                                     () 
@@ -44,6 +45,7 @@
                                                 (Variable 
                                                     4 
                                                     rhs 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -93,6 +95,7 @@
                                                 (Variable 
                                                     3 
                                                     raw 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -123,6 +126,7 @@
                                                 (Variable 
                                                     5 
                                                     string 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -140,6 +144,7 @@
                                                 (Variable 
                                                     5 
                                                     trimmed_string 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -231,6 +236,7 @@
                                                 (Variable 
                                                     7 
                                                     chomped_string 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -248,6 +254,7 @@
                                                 (Variable 
                                                     7 
                                                     last 
+                                                    [] 
                                                     Local 
                                                     () 
                                                     () 
@@ -262,6 +269,7 @@
                                                 (Variable 
                                                     7 
                                                     string 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 

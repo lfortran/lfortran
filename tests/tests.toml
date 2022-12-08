@@ -28,6 +28,10 @@ ast = true
 asr = true
 
 [[test]]
+filename = "../integration_tests/test_backspace_01.f90"
+asr = true
+
+[[test]]
 filename = "subroutine2.f90"
 ast = true
 julia = true
@@ -1800,6 +1804,11 @@ wat = true
 julia = true
 
 [[test]]
+filename = "../integration_tests/expr_11.f90"
+c = true
+julia = true
+
+[[test]]
 filename = "../integration_tests/modules_11.f90"
 ast = true
 asr = true
@@ -2277,6 +2286,10 @@ filename = "../integration_tests/functions_10.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/functions_12.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/arrays_elemental_15.f90"
 asr = true
 
@@ -2327,6 +2340,10 @@ filename = "implicit_interface2.f90"
 asr_implicit_interface = true
 
 [[test]]
+filename = "implicit_interface5.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "implicit_interface3.f90"
 asr_implicit_interface_and_typing = true
 
@@ -2337,6 +2354,10 @@ asr_implicit_interface_and_typing = true
 [[test]]
 filename = "allow_implicit_interface2.f90"
 asr_implicit_interface_and_typing = true
+
+[[test]]
+filename = "../integration_tests/implicit_interface_04.f90"
+asr_implicit_interface_and_typing_with_llvm = true
 
 [[test]]
 filename = "dimension_attr2.f90"

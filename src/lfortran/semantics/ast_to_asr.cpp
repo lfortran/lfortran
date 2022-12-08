@@ -52,8 +52,6 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         return res.error;
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
-    PassUtils::UpdateDependenciesVisitor dep_visitor_symtab(al);
-    dep_visitor_symtab.visit_TranslationUnit(*tu);
 #if defined(WITH_LFORTRAN_ASSERT)
         if (!asr_verify(*tu, true, diagnostics)) {
             return Error();
@@ -68,8 +66,6 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         } else {
             return res.error;
         }
-        PassUtils::UpdateDependenciesVisitor dep_visitor_body(al);
-        dep_visitor_body.visit_TranslationUnit(*tu);
 #if defined(WITH_LFORTRAN_ASSERT)
         if (!asr_verify(*tu, true, diagnostics)) {
             return Error();

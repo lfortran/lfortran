@@ -41,6 +41,7 @@
                                 (Variable 
                                     8 
                                     p 
+                                    [] 
                                     Local 
                                     (Cast 
                                         (IntegerConstant 5 (Integer 4 [])) 
@@ -63,6 +64,7 @@
                                 (Variable 
                                     8 
                                     q 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -110,6 +112,7 @@
                                                 (Variable 
                                                     3 
                                                     u 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -124,6 +127,7 @@
                                                 (Variable 
                                                     3 
                                                     v 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -198,6 +202,7 @@
                                                 (Variable 
                                                     5 
                                                     x 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -212,6 +217,7 @@
                                                 (Variable 
                                                     5 
                                                     y 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -265,8 +271,7 @@
                             
                         }) 
                     functions_07_b 
-                    [functions_07_a
-                    functions_07_a] 
+                    [functions_07_a] 
                     .false. 
                     .false.
                 ), 
@@ -304,6 +309,7 @@
                                                 (Variable 
                                                     7 
                                                     w 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -318,6 +324,7 @@
                                                 (Variable 
                                                     7 
                                                     z 
+                                                    [] 
                                                     ReturnVar 
                                                     () 
                                                     () 
@@ -371,8 +378,7 @@
                             
                         }) 
                     functions_07_c 
-                    [functions_07_b
-                    functions_07_b] 
+                    [functions_07_b] 
                     .false. 
                     .false.
                 )

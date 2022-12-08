@@ -16,6 +16,7 @@
                                                 (Variable 
                                                     3 
                                                     x 
+                                                    [] 
                                                     In 
                                                     () 
                                                     () 
@@ -31,6 +32,7 @@
                                                 (Variable 
                                                     3 
                                                     y 
+                                                    [] 
                                                     Out 
                                                     () 
                                                     () 
@@ -71,6 +73,7 @@
                                 (Variable 
                                     2 
                                     x 
+                                    [] 
                                     Local 
                                     () 
                                     () 
@@ -86,6 +89,7 @@
                                 (Variable 
                                     2 
                                     y 
+                                    [] 
                                     Local 
                                     () 
                                     () 

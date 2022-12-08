@@ -1,0 +1,124 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            test_backspace_01:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            i:
+                                (Variable 
+                                    2 
+                                    i 
+                                    [] 
+                                    Local 
+                                    (IntegerConstant 0 (Integer 4 [])) 
+                                    () 
+                                    Save 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            iostat:
+                                (Variable 
+                                    2 
+                                    iostat 
+                                    [] 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            u:
+                                (Variable 
+                                    2 
+                                    u 
+                                    [] 
+                                    Local 
+                                    (IntegerConstant 10 (Integer 4 [])) 
+                                    () 
+                                    Save 
+                                    (Integer 4 []) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                )
+                            
+                        }) 
+                    test_backspace_01 
+                    [] 
+                    [(FileOpen 
+                        0 
+                        (Var 2 u) 
+                        (StringConstant 
+                            "tests.txt" 
+                            (Character 1 9 () [])
+                        ) 
+                        ()
+                    )
+                    (WhileLoop 
+                        (LogicalConstant 
+                            .true. 
+                            (Logical 4 [])
+                        ) 
+                        [(FileRead 
+                            0 
+                            (Var 2 u) 
+                            () 
+                            () 
+                            () 
+                            () 
+                            [(Var 2 i)]
+                        )]
+                    )
+                    (GoToTarget 
+                        20 
+                        20
+                    )
+                    (FileBackspace 
+                        20 
+                        (Var 2 u) 
+                        (Var 2 iostat) 
+                        ()
+                    )
+                    (If 
+                        (IntegerCompare 
+                            (Var 2 iostat) 
+                            Eq 
+                            (IntegerConstant 0 (Integer 4 [])) 
+                            (Logical 4 []) 
+                            ()
+                        ) 
+                        [(FileWrite 
+                            0 
+                            (Var 2 u) 
+                            () 
+                            () 
+                            () 
+                            () 
+                            [(IntegerBinOp 
+                                (Var 2 i) 
+                                Add 
+                                (IntegerConstant 1 (Integer 4 [])) 
+                                (Integer 4 []) 
+                                ()
+                            )] 
+                            () 
+                            ()
+                        )] 
+                        []
+                    )]
+                )
+            
+        }) 
+    []
+)
