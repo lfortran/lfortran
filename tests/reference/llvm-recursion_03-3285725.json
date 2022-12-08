@@ -6,11 +6,7 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-recursion_03-3285725.stdout",
-<<<<<<< HEAD
-    "stdout_hash": "800a831de4432b8017f39c5a22a5fb5864e422a9036daab174b85932",
-=======
-    "stdout_hash": "257e1dfd519158cfc2f503a86b55d55c8c1565f9568ad1c3f045db9d",
->>>>>>> main
+    "stdout_hash": "1756b47944f3fb4a560528aa4d0cce49455ab20b16235c979ce282fc",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

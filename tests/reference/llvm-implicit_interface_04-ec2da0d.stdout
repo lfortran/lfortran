@@ -67,27 +67,27 @@ declare void @_lfortran_i64sys_clock(i64*, i64*, i64*)
 
 define float @__module_lfortran_intrinsic_math_sabs(float* %x) {
 .entry:
-  %r = alloca float, align 4
-  %0 = load float, float* %x, align 4
+  %r = alloca float
+  %0 = load float, float* %x
   %1 = fcmp uge float %0, 0.000000e+00
   br i1 %1, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %2 = load float, float* %x, align 4
-  store float %2, float* %r, align 4
+  %2 = load float, float* %x
+  store float %2, float* %r
   br label %ifcont
 
 else:                                             ; preds = %.entry
-  %3 = load float, float* %x, align 4
+  %3 = load float, float* %x
   %4 = fsub float 0.000000e+00, %3
-  store float %4, float* %r, align 4
+  store float %4, float* %r
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
-  %5 = load float, float* %r, align 4
+  %5 = load float, float* %r
   ret float %5
 }
 
@@ -105,7 +105,7 @@ declare void @_lfortran_sp_rand_num(float*)
 define void @driver(void (i32*, i32*, i32*)* %fnc, i32* %arr, i32* %m) {
 .entry:
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @3, i32 0, i32 0), double 1.000000e+00, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
-  %0 = load i32, i32* %m, align 4
+  %0 = load i32, i32* %m
   %1 = mul i32 1, %0
   %2 = getelementptr inbounds i32, i32* %arr, i32 2
   call void %fnc(i32* %arr, i32* %m, i32* %2)
@@ -119,7 +119,7 @@ declare void @fnc(i32*, i32*, i32*)
 
 define void @implicit_interface_check(i32* %arr1, i32* %m, i32* %c) {
 .entry:
-  %0 = load i32, i32* %m, align 4
+  %0 = load i32, i32* %m
   %1 = icmp ne i32 %0, 3
   br i1 %1, label %then, label %else
 
@@ -132,7 +132,7 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %2 = load i32, i32* %c, align 4
+  %2 = load i32, i32* %c
   %3 = icmp ne i32 %2, 30
   br i1 %3, label %then1, label %else2
 
@@ -145,10 +145,10 @@ else2:                                            ; preds = %ifcont
   br label %ifcont3
 
 ifcont3:                                          ; preds = %else2, %then1
-  %4 = load i32, i32* %m, align 4
+  %4 = load i32, i32* %m
   %5 = mul i32 1, %4
   %6 = getelementptr inbounds i32, i32* %arr1, i32 0
-  %7 = load i32, i32* %6, align 4
+  %7 = load i32, i32* %6
   %8 = icmp ne i32 %7, 10
   br i1 %8, label %then4, label %else5
 
@@ -161,10 +161,10 @@ else5:                                            ; preds = %ifcont3
   br label %ifcont6
 
 ifcont6:                                          ; preds = %else5, %then4
-  %9 = load i32, i32* %m, align 4
+  %9 = load i32, i32* %m
   %10 = mul i32 1, %9
   %11 = getelementptr inbounds i32, i32* %arr1, i32 1
-  %12 = load i32, i32* %11, align 4
+  %12 = load i32, i32* %11
   %13 = icmp ne i32 %12, 20
   br i1 %13, label %then7, label %else8
 
@@ -177,10 +177,10 @@ else8:                                            ; preds = %ifcont6
   br label %ifcont9
 
 ifcont9:                                          ; preds = %else8, %then7
-  %14 = load i32, i32* %m, align 4
+  %14 = load i32, i32* %m
   %15 = mul i32 1, %14
   %16 = getelementptr inbounds i32, i32* %arr1, i32 2
-  %17 = load i32, i32* %16, align 4
+  %17 = load i32, i32* %16
   %18 = icmp ne i32 %17, 30
   br i1 %18, label %then10, label %else11
 
@@ -207,45 +207,45 @@ declare void @exit(i32)
 
 define i32 @main() {
 .entry:
-  %b = alloca %array, align 8
+  %b = alloca %array
   %0 = getelementptr %array, %array* %b, i32 0, i32 1
-  store i32 0, i32* %0, align 4
+  store i32 0, i32* %0
   %1 = getelementptr %array, %array* %b, i32 0, i32 2
-  %2 = alloca i32, align 4
-  store i32 1, i32* %2, align 4
-  %3 = load i32, i32* %2, align 4
-  %4 = alloca %dimension_descriptor, i32 %3, align 8
+  %2 = alloca i32
+  store i32 1, i32* %2
+  %3 = load i32, i32* %2
+  %4 = alloca %dimension_descriptor, i32 %3
   %5 = getelementptr %array, %array* %b, i32 0, i32 4
-  store i32 1, i32* %5, align 4
-  store %dimension_descriptor* %4, %dimension_descriptor** %1, align 8
-  %6 = load %dimension_descriptor*, %dimension_descriptor** %1, align 8
+  store i32 1, i32* %5
+  store %dimension_descriptor* %4, %dimension_descriptor** %1
+  %6 = load %dimension_descriptor*, %dimension_descriptor** %1
   %7 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %6, i32 0
   %8 = getelementptr %dimension_descriptor, %dimension_descriptor* %7, i32 0, i32 0
   %9 = getelementptr %dimension_descriptor, %dimension_descriptor* %7, i32 0, i32 1
   %10 = getelementptr %dimension_descriptor, %dimension_descriptor* %7, i32 0, i32 2
-  store i32 1, i32* %8, align 4
-  store i32 1, i32* %9, align 4
-  store i32 3, i32* %10, align 4
-  %11 = alloca i32, align 4
-  store i32 3, i32* %11, align 4
+  store i32 1, i32* %8
+  store i32 1, i32* %9
+  store i32 3, i32* %10
+  %11 = alloca i32
+  store i32 3, i32* %11
   %12 = getelementptr %array, %array* %b, i32 0, i32 0
-  %13 = load i32, i32* %11, align 4
-  %14 = alloca i32, i32 %13, align 4
-  store i32* %14, i32** %12, align 8
-  %15 = alloca <3 x i32>, align 16
+  %13 = load i32, i32* %11
+  %14 = alloca i32, i32 %13
+  store i32* %14, i32** %12
+  %15 = alloca <3 x i32>
   %16 = getelementptr <3 x i32>, <3 x i32>* %15, i32 0, i32 0
-  store i32 10, i32* %16, align 4
+  store i32 10, i32* %16
   %17 = getelementptr <3 x i32>, <3 x i32>* %15, i32 0, i32 1
-  store i32 20, i32* %17, align 4
+  store i32 20, i32* %17
   %18 = getelementptr <3 x i32>, <3 x i32>* %15, i32 0, i32 2
-  store i32 30, i32* %18, align 4
+  store i32 30, i32* %18
   %19 = getelementptr <3 x i32>, <3 x i32>* %15, i32 0, i32 0
   %20 = getelementptr %array, %array* %b, i32 0, i32 0
-  store i32* %19, i32** %20, align 8
-  %n = alloca i32, align 4
-  store i32 3, i32* %n, align 4
+  store i32* %19, i32** %20
+  %n = alloca i32
+  store i32 3, i32* %n
   %21 = getelementptr %array, %array* %b, i32 0, i32 0
-  %22 = load i32*, i32** %21, align 8
+  %22 = load i32*, i32** %21
   call void @driver(void (i32*, i32*, i32*)* @implicit_interface_check, i32* %22, i32* %n)
   ret i32 0
 }
