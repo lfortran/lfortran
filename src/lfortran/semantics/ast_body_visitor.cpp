@@ -675,6 +675,8 @@ public:
         ASR::ttype_t* value_type = LFortran::ASRUtils::expr_type(value);
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
         bool is_value_pointer = ASRUtils::is_pointer(value_type);
+        std::cout<<"is_value_pointer: "<<is_value_pointer<<std::endl;
+        std::cout<<"is_target_pointer: "<<is_target_pointer<<std::endl;
         if( !(is_target_pointer && !is_value_pointer) ) {
             throw SemanticError("Only a pointer variable can be associated with a non-pointer variable.", x.base.base.loc);
         }
@@ -1012,6 +1014,69 @@ public:
         }
         tmp = ASR::make_Select_t(al, x.base.base.loc, a_test, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size());
+    }
+
+    void visit_SelectType(const AST::SelectType_t& x) {
+        SymbolTable* parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        if( !x.m_selector ) {
+            throw SemanticError("Selector expression is missing in select type statement.",
+                                x.base.base.loc);
+        }
+        visit_expr(*x.m_selector);
+        ASR::expr_t* m_selector = ASRUtils::EXPR(tmp);
+        if( x.m_assoc_name ) {
+            ASR::ttype_t* selector_type = ASRUtils::expr_type(m_selector);
+            Vec<char*> assoc_deps;
+            assoc_deps.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, m_selector);
+            ASR::symbol_t* assoc_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                al, x.base.base.loc, current_scope, x.m_assoc_name,
+                assoc_deps.p, assoc_deps.size(), ASR::intentType::Local, m_selector, nullptr,
+                ASR::storage_typeType::Default, selector_type, ASR::abiType::Source,
+                ASR::accessType::Public, ASR::presenceType::Required, false));
+            current_scope->add_symbol(std::string(x.m_assoc_name), assoc_sym);
+        }
+        Vec<ASR::stmt_t*> select_type_default;
+        select_type_default.reserve(al, 1);
+        Vec<ASR::type_stmt_t*> select_type_body;
+        select_type_body.reserve(al, x.n_body);
+        for( size_t i = 0; i < x.n_body; i++ ) {
+            switch( x.m_body[i]->type ) {
+                case AST::type_stmtType::ClassStmt: {
+                    AST::ClassStmt_t* class_stmt = AST::down_cast<AST::ClassStmt_t>(x.m_body[i]);
+                    ASR::symbol_t* sym = current_scope->resolve_symbol(std::string(class_stmt->m_id));
+                    Vec<ASR::stmt_t*> class_stmt_body;
+                    class_stmt_body.reserve(al, class_stmt->n_body);
+                    transform_stmts(class_stmt_body, class_stmt->n_body, class_stmt->m_body);
+                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmt_t(al,
+                        class_stmt->base.base.loc, sym, class_stmt_body.p, class_stmt_body.size())));
+                    break;
+                }
+                case AST::type_stmtType::TypeStmtName: {
+                    AST::TypeStmtName_t* type_stmt_name = AST::down_cast<AST::TypeStmtName_t>(x.m_body[i]);
+                    ASR::symbol_t* sym = current_scope->resolve_symbol(std::string(type_stmt_name->m_name));
+                    Vec<ASR::stmt_t*> type_stmt_name_body;
+                    type_stmt_name_body.reserve(al, type_stmt_name->n_body);
+                    transform_stmts(type_stmt_name_body, type_stmt_name->n_body, type_stmt_name->m_body);
+                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmt_t(al,
+                        type_stmt_name->base.base.loc, sym, type_stmt_name_body.p, type_stmt_name_body.size())));
+                    break;
+                }
+                default: {
+                    throw SemanticError(std::to_string(x.m_body[i]->type) + " statement not supported yet in select type",
+                                        x.m_body[i]->base.loc);
+                }
+            }
+        }
+
+        std::string select_type_name = parent_scope->get_unique_name("~select_type_");
+        tmp = ASR::make_SelectType_t(al, x.base.base.loc, current_scope, s2c(al, select_type_name),
+                                     select_type_body.p, select_type_body.size(), select_type_default.p,
+                                     select_type_default.size());
+        parent_scope->add_symbol(select_type_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        tmp = ASR::make_SelectTypeCall_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(tmp));
+        current_scope = parent_scope;
     }
 
     void visit_Submodule(const AST::Submodule_t &x) {
