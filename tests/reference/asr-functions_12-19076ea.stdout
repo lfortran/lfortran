@@ -1,0 +1,179 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            functions_12:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            decodebase:
+                                (Function 
+                                    (SymbolTable
+                                        3
+                                        {
+                                            huge:
+                                                (ExternalSymbol 
+                                                    3 
+                                                    huge 
+                                                    29 huge 
+                                                    lfortran_intrinsic_math2 
+                                                    [] 
+                                                    huge 
+                                                    Private
+                                                ), 
+                                            huge@i32huge:
+                                                (ExternalSymbol 
+                                                    3 
+                                                    huge@i32huge 
+                                                    29 i32huge 
+                                                    lfortran_intrinsic_math2 
+                                                    [] 
+                                                    i32huge 
+                                                    Private
+                                                ), 
+                                            len:
+                                                (ExternalSymbol 
+                                                    3 
+                                                    len 
+                                                    5 len 
+                                                    lfortran_intrinsic_builtin 
+                                                    [] 
+                                                    len 
+                                                    Private
+                                                ), 
+                                            r:
+                                                (Variable 
+                                                    3 
+                                                    r 
+                                                    [] 
+                                                    ReturnVar 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Logical 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            real:
+                                                (ExternalSymbol 
+                                                    3 
+                                                    real 
+                                                    5 real 
+                                                    lfortran_intrinsic_builtin 
+                                                    [] 
+                                                    real 
+                                                    Private
+                                                ), 
+                                            string:
+                                                (Variable 
+                                                    3 
+                                                    string 
+                                                    [] 
+                                                    In 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Character 1 -1 () []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            string_local:
+                                                (Variable 
+                                                    3 
+                                                    string_local 
+                                                    [string] 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Character 1 -3 (FunctionCall 
+                                                        3 len 
+                                                        () 
+                                                        [((Var 3 string))] 
+                                                        (Integer 4 []) 
+                                                        () 
+                                                        ()
+                                                    ) []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                ), 
+                                            x:
+                                                (Variable 
+                                                    3 
+                                                    x 
+                                                    [] 
+                                                    Local 
+                                                    (Cast 
+                                                        (FunctionCall 
+                                                            3 huge@i32huge 
+                                                            3 huge 
+                                                            [((IntegerConstant 1 (Integer 4 [])))] 
+                                                            (Integer 4 []) 
+                                                            (IntegerConstant 2147483647 (Integer 4 [])) 
+                                                            ()
+                                                        ) 
+                                                        IntegerToReal 
+                                                        (Real 4 []) 
+                                                        (RealConstant 
+                                                            2147483647.000000 
+                                                            (Real 4 [])
+                                                        )
+                                                    ) 
+                                                    (RealConstant 
+                                                        2147483647.000000 
+                                                        (Real 4 [])
+                                                    ) 
+                                                    Parameter 
+                                                    (Real 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    decodebase 
+                                    [huge@i32huge
+                                    len] 
+                                    [(Var 3 string)] 
+                                    [] 
+                                    (Var 3 r) 
+                                    Source 
+                                    Public 
+                                    Implementation 
+                                    () 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    .false. 
+                                    [] 
+                                    [] 
+                                    .false.
+                                )
+                            
+                        }) 
+                    functions_12 
+                    [lfortran_intrinsic_builtin
+                    lfortran_intrinsic_math2] 
+                    []
+                ), 
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin), 
+            lfortran_intrinsic_math2:
+                (IntrinsicModule lfortran_intrinsic_math2), 
+            lfortran_intrinsic_math3:
+                (IntrinsicModule lfortran_intrinsic_math3)
+            
+        }) 
+    []
+)
