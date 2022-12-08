@@ -2348,6 +2348,10 @@ filename = "allow_implicit_interface2.f90"
 asr_implicit_interface_and_typing = true
 
 [[test]]
+filename = "../integration_tests/implicit_interface_04.f90"
+asr_implicit_interface_and_typing_with_llvm = true
+
+[[test]]
 filename = "dimension_attr2.f90"
 asr_implicit_typing = true
 
