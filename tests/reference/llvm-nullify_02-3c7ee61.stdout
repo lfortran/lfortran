@@ -3,17 +3,17 @@ source_filename = "LFortran"
 
 define i32 @main() {
 .entry:
-  %p1 = alloca float*, align 8
-  %p2 = alloca i32*, align 8
-  %t1 = alloca float, align 4
-  %t2 = alloca i32, align 4
-  store float* %t1, float** %p1, align 8
-  %0 = load float*, float** %p1, align 8
-  store float 1.000000e+00, float* %0, align 4
-  store i32* %t2, i32** %p2, align 8
-  %1 = load i32*, i32** %p2, align 8
-  store i32 2, i32* %1, align 4
-  store float* null, float** %p1, align 8
-  store i32* null, i32** %p2, align 8
+  %p1 = alloca float*
+  %p2 = alloca i32*
+  %t1 = alloca float
+  %t2 = alloca i32
+  store float* %t1, float** %p1
+  %0 = load float*, float** %p1
+  store float 1.000000e+00, float* %0
+  store i32* %t2, i32** %p2
+  %1 = load i32*, i32** %p2
+  store i32 2, i32* %1
+  store float* null, float** %p1
+  store i32* null, i32** %p2
   ret i32 0
 }

@@ -66,14 +66,14 @@ declare void @_lfortran_i64sys_clock(i64*, i64*, i64*)
 
 define float @__module_lfortran_intrinsic_math_scos(float* %x) {
 .entry:
-  %r = alloca float, align 4
-  %0 = load float, float* %x, align 4
+  %r = alloca float
+  %0 = load float, float* %x
   %1 = call float @_lfortran_scos(float %0)
-  store float %1, float* %r, align 4
+  store float %1, float* %r
   br label %return
 
 return:                                           ; preds = %.entry
-  %2 = load float, float* %r, align 4
+  %2 = load float, float* %r
   ret float %2
 }
 
@@ -92,51 +92,51 @@ declare void @_lfortran_sp_rand_num(float*)
 
 define i32 @main() {
 .entry:
-  %a = alloca float, align 4
-  %myreal = alloca float, align 4
-  %theta = alloca float, align 4
-  %x = alloca float, align 4
-  %y = alloca float, align 4
-  store float 0x3FDAE147A0000000, float* %x, align 4
-  store float 0x3FD6666660000000, float* %y, align 4
-  store float 0x4022333340000000, float* %myreal, align 4
-  store float 1.500000e+00, float* %theta, align 4
-  store float 0x3FD99999A0000000, float* %a, align 4
-  %v = alloca float*, align 8
-  %z = alloca float, align 4
-  %0 = load float, float* %x, align 4
+  %a = alloca float
+  %myreal = alloca float
+  %theta = alloca float
+  %x = alloca float
+  %y = alloca float
+  store float 0x3FDAE147A0000000, float* %x
+  store float 0x3FD6666660000000, float* %y
+  store float 0x4022333340000000, float* %myreal
+  store float 1.500000e+00, float* %theta
+  store float 0x3FD99999A0000000, float* %a
+  %v = alloca float*
+  %z = alloca float
+  %0 = load float, float* %x
   %1 = fmul float %0, 2.000000e+00
-  %2 = load float, float* %y, align 4
+  %2 = load float, float* %y
   %3 = fmul float %2, 2.000000e+00
   %4 = fadd float %1, %3
   %5 = fsub float 0.000000e+00, %4
   %6 = call float @__module_lfortran_intrinsic_math_scos(float* %theta)
   %7 = fmul float %5, %6
-  store float %7, float* %z, align 4
-  store float* %myreal, float** %v, align 8
-  %8 = load float, float* %a, align 4
-  %9 = load float, float* %z, align 4
+  store float %7, float* %z
+  store float* %myreal, float** %v
+  %8 = load float, float* %a
+  %9 = load float, float* %z
   %10 = fadd float %8, %9
   %11 = fpext float %10 to double
-  %12 = load float, float* %a, align 4
-  %13 = load float, float* %z, align 4
+  %12 = load float, float* %a
+  %13 = load float, float* %z
   %14 = fsub float %12, %13
   %15 = fpext float %14 to double
-  %16 = load float*, float** %v, align 8
+  %16 = load float*, float** %v
   %17 = ptrtoint float* %16 to i64
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([23 x i8], [23 x i8]* @3, i32 0, i32 0), double %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), double %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), i64 %17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
-  %18 = load float*, float** %v, align 8
-  %19 = load float*, float** %v, align 8
-  %20 = load float, float* %19, align 4
+  %18 = load float*, float** %v
+  %19 = load float*, float** %v
+  %20 = load float, float* %19
   %21 = fmul float %20, 0x4012666660000000
-  store float %21, float* %18, align 4
-  %22 = load float, float* %myreal, align 4
+  store float %21, float* %18
+  %22 = load float, float* %myreal
   %23 = fpext float %22 to double
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @6, i32 0, i32 0), double %23, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
-  %24 = load float, float* %myreal, align 4
+  %24 = load float, float* %myreal
   %25 = fsub float %24, 0x4044EE1480000000
   %26 = fcmp ugt float %25, 0x3EE4F8B580000000
-  %27 = load float, float* %myreal, align 4
+  %27 = load float, float* %myreal
   %28 = fsub float %27, 0x4044EE1480000000
   %29 = fcmp ult float %28, 0xBEE4F8B580000000
   %30 = or i1 %26, %29
