@@ -2874,26 +2874,18 @@ public:
         return ASR::make_Iachar_t(al, x.base.base.loc, arg, type, iachar_value);
     }
 
-    int64_t create_ScanVerify_util(const AST::FuncCallOrArray_t& x,
-        ASR::expr_t*& string, ASR::expr_t*& set, ASR::expr_t*& back,
-        ASR::ttype_t*& type, std::string func_name) {
-        ASR::expr_t* kind = nullptr;
+    ASR::asr_t* create_ScanVerify_util(const AST::FuncCallOrArray_t& x, std::string func_name) {
+        ASR::expr_t *string, *set, *back, *kind;
+        ASR::ttype_t *type;
+        string = nullptr, set = nullptr, back = nullptr;
+        type = nullptr, kind = nullptr;
         std::vector<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"back", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 4, func_name);
         string = args[0], set = args[1], back = args[2], kind = args[3];
         int64_t kind_value = handle_kind(kind);
         type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_value, nullptr, 0));
-        return kind_value;
-    }
-
-    ASR::asr_t* create_Scan(const AST::FuncCallOrArray_t& x) {
-        ASR::expr_t *string, *set, *back;
-        ASR::ttype_t *type;
-        string = nullptr, set = nullptr, back = nullptr;
-        type = nullptr;
-        int64_t kind_value = create_ScanVerify_util(x, string, set, back, type, "scan");
-        std::string function_name = "scan_kind" + std::to_string(kind_value);
+        std::string function_name = func_name + "_kind" + std::to_string(kind_value);
 
         ASR::call_arg_t string_arg, set_arg, back_arg;
         string_arg.loc = string->base.loc;
@@ -2911,14 +2903,17 @@ public:
         }
         back_arg.m_value = back;
 
-        Vec<ASR::call_arg_t> scan_args;
-        scan_args.reserve(al, 3);
-        scan_args.push_back(al, string_arg);
-        scan_args.push_back(al, set_arg);
-        scan_args.push_back(al, back_arg);
-        ASR::symbol_t* scan_function = resolve_intrinsic_function(x.base.base.loc, function_name);
-        return ASR::make_FunctionCall_t(al, x.base.base.loc, scan_function, nullptr, scan_args.p,
-            scan_args.size(), type, nullptr, nullptr);
+        Vec<ASR::call_arg_t> func_args;
+        func_args.reserve(al, 3);
+        func_args.push_back(al, string_arg);
+        func_args.push_back(al, set_arg);
+        func_args.push_back(al, back_arg);
+        ASR::symbol_t* function = current_scope->resolve_symbol(function_name);
+        if( !function ) {
+            function = resolve_intrinsic_function(x.base.base.loc, function_name);
+        }
+        return ASR::make_FunctionCall_t(al, x.base.base.loc, function, nullptr, func_args.p,
+            func_args.size(), type, nullptr, nullptr);
     }
 
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
@@ -2952,7 +2947,9 @@ public:
             } else if( var_name == "maxloc" ) {
                 tmp = create_ArrayMaxloc(x);
             } else if( var_name == "scan" ) {
-                tmp = create_Scan(x);
+                tmp = create_ScanVerify_util(x, var_name);
+            } else if( var_name == "verify" ) {
+                tmp = create_ScanVerify_util(x, var_name);
             } else {
                 LCompilersException("create_" + var_name + " not implemented yet.");
             }

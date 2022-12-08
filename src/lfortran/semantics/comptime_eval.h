@@ -178,6 +178,8 @@ struct IntrinsicProcedures {
             {"new_line", {m_string, &eval_new_line, false}},
             {"scan_kind4", {m_string, &not_implemented, false}},
             {"scan_kind8", {m_string, &not_implemented, false}},
+            {"verify_kind4", {m_string, &not_implemented, false}},
+            {"verify_kind8", {m_string, &not_implemented, false}},
 
             // Subroutines
             {"cpu_time", {m_math, &not_implemented, false}},
