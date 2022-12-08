@@ -41,7 +41,7 @@ interface min
 end interface
 
 interface max
-    module procedure imax, imax8, imax16, imax64, smax, dmax, dmax1, imax_6args, dmax_3args
+    module procedure imax, imax8, imax16, imax64, smax, dmax, dmax1, imax_6args, dmax_3args, imax_3args
 end interface
 
 interface huge
@@ -412,6 +412,11 @@ do itr = 1, 6
     curr_value = args(itr)
     r = imax(curr_value, r)
 end do
+end function
+
+elemental integer function imax_3args(x, y, z) result(r)
+integer, intent(in) :: x, y, z
+r = imax(imax(x, y), z)
 end function
 
 elemental real(sp) function smax(x, y) result(r)
