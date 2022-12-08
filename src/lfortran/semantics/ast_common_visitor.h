@@ -1748,6 +1748,10 @@ public:
         }
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 1);
+        if (x.m_vartype != nullptr) {
+            std::string sym = "";
+            type = determine_type(x.base.base.loc, sym, x.m_vartype, false, dims);
+        }
         ASR::dimension_t dim;
         dim.loc = x.base.base.loc;
         ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
