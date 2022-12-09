@@ -1491,7 +1491,25 @@ public:
                             char_data->expr = sym_type->m_kind->m_value;
                             char_data->scope = current_scope;
                             char_data->sym_type = current_symbol;
-                            a_len = 1;
+                            AST::FuncCallOrArray_t* call =
+                                AST::down_cast<AST::FuncCallOrArray_t>(
+                                sym_type->m_kind->m_value);
+                            if (AST::is_a<AST::Name_t>(*call->m_args->m_end)) {
+                                ASR::symbol_t* sym = current_scope->get_symbol(
+                                    AST::down_cast<AST::Name_t>(call->m_args->m_end)->m_id);
+                                if (sym != nullptr) {
+                                    sym = ASRUtils::symbol_get_past_external(sym);
+                                    ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
+                                        ASRUtils::symbol_get_past_external(sym));
+                                    if (ASR::is_a<ASR::Character_t>(*v->m_type)) {
+                                        a_len = ASR::down_cast<ASR::Character_t>(
+                                            v->m_type)->m_len;
+                                    }
+                                }
+                            }
+                            if (a_len == -10) {
+                                a_len = 1;
+                            }
                         } else {
                             this->visit_expr(*sym_type->m_kind->m_value);
                             ASR::expr_t* len_expr0 = LFortran::ASRUtils::EXPR(tmp);
