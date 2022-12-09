@@ -87,6 +87,7 @@ public:
                 body.push_back(al, ASR::down_cast<ASR::stmt_t>(l));
             }
             // Visit the statement
+            LFORTRAN_ASSERT(current_body != nullptr)
             this->visit_stmt(*m_body[i]);
             if (tmp != nullptr) {
                 ASR::stmt_t* tmp_stmt = LFortran::ASRUtils::STMT(tmp);
@@ -100,8 +101,8 @@ public:
             }
             // To avoid last statement to be entered twice once we exit this node
             tmp = nullptr;
-            current_body = current_body_copy;
         }
+        current_body = current_body_copy;
     }
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {

@@ -1012,14 +1012,6 @@ public:
                         v2->m_dependencies = var_deps_vec.p;
                         v2->n_dependencies = var_deps_vec.size();
                     } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
-                        if (current_body == nullptr) {
-                            diag.semantic_warning_label(
-                                "Data statement with ArrayItem has current_body == nullptr, it's a bug that we will fix later, for now we will ignore it",
-                                {x.base.base.loc},
-                                "ignored for now"
-                            );
-                            continue;
-                        }
                         // This is the following case:
                         // x(2) / 2 /
                         // We create an assignment node and insert into the current body.
@@ -1031,6 +1023,7 @@ public:
                         // but we can fix that later.
                         ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
                                     object->base.loc, object, expression_value, nullptr));
+                        LFORTRAN_ASSERT(current_body != nullptr)
                         current_body->push_back(al, assign_stmt);
                     } else {
                         throw SemanticError("The variable (object) type is not supported (only variables and array items are supported so far)",
