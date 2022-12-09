@@ -111,7 +111,6 @@ symbol
         symbol proc, abi abi)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
-    | SelectType(symbol_table symtab, identifier name, type_stmt* body, stmt* default)
 
 storage_type = Default | Save | Parameter | Allocatable
 access = Public | Private
@@ -208,7 +207,7 @@ stmt
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
     | ListAppend(expr a, expr ele)
     | AssociateBlockCall(symbol m)
-    | SelectTypeCall(symbol m)
+    | SelectType(type_stmt* body, stmt* default)
     | CPtrToPointer(expr cptr, expr ptr, expr? shape)
     | BlockCall(int label, symbol m)
     | SetInsert(expr a, expr ele)
