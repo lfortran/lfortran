@@ -1025,6 +1025,18 @@ public:
         select_type_default.reserve(al, 1);
         Vec<ASR::type_stmt_t*> select_type_body;
         select_type_body.reserve(al, x.n_body);
+        ASR::Variable_t* selector_variable = nullptr;
+        ASR::ttype_t* selector_variable_type = nullptr;
+        char** selector_variable_dependencies = nullptr;
+        size_t selector_variable_n_dependencies = 0;
+        if( ASR::is_a<ASR::Var_t>(*m_selector) ) {
+            ASR::symbol_t* selector_sym = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
+            LFORTRAN_ASSERT(ASR::is_a<ASR::Variable_t>(*selector_sym));
+            selector_variable = ASR::down_cast<ASR::Variable_t>(selector_sym);
+            selector_variable_type = selector_variable->m_type;
+            selector_variable_dependencies = selector_variable->m_dependencies;
+            selector_variable_n_dependencies = selector_variable->n_dependencies;
+        }
         for( size_t i = 0; i < x.n_body; i++ ) {
             SymbolTable* parent_scope = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -1037,6 +1049,8 @@ public:
                     ASR::accessType::Public, ASR::presenceType::Required, false));
                 current_scope->add_symbol(std::string(x.m_assoc_name), assoc_sym);
                 assoc_variable = ASR::down_cast<ASR::Variable_t>(assoc_sym);
+            } else if( selector_variable ) {
+                assoc_variable = selector_variable;
             }
             switch( x.m_body[i]->type ) {
                 case AST::type_stmtType::ClassStmt: {
@@ -1118,6 +1132,10 @@ public:
             }
             current_scope = parent_scope;
         }
+
+        selector_variable->m_type = selector_variable_type;
+        selector_variable->m_dependencies = selector_variable_dependencies;
+        selector_variable->n_dependencies = selector_variable_n_dependencies;
 
         tmp = ASR::make_SelectType_t(al, x.base.base.loc, select_type_body.p, select_type_body.size(),
                                      select_type_default.p, select_type_default.size());
