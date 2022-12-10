@@ -1015,8 +1015,6 @@ public:
     }
 
     void visit_SelectType(const AST::SelectType_t& x) {
-        SymbolTable* parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
         if( !x.m_selector ) {
             throw SemanticError("Selector expression is missing in select type statement.",
                                 x.base.base.loc);
@@ -1123,7 +1121,6 @@ public:
 
         tmp = ASR::make_SelectType_t(al, x.base.base.loc, select_type_body.p, select_type_body.size(),
                                      select_type_default.p, select_type_default.size());
-        current_scope = parent_scope;
     }
 
     void visit_Submodule(const AST::Submodule_t &x) {

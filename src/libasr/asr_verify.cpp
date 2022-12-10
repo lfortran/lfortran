@@ -205,6 +205,13 @@ public:
         current_symtab = parent_symtab;
     }
 
+    void visit_BlockCall(const BlockCall_t& x) {
+        require(x.m_m != nullptr, "Block call made to inexisting block");
+        require(symtab_in_scope(current_symtab, x.m_m),
+            "Block " + std::string(ASRUtils::symbol_name(x.m_m)) +
+            " should resolve in current scope.");
+    }
+
     void visit_Module(const Module_t &x) {
         module_dependencies.clear();
         module_dependencies.reserve(x.n_dependencies);
