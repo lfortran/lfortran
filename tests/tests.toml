@@ -839,6 +839,10 @@ filename = "../integration_tests/arrays_13.f90"
 llvm = true
 
 [[test]]
+filename = "../integration_tests/arrays_20.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/types_01.f90"
 asr = true
 llvm = true
