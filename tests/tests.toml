@@ -1239,6 +1239,10 @@ c = true
 cpp = true
 
 [[test]]
+filename = "../integration_tests/case_07.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/include_01.f90"
 ast = true
 
