@@ -1659,9 +1659,36 @@ public:
                 ai.loc = m_end->base.loc;
             } else {
                 if( ASR::is_a<ASR::Character_t>(*ASRUtils::symbol_type(v)) ) {
-                    m_end = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc,
-                                v_Var, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0)),
-                                nullptr));
+                    ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(
+                                                    ASRUtils::symbol_type(v));
+                    bool is_comp_time_value = false;
+                    if( char_type->m_len_expr &&
+                        ASRUtils::expr_value(char_type->m_len_expr) ) {
+                        int64_t m_len_expr_value = -1;
+                        if( ASRUtils::extract_value(
+                                ASRUtils::expr_value(char_type->m_len_expr),
+                                m_len_expr_value) ) {
+                            is_comp_time_value = true;
+                        }
+                    } else {
+                        if( ASR::is_a<ASR::Variable_t>(*v) ) {
+                            ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(v);
+                            is_comp_time_value = v_variable->m_storage == ASR::storage_typeType::Parameter;
+                        }
+                    }
+                    if( is_comp_time_value ) {
+                        if( char_type->m_len_expr ) {
+                            m_end = ASRUtils::expr_value(char_type->m_len_expr);
+                        } else {
+                            m_end = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                        al, char_type->base.base.loc, char_type->m_len,
+                                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0))));
+                        }
+                    } else {
+                        m_end = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc,
+                                    v_Var, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0)),
+                                    nullptr));
+                    }
                 } else {
                     m_end = ASRUtils::get_bound(v_Var, i + 1, "ubound", al);
                 }
