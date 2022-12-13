@@ -967,18 +967,10 @@ public:
                     if( condrange->m_start != nullptr ) {
                         this->visit_expr(*(condrange->m_start));
                         m_start = LFortran::ASRUtils::EXPR(tmp);
-                        // if( LFortran::ASRUtils::expr_type(m_start)->type != ASR::ttypeType::Integer ) {
-                        //     throw SemanticError(R"""(Expression in Case selector can only be an Integer)""",
-                        //                         x.base.loc);
-                        // }
                     }
                     if( condrange->m_end != nullptr ) {
                         this->visit_expr(*(condrange->m_end));
                         m_end = LFortran::ASRUtils::EXPR(tmp);
-                        // if( LFortran::ASRUtils::expr_type(m_end)->type != ASR::ttypeType::Integer ) {
-                        //     throw SemanticError(R"""(Expression in Case selector can only be an Integer)""",
-                        //                         x.base.loc);
-                        // }
                     }
                     Vec<ASR::stmt_t*> case_body_vec;
                     case_body_vec.reserve(al, Case_Stmt->n_body);
