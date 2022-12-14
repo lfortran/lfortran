@@ -6,8 +6,8 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-return1-87389a8.stdout",
-    "stdout_hash": "8429b5813be86b3691b7f9915b4e59e2af211d376884dd08ffde77c6",
-    "stderr": "ast-return1-87389a8.stderr",
-    "stderr_hash": "97e4ee7f017f858be24662871fe3e1ab033a7cd4bae84c20209d0502",
+    "stdout_hash": "db6432d7e46af76e58c91dd1993915b9327d4f3250880f67ea7f7ea9",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

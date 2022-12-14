@@ -67,7 +67,9 @@
         )] 
         [(= 
             0 
-            a 
+            a
+                []
+             
             (ArrayInitializer 
                 () 
                 () 
@@ -79,7 +81,9 @@
         )
         (= 
             0 
-            b 
+            b
+                []
+             
             (ArrayInitializer 
                 () 
                 () 
@@ -91,7 +95,9 @@
         )
         (= 
             0 
-            c 
+            c
+                []
+             
             (ArrayInitializer 
                 (AttrType 
                     TypeReal 
@@ -108,7 +114,9 @@
         )
         (= 
             0 
-            e 
+            e
+                []
+             
             (ArrayInitializer 
                 (AttrType 
                     TypeReal 

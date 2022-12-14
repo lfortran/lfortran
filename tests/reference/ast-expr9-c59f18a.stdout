@@ -9,16 +9,24 @@
         (DefUnaryOp 
             "errors" 
             rslt
+                []
+            
         ))] 
         ()
     )
     (DefUnaryOp 
         "INVERSE" 
         B
+            []
+        
     )
     (DefUnaryOp 
         "INVERSE" 
-        (+ A B)
+        (+ A
+            []
+         B
+            []
+        )
     )
     (DefUnaryOp 
         "anotherunary" 
@@ -31,9 +39,15 @@
     (DefUnaryOp 
         "anotherunary" 
         C
+            []
+        
     )
     (DefUnaryOp 
         "anotherunary" 
-        (+ c d)
+        (+ c
+            []
+         d
+            []
+        )
     )]
 )

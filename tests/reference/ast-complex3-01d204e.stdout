@@ -78,50 +78,66 @@
         )] 
         [(= 
             0 
-            x 
+            x
+                []
+             
             (Complex (Real "3.0_8") (Real "4.0_8")) 
             ()
         )
         (Print 
             0 
             () 
-            [x] 
+            [x
+                []
+            ] 
             ()
         )
         (= 
             0 
-            y 
+            y
+                []
+             
             (Complex (Real "3.0_8") (Real "4.0_8")) 
             ()
         )
         (Print 
             0 
             () 
-            [y] 
+            [y
+                []
+            ] 
             ()
         )
         (= 
             0 
-            z 
+            z
+                []
+             
             (Complex (Real "3.0_4") (Real "4.0_4")) 
             ()
         )
         (Print 
             0 
             () 
-            [z] 
+            [z
+                []
+            ] 
             ()
         )
         (= 
             0 
-            w 
+            w
+                []
+             
             (Complex (Real "3.0_4") (Real "4.0_4")) 
             ()
         )
         (Print 
             0 
             () 
-            [w] 
+            [w
+                []
+            ] 
             ()
         )] 
         []

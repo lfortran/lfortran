@@ -174,16 +174,16 @@ struct Diagnostics {
             Level::Error, Stage::CodeGen);
     }
 
-    void tokenizer_style_label(const std::string &message,
-            const std::vector<Location> &locations, const std::string &error_label) {
-        message_label(message, locations, error_label,
-            Level::Style, Stage::Tokenizer);
+    void tokenizer_style_label(const std::string &/*message*/,
+            const std::vector<Location> &/*locations*/, const std::string &/*error_label*/) {
+        // message_label(message, locations, error_label,
+        //     Level::Style, Stage::Tokenizer);
     }
 
-    void parser_style_label(const std::string &message,
-            const std::vector<Location> &locations, const std::string &error_label) {
-        message_label(message, locations, error_label,
-            Level::Style, Stage::Parser);
+    void parser_style_label(const std::string &/*message*/,
+            const std::vector<Location> &/*locations*/, const std::string &/*error_label*/) {
+        // message_label(message, locations, error_label,
+        //     Level::Style, Stage::Parser);
     }
 };
 

@@ -91,7 +91,9 @@
                 (AttrType 
                     TypeReal 
                     [(() 
-                    r8 
+                    r8
+                        []
+                     
                     Value)] 
                     () 
                     None
@@ -137,7 +139,9 @@
                 (AttrType 
                     TypeReal 
                     [(() 
-                    r8 
+                    r8
+                        []
+                     
                     Value)] 
                     () 
                     None
@@ -358,7 +362,9 @@
                 (AttrType 
                     TypeReal 
                     [(() 
-                    k 
+                    k
+                        []
+                     
                     Value)] 
                     () 
                     None
@@ -366,10 +372,14 @@
                 [] 
                 [(element 
                 [(1 
-                b 
+                b
+                    []
+                 
                 DimensionExpr)
                 (1 
-                b 
+                b
+                    []
+                 
                 DimensionExpr)] 
                 [] 
                 () 

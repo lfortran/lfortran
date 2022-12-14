@@ -1,0 +1,286 @@
+(TranslationUnit 
+    (SymbolTable
+        1
+        {
+            select_type_01:
+                (Program 
+                    (SymbolTable
+                        2
+                        {
+                            base:
+                                (StructType 
+                                    (SymbolTable
+                                        3
+                                        {
+                                            i:
+                                                (Variable 
+                                                    3 
+                                                    i 
+                                                    [] 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    base 
+                                    [] 
+                                    [i] 
+                                    Source 
+                                    Public 
+                                    .false. 
+                                    () 
+                                    ()
+                                ), 
+                            base_target:
+                                (Variable 
+                                    2 
+                                    base_target 
+                                    [] 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Struct 
+                                        2 base 
+                                        []
+                                    ) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            bptr:
+                                (Variable 
+                                    2 
+                                    bptr 
+                                    [] 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Pointer 
+                                        (Class 
+                                            2 base 
+                                            []
+                                        )
+                                    ) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            child:
+                                (StructType 
+                                    (SymbolTable
+                                        4
+                                        {
+                                            j:
+                                                (Variable 
+                                                    4 
+                                                    j 
+                                                    [] 
+                                                    Local 
+                                                    () 
+                                                    () 
+                                                    Default 
+                                                    (Integer 4 []) 
+                                                    Source 
+                                                    Public 
+                                                    Required 
+                                                    .false.
+                                                )
+                                            
+                                        }) 
+                                    child 
+                                    [] 
+                                    [j] 
+                                    Source 
+                                    Public 
+                                    .false. 
+                                    () 
+                                    2 base
+                                ), 
+                            child_target:
+                                (Variable 
+                                    2 
+                                    child_target 
+                                    [] 
+                                    Local 
+                                    () 
+                                    () 
+                                    Default 
+                                    (Struct 
+                                        2 child 
+                                        []
+                                    ) 
+                                    Source 
+                                    Public 
+                                    Required 
+                                    .false.
+                                ), 
+                            ~select_type_block_:
+                                (Block 
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        }) 
+                                    ~select_type_block_ 
+                                    [(Print 
+                                        () 
+                                        [(StringConstant 
+                                            "base type: component value: " 
+                                            (Character 1 28 () [])
+                                        )
+                                        (StructInstanceMember 
+                                            (Var 2 bptr) 
+                                            3 i 
+                                            (Integer 4 []) 
+                                            ()
+                                        )] 
+                                        () 
+                                        ()
+                                    )]
+                                ), 
+                            ~select_type_block_1:
+                                (Block 
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        }) 
+                                    ~select_type_block_1 
+                                    [(Print 
+                                        () 
+                                        [(StringConstant 
+                                            "child type: component values: " 
+                                            (Character 1 30 () [])
+                                        )
+                                        (StructInstanceMember 
+                                            (Var 2 bptr) 
+                                            3 i 
+                                            (Integer 4 []) 
+                                            ()
+                                        )
+                                        (StructInstanceMember 
+                                            (Var 2 bptr) 
+                                            4 j 
+                                            (Integer 4 []) 
+                                            ()
+                                        )] 
+                                        () 
+                                        ()
+                                    )]
+                                ), 
+                            ~select_type_block_2:
+                                (Block 
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        }) 
+                                    ~select_type_block_2 
+                                    [(Print 
+                                        () 
+                                        [(StringConstant 
+                                            "base type: component value: " 
+                                            (Character 1 28 () [])
+                                        )
+                                        (StructInstanceMember 
+                                            (Var 2 bptr) 
+                                            3 i 
+                                            (Integer 4 []) 
+                                            ()
+                                        )] 
+                                        () 
+                                        ()
+                                    )]
+                                ), 
+                            ~select_type_block_3:
+                                (Block 
+                                    (SymbolTable
+                                        8
+                                        {
+                                            
+                                        }) 
+                                    ~select_type_block_3 
+                                    [(Print 
+                                        () 
+                                        [(StringConstant 
+                                            "child type: component values: " 
+                                            (Character 1 30 () [])
+                                        )
+                                        (StructInstanceMember 
+                                            (Var 2 bptr) 
+                                            3 i 
+                                            (Integer 4 []) 
+                                            ()
+                                        )
+                                        (StructInstanceMember 
+                                            (Var 2 bptr) 
+                                            4 j 
+                                            (Integer 4 []) 
+                                            ()
+                                        )] 
+                                        () 
+                                        ()
+                                    )]
+                                )
+                            
+                        }) 
+                    select_type_01 
+                    [] 
+                    [(=> 
+                        (Var 2 bptr) 
+                        (Var 2 child_target)
+                    )
+                    (SelectType 
+                        [(TypeStmt 
+                            2 base 
+                            [(BlockCall 
+                                -1 
+                                2 ~select_type_block_
+                            )]
+                        )
+                        (TypeStmt 
+                            2 child 
+                            [(BlockCall 
+                                -1 
+                                2 ~select_type_block_1
+                            )]
+                        )] 
+                        []
+                    )
+                    (=> 
+                        (Var 2 bptr) 
+                        (Var 2 base_target)
+                    )
+                    (SelectType 
+                        [(TypeStmt 
+                            2 base 
+                            [(BlockCall 
+                                -1 
+                                2 ~select_type_block_2
+                            )]
+                        )
+                        (TypeStmt 
+                            2 child 
+                            [(BlockCall 
+                                -1 
+                                2 ~select_type_block_3
+                            )]
+                        )] 
+                        []
+                    )]
+                )
+            
+        }) 
+    []
+)

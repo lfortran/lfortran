@@ -25,7 +25,9 @@
         )] 
         [(= 
             0 
-            stop 
+            stop
+                []
+             
             1 
             (TriviaNode 
                 [] 
@@ -35,7 +37,9 @@
         (WhileLoop 
             0 
             () 
-            (== stop 0) 
+            (== stop
+                []
+             0) 
             [] 
             (TriviaNode 
                 [] 

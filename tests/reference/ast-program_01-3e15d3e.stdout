@@ -37,7 +37,9 @@
             (AttrType 
                 TypeReal 
                 [(() 
-                dp 
+                dp
+                    []
+                 
                 Value)] 
                 () 
                 None
@@ -88,7 +90,9 @@
                 rand 
                 [] 
                 [(() 
-                a 
+                a
+                    []
+                 
                 ())] 
                 [] 
                 ()
@@ -96,7 +100,9 @@
             (Print 
                 0 
                 () 
-                [a] 
+                [a
+                    []
+                ] 
                 ()
             )] 
             () 
@@ -135,7 +141,9 @@
                 (AttrType 
                     TypeReal 
                     [(() 
-                    dp 
+                    dp
+                        []
+                     
                     Value)] 
                     () 
                     None
@@ -173,7 +181,9 @@
                 (AttrType 
                     TypeReal 
                     [(() 
-                    dp 
+                    dp
+                        []
+                     
                     Value)] 
                     () 
                     None
@@ -195,7 +205,9 @@
                 (AttrType 
                     TypeReal 
                     [(() 
-                    dp 
+                    dp
+                        []
+                     
                     Value)] 
                     () 
                     None
@@ -212,7 +224,9 @@
             [(If 
                 0 
                 () 
-                first 
+                first
+                    []
+                 
                 [(DoLoop 
                     0 
                     () 
@@ -226,25 +240,35 @@
                         random_number 
                         [] 
                         [(() 
-                        u 
+                        u
+                            []
+                         
                         ())] 
                         [] 
                         ()
                     )
                     (= 
                         0 
-                        u 
-                        (- (* 2 u) 1) 
+                        u
+                            []
+                         
+                        (- (* 2 u
+                            []
+                        ) 1) 
                         ()
                     )
                     (= 
                         0 
-                        r2 
+                        r2
+                            []
+                         
                         (FuncCallOrArray 
                             sum 
                             [] 
                             [(() 
-                            (** u 2) 
+                            (** u
+                                []
+                             2) 
                             ())] 
                             [] 
                             []
@@ -255,9 +279,13 @@
                         0 
                         () 
                         (BoolOp 
-                            (< r2 1) 
+                            (< r2
+                                []
+                             1) 
                             And 
-                            (> r2 0)
+                            (> r2
+                                []
+                             0)
                         ) 
                         [(Exit 
                             0 
@@ -274,8 +302,12 @@
                 )
                 (= 
                     0 
-                    u 
-                    (* u (FuncCallOrArray 
+                    u
+                        []
+                     
+                    (* u
+                        []
+                     (FuncCallOrArray 
                         sqrt 
                         [] 
                         [(() 
@@ -283,11 +315,15 @@
                             log 
                             [] 
                             [(() 
-                            r2 
+                            r2
+                                []
+                             
                             ())] 
                             [] 
                             []
-                        )) r2) 
+                        )) r2
+                            []
+                        ) 
                         ())] 
                         [] 
                         []
@@ -296,7 +332,9 @@
                 )
                 (= 
                     0 
-                    x 
+                    x
+                        []
+                     
                     (FuncCallOrArray 
                         u 
                         [] 
@@ -310,7 +348,9 @@
                 )] 
                 [(= 
                     0 
-                    x 
+                    x
+                        []
+                     
                     (FuncCallOrArray 
                         u 
                         [] 
@@ -328,8 +368,12 @@
             )
             (= 
                 0 
-                first 
-                (not first) 
+                first
+                    []
+                 
+                (not first
+                    []
+                ) 
                 ()
             )] 
             []

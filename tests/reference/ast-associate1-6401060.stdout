@@ -5,7 +5,9 @@
         [(x 
         [] 
         [] 
-        y 
+        y
+            []
+         
         Arrow 
         ())] 
         [] 
@@ -20,6 +22,8 @@
         [] 
         (Parenthesis 
             y
+                []
+            
         ) 
         Arrow 
         ())] 
@@ -33,7 +37,11 @@
         [(x 
         [] 
         [] 
-        (+ y z) 
+        (+ y
+            []
+         z
+            []
+        ) 
         Arrow 
         ())] 
         [] 
@@ -46,7 +54,9 @@
         [(x 
         [] 
         [] 
-        (u- y) 
+        (u- y
+            []
+        ) 
         Arrow 
         ())] 
         [] 
@@ -62,11 +72,15 @@
         some_subroutine 
         [] 
         [(() 
-        x 
+        x
+            []
+         
         ())
         (() 
         (Parenthesis 
             x
+                []
+            
         ) 
         ())] 
         [] 
@@ -74,13 +88,17 @@
     )
     (= 
         0 
-        x 
+        x
+            []
+         
         (FuncCallOrArray 
             f 
             [] 
             [(() 
             (Parenthesis 
                 x
+                    []
+                
             ) 
             ())] 
             [] 

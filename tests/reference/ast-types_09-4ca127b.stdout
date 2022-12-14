@@ -51,7 +51,9 @@
                 1 
                 Value)
                 (() 
-                ucs4 
+                ucs4
+                    []
+                 
                 Value)] 
                 () 
                 None
@@ -79,7 +81,9 @@
                 ) 
                 ())
                 (() 
-                ucs4 
+                ucs4
+                    []
+                 
                 ())] 
                 [] 
                 []
@@ -111,7 +115,9 @@
                 (AttrType 
                     TypeCharacter 
                     [(kind 
-                    c_char 
+                    c_char
+                        []
+                     
                     Value)
                     (len 
                     () 
@@ -153,6 +159,31 @@
                 [] 
                 () 
                 None 
+                ())] 
+                ()
+            )
+            (Declaration 
+                (AttrType 
+                    TypeCharacter 
+                    [(kind 
+                    1 
+                    Value)
+                    (len 
+                    () 
+                    Star)] 
+                    () 
+                    None
+                ) 
+                [(SimpleAttribute 
+                    AttrParameter
+                )] 
+                [(lowercase 
+                [] 
+                [] 
+                (String 
+                    "abcdefghijklmnopqrstuvwxyz"
+                ) 
+                Equal 
                 ())] 
                 ()
             )] 

@@ -33,8 +33,15 @@
         )] 
         [(= 
             0 
-            i 
-            a 
+            i
+                []
+             
+            a
+                [(some_array 
+                [(() 
+                5 
+                ())])]
+             
             (TriviaNode 
                 [] 
                 [(EndOfLine)

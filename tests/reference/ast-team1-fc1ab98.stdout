@@ -63,7 +63,9 @@
             ) 
             [(AttrCodimension 
                 [(1 
-                n 
+                n
+                    []
+                 
                 CodimensionExpr)
                 (() 
                 () 
@@ -112,7 +114,9 @@
                 this_image 
                 [] 
                 [(() 
-                co_array 
+                co_array
+                    []
+                 
                 ())] 
                 [] 
                 []
@@ -150,14 +154,18 @@
         )
         (SyncTeam 
             0 
-            column 
+            column
+                []
+             
             [] 
             ()
         )
         (ChangeTeam 
             0 
             () 
-            column 
+            column
+                []
+             
             [(CoarrayAssociation 
                 (CoarrayRef 
                     ca 
@@ -171,6 +179,8 @@
                     []
                 ) 
                 co_array
+                    []
+                
             )] 
             [] 
             [] 
@@ -215,7 +225,9 @@
         (ChangeTeam 
             0 
             () 
-            odd_even 
+            odd_even
+                []
+             
             [] 
             [] 
             [] 

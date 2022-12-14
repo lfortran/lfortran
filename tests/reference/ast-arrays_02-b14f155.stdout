@@ -37,7 +37,9 @@
             (AttrType 
                 TypeReal 
                 [(() 
-                dp 
+                dp
+                    []
+                 
                 Value)] 
                 () 
                 None
@@ -103,12 +105,16 @@
         )
         (= 
             0 
-            b 
+            b
+                []
+             
             (FuncCallOrArray 
                 sum 
                 [] 
                 [(() 
-                a 
+                a
+                    []
+                 
                 ())] 
                 [] 
                 []
@@ -122,7 +128,9 @@
                 abs 
                 [] 
                 [(() 
-                (- b (Real "6._dp")) 
+                (- b
+                    []
+                 (Real "6._dp")) 
                 ())] 
                 [] 
                 []

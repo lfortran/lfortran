@@ -103,6 +103,13 @@ static inline ASR::ttype_t* symbol_type(const ASR::symbol_t *f)
         case ASR::symbolType::EnumType: {
             return ASR::down_cast<ASR::EnumType_t>(f)->m_type;
         }
+        case ASR::symbolType::ExternalSymbol: {
+            return symbol_type(ASRUtils::symbol_get_past_external(f));
+        }
+        case ASR::symbolType::Function: {
+            return ASRUtils::expr_type(
+                ASR::down_cast<ASR::Function_t>(f)->m_return_var);
+        }
         default: {
             throw LCompilersException("Cannot return type of, " +
                                     std::to_string(f->type) + " symbol.");
@@ -1644,7 +1651,12 @@ inline bool is_same_type_pointer(ASR::ttype_t* source, ASR::ttype_t* dest) {
         source = dest;
         dest = temp;
     }
-    bool res = source->type == ASR::down_cast<ASR::Pointer_t>(dest)->m_type->type;
+    dest = ASR::down_cast<ASR::Pointer_t>(dest)->m_type;
+    if( (ASR::is_a<ASR::Class_t>(*source) || ASR::is_a<ASR::Struct_t>(*source)) &&
+        (ASR::is_a<ASR::Class_t>(*dest) || ASR::is_a<ASR::Struct_t>(*dest)) ) {
+        return true;
+    }
+    bool res = source->type == dest->type;
     return res;
 }
 

@@ -103,7 +103,9 @@
                 [(())
                 (())] 
                 [] 
-                [joblist] 
+                [joblist
+                    []
+                ] 
                 ()
             )] 
             [] 
@@ -130,7 +132,9 @@
                 [] 
                 [(= 
                     0 
-                    job 
+                    job
+                        []
+                     
                     (CoarrayRef 
                         joblist 
                         [] 
@@ -157,7 +161,9 @@
                         CodimensionExpr)] 
                         []
                     ) 
-                    (- job 1) 
+                    (- job
+                        []
+                     1) 
                     ()
                 )] 
                 () 
@@ -176,7 +182,9 @@
                 [] 
                 [(= 
                     0 
-                    IntegerSample 
+                    IntegerSample
+                        []
+                     
                     0 
                     ()
                 )] 
@@ -191,7 +199,9 @@
                 )] 
                 [(= 
                     0 
-                    Sample 
+                    Sample
+                        []
+                     
                     (String 
                         "Error message"
                     ) 
@@ -208,7 +218,9 @@
                 )] 
                 [(= 
                     0 
-                    Sample 
+                    Sample
+                        []
+                     
                     (String 
                         "Error message"
                     ) 
@@ -227,11 +239,19 @@
             (If 
                 0 
                 () 
-                (> job 0) 
+                (> job
+                    []
+                 0) 
                 [(= 
                     0 
-                    b 
-                    (+ (** a 2) (** b 2)) 
+                    b
+                        []
+                     
+                    (+ (** a
+                        []
+                     2) (** b
+                        []
+                     2)) 
                     ()
                 )] 
                 [(Exit 

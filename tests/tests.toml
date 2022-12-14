@@ -843,6 +843,10 @@ filename = "../integration_tests/arrays_20.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/arrays_21.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/types_01.f90"
 asr = true
 llvm = true
@@ -963,6 +967,9 @@ asr = true
 filename = "../integration_tests/derived_types_08.f90"
 asr = true
 
+[[test]]
+filename = "../integration_tests/derived_types_10.f90"
+asr = true
 
 [[test]]
 filename = "fn2.f90"
@@ -1239,6 +1246,10 @@ c = true
 cpp = true
 
 [[test]]
+filename = "../integration_tests/case_07.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/include_01.f90"
 ast = true
 
@@ -1321,7 +1332,11 @@ ast_f90 = true
 
 [[test]]
 filename = "../integration_tests/select_type_01.f90"
-ast = true
+asr = true
+
+[[test]]
+filename = "../integration_tests/select_type_02.f90"
+asr = true
 
 [[test]]
 filename = "../integration_tests/format_01.f90"
@@ -2290,6 +2305,10 @@ filename = "../integration_tests/functions_12.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/functions_13.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/arrays_elemental_15.f90"
 asr = true
 
@@ -2309,6 +2328,14 @@ llvm = true
 
 [[test]]
 filename = "../integration_tests/bindc4.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/cmd_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/cmd_02.f90"
 asr = true
 
 [[test]]

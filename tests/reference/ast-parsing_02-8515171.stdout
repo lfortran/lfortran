@@ -178,8 +178,12 @@
             [] 
             [(= 
                 0 
-                real 
-                (* 2 integer) 
+                real
+                    []
+                 
+                (* 2 integer
+                    []
+                ) 
                 ()
             )] 
             []
@@ -270,8 +274,12 @@
         )] 
         [(= 
             0 
-            integer 
-            character 
+            integer
+                []
+             
+            character
+                []
+             
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -283,7 +291,9 @@
         )
         (= 
             0 
-            types 
+            types
+                []
+             
             (FuncCallOrArray 
                 type 
                 [] 
@@ -364,33 +374,51 @@
             [(If 
                 0 
                 endif 
-                then 
+                then
+                    []
+                 
                 [(= 
                     0 
-                    if 
-                    then 
+                    if
+                        []
+                     
+                    then
+                        []
+                     
                     ()
                 )] 
                 [(If 
                     0 
                     () 
-                    else 
+                    else
+                        []
+                     
                     [(= 
                         0 
-                        if 
-                        else 
+                        if
+                            []
+                         
+                        else
+                            []
+                         
                         ()
                     )] 
                     [(= 
                         0 
-                        if 
+                        if
+                            []
+                         
                         (BoolOp 
                             (not (Parenthesis 
                                 else
+                                    []
+                                
                             )) 
                             And 
                             (not (Parenthesis 
                                 if
+                                    []
+                                
                             ))
                         ) 
                         ()
@@ -406,7 +434,9 @@
             (Print 
                 0 
                 () 
-                [if] 
+                [if
+                    []
+                ] 
                 ()
             )] 
             () 
@@ -422,13 +452,17 @@
             [(logical 
             [] 
             [] 
-            character 
+            character
+                []
+             
             Arrow 
             ())
             (complex 
             [] 
             [] 
-            real 
+            real
+                []
+             
             Arrow 
             ())] 
             [(SubroutineCall 
@@ -436,10 +470,14 @@
                 subroutine 
                 [] 
                 [(() 
-                logical 
+                logical
+                    []
+                 
                 ())
                 (() 
-                complex 
+                complex
+                    []
+                 
                 ())] 
                 [] 
                 ()
@@ -449,6 +487,8 @@
                 () 
                 [(Parenthesis 
                     complex
+                        []
+                    
                 )] 
                 ()
             )] 

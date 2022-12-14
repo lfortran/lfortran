@@ -67,7 +67,9 @@
                 [(String 
                     "i = "
                 )
-                i] 
+                i
+                    []
+                ] 
                 ()
             )] 
             []
@@ -94,7 +96,9 @@
             [(String 
                 "j = "
             )
-            j] 
+            j
+                []
+            ] 
             ()
         )
         (SubroutineCall 

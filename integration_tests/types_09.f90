@@ -9,6 +9,8 @@ contains
     subroutine f(s, s2)
     character(kind=c_char, len=:), allocatable, intent(in) :: s
     character(len=:), allocatable, intent(in) :: s2
+    character(kind=1, len=*), parameter :: lowercase = &
+      & 'abcdefghijklmnopqrstuvwxyz'
     end subroutine
 
 end program

@@ -22,9 +22,13 @@
             0 
             [] 
             [(unit 
-            n)
+            n
+                []
+            )
             (opened 
-            inuse)] 
+            inuse
+                []
+            )] 
             [] 
             ()
         )
@@ -32,15 +36,25 @@
             0 
             [] 
             [(UNIT 
-            JOAN)
+            JOAN
+                []
+            )
             (OPENED 
-            LOG_01)
+            LOG_01
+                []
+            )
             (NAMED 
-            LOG_02)
+            LOG_02
+                []
+            )
             (FORM 
-            CHAR_VAR)
+            CHAR_VAR
+                []
+            )
             (IOSTAT 
-            IOS)] 
+            IOS
+                []
+            )] 
             [] 
             ()
         )
@@ -48,12 +62,16 @@
             0 
             [] 
             [(IOLENGTH 
-            IOL)] 
+            IOL
+                []
+            )] 
             [(FuncCallOrArray 
                 A 
                 [] 
                 [(1 
-                N 
+                N
+                    []
+                 
                 1)] 
                 [] 
                 []
@@ -66,13 +84,17 @@
         )
         (Rewind 
             0 
-            [s] 
+            [s
+                []
+            ] 
             [] 
             ()
         )
         (Rewind 
             0 
-            [s] 
+            [s
+                []
+            ] 
             [] 
             ()
         )
@@ -86,9 +108,13 @@
             0 
             [] 
             [(err 
-            label)
+            label
+                []
+            )
             (unit 
-            s)] 
+            s
+                []
+            )] 
             ()
         )
         (Rewind 
@@ -111,13 +137,17 @@
         )
         (Backspace 
             0 
-            [u] 
+            [u
+                []
+            ] 
             [] 
             ()
         )
         (Backspace 
             0 
-            [io_unit] 
+            [io_unit
+                []
+            ] 
             [] 
             ()
         )
@@ -131,7 +161,9 @@
             0 
             [10] 
             [(IOSTAT 
-            N)] 
+            N
+                []
+            )] 
             ()
         )
         (Backspace 
@@ -154,7 +186,9 @@
         )
         (Endfile 
             0 
-            [K] 
+            [K
+                []
+            ] 
             [] 
             ()
         )
@@ -166,7 +200,9 @@
         )
         (Endfile 
             0 
-            [k] 
+            [k
+                []
+            ] 
             [] 
             ()
         )
@@ -174,18 +210,26 @@
             0 
             [10] 
             [(iostat 
-            n)] 
+            n
+                []
+            )] 
             ()
         )
         (Endfile 
             0 
             [] 
             [(unit 
-            iout)
+            iout
+                []
+            )
             (iostat 
-            ios)
+            ios
+                []
+            )
             (iomsg 
-            msg)] 
+            msg
+                []
+            )] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)

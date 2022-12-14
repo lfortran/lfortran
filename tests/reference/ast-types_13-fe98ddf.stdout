@@ -130,7 +130,9 @@
                             () 
                             Star)
                             (kind 
-                            c_char 
+                            c_char
+                                []
+                             
                             Value)] 
                             () 
                             None
@@ -173,7 +175,9 @@
                             () 
                             Star)
                             (kind 
-                            c_char 
+                            c_char
+                                []
+                             
                             Value)] 
                             () 
                             None
@@ -213,7 +217,9 @@
                         (AttrType 
                             TypeCharacter 
                             [(kind 
-                            c_char 
+                            c_char
+                                []
+                             
                             Value)
                             (len 
                             () 
@@ -281,14 +287,20 @@
                     [(AttrType 
                         TypeInteger 
                         [(() 
-                        c_int 
+                        c_int
+                            []
+                         
                         Value)] 
                         () 
                         None
                     )] 
-                    r 
+                    r
+                        []
+                     
                     (Bind 
-                        [c] 
+                        [c
+                            []
+                        ] 
                         []
                     ) 
                     (TriviaNode 
@@ -382,14 +394,20 @@
                     [(AttrType 
                         TypeInteger 
                         [(() 
-                        c_int 
+                        c_int
+                            []
+                         
                         Value)] 
                         () 
                         None
                     )] 
-                    r 
+                    r
+                        []
+                     
                     (Bind 
-                        [c] 
+                        [c
+                            []
+                        ] 
                         []
                     ) 
                     (TriviaNode 
@@ -481,9 +499,13 @@
                     (c)
                     (d)] 
                     [] 
-                    r 
+                    r
+                        []
+                     
                     (Bind 
-                        [c] 
+                        [c
+                            []
+                        ] 
                         []
                     ) 
                     (TriviaNode 
@@ -503,7 +525,9 @@
                         (AttrType 
                             TypeInteger 
                             [(() 
-                            c_int 
+                            c_int
+                                []
+                             
                             Value)] 
                             () 
                             None
@@ -593,9 +617,13 @@
                     (c)
                     (d)] 
                     [] 
-                    r 
+                    r
+                        []
+                     
                     (Bind 
-                        [c] 
+                        [c
+                            []
+                        ] 
                         []
                     ) 
                     (TriviaNode 
@@ -615,7 +643,9 @@
                         (AttrType 
                             TypeInteger 
                             [(() 
-                            c_int 
+                            c_int
+                                []
+                             
                             Value)] 
                             () 
                             None
@@ -705,7 +735,9 @@
                     (c)] 
                     [] 
                     (Bind 
-                        [C] 
+                        [C
+                            []
+                        ] 
                         [(name 
                         (String 
                             "_cf5"
@@ -728,7 +760,9 @@
                         (AttrType 
                             TypeInteger 
                             [(() 
-                            c_int 
+                            c_int
+                                []
+                             
                             Value)] 
                             () 
                             None
@@ -746,7 +780,9 @@
                         (AttrType 
                             TypeInteger 
                             [(() 
-                            c_int 
+                            c_int
+                                []
+                             
                             Value)] 
                             () 
                             None
@@ -769,7 +805,9 @@
                         (AttrType 
                             TypeReal 
                             [(() 
-                            c_double 
+                            c_double
+                                []
+                             
                             Value)] 
                             () 
                             None

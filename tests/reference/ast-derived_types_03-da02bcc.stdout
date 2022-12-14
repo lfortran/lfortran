@@ -17,12 +17,23 @@
             0 
             nn 
             1 
-            ndiag 
+            ndiag
+                []
+             
             () 
             [(= 
                 0 
-                ing 
-                len 
+                ing
+                    []
+                 
+                len
+                    [(diag 
+                    [(() 
+                    nn
+                        []
+                     
+                    ())])]
+                 
                 ()
             )
             (Allocate 
@@ -32,23 +43,31 @@
                     cell_id 
                     [(diag 
                     [(() 
-                    nn 
+                    nn
+                        []
+                     
                     ())])] 
                     [(() 
-                    ing 
+                    ing
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
                 ())] 
                 [(STAT 
-                ierr)] 
+                ierr
+                    []
+                )] 
                 ()
             )
             (If 
                 0 
                 () 
-                (/= ierr 0) 
+                (/= ierr
+                    []
+                 0) 
                 [(Return 
                     0 
                     () 
@@ -61,12 +80,23 @@
             )
             (= 
                 0 
-                ndpwds 
-                (+ ndpwds (FuncCallOrArray 
+                ndpwds
+                    []
+                 
+                (+ ndpwds
+                    []
+                 (FuncCallOrArray 
                     SIZE 
                     [] 
                     [(() 
-                    cell_id 
+                    cell_id
+                        [(diag 
+                        [(() 
+                        nn
+                            []
+                         
+                        ())])]
+                     
                     ())] 
                     [] 
                     []
@@ -86,7 +116,9 @@
             0 
             k 
             1 
-            nz 
+            nz
+                []
+             
             () 
             [(DoLoop 
                 0 
@@ -94,7 +126,9 @@
                 0 
                 j 
                 1 
-                ny 
+                ny
+                    []
+                 
                 () 
                 [(DoLoop 
                     0 
@@ -102,12 +136,22 @@
                     0 
                     i 
                     1 
-                    ichunk 
+                    ichunk
+                        []
+                     
                     () 
                     [(= 
                         0 
-                        nn 
-                        (- (+ (+ i j) k) 2) 
+                        nn
+                            []
+                         
+                        (- (+ (+ i
+                            []
+                         j
+                            []
+                        ) k
+                            []
+                        ) 2) 
                         ()
                     )
                     (= 
@@ -116,7 +160,9 @@
                             indx 
                             [] 
                             [(() 
-                            nn 
+                            nn
+                                []
+                             
                             ())] 
                             [] 
                             []
@@ -125,7 +171,9 @@
                             indx 
                             [] 
                             [(() 
-                            nn 
+                            nn
+                                []
+                             
                             ())] 
                             [] 
                             []
@@ -134,12 +182,16 @@
                     )
                     (= 
                         0 
-                        ing 
+                        ing
+                            []
+                         
                         (FuncCallOrArray 
                             indx 
                             [] 
                             [(() 
-                            nn 
+                            nn
+                                []
+                             
                             ())] 
                             [] 
                             []
@@ -148,20 +200,62 @@
                     )
                     (= 
                         0 
-                        ic 
-                        i 
+                        ic
+                            [(diag 
+                            [(() 
+                            nn
+                                []
+                             
+                            ())]) (cell_id 
+                            [(() 
+                            ing
+                                []
+                             
+                            ())])]
+                         
+                        i
+                            []
+                         
                         ()
                     )
                     (= 
                         0 
-                        j 
-                        j 
+                        j
+                            [(diag 
+                            [(() 
+                            nn
+                                []
+                             
+                            ())]) (cell_id 
+                            [(() 
+                            ing
+                                []
+                             
+                            ())])]
+                         
+                        j
+                            []
+                         
                         ()
                     )
                     (= 
                         0 
-                        k 
-                        k 
+                        k
+                            [(diag 
+                            [(() 
+                            nn
+                                []
+                             
+                            ())]) (cell_id 
+                            [(() 
+                            ing
+                                []
+                             
+                            ())])]
+                         
+                        k
+                            []
+                         
                         ()
                     )] 
                     () 

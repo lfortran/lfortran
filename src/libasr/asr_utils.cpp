@@ -363,7 +363,17 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         default :
             break;
     }
-    return ASR::make_StructInstanceMember_t(al, loc, LFortran::ASRUtils::EXPR(v_var), member, member_type, nullptr);
+    ASR::expr_t* value = nullptr;
+    if (ASR::is_a<ASR::Variable_t>(*member)) {
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(member);
+        if (v->m_value != nullptr) {
+            value = v->m_value;
+        } else if (v->m_symbolic_value != nullptr) {
+            value = expr_value(v->m_symbolic_value);
+        }
+    }
+    return ASR::make_StructInstanceMember_t(al, loc, LFortran::ASRUtils::EXPR(v_var),
+        member, member_type, value);
 }
 
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,

@@ -19,17 +19,24 @@ struct IntrinsicProceduresAsASRNodes {
     private:
 
         std::set<std::string> intrinsics_present_in_ASR;
+        std::set<std::string> kind_based_intrinsics;
 
     public:
 
         IntrinsicProceduresAsASRNodes() {
             intrinsics_present_in_ASR = {"size", "lbound", "ubound",
                 "transpose", "matmul", "pack", "transfer", "cmplx",
-                "dcmplx", "reshape", "ichar", "iachar"};
+                "dcmplx", "reshape", "ichar", "iachar", "maxloc"};
+
+            kind_based_intrinsics = {"scan", "verify"};
         }
 
         bool is_intrinsic_present_in_ASR(std::string& name) {
             return intrinsics_present_in_ASR.find(name) != intrinsics_present_in_ASR.end();
+        }
+
+        bool is_kind_based_selection_required(std::string& name) {
+            return kind_based_intrinsics.find(name) != kind_based_intrinsics.end();
         }
 
 };
@@ -74,6 +81,10 @@ struct IntrinsicProcedures {
             {"any", {m_builtin, &not_implemented, false}},
             {"is_iostat_eor", {m_builtin, &not_implemented, false}},
             {"is_iostat_end", {m_builtin, &not_implemented, false}},
+            {"get_command_argument", {m_builtin, &not_implemented, false}},
+            {"command_argument_count", {m_builtin, &not_implemented, false}},
+            {"execute_command_line", {m_builtin, &not_implemented, false}},
+            {"get_environment_variable", {m_builtin, &not_implemented, false}},
 
             // Require evaluated arguments
             {"aimag", {m_math, &eval_aimag, true}},
@@ -111,6 +122,7 @@ struct IntrinsicProcedures {
             {"erf", {m_math, &eval_erf, true}},
             {"erfc", {m_math, &eval_erfc, true}},
             {"abs", {m_math, &eval_abs, true}},
+            {"iabs", {m_math, &eval_abs, true}},
             {"sqrt", {m_math, &eval_sqrt, true}},
             {"dsqrt", {m_math, &eval_dsqrt, true}},
             {"datan", {m_math, &eval_datan, true}},
@@ -169,6 +181,10 @@ struct IntrinsicProcedures {
             {"len_adjustl", {m_string, &not_implemented, false}},
             {"repeat", {m_string, &not_implemented, false}},
             {"new_line", {m_string, &eval_new_line, false}},
+            {"scan_kind4", {m_string, &not_implemented, false}},
+            {"scan_kind8", {m_string, &not_implemented, false}},
+            {"verify_kind4", {m_string, &not_implemented, false}},
+            {"verify_kind8", {m_string, &not_implemented, false}},
 
             // Subroutines
             {"cpu_time", {m_math, &not_implemented, false}},
@@ -828,9 +844,6 @@ TRIG2(sqrt, dsqrt)
         ASR::ttype_t* real_type = LFortran::ASRUtils::expr_type(real_expr);
         if (LFortran::ASR::is_a<LFortran::ASR::Integer_t>(*real_type)) {
             int64_t c = ASR::down_cast<ASR::IntegerConstant_t>(real_expr)->m_n;
-            ASR::ttype_t* str_type =
-                LFortran::ASRUtils::TYPE(ASR::make_Character_t(al,
-                loc, 1, 1, nullptr, nullptr, 0));
             if (! (c >= 0 && c <= 127) ) {
                 throw SemanticError("The argument 'x' in char(x) must be in the range 0 <= x <= 127.", loc);
             }
@@ -840,6 +853,9 @@ TRIG2(sqrt, dsqrt)
             Str s;
             s.from_str_view(svalue);
             char *str_val = s.c_str(al);
+            // TODO: Should be 0 for char(0) but we store it as 1
+            ASR::ttype_t* str_type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al,
+                loc, 1, 1, nullptr, nullptr, 0));
             return ASR::down_cast<ASR::expr_t>(
                 ASR::make_StringConstant_t(al, loc,
                 str_val, str_type));

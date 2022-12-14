@@ -98,7 +98,9 @@
                 present 
                 [] 
                 [(() 
-                val 
+                val
+                    []
+                 
                 ())] 
                 [] 
                 []
@@ -110,7 +112,9 @@
                     present 
                     [] 
                     [(() 
-                    dim 
+                    dim
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -120,24 +124,34 @@
                     () 
                     (BoolOp 
                         (BoolOp 
-                            (> dim 0) 
+                            (> dim
+                                []
+                             0) 
                             And 
-                            (<= dim (FuncCallOrArray 
+                            (<= dim
+                                []
+                             (FuncCallOrArray 
                                 rank 
                                 [] 
                                 [(() 
-                                mold 
+                                mold
+                                    []
+                                 
                                 ())] 
                                 [] 
                                 []
                             ))
                         ) 
                         And 
-                        (<= dim (FuncCallOrArray 
+                        (<= dim
+                            []
+                         (FuncCallOrArray 
                             rank 
                             [] 
                             [(() 
-                            val 
+                            val
+                                []
+                             
                             ())] 
                             [] 
                             []
@@ -145,24 +159,34 @@
                     ) 
                     [(= 
                         0 
-                        conform 
+                        conform
+                            []
+                         
                         (== (FuncCallOrArray 
                             size 
                             [] 
                             [(() 
-                            mold 
+                            mold
+                                []
+                             
                             ())] 
                             [(dim 
-                            dim)] 
+                            dim
+                                []
+                            )] 
                             []
                         ) (FuncCallOrArray 
                             size 
                             [] 
                             [(() 
-                            val 
+                            val
+                                []
+                             
                             ())] 
                             [(dim 
-                            dim)] 
+                            dim
+                                []
+                            )] 
                             []
                         )) 
                         ()
@@ -186,7 +210,9 @@
                         rank 
                         [] 
                         [(() 
-                        val 
+                        val
+                            []
+                         
                         ())] 
                         [] 
                         []
@@ -194,14 +220,18 @@
                         rank 
                         [] 
                         [(() 
-                        mold 
+                        mold
+                            []
+                         
                         ())] 
                         [] 
                         []
                     )) 
                     [(= 
                         0 
-                        conform 
+                        conform
+                            []
+                         
                         (FuncCallOrArray 
                             all 
                             [] 
@@ -210,7 +240,9 @@
                                 shape 
                                 [] 
                                 [(() 
-                                mold 
+                                mold
+                                    []
+                                 
                                 ())] 
                                 [] 
                                 []
@@ -218,7 +250,9 @@
                                 shape 
                                 [] 
                                 [(() 
-                                val 
+                                val
+                                    []
+                                 
                                 ())] 
                                 [] 
                                 []
@@ -231,7 +265,9 @@
                     )] 
                     [(= 
                         0 
-                        conform 
+                        conform
+                            []
+                         
                         (Logical .false.) 
                         ()
                     )] 
@@ -245,7 +281,9 @@
             )] 
             [(= 
                 0 
-                conform 
+                conform
+                    []
+                 
                 (Logical .true.) 
                 ()
             )] 

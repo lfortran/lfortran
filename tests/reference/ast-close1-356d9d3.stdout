@@ -13,7 +13,9 @@
         [] 
         [(Close 
             0 
-            [u] 
+            [u
+                []
+            ] 
             [] 
             ()
         )
@@ -21,14 +23,19 @@
             0 
             [] 
             [(unit 
-            gmv_lun)] 
+            gmv_lun
+                []
+            )] 
             ()
         )
         (Close 
             0 
             [] 
             [(unit 
-            dunit)
+            dunit
+                [(dxf 
+                [])]
+            )
             (status 
             (String 
                 "delete"
@@ -39,9 +46,13 @@
             0 
             [] 
             [(UNIT 
-            funit)
+            funit
+                []
+            )
             (IOSTAT 
-            ierr)] 
+            ierr
+                []
+            )] 
             ()
         )] 
         []

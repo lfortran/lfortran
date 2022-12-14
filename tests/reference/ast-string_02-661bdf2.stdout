@@ -77,7 +77,9 @@
         )] 
         [(= 
             0 
-            title 
+            title
+                []
+             
             (String 
                 "Mr. "
             ) 
@@ -85,7 +87,9 @@
         )
         (= 
             0 
-            firstname 
+            firstname
+                []
+             
             (String 
                 "Rowan "
             ) 
@@ -93,7 +97,9 @@
         )
         (= 
             0 
-            surname 
+            surname
+                []
+             
             (String 
                 "Atkinson"
             ) 
@@ -101,7 +107,9 @@
         )
         (= 
             0 
-            greetings 
+            greetings
+                []
+             
             (String 
                 "A big hello from Mr. Bean"
             ) 
@@ -118,14 +126,22 @@
                 "Here is "
             )
             title
+                []
+            
             firstname
-            surname] 
+                []
+            
+            surname
+                []
+            ] 
             ()
         )
         (Print 
             0 
             () 
-            [greetings] 
+            [greetings
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)

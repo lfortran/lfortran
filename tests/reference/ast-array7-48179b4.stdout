@@ -60,7 +60,9 @@
             )] 
             [(SJ 
             [(0 
-            N 
+            N
+                []
+             
             DimensionExpr)] 
             [] 
             () 
@@ -68,7 +70,9 @@
             ())
             (DJ 
             [(0 
-            N 
+            N
+                []
+             
             DimensionExpr)] 
             [] 
             () 

@@ -56,7 +56,9 @@
         )] 
         [(= 
             0 
-            marks 
+            marks
+                []
+             
             94 
             (TriviaNode 
                 [] 
@@ -67,10 +69,14 @@
         (Select 
             0 
             () 
-            marks 
+            marks
+                []
+             
             [(CaseStmt 
                 [(CaseCondRange 
-                    (+ 40 b) 
+                    (+ 40 b
+                        []
+                    ) 
                     ()
                 )] 
                 () 
@@ -90,7 +96,9 @@
             (CaseStmt 
                 [(CaseCondRange 
                     () 
-                    (- 39 a)
+                    (- 39 a
+                        []
+                    )
                 )] 
                 () 
                 [(Print 
@@ -134,7 +142,9 @@
             [(String 
                 "Your marks are "
             )
-            marks] 
+            marks
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -143,7 +153,9 @@
         )
         (= 
             0 
-            marks 
+            marks
+                []
+             
             (u- 1) 
             (TriviaNode 
                 [] 
@@ -154,10 +166,14 @@
         (Select 
             0 
             () 
-            marks 
+            marks
+                []
+             
             [(CaseStmt 
                 [(CaseCondRange 
-                    (+ 40 b) 
+                    (+ 40 b
+                        []
+                    ) 
                     ()
                 )] 
                 () 
@@ -177,7 +193,9 @@
             (CaseStmt 
                 [(CaseCondRange 
                     0 
-                    (- 39 a)
+                    (- 39 a
+                        []
+                    )
                 )] 
                 () 
                 [(Print 
@@ -221,7 +239,9 @@
             [(String 
                 "Your marks are "
             )
-            marks] 
+            marks
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)

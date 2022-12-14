@@ -3,7 +3,9 @@
         (AttrType 
             TypeReal 
             [(kind 
-            c_float 
+            c_float
+                []
+             
             Value)] 
             () 
             None
@@ -21,7 +23,9 @@
         (AttrType 
             TypeReal 
             [(() 
-            c_float 
+            c_float
+                []
+             
             Value)] 
             () 
             None
@@ -39,7 +43,9 @@
         (AttrType 
             TypeCharacter 
             [(kind 
-            c_char 
+            c_char
+                []
+             
             Value)] 
             () 
             None
@@ -96,7 +102,9 @@
             () 
             Star)
             (kind 
-            c_char 
+            c_char
+                []
+             
             Value)] 
             () 
             None
@@ -117,7 +125,9 @@
             () 
             Star)
             (kind 
-            c_char 
+            c_char
+                []
+             
             Value)] 
             () 
             None
@@ -135,7 +145,9 @@
         (AttrType 
             TypeCharacter 
             [(kind 
-            c_char 
+            c_char
+                []
+             
             Value)
             (len 
             () 
@@ -195,7 +207,9 @@
             () 
             Colon)
             (kind 
-            c_char 
+            c_char
+                []
+             
             Value)] 
             () 
             None
@@ -216,7 +230,9 @@
             () 
             Colon)
             (kind 
-            c_char 
+            c_char
+                []
+             
             Value)] 
             () 
             None
@@ -234,7 +250,9 @@
         (AttrType 
             TypeCharacter 
             [(kind 
-            c_char 
+            c_char
+                []
+             
             Value)
             (len 
             () 
@@ -255,7 +273,9 @@
         (AttrType 
             TypeCharacter 
             [(() 
-            n 
+            n
+                []
+             
             Value)] 
             () 
             None
@@ -273,7 +293,9 @@
         (AttrType 
             TypeCharacter 
             [(len 
-            n 
+            n
+                []
+             
             Value)] 
             () 
             None
@@ -291,10 +313,14 @@
         (AttrType 
             TypeCharacter 
             [(len 
-            n 
+            n
+                []
+             
             Value)
             (kind 
-            c_char 
+            c_char
+                []
+             
             Value)] 
             () 
             None
@@ -312,10 +338,14 @@
         (AttrType 
             TypeCharacter 
             [(() 
-            n 
+            n
+                []
+             
             Value)
             (kind 
-            c_char 
+            c_char
+                []
+             
             Value)] 
             () 
             None
@@ -333,10 +363,14 @@
         (AttrType 
             TypeCharacter 
             [(kind 
-            c_char 
+            c_char
+                []
+             
             Value)
             (len 
-            n 
+            n
+                []
+             
             Value)] 
             () 
             None

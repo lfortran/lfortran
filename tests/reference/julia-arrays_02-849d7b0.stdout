@@ -20,6 +20,17 @@ function bit_size(x::Int32)::Int32
     return bit_size
 end
 
+function command_argument_count()::Int32
+    local r::Int32 = 0
+    return r
+end
+
+function execute_command_line(command::String, wait::Bool, exitstat::Int32, cmdstat::Int32, cmdmsg::String) end
+
+function get_command_argument(number::Int32, value::Base.RefValue{String}, length::Base.RefValue{Int32}, status::Base.RefValue{Int32}) end
+
+function get_environment_variable(name::String, value::String, length::Int32, status::Int32, trim_name::Bool) end
+
 function is_iostat_end(i::Int32)::Bool
     local r::Bool = false
     return r

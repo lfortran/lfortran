@@ -34,13 +34,17 @@
         )] 
         [(= 
             0 
-            x 
+            x
+                []
+             
             (Real "1.0") 
             ()
         )
         (= 
             0 
-            y 
+            y
+                []
+             
             (Real "2.0") 
             (TriviaNode 
                 [] 
@@ -50,15 +54,21 @@
         )
         (= 
             0 
-            z 
+            z
+                []
+             
             (FuncCallOrArray 
                 func1 
                 [] 
                 [(() 
-                x 
+                x
+                    []
+                 
                 ())
                 (() 
-                y 
+                y
+                    []
+                 
                 ())] 
                 [] 
                 []
@@ -71,7 +81,9 @@
             [(String 
                 "6.0 == "
             )
-            z] 
+            z
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -80,15 +92,21 @@
         )
         (= 
             0 
-            z 
+            z
+                []
+             
             (FuncCallOrArray 
                 func1 
                 [] 
                 [(() 
-                x 
+                x
+                    []
+                 
                 ())
                 (() 
-                y 
+                y
+                    []
+                 
                 ())] 
                 [] 
                 []
@@ -101,7 +119,9 @@
             [(String 
                 "7.0 == "
             )
-            z] 
+            z
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -110,15 +130,21 @@
         )
         (= 
             0 
-            z 
+            z
+                []
+             
             (FuncCallOrArray 
                 func2 
                 [] 
                 [(() 
-                x 
+                x
+                    []
+                 
                 ())
                 (() 
-                y 
+                y
+                    []
+                 
                 ())] 
                 [] 
                 []
@@ -131,7 +157,9 @@
             [(String 
                 "6.0 == "
             )
-            z] 
+            z
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -140,15 +168,21 @@
         )
         (= 
             0 
-            z 
+            z
+                []
+             
             (FuncCallOrArray 
                 func2 
                 [] 
                 [(() 
-                x 
+                x
+                    []
+                 
                 ())
                 (() 
-                y 
+                y
+                    []
+                 
                 ())] 
                 [] 
                 []
@@ -161,7 +195,9 @@
             [(String 
                 "8.0 == "
             )
-            z] 
+            z
+                []
+            ] 
             ()
         )] 
         [(Function 
@@ -169,7 +205,9 @@
             [(a)
             (b)] 
             [] 
-            c 
+            c
+                []
+             
             () 
             (TriviaNode 
                 [] 
@@ -239,14 +277,28 @@
             )] 
             [(= 
                 0 
-                saved 
-                (+ saved (Real "1.0")) 
+                saved
+                    []
+                 
+                (+ saved
+                    []
+                 (Real "1.0")) 
                 ()
             )
             (= 
                 0 
-                c 
-                (+ (+ (+ c a) b) saved) 
+                c
+                    []
+                 
+                (+ (+ (+ c
+                    []
+                 a
+                    []
+                ) b
+                    []
+                ) saved
+                    []
+                ) 
                 ()
             )] 
             []
@@ -256,7 +308,9 @@
             [(a)
             (b)] 
             [] 
-            c 
+            c
+                []
+             
             () 
             () 
             [] 
@@ -354,26 +408,52 @@
             )] 
             [(= 
                 0 
-                saved1 
-                (+ saved1 (Real "1.0")) 
+                saved1
+                    []
+                 
+                (+ saved1
+                    []
+                 (Real "1.0")) 
                 ()
             )
             (= 
                 0 
-                c 
-                (+ (+ (+ (+ (+ d c) a) b) saved1) saved2) 
+                c
+                    []
+                 
+                (+ (+ (+ (+ (+ d
+                    []
+                 c
+                    []
+                ) a
+                    []
+                ) b
+                    []
+                ) saved1
+                    []
+                ) saved2
+                    []
+                ) 
                 ()
             )
             (= 
                 0 
-                saved2 
-                (+ saved2 (Real "1.0")) 
+                saved2
+                    []
+                 
+                (+ saved2
+                    []
+                 (Real "1.0")) 
                 ()
             )
             (= 
                 0 
-                d 
-                (+ d (Real "3.0")) 
+                d
+                    []
+                 
+                (+ d
+                    []
+                 (Real "3.0")) 
                 ()
             )] 
             []

@@ -6,8 +6,8 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-parsing_02-8515171.stdout",
-    "stdout_hash": "4639aeef5bcf61943142b84e72757da0058c1cbff7558e2335cf9cad",
-    "stderr": "ast-parsing_02-8515171.stderr",
-    "stderr_hash": "38c28e43e72288cf56f08313327a8162e55d4462005ccca3fd591670",
+    "stdout_hash": "f0aff73e20143d54bf693f7f4ce12fcc811ce300e61c6d0eef13374d",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

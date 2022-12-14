@@ -111,8 +111,12 @@
             [] 
             [(= 
                 0 
-                real 
-                (* 2 integer) 
+                real
+                    []
+                 
+                (* 2 integer
+                    []
+                ) 
                 ()
             )] 
             []
@@ -171,8 +175,12 @@
         )] 
         [(= 
             0 
-            integer 
-            character 
+            integer
+                []
+             
+            character
+                []
+             
             ()
         )
         (AssociateBlock 
@@ -181,13 +189,17 @@
             [(logical 
             [] 
             [] 
-            character 
+            character
+                []
+             
             Arrow 
             ())
             (complex 
             [] 
             [] 
-            real 
+            real
+                []
+             
             Arrow 
             ())] 
             [(SubroutineCall 
@@ -195,10 +207,14 @@
                 subroutine 
                 [] 
                 [(() 
-                logical 
+                logical
+                    []
+                 
                 ())
                 (() 
-                complex 
+                complex
+                    []
+                 
                 ())] 
                 [] 
                 ()
@@ -208,6 +224,8 @@
                 () 
                 [(Parenthesis 
                     complex
+                        []
+                    
                 )] 
                 ()
             )] 

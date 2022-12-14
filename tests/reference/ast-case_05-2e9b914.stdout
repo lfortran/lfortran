@@ -39,7 +39,9 @@
         [(Select 
             0 
             () 
-            grade 
+            grade
+                []
+             
             [(CaseStmt 
                 [(CaseCondExpr 
                     (String 
@@ -165,7 +167,9 @@
             [(String 
                 "Your grade is "
             )
-            grade] 
+            grade
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)

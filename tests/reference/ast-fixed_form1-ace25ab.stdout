@@ -372,7 +372,9 @@
             )] 
             [(alist 
             [(1 
-            limit 
+            limit
+                []
+             
             DimensionExpr)] 
             [] 
             () 
@@ -380,7 +382,9 @@
             ())
             (blist 
             [(1 
-            limit 
+            limit
+                []
+             
             DimensionExpr)] 
             [] 
             () 
@@ -388,7 +392,9 @@
             ())
             (rlist 
             [(1 
-            limit 
+            limit
+                []
+             
             DimensionExpr)] 
             [] 
             () 
@@ -396,7 +402,9 @@
             ())
             (elist 
             [(1 
-            limit 
+            limit
+                []
+             
             DimensionExpr)] 
             [] 
             () 
@@ -404,7 +412,9 @@
             ())
             (iord 
             [(1 
-            limit 
+            limit
+                []
+             
             DimensionExpr)] 
             [] 
             () 
@@ -446,7 +456,9 @@
         )] 
         [(= 
             0 
-            epmach 
+            epmach
+                []
+             
             (FuncCallOrArray 
                 d1mach 
                 [] 
@@ -460,7 +472,9 @@
         )
         (= 
             0 
-            uflow 
+            uflow
+                []
+             
             (FuncCallOrArray 
                 d1mach 
                 [] 
@@ -474,19 +488,25 @@
         )
         (= 
             0 
-            ier 
+            ier
+                []
+             
             6 
             ()
         )
         (= 
             0 
-            neval 
+            neval
+                []
+             
             0 
             ()
         )
         (= 
             0 
-            last 
+            last
+                []
+             
             0 
             ()
         )
@@ -534,13 +554,17 @@
         )
         (= 
             0 
-            result 
+            result
+                []
+             
             (Real "0.0d+00") 
             ()
         )
         (= 
             0 
-            abserr 
+            abserr
+                []
+             
             (Real "0.0d+00") 
             ()
         )
@@ -553,16 +577,26 @@
                         (BoolOp 
                             (BoolOp 
                                 (BoolOp 
-                                    (<= b a) 
+                                    (<= b
+                                        []
+                                     a
+                                        []
+                                    ) 
                                     Or 
                                     (BoolOp 
-                                        (== epsabs (Real "0.0d+00")) 
+                                        (== epsabs
+                                            []
+                                         (Real "0.0d+00")) 
                                         And 
-                                        (< epsrel (FuncCallOrArray 
+                                        (< epsrel
+                                            []
+                                         (FuncCallOrArray 
                                             dmax1 
                                             [] 
                                             [(() 
-                                            (* (Real "0.5d+02") epmach) 
+                                            (* (Real "0.5d+02") epmach
+                                                []
+                                            ) 
                                             ())
                                             (() 
                                             (Real "0.5d-28") 
@@ -573,19 +607,29 @@
                                     )
                                 ) 
                                 Or 
-                                (<= alfa (u- (Real "0.1d+01")))
+                                (<= alfa
+                                    []
+                                 (u- (Real "0.1d+01")))
                             ) 
                             Or 
-                            (<= beta (u- (Real "0.1d+01")))
+                            (<= beta
+                                []
+                             (u- (Real "0.1d+01")))
                         ) 
                         Or 
-                        (< integr 1)
+                        (< integr
+                            []
+                         1)
                     ) 
                     Or 
-                    (> integr 4)
+                    (> integr
+                        []
+                     4)
                 ) 
                 Or 
-                (< limit 2)
+                (< limit
+                    []
+                 2)
             ) 
             [(GoTo 
                 0 
@@ -601,7 +645,9 @@
         )
         (= 
             0 
-            ier 
+            ier
+                []
+             
             0 
             ()
         )
@@ -610,33 +656,53 @@
             dqmomo 
             [] 
             [(() 
-            alfa 
+            alfa
+                []
+             
             ())
             (() 
-            beta 
+            beta
+                []
+             
             ())
             (() 
-            ri 
+            ri
+                []
+             
             ())
             (() 
-            rj 
+            rj
+                []
+             
             ())
             (() 
-            rg 
+            rg
+                []
+             
             ())
             (() 
-            rh 
+            rh
+                []
+             
             ())
             (() 
-            integr 
+            integr
+                []
+             
             ())] 
             [] 
             ()
         )
         (= 
             0 
-            centre 
-            (* (Real "0.5d+00") (+ b a)) 
+            centre
+                []
+             
+            (* (Real "0.5d+00") (+ b
+                []
+             a
+                []
+            )) 
             ()
         )
         (SubroutineCall 
@@ -644,60 +710,96 @@
             dqc25s 
             [] 
             [(() 
-            f 
+            f
+                []
+             
             ())
             (() 
-            a 
+            a
+                []
+             
             ())
             (() 
-            b 
+            b
+                []
+             
             ())
             (() 
-            a 
+            a
+                []
+             
             ())
             (() 
-            centre 
+            centre
+                []
+             
             ())
             (() 
-            alfa 
+            alfa
+                []
+             
             ())
             (() 
-            beta 
+            beta
+                []
+             
             ())
             (() 
-            ri 
+            ri
+                []
+             
             ())
             (() 
-            rj 
+            rj
+                []
+             
             ())
             (() 
-            rg 
+            rg
+                []
+             
             ())
             (() 
-            rh 
+            rh
+                []
+             
             ())
             (() 
-            area1 
+            area1
+                []
+             
             ())
             (() 
-            error1 
+            error1
+                []
+             
             ())
             (() 
-            resas1 
+            resas1
+                []
+             
             ())
             (() 
-            integr 
+            integr
+                []
+             
             ())
             (() 
-            nev 
+            nev
+                []
+             
             ())] 
             [] 
             ()
         )
         (= 
             0 
-            neval 
-            nev 
+            neval
+                []
+             
+            nev
+                []
+             
             ()
         )
         (SubroutineCall 
@@ -705,95 +807,155 @@
             dqc25s 
             [] 
             [(() 
-            f 
+            f
+                []
+             
             ())
             (() 
-            a 
+            a
+                []
+             
             ())
             (() 
-            b 
+            b
+                []
+             
             ())
             (() 
-            centre 
+            centre
+                []
+             
             ())
             (() 
-            b 
+            b
+                []
+             
             ())
             (() 
-            alfa 
+            alfa
+                []
+             
             ())
             (() 
-            beta 
+            beta
+                []
+             
             ())
             (() 
-            ri 
+            ri
+                []
+             
             ())
             (() 
-            rj 
+            rj
+                []
+             
             ())
             (() 
-            rg 
+            rg
+                []
+             
             ())
             (() 
-            rh 
+            rh
+                []
+             
             ())
             (() 
-            area2 
+            area2
+                []
+             
             ())
             (() 
-            error2 
+            error2
+                []
+             
             ())
             (() 
-            resas2 
+            resas2
+                []
+             
             ())
             (() 
-            integr 
+            integr
+                []
+             
             ())
             (() 
-            nev 
+            nev
+                []
+             
             ())] 
             [] 
             ()
         )
         (= 
             0 
-            last 
+            last
+                []
+             
             2 
             ()
         )
         (= 
             0 
-            neval 
-            (+ neval nev) 
+            neval
+                []
+             
+            (+ neval
+                []
+             nev
+                []
+            ) 
             ()
         )
         (= 
             0 
-            result 
-            (+ area1 area2) 
+            result
+                []
+             
+            (+ area1
+                []
+             area2
+                []
+            ) 
             ()
         )
         (= 
             0 
-            abserr 
-            (+ error1 error2) 
+            abserr
+                []
+             
+            (+ error1
+                []
+             error2
+                []
+            ) 
             ()
         )
         (= 
             0 
-            errbnd 
+            errbnd
+                []
+             
             (FuncCallOrArray 
                 dmax1 
                 [] 
                 [(() 
-                epsabs 
+                epsabs
+                    []
+                 
                 ())
                 (() 
-                (* epsrel (FuncCallOrArray 
+                (* epsrel
+                    []
+                 (FuncCallOrArray 
                     dabs 
                     [] 
                     [(() 
-                    result 
+                    result
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -807,7 +969,11 @@
         (If 
             0 
             () 
-            (> error2 error1) 
+            (> error2
+                []
+             error1
+                []
+            ) 
             [(GoTo 
                 0 
                 () 
@@ -831,7 +997,9 @@
                 [] 
                 []
             ) 
-            a 
+            a
+                []
+             
             ()
         )
         (= 
@@ -845,7 +1013,9 @@
                 [] 
                 []
             ) 
-            centre 
+            centre
+                []
+             
             ()
         )
         (= 
@@ -859,7 +1029,9 @@
                 [] 
                 []
             ) 
-            centre 
+            centre
+                []
+             
             ()
         )
         (= 
@@ -873,7 +1045,9 @@
                 [] 
                 []
             ) 
-            b 
+            b
+                []
+             
             ()
         )
         (= 
@@ -887,7 +1061,9 @@
                 [] 
                 []
             ) 
-            area1 
+            area1
+                []
+             
             ()
         )
         (= 
@@ -901,7 +1077,9 @@
                 [] 
                 []
             ) 
-            area2 
+            area2
+                []
+             
             ()
         )
         (= 
@@ -915,7 +1093,9 @@
                 [] 
                 []
             ) 
-            error1 
+            error1
+                []
+             
             ()
         )
         (= 
@@ -929,7 +1109,9 @@
                 [] 
                 []
             ) 
-            error2 
+            error2
+                []
+             
             ()
         )
         (GoTo 
@@ -950,7 +1132,9 @@
                 [] 
                 []
             ) 
-            centre 
+            centre
+                []
+             
             ()
         )
         (= 
@@ -964,7 +1148,9 @@
                 [] 
                 []
             ) 
-            a 
+            a
+                []
+             
             ()
         )
         (= 
@@ -978,7 +1164,9 @@
                 [] 
                 []
             ) 
-            b 
+            b
+                []
+             
             ()
         )
         (= 
@@ -992,7 +1180,9 @@
                 [] 
                 []
             ) 
-            centre 
+            centre
+                []
+             
             ()
         )
         (= 
@@ -1006,7 +1196,9 @@
                 [] 
                 []
             ) 
-            area2 
+            area2
+                []
+             
             ()
         )
         (= 
@@ -1020,7 +1212,9 @@
                 [] 
                 []
             ) 
-            area1 
+            area1
+                []
+             
             ()
         )
         (= 
@@ -1034,7 +1228,9 @@
                 [] 
                 []
             ) 
-            error2 
+            error2
+                []
+             
             ()
         )
         (= 
@@ -1048,7 +1244,9 @@
                 [] 
                 []
             ) 
-            error1 
+            error1
+                []
+             
             ()
         )
         (= 
@@ -1082,10 +1280,14 @@
         (If 
             0 
             () 
-            (== limit 2) 
+            (== limit
+                []
+             2) 
             [(= 
                 0 
-                ier 
+                ier
+                    []
+                 
                 1 
                 ()
             )] 
@@ -1098,9 +1300,15 @@
             0 
             () 
             (BoolOp 
-                (<= abserr errbnd) 
+                (<= abserr
+                    []
+                 errbnd
+                    []
+                ) 
                 Or 
-                (== ier 1)
+                (== ier
+                    []
+                 1)
             ) 
             [(GoTo 
                 0 
@@ -1116,7 +1324,9 @@
         )
         (= 
             0 
-            errmax 
+            errmax
+                []
+             
             (FuncCallOrArray 
                 elist 
                 [] 
@@ -1130,37 +1340,53 @@
         )
         (= 
             0 
-            maxerr 
+            maxerr
+                []
+             
             1 
             ()
         )
         (= 
             0 
-            nrmax 
+            nrmax
+                []
+             
             1 
             ()
         )
         (= 
             0 
-            area 
-            result 
+            area
+                []
+             
+            result
+                []
+             
             ()
         )
         (= 
             0 
-            errsum 
-            abserr 
+            errsum
+                []
+             
+            abserr
+                []
+             
             ()
         )
         (= 
             0 
-            iroff1 
+            iroff1
+                []
+             
             0 
             ()
         )
         (= 
             0 
-            iroff2 
+            iroff2
+                []
+             
             0 
             ()
         )
@@ -1170,16 +1396,22 @@
             60 
             last 
             3 
-            limit 
+            limit
+                []
+             
             () 
             [(= 
                 0 
-                a1 
+                a1
+                    []
+                 
                 (FuncCallOrArray 
                     alist 
                     [] 
                     [(() 
-                    maxerr 
+                    maxerr
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -1188,12 +1420,16 @@
             )
             (= 
                 0 
-                b1 
+                b1
+                    []
+                 
                 (* (Real "0.5d+00") (+ (FuncCallOrArray 
                     alist 
                     [] 
                     [(() 
-                    maxerr 
+                    maxerr
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -1201,7 +1437,9 @@
                     blist 
                     [] 
                     [(() 
-                    maxerr 
+                    maxerr
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -1210,18 +1448,26 @@
             )
             (= 
                 0 
-                a2 
-                b1 
+                a2
+                    []
+                 
+                b1
+                    []
+                 
                 ()
             )
             (= 
                 0 
-                b2 
+                b2
+                    []
+                 
                 (FuncCallOrArray 
                     blist 
                     [] 
                     [(() 
-                    maxerr 
+                    maxerr
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -1233,60 +1479,98 @@
                 dqc25s 
                 [] 
                 [(() 
-                f 
+                f
+                    []
+                 
                 ())
                 (() 
-                a 
+                a
+                    []
+                 
                 ())
                 (() 
-                b 
+                b
+                    []
+                 
                 ())
                 (() 
-                a1 
+                a1
+                    []
+                 
                 ())
                 (() 
-                b1 
+                b1
+                    []
+                 
                 ())
                 (() 
-                alfa 
+                alfa
+                    []
+                 
                 ())
                 (() 
-                beta 
+                beta
+                    []
+                 
                 ())
                 (() 
-                ri 
+                ri
+                    []
+                 
                 ())
                 (() 
-                rj 
+                rj
+                    []
+                 
                 ())
                 (() 
-                rg 
+                rg
+                    []
+                 
                 ())
                 (() 
-                rh 
+                rh
+                    []
+                 
                 ())
                 (() 
-                area1 
+                area1
+                    []
+                 
                 ())
                 (() 
-                error1 
+                error1
+                    []
+                 
                 ())
                 (() 
-                resas1 
+                resas1
+                    []
+                 
                 ())
                 (() 
-                integr 
+                integr
+                    []
+                 
                 ())
                 (() 
-                nev 
+                nev
+                    []
+                 
                 ())] 
                 [] 
                 ()
             )
             (= 
                 0 
-                neval 
-                (+ neval nev) 
+                neval
+                    []
+                 
+                (+ neval
+                    []
+                 nev
+                    []
+                ) 
                 ()
             )
             (SubroutineCall 
@@ -1294,88 +1578,154 @@
                 dqc25s 
                 [] 
                 [(() 
-                f 
+                f
+                    []
+                 
                 ())
                 (() 
-                a 
+                a
+                    []
+                 
                 ())
                 (() 
-                b 
+                b
+                    []
+                 
                 ())
                 (() 
-                a2 
+                a2
+                    []
+                 
                 ())
                 (() 
-                b2 
+                b2
+                    []
+                 
                 ())
                 (() 
-                alfa 
+                alfa
+                    []
+                 
                 ())
                 (() 
-                beta 
+                beta
+                    []
+                 
                 ())
                 (() 
-                ri 
+                ri
+                    []
+                 
                 ())
                 (() 
-                rj 
+                rj
+                    []
+                 
                 ())
                 (() 
-                rg 
+                rg
+                    []
+                 
                 ())
                 (() 
-                rh 
+                rh
+                    []
+                 
                 ())
                 (() 
-                area2 
+                area2
+                    []
+                 
                 ())
                 (() 
-                error2 
+                error2
+                    []
+                 
                 ())
                 (() 
-                resas2 
+                resas2
+                    []
+                 
                 ())
                 (() 
-                integr 
+                integr
+                    []
+                 
                 ())
                 (() 
-                nev 
+                nev
+                    []
+                 
                 ())] 
                 [] 
                 ()
             )
             (= 
                 0 
-                neval 
-                (+ neval nev) 
+                neval
+                    []
+                 
+                (+ neval
+                    []
+                 nev
+                    []
+                ) 
                 ()
             )
             (= 
                 0 
-                area12 
-                (+ area1 area2) 
+                area12
+                    []
+                 
+                (+ area1
+                    []
+                 area2
+                    []
+                ) 
                 ()
             )
             (= 
                 0 
-                erro12 
-                (+ error1 error2) 
+                erro12
+                    []
+                 
+                (+ error1
+                    []
+                 error2
+                    []
+                ) 
                 ()
             )
             (= 
                 0 
-                errsum 
-                (- (+ errsum erro12) errmax) 
+                errsum
+                    []
+                 
+                (- (+ errsum
+                    []
+                 erro12
+                    []
+                ) errmax
+                    []
+                ) 
                 ()
             )
             (= 
                 0 
-                area 
-                (- (+ area area12) (FuncCallOrArray 
+                area
+                    []
+                 
+                (- (+ area
+                    []
+                 area12
+                    []
+                ) (FuncCallOrArray 
                     rlist 
                     [] 
                     [(() 
-                    maxerr 
+                    maxerr
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -1386,9 +1736,17 @@
                 0 
                 () 
                 (BoolOp 
-                    (== a a1) 
+                    (== a
+                        []
+                     a1
+                        []
+                    ) 
                     Or 
-                    (== b b2)
+                    (== b
+                        []
+                     b2
+                        []
+                    )
                 ) 
                 [(GoTo 
                     0 
@@ -1406,9 +1764,17 @@
                 0 
                 () 
                 (BoolOp 
-                    (== resas1 error1) 
+                    (== resas1
+                        []
+                     error1
+                        []
+                    ) 
                     Or 
-                    (== resas2 error2)
+                    (== resas2
+                        []
+                     error2
+                        []
+                    )
                 ) 
                 [(GoTo 
                     0 
@@ -1434,11 +1800,15 @@
                             rlist 
                             [] 
                             [(() 
-                            maxerr 
+                            maxerr
+                                []
+                             
                             ())] 
                             [] 
                             []
-                        ) area12) 
+                        ) area12
+                            []
+                        ) 
                         ())] 
                         [] 
                         []
@@ -1446,18 +1816,28 @@
                         dabs 
                         [] 
                         [(() 
-                        area12 
+                        area12
+                            []
+                         
                         ())] 
                         [] 
                         []
                     ))) 
                     And 
-                    (>= erro12 (* (Real "0.99d+00") errmax))
+                    (>= erro12
+                        []
+                     (* (Real "0.99d+00") errmax
+                        []
+                    ))
                 ) 
                 [(= 
                     0 
-                    iroff1 
-                    (+ iroff1 1) 
+                    iroff1
+                        []
+                     
+                    (+ iroff1
+                        []
+                     1) 
                     ()
                 )] 
                 [] 
@@ -1469,14 +1849,24 @@
                 0 
                 () 
                 (BoolOp 
-                    (> last 10) 
+                    (> last
+                        []
+                     10) 
                     And 
-                    (> erro12 errmax)
+                    (> erro12
+                        []
+                     errmax
+                        []
+                    )
                 ) 
                 [(= 
                     0 
-                    iroff2 
-                    (+ iroff2 1) 
+                    iroff2
+                        []
+                     
+                    (+ iroff2
+                        []
+                     1) 
                     ()
                 )] 
                 [] 
@@ -1490,12 +1880,16 @@
                     rlist 
                     [] 
                     [(() 
-                    maxerr 
+                    maxerr
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
-                area1 
+                area1
+                    []
+                 
                 ()
             )
             (= 
@@ -1504,29 +1898,41 @@
                     rlist 
                     [] 
                     [(() 
-                    last 
+                    last
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
-                area2 
+                area2
+                    []
+                 
                 ()
             )
             (= 
                 0 
-                errbnd 
+                errbnd
+                    []
+                 
                 (FuncCallOrArray 
                     dmax1 
                     [] 
                     [(() 
-                    epsabs 
+                    epsabs
+                        []
+                     
                     ())
                     (() 
-                    (* epsrel (FuncCallOrArray 
+                    (* epsrel
+                        []
+                     (FuncCallOrArray 
                         dabs 
                         [] 
                         [(() 
-                        area 
+                        area
+                            []
+                         
                         ())] 
                         [] 
                         []
@@ -1540,7 +1946,11 @@
             (If 
                 0 
                 () 
-                (<= errsum errbnd) 
+                (<= errsum
+                    []
+                 errbnd
+                    []
+                ) 
                 [(GoTo 
                     0 
                     () 
@@ -1556,10 +1966,16 @@
             (If 
                 0 
                 () 
-                (== last limit) 
+                (== last
+                    []
+                 limit
+                    []
+                ) 
                 [(= 
                     0 
-                    ier 
+                    ier
+                        []
+                     
                     1 
                     ()
                 )] 
@@ -1572,13 +1988,19 @@
                 0 
                 () 
                 (BoolOp 
-                    (>= iroff1 6) 
+                    (>= iroff1
+                        []
+                     6) 
                     Or 
-                    (>= iroff2 20)
+                    (>= iroff2
+                        []
+                     20)
                 ) 
                 [(= 
                     0 
-                    ier 
+                    ier
+                        []
+                     
                     2 
                     ()
                 )] 
@@ -1598,7 +2020,9 @@
                         dabs 
                         [] 
                         [(() 
-                        a1 
+                        a1
+                            []
+                         
                         ())] 
                         [] 
                         []
@@ -1609,7 +2033,9 @@
                         dabs 
                         [] 
                         [(() 
-                        b2 
+                        b2
+                            []
+                         
                         ())] 
                         [] 
                         []
@@ -1617,18 +2043,26 @@
                     ())] 
                     [] 
                     []
-                ) (* (+ (Real "0.1d+01") (* (Real "0.1d+03") epmach)) (+ (FuncCallOrArray 
+                ) (* (+ (Real "0.1d+01") (* (Real "0.1d+03") epmach
+                    []
+                )) (+ (FuncCallOrArray 
                     dabs 
                     [] 
                     [(() 
-                    a2 
+                    a2
+                        []
+                     
                     ())] 
                     [] 
                     []
-                ) (* (Real "0.1d+04") uflow)))) 
+                ) (* (Real "0.1d+04") uflow
+                    []
+                )))) 
                 [(= 
                     0 
-                    ier 
+                    ier
+                        []
+                     
                     3 
                     ()
                 )] 
@@ -1640,7 +2074,11 @@
             (If 
                 35 
                 () 
-                (> error2 error1) 
+                (> error2
+                    []
+                 error1
+                    []
+                ) 
                 [(GoTo 
                     0 
                     () 
@@ -1659,12 +2097,16 @@
                     alist 
                     [] 
                     [(() 
-                    last 
+                    last
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
-                a2 
+                a2
+                    []
+                 
                 ()
             )
             (= 
@@ -1673,12 +2115,16 @@
                     blist 
                     [] 
                     [(() 
-                    maxerr 
+                    maxerr
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
-                b1 
+                b1
+                    []
+                 
                 ()
             )
             (= 
@@ -1687,12 +2133,16 @@
                     blist 
                     [] 
                     [(() 
-                    last 
+                    last
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
-                b2 
+                b2
+                    []
+                 
                 ()
             )
             (= 
@@ -1701,12 +2151,16 @@
                     elist 
                     [] 
                     [(() 
-                    maxerr 
+                    maxerr
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
-                error1 
+                error1
+                    []
+                 
                 ()
             )
             (= 
@@ -1715,12 +2169,16 @@
                     elist 
                     [] 
                     [(() 
-                    last 
+                    last
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
-                error2 
+                error2
+                    []
+                 
                 ()
             )
             (GoTo 
@@ -1736,12 +2194,16 @@
                     alist 
                     [] 
                     [(() 
-                    maxerr 
+                    maxerr
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
-                a2 
+                a2
+                    []
+                 
                 ()
             )
             (= 
@@ -1750,12 +2212,16 @@
                     alist 
                     [] 
                     [(() 
-                    last 
+                    last
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
-                a1 
+                a1
+                    []
+                 
                 ()
             )
             (= 
@@ -1764,12 +2230,16 @@
                     blist 
                     [] 
                     [(() 
-                    last 
+                    last
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
-                b1 
+                b1
+                    []
+                 
                 ()
             )
             (= 
@@ -1778,12 +2248,16 @@
                     rlist 
                     [] 
                     [(() 
-                    maxerr 
+                    maxerr
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
-                area2 
+                area2
+                    []
+                 
                 ()
             )
             (= 
@@ -1792,12 +2266,16 @@
                     rlist 
                     [] 
                     [(() 
-                    last 
+                    last
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
-                area1 
+                area1
+                    []
+                 
                 ()
             )
             (= 
@@ -1806,12 +2284,16 @@
                     elist 
                     [] 
                     [(() 
-                    maxerr 
+                    maxerr
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
-                error2 
+                error2
+                    []
+                 
                 ()
             )
             (= 
@@ -1820,12 +2302,16 @@
                     elist 
                     [] 
                     [(() 
-                    last 
+                    last
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
-                error1 
+                error1
+                    []
+                 
                 ()
             )
             (SubroutineCall 
@@ -1833,25 +2319,39 @@
                 dqpsrt 
                 [] 
                 [(() 
-                limit 
+                limit
+                    []
+                 
                 ())
                 (() 
-                last 
+                last
+                    []
+                 
                 ())
                 (() 
-                maxerr 
+                maxerr
+                    []
+                 
                 ())
                 (() 
-                errmax 
+                errmax
+                    []
+                 
                 ())
                 (() 
-                elist 
+                elist
+                    []
+                 
                 ())
                 (() 
-                iord 
+                iord
+                    []
+                 
                 ())
                 (() 
-                nrmax 
+                nrmax
+                    []
+                 
                 ())] 
                 [] 
                 ()
@@ -1860,9 +2360,15 @@
                 0 
                 () 
                 (BoolOp 
-                    (/= ier 0) 
+                    (/= ier
+                        []
+                     0) 
                     Or 
-                    (<= errsum errbnd)
+                    (<= errsum
+                        []
+                     errbnd
+                        []
+                    )
                 ) 
                 [(GoTo 
                     0 
@@ -1885,7 +2391,9 @@
         )
         (= 
             70 
-            result 
+            result
+                []
+             
             (Real "0.0d+00") 
             ()
         )
@@ -1895,16 +2403,24 @@
             80 
             k 
             1 
-            last 
+            last
+                []
+             
             () 
             [(= 
                 0 
-                result 
-                (+ result (FuncCallOrArray 
+                result
+                    []
+                 
+                (+ result
+                    []
+                 (FuncCallOrArray 
                     rlist 
                     [] 
                     [(() 
-                    k 
+                    k
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -1920,8 +2436,12 @@
         )
         (= 
             0 
-            abserr 
-            errsum 
+            abserr
+                []
+             
+            errsum
+                []
+             
             ()
         )
         (Return 

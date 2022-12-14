@@ -142,8 +142,12 @@
         )] 
         [(=> 
             0 
-            bptr 
-            child_target 
+            bptr
+                []
+             
+            child_target
+                []
+             
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -154,7 +158,9 @@
             0 
             () 
             () 
-            bptr 
+            bptr
+                []
+             
             [(TypeStmtName 
                 base 
                 () 
@@ -164,7 +170,10 @@
                     [(String 
                         "base type: component value: "
                     )
-                    i] 
+                    i
+                        [(bptr 
+                        [])]
+                    ] 
                     ()
                 )]
             )
@@ -178,7 +187,13 @@
                         "child type: component values: "
                     )
                     i
-                    j] 
+                        [(bptr 
+                        [])]
+                    
+                    j
+                        [(bptr 
+                        [])]
+                    ] 
                     ()
                 )]
             )] 
@@ -191,8 +206,12 @@
         )
         (=> 
             0 
-            bptr 
-            base_target 
+            bptr
+                []
+             
+            base_target
+                []
+             
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -203,7 +222,9 @@
             0 
             () 
             () 
-            bptr 
+            bptr
+                []
+             
             [(TypeStmtName 
                 base 
                 () 
@@ -213,7 +234,10 @@
                     [(String 
                         "base type: component value: "
                     )
-                    i] 
+                    i
+                        [(bptr 
+                        [])]
+                    ] 
                     ()
                 )]
             )
@@ -227,7 +251,13 @@
                         "child type: component values: "
                     )
                     i
-                    j] 
+                        [(bptr 
+                        [])]
+                    
+                    j
+                        [(bptr 
+                        [])]
+                    ] 
                     ()
                 )]
             )] 

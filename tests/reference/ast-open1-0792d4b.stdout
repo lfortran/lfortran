@@ -19,25 +19,37 @@
                 "p_cc"
             ))
             (newunit 
-            u)] 
+            u
+                []
+            )] 
             ()
         )
         (Open 
             0 
-            [task_lun] 
+            [task_lun
+                []
+            ] 
             [(file 
-            taskfile)] 
+            taskfile
+                []
+            )] 
             ()
         )
         (Open 
             0 
             [] 
             [(unit 
-            gmv_lun)
+            gmv_lun
+                []
+            )
             (FILE 
-            fname)
+            fname
+                []
+            )
             (IOSTAT 
-            ier)
+            ier
+                []
+            )
             (POSITION 
             (String 
                 "rewind"
@@ -48,15 +60,22 @@
             0 
             [] 
             [(newunit 
-            lun)
+            lun
+                [(this 
+                [])]
+            )
             (file 
-            outfile)
+            outfile
+                []
+            )
             (status 
             (String 
                 "replace"
             ))
             (iostat 
-            ios)] 
+            ios
+                []
+            )] 
             ()
         )
         (Open 
@@ -86,19 +105,29 @@
             0 
             [] 
             [(UNIT 
-            funit)
+            funit
+                []
+            )
             (FILE 
-            tname)
+            tname
+                []
+            )
             (STATUS 
-            fstat)
+            fstat
+                []
+            )
             (ACCESS 
             (String 
                 "SEQUENTIAL"
             ))
             (ACTION 
-            faction)
+            faction
+                []
+            )
             (IOSTAT 
-            ierr)] 
+            ierr
+                []
+            )] 
             ()
         )] 
         []

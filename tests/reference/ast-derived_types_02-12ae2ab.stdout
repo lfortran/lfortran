@@ -96,7 +96,9 @@
                 (AttrType 
                     TypeReal 
                     [(() 
-                    r8 
+                    r8
+                        []
+                     
                     Value)] 
                     () 
                     None
@@ -142,7 +144,9 @@
                 (AttrType 
                     TypeReal 
                     [(() 
-                    r8 
+                    r8
+                        []
+                     
                     Value)] 
                     () 
                     None

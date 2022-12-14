@@ -22,14 +22,18 @@
         )] 
         [(= 
             0 
-            x 
+            x
+                []
+             
             (* (+ 2 3) 5) 
             ()
         )
         (Print 
             0 
             () 
-            [x] 
+            [x
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)

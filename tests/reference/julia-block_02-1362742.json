@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "julia-block_02-1362742.stdout",
     "stdout_hash": "37416d0e9c9b806a181fd96e8686ee1d6421c819f1a3a09f0979e98d",
-    "stderr": "julia-block_02-1362742.stderr",
-    "stderr_hash": "60488b7fcd202fd28a9fb7045091257667eed65fe1dec8040b9c2871",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

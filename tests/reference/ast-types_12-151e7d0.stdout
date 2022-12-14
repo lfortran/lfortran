@@ -39,12 +39,16 @@
                     [(AttrType 
                         TypeInteger 
                         [(() 
-                        c_int 
+                        c_int
+                            []
+                         
                         Value)] 
                         () 
                         None
                     )] 
-                    r 
+                    r
+                        []
+                     
                     () 
                     () 
                     [] 
@@ -59,7 +63,9 @@
                         (AttrType 
                             TypeInteger 
                             [(() 
-                            c_int 
+                            c_int
+                                []
+                             
                             Value)] 
                             () 
                             None
@@ -82,7 +88,9 @@
                         (AttrType 
                             TypeReal 
                             [(() 
-                            c_double 
+                            c_double
+                                []
+                             
                             Value)] 
                             () 
                             None

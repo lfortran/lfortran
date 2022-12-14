@@ -152,7 +152,9 @@
         )] 
         [(= 
             0 
-            verb 
+            verb
+                []
+             
             (String 
                 "learned "
             ) 
@@ -160,7 +162,9 @@
         )
         (= 
             0 
-            posit 
+            posit
+                []
+             
             (String 
                 "from "
             ) 
@@ -168,7 +172,9 @@
         )
         (= 
             0 
-            title 
+            title
+                []
+             
             (String 
                 "the "
             ) 
@@ -176,7 +182,9 @@
         )
         (= 
             0 
-            last_name 
+            last_name
+                []
+             
             (String 
                 "best"
             ) 
@@ -188,24 +196,36 @@
         )
         (= 
             0 
-            combined 
+            combined
+                []
+             
             (StrOp 
                 (StrOp 
                     (StrOp 
                         (StrOp 
                             (StrOp 
-                                intro 
+                                intro
+                                    []
+                                 
                                 Concat 
                                 verb
+                                    []
+                                
                             ) 
                             Concat 
                             posit
+                                []
+                            
                         ) 
                         Concat 
                         title
+                            []
+                        
                     ) 
                     Concat 
                     last_name
+                        []
+                    
                 ) 
                 Concat 
                 (String 
@@ -221,7 +241,9 @@
         (Print 
             0 
             () 
-            [combined] 
+            [combined
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)

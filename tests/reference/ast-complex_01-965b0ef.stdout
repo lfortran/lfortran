@@ -62,7 +62,11 @@
             [(y 
             [] 
             [] 
-            (Complex a b) 
+            (Complex a
+                []
+             b
+                []
+            ) 
             Equal 
             ())] 
             (TriviaNode 
@@ -100,7 +104,13 @@
             [(z 
             [] 
             [] 
-            (+ a (* i_ b)) 
+            (+ a
+                []
+             (* i_
+                []
+             b
+                []
+            )) 
             Equal 
             ())] 
             ()
@@ -116,7 +126,17 @@
             [(w 
             [] 
             [] 
-            (+ (+ a b) (* i_ (- a b))) 
+            (+ (+ a
+                []
+             b
+                []
+            ) (* i_
+                []
+             (- a
+                []
+             b
+                []
+            ))) 
             Equal 
             ())] 
             (TriviaNode 
@@ -129,9 +149,17 @@
             0 
             () 
             [x
+                []
+            
             y
+                []
+            
             z
-            w] 
+                []
+            
+            w
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)

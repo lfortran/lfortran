@@ -43,7 +43,9 @@
         )] 
         [(= 
             0 
-            iam 
+            iam
+                []
+             
             (FuncCallOrArray 
                 this_image 
                 [] 
@@ -60,10 +62,14 @@
         (If 
             0 
             () 
-            (== iam 1) 
+            (== iam
+                []
+             1) 
             [(= 
                 0 
-                x 
+                x
+                    []
+                 
                 (Real "1.0") 
                 ()
             )] 
@@ -103,7 +109,9 @@
         (If 
             0 
             () 
-            (== iam 2) 
+            (== iam
+                []
+             2) 
             [(Write 
                 0 
                 [(())

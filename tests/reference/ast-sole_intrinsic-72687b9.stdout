@@ -92,7 +92,9 @@
         )] 
         [(= 
             0 
-            f 
+            f
+                []
+             
             (FuncCallOrArray 
                 cmplx 
                 [] 
@@ -109,12 +111,16 @@
         )
         (= 
             0 
-            y 
+            y
+                []
+             
             (FuncCallOrArray 
                 aimag 
                 [] 
                 [(() 
-                x 
+                x
+                    []
+                 
                 ())] 
                 [] 
                 []

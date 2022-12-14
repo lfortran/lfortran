@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "llvm-operator_overloading_01-33c47db.stdout",
     "stdout_hash": "4544cc4633affe4bc72e3349d97afa57f7e2ccd1a2a195a43fcd886c",
-    "stderr": "llvm-operator_overloading_01-33c47db.stderr",
-    "stderr_hash": "bc887b577bc8ccfc15f212c070a67ee8c67af8d343abdd0132e6b6fb",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

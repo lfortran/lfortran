@@ -6,8 +6,8 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-program_cmake_02-d3e4e1d.stdout",
-    "stdout_hash": "ee3645a8d467b2411df890ffb762b08e7261bc78bea68d2e20caf8e3",
-    "stderr": "ast-program_cmake_02-d3e4e1d.stderr",
-    "stderr_hash": "46bc7510f839ce095b554c75efdcb63bad2385e910d819d7305c5465",
+    "stdout_hash": "c10ea4e0c98e170db07f6ea15b473f37916874b606ec71c952750cdc",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

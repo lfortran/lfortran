@@ -41,7 +41,9 @@
             [(String 
                 "My name is "
             )
-            my_name] 
+            my_name
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)

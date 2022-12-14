@@ -385,7 +385,9 @@
         )] 
         [(= 
             0 
-            n 
+            n
+                []
+             
             5 
             ()
         )
@@ -396,7 +398,9 @@
                 F 
                 [] 
                 [(() 
-                n 
+                n
+                    []
+                 
                 ())] 
                 [] 
                 [(() 
@@ -502,14 +506,20 @@
                 () 
                 [(= 
                     0 
-                    c 
-                    (+ c (CoarrayRef 
+                    c
+                        []
+                     
+                    (+ c
+                        []
+                     (CoarrayRef 
                         c 
                         [] 
                         [] 
                         [] 
                         [(() 
-                        i 
+                        i
+                            []
+                         
                         () 
                         CodimensionExpr)] 
                         []
@@ -524,7 +534,9 @@
                         [] 
                         [] 
                         [(() 
-                        i 
+                        i
+                            []
+                         
                         () 
                         CodimensionExpr)] 
                         []
@@ -537,7 +549,9 @@
             )] 
             [(EventWait 
                 0 
-                ok_to_overwrite 
+                ok_to_overwrite
+                    []
+                 
                 [] 
                 ()
             )
@@ -603,19 +617,27 @@
         )
         (EventWait 
             0 
-            variable 
+            variable
+                []
+             
             [(AttrEventWaitKwArg 
                 until_count 
                 status
+                    []
+                
             )] 
             ()
         )
         (EventWait 
             0 
-            variable 
+            variable
+                []
+             
             [(AttrEventWaitKwArg 
                 until_count 
                 status
+                    []
+                
             )
             (AttrErrmsg 
                 status
@@ -624,19 +646,27 @@
         )
         (EventWait 
             0 
-            variable 
+            variable
+                []
+             
             [(AttrEventWaitKwArg 
                 errmsg 
                 status
+                    []
+                
             )] 
             ()
         )
         (EventWait 
             0 
-            variable 
+            variable
+                []
+             
             [(AttrEventWaitKwArg 
                 stat 
                 status
+                    []
+                
             )] 
             ()
         )
@@ -650,7 +680,9 @@
                     sub 
                     [] 
                     [(() 
-                    i 
+                    i
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -662,7 +694,9 @@
                     parent 
                     [] 
                     [(() 
-                    i 
+                    i
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -678,7 +712,9 @@
         )
         (EventPost 
             0 
-            variable 
+            variable
+                []
+             
             [(AttrStat 
                 status
             )] 
@@ -686,7 +722,9 @@
         )
         (EventPost 
             0 
-            variable 
+            variable
+                []
+             
             [(AttrErrmsg 
                 status
             )] 
@@ -976,7 +1014,9 @@
                 [(team 
                 3)
                 (stat 
-                i)]
+                i
+                    []
+                )]
             ) 
             5 
             ()
@@ -1002,7 +1042,9 @@
                 () 
                 CodimensionExpr)] 
                 [(stat 
-                i)]
+                i
+                    []
+                )]
             ) 
             5 
             (TriviaNode 

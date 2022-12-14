@@ -15,14 +15,22 @@
         [] 
         [(= 
             0 
-            x 
-            y 
+            x
+                []
+             
+            y
+                []
+             
             ()
         )
         (= 
             0 
-            x 
-            (* 2 y) 
+            x
+                []
+             
+            (* 2 y
+                []
+            ) 
             ()
         )] 
         []
@@ -43,8 +51,12 @@
         [] 
         [(= 
             0 
-            x 
-            y 
+            x
+                []
+             
+            y
+                []
+             
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -53,8 +65,12 @@
         )
         (= 
             0 
-            x 
-            (* 2 y) 
+            x
+                []
+             
+            (* 2 y
+                []
+            ) 
             ()
         )] 
         []
@@ -76,8 +92,12 @@
         [] 
         [(= 
             0 
-            x 
-            y 
+            x
+                []
+             
+            y
+                []
+             
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -87,8 +107,12 @@
         )
         (= 
             0 
-            x 
-            (* 2 y) 
+            x
+                []
+             
+            (* 2 y
+                []
+            ) 
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -115,8 +139,12 @@
         [] 
         [(= 
             0 
-            x 
-            y 
+            x
+                []
+             
+            y
+                []
+             
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -134,8 +162,12 @@
         )
         (= 
             0 
-            x 
-            (* 2 y) 
+            x
+                []
+             
+            (* 2 y
+                []
+            ) 
             ()
         )] 
         []
@@ -156,8 +188,12 @@
         [] 
         [(= 
             0 
-            x 
-            y 
+            x
+                []
+             
+            y
+                []
+             
             (TriviaNode 
                 [] 
                 [(Semicolon)
@@ -166,8 +202,12 @@
         )
         (= 
             0 
-            x 
-            (* 2 y) 
+            x
+                []
+             
+            (* 2 y
+                []
+            ) 
             (TriviaNode 
                 [] 
                 [(Semicolon)
@@ -192,8 +232,12 @@
         [] 
         [(= 
             0 
-            x 
-            y 
+            x
+                []
+             
+            y
+                []
+             
             (TriviaNode 
                 [] 
                 [(Semicolon)
@@ -203,8 +247,12 @@
         )
         (= 
             0 
-            x 
-            (* 2 y) 
+            x
+                []
+             
+            (* 2 y
+                []
+            ) 
             (TriviaNode 
                 [] 
                 [(Semicolon)
@@ -231,8 +279,12 @@
         [] 
         [(= 
             0 
-            x 
-            y 
+            x
+                []
+             
+            y
+                []
+             
             (TriviaNode 
                 [] 
                 [(Semicolon)]
@@ -240,8 +292,12 @@
         )
         (= 
             0 
-            x 
-            (* 2 y) 
+            x
+                []
+             
+            (* 2 y
+                []
+            ) 
             (TriviaNode 
                 [] 
                 [(Semicolon)]
@@ -265,14 +321,22 @@
         [] 
         [(= 
             0 
-            subroutine 
-            y 
+            subroutine
+                []
+             
+            y
+                []
+             
             ()
         )
         (= 
             0 
-            x 
-            (* 2 subroutine) 
+            x
+                []
+             
+            (* 2 subroutine
+                []
+            ) 
             ()
         )] 
         []
@@ -555,7 +619,9 @@
             (AttrType 
                 TypeReal 
                 [(() 
-                dp 
+                dp
+                    []
+                 
                 Value)] 
                 () 
                 None
@@ -583,7 +649,9 @@
             (AttrType 
                 TypeReal 
                 [(() 
-                dp 
+                dp
+                    []
+                 
                 Value)] 
                 () 
                 None
@@ -641,7 +709,9 @@
             0 
             i 
             1 
-            n 
+            n
+                []
+             
             () 
             [(= 
                 0 
@@ -649,16 +719,22 @@
                     y 
                     [] 
                     [(() 
-                    i 
+                    i
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
-                (+ (* a (FuncCallOrArray 
+                (+ (* a
+                    []
+                 (FuncCallOrArray 
                     x 
                     [] 
                     [(() 
-                    i 
+                    i
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -666,7 +742,9 @@
                     y 
                     [] 
                     [(() 
-                    i 
+                    i
+                        []
+                     
                     ())] 
                     [] 
                     []

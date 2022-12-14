@@ -82,7 +82,9 @@
         )] 
         [(= 
             0 
-            i 
+            i
+                []
+             
             5 
             (TriviaNode 
                 [] 
@@ -93,7 +95,9 @@
         (Print 
             0 
             () 
-            [i] 
+            [i
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -154,7 +158,9 @@
         (Print 
             0 
             () 
-            [i] 
+            [i
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -164,7 +170,9 @@
         (Print 
             0 
             () 
-            [i] 
+            [i
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -174,7 +182,9 @@
         (Print 
             0 
             () 
-            [i] 
+            [i
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)

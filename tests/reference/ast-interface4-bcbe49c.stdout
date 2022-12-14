@@ -148,7 +148,9 @@
                     SIZE 
                     [] 
                     [(() 
-                    A 
+                    A
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -156,14 +158,18 @@
                     SIZE 
                     [] 
                     [(() 
-                    B 
+                    B
+                        []
+                     
                     ())] 
                     [] 
                     []
                 )) 
                 [(= 
                     0 
-                    MATRIX_ERROR 
+                    MATRIX_ERROR
+                        []
+                     
                     (Logical .true.) 
                     ()
                 )
@@ -186,7 +192,9 @@
             )
             (= 
                 0 
-                MULT 
+                MULT
+                    []
+                 
                 (Real "0.0") 
                 ()
             )
@@ -200,7 +208,9 @@
                     SIZE 
                     [] 
                     [(() 
-                    A 
+                    A
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -208,12 +218,18 @@
                 () 
                 [(= 
                     0 
-                    MULT 
-                    (+ MULT (* (FuncCallOrArray 
+                    MULT
+                        []
+                     
+                    (+ MULT
+                        []
+                     (* (FuncCallOrArray 
                         A 
                         [] 
                         [(() 
-                        I 
+                        I
+                            []
+                         
                         ())] 
                         [] 
                         []
@@ -221,7 +237,9 @@
                         B 
                         [] 
                         [(() 
-                        I 
+                        I
+                            []
+                         
                         ())] 
                         [] 
                         []
@@ -236,10 +254,14 @@
                 IEEE_GET_FLAG 
                 [] 
                 [(() 
-                IEEE_OVERFLOW 
+                IEEE_OVERFLOW
+                    []
+                 
                 ())
                 (() 
-                OVERFLOW 
+                OVERFLOW
+                    []
+                 
                 ())] 
                 [] 
                 ()
@@ -247,10 +269,14 @@
             (If 
                 0 
                 () 
-                OVERFLOW 
+                OVERFLOW
+                    []
+                 
                 [(= 
                     0 
-                    MATRIX_ERROR 
+                    MATRIX_ERROR
+                        []
+                     
                     (Logical .true.) 
                     ()
                 )] 

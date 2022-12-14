@@ -79,18 +79,24 @@
         )] 
         [(= 
             0 
-            scalar 
+            scalar
+                []
+             
             10 
             ()
         )
         (= 
             0 
-            nsize 
+            nsize
+                []
+             
             (FuncCallOrArray 
                 size 
                 [] 
                 [(() 
-                a 
+                a
+                    []
+                 
                 ())] 
                 [] 
                 []
@@ -103,7 +109,9 @@
             [(ConcurrentControl 
                 i 
                 1 
-                nsize 
+                nsize
+                    []
+                 
                 ()
             )] 
             () 
@@ -114,7 +122,9 @@
                     a 
                     [] 
                     [(() 
-                    i 
+                    i
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -128,7 +138,9 @@
                     b 
                     [] 
                     [(() 
-                    i 
+                    i
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -144,16 +156,24 @@
             triad 
             [] 
             [(() 
-            a 
+            a
+                []
+             
             ())
             (() 
-            b 
+            b
+                []
+             
             ())
             (() 
-            scalar 
+            scalar
+                []
+             
             ())
             (() 
-            c 
+            c
+                []
+             
             ())] 
             [] 
             ()
@@ -264,12 +284,16 @@
             )] 
             [(= 
                 0 
-                N 
+                N
+                    []
+                 
                 (FuncCallOrArray 
                     size 
                     [] 
                     [(() 
-                    a 
+                    a
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -282,7 +306,9 @@
                 [(ConcurrentControl 
                     i 
                     1 
-                    N 
+                    N
+                        []
+                     
                     ()
                 )] 
                 () 
@@ -292,7 +318,9 @@
                         c 
                         [] 
                         [(() 
-                        i 
+                        i
+                            []
+                         
                         ())] 
                         [] 
                         []
@@ -301,15 +329,21 @@
                         a 
                         [] 
                         [(() 
-                        i 
+                        i
+                            []
+                         
                         ())] 
                         [] 
                         []
-                    ) (* scalar (FuncCallOrArray 
+                    ) (* scalar
+                        []
+                     (FuncCallOrArray 
                         b 
                         [] 
                         [(() 
-                        i 
+                        i
+                            []
+                         
                         ())] 
                         [] 
                         []

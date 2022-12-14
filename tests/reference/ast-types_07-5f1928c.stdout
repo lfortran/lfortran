@@ -38,7 +38,9 @@
             [(y 
             [] 
             [] 
-            x 
+            x
+                []
+             
             Arrow 
             ())] 
             ()
@@ -78,7 +80,9 @@
             () 
             DimensionExpr)] 
             [] 
-            a 
+            a
+                []
+             
             Arrow 
             ())] 
             (TriviaNode 

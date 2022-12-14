@@ -125,6 +125,16 @@
                                     imax 
                                     Private
                                 ), 
+                            max@imax_3_args:
+                                (ExternalSymbol 
+                                    2 
+                                    max@imax_3_args 
+                                    4 imax_3_args 
+                                    lfortran_intrinsic_math2 
+                                    [] 
+                                    imax_3_args 
+                                    Private
+                                ), 
                             max@imax_6args:
                                 (ExternalSymbol 
                                     2 
@@ -169,69 +179,142 @@
                         }) 
                     debug 
                     [] 
-                    [(Print 
-                        () 
-                        [(FunctionCall 
-                            2 min@imin_6args 
-                            2 min 
-                            [((Var 2 a))
-                            ((Var 2 b))
-                            ((Var 2 c))
-                            ((Var 2 d))
-                            ((Var 2 e))
-                            ((Var 2 f))] 
-                            (Integer 4 []) 
-                            (IntegerConstant -20 (Integer 4 [])) 
+                    [(If 
+                        (IntegerCompare 
+                            (FunctionCall 
+                                2 min@imin_6args 
+                                2 min 
+                                [((Var 2 a))
+                                ((Var 2 b))
+                                ((Var 2 c))
+                                ((Var 2 d))
+                                ((Var 2 e))
+                                ((Var 2 f))] 
+                                (Integer 4 []) 
+                                (IntegerConstant -20 (Integer 4 [])) 
+                                ()
+                            ) 
+                            NotEq 
+                            (IntegerUnaryMinus 
+                                (IntegerConstant 40 (Integer 4 [])) 
+                                (Integer 4 []) 
+                                (IntegerConstant -40 (Integer 4 []))
+                            ) 
+                            (Logical 4 []) 
+                            (LogicalConstant 
+                                .true. 
+                                (Logical 4 [])
+                            )
+                        ) 
+                        [(ErrorStop 
                             ()
                         )] 
-                        () 
-                        ()
+                        []
                     )
-                    (Print 
-                        () 
-                        [(FunctionCall 
-                            2 max@imax_6args 
-                            2 max 
-                            [((Var 2 a))
-                            ((Var 2 b))
-                            ((Var 2 c))
-                            ((Var 2 d))
-                            ((Var 2 e))
-                            ((Var 2 f))] 
-                            (Integer 4 []) 
+                    (If 
+                        (IntegerCompare 
+                            (FunctionCall 
+                                2 max@imax_6args 
+                                2 max 
+                                [((Var 2 a))
+                                ((Var 2 b))
+                                ((Var 2 c))
+                                ((Var 2 d))
+                                ((Var 2 e))
+                                ((Var 2 f))] 
+                                (Integer 4 []) 
+                                (IntegerConstant 10 (Integer 4 [])) 
+                                ()
+                            ) 
+                            NotEq 
+                            (IntegerConstant 50 (Integer 4 [])) 
+                            (Logical 4 []) 
+                            (LogicalConstant 
+                                .true. 
+                                (Logical 4 [])
+                            )
+                        ) 
+                        [(ErrorStop 
+                            ()
+                        )] 
+                        []
+                    )
+                    (If 
+                        (IntegerCompare 
+                            (FunctionCall 
+                                2 max@imax 
+                                2 max 
+                                [((Var 2 a))
+                                ((Var 2 b))] 
+                                (Integer 4 []) 
+                                (IntegerConstant 10 (Integer 4 [])) 
+                                ()
+                            ) 
+                            NotEq 
                             (IntegerConstant 10 (Integer 4 [])) 
+                            (Logical 4 []) 
+                            (LogicalConstant 
+                                .false. 
+                                (Logical 4 [])
+                            )
+                        ) 
+                        [(ErrorStop 
                             ()
                         )] 
-                        () 
-                        ()
+                        []
                     )
-                    (Print 
-                        () 
-                        [(FunctionCall 
-                            2 max@imax 
-                            2 max 
-                            [((Var 2 a))
-                            ((Var 2 b))] 
-                            (Integer 4 []) 
-                            (IntegerConstant 10 (Integer 4 [])) 
+                    (If 
+                        (IntegerCompare 
+                            (FunctionCall 
+                                2 min@imin 
+                                2 min 
+                                [((Var 2 a))
+                                ((Var 2 b))] 
+                                (Integer 4 []) 
+                                (IntegerConstant -20 (Integer 4 [])) 
+                                ()
+                            ) 
+                            NotEq 
+                            (IntegerUnaryMinus 
+                                (IntegerConstant 20 (Integer 4 [])) 
+                                (Integer 4 []) 
+                                (IntegerConstant -20 (Integer 4 []))
+                            ) 
+                            (Logical 4 []) 
+                            (LogicalConstant 
+                                .false. 
+                                (Logical 4 [])
+                            )
+                        ) 
+                        [(ErrorStop 
                             ()
                         )] 
-                        () 
-                        ()
+                        []
                     )
-                    (Print 
-                        () 
-                        [(FunctionCall 
-                            2 min@imin 
-                            2 min 
-                            [((Var 2 a))
-                            ((Var 2 b))] 
-                            (Integer 4 []) 
-                            (IntegerConstant -20 (Integer 4 [])) 
+                    (If 
+                        (IntegerCompare 
+                            (FunctionCall 
+                                2 max@imax_3_args 
+                                2 max 
+                                [((Var 2 a))
+                                ((Var 2 b))
+                                ((Var 2 c))] 
+                                (Integer 4 []) 
+                                (IntegerConstant 10 (Integer 4 [])) 
+                                ()
+                            ) 
+                            NotEq 
+                            (IntegerConstant 30 (Integer 4 [])) 
+                            (Logical 4 []) 
+                            (LogicalConstant 
+                                .true. 
+                                (Logical 4 [])
+                            )
+                        ) 
+                        [(ErrorStop 
                             ()
                         )] 
-                        () 
-                        ()
+                        []
                     )]
                 ), 
             iso_fortran_env:

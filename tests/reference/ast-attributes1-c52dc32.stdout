@@ -59,7 +59,9 @@
                 1 
                 Value)
                 (kind 
-                c_char 
+                c_char
+                    []
+                 
                 Value)] 
                 () 
                 None
@@ -69,7 +71,9 @@
             )
             (AttrBind 
                 (Bind 
-                    [C] 
+                    [C
+                        []
+                    ] 
                     [(name 
                     (String 
                         "_binary_fclKernels_cl_start"
@@ -150,6 +154,8 @@
             () 
             [(AttrEquivalence 
                 [([a
+                    []
+                
                 (FuncCallOrArray 
                     c 
                     [] 
@@ -160,6 +166,8 @@
                     []
                 )])
                 ([b
+                    []
+                
                 (FuncCallOrArray 
                     c 
                     [] 

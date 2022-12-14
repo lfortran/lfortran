@@ -904,7 +904,8 @@ public:
                                         tmp_expr->base.loc);
                 } else {
                     ASR::Variable_t* tmp_v = ASR::down_cast<ASR::Variable_t>(tmp_sym);
-                    if( tmp_v->m_storage != ASR::storage_typeType::Allocatable ) {
+                    if( tmp_v->m_storage != ASR::storage_typeType::Allocatable &&
+                        tmp_v->m_storage != ASR::storage_typeType::Save) {
                         // If it is not allocatable, it can also be a pointer
                         if (ASR::is_a<ASR::Pointer_t>(*tmp_v->m_type)) {
                             // OK
@@ -967,18 +968,10 @@ public:
                     if( condrange->m_start != nullptr ) {
                         this->visit_expr(*(condrange->m_start));
                         m_start = LFortran::ASRUtils::EXPR(tmp);
-                        if( LFortran::ASRUtils::expr_type(m_start)->type != ASR::ttypeType::Integer ) {
-                            throw SemanticError(R"""(Expression in Case selector can only be an Integer)""",
-                                                x.base.loc);
-                        }
                     }
                     if( condrange->m_end != nullptr ) {
                         this->visit_expr(*(condrange->m_end));
                         m_end = LFortran::ASRUtils::EXPR(tmp);
-                        if( LFortran::ASRUtils::expr_type(m_end)->type != ASR::ttypeType::Integer ) {
-                            throw SemanticError(R"""(Expression in Case selector can only be an Integer)""",
-                                                x.base.loc);
-                        }
                     }
                     Vec<ASR::stmt_t*> case_body_vec;
                     case_body_vec.reserve(al, Case_Stmt->n_body);
@@ -1020,6 +1013,133 @@ public:
         }
         tmp = ASR::make_Select_t(al, x.base.base.loc, a_test, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size());
+    }
+
+    void visit_SelectType(const AST::SelectType_t& x) {
+        if( !x.m_selector ) {
+            throw SemanticError("Selector expression is missing in select type statement.",
+                                x.base.base.loc);
+        }
+        visit_expr(*x.m_selector);
+        ASR::expr_t* m_selector = ASRUtils::EXPR(tmp);
+        Vec<ASR::stmt_t*> select_type_default;
+        select_type_default.reserve(al, 1);
+        Vec<ASR::type_stmt_t*> select_type_body;
+        select_type_body.reserve(al, x.n_body);
+        ASR::Variable_t* selector_variable = nullptr;
+        ASR::ttype_t* selector_variable_type = nullptr;
+        char** selector_variable_dependencies = nullptr;
+        size_t selector_variable_n_dependencies = 0;
+        if( ASR::is_a<ASR::Var_t>(*m_selector) ) {
+            ASR::symbol_t* selector_sym = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
+            LFORTRAN_ASSERT(ASR::is_a<ASR::Variable_t>(*selector_sym));
+            selector_variable = ASR::down_cast<ASR::Variable_t>(selector_sym);
+            selector_variable_type = selector_variable->m_type;
+            selector_variable_dependencies = selector_variable->m_dependencies;
+            selector_variable_n_dependencies = selector_variable->n_dependencies;
+        }
+        for( size_t i = 0; i < x.n_body; i++ ) {
+            SymbolTable* parent_scope = current_scope;
+            current_scope = al.make_new<SymbolTable>(parent_scope);
+            ASR::Variable_t* assoc_variable = nullptr;
+            if( x.m_assoc_name ) {
+                ASR::symbol_t* assoc_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                    al, x.base.base.loc, current_scope, x.m_assoc_name,
+                    nullptr, 0, ASR::intentType::Local, m_selector, nullptr,
+                    ASR::storage_typeType::Default, nullptr, ASR::abiType::Source,
+                    ASR::accessType::Public, ASR::presenceType::Required, false));
+                current_scope->add_symbol(std::string(x.m_assoc_name), assoc_sym);
+                assoc_variable = ASR::down_cast<ASR::Variable_t>(assoc_sym);
+            } else if( selector_variable ) {
+                assoc_variable = selector_variable;
+            }
+            switch( x.m_body[i]->type ) {
+                case AST::type_stmtType::ClassStmt: {
+                    AST::ClassStmt_t* class_stmt = AST::down_cast<AST::ClassStmt_t>(x.m_body[i]);
+                    ASR::symbol_t* sym = current_scope->resolve_symbol(std::string(class_stmt->m_id));
+                    if( assoc_variable ) {
+                        ASR::ttype_t* selector_type = nullptr;
+                        if( ASR::is_a<ASR::StructType_t>(*sym) ) {
+                            selector_type = ASRUtils::TYPE(ASR::make_Struct_t(al, sym->base.loc, sym, nullptr, 0));
+                        } else if( ASR::is_a<ASR::ClassType_t>(*sym) ) {
+                            selector_type = ASRUtils::TYPE(ASR::make_Class_t(al, sym->base.loc, sym, nullptr, 0));
+                        } else {
+                            throw SemanticError("Only class and derived type in select type test expressions.",
+                                                class_stmt->base.base.loc);
+                        }
+                        Vec<char*> assoc_deps;
+                        assoc_deps.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, m_selector);
+                        assoc_variable->m_dependencies = assoc_deps.p;
+                        assoc_variable->n_dependencies = assoc_deps.size();
+                        assoc_variable->m_type = selector_type;
+                    }
+                    Vec<ASR::stmt_t*> class_stmt_body;
+                    class_stmt_body.reserve(al, class_stmt->n_body);
+                    transform_stmts(class_stmt_body, class_stmt->n_body, class_stmt->m_body);
+                    std::string block_name = parent_scope->get_unique_name("~select_type_block_");
+                    ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
+                                                    al, class_stmt->base.base.loc,
+                                                    current_scope, s2c(al, block_name), class_stmt_body.p,
+                                                    class_stmt_body.size()));
+                    parent_scope->add_symbol(block_name, block_sym);
+                    Vec<ASR::stmt_t*> block_call_stmt;
+                    block_call_stmt.reserve(al, 1);
+                    block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, class_stmt->base.base.loc, -1, block_sym)));
+                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmt_t(al,
+                        class_stmt->base.base.loc, sym, block_call_stmt.p, block_call_stmt.size())));
+                    break;
+                }
+                case AST::type_stmtType::TypeStmtName: {
+                    AST::TypeStmtName_t* type_stmt_name = AST::down_cast<AST::TypeStmtName_t>(x.m_body[i]);
+                    ASR::symbol_t* sym = current_scope->resolve_symbol(std::string(type_stmt_name->m_name));
+                    if( assoc_variable ) {
+                        ASR::ttype_t* selector_type = nullptr;
+                        if( ASR::is_a<ASR::StructType_t>(*sym) ) {
+                            selector_type = ASRUtils::TYPE(ASR::make_Struct_t(al, sym->base.loc, sym, nullptr, 0));
+                        } else if( ASR::is_a<ASR::ClassType_t>(*sym) ) {
+                            selector_type = ASRUtils::TYPE(ASR::make_Class_t(al, sym->base.loc, sym, nullptr, 0));
+                        } else {
+                            throw SemanticError("Only class and derived type in select type test expressions.",
+                                                type_stmt_name->base.base.loc);
+                        }
+                        Vec<char*> assoc_deps;
+                        assoc_deps.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, m_selector);
+                        assoc_variable->m_dependencies = assoc_deps.p;
+                        assoc_variable->n_dependencies = assoc_deps.size();
+                        assoc_variable->m_type = selector_type;
+                    }
+                    Vec<ASR::stmt_t*> type_stmt_name_body;
+                    type_stmt_name_body.reserve(al, type_stmt_name->n_body);
+                    transform_stmts(type_stmt_name_body, type_stmt_name->n_body, type_stmt_name->m_body);
+                    std::string block_name = parent_scope->get_unique_name("~select_type_block_");
+                    ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
+                                                    al, type_stmt_name->base.base.loc,
+                                                    current_scope, s2c(al, block_name), type_stmt_name_body.p,
+                                                    type_stmt_name_body.size()));
+                    parent_scope->add_symbol(block_name, block_sym);
+                    Vec<ASR::stmt_t*> block_call_stmt;
+                    block_call_stmt.reserve(al, 1);
+                    block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, type_stmt_name->base.base.loc, -1, block_sym)));
+                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmt_t(al,
+                        type_stmt_name->base.base.loc, sym, block_call_stmt.p, block_call_stmt.size())));
+                    break;
+                }
+                default: {
+                    throw SemanticError(std::to_string(x.m_body[i]->type) + " statement not supported yet in select type",
+                                        x.m_body[i]->base.loc);
+                }
+            }
+            current_scope = parent_scope;
+        }
+
+        selector_variable->m_type = selector_variable_type;
+        selector_variable->m_dependencies = selector_variable_dependencies;
+        selector_variable->n_dependencies = selector_variable_n_dependencies;
+
+        tmp = ASR::make_SelectType_t(al, x.base.base.loc, select_type_body.p, select_type_body.size(),
+                                     select_type_default.p, select_type_default.size());
     }
 
     void visit_Submodule(const AST::Submodule_t &x) {
@@ -1568,6 +1688,8 @@ public:
                     f->m_args, f->n_args, x.base.base.loc, f,
                     diags, x.n_member);
                 if( diags.has_error() ) {
+                    diag.diagnostics.insert(diag.diagnostics.end(),
+                            diags.diagnostics.begin(), diags.diagnostics.end());
                     throw SemanticAbort();
                 }
             } else if (ASR::is_a<ASR::ClassProcedure_t>(*f2)) {
@@ -1582,6 +1704,8 @@ public:
                     f->m_args, f->n_args, x.base.base.loc, f,
                     diags, x.n_member);
                 if( diags.has_error() ) {
+                    diag.diagnostics.insert(diag.diagnostics.end(),
+                            diags.diagnostics.begin(), diags.diagnostics.end());
                     throw SemanticAbort();
                 }
             } else {

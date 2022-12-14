@@ -733,6 +733,9 @@ public:
             }
             const std::map<std::string, ASR::symbol_t*>& scope = der_type->m_symtab->get_scope();
             for( auto itr = scope.begin(); itr != scope.end(); itr++ ) {
+                if( !ASR::is_a<ASR::Variable_t>(*itr->second) ) {
+                    continue;
+                }
                 ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(itr->second);
                 llvm::Type* llvm_mem_type = get_type_from_ttype_t_util(member->m_type, member->m_abi);
                 member_types.push_back(llvm_mem_type);
@@ -2690,6 +2693,13 @@ public:
             ASR::ttype_t* symbol_type = ASRUtils::symbol_type(item.second);
             int idx = name2memidx[struct_type_name][item.first];
             llvm::Value* ptr_member = llvm_utils->create_gep(ptr, idx);
+            if( ASR::is_a<ASR::Variable_t>(*item.second) ) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if( v->m_symbolic_value ) {
+                    visit_expr(*v->m_symbolic_value);
+                    LLVM::CreateStore(*builder, tmp, ptr_member);
+                }
+            }
             if( ASRUtils::is_array(symbol_type) ) {
                 // Assume that struct member array is not allocatable
                 ASR::dimension_t* m_dims = nullptr;

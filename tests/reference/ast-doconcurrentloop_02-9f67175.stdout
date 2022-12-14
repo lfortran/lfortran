@@ -75,12 +75,16 @@
         )] 
         [(= 
             0 
-            N 
+            N
+                []
+             
             (FuncCallOrArray 
                 size 
                 [] 
                 [(() 
-                a 
+                a
+                    []
+                 
                 ())] 
                 [] 
                 []
@@ -89,7 +93,9 @@
         )
         (= 
             0 
-            sum 
+            sum
+                []
+             
             0 
             (TriviaNode 
                 [] 
@@ -103,7 +109,9 @@
             [(ConcurrentControl 
                 i 
                 1 
-                N 
+                N
+                    []
+                 
                 ()
             )] 
             () 
@@ -114,7 +122,9 @@
                     a 
                     [] 
                     [(() 
-                    i 
+                    i
+                        []
+                     
                     ())] 
                     [] 
                     []
@@ -123,7 +133,9 @@
                     a 
                     [] 
                     [(() 
-                    (- i 1) 
+                    (- i
+                        []
+                     1) 
                     ())] 
                     [] 
                     []
@@ -142,10 +154,14 @@
             arraySum 
             [] 
             [(() 
-            a 
+            a
+                []
+             
             ())
             (() 
-            sum 
+            sum
+                []
+             
             ())] 
             [] 
             (TriviaNode 
@@ -208,7 +224,9 @@
                 [(ConcurrentControl 
                     i 
                     1 
-                    N 
+                    N
+                        []
+                     
                     ()
                 )] 
                 () 
@@ -218,12 +236,18 @@
                 )] 
                 [(= 
                     0 
-                    sum 
-                    (+ sum (FuncCallOrArray 
+                    sum
+                        []
+                     
+                    (+ sum
+                        []
+                     (FuncCallOrArray 
                         a 
                         [] 
                         [(() 
-                        i 
+                        i
+                            []
+                         
                         ())] 
                         [] 
                         []

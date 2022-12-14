@@ -32,7 +32,9 @@
         )] 
         [(= 
             0 
-            marks 
+            marks
+                []
+             
             81 
             (TriviaNode 
                 [] 
@@ -43,7 +45,9 @@
         (Select 
             0 
             () 
-            marks 
+            marks
+                []
+             
             [(CaseStmt 
                 [(CaseCondRange 
                     91 
@@ -186,7 +190,9 @@
             [(String 
                 "Your marks are "
             )
-            marks] 
+            marks
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -199,7 +205,9 @@
         (Select 
             0 
             () 
-            marks 
+            marks
+                []
+             
             [(CaseStmt_Default 
                 () 
                 [(Print 
@@ -342,7 +350,9 @@
             [(String 
                 "Your marks are "
             )
-            marks] 
+            marks
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -355,7 +365,9 @@
         (Select 
             0 
             () 
-            marks 
+            marks
+                []
+             
             [(CaseStmt 
                 [(CaseCondRange 
                     91 
@@ -498,7 +510,9 @@
             [(String 
                 "Your marks are "
             )
-            marks] 
+            marks
+                []
+            ] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)

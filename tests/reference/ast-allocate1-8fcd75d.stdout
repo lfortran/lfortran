@@ -65,7 +65,9 @@
             [] 
             [] 
             [(length 
-            cmdlen)] 
+            cmdlen
+                []
+            )] 
             (TriviaNode 
                 [] 
                 [(EndOfLine)
@@ -75,20 +77,26 @@
         (If 
             0 
             () 
-            (> cmdlen 0) 
+            (> cmdlen
+                []
+             0) 
             [(Allocate 
                 0 
                 [((FuncCallOrArray 
                     character 
                     [] 
                     [(() 
-                    cmdlen 
+                    cmdlen
+                        []
+                     
                     ())] 
                     [] 
                     []
                 ) 
                 () 
-                cmd)] 
+                cmd
+                    []
+                )] 
                 [] 
                 ()
             )
@@ -97,7 +105,9 @@
                 get_command 
                 [] 
                 [(() 
-                cmd 
+                cmd
+                    []
+                 
                 ())] 
                 [] 
                 ()
@@ -108,7 +118,9 @@
                 [(String 
                     "hello "
                 )
-                cmd] 
+                cmd
+                    []
+                ] 
                 ()
             )] 
             [] 
@@ -119,10 +131,14 @@
         (Deallocate 
             0 
             [(() 
-            cmd 
+            cmd
+                []
+             
             ())] 
             [(stat 
-            ierr)] 
+            ierr
+                []
+            )] 
             ()
         )] 
         []
