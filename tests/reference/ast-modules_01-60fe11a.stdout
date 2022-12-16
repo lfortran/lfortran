@@ -1,80 +1,80 @@
-(TranslationUnit 
-    [(Module 
-        modules_01_a 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(Module
+        modules_01_a
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+        )
+        []
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [] 
-        [(Subroutine 
-            b 
-            [] 
-            [] 
-            () 
-            (TriviaNode 
-                [] 
+        )]
+        []
+        [(Subroutine
+            b
+            []
+            []
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [] 
-            [] 
-            [] 
-            [(Print 
-                0 
-                () 
-                [(String 
-                    "b()"
-                )] 
+            )
+            []
+            []
+            []
+            []
+            [(Print
+                0
                 ()
-            )] 
+                [(String
+                    "b()"
+                )]
+                ()
+            )]
             []
         )]
     )
-    (Program 
-        modules_01 
-        () 
-        [(Use 
-            [] 
-            modules_01_a 
-            [(UseSymbol 
-                b 
+    (Program
+        modules_01
+        ()
+        [(Use
+            []
+            modules_01_a
+            [(UseSymbol
+                b
                 ()
-            )] 
-            .true. 
+            )]
+            .true.
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+        )]
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [] 
-        [(SubroutineCall 
-            0 
-            b 
-            [] 
-            [] 
-            [] 
-            (TriviaNode 
-                [] 
+        )]
+        []
+        [(SubroutineCall
+            0
+            b
+            []
+            []
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

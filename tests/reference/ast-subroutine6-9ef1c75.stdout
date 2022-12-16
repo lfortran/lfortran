@@ -1,216 +1,216 @@
-(TranslationUnit 
-    [(Subroutine 
-        triad 
+(TranslationUnit
+    [(Subroutine
+        triad
         [(a)
         (b)
         (scalar)
-        (c)] 
-        [] 
-        () 
-        () 
-        [] 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeReal 
-                [] 
-                () 
+        (c)]
+        []
+        ()
+        ()
+        []
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
                 None
-            ) 
-            [(AttrIntent 
+            )
+            [(AttrIntent
                 In
-            )] 
-            [(a 
-            [(() 
-            () 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
+            )]
+            [(a
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            None
             ())
-            (b 
-            [(() 
-            () 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
+            (b
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            None
             ())
-            (scalar 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            (scalar
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeReal 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
                 None
-            ) 
-            [(AttrIntent 
+            )
+            [(AttrIntent
                 Out
-            )] 
-            [(c 
-            [(() 
-            () 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())] 
+            )]
+            [(c
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(N 
-            [] 
-            [] 
-            () 
-            None 
-            ())
-            (N2 
-            [] 
-            [] 
-            () 
-            None 
-            ())
-            (i 
-            [] 
-            [] 
-            () 
-            None 
-            ())
-            (j 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(N
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            N 
-            (FuncCallOrArray 
-                size 
-                [] 
-                [(() 
-                a 
-                ())] 
-                [] 
+            None
+            ())
+            (N2
+            []
+            []
+            ()
+            None
+            ())
+            (i
+            []
+            []
+            ()
+            None
+            ())
+            (j
+            []
+            []
+            ()
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            N
+            (FuncCallOrArray
+                size
                 []
-            ) 
+                [(()
+                a
+                ())]
+                []
+                []
+            )
             ()
         )
-        (= 
-            0 
-            N2 
-            (FuncCallOrArray 
-                size 
-                [] 
-                [(() 
-                b 
-                ())] 
-                [] 
+        (=
+            0
+            N2
+            (FuncCallOrArray
+                size
                 []
-            ) 
+                [(()
+                b
+                ())]
+                []
+                []
+            )
             ()
         )
-        (DoConcurrentLoop 
-            0 
-            () 
-            [(ConcurrentControl 
-                i 
-                1 
-                N 
+        (DoConcurrentLoop
+            0
+            ()
+            [(ConcurrentControl
+                i
+                1
+                N
                 ()
-            )] 
-            () 
-            [] 
-            [(= 
-                0 
-                (FuncCallOrArray 
-                    c 
-                    [] 
-                    [(() 
-                    i 
-                    ())] 
-                    [] 
+            )]
+            ()
+            []
+            [(=
+                0
+                (FuncCallOrArray
+                    c
                     []
-                ) 
-                (+ (FuncCallOrArray 
-                    a 
-                    [] 
-                    [(() 
-                    i 
-                    ())] 
-                    [] 
+                    [(()
+                    i
+                    ())]
                     []
-                ) (* scalar (FuncCallOrArray 
-                    b 
-                    [] 
-                    [(() 
-                    i 
-                    ())] 
-                    [] 
                     []
-                ))) 
+                )
+                (+ (FuncCallOrArray
+                    a
+                    []
+                    [(()
+                    i
+                    ())]
+                    []
+                    []
+                ) (* scalar (FuncCallOrArray
+                    b
+                    []
+                    [(()
+                    i
+                    ())]
+                    []
+                    []
+                )))
                 ()
-            )] 
-            () 
-            (TriviaNode 
-                [] 
+            )]
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (DoConcurrentLoop 
-            0 
-            () 
-            [(ConcurrentControl 
-                j 
-                1 
-                N2 
-                ()
-            )] 
-            () 
-            [] 
-            [(= 
-                0 
-                (FuncCallOrArray 
-                    c 
-                    [] 
-                    [(() 
-                    j 
-                    ())] 
-                    [] 
-                    []
-                ) 
-                (+ (FuncCallOrArray 
-                    b 
-                    [] 
-                    [(() 
-                    j 
-                    ())] 
-                    [] 
-                    []
-                ) scalar) 
-                ()
-            )] 
-            () 
+        (DoConcurrentLoop
+            0
             ()
-        )] 
+            [(ConcurrentControl
+                j
+                1
+                N2
+                ()
+            )]
+            ()
+            []
+            [(=
+                0
+                (FuncCallOrArray
+                    c
+                    []
+                    [(()
+                    j
+                    ())]
+                    []
+                    []
+                )
+                (+ (FuncCallOrArray
+                    b
+                    []
+                    [(()
+                    j
+                    ())]
+                    []
+                    []
+                ) scalar)
+                ()
+            )]
+            ()
+            ()
+        )]
         []
     )]
 )

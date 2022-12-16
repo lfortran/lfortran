@@ -1,178 +1,174 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             interface_10:
-                (Program 
+                (Program
                     (SymbolTable
                         4
                         {
                             chars:
-                                (ExternalSymbol 
-                                    4 
-                                    chars 
-                                    2 chars 
-                                    interface_10_m 
-                                    [] 
-                                    chars 
+                                (ExternalSymbol
+                                    4
+                                    chars
+                                    2 chars
+                                    interface_10_m
+                                    []
+                                    chars
                                     Public
-                                ), 
+                                ),
                             chars@identity:
-                                (ExternalSymbol 
-                                    4 
-                                    chars@identity 
-                                    2 identity 
-                                    interface_10_m 
-                                    [] 
-                                    identity 
+                                (ExternalSymbol
+                                    4
+                                    chars@identity
+                                    2 identity
+                                    interface_10_m
+                                    []
+                                    identity
                                     Private
-                                ), 
+                                ),
                             identity:
-                                (ExternalSymbol 
-                                    4 
-                                    identity 
-                                    2 identity 
-                                    interface_10_m 
-                                    [] 
-                                    identity 
+                                (ExternalSymbol
+                                    4
+                                    identity
+                                    2 identity
+                                    interface_10_m
+                                    []
+                                    identity
                                     Public
-                                ), 
+                                ),
                             x:
-                                (Variable 
-                                    4 
-                                    x 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Character 1 1 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    4
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Character 1 1 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             y:
-                                (Variable 
-                                    4 
-                                    y 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Character 1 1 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    4
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Character 1 1 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    interface_10 
-                    [interface_10_m] 
-                    [(= 
-                        (Var 4 x) 
-                        (StringConstant 
-                            "A" 
+                        })
+                    interface_10
+                    [interface_10_m]
+                    [(=
+                        (Var 4 x)
+                        (StringConstant
+                            "A"
                             (Character 1 1 () [])
-                        ) 
+                        )
                         ()
                     )
-                    (SubroutineCall 
-                        4 chars@identity 
-                        4 chars 
+                    (SubroutineCall
+                        4 chars@identity
+                        4 chars
                         [((Var 4 x))
-                        ((Var 4 y))] 
+                        ((Var 4 y))]
                         ()
                     )
-                    (Print 
-                        () 
-                        [(Var 4 x)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 4 x)]
+                        ()
                         ()
                     )]
-                ), 
+                ),
             interface_10_m:
-                (Module 
+                (Module
                     (SymbolTable
                         2
                         {
                             chars:
-                                (GenericProcedure 
-                                    2 
-                                    chars 
-                                    [2 identity] 
+                                (GenericProcedure
+                                    2
+                                    chars
+                                    [2 identity]
                                     Public
-                                ), 
+                                ),
                             identity:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         3
                                         {
                                             x:
-                                                (Variable 
-                                                    3 
-                                                    x 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Character 1 1 () []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 1 () [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             y:
-                                                (Variable 
-                                                    3 
-                                                    y 
-                                                    [] 
-                                                    Out 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Character 1 1 () []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    y
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 1 () [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    identity 
-                                    [] 
+                                        })
+                                    identity
+                                    []
                                     [(Var 3 x)
-                                    (Var 3 y)] 
-                                    [(= 
-                                        (Var 3 y) 
-                                        (Var 3 x) 
+                                    (Var 3 y)]
+                                    [(=
+                                        (Var 3 y)
+                                        (Var 3 x)
                                         ()
-                                    )] 
-                                    () 
-                                    Source 
-                                    Public 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                    )]
+                                    ()
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
                                     .false.
                                 )
-                            
-                        }) 
-                    interface_10_m 
-                    [] 
-                    .false. 
+                        })
+                    interface_10_m
+                    []
+                    .false.
                     .false.
                 )
-            
-        }) 
+        })
     []
 )

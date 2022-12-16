@@ -1,271 +1,271 @@
-(TranslationUnit 
-    [(Program 
-        goto2 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
+(TranslationUnit
+    [(Program
+        goto2
+        ()
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(A 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(A
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            A 
-            0 
-            (TriviaNode 
-                [] 
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            A
+            0
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Continue 
-            1 
+        (Continue
+            1
             ()
         )
-        (Write 
-            0 
+        (Write
+            0
             [(())
-            (())] 
-            [] 
-            [] 
+            (())]
+            []
+            []
             ()
         )
-        (= 
-            0 
-            A 
-            (+ A 1) 
-            (TriviaNode 
-                [] 
+        (=
+            0
+            A
+            (+ A 1)
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (If 
-            0 
-            () 
-            (> A 2) 
-            [(GoTo 
-                0 
-                () 
-                95 
-                [] 
+        (If
+            0
+            ()
+            (> A 2)
+            [(GoTo
+                0
                 ()
-            )] 
-            [] 
-            () 
-            () 
-            (TriviaNode 
-                [] 
+                95
+                []
+                ()
+            )]
+            []
+            ()
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Write 
-            0 
+        (Write
+            0
             [(())
-            (())] 
-            [] 
-            [(String 
+            (())]
+            []
+            [(String
                 "A ="
             )
             A
-            (String 
+            (String
                 "  Starting"
-            )] 
+            )]
             ()
         )
-        (If 
-            0 
-            () 
-            (== A 1) 
-            [(GoTo 
-                0 
-                () 
-                10 
-                [] 
+        (If
+            0
+            ()
+            (== A 1)
+            [(GoTo
+                0
                 ()
-            )] 
-            [] 
-            () 
-            () 
+                10
+                []
+                ()
+            )]
+            []
+            ()
+            ()
             ()
         )
-        (GoTo 
-            0 
-            () 
-            20 
-            [] 
-            (TriviaNode 
-                [] 
+        (GoTo
+            0
+            ()
+            20
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Continue 
-            10 
+        (Continue
+            10
             ()
         )
-        (Write 
-            0 
+        (Write
+            0
             [(())
-            (())] 
-            [] 
-            [(String 
+            (())]
+            []
+            [(String
                 "A ="
             )
             A
-            (String 
+            (String
                 "  Got to 10"
-            )] 
+            )]
             ()
         )
-        (GoTo 
-            0 
-            () 
-            30 
-            [] 
-            (TriviaNode 
-                [] 
+        (GoTo
+            0
+            ()
+            30
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Continue 
-            20 
+        (Continue
+            20
             ()
         )
-        (Write 
-            0 
+        (Write
+            0
             [(())
-            (())] 
-            [] 
-            [(String 
+            (())]
+            []
+            [(String
                 "A ="
             )
             A
-            (String 
+            (String
                 "  Got to 20"
-            )] 
-            (TriviaNode 
-                [] 
+            )]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Continue 
-            30 
+        (Continue
+            30
             ()
         )
-        (Write 
-            0 
+        (Write
+            0
             [(())
-            (())] 
-            [] 
-            [(String 
+            (())]
+            []
+            [(String
                 "A ="
             )
             A
-            (String 
+            (String
                 "  Got to 30"
-            )] 
+            )]
             ()
         )
-        (If 
-            0 
-            () 
-            (== A 2) 
-            [(GoTo 
-                0 
-                () 
-                99 
-                [] 
+        (If
+            0
+            ()
+            (== A 2)
+            [(GoTo
+                0
                 ()
-            )] 
-            [] 
-            () 
-            () 
+                99
+                []
+                ()
+            )]
+            []
+            ()
+            ()
             ()
         )
-        (GoTo 
-            0 
-            () 
-            1 
-            [] 
-            (TriviaNode 
-                [] 
+        (GoTo
+            0
+            ()
+            1
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Continue 
-            95 
+        (Continue
+            95
             ()
         )
-        (Write 
-            0 
+        (Write
+            0
             [(())
-            (())] 
-            [] 
-            [(String 
+            (())]
+            []
+            [(String
                 "A ="
             )
             A
-            (String 
+            (String
                 "  Got to 95"
-            )] 
-            (TriviaNode 
-                [] 
+            )]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Continue 
-            99 
+        (Continue
+            99
             ()
         )
-        (Write 
-            0 
+        (Write
+            0
             [(())
-            (())] 
-            [] 
-            [(String 
+            (())]
+            []
+            [(String
                 "A ="
             )
             A
-            (String 
+            (String
                 "  Got to 99"
-            )] 
-            (TriviaNode 
-                [] 
+            )]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Stop 
-            0 
-            (String 
+        (Stop
+            0
+            (String
                 " "
-            ) 
-            () 
+            )
             ()
-        )] 
+            ()
+        )]
         []
     )]
 )

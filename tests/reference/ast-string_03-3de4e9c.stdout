@@ -1,233 +1,233 @@
-(TranslationUnit 
-    [(Module 
-        string_03_mod 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(Module
+        string_03_mod
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(ImplicitNone 
-            [] 
+        )
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeCharacter 
-                [(len 
-                5 
-                Value)] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeCharacter
+                [(len
+                5
+                Value)]
+                ()
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrParameter
-            )] 
-            [(intro 
-            [] 
-            [] 
-            (String 
+            )]
+            [(intro
+            []
+            []
+            (String
                 "I've "
-            ) 
-            Equal 
-            ())] 
+            )
+            Equal
+            ())]
             ()
-        )] 
+        )]
         []
     )
-    (Program 
-        string_03 
-        () 
-        [(Use 
-            [] 
-            string_03_mod 
-            [(UseSymbol 
-                intro 
+    (Program
+        string_03
+        ()
+        [(Use
+            []
+            string_03_mod
+            [(UseSymbol
+                intro
                 ()
-            )] 
-            .true. 
+            )]
+            .true.
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+        )]
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeCharacter 
-                [(len 
-                8 
-                Value)] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeCharacter
+                [(len
+                8
+                Value)]
+                ()
                 None
-            ) 
-            [] 
-            [(verb 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(verb
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeCharacter 
-                [(len 
-                5 
-                Value)] 
-                () 
+        (Declaration
+            (AttrType
+                TypeCharacter
+                [(len
+                5
+                Value)]
+                ()
                 None
-            ) 
-            [] 
-            [(posit 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(posit
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeCharacter 
-                [(len 
-                4 
-                Value)] 
-                () 
+        (Declaration
+            (AttrType
+                TypeCharacter
+                [(len
+                4
+                Value)]
+                ()
                 None
-            ) 
-            [] 
-            [(title 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(title
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeCharacter 
-                [(len 
-                7 
-                Value)] 
-                () 
+        (Declaration
+            (AttrType
+                TypeCharacter
+                [(len
+                7
+                Value)]
+                ()
                 None
-            ) 
-            [] 
-            [(last_name 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(last_name
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeCharacter 
-                [(len 
-                29 
-                Value)] 
-                () 
+        (Declaration
+            (AttrType
+                TypeCharacter
+                [(len
+                29
+                Value)]
+                ()
                 None
-            ) 
-            [] 
-            [(combined 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
-            (TriviaNode 
-                [] 
+            )
+            []
+            [(combined
+            []
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(= 
-            0 
-            verb 
-            (String 
+        )]
+        [(=
+            0
+            verb
+            (String
                 "learned "
-            ) 
+            )
             ()
         )
-        (= 
-            0 
-            posit 
-            (String 
+        (=
+            0
+            posit
+            (String
                 "from "
-            ) 
+            )
             ()
         )
-        (= 
-            0 
-            title 
-            (String 
+        (=
+            0
+            title
+            (String
                 "the "
-            ) 
+            )
             ()
         )
-        (= 
-            0 
-            last_name 
-            (String 
+        (=
+            0
+            last_name
+            (String
                 "best"
-            ) 
-            (TriviaNode 
-                [] 
+            )
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (= 
-            0 
-            combined 
-            (StrOp 
-                (StrOp 
-                    (StrOp 
-                        (StrOp 
-                            (StrOp 
-                                intro 
-                                Concat 
+        (=
+            0
+            combined
+            (StrOp
+                (StrOp
+                    (StrOp
+                        (StrOp
+                            (StrOp
+                                intro
+                                Concat
                                 verb
-                            ) 
-                            Concat 
+                            )
+                            Concat
                             posit
-                        ) 
-                        Concat 
+                        )
+                        Concat
                         title
-                    ) 
-                    Concat 
+                    )
+                    Concat
                     last_name
-                ) 
-                Concat 
-                (String 
+                )
+                Concat
+                (String
                     "."
                 )
-            ) 
-            (TriviaNode 
-                [] 
+            )
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Print 
-            0 
-            () 
-            [combined] 
-            (TriviaNode 
-                [] 
+        (Print
+            0
+            ()
+            [combined]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

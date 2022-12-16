@@ -1,205 +1,205 @@
-(TranslationUnit 
-    [(Program 
-        line_continuation_03 
-        (TriviaNode 
+(TranslationUnit
+    [(Program
+        line_continuation_03
+        (TriviaNode
             [(EndOfLine)
-            (Comment 
+            (Comment
                 "! The same as line_continuation_02, but we do use & to split a token"
-            )] 
+            )]
             []
-        ) 
-        [] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+        )
+        []
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)
-                (Comment 
+                (Comment
                     "! Here are the rules for & based on the § 6.3.2.4 ("Free form statement"
                 )
-                (Comment 
+                (Comment
                     "! continuation") in Fortran 2018 standard."
                 )
                 (EndOfLine)
-                (Comment 
+                (Comment
                     "! The & character in a comment has no effect"
                 )
                 (EndOfLine)
-                (Comment 
+                (Comment
                     "! The & character can be used to continue a line like this:"
                 )
                 (EndOfLine)]
             )
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(i 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
-            (TriviaNode 
-                [] 
+            )
+            []
+            [(i
+            []
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)
-                (Comment 
+                (Comment
                     "! If it is used between tokens, then one can, but does not have to put another &"
                 )
-                (Comment 
+                (Comment
                     "! on the next line:"
                 )
                 (EndOfLine)]
             )
         )
-        (Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(k 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
-            (TriviaNode 
-                [] 
+            )
+            []
+            [(k
+            []
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(= 
-            0 
-            i 
-            5 
-            (TriviaNode 
-                [] 
+        )]
+        [(=
+            0
+            i
+            5
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Print 
-            0 
-            () 
-            [i] 
-            (TriviaNode 
-                [] 
+        (Print
+            0
+            ()
+            [i]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)
-                (Comment 
+                (Comment
                     "! One can continue strings also by treating them as tokens:"
                 )
                 (EndOfLine)]
             )
         )
-        (Print 
-            0 
-            () 
-            [(String 
+        (Print
+            0
+            ()
+            [(String
                 "some string is continued"
-            )] 
-            (TriviaNode 
-                [] 
+            )]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)
-                (Comment 
+                (Comment
                     "! Unless the & is at the end of the line, it can be used as a regular"
                 )
-                (Comment 
+                (Comment
                     "! character in a string:"
                 )
                 (EndOfLine)]
             )
         )
-        (Print 
-            0 
-            () 
-            [(String 
+        (Print
+            0
+            ()
+            [(String
                 "some string can contain & as a regular character is continued"
-            )] 
-            (TriviaNode 
-                [] 
+            )]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Print 
-            0 
-            () 
-            [(String 
+        (Print
+            0
+            ()
+            [(String
                 "Even here: && <- there will be two &"
-            )] 
-            (TriviaNode 
-                [] 
+            )]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)
-                (Comment 
+                (Comment
                     "! One can put arbitrary comments and empty lines after & that will be skipped:"
                 )
                 (EndOfLine)]
             )
         )
-        (Print 
-            0 
-            () 
-            [i] 
-            (TriviaNode 
-                [] 
+        (Print
+            0
+            ()
+            [i]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Print 
-            0 
-            () 
-            [i] 
-            (TriviaNode 
-                [] 
+        (Print
+            0
+            ()
+            [i]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Print 
-            0 
-            () 
-            [i] 
-            (TriviaNode 
-                [] 
+        (Print
+            0
+            ()
+            [i]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)
-                (Comment 
+                (Comment
                     "! In strings the comment cannot be after the first &, but it can be on"
                 )
-                (Comment 
+                (Comment
                     "! subsequent lines:"
                 )
                 (EndOfLine)]
             )
         )
-        (Print 
-            0 
-            () 
-            [(String 
+        (Print
+            0
+            ()
+            [(String
                 "some string is continued"
-            )] 
-            (TriviaNode 
-                [] 
+            )]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

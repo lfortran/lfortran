@@ -1,164 +1,164 @@
-(TranslationUnit 
-    [(Program 
-        goto_03 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
+(TranslationUnit
+    [(Program
+        goto_03
+        ()
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(a 
-            [] 
-            [] 
-            () 
-            None 
-            ())
-            (n 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(a
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            n 
-            2 
+            None
+            ())
+            (n
+            []
+            []
+            ()
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            n
+            2
             ()
         )
-        (= 
-            0 
-            a 
-            10 
-            (TriviaNode 
-                [] 
+        (=
+            0
+            a
+            10
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (GoTo 
-            0 
-            () 
-            n 
+        (GoTo
+            0
+            ()
+            n
             [1
             2
-            3] 
-            (TriviaNode 
-                [] 
+            3]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (= 
-            1 
-            a 
-            (+ a 10) 
+        (=
+            1
+            a
+            (+ a 10)
             ()
         )
-        (= 
-            2 
-            a 
-            (+ a 20) 
+        (=
+            2
+            a
+            (+ a 20)
             ()
         )
-        (= 
-            3 
-            a 
-            (+ a 30) 
-            (TriviaNode 
-                [] 
+        (=
+            3
+            a
+            (+ a 30)
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (If 
-            0 
-            () 
-            (/= a 60) 
-            [(ErrorStop 
-                0 
-                () 
-                () 
+        (If
+            0
+            ()
+            (/= a 60)
+            [(ErrorStop
+                0
                 ()
-            )] 
-            [] 
-            () 
-            () 
-            (TriviaNode 
-                [] 
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Assign 
-            0 
-            30 
-            n 
-            (TriviaNode 
-                [] 
+        (Assign
+            0
+            30
+            n
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (GoTo 
-            0 
-            n 
-            () 
+        (GoTo
+            0
+            n
+            ()
             [10
             20
-            30] 
+            30]
             ()
         )
-        (= 
-            10 
-            a 
-            (* a a) 
+        (=
+            10
+            a
+            (* a a)
             ()
         )
-        (= 
-            20 
-            a 
-            (+ a a) 
+        (=
+            20
+            a
+            (+ a a)
             ()
         )
-        (= 
-            30 
-            a 
-            (- a a) 
-            (TriviaNode 
-                [] 
+        (=
+            30
+            a
+            (- a a)
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (If 
-            0 
-            () 
-            (/= a 0) 
-            [(ErrorStop 
-                0 
-                () 
-                () 
+        (If
+            0
+            ()
+            (/= a 0)
+            [(ErrorStop
+                0
                 ()
-            )] 
-            [] 
-            () 
-            () 
-            (TriviaNode 
-                [] 
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

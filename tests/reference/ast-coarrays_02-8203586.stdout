@@ -1,334 +1,334 @@
-(TranslationUnit 
-    [(Program 
-        coarrays_02 
-        (TriviaNode 
+(TranslationUnit
+    [(Program
+        coarrays_02
+        (TriviaNode
             [(EndOfLine)
-            (Comment 
+            (Comment
                 "! Source https://j3-fortran.org/doc/year/18/18-007r1.pdf Page no - 541"
-            )] 
+            )]
             []
-        ) 
-        [(Use 
-            [(SimpleAttribute 
+        )
+        [(Use
+            [(SimpleAttribute
                 AttrIntrinsic
-            )] 
-            iso_fortran_env 
-            [] 
-            .false. 
+            )]
+            iso_fortran_env
+            []
+            .false.
             ()
-        )] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrAllocatable
-            )] 
-            [(node 
-            [(() 
-            () 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())] 
-            (TriviaNode 
-                [] 
-                [(EOLComment 
+            )]
+            [(node
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
+                [(EOLComment
                     "! tree nodes that this image handles."
                 )]
             )
         )
-        (Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrAllocatable
-            )] 
-            [(nc 
-            [(() 
-            () 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())] 
-            (TriviaNode 
-                [] 
+            )]
+            [(nc
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
-                (Comment 
+                (Comment
                     "! node(i) has nc(i) children."
                 )]
             )
         )
-        (Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrAllocatable
-            )] 
-            [(parent 
-            [(() 
-            () 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
+            )]
+            [(parent
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            None
             ())
-            (sub 
-            [(() 
-            () 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())] 
-            (TriviaNode 
-                [] 
+            (sub
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
-                (Comment 
+                (Comment
                     "! the parent of node (i) is node (sub (i)) [parent (i)]."
                 )]
             )
         )
-        (Declaration 
-            (AttrType 
-                TypeType 
-                [] 
-                event_type 
+        (Declaration
+            (AttrType
+                TypeType
+                []
+                event_type
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrAllocatable
-            )] 
-            [(done 
-            [(() 
-            () 
-            DimensionExpr)] 
-            [(() 
-            () 
-            CodimensionExpr)] 
-            () 
-            None 
-            ())] 
+            )]
+            [(done
+            [(()
+            ()
+            DimensionExpr)]
+            [(()
+            ()
+            CodimensionExpr)]
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(i 
-            [] 
-            [] 
-            () 
-            None 
+            )
+            []
+            [(i
+            []
+            []
+            ()
+            None
             ())
-            (j 
-            [] 
-            [] 
-            () 
-            None 
+            (j
+            []
+            []
+            ()
+            None
             ())
-            (status 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
-            (TriviaNode 
-                [] 
+            (status
+            []
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
-                (Comment 
+                (Comment
                     "! set up the tree, including allocation of all arrays."
                 )]
             )
-        )] 
-        [(DoLoop 
-            0 
-            () 
-            0 
-            i 
-            1 
-            (FuncCallOrArray 
-                size 
-                [] 
-                [(() 
-                node 
-                ())] 
-                [] 
+        )]
+        [(DoLoop
+            0
+            ()
+            0
+            i
+            1
+            (FuncCallOrArray
+                size
                 []
-            ) 
-            () 
-            [(If 
-                0 
-                () 
-                (> (FuncCallOrArray 
-                    nc 
-                    [] 
-                    [(() 
-                    i 
-                    ())] 
-                    [] 
+                [(()
+                node
+                ())]
+                []
+                []
+            )
+            ()
+            [(If
+                0
+                ()
+                (> (FuncCallOrArray
+                    nc
                     []
-                ) 0) 
-                [(EventWait 
-                    0 
-                    (FuncCallOrArray 
-                        done 
-                        [] 
-                        [(() 
-                        i 
-                        ())] 
-                        [] 
+                    [(()
+                    i
+                    ())]
+                    []
+                    []
+                ) 0)
+                [(EventWait
+                    0
+                    (FuncCallOrArray
+                        done
                         []
-                    ) 
-                    [(AttrEventWaitKwArg 
-                        until_count 
-                        (FuncCallOrArray 
-                            nc 
-                            [] 
-                            [(() 
-                            i 
-                            ())] 
-                            [] 
+                        [(()
+                        i
+                        ())]
+                        []
+                        []
+                    )
+                    [(AttrEventWaitKwArg
+                        until_count
+                        (FuncCallOrArray
+                            nc
+                            []
+                            [(()
+                            i
+                            ())]
+                            []
                             []
                         )
                     )
-                    (AttrStat 
+                    (AttrStat
                         status
-                    )] 
+                    )]
                     ()
                 )
-                (If 
-                    0 
-                    () 
-                    (/= status 0) 
-                    [(Exit 
-                        0 
-                        () 
-                        ()
-                    )] 
-                    [] 
-                    () 
-                    () 
+                (If
+                    0
                     ()
-                )] 
-                [] 
-                () 
-                () 
-                (TriviaNode 
-                    [] 
+                    (/= status 0)
+                    [(Exit
+                        0
+                        ()
+                        ()
+                    )]
+                    []
+                    ()
+                    ()
+                    ()
+                )]
+                []
+                ()
+                ()
+                (TriviaNode
+                    []
                     [(EndOfLine)
                     (EndOfLine)
-                    (Comment 
+                    (Comment
                         "! process node, using data from children."
                     )]
                 )
             )
-            (If 
-                0 
-                () 
-                (> (FuncCallOrArray 
-                    parent 
-                    [] 
-                    [(() 
-                    i 
-                    ())] 
-                    [] 
+            (If
+                0
+                ()
+                (> (FuncCallOrArray
+                    parent
                     []
-                ) 0) 
-                [(EventPost 
-                    0 
-                    (CoarrayRef 
-                        done 
-                        [] 
-                        [(() 
-                        (FuncCallOrArray 
-                            sub 
-                            [] 
-                            [(() 
-                            i 
-                            ())] 
-                            [] 
-                            []
-                        ) 
-                        ())] 
-                        [] 
-                        [(() 
-                        (FuncCallOrArray 
-                            parent 
-                            [] 
-                            [(() 
-                            i 
-                            ())] 
-                            [] 
-                            []
-                        ) 
-                        () 
-                        CodimensionExpr)] 
+                    [(()
+                    i
+                    ())]
+                    []
+                    []
+                ) 0)
+                [(EventPost
+                    0
+                    (CoarrayRef
+                        done
                         []
-                    ) 
-                    [(AttrStat 
+                        [(()
+                        (FuncCallOrArray
+                            sub
+                            []
+                            [(()
+                            i
+                            ())]
+                            []
+                            []
+                        )
+                        ())]
+                        []
+                        [(()
+                        (FuncCallOrArray
+                            parent
+                            []
+                            [(()
+                            i
+                            ())]
+                            []
+                            []
+                        )
+                        ()
+                        CodimensionExpr)]
+                        []
+                    )
+                    [(AttrStat
                         status
-                    )] 
+                    )]
                     ()
                 )
-                (If 
-                    0 
-                    () 
-                    (/= status 0) 
-                    [(Exit 
-                        0 
-                        () 
-                        ()
-                    )] 
-                    [] 
-                    () 
-                    () 
+                (If
+                    0
                     ()
-                )] 
-                [] 
-                (TriviaNode 
-                    [] 
+                    (/= status 0)
+                    [(Exit
+                        0
+                        ()
+                        ()
+                    )]
+                    []
+                    ()
+                    ()
+                    ()
+                )]
+                []
+                (TriviaNode
+                    []
                     [(EndOfLine)
-                    (Comment 
+                    (Comment
                         "! node is not the root."
                     )
-                    (Comment 
+                    (Comment
                         "! place result on image parent (i) for node node (sub) [parent (i)]"
                     )
-                    (Comment 
+                    (Comment
                         "! tell parent (i) that this has been done."
                     )]
-                ) 
-                () 
+                )
                 ()
-            )] 
-            (TriviaNode 
-                [] 
+                ()
+            )]
+            (TriviaNode
+                []
                 [(EndOfLine)
-                (Comment 
+                (Comment
                     "! wait for children to complete"
                 )]
-            ) 
+            )
             ()
-        )] 
+        )]
         []
     )]
 )

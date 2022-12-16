@@ -1,138 +1,136 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             complex_dp:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             v:
-                                (Variable 
-                                    2 
-                                    v 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Complex 8 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    v
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             x:
-                                (Variable 
-                                    2 
-                                    x 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Complex 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             zero:
-                                (Variable 
-                                    2 
-                                    zero 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Complex 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    zero
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    complex_dp 
-                    [] 
-                    [(= 
-                        (Var 2 zero) 
-                        (Cast 
-                            (RealConstant 
-                                0.000000 
+                        })
+                    complex_dp
+                    []
+                    [(=
+                        (Var 2 zero)
+                        (Cast
+                            (RealConstant
+                                0.000000
                                 (Real 4 [])
-                            ) 
-                            RealToComplex 
-                            (Complex 4 []) 
-                            (ComplexConstant 
-                                0.000000 
-                                0.000000 
+                            )
+                            RealToComplex
+                            (Complex 4 [])
+                            (ComplexConstant
+                                0.000000
+                                0.000000
                                 (Complex 4 [])
                             )
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 v) 
-                        (Cast 
-                            (ComplexConstructor 
-                                (RealConstant 
-                                    1.050000 
+                    (=
+                        (Var 2 v)
+                        (Cast
+                            (ComplexConstructor
+                                (RealConstant
+                                    1.050000
                                     (Real 4 [])
-                                ) 
-                                (RealConstant 
-                                    1.050000 
+                                )
+                                (RealConstant
+                                    1.050000
                                     (Real 4 [])
-                                ) 
-                                (Complex 4 []) 
-                                (ComplexConstant 
-                                    1.050000 
-                                    1.050000 
+                                )
+                                (Complex 4 [])
+                                (ComplexConstant
+                                    1.050000
+                                    1.050000
                                     (Complex 4 [])
                                 )
-                            ) 
-                            ComplexToComplex 
-                            (Complex 8 []) 
+                            )
+                            ComplexToComplex
+                            (Complex 8 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 x) 
-                        (Cast 
-                            (ComplexConstructor 
-                                (RealConstant 
-                                    1.050000 
+                    (=
+                        (Var 2 x)
+                        (Cast
+                            (ComplexConstructor
+                                (RealConstant
+                                    1.050000
                                     (Real 4 [])
-                                ) 
-                                (RealConstant 
-                                    1.050000 
+                                )
+                                (RealConstant
+                                    1.050000
                                     (Real 8 [])
-                                ) 
-                                (Complex 8 []) 
-                                (ComplexConstant 
-                                    1.050000 
-                                    1.050000 
+                                )
+                                (Complex 8 [])
+                                (ComplexConstant
+                                    1.050000
+                                    1.050000
                                     (Complex 8 [])
                                 )
-                            ) 
-                            ComplexToComplex 
-                            (Complex 4 []) 
+                            )
+                            ComplexToComplex
+                            (Complex 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (Print 
-                        () 
+                    (Print
+                        ()
                         [(Var 2 v)
                         (Var 2 x)
-                        (Var 2 zero)] 
-                        () 
+                        (Var 2 zero)]
+                        ()
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )

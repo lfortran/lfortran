@@ -1,87 +1,87 @@
-(TranslationUnit 
-    [(Program 
-        block1 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(Program
+        block1
+        (TriviaNode
+            []
             [(EndOfLine)
-            (Comment 
+            (Comment
                 "! The variable B is implicitly declared in the scoping unit of the main program."
             )
-            (Comment 
+            (Comment
                 "! The statement IMPORT, NONE makes B inaccessible in the BLOCK construct."
             )
-            (Comment 
+            (Comment
                 "! If the IMPORT, NONE statement is replaced with the IMPORT statement in the"
             )
-            (Comment 
+            (Comment
                 "! comment, the program is conformant."
             )]
-        ) 
-        [] 
-        [(Implicit 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
-                None
-            ) 
-            [] 
-            [(LetterSpec 
-                a 
-                z
-            )] 
-            ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
-                None
-            ) 
-            [] 
-            [(B 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
-            ()
-        )] 
-        [(Block 
-            0 
-            () 
-            [(Use 
-                [] 
-                mod 
-                [(UseSymbol 
-                    example 
-                    ()
-                )] 
-                .true. 
+        )
+        []
+        [(Implicit
+            (AttrType
+                TypeInteger
+                []
                 ()
-            )] 
-            [(Import 
-                [] 
-                ImportNone 
-                (TriviaNode 
-                    [] 
+                None
+            )
+            []
+            [(LetterSpec
+                a
+                z
+            )]
+            ()
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                None
+            )
+            []
+            [(B
+            []
+            []
+            ()
+            None
+            ())]
+            ()
+        )]
+        [(Block
+            0
+            ()
+            [(Use
+                []
+                mod
+                [(UseSymbol
+                    example
+                    ()
+                )]
+                .true.
+                ()
+            )]
+            [(Import
+                []
+                ImportNone
+                (TriviaNode
+                    []
                     [(EndOfLine)
-                    (Comment 
+                    (Comment
                         "!import, only: B"
                     )]
                 )
-            )] 
-            [] 
-            [(= 
-                0 
-                B 
-                10 
+            )]
+            []
+            [(=
+                0
+                B
+                10
                 ()
-            )] 
-            () 
+            )]
             ()
-        )] 
+            ()
+        )]
         []
     )]
 )

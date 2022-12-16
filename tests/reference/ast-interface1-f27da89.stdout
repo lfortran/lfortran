@@ -1,54 +1,54 @@
-(TranslationUnit 
-    [(Module 
-        interface1 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+(TranslationUnit
+    [(Module
+        interface1
+        ()
+        []
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(Interface 
-            (InterfaceHeaderName 
+        )]
+        [(Interface
+            (InterfaceHeaderName
                 randn
-            ) 
-            (TriviaNode 
-                [] 
+            )
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [(InterfaceModuleProcedure 
-                [randn_scalar] 
-                [(SimpleAttribute 
+            )
+            [(InterfaceModuleProcedure
+                [randn_scalar]
+                [(SimpleAttribute
                     AttrModule
-                )] 
+                )]
                 ()
             )
-            (InterfaceModuleProcedure 
-                [randn_vector] 
-                [(SimpleAttribute 
+            (InterfaceModuleProcedure
+                [randn_vector]
+                [(SimpleAttribute
                     AttrModule
-                )] 
+                )]
                 ()
             )
-            (InterfaceModuleProcedure 
-                [randn_matrix] 
-                [(SimpleAttribute 
+            (InterfaceModuleProcedure
+                [randn_matrix]
+                [(SimpleAttribute
                     AttrModule
-                )] 
+                )]
                 ()
             )
-            (InterfaceModuleProcedure 
-                [randn_vector_n] 
-                [(SimpleAttribute 
+            (InterfaceModuleProcedure
+                [randn_vector_n]
+                [(SimpleAttribute
                     AttrModule
-                )] 
+                )]
                 ()
             )]
-        )] 
+        )]
         []
     )]
 )

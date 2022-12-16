@@ -1,80 +1,78 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             array_01_transfer:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             m:
-                                (Variable 
-                                    2 
-                                    m 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                    (IntegerConstant 6 (Integer 4 [])))]) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    m
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 6 (Integer 4 [])))])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             size:
-                                (Variable 
-                                    2 
-                                    size 
-                                    [] 
-                                    Local 
-                                    (IntegerConstant 2 (Integer 4 [])) 
-                                    () 
-                                    Save 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    size
+                                    []
+                                    Local
+                                    (IntegerConstant 2 (Integer 4 []))
+                                    ()
+                                    Save
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    array_01_transfer 
-                    [] 
-                    [(= 
-                        (Var 2 m) 
-                        (ArrayConstant 
+                        })
+                    array_01_transfer
+                    []
+                    [(=
+                        (Var 2 m)
+                        (ArrayConstant
                             [(IntegerConstant 1 (Integer 4 []))
                             (IntegerConstant 0 (Integer 4 []))
                             (IntegerConstant 0 (Integer 4 []))
                             (IntegerConstant 0 (Integer 4 []))
                             (IntegerConstant 5 (Integer 4 []))
-                            (IntegerConstant 0 (Integer 4 []))] 
-                            (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
-                            (IntegerConstant 6 (Integer 4 [])))]) 
+                            (IntegerConstant 0 (Integer 4 []))]
+                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 6 (Integer 4 [])))])
                             ColMajor
-                        ) 
+                        )
                         ()
                     )
-                    (Print 
-                        () 
-                        [(BitCast 
-                            (Var 2 m) 
-                            (RealConstant 
-                                1.000000 
+                    (Print
+                        ()
+                        [(BitCast
+                            (Var 2 m)
+                            (RealConstant
+                                1.000000
                                 (Real 4 [])
-                            ) 
-                            (Var 2 size) 
-                            (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
-                            (Var 2 size))]) 
+                            )
+                            (Var 2 size)
+                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                            (Var 2 size))])
                             ()
-                        )] 
-                        () 
+                        )]
+                        ()
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )
