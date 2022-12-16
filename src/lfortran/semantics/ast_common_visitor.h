@@ -1894,6 +1894,7 @@ public:
                 arg1 = nullptr;
             } else if (args.size() == 2) {
                 arg1 = args[1].m_value;
+                current_function_dependencies.erase("kind");
             } else {
                 throw SemanticError("real(...) must have 1 or 2 arguments", loc);
             }
