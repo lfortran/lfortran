@@ -1264,19 +1264,24 @@ class PickleVisitorVisitor(ASDLVisitor):
             self.emit(        's.append(color(style::reset));', 3)
             self.emit(    '}', 2)
             if len(fields) > 0:
-                self.emit(    's.append(" ");', 2)
                 if name not in symbol:
                     self.emit(    'if(indent) {', 2)
                     self.emit(        'inc_indent();', 3)
                     self.emit(        's.append("\\n" + indented);', 3)
+                    self.emit(    '} else {', 2)
+                    self.emit(        's.append(" ");', 3)
                     self.emit(    '}', 2)
+                else:
+                    self.emit(    's.append(" ");', 2)
         self.used = False
         for n, field in enumerate(fields):
             self.visitField(field, cons)
             if n < len(fields) - 1:
-                self.emit(    's.append(" ");', 2)
                 if name not in symbol:
                     self.emit(    'if(indent) s.append("\\n" + indented);', 2)
+                    self.emit(    'else s.append(" ");', 2)
+                else:
+                    self.emit(    's.append(" ");', 2)
         if name not in symbol and cons and len(fields) > 0:
             self.emit(    'if(indent) {', 2)
             self.emit(        'dec_indent();', 3)
@@ -1416,12 +1421,11 @@ class PickleVisitorVisitor(ASDLVisitor):
                     self.emit('        }', level)
                     self.emit('        else s.append(" ");', level)
                     self.emit('        this->visit_symbol(*a.second);', level)
-                    self.emit('        if (i < x.m_%s->get_scope().size()-1) { ' % field.name, level)
-                    self.emit('            s.append(", ");', level)
-                    self.emit('        }', level)
-                    self.emit('        if(indent) {', level)
-                    self.emit('            dec_indent();', level+1)
-                    self.emit('            s.append("\\n" + indented);', level+1)
+                    self.emit('        if(indent) dec_indent();', level)
+                    self.emit('        if (i < x.m_%s->get_scope().size()-1) {' % field.name, level)
+                    self.emit('            s.append(",");', level)
+                    self.emit('            if(indent) s.append("\\n" + indented);', level)
+                    self.emit('            else s.append(" ");', level)
                     self.emit('        }', level)
                     self.emit('        i++;', level)
                     self.emit('    }', level)
