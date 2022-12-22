@@ -1,49 +1,49 @@
-(TranslationUnit 
-    [(Program 
-        expr_05 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
+(TranslationUnit
+    [(Program
+        expr_05
+        ()
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(x 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(x
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            x 
-            (* (+ 2 3) 5) 
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            x
+            (* (+ 2 3) 5)
             ()
         )
-        (If 
-            0 
-            () 
-            (== x 25) 
-            [(ErrorStop 
-                0 
-                () 
-                () 
-                ()
-            )] 
-            [] 
-            () 
-            () 
+        (If
+            0
             ()
-        )] 
+            (== x 25)
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )]
         []
     )]
 )

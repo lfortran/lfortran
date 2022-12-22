@@ -1,183 +1,183 @@
-(TranslationUnit 
-    [(Program 
-        derived_types_03 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+(TranslationUnit
+    [(Program
+        derived_types_03
+        ()
+        []
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(DerivedType 
-            X 
-            [] 
-            (TriviaNode 
-                [] 
+        )]
+        [(DerivedType
+            X
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [(Declaration 
-                (AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
+            )
+            []
+            [(Declaration
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
                     None
-                ) 
-                [] 
-                [(i 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )
+                []
+                [(i
+                []
+                []
                 ()
-            )] 
+                None
+                ())]
+                ()
+            )]
             []
         )
-        (Declaration 
-            (AttrType 
-                TypeType 
-                [] 
-                X 
+        (Declaration
+            (AttrType
+                TypeType
+                []
+                X
                 None
-            ) 
-            [] 
-            [(b 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
-            (TriviaNode 
-                [] 
+            )
+            []
+            [(b
+            []
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [] 
-        [(Subroutine 
-            Y 
-            [] 
-            [] 
-            () 
-            (TriviaNode 
-                [] 
+        )]
+        []
+        [(Subroutine
+            Y
+            []
+            []
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [] 
-            [] 
-            [(DerivedType 
-                A 
-                [] 
-                () 
-                [] 
-                [(Declaration 
-                    (AttrType 
-                        TypeInteger 
-                        [] 
-                        () 
+            )
+            []
+            []
+            []
+            [(DerivedType
+                A
+                []
+                ()
+                []
+                [(Declaration
+                    (AttrType
+                        TypeInteger
+                        []
+                        ()
                         None
-                    ) 
-                    [] 
-                    [(i 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    )
+                    []
+                    [(i
+                    []
+                    []
                     ()
-                )] 
+                    None
+                    ())]
+                    ()
+                )]
                 []
             )
-            (Declaration 
-                (AttrType 
-                    TypeType 
-                    [] 
-                    A 
+            (Declaration
+                (AttrType
+                    TypeType
+                    []
+                    A
                     None
-                ) 
-                [] 
-                [(b 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )
+                []
+                [(b
+                []
+                []
                 ()
-            )] 
-            [] 
+                None
+                ())]
+                ()
+            )]
+            []
             []
         )
-        (Function 
-            Z 
-            [] 
-            [(AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Function
+            Z
+            []
+            [(AttrType
+                TypeInteger
+                []
+                ()
                 None
-            )] 
-            () 
-            () 
-            (TriviaNode 
-                [] 
+            )]
+            ()
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [] 
-            [] 
-            [(DerivedType 
-                A 
-                [] 
-                () 
-                [] 
-                [(Declaration 
-                    (AttrType 
-                        TypeInteger 
-                        [] 
-                        () 
+            )
+            []
+            []
+            []
+            [(DerivedType
+                A
+                []
+                ()
+                []
+                [(Declaration
+                    (AttrType
+                        TypeInteger
+                        []
+                        ()
                         None
-                    ) 
-                    [] 
-                    [(i 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    )
+                    []
+                    [(i
+                    []
+                    []
                     ()
-                )] 
+                    None
+                    ())]
+                    ()
+                )]
                 []
             )
-            (Declaration 
-                (AttrType 
-                    TypeType 
-                    [] 
-                    A 
+            (Declaration
+                (AttrType
+                    TypeType
+                    []
+                    A
                     None
-                ) 
-                [] 
-                [(b 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )
+                []
+                [(b
+                []
+                []
                 ()
-            )] 
-            [(= 
-                0 
-                Z 
-                5 
+                None
+                ())]
                 ()
-            )] 
+            )]
+            [(=
+                0
+                Z
+                5
+                ()
+            )]
             []
         )]
     )]

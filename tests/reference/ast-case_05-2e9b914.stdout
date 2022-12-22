@@ -1,177 +1,177 @@
-(TranslationUnit 
-    [(Program 
-        case_05 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+(TranslationUnit
+    [(Program
+        case_05
+        ()
+        []
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)
-                (Comment 
+                (Comment
                     "! local variable declaration"
                 )]
             )
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeCharacter 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeCharacter
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(grade 
-            [] 
-            [] 
-            (String 
+            )
+            []
+            [(grade
+            []
+            []
+            (String
                 "B"
-            ) 
-            Equal 
-            ())] 
-            (TriviaNode 
-                [] 
+            )
+            Equal
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(Select 
-            0 
-            () 
-            grade 
-            [(CaseStmt 
-                [(CaseCondExpr 
-                    (String 
+        )]
+        [(Select
+            0
+            ()
+            grade
+            [(CaseStmt
+                [(CaseCondExpr
+                    (String
                         "A"
                     )
-                )] 
-                () 
-                [(Print 
-                    0 
-                    () 
-                    [(String 
+                )]
+                ()
+                [(Print
+                    0
+                    ()
+                    [(String
                         "Excellent!"
-                    )] 
-                    (TriviaNode 
-                        [] 
+                    )]
+                    (TriviaNode
+                        []
                         [(EndOfLine)
                         (EndOfLine)]
                     )
                 )]
             )
-            (CaseStmt 
-                [(CaseCondExpr 
-                    (String 
+            (CaseStmt
+                [(CaseCondExpr
+                    (String
                         "B"
                     )
-                )] 
-                (TriviaNode 
-                    [] 
+                )]
+                (TriviaNode
+                    []
                     [(EndOfLine)
                     (EndOfLine)]
-                ) 
+                )
                 []
             )
-            (CaseStmt 
-                [(CaseCondExpr 
-                    (String 
+            (CaseStmt
+                [(CaseCondExpr
+                    (String
                         "C"
                     )
-                )] 
-                () 
-                [(Print 
-                    0 
-                    () 
-                    [(String 
+                )]
+                ()
+                [(Print
+                    0
+                    ()
+                    [(String
                         "Well done"
-                    )] 
-                    (TriviaNode 
-                        [] 
+                    )]
+                    (TriviaNode
+                        []
                         [(EndOfLine)
                         (EndOfLine)]
                     )
                 )]
             )
-            (CaseStmt 
-                [(CaseCondExpr 
-                    (String 
+            (CaseStmt
+                [(CaseCondExpr
+                    (String
                         "D"
                     )
-                )] 
-                () 
-                [(Print 
-                    0 
-                    () 
-                    [(String 
+                )]
+                ()
+                [(Print
+                    0
+                    ()
+                    [(String
                         "You passed"
-                    )] 
-                    (TriviaNode 
-                        [] 
+                    )]
+                    (TriviaNode
+                        []
                         [(EndOfLine)
                         (EndOfLine)]
                     )
                 )]
             )
-            (CaseStmt 
-                [(CaseCondExpr 
-                    (String 
+            (CaseStmt
+                [(CaseCondExpr
+                    (String
                         "F"
                     )
-                )] 
-                () 
-                [(Print 
-                    0 
-                    () 
-                    [(String 
+                )]
+                ()
+                [(Print
+                    0
+                    ()
+                    [(String
                         "Better try again"
-                    )] 
-                    (TriviaNode 
-                        [] 
+                    )]
+                    (TriviaNode
+                        []
                         [(EndOfLine)
                         (EndOfLine)]
                     )
                 )]
             )
-            (CaseStmt_Default 
-                () 
-                [(Print 
-                    0 
-                    () 
-                    [(String 
+            (CaseStmt_Default
+                ()
+                [(Print
+                    0
+                    ()
+                    [(String
                         "Invalid grade"
-                    )] 
-                    (TriviaNode 
-                        [] 
+                    )]
+                    (TriviaNode
+                        []
                         [(EndOfLine)
                         (EndOfLine)]
                     )
                 )]
-            )] 
-            (TriviaNode 
-                [] 
+            )]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            (TriviaNode 
-                [] 
+            )
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Print 
-            0 
-            () 
-            [(String 
+        (Print
+            0
+            ()
+            [(String
                 "Your grade is "
             )
-            grade] 
-            (TriviaNode 
-                [] 
+            grade]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

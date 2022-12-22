@@ -1,263 +1,261 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             flip_sign:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             abs:
-                                (ExternalSymbol 
-                                    2 
-                                    abs 
-                                    96 abs 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    abs 
+                                (ExternalSymbol
+                                    2
+                                    abs
+                                    96 abs
+                                    lfortran_intrinsic_math
+                                    []
+                                    abs
                                     Private
-                                ), 
+                                ),
                             abs@sabs:
-                                (ExternalSymbol 
-                                    2 
-                                    abs@sabs 
-                                    96 sabs 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    sabs 
+                                (ExternalSymbol
+                                    2
+                                    abs@sabs
+                                    96 sabs
+                                    lfortran_intrinsic_math
+                                    []
+                                    sabs
                                     Private
-                                ), 
+                                ),
                             eps:
-                                (Variable 
-                                    2 
-                                    eps 
-                                    [] 
-                                    Local 
-                                    (RealConstant 
-                                        0.000001 
+                                (Variable
+                                    2
+                                    eps
+                                    []
+                                    Local
+                                    (RealConstant
+                                        0.000001
                                         (Real 4 [])
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    )
+                                    ()
+                                    Save
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             modulo:
-                                (ExternalSymbol 
-                                    2 
-                                    modulo 
-                                    4 modulo 
-                                    lfortran_intrinsic_math2 
-                                    [] 
-                                    modulo 
+                                (ExternalSymbol
+                                    2
+                                    modulo
+                                    4 modulo
+                                    lfortran_intrinsic_math2
+                                    []
+                                    modulo
                                     Private
-                                ), 
+                                ),
                             modulo@imodulo:
-                                (ExternalSymbol 
-                                    2 
-                                    modulo@imodulo 
-                                    4 imodulo 
-                                    lfortran_intrinsic_math2 
-                                    [] 
-                                    imodulo 
+                                (ExternalSymbol
+                                    2
+                                    modulo@imodulo
+                                    4 imodulo
+                                    lfortran_intrinsic_math2
+                                    []
+                                    imodulo
                                     Private
-                                ), 
+                                ),
                             number:
-                                (Variable 
-                                    2 
-                                    number 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    number
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             x:
-                                (Variable 
-                                    2 
-                                    x 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    flip_sign 
-                    [] 
-                    [(= 
-                        (Var 2 number) 
-                        (IntegerConstant 123 (Integer 4 [])) 
+                        })
+                    flip_sign
+                    []
+                    [(=
+                        (Var 2 number)
+                        (IntegerConstant 123 (Integer 4 []))
                         ()
                     )
-                    (= 
-                        (Var 2 x) 
-                        (RealConstant 
-                            5.500000 
+                    (=
+                        (Var 2 x)
+                        (RealConstant
+                            5.500000
                             (Real 4 [])
-                        ) 
+                        )
                         ()
                     )
-                    (If 
-                        (IntegerCompare 
-                            (FunctionCall 
-                                2 modulo@imodulo 
-                                2 modulo 
+                    (If
+                        (IntegerCompare
+                            (FunctionCall
+                                2 modulo@imodulo
+                                2 modulo
                                 [((Var 2 number))
-                                ((IntegerConstant 2 (Integer 4 [])))] 
-                                (Integer 4 []) 
-                                () 
+                                ((IntegerConstant 2 (Integer 4 [])))]
+                                (Integer 4 [])
                                 ()
-                            ) 
-                            Eq 
-                            (IntegerConstant 1 (Integer 4 [])) 
-                            (Logical 4 []) 
-                            ()
-                        ) 
-                        [(= 
-                            (Var 2 x) 
-                            (RealUnaryMinus 
-                                (Var 2 x) 
-                                (Real 4 []) 
                                 ()
-                            ) 
+                            )
+                            Eq
+                            (IntegerConstant 1 (Integer 4 []))
+                            (Logical 4 [])
                             ()
-                        )] 
+                        )
+                        [(=
+                            (Var 2 x)
+                            (RealUnaryMinus
+                                (Var 2 x)
+                                (Real 4 [])
+                                ()
+                            )
+                            ()
+                        )]
                         []
                     )
-                    (If 
-                        (RealCompare 
-                            (FunctionCall 
-                                2 abs@sabs 
-                                2 abs 
-                                [((RealBinOp 
-                                    (Var 2 x) 
-                                    Sub 
-                                    (RealUnaryMinus 
-                                        (RealConstant 
-                                            5.500000 
-                                            (Real 4 [])
-                                        ) 
-                                        (Real 4 []) 
-                                        (RealConstant 
-                                            -5.500000 
+                    (If
+                        (RealCompare
+                            (FunctionCall
+                                2 abs@sabs
+                                2 abs
+                                [((RealBinOp
+                                    (Var 2 x)
+                                    Sub
+                                    (RealUnaryMinus
+                                        (RealConstant
+                                            5.500000
                                             (Real 4 [])
                                         )
-                                    ) 
-                                    (Real 4 []) 
-                                    ()
-                                ))] 
-                                (Real 4 []) 
-                                () 
-                                ()
-                            ) 
-                            Gt 
-                            (Var 2 eps) 
-                            (Logical 4 []) 
-                            ()
-                        ) 
-                        [(ErrorStop 
-                            ()
-                        )] 
-                        []
-                    )
-                    (= 
-                        (Var 2 number) 
-                        (IntegerConstant 124 (Integer 4 [])) 
-                        ()
-                    )
-                    (= 
-                        (Var 2 x) 
-                        (RealConstant 
-                            5.500000 
-                            (Real 4 [])
-                        ) 
-                        ()
-                    )
-                    (If 
-                        (IntegerCompare 
-                            (FunctionCall 
-                                2 modulo@imodulo 
-                                2 modulo 
-                                [((Var 2 number))
-                                ((IntegerConstant 2 (Integer 4 [])))] 
-                                (Integer 4 []) 
-                                () 
-                                ()
-                            ) 
-                            Eq 
-                            (IntegerConstant 1 (Integer 4 [])) 
-                            (Logical 4 []) 
-                            ()
-                        ) 
-                        [(= 
-                            (Var 2 x) 
-                            (RealUnaryMinus 
-                                (Var 2 x) 
-                                (Real 4 []) 
-                                ()
-                            ) 
-                            ()
-                        )] 
-                        []
-                    )
-                    (If 
-                        (RealCompare 
-                            (FunctionCall 
-                                2 abs@sabs 
-                                2 abs 
-                                [((RealBinOp 
-                                    (Var 2 x) 
-                                    Sub 
-                                    (RealConstant 
-                                        5.500000 
                                         (Real 4 [])
-                                    ) 
-                                    (Real 4 []) 
+                                        (RealConstant
+                                            -5.500000
+                                            (Real 4 [])
+                                        )
+                                    )
+                                    (Real 4 [])
                                     ()
-                                ))] 
-                                (Real 4 []) 
-                                () 
+                                ))]
+                                (Real 4 [])
                                 ()
-                            ) 
-                            Gt 
-                            (Var 2 eps) 
-                            (Logical 4 []) 
+                                ()
+                            )
+                            Gt
+                            (Var 2 eps)
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 2 number)
+                        (IntegerConstant 124 (Integer 4 []))
+                        ()
+                    )
+                    (=
+                        (Var 2 x)
+                        (RealConstant
+                            5.500000
+                            (Real 4 [])
+                        )
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (FunctionCall
+                                2 modulo@imodulo
+                                2 modulo
+                                [((Var 2 number))
+                                ((IntegerConstant 2 (Integer 4 [])))]
+                                (Integer 4 [])
+                                ()
+                                ()
+                            )
+                            Eq
+                            (IntegerConstant 1 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(=
+                            (Var 2 x)
+                            (RealUnaryMinus
+                                (Var 2 x)
+                                (Real 4 [])
+                                ()
+                            )
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (FunctionCall
+                                2 abs@sabs
+                                2 abs
+                                [((RealBinOp
+                                    (Var 2 x)
+                                    Sub
+                                    (RealConstant
+                                        5.500000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                ))]
+                                (Real 4 [])
+                                ()
+                                ()
+                            )
+                            Gt
+                            (Var 2 eps)
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
                         []
                     )]
-                ), 
+                ),
             iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding), 
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
             iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin), 
+                (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math), 
+                (IntrinsicModule lfortran_intrinsic_math),
             lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2), 
+                (IntrinsicModule lfortran_intrinsic_math2),
             lfortran_intrinsic_math3:
                 (IntrinsicModule lfortran_intrinsic_math3)
-            
-        }) 
+        })
     []
 )

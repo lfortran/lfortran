@@ -1,49 +1,49 @@
-(TranslationUnit 
-    [(Program 
-        assign2 
-        () 
-        [] 
-        [] 
-        [] 
-        [(If 
-            100 
-            () 
-            (< 0 1) 
-            [(Assign 
-                0 
-                101 
-                k 
+(TranslationUnit
+    [(Program
+        assign2
+        ()
+        []
+        []
+        []
+        [(If
+            100
+            ()
+            (< 0 1)
+            [(Assign
+                0
+                101
+                k
                 ()
-            )] 
-            [] 
-            () 
-            () 
+            )]
+            []
+            ()
+            ()
             ()
         )
-        (GoTo 
-            0 
-            k 
-            () 
+        (GoTo
+            0
+            k
+            ()
             [100
-            101] 
+            101]
             ()
         )
-        (Print 
-            0 
-            () 
-            [(String 
+        (Print
+            0
+            ()
+            [(String
                 "no"
-            )] 
+            )]
             ()
         )
-        (Print 
-            101 
-            () 
-            [(String 
-                "yes"
-            )] 
+        (Print
+            101
             ()
-        )] 
+            [(String
+                "yes"
+            )]
+            ()
+        )]
         []
     )]
 )

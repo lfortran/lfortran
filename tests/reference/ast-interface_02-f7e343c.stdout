@@ -1,169 +1,169 @@
-(TranslationUnit 
-    [(Module 
-        interface_02_mod 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(Module
+        interface_02_mod
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+        )
+        []
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(Interface 
-            (InterfaceHeader) 
-            (TriviaNode 
-                [] 
+        )]
+        [(Interface
+            (InterfaceHeader)
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [(InterfaceProc 
-                (Subroutine 
-                    a1 
-                    [(a)] 
-                    [] 
-                    () 
-                    () 
-                    [] 
-                    [] 
-                    [] 
-                    [(Declaration 
-                        (AttrType 
-                            TypeInteger 
-                            [] 
-                            () 
+            )
+            [(InterfaceProc
+                (Subroutine
+                    a1
+                    [(a)]
+                    []
+                    ()
+                    ()
+                    []
+                    []
+                    []
+                    [(Declaration
+                        (AttrType
+                            TypeInteger
+                            []
+                            ()
                             None
-                        ) 
-                        [(AttrIntent 
+                        )
+                        [(AttrIntent
                             InOut
-                        )] 
-                        [(a 
-                        [] 
-                        [] 
-                        () 
-                        None 
-                        ())] 
+                        )]
+                        [(a
+                        []
+                        []
                         ()
-                    )] 
-                    [] 
+                        None
+                        ())]
+                        ()
+                    )]
+                    []
                     []
                 )
             )]
         )
-        (Interface 
-            (InterfaceHeader) 
-            (TriviaNode 
-                [] 
+        (Interface
+            (InterfaceHeader)
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [(InterfaceProc 
-                (Subroutine 
-                    a2 
-                    [(a)] 
-                    [] 
-                    () 
-                    (TriviaNode 
-                        [] 
+            )
+            [(InterfaceProc
+                (Subroutine
+                    a2
+                    [(a)]
+                    []
+                    ()
+                    (TriviaNode
+                        []
                         [(EndOfLine)
                         (EndOfLine)]
-                    ) 
-                    [] 
-                    [] 
-                    [] 
-                    [(Declaration 
-                        (AttrType 
-                            TypeInteger 
-                            [] 
-                            () 
+                    )
+                    []
+                    []
+                    []
+                    [(Declaration
+                        (AttrType
+                            TypeInteger
+                            []
+                            ()
                             None
-                        ) 
-                        [(AttrIntent 
+                        )
+                        [(AttrIntent
                             InOut
-                        )] 
-                        [(a 
-                        [] 
-                        [] 
-                        () 
-                        None 
-                        ())] 
+                        )]
+                        [(a
+                        []
+                        []
                         ()
-                    )] 
-                    [] 
+                        None
+                        ())]
+                        ()
+                    )]
+                    []
                     []
                 )
             )
-            (InterfaceProc 
-                (Subroutine 
-                    a3 
-                    [(a)] 
-                    [] 
-                    () 
-                    () 
-                    [] 
-                    [] 
-                    [] 
-                    [(Declaration 
-                        (AttrType 
-                            TypeReal 
-                            [] 
-                            () 
+            (InterfaceProc
+                (Subroutine
+                    a3
+                    [(a)]
+                    []
+                    ()
+                    ()
+                    []
+                    []
+                    []
+                    [(Declaration
+                        (AttrType
+                            TypeReal
+                            []
+                            ()
                             None
-                        ) 
-                        [(AttrIntent 
+                        )
+                        [(AttrIntent
                             InOut
-                        )] 
-                        [(a 
-                        [] 
-                        [] 
-                        () 
-                        None 
-                        ())] 
+                        )]
+                        [(a
+                        []
+                        []
                         ()
-                    )] 
-                    [] 
+                        None
+                        ())]
+                        ()
+                    )]
+                    []
                     []
                 )
             )]
-        )] 
+        )]
         []
     )
-    (Program 
-        interface_02 
-        () 
-        [(Use 
-            [] 
-            interface_02_mod 
-            [(UseSymbol 
-                a1 
+    (Program
+        interface_02
+        ()
+        [(Use
+            []
+            interface_02_mod
+            [(UseSymbol
+                a1
                 ()
             )
-            (UseSymbol 
-                a2 
+            (UseSymbol
+                a2
                 ()
             )
-            (UseSymbol 
-                a3 
+            (UseSymbol
+                a3
                 ()
-            )] 
-            .true. 
+            )]
+            .true.
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+        )]
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [] 
-        [] 
+        )]
+        []
+        []
         []
     )]
 )

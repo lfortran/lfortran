@@ -1,68 +1,68 @@
-(TranslationUnit 
-    [(Program 
-        assign3 
-        () 
-        [] 
-        [] 
-        [] 
-        [(Assign 
-            10 
-            30 
-            next 
+(TranslationUnit
+    [(Program
+        assign3
+        ()
+        []
+        []
+        []
+        [(Assign
+            10
+            30
+            next
             ()
         )
-        (GoTo 
-            20 
-            next 
-            () 
+        (GoTo
+            20
+            next
+            ()
             [30
             50
             70
-            110] 
+            110]
             ()
         )
-        (Assign 
-            0 
-            50 
-            next 
+        (Assign
+            0
+            50
+            next
             ()
         )
-        (Assign 
-            0 
-            70 
-            next 
+        (Assign
+            0
+            70
+            next
             ()
         )
-        (Assign 
-            0 
-            110 
-            next 
+        (Assign
+            0
+            110
+            next
             ()
         )
-        (Print 
-            30 
-            () 
-            [30] 
+        (Print
+            30
+            ()
+            [30]
             ()
         )
-        (Print 
-            50 
-            () 
-            [50] 
+        (Print
+            50
+            ()
+            [50]
             ()
         )
-        (Print 
-            70 
-            () 
-            [70] 
+        (Print
+            70
+            ()
+            [70]
             ()
         )
-        (Print 
-            110 
-            () 
-            [110] 
+        (Print
+            110
             ()
-        )] 
+            [110]
+            ()
+        )]
         []
     )]
 )

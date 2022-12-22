@@ -1,63 +1,63 @@
-(TranslationUnit 
-    [(Subroutine 
-        add 
+(TranslationUnit
+    [(Subroutine
+        add
         [(a)
         (b)
-        (c)] 
-        [] 
-        () 
-        () 
-        [] 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeReal 
-                [] 
-                () 
+        (c)]
+        []
+        ()
+        ()
+        []
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
                 None
-            ) 
-            [(AttrIntent 
+            )
+            [(AttrIntent
                 In
-            )] 
-            [(a 
-            [] 
-            [] 
-            () 
-            None 
+            )]
+            [(a
+            []
+            []
+            ()
+            None
             ())
-            (b 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            (b
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeReal 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
                 None
-            ) 
-            [(AttrIntent 
+            )
+            [(AttrIntent
                 Out
-            )] 
-            [(c 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )]
+            [(c
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            c 
-            (+ a b) 
+            None
+            ())]
             ()
-        )] 
+        )]
+        [(=
+            0
+            c
+            (+ a b)
+            ()
+        )]
         []
     )]
 )

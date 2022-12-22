@@ -1,26 +1,26 @@
-(TranslationUnit 
-    [(Function 
-        f 
-        [] 
-        [(AttrType 
-            TypeInteger 
-            [] 
-            () 
-            None
-        )] 
-        () 
-        () 
-        () 
-        [] 
-        [] 
-        [] 
-        [] 
-        [(= 
-            0 
-            f 
-            42 
+(TranslationUnit
+    [(Function
+        f
+        []
+        [(AttrType
+            TypeInteger
+            []
             ()
-        )] 
+            None
+        )]
+        ()
+        ()
+        ()
+        []
+        []
+        []
+        []
+        [(=
+            0
+            f
+            42
+            ()
+        )]
         []
     )]
 )

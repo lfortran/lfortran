@@ -1,44 +1,44 @@
-(TranslationUnit 
-    [(Program 
-        implicit_program_lfortran 
-        () 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+(TranslationUnit
+    [(Program
+        implicit_program_lfortran
+        ()
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(a 
-            [] 
-            [] 
-            () 
-            None 
-            ())
-            (b 
-            [] 
-            [] 
-            () 
-            None 
-            ())
-            (c 
-            [] 
-            [] 
-            () 
-            None 
-            ())
-            (d 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(a
+            []
+            []
             ()
-        )] 
-        [] 
+            None
+            ())
+            (b
+            []
+            []
+            ()
+            None
+            ())
+            (c
+            []
+            []
+            ()
+            None
+            ())
+            (d
+            []
+            []
+            ()
+            None
+            ())]
+            ()
+        )]
+        []
         []
     )]
 )

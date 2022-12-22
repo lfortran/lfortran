@@ -1,24 +1,24 @@
-(TranslationUnit 
-    [(Declaration 
-        (AttrType 
-            TypeInteger 
-            [] 
-            () 
+(TranslationUnit
+    [(Declaration
+        (AttrType
+            TypeInteger
+            []
+            ()
             None
-        ) 
-        [] 
-        [(x 
-        [] 
-        [] 
-        () 
-        None 
-        ())] 
+        )
+        []
+        [(x
+        []
+        []
+        ()
+        None
+        ())]
         ()
     )
-    (= 
-        0 
-        x 
-        6 
+    (=
+        0
+        x
+        6
         ()
     )]
 )

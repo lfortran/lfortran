@@ -1,538 +1,538 @@
-(TranslationUnit 
-    [(Module 
-        math 
-        (TriviaNode 
-            [(EndOfLine)
-            (EndOfLine)] 
+(TranslationUnit
+    [(Module
+        math
+        (TriviaNode
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(ImplicitNone 
-            [] 
+            [(EndOfLine)
+            (EndOfLine)]
+        )
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            () 
-            [(SimpleAttribute 
+        )]
+        [(Declaration
+            ()
+            [(SimpleAttribute
                 AttrPrivate
-            )] 
-            [] 
+            )]
+            []
             ()
         )
-        (Declaration 
-            () 
-            [(SimpleAttribute 
+        (Declaration
+            ()
+            [(SimpleAttribute
                 AttrPublic
-            )] 
-            [(add_real 
-            [] 
-            [] 
-            () 
-            None 
+            )]
+            [(add_real
+            []
+            []
+            ()
+            None
             ())
-            (slash_real 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
-            (TriviaNode 
-                [] 
+            (slash_real
+            []
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(Function 
-            add_real 
+        )]
+        [(Function
+            add_real
             [(x)
-            (y)] 
-            [(SimpleAttribute 
+            (y)]
+            [(SimpleAttribute
                 AttrPure
-            )] 
-            total 
-            () 
-            (TriviaNode 
-                [] 
+            )]
+            total
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [] 
-            [] 
-            [(Declaration 
-                (AttrType 
-                    TypeReal 
-                    [] 
-                    () 
+            )
+            []
+            []
+            []
+            [(Declaration
+                (AttrType
+                    TypeReal
+                    []
+                    ()
                     None
-                ) 
-                [(AttrIntent 
+                )
+                [(AttrIntent
                     In
-                )] 
-                [(x 
-                [] 
-                [] 
-                () 
-                None 
+                )]
+                [(x
+                []
+                []
+                ()
+                None
                 ())
-                (y 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                (y
+                []
+                []
+                ()
+                None
+                ())]
                 ()
             )
-            (Declaration 
-                (AttrType 
-                    TypeReal 
-                    [] 
-                    () 
+            (Declaration
+                (AttrType
+                    TypeReal
+                    []
+                    ()
                     None
-                ) 
-                [] 
-                [(total 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )
+                []
+                [(total
+                []
+                []
                 ()
-            )] 
-            [(= 
-                0 
-                total 
-                (+ x y) 
+                None
+                ())]
                 ()
-            )] 
+            )]
+            [(=
+                0
+                total
+                (+ x y)
+                ()
+            )]
             []
         )
-        (Function 
-            slash_real 
+        (Function
+            slash_real
             [(x)
-            (y)] 
-            [(SimpleAttribute 
+            (y)]
+            [(SimpleAttribute
                 AttrPure
-            )] 
-            total 
-            () 
-            (TriviaNode 
-                [] 
+            )]
+            total
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [] 
-            [] 
-            [(Declaration 
-                (AttrType 
-                    TypeReal 
-                    [] 
-                    () 
+            )
+            []
+            []
+            []
+            [(Declaration
+                (AttrType
+                    TypeReal
+                    []
+                    ()
                     None
-                ) 
-                [(AttrIntent 
+                )
+                [(AttrIntent
                     In
-                )] 
-                [(x 
-                [] 
-                [] 
-                () 
-                None 
+                )]
+                [(x
+                []
+                []
+                ()
+                None
                 ())
-                (y 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                (y
+                []
+                []
+                ()
+                None
+                ())]
                 ()
             )
-            (Declaration 
-                (AttrType 
-                    TypeReal 
-                    [] 
-                    () 
+            (Declaration
+                (AttrType
+                    TypeReal
+                    []
+                    ()
                     None
-                ) 
-                [] 
-                [(total 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )
+                []
+                [(total
+                []
+                []
                 ()
-            )] 
-            [(= 
-                0 
-                total 
-                (/ x y) 
+                None
+                ())]
                 ()
-            )] 
+            )]
+            [(=
+                0
+                total
+                (/ x y)
+                ()
+            )]
             []
         )]
     )
-    (Module 
-        travel 
-        (TriviaNode 
-            [(EndOfLine)
-            (EndOfLine)] 
+    (Module
+        travel
+        (TriviaNode
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [(Use 
-            [] 
-            math 
-            [] 
-            .false. 
+            [(EndOfLine)
+            (EndOfLine)]
+        )
+        [(Use
+            []
+            math
+            []
+            .false.
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
+        )]
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            () 
-            [(SimpleAttribute 
+        )]
+        [(Declaration
+            ()
+            [(SimpleAttribute
                 AttrPrivate
-            )] 
-            [] 
+            )]
+            []
             ()
         )
-        (Declaration 
-            () 
-            [(SimpleAttribute 
+        (Declaration
+            ()
+            [(SimpleAttribute
                 AttrPublic
-            )] 
-            [(travel_tmpl 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
-            (TriviaNode 
-                [] 
+            )]
+            [(travel_tmpl
+            []
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Requirement 
-            operations 
+        (Requirement
+            operations
             [D
             T
             S
             plus_D
             plus_T
             D_divided_by_T
-            D_divided_by_S] 
-            [(DerivedType 
-                D 
-                [] 
-                (TriviaNode 
-                    [(Semicolon)] 
+            D_divided_by_S]
+            [(DerivedType
+                D
+                []
+                (TriviaNode
+                    [(Semicolon)]
                     []
-                ) 
-                [] 
-                [] 
+                )
+                []
+                []
                 []
             )
-            (DerivedType 
-                T 
-                [] 
-                (TriviaNode 
-                    [(Semicolon)] 
+            (DerivedType
+                T
+                []
+                (TriviaNode
+                    [(Semicolon)]
                     []
-                ) 
-                [] 
-                [] 
+                )
+                []
+                []
                 []
             )
-            (DerivedType 
-                S 
-                [] 
-                (TriviaNode 
-                    [(Semicolon)] 
+            (DerivedType
+                S
+                []
+                (TriviaNode
+                    [(Semicolon)]
                     [(EndOfLine)
                     (EndOfLine)]
-                ) 
-                [] 
-                [] 
+                )
                 []
-            )] 
-            [(Function 
-                plus_D 
+                []
+                []
+            )]
+            [(Function
+                plus_D
                 [(l)
-                (r)] 
-                [(SimpleAttribute 
+                (r)]
+                [(SimpleAttribute
                     AttrPure
-                )] 
-                total 
-                () 
-                (TriviaNode 
-                    [] 
+                )]
+                total
+                ()
+                (TriviaNode
+                    []
                     [(EndOfLine)
                     (EndOfLine)]
-                ) 
-                [] 
-                [] 
-                [] 
-                [(Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        D 
+                )
+                []
+                []
+                []
+                [(Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        D
                         None
-                    ) 
-                    [(AttrIntent 
+                    )
+                    [(AttrIntent
                         In
-                    )] 
-                    [(l 
-                    [] 
-                    [] 
-                    () 
-                    None 
+                    )]
+                    [(l
+                    []
+                    []
+                    ()
+                    None
                     ())
-                    (R 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    (R
+                    []
+                    []
+                    ()
+                    None
+                    ())]
                     ()
                 )
-                (Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        D 
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        D
                         None
-                    ) 
-                    [] 
-                    [(total 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    )
+                    []
+                    [(total
+                    []
+                    []
                     ()
-                )] 
-                [] 
+                    None
+                    ())]
+                    ()
+                )]
+                []
                 []
             )
-            (Function 
-                plus_T 
+            (Function
+                plus_T
                 [(l)
-                (r)] 
-                [(SimpleAttribute 
+                (r)]
+                [(SimpleAttribute
                     AttrPure
-                )] 
-                total 
-                () 
-                (TriviaNode 
-                    [] 
+                )]
+                total
+                ()
+                (TriviaNode
+                    []
                     [(EndOfLine)
                     (EndOfLine)]
-                ) 
-                [] 
-                [] 
-                [] 
-                [(Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        T 
+                )
+                []
+                []
+                []
+                [(Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        T
                         None
-                    ) 
-                    [(AttrIntent 
+                    )
+                    [(AttrIntent
                         In
-                    )] 
-                    [(l 
-                    [] 
-                    [] 
-                    () 
-                    None 
+                    )]
+                    [(l
+                    []
+                    []
+                    ()
+                    None
                     ())
-                    (R 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    (R
+                    []
+                    []
+                    ()
+                    None
+                    ())]
                     ()
                 )
-                (Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        T 
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        T
                         None
-                    ) 
-                    [] 
-                    [(total 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    )
+                    []
+                    [(total
+                    []
+                    []
                     ()
-                )] 
-                [] 
+                    None
+                    ())]
+                    ()
+                )]
+                []
                 []
             )
-            (Function 
-                D_divided_by_T 
+            (Function
+                D_divided_by_T
                 [(n)
-                (d)] 
-                [(SimpleAttribute 
+                (d)]
+                [(SimpleAttribute
                     AttrPure
-                )] 
-                quotient 
-                () 
-                (TriviaNode 
-                    [] 
+                )]
+                quotient
+                ()
+                (TriviaNode
+                    []
                     [(EndOfLine)
                     (EndOfLine)]
-                ) 
-                [] 
-                [] 
-                [] 
-                [(Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        D 
+                )
+                []
+                []
+                []
+                [(Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        D
                         None
-                    ) 
-                    [(AttrIntent 
+                    )
+                    [(AttrIntent
                         In
-                    )] 
-                    [(n 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    )]
+                    [(n
+                    []
+                    []
+                    ()
+                    None
+                    ())]
                     ()
                 )
-                (Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        T 
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        T
                         None
-                    ) 
-                    [(AttrIntent 
+                    )
+                    [(AttrIntent
                         In
-                    )] 
-                    [(d 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    )]
+                    [(d
+                    []
+                    []
+                    ()
+                    None
+                    ())]
                     ()
                 )
-                (Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        S 
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        S
                         None
-                    ) 
-                    [] 
-                    [(quotient 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    )
+                    []
+                    [(quotient
+                    []
+                    []
                     ()
-                )] 
-                [] 
+                    None
+                    ())]
+                    ()
+                )]
+                []
                 []
             )
-            (Function 
-                D_divided_by_S 
+            (Function
+                D_divided_by_S
                 [(n)
-                (d)] 
-                [(SimpleAttribute 
+                (d)]
+                [(SimpleAttribute
                     AttrPure
-                )] 
-                quotient 
-                () 
-                () 
-                [] 
-                [] 
-                [] 
-                [(Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        D 
+                )]
+                quotient
+                ()
+                ()
+                []
+                []
+                []
+                [(Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        D
                         None
-                    ) 
-                    [(AttrIntent 
+                    )
+                    [(AttrIntent
                         In
-                    )] 
-                    [(n 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    )]
+                    [(n
+                    []
+                    []
+                    ()
+                    None
+                    ())]
                     ()
                 )
-                (Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        S 
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        S
                         None
-                    ) 
-                    [(AttrIntent 
+                    )
+                    [(AttrIntent
                         In
-                    )] 
-                    [(d 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    )]
+                    [(d
+                    []
+                    []
+                    ()
+                    None
+                    ())]
                     ()
                 )
-                (Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        T 
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        T
                         None
-                    ) 
-                    [] 
-                    [(quotient 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    )
+                    []
+                    [(quotient
+                    []
+                    []
                     ()
-                )] 
-                [] 
+                    None
+                    ())]
+                    ()
+                )]
+                []
                 []
             )]
         )
-        (Template 
-            travel_tmpl 
+        (Template
+            travel_tmpl
             [D
             T
             S
             plus_D
             plus_T
             D_divided_by_T
-            D_divided_by_S] 
-            [(Requires 
-                operations 
+            D_divided_by_S]
+            [(Requires
+                operations
                 [D
                 T
                 S
@@ -541,472 +541,472 @@
                 D_divided_by_T
                 D_divided_by_S]
             )
-            (Declaration 
-                () 
-                [(SimpleAttribute 
+            (Declaration
+                ()
+                [(SimpleAttribute
                     AttrPrivate
-                )] 
-                [] 
+                )]
+                []
                 ()
             )
-            (Declaration 
-                () 
-                [(SimpleAttribute 
-                    AttrPublic
-                )] 
-                [(avg_S_from_T 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+            (Declaration
                 ()
-            )] 
-            [(Function 
-                avg_S_from_T 
+                [(SimpleAttribute
+                    AttrPublic
+                )]
+                [(avg_S_from_T
+                []
+                []
+                ()
+                None
+                ())]
+                ()
+            )]
+            [(Function
+                avg_S_from_T
                 [(d1)
                 (t1)
                 (d2)
-                (t2)] 
-                [(SimpleAttribute 
+                (t2)]
+                [(SimpleAttribute
                     AttrPure
-                )] 
-                avg 
-                () 
-                (TriviaNode 
-                    [] 
+                )]
+                avg
+                ()
+                (TriviaNode
+                    []
                     [(EndOfLine)
                     (EndOfLine)]
-                ) 
-                [] 
-                [] 
-                [] 
-                [(Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        D 
-                        None
-                    ) 
-                    [(AttrIntent 
-                        In
-                    )] 
-                    [(d1 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())
-                    (d2 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
-                    ()
                 )
-                (Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        T 
-                        None
-                    ) 
-                    [(AttrIntent 
-                        In
-                    )] 
-                    [(t1 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())
-                    (t2 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
-                    ()
-                )
-                (Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        S 
-                        None
-                    ) 
-                    [] 
-                    [(avg 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
-                    ()
-                )] 
-                [(= 
-                    0 
-                    avg 
-                    (FuncCallOrArray 
-                        D_divided_by_T 
-                        [] 
-                        [(() 
-                        (FuncCallOrArray 
-                            plus_D 
-                            [] 
-                            [(() 
-                            d1 
-                            ())
-                            (() 
-                            d2 
-                            ())] 
-                            [] 
-                            []
-                        ) 
-                        ())
-                        (() 
-                        (FuncCallOrArray 
-                            plus_T 
-                            [] 
-                            [(() 
-                            t1 
-                            ())
-                            (() 
-                            t2 
-                            ())] 
-                            [] 
-                            []
-                        ) 
-                        ())] 
-                        [] 
+                []
+                []
+                []
+                [(Declaration
+                    (AttrType
+                        TypeType
                         []
-                    ) 
+                        D
+                        None
+                    )
+                    [(AttrIntent
+                        In
+                    )]
+                    [(d1
+                    []
+                    []
                     ()
-                )] 
+                    None
+                    ())
+                    (d2
+                    []
+                    []
+                    ()
+                    None
+                    ())]
+                    ()
+                )
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        T
+                        None
+                    )
+                    [(AttrIntent
+                        In
+                    )]
+                    [(t1
+                    []
+                    []
+                    ()
+                    None
+                    ())
+                    (t2
+                    []
+                    []
+                    ()
+                    None
+                    ())]
+                    ()
+                )
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        S
+                        None
+                    )
+                    []
+                    [(avg
+                    []
+                    []
+                    ()
+                    None
+                    ())]
+                    ()
+                )]
+                [(=
+                    0
+                    avg
+                    (FuncCallOrArray
+                        D_divided_by_T
+                        []
+                        [(()
+                        (FuncCallOrArray
+                            plus_D
+                            []
+                            [(()
+                            d1
+                            ())
+                            (()
+                            d2
+                            ())]
+                            []
+                            []
+                        )
+                        ())
+                        (()
+                        (FuncCallOrArray
+                            plus_T
+                            []
+                            [(()
+                            t1
+                            ())
+                            (()
+                            t2
+                            ())]
+                            []
+                            []
+                        )
+                        ())]
+                        []
+                        []
+                    )
+                    ()
+                )]
                 []
             )
-            (Function 
-                avg_S_from_S 
+            (Function
+                avg_S_from_S
                 [(d1)
                 (s1)
                 (d2)
-                (s2)] 
-                [(SimpleAttribute 
+                (s2)]
+                [(SimpleAttribute
                     AttrPure
-                )] 
-                avg 
-                () 
-                () 
-                [] 
-                [] 
-                [] 
-                [(Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        D 
-                        None
-                    ) 
-                    [(AttrIntent 
-                        In
-                    )] 
-                    [(d1 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())
-                    (d2 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
-                    ()
-                )
-                (Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        S 
-                        None
-                    ) 
-                    [(AttrIntent 
-                        In
-                    )] 
-                    [(s1 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())
-                    (s2 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
-                    ()
-                )
-                (Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        S 
-                        None
-                    ) 
-                    [] 
-                    [(avg 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
-                    ()
-                )] 
-                [(= 
-                    0 
-                    avg 
-                    (FuncCallOrArray 
-                        avg_S_from_T 
-                        [] 
-                        [(() 
-                        d1 
-                        ())
-                        (() 
-                        (FuncCallOrArray 
-                            D_divided_by_S 
-                            [] 
-                            [(() 
-                            d1 
-                            ())
-                            (() 
-                            s1 
-                            ())] 
-                            [] 
-                            []
-                        ) 
-                        ())
-                        (() 
-                        d2 
-                        ())
-                        (() 
-                        (FuncCallOrArray 
-                            D_divided_by_S 
-                            [] 
-                            [(() 
-                            d2 
-                            ())
-                            (() 
-                            s2 
-                            ())] 
-                            [] 
-                            []
-                        ) 
-                        ())] 
-                        [] 
+                )]
+                avg
+                ()
+                ()
+                []
+                []
+                []
+                [(Declaration
+                    (AttrType
+                        TypeType
                         []
-                    ) 
+                        D
+                        None
+                    )
+                    [(AttrIntent
+                        In
+                    )]
+                    [(d1
+                    []
+                    []
                     ()
-                )] 
+                    None
+                    ())
+                    (d2
+                    []
+                    []
+                    ()
+                    None
+                    ())]
+                    ()
+                )
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        S
+                        None
+                    )
+                    [(AttrIntent
+                        In
+                    )]
+                    [(s1
+                    []
+                    []
+                    ()
+                    None
+                    ())
+                    (s2
+                    []
+                    []
+                    ()
+                    None
+                    ())]
+                    ()
+                )
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        S
+                        None
+                    )
+                    []
+                    [(avg
+                    []
+                    []
+                    ()
+                    None
+                    ())]
+                    ()
+                )]
+                [(=
+                    0
+                    avg
+                    (FuncCallOrArray
+                        avg_S_from_T
+                        []
+                        [(()
+                        d1
+                        ())
+                        (()
+                        (FuncCallOrArray
+                            D_divided_by_S
+                            []
+                            [(()
+                            d1
+                            ())
+                            (()
+                            s1
+                            ())]
+                            []
+                            []
+                        )
+                        ())
+                        (()
+                        d2
+                        ())
+                        (()
+                        (FuncCallOrArray
+                            D_divided_by_S
+                            []
+                            [(()
+                            d2
+                            ())
+                            (()
+                            s2
+                            ())]
+                            []
+                            []
+                        )
+                        ())]
+                        []
+                        []
+                    )
+                    ()
+                )]
                 []
             )]
-        )] 
+        )]
         []
     )
-    (Module 
-        template_travel_m 
-        (TriviaNode 
-            [(EndOfLine)
-            (EndOfLine)] 
+    (Module
+        template_travel_m
+        (TriviaNode
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [(Use 
-            [] 
-            math 
-            [] 
-            .false. 
+            [(EndOfLine)
+            (EndOfLine)]
+        )
+        [(Use
+            []
+            math
+            []
+            .false.
             ()
         )
-        (Use 
-            [] 
-            travel 
-            [] 
-            .false. 
+        (Use
+            []
+            travel
+            []
+            .false.
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+        )]
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [] 
-        [(Subroutine 
-            test_template 
-            [] 
-            [] 
-            () 
-            (TriviaNode 
-                [] 
+        )]
+        []
+        [(Subroutine
+            test_template
+            []
+            []
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [] 
-            [] 
-            [(Instantiate 
-                travel_tmpl 
+            )
+            []
+            []
+            []
+            [(Instantiate
+                travel_tmpl
                 [real
                 real
                 real
                 add_real
                 add_real
                 slash_real
-                slash_real] 
-                [(UseSymbol 
-                    avg_S_from_T 
+                slash_real]
+                [(UseSymbol
+                    avg_S_from_T
                     avg_real_S_from_T
                 )]
             )
-            (Instantiate 
-                travel_tmpl 
+            (Instantiate
+                travel_tmpl
                 [real
                 real
                 real
                 add_real
                 add_real
                 slash_real
-                slash_real] 
-                [(UseSymbol 
-                    avg_S_from_S 
+                slash_real]
+                [(UseSymbol
+                    avg_S_from_S
                     avg_real_S_from_S
                 )]
             )
-            (Declaration 
-                (AttrType 
-                    TypeReal 
-                    [] 
-                    () 
+            (Declaration
+                (AttrType
+                    TypeReal
+                    []
+                    ()
                     None
-                ) 
-                [] 
-                [(s1 
-                [] 
-                [] 
-                () 
-                None 
+                )
+                []
+                [(s1
+                []
+                []
+                ()
+                None
                 ())
-                (s2 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                (s2
+                []
+                []
                 ()
-            )] 
-            [(= 
-                0 
-                s1 
-                (FuncCallOrArray 
-                    avg_real_S_from_T 
-                    [] 
-                    [(() 
-                    (Real "1.0") 
-                    ())
-                    (() 
-                    (Real "3.0") 
-                    ())
-                    (() 
-                    (Real "1.5") 
-                    ())
-                    (() 
-                    (Real "4.0") 
-                    ())] 
-                    [] 
+                None
+                ())]
+                ()
+            )]
+            [(=
+                0
+                s1
+                (FuncCallOrArray
+                    avg_real_S_from_T
                     []
-                ) 
+                    [(()
+                    (Real "1.0")
+                    ())
+                    (()
+                    (Real "3.0")
+                    ())
+                    (()
+                    (Real "1.5")
+                    ())
+                    (()
+                    (Real "4.0")
+                    ())]
+                    []
+                    []
+                )
                 ()
             )
-            (= 
-                0 
-                s2 
-                (FuncCallOrArray 
-                    avg_real_S_from_S 
-                    [] 
-                    [(() 
-                    (Real "1.1") 
-                    ())
-                    (() 
-                    (Real "0.5") 
-                    ())
-                    (() 
-                    (Real "2.0") 
-                    ())
-                    (() 
-                    (Real "0.75") 
-                    ())] 
-                    [] 
+            (=
+                0
+                s2
+                (FuncCallOrArray
+                    avg_real_S_from_S
                     []
-                ) 
+                    [(()
+                    (Real "1.1")
+                    ())
+                    (()
+                    (Real "0.5")
+                    ())
+                    (()
+                    (Real "2.0")
+                    ())
+                    (()
+                    (Real "0.75")
+                    ())]
+                    []
+                    []
+                )
                 ()
             )
-            (Print 
-                0 
-                () 
-                [(String 
+            (Print
+                0
+                ()
+                [(String
                     "s1="
                 )
-                s1] 
+                s1]
                 ()
             )
-            (Print 
-                0 
-                () 
-                [(String 
+            (Print
+                0
+                ()
+                [(String
                     "s2="
                 )
-                s2] 
+                s2]
                 ()
-            )] 
+            )]
             []
         )]
     )
-    (Program 
-        template_travel 
-        () 
-        [(Use 
-            [] 
-            template_travel_m 
-            [] 
-            .false. 
+    (Program
+        template_travel
+        ()
+        [(Use
+            []
+            template_travel_m
+            []
+            .false.
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+        )]
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [] 
-        [(SubroutineCall 
-            0 
-            test_template 
-            [] 
-            [] 
-            [] 
-            (TriviaNode 
-                [] 
+        )]
+        []
+        [(SubroutineCall
+            0
+            test_template
+            []
+            []
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

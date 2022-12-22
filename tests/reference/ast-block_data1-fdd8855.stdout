@@ -1,150 +1,150 @@
-(TranslationUnit 
-    [(BlockData 
-        init 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(BlockData
+        init
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(Implicit 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )
+        []
+        [(Implicit
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(LetterSpec 
-                a 
+            )
+            []
+            [(LetterSpec
+                a
                 z
-            )] 
+            )]
             ()
-        )] 
-        [(Declaration 
-            () 
-            [(SimpleAttribute 
+        )]
+        [(Declaration
+            ()
+            [(SimpleAttribute
                 AttrCommon
-            )] 
-            [(range 
-            [] 
-            [] 
-            x0 
-            Equal 
+            )]
+            [(range
+            []
+            []
+            x0
+            Equal
             ())
-            (() 
-            [] 
-            [] 
-            x1 
-            None 
-            ())] 
+            (()
+            []
+            []
+            x1
+            None
+            ())]
             ()
-        )] 
-        [(DataStmt 
-            0 
-            [(DataStmtSet 
+        )]
+        [(DataStmt
+            0
+            [(DataStmtSet
                 [x0
-                x1] 
+                x1]
                 [1
                 10]
-            )] 
+            )]
             ()
         )]
     )
-    (Program 
-        block_data1 
-        () 
-        [] 
-        [(Implicit 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+    (Program
+        block_data1
+        ()
+        []
+        [(Implicit
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(LetterSpec 
-                a 
+            )
+            []
+            [(LetterSpec
+                a
                 z
-            )] 
+            )]
             ()
-        )] 
-        [(Declaration 
-            () 
-            [(SimpleAttribute 
+        )]
+        [(Declaration
+            ()
+            [(SimpleAttribute
                 AttrCommon
-            )] 
-            [(range 
-            [] 
-            [] 
-            x0 
-            Equal 
+            )]
+            [(range
+            []
+            []
+            x0
+            Equal
             ())
-            (() 
-            [] 
-            [] 
-            x1 
-            None 
-            ())] 
+            (()
+            []
+            []
+            x1
+            None
+            ())]
             ()
-        )] 
-        [(Print 
-            0 
-            () 
-            [(String 
+        )]
+        [(Print
+            0
+            ()
+            [(String
                 "Printing Even number in the Range: "
             )
             x0
-            (String 
+            (String
                 " to "
             )
-            x1] 
+            x1]
             ()
         )
-        (DoLoop 
-            0 
-            () 
-            0 
-            i 
-            x0 
-            x1 
-            () 
-            [(If 
-                0 
-                () 
-                (/= (FuncCallOrArray 
-                    mod 
-                    [] 
-                    [(() 
-                    i 
-                    ())
-                    (() 
-                    2 
-                    ())] 
-                    [] 
+        (DoLoop
+            0
+            ()
+            0
+            i
+            x0
+            x1
+            ()
+            [(If
+                0
+                ()
+                (/= (FuncCallOrArray
+                    mod
                     []
-                ) 0) 
-                [(Cycle 
-                    0 
-                    () 
+                    [(()
+                    i
+                    ())
+                    (()
+                    2
+                    ())]
+                    []
+                    []
+                ) 0)
+                [(Cycle
+                    0
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                    ()
+                )]
+                []
+                ()
+                ()
                 ()
             )
-            (Write 
-                0 
+            (Write
+                0
                 [(())
-                (())] 
-                [] 
-                [i] 
+                (())]
+                []
+                [i]
                 ()
-            )] 
-            () 
+            )]
             ()
-        )] 
+            ()
+        )]
         []
     )]
 )

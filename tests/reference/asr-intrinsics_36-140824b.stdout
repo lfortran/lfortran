@@ -1,443 +1,441 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             intrinsics_36:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             adjustl:
-                                (ExternalSymbol 
-                                    2 
-                                    adjustl 
-                                    4 adjustl 
-                                    lfortran_intrinsic_string 
-                                    [] 
-                                    adjustl 
+                                (ExternalSymbol
+                                    2
+                                    adjustl
+                                    4 adjustl
+                                    lfortran_intrinsic_string
+                                    []
+                                    adjustl
                                     Private
-                                ), 
+                                ),
                             all_spaces:
-                                (Variable 
-                                    2 
-                                    all_spaces 
-                                    [] 
-                                    Local 
-                                    (FunctionCall 
-                                        2 adjustl 
-                                        () 
-                                        [((StringConstant 
-                                            "    " 
+                                (Variable
+                                    2
+                                    all_spaces
+                                    []
+                                    Local
+                                    (FunctionCall
+                                        2 adjustl
+                                        ()
+                                        [((StringConstant
+                                            "    "
                                             (Character 1 4 () [])
-                                        ))] 
-                                        (Character 1 -3 (FunctionCall 
-                                            2 len 
-                                            () 
-                                            [((StringConstant 
-                                                "    " 
+                                        ))]
+                                        (Character 1 -3 (FunctionCall
+                                            2 len
+                                            ()
+                                            [((StringConstant
+                                                "    "
                                                 (Character 1 4 () [])
-                                            ))] 
-                                            (Integer 4 []) 
-                                            () 
+                                            ))]
+                                            (Integer 4 [])
                                             ()
-                                        ) []) 
-                                        () 
+                                            ()
+                                        ) [])
                                         ()
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Character 1 25 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                        ()
+                                    )
+                                    ()
+                                    Save
+                                    (Character 1 25 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             empty:
-                                (Variable 
-                                    2 
-                                    empty 
-                                    [] 
-                                    Local 
-                                    (FunctionCall 
-                                        2 adjustl 
-                                        () 
-                                        [((StringConstant 
-                                            "" 
+                                (Variable
+                                    2
+                                    empty
+                                    []
+                                    Local
+                                    (FunctionCall
+                                        2 adjustl
+                                        ()
+                                        [((StringConstant
+                                            ""
                                             (Character 1 0 () [])
-                                        ))] 
-                                        (Character 1 -3 (FunctionCall 
-                                            2 len 
-                                            () 
-                                            [((StringConstant 
-                                                "" 
+                                        ))]
+                                        (Character 1 -3 (FunctionCall
+                                            2 len
+                                            ()
+                                            [((StringConstant
+                                                ""
                                                 (Character 1 0 () [])
-                                            ))] 
-                                            (Integer 4 []) 
-                                            () 
+                                            ))]
+                                            (Integer 4 [])
                                             ()
-                                        ) []) 
-                                        () 
+                                            ()
+                                        ) [])
                                         ()
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Character 1 25 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                        ()
+                                    )
+                                    ()
+                                    Save
+                                    (Character 1 25 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             len:
-                                (ExternalSymbol 
-                                    2 
-                                    len 
-                                    24 len 
-                                    lfortran_intrinsic_builtin 
-                                    [] 
-                                    len 
+                                (ExternalSymbol
+                                    2
+                                    len
+                                    24 len
+                                    lfortran_intrinsic_builtin
+                                    []
+                                    len
                                     Private
-                                ), 
+                                ),
                             simple:
-                                (Variable 
-                                    2 
-                                    simple 
-                                    [] 
-                                    Local 
-                                    (FunctionCall 
-                                        2 adjustl 
-                                        () 
-                                        [((StringConstant 
-                                            "gfortran" 
+                                (Variable
+                                    2
+                                    simple
+                                    []
+                                    Local
+                                    (FunctionCall
+                                        2 adjustl
+                                        ()
+                                        [((StringConstant
+                                            "gfortran"
                                             (Character 1 8 () [])
-                                        ))] 
-                                        (Character 1 -3 (FunctionCall 
-                                            2 len 
-                                            () 
-                                            [((StringConstant 
-                                                "gfortran" 
+                                        ))]
+                                        (Character 1 -3 (FunctionCall
+                                            2 len
+                                            ()
+                                            [((StringConstant
+                                                "gfortran"
                                                 (Character 1 8 () [])
-                                            ))] 
-                                            (Integer 4 []) 
-                                            () 
+                                            ))]
+                                            (Integer 4 [])
                                             ()
-                                        ) []) 
-                                        () 
+                                            ()
+                                        ) [])
                                         ()
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Character 1 25 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                        ()
+                                    )
+                                    ()
+                                    Save
+                                    (Character 1 25 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             space_at_end:
-                                (Variable 
-                                    2 
-                                    space_at_end 
-                                    [] 
-                                    Local 
-                                    (FunctionCall 
-                                        2 adjustl 
-                                        () 
-                                        [((StringConstant 
-                                            "gfortran   " 
-                                            (Character 1 11 () [])
-                                        ))] 
-                                        (Character 1 -3 (FunctionCall 
-                                            2 len 
-                                            () 
-                                            [((StringConstant 
-                                                "gfortran   " 
-                                                (Character 1 11 () [])
-                                            ))] 
-                                            (Integer 4 []) 
-                                            () 
-                                            ()
-                                        ) []) 
-                                        () 
+                                (Variable
+                                    2
+                                    space_at_end
+                                    []
+                                    Local
+                                    (FunctionCall
+                                        2 adjustl
                                         ()
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Character 1 25 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                        [((StringConstant
+                                            "gfortran   "
+                                            (Character 1 11 () [])
+                                        ))]
+                                        (Character 1 -3 (FunctionCall
+                                            2 len
+                                            ()
+                                            [((StringConstant
+                                                "gfortran   "
+                                                (Character 1 11 () [])
+                                            ))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ) [])
+                                        ()
+                                        ()
+                                    )
+                                    ()
+                                    Save
+                                    (Character 1 25 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             space_at_start:
-                                (Variable 
-                                    2 
-                                    space_at_start 
-                                    [] 
-                                    Local 
-                                    (FunctionCall 
-                                        2 adjustl 
-                                        () 
-                                        [((StringConstant 
-                                            "   gfortran" 
+                                (Variable
+                                    2
+                                    space_at_start
+                                    []
+                                    Local
+                                    (FunctionCall
+                                        2 adjustl
+                                        ()
+                                        [((StringConstant
+                                            "   gfortran"
                                             (Character 1 11 () [])
-                                        ))] 
-                                        (Character 1 -3 (FunctionCall 
-                                            2 len 
-                                            () 
-                                            [((StringConstant 
-                                                "   gfortran" 
+                                        ))]
+                                        (Character 1 -3 (FunctionCall
+                                            2 len
+                                            ()
+                                            [((StringConstant
+                                                "   gfortran"
                                                 (Character 1 11 () [])
-                                            ))] 
-                                            (Integer 4 []) 
-                                            () 
+                                            ))]
+                                            (Integer 4 [])
                                             ()
-                                        ) []) 
-                                        () 
+                                            ()
+                                        ) [])
                                         ()
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Character 1 25 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                        ()
+                                    )
+                                    ()
+                                    Save
+                                    (Character 1 25 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             space_in_between:
-                                (Variable 
-                                    2 
-                                    space_in_between 
-                                    [] 
-                                    Local 
-                                    (FunctionCall 
-                                        2 adjustl 
-                                        () 
-                                        [((StringConstant 
-                                            "   g for tran   " 
+                                (Variable
+                                    2
+                                    space_in_between
+                                    []
+                                    Local
+                                    (FunctionCall
+                                        2 adjustl
+                                        ()
+                                        [((StringConstant
+                                            "   g for tran   "
                                             (Character 1 16 () [])
-                                        ))] 
-                                        (Character 1 -3 (FunctionCall 
-                                            2 len 
-                                            () 
-                                            [((StringConstant 
-                                                "   g for tran   " 
+                                        ))]
+                                        (Character 1 -3 (FunctionCall
+                                            2 len
+                                            ()
+                                            [((StringConstant
+                                                "   g for tran   "
                                                 (Character 1 16 () [])
-                                            ))] 
-                                            (Integer 4 []) 
-                                            () 
+                                            ))]
+                                            (Integer 4 [])
                                             ()
-                                        ) []) 
-                                        () 
+                                            ()
+                                        ) [])
                                         ()
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Character 1 25 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                        ()
+                                    )
+                                    ()
+                                    Save
+                                    (Character 1 25 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             spaces_with_symbols:
-                                (Variable 
-                                    2 
-                                    spaces_with_symbols 
-                                    [] 
-                                    Local 
-                                    (FunctionCall 
-                                        2 adjustl 
-                                        () 
-                                        [((StringConstant 
-                                            "  # gfor* t $ ran &    " 
-                                            (Character 1 23 () [])
-                                        ))] 
-                                        (Character 1 -3 (FunctionCall 
-                                            2 len 
-                                            () 
-                                            [((StringConstant 
-                                                "  # gfor* t $ ran &    " 
-                                                (Character 1 23 () [])
-                                            ))] 
-                                            (Integer 4 []) 
-                                            () 
-                                            ()
-                                        ) []) 
-                                        () 
+                                (Variable
+                                    2
+                                    spaces_with_symbols
+                                    []
+                                    Local
+                                    (FunctionCall
+                                        2 adjustl
                                         ()
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Character 1 25 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                        [((StringConstant
+                                            "  # gfor* t $ ran &    "
+                                            (Character 1 23 () [])
+                                        ))]
+                                        (Character 1 -3 (FunctionCall
+                                            2 len
+                                            ()
+                                            [((StringConstant
+                                                "  # gfor* t $ ran &    "
+                                                (Character 1 23 () [])
+                                            ))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ) [])
+                                        ()
+                                        ()
+                                    )
+                                    ()
+                                    Save
+                                    (Character 1 25 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    intrinsics_36 
-                    [lfortran_intrinsic_string] 
-                    [(Print 
-                        () 
-                        [(Var 2 empty)] 
-                        () 
+                        })
+                    intrinsics_36
+                    [lfortran_intrinsic_string]
+                    [(Print
+                        ()
+                        [(Var 2 empty)]
+                        ()
                         ()
                     )
-                    (If 
-                        (StringCompare 
-                            (Var 2 empty) 
-                            NotEq 
-                            (StringConstant 
-                                "" 
+                    (If
+                        (StringCompare
+                            (Var 2 empty)
+                            NotEq
+                            (StringConstant
+                                ""
                                 (Character 1 0 () [])
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (Print 
-                        () 
-                        [(Var 2 all_spaces)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 all_spaces)]
+                        ()
                         ()
                     )
-                    (If 
-                        (StringCompare 
-                            (Var 2 all_spaces) 
-                            NotEq 
-                            (StringConstant 
-                                "    " 
+                    (If
+                        (StringCompare
+                            (Var 2 all_spaces)
+                            NotEq
+                            (StringConstant
+                                "    "
                                 (Character 1 4 () [])
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (Print 
-                        () 
-                        [(Var 2 simple)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 simple)]
+                        ()
                         ()
                     )
-                    (If 
-                        (StringCompare 
-                            (Var 2 simple) 
-                            NotEq 
-                            (StringConstant 
-                                "gfortran" 
+                    (If
+                        (StringCompare
+                            (Var 2 simple)
+                            NotEq
+                            (StringConstant
+                                "gfortran"
                                 (Character 1 8 () [])
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (Print 
-                        () 
-                        [(Var 2 space_at_start)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 space_at_start)]
+                        ()
                         ()
                     )
-                    (If 
-                        (StringCompare 
-                            (Var 2 space_at_start) 
-                            NotEq 
-                            (StringConstant 
-                                "gfortran   " 
+                    (If
+                        (StringCompare
+                            (Var 2 space_at_start)
+                            NotEq
+                            (StringConstant
+                                "gfortran   "
                                 (Character 1 11 () [])
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (Print 
-                        () 
-                        [(Var 2 space_at_end)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 space_at_end)]
+                        ()
                         ()
                     )
-                    (If 
-                        (StringCompare 
-                            (Var 2 space_at_end) 
-                            NotEq 
-                            (StringConstant 
-                                "gfortran   " 
+                    (If
+                        (StringCompare
+                            (Var 2 space_at_end)
+                            NotEq
+                            (StringConstant
+                                "gfortran   "
                                 (Character 1 11 () [])
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (Print 
-                        () 
-                        [(Var 2 space_in_between)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 space_in_between)]
+                        ()
                         ()
                     )
-                    (If 
-                        (StringCompare 
-                            (Var 2 space_in_between) 
-                            NotEq 
-                            (StringConstant 
-                                "g for tran      " 
+                    (If
+                        (StringCompare
+                            (Var 2 space_in_between)
+                            NotEq
+                            (StringConstant
+                                "g for tran      "
                                 (Character 1 16 () [])
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (Print 
-                        () 
-                        [(Var 2 spaces_with_symbols)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 spaces_with_symbols)]
+                        ()
                         ()
                     )
-                    (If 
-                        (StringCompare 
-                            (Var 2 spaces_with_symbols) 
-                            NotEq 
-                            (StringConstant 
-                                "# gfor* t $ ran &      " 
+                    (If
+                        (StringCompare
+                            (Var 2 spaces_with_symbols)
+                            NotEq
+                            (StringConstant
+                                "# gfor* t $ ran &      "
                                 (Character 1 23 () [])
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )]
-                ), 
+                ),
             iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin), 
+                (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_string:
                 (IntrinsicModule lfortran_intrinsic_string)
-            
-        }) 
+        })
     []
 )

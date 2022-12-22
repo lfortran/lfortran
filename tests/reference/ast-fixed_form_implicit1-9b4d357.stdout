@@ -1,51 +1,51 @@
-(TranslationUnit 
-    [(Program 
-        main 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
+(TranslationUnit
+    [(Program
+        main
+        ()
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(a 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(a
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            a 
-            1 
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            a
+            1
             ()
         )
-        (If 
-            0 
-            () 
-            (<= a 1) 
-            [(Print 
-                0 
-                () 
-                [(String 
-                    "h"
-                )] 
-                ()
-            )] 
-            [] 
-            () 
-            () 
+        (If
+            0
             ()
-        )] 
+            (<= a 1)
+            [(Print
+                0
+                ()
+                [(String
+                    "h"
+                )]
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )]
         []
     )]
 )

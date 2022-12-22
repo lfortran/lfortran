@@ -1,99 +1,97 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             types_01:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             r:
-                                (Variable 
-                                    2 
-                                    r 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    r
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    types_01 
-                    [] 
-                    [(= 
-                        (Var 2 r) 
-                        (RealConstant 
-                            1.000000 
+                        })
+                    types_01
+                    []
+                    [(=
+                        (Var 2 r)
+                        (RealConstant
+                            1.000000
                             (Real 4 [])
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 r) 
-                        (RealConstant 
-                            1.500000 
+                    (=
+                        (Var 2 r)
+                        (RealConstant
+                            1.500000
                             (Real 4 [])
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 r) 
-                        (RealConstant 
-                            1.000000 
+                    (=
+                        (Var 2 r)
+                        (RealConstant
+                            1.000000
                             (Real 4 [])
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 r) 
-                        (Cast 
-                            (Cast 
-                                (IntegerConstant 2 (Integer 4 [])) 
-                                IntegerToReal 
-                                (Real 8 []) 
-                                (RealConstant 
-                                    2.000000 
+                    (=
+                        (Var 2 r)
+                        (Cast
+                            (Cast
+                                (IntegerConstant 2 (Integer 4 []))
+                                IntegerToReal
+                                (Real 8 [])
+                                (RealConstant
+                                    2.000000
                                     (Real 8 [])
                                 )
-                            ) 
-                            RealToReal 
-                            (Real 4 []) 
-                            (RealConstant 
-                                2.000000 
+                            )
+                            RealToReal
+                            (Real 4 [])
+                            (RealConstant
+                                2.000000
                                 (Real 4 [])
                             )
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 r) 
-                        (Cast 
-                            (Cast 
-                                (IntegerConstant 3 (Integer 4 [])) 
-                                IntegerToReal 
-                                (Real 8 []) 
-                                (RealConstant 
-                                    3.000000 
+                    (=
+                        (Var 2 r)
+                        (Cast
+                            (Cast
+                                (IntegerConstant 3 (Integer 4 []))
+                                IntegerToReal
+                                (Real 8 [])
+                                (RealConstant
+                                    3.000000
                                     (Real 8 [])
                                 )
-                            ) 
-                            RealToReal 
-                            (Real 4 []) 
-                            (RealConstant 
-                                3.000000 
+                            )
+                            RealToReal
+                            (Real 4 [])
+                            (RealConstant
+                                3.000000
                                 (Real 4 [])
                             )
-                        ) 
+                        )
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )
