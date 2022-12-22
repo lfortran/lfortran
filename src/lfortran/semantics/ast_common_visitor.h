@@ -1858,10 +1858,12 @@ public:
                 new_dims.reserve(al, t->n_dims);
                 for( size_t i = 0; i < func_calls.size(); i += 2 ) {
                     ASR::dimension_t new_dim;
-                    new_dim.loc = func_calls[i]->base.loc;
-                    new_dim.m_start = func_calls[i];
-                    new_dim.m_length = func_calls[i + 1];
-                    new_dims.push_back(al, new_dim);
+                    if (func_calls[i] != nullptr) {
+                        new_dim.loc = func_calls[i]->base.loc;
+                        new_dim.m_start = func_calls[i];
+                        new_dim.m_length = func_calls[i + 1];
+                        new_dims.push_back(al, new_dim);
+                    }
                 }
                 return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t->m_kind, new_dims.p, new_dims.size()));
             }
@@ -1873,10 +1875,12 @@ public:
                 new_dims.reserve(al, t->n_dims);
                 for( size_t i = 0; i < func_calls.size(); i += 2 ) {
                     ASR::dimension_t new_dim;
-                    new_dim.loc = func_calls[i]->base.loc;
-                    new_dim.m_start = func_calls[i];
-                    new_dim.m_length = func_calls[i + 1];
-                    new_dims.push_back(al, new_dim);
+                    if (func_calls[i] != nullptr) {
+                        new_dim.loc = func_calls[i]->base.loc;
+                        new_dim.m_start = func_calls[i];
+                        new_dim.m_length = func_calls[i + 1];
+                        new_dims.push_back(al, new_dim);
+                    }
                 }
                 return ASRUtils::TYPE(ASR::make_Real_t(al, loc, t->m_kind, new_dims.p, new_dims.size()));
                 break;
