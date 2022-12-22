@@ -260,8 +260,10 @@
         (DataStmt
             0
             [(DataStmtSet
-                [age
-                fullname]
+                [age [(yourname
+                [])]
+                fullname [(yourname
+                [])]]
                 [35
                 (String
                     "abc"
@@ -579,7 +581,8 @@
             [(String
                 "Your name is: "
             )
-            fullname]
+            fullname [(yourname
+            [])]]
             ()
         )
         (Print
@@ -588,7 +591,8 @@
             [(String
                 "Your age is: "
             )
-            age]
+            age [(yourname
+            [])]]
             ()
         )
         (DataStmt

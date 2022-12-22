@@ -164,7 +164,8 @@
                     [(String
                         "base type: component value: "
                     )
-                    i]
+                    i [(bptr
+                    [])]]
                     ()
                 )]
             )
@@ -177,8 +178,10 @@
                     [(String
                         "child type: component values: "
                     )
-                    i
-                    j]
+                    i [(bptr
+                    [])]
+                    j [(bptr
+                    [])]]
                     ()
                 )]
             )]
@@ -213,7 +216,8 @@
                     [(String
                         "base type: component value: "
                     )
-                    i]
+                    i [(bptr
+                    [])]]
                     ()
                 )]
             )
@@ -226,8 +230,10 @@
                     [(String
                         "child type: component values: "
                     )
-                    i
-                    j]
+                    i [(bptr
+                    [])]
+                    j [(bptr
+                    [])]]
                     ()
                 )]
             )]
