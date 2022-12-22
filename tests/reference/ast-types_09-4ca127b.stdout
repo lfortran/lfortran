@@ -155,6 +155,31 @@
                 None
                 ())]
                 ()
+            )
+            (Declaration
+                (AttrType
+                    TypeCharacter
+                    [(kind
+                    1
+                    Value)
+                    (len
+                    ()
+                    Star)]
+                    ()
+                    None
+                )
+                [(SimpleAttribute
+                    AttrParameter
+                )]
+                [(lowercase
+                []
+                []
+                (String
+                    "abcdefghijklmnopqrstuvwxyz"
+                )
+                Equal
+                ())]
+                ()
             )]
             []
             []
