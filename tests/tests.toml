@@ -2642,3 +2642,7 @@ asr = true
 [[test]]
 filename = "redeclaration1.f90"
 asr_implicit_typing = true
+
+[[test]]
+filename = "character1.f90"
+asr_implicit_interface = true
