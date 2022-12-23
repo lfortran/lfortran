@@ -2636,6 +2636,10 @@ filename = "array10.f90"
 asr = true
 
 [[test]]
+filename = "statement1.f90"
+asr = true
+
+[[test]]
 filename = "data2.f90"
 asr = true
 
