@@ -1,165 +1,162 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             a:
-                (Function 
+                (Function
                     (SymbolTable
                         3
                         {
                             factor:
-                                (Variable 
-                                    3 
-                                    factor 
-                                    [] 
-                                    Local 
-                                    () 
-                                    (RealConstant 
-                                        100.000000 
+                                (Variable
+                                    3
+                                    factor
+                                    []
+                                    Local
+                                    ()
+                                    (RealConstant
+                                        100.000000
                                         (Real 8 [])
-                                    ) 
-                                    Default 
-                                    (Real 8 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    )
+                                    Default
+                                    (Real 8 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             zero:
-                                (Variable 
-                                    3 
-                                    zero 
-                                    [] 
-                                    Local 
-                                    () 
-                                    (RealConstant 
-                                        0.000000 
+                                (Variable
+                                    3
+                                    zero
+                                    []
+                                    Local
+                                    ()
+                                    (RealConstant
+                                        0.000000
                                         (Real 8 [])
-                                    ) 
-                                    Default 
-                                    (Real 8 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    )
+                                    Default
+                                    (Real 8 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    a 
-                    [b] 
-                    [] 
-                    [(= 
-                        (Var 3 factor) 
-                        (RealConstant 
-                            100.000000 
+                        })
+                    a
+                    [b]
+                    []
+                    [(=
+                        (Var 3 factor)
+                        (RealConstant
+                            100.000000
                             (Real 8 [])
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 3 zero) 
-                        (RealConstant 
-                            0.000000 
+                    (=
+                        (Var 3 zero)
+                        (RealConstant
+                            0.000000
                             (Real 8 [])
-                        ) 
+                        )
                         ()
                     )
-                    (Print 
-                        () 
-                        [(StringConstant 
-                            "factor in a:" 
+                    (Print
+                        ()
+                        [(StringConstant
+                            "factor in a:"
                             (Character 1 12 () [])
                         )
-                        (Var 3 factor)] 
-                        () 
+                        (Var 3 factor)]
+                        ()
                         ()
                     )
-                    (SubroutineCall 
-                        1 b 
-                        () 
-                        [((Var 3 factor))] 
+                    (SubroutineCall
+                        1 b
                         ()
-                    )] 
-                    () 
-                    Source 
-                    Public 
-                    Implementation 
-                    () 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    [] 
-                    [] 
+                        [((Var 3 factor))]
+                        ()
+                    )]
+                    ()
+                    Source
+                    Public
+                    Implementation
+                    ()
                     .false.
-                ), 
+                    .false.
+                    .false.
+                    .false.
+                    .false.
+                    []
+                    []
+                    .false.
+                ),
             b:
-                (Function 
+                (Function
                     (SymbolTable
                         4
                         {
                             factor:
-                                (Variable 
-                                    4 
-                                    factor 
-                                    [] 
-                                    Unspecified 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 8 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    4
+                                    factor
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    b 
-                    [] 
-                    [(Var 4 factor)] 
-                    [(Print 
-                        () 
-                        [(StringConstant 
-                            "factor: " 
+                        })
+                    b
+                    []
+                    [(Var 4 factor)]
+                    [(Print
+                        ()
+                        [(StringConstant
+                            "factor: "
                             (Character 1 8 () [])
                         )
-                        (Var 4 factor)] 
-                        () 
+                        (Var 4 factor)]
                         ()
-                    )] 
-                    () 
-                    Source 
-                    Public 
-                    Implementation 
-                    () 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    [] 
-                    [] 
+                        ()
+                    )]
+                    ()
+                    Source
+                    Public
+                    Implementation
+                    ()
                     .false.
-                ), 
+                    .false.
+                    .false.
+                    .false.
+                    .false.
+                    []
+                    []
+                    .false.
+                ),
             main:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             
-                        }) 
-                    main 
-                    [] 
-                    [(SubroutineCall 
-                        1 a 
-                        () 
-                        [] 
+                        })
+                    main
+                    []
+                    [(SubroutineCall
+                        1 a
+                        ()
+                        []
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )
