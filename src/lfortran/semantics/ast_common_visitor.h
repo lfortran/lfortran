@@ -1011,6 +1011,10 @@ public:
                             v2->m_symbolic_value, v2->m_value);
                         v2->m_dependencies = var_deps_vec.p;
                         v2->n_dependencies = var_deps_vec.size();
+                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
+                                    object->base.loc, object, expression_value, nullptr));
+                        LFORTRAN_ASSERT(current_body != nullptr)
+                        current_body->push_back(al, assign_stmt);
                     } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
                         // This is the following case:
                         // x(2) / 2 /
