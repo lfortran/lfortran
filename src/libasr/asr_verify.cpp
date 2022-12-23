@@ -68,38 +68,20 @@ public:
         }
     }
 
-    // Returns true if the `symtab_ID` (sym->symtab->parent) is the current
-    // symbol table `symtab` or any of its parents *and* if the symbol in the
-    // symbol table is equal to `sym`. It returns false otherwise, such as in the
-    // case when the symtab is in a different module or if the `sym`'s symbol table
-    // does not actually contain it.
-    bool symtab_in_scope(const SymbolTable *symtab, const ASR::symbol_t *sym) {
+    // Returns nullptr if the symbol table was not found in the scope of `symtab`.
+    ASR::symbol_t* symtab_in_scope(const SymbolTable *symtab, const ASR::symbol_t *sym) {
         unsigned int symtab_ID = symbol_parent_symtab(sym)->counter;
         char *sym_name = symbol_name(sym);
         const SymbolTable *s = symtab;
         while (s != nullptr) {
             if (s->counter == symtab_ID) {
                 ASR::symbol_t *sym2 = s->get_symbol(sym_name);
-                if (sym2) {
-                    if (sym2 == sym) {
-                        // The symbol table was found and the symbol `sym` is in
-                        // it
-                        return true;
-                    } else {
-                        // The symbol table was found and the symbol in it
-                        // shares the name, but is not equal to `sym`
-                        return false;
-                    }
-                } else {
-                    // The symbol table was found, but the symbol `sym` is not
-                    // in it
-                    return false;
-                }
+                return sym2;
             }
             s = s->parent;
         }
         // The symbol table was not found in the scope of `symtab`.
-        return false;
+        return nullptr;
     }
 
     void visit_TranslationUnit(const TranslationUnit_t &x) {
@@ -506,12 +488,16 @@ public:
         require(x.m_v != nullptr,
             "Var_t::m_v cannot be nullptr");
         std::string x_mv_name = ASRUtils::symbol_name(x.m_v);
+        ASR::symbol_t* sym = x.m_v;
         require(is_a<Variable_t>(*x.m_v) || is_a<ExternalSymbol_t>(*x.m_v)
                 || is_a<Function_t>(*x.m_v) || is_a<ASR::EnumType_t>(*x.m_v),
             "Var_t::m_v " + x_mv_name + " does not point to a Variable_t, ExternalSymbol_t, " \
             "Function_t, Subroutine_t or EnumType_t");
-        require(symtab_in_scope(current_symtab, x.m_v),
+        sym = symtab_in_scope(current_symtab, x.m_v);
+        require( sym != nullptr,
             "Var::m_v `" + x_mv_name + "` cannot point outside of its symbol table");
+        require( sym == x.m_v,
+            "Var::m_v `" + x_mv_name + "` is different from what is expected!");
         variable_dependencies.push_back(x_mv_name);
     }
 
