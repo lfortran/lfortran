@@ -1,76 +1,74 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             types_02:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             i:
-                                (Variable 
-                                    2 
-                                    i 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             r:
-                                (Variable 
-                                    2 
-                                    r 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    r
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    types_02 
-                    [] 
-                    [(= 
-                        (Var 2 i) 
-                        (IntegerConstant 1 (Integer 4 [])) 
+                        })
+                    types_02
+                    []
+                    [(=
+                        (Var 2 i)
+                        (IntegerConstant 1 (Integer 4 []))
                         ()
                     )
-                    (= 
-                        (Var 2 r) 
-                        (Cast 
-                            (IntegerConstant 1 (Integer 4 [])) 
-                            IntegerToReal 
-                            (Real 4 []) 
-                            (RealConstant 
-                                1.000000 
+                    (=
+                        (Var 2 r)
+                        (Cast
+                            (IntegerConstant 1 (Integer 4 []))
+                            IntegerToReal
+                            (Real 4 [])
+                            (RealConstant
+                                1.000000
                                 (Real 4 [])
                             )
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 r) 
-                        (Cast 
-                            (Var 2 i) 
-                            IntegerToReal 
-                            (Real 4 []) 
+                    (=
+                        (Var 2 r)
+                        (Cast
+                            (Var 2 i)
+                            IntegerToReal
+                            (Real 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )

@@ -1,82 +1,82 @@
-(TranslationUnit 
-    [(Function 
-        f 
-        [] 
-        [(AttrType 
-            TypeInteger 
-            [] 
-            () 
+(TranslationUnit
+    [(Function
+        f
+        []
+        [(AttrType
+            TypeInteger
+            []
+            ()
             None
-        )] 
-        () 
-        () 
-        (TriviaNode 
-            [] 
+        )]
+        ()
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [] 
-        [] 
-        [] 
-        [(= 
-            0 
-            f 
-            42 
+        )
+        []
+        []
+        []
+        []
+        [(=
+            0
+            f
+            42
             ()
-        )] 
+        )]
         []
     )
-    (Function 
-        g 
-        [] 
-        [(AttrType 
-            TypeInteger 
-            [] 
-            () 
+    (Function
+        g
+        []
+        [(AttrType
+            TypeInteger
+            []
+            ()
             None
-        )] 
-        () 
-        () 
-        (TriviaNode 
-            [] 
+        )]
+        ()
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [] 
-        [] 
-        [] 
-        [(= 
-            0 
-            g 
-            42 
+        )
+        []
+        []
+        []
+        []
+        [(=
+            0
+            g
+            42
             ()
-        )] 
+        )]
         []
     )
-    (Function 
-        h 
-        [] 
-        [(AttrType 
-            TypeInteger 
-            [] 
-            () 
-            None
-        )] 
-        () 
-        () 
-        () 
-        [] 
-        [] 
-        [] 
-        [] 
-        [(= 
-            0 
-            h 
-            42 
+    (Function
+        h
+        []
+        [(AttrType
+            TypeInteger
+            []
             ()
-        )] 
+            None
+        )]
+        ()
+        ()
+        ()
+        []
+        []
+        []
+        []
+        [(=
+            0
+            h
+            42
+            ()
+        )]
         []
     )]
 )

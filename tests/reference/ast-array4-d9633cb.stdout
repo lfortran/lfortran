@@ -1,46 +1,46 @@
-(TranslationUnit 
-    [(Program 
-        array4 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+(TranslationUnit
+    [(Program
+        array4
+        ()
+        []
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(i 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
-            (TriviaNode 
-                [] 
+            )
+            []
+            [(i
+            []
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(= 
-            0 
-            i 
-            a 
-            (TriviaNode 
-                [] 
+        )]
+        [(=
+            0
+            i
+            a
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

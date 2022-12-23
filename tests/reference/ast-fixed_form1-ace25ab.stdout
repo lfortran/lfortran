@@ -1,6 +1,6 @@
-(TranslationUnit 
-    [(Subroutine 
-        dqawse 
+(TranslationUnit
+    [(Subroutine
+        dqawse
         [(f)
         (a)
         (b)
@@ -19,1916 +19,1916 @@
         (rlist)
         (elist)
         (iord)
-        (last)] 
-        [] 
-        () 
-        () 
-        [] 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeDoublePrecision 
-                [] 
-                () 
+        (last)]
+        []
+        ()
+        ()
+        []
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeDoublePrecision
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(a 
-            [] 
-            [] 
-            () 
-            None 
+            )
+            []
+            [(a
+            []
+            []
+            ()
+            None
             ())
-            (abserr 
-            [] 
-            [] 
-            () 
-            None 
+            (abserr
+            []
+            []
+            ()
+            None
             ())
-            (alfa 
-            [] 
-            [] 
-            () 
-            None 
+            (alfa
+            []
+            []
+            ()
+            None
             ())
-            (alist 
-            [] 
-            [] 
-            () 
-            None 
+            (alist
+            []
+            []
+            ()
+            None
             ())
-            (area 
-            [] 
-            [] 
-            () 
-            None 
+            (area
+            []
+            []
+            ()
+            None
             ())
-            (area1 
-            [] 
-            [] 
-            () 
-            None 
+            (area1
+            []
+            []
+            ()
+            None
             ())
-            (area12 
-            [] 
-            [] 
-            () 
-            None 
+            (area12
+            []
+            []
+            ()
+            None
             ())
-            (area2 
-            [] 
-            [] 
-            () 
-            None 
+            (area2
+            []
+            []
+            ()
+            None
             ())
-            (a1 
-            [] 
-            [] 
-            () 
-            None 
+            (a1
+            []
+            []
+            ()
+            None
             ())
-            (a2 
-            [] 
-            [] 
-            () 
-            None 
+            (a2
+            []
+            []
+            ()
+            None
             ())
-            (b 
-            [] 
-            [] 
-            () 
-            None 
+            (b
+            []
+            []
+            ()
+            None
             ())
-            (beta 
-            [] 
-            [] 
-            () 
-            None 
+            (beta
+            []
+            []
+            ()
+            None
             ())
-            (blist 
-            [] 
-            [] 
-            () 
-            None 
+            (blist
+            []
+            []
+            ()
+            None
             ())
-            (b1 
-            [] 
-            [] 
-            () 
-            None 
+            (b1
+            []
+            []
+            ()
+            None
             ())
-            (b2 
-            [] 
-            [] 
-            () 
-            None 
+            (b2
+            []
+            []
+            ()
+            None
             ())
-            (centre 
-            [] 
-            [] 
-            () 
-            None 
+            (centre
+            []
+            []
+            ()
+            None
             ())
-            (dabs 
-            [] 
-            [] 
-            () 
-            None 
+            (dabs
+            []
+            []
+            ()
+            None
             ())
-            (dmax1 
-            [] 
-            [] 
-            () 
-            None 
+            (dmax1
+            []
+            []
+            ()
+            None
             ())
-            (d1mach 
-            [] 
-            [] 
-            () 
-            None 
+            (d1mach
+            []
+            []
+            ()
+            None
             ())
-            (elist 
-            [] 
-            [] 
-            () 
-            None 
+            (elist
+            []
+            []
+            ()
+            None
             ())
-            (epmach 
-            [] 
-            [] 
-            () 
-            None 
+            (epmach
+            []
+            []
+            ()
+            None
             ())
-            (epsabs 
-            [] 
-            [] 
-            () 
-            None 
+            (epsabs
+            []
+            []
+            ()
+            None
             ())
-            (epsrel 
-            [] 
-            [] 
-            () 
-            None 
+            (epsrel
+            []
+            []
+            ()
+            None
             ())
-            (errbnd 
-            [] 
-            [] 
-            () 
-            None 
+            (errbnd
+            []
+            []
+            ()
+            None
             ())
-            (errmax 
-            [] 
-            [] 
-            () 
-            None 
+            (errmax
+            []
+            []
+            ()
+            None
             ())
-            (error1 
-            [] 
-            [] 
-            () 
-            None 
+            (error1
+            []
+            []
+            ()
+            None
             ())
-            (erro12 
-            [] 
-            [] 
-            () 
-            None 
+            (erro12
+            []
+            []
+            ()
+            None
             ())
-            (error2 
-            [] 
-            [] 
-            () 
-            None 
+            (error2
+            []
+            []
+            ()
+            None
             ())
-            (errsum 
-            [] 
-            [] 
-            () 
-            None 
+            (errsum
+            []
+            []
+            ()
+            None
             ())
-            (f 
-            [] 
-            [] 
-            () 
-            None 
+            (f
+            []
+            []
+            ()
+            None
             ())
-            (resas1 
-            [] 
-            [] 
-            () 
-            None 
+            (resas1
+            []
+            []
+            ()
+            None
             ())
-            (resas2 
-            [] 
-            [] 
-            () 
-            None 
+            (resas2
+            []
+            []
+            ()
+            None
             ())
-            (result 
-            [] 
-            [] 
-            () 
-            None 
+            (result
+            []
+            []
+            ()
+            None
             ())
-            (rg 
-            [] 
-            [] 
-            () 
-            None 
+            (rg
+            []
+            []
+            ()
+            None
             ())
-            (rh 
-            [] 
-            [] 
-            () 
-            None 
+            (rh
+            []
+            []
+            ()
+            None
             ())
-            (ri 
-            [] 
-            [] 
-            () 
-            None 
+            (ri
+            []
+            []
+            ()
+            None
             ())
-            (rj 
-            [] 
-            [] 
-            () 
-            None 
+            (rj
+            []
+            []
+            ()
+            None
             ())
-            (rlist 
-            [] 
-            [] 
-            () 
-            None 
+            (rlist
+            []
+            []
+            ()
+            None
             ())
-            (uflow 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            (uflow
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(ier 
-            [] 
-            [] 
-            () 
-            None 
+            )
+            []
+            [(ier
+            []
+            []
+            ()
+            None
             ())
-            (integr 
-            [] 
-            [] 
-            () 
-            None 
+            (integr
+            []
+            []
+            ()
+            None
             ())
-            (iord 
-            [] 
-            [] 
-            () 
-            None 
+            (iord
+            []
+            []
+            ()
+            None
             ())
-            (iroff1 
-            [] 
-            [] 
-            () 
-            None 
+            (iroff1
+            []
+            []
+            ()
+            None
             ())
-            (iroff2 
-            [] 
-            [] 
-            () 
-            None 
+            (iroff2
+            []
+            []
+            ()
+            None
             ())
-            (k 
-            [] 
-            [] 
-            () 
-            None 
+            (k
+            []
+            []
+            ()
+            None
             ())
-            (last 
-            [] 
-            [] 
-            () 
-            None 
+            (last
+            []
+            []
+            ()
+            None
             ())
-            (limit 
-            [] 
-            [] 
-            () 
-            None 
+            (limit
+            []
+            []
+            ()
+            None
             ())
-            (maxerr 
-            [] 
-            [] 
-            () 
-            None 
+            (maxerr
+            []
+            []
+            ()
+            None
             ())
-            (nev 
-            [] 
-            [] 
-            () 
-            None 
+            (nev
+            []
+            []
+            ()
+            None
             ())
-            (neval 
-            [] 
-            [] 
-            () 
-            None 
+            (neval
+            []
+            []
+            ()
+            None
             ())
-            (nrmax 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            (nrmax
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            () 
-            [(SimpleAttribute 
+        (Declaration
+            ()
+            [(SimpleAttribute
                 AttrExternal
-            )] 
-            [(f 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )]
+            [(f
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            () 
-            [(AttrDimension 
+        (Declaration
+            ()
+            [(AttrDimension
                 []
-            )] 
-            [(alist 
-            [(1 
-            limit 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())
-            (blist 
-            [(1 
-            limit 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())
-            (rlist 
-            [(1 
-            limit 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())
-            (elist 
-            [(1 
-            limit 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())
-            (iord 
-            [(1 
-            limit 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())
-            (ri 
-            [(1 
-            25 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())
-            (rj 
-            [(1 
-            25 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())
-            (rh 
-            [(1 
-            25 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())
-            (rg 
-            [(1 
-            25 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())] 
+            )]
+            [(alist
+            [(1
+            limit
+            DimensionExpr)]
+            []
             ()
-        )] 
-        [(= 
-            0 
-            epmach 
-            (FuncCallOrArray 
-                d1mach 
-                [] 
-                [(() 
-                4 
-                ())] 
-                [] 
+            None
+            ())
+            (blist
+            [(1
+            limit
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())
+            (rlist
+            [(1
+            limit
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())
+            (elist
+            [(1
+            limit
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())
+            (iord
+            [(1
+            limit
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())
+            (ri
+            [(1
+            25
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())
+            (rj
+            [(1
+            25
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())
+            (rh
+            [(1
+            25
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())
+            (rg
+            [(1
+            25
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            epmach
+            (FuncCallOrArray
+                d1mach
                 []
-            ) 
-            ()
-        )
-        (= 
-            0 
-            uflow 
-            (FuncCallOrArray 
-                d1mach 
-                [] 
-                [(() 
-                1 
-                ())] 
-                [] 
+                [(()
+                4
+                ())]
                 []
-            ) 
-            ()
-        )
-        (= 
-            0 
-            ier 
-            6 
-            ()
-        )
-        (= 
-            0 
-            neval 
-            0 
-            ()
-        )
-        (= 
-            0 
-            last 
-            0 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                rlist 
-                [] 
-                [(() 
-                1 
-                ())] 
-                [] 
                 []
-            ) 
-            (Real "0.0d+00") 
+            )
             ()
         )
-        (= 
-            0 
-            (FuncCallOrArray 
-                elist 
-                [] 
-                [(() 
-                1 
-                ())] 
-                [] 
+        (=
+            0
+            uflow
+            (FuncCallOrArray
+                d1mach
                 []
-            ) 
-            (Real "0.0d+00") 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                iord 
-                [] 
-                [(() 
-                1 
-                ())] 
-                [] 
+                [(()
+                1
+                ())]
                 []
-            ) 
-            0 
+                []
+            )
             ()
         )
-        (= 
-            0 
-            result 
-            (Real "0.0d+00") 
+        (=
+            0
+            ier
+            6
             ()
         )
-        (= 
-            0 
-            abserr 
-            (Real "0.0d+00") 
+        (=
+            0
+            neval
+            0
             ()
         )
-        (If 
-            0 
-            () 
-            (BoolOp 
-                (BoolOp 
-                    (BoolOp 
-                        (BoolOp 
-                            (BoolOp 
-                                (BoolOp 
-                                    (<= b a) 
-                                    Or 
-                                    (BoolOp 
-                                        (== epsabs (Real "0.0d+00")) 
-                                        And 
-                                        (< epsrel (FuncCallOrArray 
-                                            dmax1 
-                                            [] 
-                                            [(() 
-                                            (* (Real "0.5d+02") epmach) 
+        (=
+            0
+            last
+            0
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                rlist
+                []
+                [(()
+                1
+                ())]
+                []
+                []
+            )
+            (Real "0.0d+00")
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                elist
+                []
+                [(()
+                1
+                ())]
+                []
+                []
+            )
+            (Real "0.0d+00")
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                iord
+                []
+                [(()
+                1
+                ())]
+                []
+                []
+            )
+            0
+            ()
+        )
+        (=
+            0
+            result
+            (Real "0.0d+00")
+            ()
+        )
+        (=
+            0
+            abserr
+            (Real "0.0d+00")
+            ()
+        )
+        (If
+            0
+            ()
+            (BoolOp
+                (BoolOp
+                    (BoolOp
+                        (BoolOp
+                            (BoolOp
+                                (BoolOp
+                                    (<= b a)
+                                    Or
+                                    (BoolOp
+                                        (== epsabs (Real "0.0d+00"))
+                                        And
+                                        (< epsrel (FuncCallOrArray
+                                            dmax1
+                                            []
+                                            [(()
+                                            (* (Real "0.5d+02") epmach)
                                             ())
-                                            (() 
-                                            (Real "0.5d-28") 
-                                            ())] 
-                                            [] 
+                                            (()
+                                            (Real "0.5d-28")
+                                            ())]
+                                            []
                                             []
                                         ))
                                     )
-                                ) 
-                                Or 
+                                )
+                                Or
                                 (<= alfa (u- (Real "0.1d+01")))
-                            ) 
-                            Or 
+                            )
+                            Or
                             (<= beta (u- (Real "0.1d+01")))
-                        ) 
-                        Or 
+                        )
+                        Or
                         (< integr 1)
-                    ) 
-                    Or 
+                    )
+                    Or
                     (> integr 4)
-                ) 
-                Or 
+                )
+                Or
                 (< limit 2)
-            ) 
-            [(GoTo 
-                0 
-                () 
-                999 
-                [] 
+            )
+            [(GoTo
+                0
                 ()
-            )] 
-            [] 
-            () 
-            () 
+                999
+                []
+                ()
+            )]
+            []
+            ()
+            ()
             ()
         )
-        (= 
-            0 
-            ier 
-            0 
+        (=
+            0
+            ier
+            0
             ()
         )
-        (SubroutineCall 
-            0 
-            dqmomo 
-            [] 
-            [(() 
-            alfa 
+        (SubroutineCall
+            0
+            dqmomo
+            []
+            [(()
+            alfa
             ())
-            (() 
-            beta 
+            (()
+            beta
             ())
-            (() 
-            ri 
+            (()
+            ri
             ())
-            (() 
-            rj 
+            (()
+            rj
             ())
-            (() 
-            rg 
+            (()
+            rg
             ())
-            (() 
-            rh 
+            (()
+            rh
             ())
-            (() 
-            integr 
-            ())] 
-            [] 
+            (()
+            integr
+            ())]
+            []
             ()
         )
-        (= 
-            0 
-            centre 
-            (* (Real "0.5d+00") (+ b a)) 
+        (=
+            0
+            centre
+            (* (Real "0.5d+00") (+ b a))
             ()
         )
-        (SubroutineCall 
-            0 
-            dqc25s 
-            [] 
-            [(() 
-            f 
+        (SubroutineCall
+            0
+            dqc25s
+            []
+            [(()
+            f
             ())
-            (() 
-            a 
+            (()
+            a
             ())
-            (() 
-            b 
+            (()
+            b
             ())
-            (() 
-            a 
+            (()
+            a
             ())
-            (() 
-            centre 
+            (()
+            centre
             ())
-            (() 
-            alfa 
+            (()
+            alfa
             ())
-            (() 
-            beta 
+            (()
+            beta
             ())
-            (() 
-            ri 
+            (()
+            ri
             ())
-            (() 
-            rj 
+            (()
+            rj
             ())
-            (() 
-            rg 
+            (()
+            rg
             ())
-            (() 
-            rh 
+            (()
+            rh
             ())
-            (() 
-            area1 
+            (()
+            area1
             ())
-            (() 
-            error1 
+            (()
+            error1
             ())
-            (() 
-            resas1 
+            (()
+            resas1
             ())
-            (() 
-            integr 
+            (()
+            integr
             ())
-            (() 
-            nev 
-            ())] 
-            [] 
+            (()
+            nev
+            ())]
+            []
             ()
         )
-        (= 
-            0 
-            neval 
-            nev 
+        (=
+            0
+            neval
+            nev
             ()
         )
-        (SubroutineCall 
-            0 
-            dqc25s 
-            [] 
-            [(() 
-            f 
+        (SubroutineCall
+            0
+            dqc25s
+            []
+            [(()
+            f
             ())
-            (() 
-            a 
+            (()
+            a
             ())
-            (() 
-            b 
+            (()
+            b
             ())
-            (() 
-            centre 
+            (()
+            centre
             ())
-            (() 
-            b 
+            (()
+            b
             ())
-            (() 
-            alfa 
+            (()
+            alfa
             ())
-            (() 
-            beta 
+            (()
+            beta
             ())
-            (() 
-            ri 
+            (()
+            ri
             ())
-            (() 
-            rj 
+            (()
+            rj
             ())
-            (() 
-            rg 
+            (()
+            rg
             ())
-            (() 
-            rh 
+            (()
+            rh
             ())
-            (() 
-            area2 
+            (()
+            area2
             ())
-            (() 
-            error2 
+            (()
+            error2
             ())
-            (() 
-            resas2 
+            (()
+            resas2
             ())
-            (() 
-            integr 
+            (()
+            integr
             ())
-            (() 
-            nev 
-            ())] 
-            [] 
+            (()
+            nev
+            ())]
+            []
             ()
         )
-        (= 
-            0 
-            last 
-            2 
+        (=
+            0
+            last
+            2
             ()
         )
-        (= 
-            0 
-            neval 
-            (+ neval nev) 
+        (=
+            0
+            neval
+            (+ neval nev)
             ()
         )
-        (= 
-            0 
-            result 
-            (+ area1 area2) 
+        (=
+            0
+            result
+            (+ area1 area2)
             ()
         )
-        (= 
-            0 
-            abserr 
-            (+ error1 error2) 
+        (=
+            0
+            abserr
+            (+ error1 error2)
             ()
         )
-        (= 
-            0 
-            errbnd 
-            (FuncCallOrArray 
-                dmax1 
-                [] 
-                [(() 
-                epsabs 
+        (=
+            0
+            errbnd
+            (FuncCallOrArray
+                dmax1
+                []
+                [(()
+                epsabs
                 ())
-                (() 
-                (* epsrel (FuncCallOrArray 
-                    dabs 
-                    [] 
-                    [(() 
-                    result 
-                    ())] 
-                    [] 
+                (()
+                (* epsrel (FuncCallOrArray
+                    dabs
                     []
-                )) 
-                ())] 
-                [] 
+                    [(()
+                    result
+                    ())]
+                    []
+                    []
+                ))
+                ())]
                 []
-            ) 
+                []
+            )
             ()
         )
-        (If 
-            0 
-            () 
-            (> error2 error1) 
-            [(GoTo 
-                0 
-                () 
-                10 
-                [] 
+        (If
+            0
+            ()
+            (> error2 error1)
+            [(GoTo
+                0
                 ()
-            )] 
-            [] 
-            () 
-            () 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                alist 
-                [] 
-                [(() 
-                1 
-                ())] 
-                [] 
+                10
                 []
-            ) 
-            a 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                alist 
-                [] 
-                [(() 
-                2 
-                ())] 
-                [] 
-                []
-            ) 
-            centre 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                blist 
-                [] 
-                [(() 
-                1 
-                ())] 
-                [] 
-                []
-            ) 
-            centre 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                blist 
-                [] 
-                [(() 
-                2 
-                ())] 
-                [] 
-                []
-            ) 
-            b 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                rlist 
-                [] 
-                [(() 
-                1 
-                ())] 
-                [] 
-                []
-            ) 
-            area1 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                rlist 
-                [] 
-                [(() 
-                2 
-                ())] 
-                [] 
-                []
-            ) 
-            area2 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                elist 
-                [] 
-                [(() 
-                1 
-                ())] 
-                [] 
-                []
-            ) 
-            error1 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                elist 
-                [] 
-                [(() 
-                2 
-                ())] 
-                [] 
-                []
-            ) 
-            error2 
-            ()
-        )
-        (GoTo 
-            0 
-            () 
-            20 
-            [] 
-            ()
-        )
-        (= 
-            10 
-            (FuncCallOrArray 
-                alist 
-                [] 
-                [(() 
-                1 
-                ())] 
-                [] 
-                []
-            ) 
-            centre 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                alist 
-                [] 
-                [(() 
-                2 
-                ())] 
-                [] 
-                []
-            ) 
-            a 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                blist 
-                [] 
-                [(() 
-                1 
-                ())] 
-                [] 
-                []
-            ) 
-            b 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                blist 
-                [] 
-                [(() 
-                2 
-                ())] 
-                [] 
-                []
-            ) 
-            centre 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                rlist 
-                [] 
-                [(() 
-                1 
-                ())] 
-                [] 
-                []
-            ) 
-            area2 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                rlist 
-                [] 
-                [(() 
-                2 
-                ())] 
-                [] 
-                []
-            ) 
-            area1 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                elist 
-                [] 
-                [(() 
-                1 
-                ())] 
-                [] 
-                []
-            ) 
-            error2 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                elist 
-                [] 
-                [(() 
-                2 
-                ())] 
-                [] 
-                []
-            ) 
-            error1 
-            ()
-        )
-        (= 
-            20 
-            (FuncCallOrArray 
-                iord 
-                [] 
-                [(() 
-                1 
-                ())] 
-                [] 
-                []
-            ) 
-            1 
-            ()
-        )
-        (= 
-            0 
-            (FuncCallOrArray 
-                iord 
-                [] 
-                [(() 
-                2 
-                ())] 
-                [] 
-                []
-            ) 
-            2 
-            ()
-        )
-        (If 
-            0 
-            () 
-            (== limit 2) 
-            [(= 
-                0 
-                ier 
-                1 
                 ()
-            )] 
-            [] 
-            () 
-            () 
+            )]
+            []
+            ()
+            ()
             ()
         )
-        (If 
-            0 
-            () 
-            (BoolOp 
-                (<= abserr errbnd) 
-                Or 
+        (=
+            0
+            (FuncCallOrArray
+                alist
+                []
+                [(()
+                1
+                ())]
+                []
+                []
+            )
+            a
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                alist
+                []
+                [(()
+                2
+                ())]
+                []
+                []
+            )
+            centre
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                blist
+                []
+                [(()
+                1
+                ())]
+                []
+                []
+            )
+            centre
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                blist
+                []
+                [(()
+                2
+                ())]
+                []
+                []
+            )
+            b
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                rlist
+                []
+                [(()
+                1
+                ())]
+                []
+                []
+            )
+            area1
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                rlist
+                []
+                [(()
+                2
+                ())]
+                []
+                []
+            )
+            area2
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                elist
+                []
+                [(()
+                1
+                ())]
+                []
+                []
+            )
+            error1
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                elist
+                []
+                [(()
+                2
+                ())]
+                []
+                []
+            )
+            error2
+            ()
+        )
+        (GoTo
+            0
+            ()
+            20
+            []
+            ()
+        )
+        (=
+            10
+            (FuncCallOrArray
+                alist
+                []
+                [(()
+                1
+                ())]
+                []
+                []
+            )
+            centre
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                alist
+                []
+                [(()
+                2
+                ())]
+                []
+                []
+            )
+            a
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                blist
+                []
+                [(()
+                1
+                ())]
+                []
+                []
+            )
+            b
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                blist
+                []
+                [(()
+                2
+                ())]
+                []
+                []
+            )
+            centre
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                rlist
+                []
+                [(()
+                1
+                ())]
+                []
+                []
+            )
+            area2
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                rlist
+                []
+                [(()
+                2
+                ())]
+                []
+                []
+            )
+            area1
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                elist
+                []
+                [(()
+                1
+                ())]
+                []
+                []
+            )
+            error2
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                elist
+                []
+                [(()
+                2
+                ())]
+                []
+                []
+            )
+            error1
+            ()
+        )
+        (=
+            20
+            (FuncCallOrArray
+                iord
+                []
+                [(()
+                1
+                ())]
+                []
+                []
+            )
+            1
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                iord
+                []
+                [(()
+                2
+                ())]
+                []
+                []
+            )
+            2
+            ()
+        )
+        (If
+            0
+            ()
+            (== limit 2)
+            [(=
+                0
+                ier
+                1
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (If
+            0
+            ()
+            (BoolOp
+                (<= abserr errbnd)
+                Or
                 (== ier 1)
-            ) 
-            [(GoTo 
-                0 
-                () 
-                999 
-                [] 
+            )
+            [(GoTo
+                0
                 ()
-            )] 
-            [] 
-            () 
-            () 
-            ()
-        )
-        (= 
-            0 
-            errmax 
-            (FuncCallOrArray 
-                elist 
-                [] 
-                [(() 
-                1 
-                ())] 
-                [] 
+                999
                 []
-            ) 
+                ()
+            )]
+            []
+            ()
+            ()
             ()
         )
-        (= 
-            0 
-            maxerr 
-            1 
+        (=
+            0
+            errmax
+            (FuncCallOrArray
+                elist
+                []
+                [(()
+                1
+                ())]
+                []
+                []
+            )
             ()
         )
-        (= 
-            0 
-            nrmax 
-            1 
+        (=
+            0
+            maxerr
+            1
             ()
         )
-        (= 
-            0 
-            area 
-            result 
+        (=
+            0
+            nrmax
+            1
             ()
         )
-        (= 
-            0 
-            errsum 
-            abserr 
+        (=
+            0
+            area
+            result
             ()
         )
-        (= 
-            0 
-            iroff1 
-            0 
+        (=
+            0
+            errsum
+            abserr
             ()
         )
-        (= 
-            0 
-            iroff2 
-            0 
+        (=
+            0
+            iroff1
+            0
             ()
         )
-        (DoLoop 
-            0 
-            () 
-            60 
-            last 
-            3 
-            limit 
-            () 
-            [(= 
-                0 
-                a1 
-                (FuncCallOrArray 
-                    alist 
-                    [] 
-                    [(() 
-                    maxerr 
-                    ())] 
-                    [] 
+        (=
+            0
+            iroff2
+            0
+            ()
+        )
+        (DoLoop
+            0
+            ()
+            60
+            last
+            3
+            limit
+            ()
+            [(=
+                0
+                a1
+                (FuncCallOrArray
+                    alist
                     []
-                ) 
-                ()
-            )
-            (= 
-                0 
-                b1 
-                (* (Real "0.5d+00") (+ (FuncCallOrArray 
-                    alist 
-                    [] 
-                    [(() 
-                    maxerr 
-                    ())] 
-                    [] 
+                    [(()
+                    maxerr
+                    ())]
                     []
-                ) (FuncCallOrArray 
-                    blist 
-                    [] 
-                    [(() 
-                    maxerr 
-                    ())] 
-                    [] 
                     []
-                ))) 
+                )
                 ()
             )
-            (= 
-                0 
-                a2 
-                b1 
-                ()
-            )
-            (= 
-                0 
-                b2 
-                (FuncCallOrArray 
-                    blist 
-                    [] 
-                    [(() 
-                    maxerr 
-                    ())] 
-                    [] 
+            (=
+                0
+                b1
+                (* (Real "0.5d+00") (+ (FuncCallOrArray
+                    alist
                     []
-                ) 
-                ()
-            )
-            (SubroutineCall 
-                0 
-                dqc25s 
-                [] 
-                [(() 
-                f 
-                ())
-                (() 
-                a 
-                ())
-                (() 
-                b 
-                ())
-                (() 
-                a1 
-                ())
-                (() 
-                b1 
-                ())
-                (() 
-                alfa 
-                ())
-                (() 
-                beta 
-                ())
-                (() 
-                ri 
-                ())
-                (() 
-                rj 
-                ())
-                (() 
-                rg 
-                ())
-                (() 
-                rh 
-                ())
-                (() 
-                area1 
-                ())
-                (() 
-                error1 
-                ())
-                (() 
-                resas1 
-                ())
-                (() 
-                integr 
-                ())
-                (() 
-                nev 
-                ())] 
-                [] 
-                ()
-            )
-            (= 
-                0 
-                neval 
-                (+ neval nev) 
-                ()
-            )
-            (SubroutineCall 
-                0 
-                dqc25s 
-                [] 
-                [(() 
-                f 
-                ())
-                (() 
-                a 
-                ())
-                (() 
-                b 
-                ())
-                (() 
-                a2 
-                ())
-                (() 
-                b2 
-                ())
-                (() 
-                alfa 
-                ())
-                (() 
-                beta 
-                ())
-                (() 
-                ri 
-                ())
-                (() 
-                rj 
-                ())
-                (() 
-                rg 
-                ())
-                (() 
-                rh 
-                ())
-                (() 
-                area2 
-                ())
-                (() 
-                error2 
-                ())
-                (() 
-                resas2 
-                ())
-                (() 
-                integr 
-                ())
-                (() 
-                nev 
-                ())] 
-                [] 
-                ()
-            )
-            (= 
-                0 
-                neval 
-                (+ neval nev) 
-                ()
-            )
-            (= 
-                0 
-                area12 
-                (+ area1 area2) 
-                ()
-            )
-            (= 
-                0 
-                erro12 
-                (+ error1 error2) 
-                ()
-            )
-            (= 
-                0 
-                errsum 
-                (- (+ errsum erro12) errmax) 
-                ()
-            )
-            (= 
-                0 
-                area 
-                (- (+ area area12) (FuncCallOrArray 
-                    rlist 
-                    [] 
-                    [(() 
-                    maxerr 
-                    ())] 
-                    [] 
+                    [(()
+                    maxerr
+                    ())]
                     []
-                )) 
+                    []
+                ) (FuncCallOrArray
+                    blist
+                    []
+                    [(()
+                    maxerr
+                    ())]
+                    []
+                    []
+                )))
                 ()
             )
-            (If 
-                0 
-                () 
-                (BoolOp 
-                    (== a a1) 
-                    Or 
+            (=
+                0
+                a2
+                b1
+                ()
+            )
+            (=
+                0
+                b2
+                (FuncCallOrArray
+                    blist
+                    []
+                    [(()
+                    maxerr
+                    ())]
+                    []
+                    []
+                )
+                ()
+            )
+            (SubroutineCall
+                0
+                dqc25s
+                []
+                [(()
+                f
+                ())
+                (()
+                a
+                ())
+                (()
+                b
+                ())
+                (()
+                a1
+                ())
+                (()
+                b1
+                ())
+                (()
+                alfa
+                ())
+                (()
+                beta
+                ())
+                (()
+                ri
+                ())
+                (()
+                rj
+                ())
+                (()
+                rg
+                ())
+                (()
+                rh
+                ())
+                (()
+                area1
+                ())
+                (()
+                error1
+                ())
+                (()
+                resas1
+                ())
+                (()
+                integr
+                ())
+                (()
+                nev
+                ())]
+                []
+                ()
+            )
+            (=
+                0
+                neval
+                (+ neval nev)
+                ()
+            )
+            (SubroutineCall
+                0
+                dqc25s
+                []
+                [(()
+                f
+                ())
+                (()
+                a
+                ())
+                (()
+                b
+                ())
+                (()
+                a2
+                ())
+                (()
+                b2
+                ())
+                (()
+                alfa
+                ())
+                (()
+                beta
+                ())
+                (()
+                ri
+                ())
+                (()
+                rj
+                ())
+                (()
+                rg
+                ())
+                (()
+                rh
+                ())
+                (()
+                area2
+                ())
+                (()
+                error2
+                ())
+                (()
+                resas2
+                ())
+                (()
+                integr
+                ())
+                (()
+                nev
+                ())]
+                []
+                ()
+            )
+            (=
+                0
+                neval
+                (+ neval nev)
+                ()
+            )
+            (=
+                0
+                area12
+                (+ area1 area2)
+                ()
+            )
+            (=
+                0
+                erro12
+                (+ error1 error2)
+                ()
+            )
+            (=
+                0
+                errsum
+                (- (+ errsum erro12) errmax)
+                ()
+            )
+            (=
+                0
+                area
+                (- (+ area area12) (FuncCallOrArray
+                    rlist
+                    []
+                    [(()
+                    maxerr
+                    ())]
+                    []
+                    []
+                ))
+                ()
+            )
+            (If
+                0
+                ()
+                (BoolOp
+                    (== a a1)
+                    Or
                     (== b b2)
-                ) 
-                [(GoTo 
-                    0 
-                    () 
-                    30 
-                    [] 
+                )
+                [(GoTo
+                    0
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                    30
+                    []
+                    ()
+                )]
+                []
+                ()
+                ()
                 ()
             )
-            (If 
-                0 
-                () 
-                (BoolOp 
-                    (== resas1 error1) 
-                    Or 
+            (If
+                0
+                ()
+                (BoolOp
+                    (== resas1 error1)
+                    Or
                     (== resas2 error2)
-                ) 
-                [(GoTo 
-                    0 
-                    () 
-                    30 
-                    [] 
+                )
+                [(GoTo
+                    0
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                    30
+                    []
+                    ()
+                )]
+                []
+                ()
+                ()
                 ()
             )
-            (If 
-                0 
-                () 
-                (BoolOp 
-                    (< (FuncCallOrArray 
-                        dabs 
-                        [] 
-                        [(() 
-                        (- (FuncCallOrArray 
-                            rlist 
-                            [] 
-                            [(() 
-                            maxerr 
-                            ())] 
-                            [] 
+            (If
+                0
+                ()
+                (BoolOp
+                    (< (FuncCallOrArray
+                        dabs
+                        []
+                        [(()
+                        (- (FuncCallOrArray
+                            rlist
                             []
-                        ) area12) 
-                        ())] 
-                        [] 
+                            [(()
+                            maxerr
+                            ())]
+                            []
+                            []
+                        ) area12)
+                        ())]
                         []
-                    ) (* (Real "0.1d-04") (FuncCallOrArray 
-                        dabs 
-                        [] 
-                        [(() 
-                        area12 
-                        ())] 
-                        [] 
                         []
-                    ))) 
-                    And 
+                    ) (* (Real "0.1d-04") (FuncCallOrArray
+                        dabs
+                        []
+                        [(()
+                        area12
+                        ())]
+                        []
+                        []
+                    )))
+                    And
                     (>= erro12 (* (Real "0.99d+00") errmax))
-                ) 
-                [(= 
-                    0 
-                    iroff1 
-                    (+ iroff1 1) 
+                )
+                [(=
+                    0
+                    iroff1
+                    (+ iroff1 1)
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                )]
+                []
+                ()
+                ()
                 ()
             )
-            (If 
-                0 
-                () 
-                (BoolOp 
-                    (> last 10) 
-                    And 
+            (If
+                0
+                ()
+                (BoolOp
+                    (> last 10)
+                    And
                     (> erro12 errmax)
-                ) 
-                [(= 
-                    0 
-                    iroff2 
-                    (+ iroff2 1) 
+                )
+                [(=
+                    0
+                    iroff2
+                    (+ iroff2 1)
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                )]
+                []
+                ()
+                ()
                 ()
             )
-            (= 
-                30 
-                (FuncCallOrArray 
-                    rlist 
-                    [] 
-                    [(() 
-                    maxerr 
-                    ())] 
-                    [] 
+            (=
+                30
+                (FuncCallOrArray
+                    rlist
                     []
-                ) 
-                area1 
-                ()
-            )
-            (= 
-                0 
-                (FuncCallOrArray 
-                    rlist 
-                    [] 
-                    [(() 
-                    last 
-                    ())] 
-                    [] 
+                    [(()
+                    maxerr
+                    ())]
                     []
-                ) 
-                area2 
+                    []
+                )
+                area1
                 ()
             )
-            (= 
-                0 
-                errbnd 
-                (FuncCallOrArray 
-                    dmax1 
-                    [] 
-                    [(() 
-                    epsabs 
+            (=
+                0
+                (FuncCallOrArray
+                    rlist
+                    []
+                    [(()
+                    last
+                    ())]
+                    []
+                    []
+                )
+                area2
+                ()
+            )
+            (=
+                0
+                errbnd
+                (FuncCallOrArray
+                    dmax1
+                    []
+                    [(()
+                    epsabs
                     ())
-                    (() 
-                    (* epsrel (FuncCallOrArray 
-                        dabs 
-                        [] 
-                        [(() 
-                        area 
-                        ())] 
-                        [] 
+                    (()
+                    (* epsrel (FuncCallOrArray
+                        dabs
                         []
-                    )) 
-                    ())] 
-                    [] 
+                        [(()
+                        area
+                        ())]
+                        []
+                        []
+                    ))
+                    ())]
                     []
-                ) 
+                    []
+                )
                 ()
             )
-            (If 
-                0 
-                () 
-                (<= errsum errbnd) 
-                [(GoTo 
-                    0 
-                    () 
-                    35 
-                    [] 
+            (If
+                0
+                ()
+                (<= errsum errbnd)
+                [(GoTo
+                    0
                     ()
-                )] 
-                [] 
-                () 
-                () 
-                ()
-            )
-            (If 
-                0 
-                () 
-                (== last limit) 
-                [(= 
-                    0 
-                    ier 
-                    1 
+                    35
+                    []
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                )]
+                []
+                ()
+                ()
                 ()
             )
-            (If 
-                0 
-                () 
-                (BoolOp 
-                    (>= iroff1 6) 
-                    Or 
+            (If
+                0
+                ()
+                (== last limit)
+                [(=
+                    0
+                    ier
+                    1
+                    ()
+                )]
+                []
+                ()
+                ()
+                ()
+            )
+            (If
+                0
+                ()
+                (BoolOp
+                    (>= iroff1 6)
+                    Or
                     (>= iroff2 20)
-                ) 
-                [(= 
-                    0 
-                    ier 
-                    2 
+                )
+                [(=
+                    0
+                    ier
+                    2
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                )]
+                []
+                ()
+                ()
                 ()
             )
-            (If 
-                0 
-                () 
-                (<= (FuncCallOrArray 
-                    dmax1 
-                    [] 
-                    [(() 
-                    (FuncCallOrArray 
-                        dabs 
-                        [] 
-                        [(() 
-                        a1 
-                        ())] 
-                        [] 
+            (If
+                0
+                ()
+                (<= (FuncCallOrArray
+                    dmax1
+                    []
+                    [(()
+                    (FuncCallOrArray
+                        dabs
                         []
-                    ) 
+                        [(()
+                        a1
+                        ())]
+                        []
+                        []
+                    )
                     ())
-                    (() 
-                    (FuncCallOrArray 
-                        dabs 
-                        [] 
-                        [(() 
-                        b2 
-                        ())] 
-                        [] 
+                    (()
+                    (FuncCallOrArray
+                        dabs
                         []
-                    ) 
-                    ())] 
-                    [] 
+                        [(()
+                        b2
+                        ())]
+                        []
+                        []
+                    )
+                    ())]
                     []
-                ) (* (+ (Real "0.1d+01") (* (Real "0.1d+03") epmach)) (+ (FuncCallOrArray 
-                    dabs 
-                    [] 
-                    [(() 
-                    a2 
-                    ())] 
-                    [] 
                     []
-                ) (* (Real "0.1d+04") uflow)))) 
-                [(= 
-                    0 
-                    ier 
-                    3 
+                ) (* (+ (Real "0.1d+01") (* (Real "0.1d+03") epmach)) (+ (FuncCallOrArray
+                    dabs
+                    []
+                    [(()
+                    a2
+                    ())]
+                    []
+                    []
+                ) (* (Real "0.1d+04") uflow))))
+                [(=
+                    0
+                    ier
+                    3
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                )]
+                []
+                ()
+                ()
                 ()
             )
-            (If 
-                35 
-                () 
-                (> error2 error1) 
-                [(GoTo 
-                    0 
-                    () 
-                    40 
-                    [] 
+            (If
+                35
+                ()
+                (> error2 error1)
+                [(GoTo
+                    0
                     ()
-                )] 
-                [] 
-                () 
-                () 
-                ()
-            )
-            (= 
-                0 
-                (FuncCallOrArray 
-                    alist 
-                    [] 
-                    [(() 
-                    last 
-                    ())] 
-                    [] 
+                    40
                     []
-                ) 
-                a2 
+                    ()
+                )]
+                []
+                ()
+                ()
                 ()
             )
-            (= 
-                0 
-                (FuncCallOrArray 
-                    blist 
-                    [] 
-                    [(() 
-                    maxerr 
-                    ())] 
-                    [] 
+            (=
+                0
+                (FuncCallOrArray
+                    alist
                     []
-                ) 
-                b1 
-                ()
-            )
-            (= 
-                0 
-                (FuncCallOrArray 
-                    blist 
-                    [] 
-                    [(() 
-                    last 
-                    ())] 
-                    [] 
+                    [(()
+                    last
+                    ())]
                     []
-                ) 
-                b2 
-                ()
-            )
-            (= 
-                0 
-                (FuncCallOrArray 
-                    elist 
-                    [] 
-                    [(() 
-                    maxerr 
-                    ())] 
-                    [] 
                     []
-                ) 
-                error1 
+                )
+                a2
                 ()
             )
-            (= 
-                0 
-                (FuncCallOrArray 
-                    elist 
-                    [] 
-                    [(() 
-                    last 
-                    ())] 
-                    [] 
+            (=
+                0
+                (FuncCallOrArray
+                    blist
                     []
-                ) 
-                error2 
-                ()
-            )
-            (GoTo 
-                0 
-                () 
-                50 
-                [] 
-                ()
-            )
-            (= 
-                40 
-                (FuncCallOrArray 
-                    alist 
-                    [] 
-                    [(() 
-                    maxerr 
-                    ())] 
-                    [] 
+                    [(()
+                    maxerr
+                    ())]
                     []
-                ) 
-                a2 
-                ()
-            )
-            (= 
-                0 
-                (FuncCallOrArray 
-                    alist 
-                    [] 
-                    [(() 
-                    last 
-                    ())] 
-                    [] 
                     []
-                ) 
-                a1 
+                )
+                b1
                 ()
             )
-            (= 
-                0 
-                (FuncCallOrArray 
-                    blist 
-                    [] 
-                    [(() 
-                    last 
-                    ())] 
-                    [] 
+            (=
+                0
+                (FuncCallOrArray
+                    blist
                     []
-                ) 
-                b1 
-                ()
-            )
-            (= 
-                0 
-                (FuncCallOrArray 
-                    rlist 
-                    [] 
-                    [(() 
-                    maxerr 
-                    ())] 
-                    [] 
+                    [(()
+                    last
+                    ())]
                     []
-                ) 
-                area2 
-                ()
-            )
-            (= 
-                0 
-                (FuncCallOrArray 
-                    rlist 
-                    [] 
-                    [(() 
-                    last 
-                    ())] 
-                    [] 
                     []
-                ) 
-                area1 
+                )
+                b2
                 ()
             )
-            (= 
-                0 
-                (FuncCallOrArray 
-                    elist 
-                    [] 
-                    [(() 
-                    maxerr 
-                    ())] 
-                    [] 
+            (=
+                0
+                (FuncCallOrArray
+                    elist
                     []
-                ) 
-                error2 
-                ()
-            )
-            (= 
-                0 
-                (FuncCallOrArray 
-                    elist 
-                    [] 
-                    [(() 
-                    last 
-                    ())] 
-                    [] 
+                    [(()
+                    maxerr
+                    ())]
                     []
-                ) 
-                error1 
+                    []
+                )
+                error1
                 ()
             )
-            (SubroutineCall 
-                50 
-                dqpsrt 
-                [] 
-                [(() 
-                limit 
+            (=
+                0
+                (FuncCallOrArray
+                    elist
+                    []
+                    [(()
+                    last
+                    ())]
+                    []
+                    []
+                )
+                error2
+                ()
+            )
+            (GoTo
+                0
+                ()
+                50
+                []
+                ()
+            )
+            (=
+                40
+                (FuncCallOrArray
+                    alist
+                    []
+                    [(()
+                    maxerr
+                    ())]
+                    []
+                    []
+                )
+                a2
+                ()
+            )
+            (=
+                0
+                (FuncCallOrArray
+                    alist
+                    []
+                    [(()
+                    last
+                    ())]
+                    []
+                    []
+                )
+                a1
+                ()
+            )
+            (=
+                0
+                (FuncCallOrArray
+                    blist
+                    []
+                    [(()
+                    last
+                    ())]
+                    []
+                    []
+                )
+                b1
+                ()
+            )
+            (=
+                0
+                (FuncCallOrArray
+                    rlist
+                    []
+                    [(()
+                    maxerr
+                    ())]
+                    []
+                    []
+                )
+                area2
+                ()
+            )
+            (=
+                0
+                (FuncCallOrArray
+                    rlist
+                    []
+                    [(()
+                    last
+                    ())]
+                    []
+                    []
+                )
+                area1
+                ()
+            )
+            (=
+                0
+                (FuncCallOrArray
+                    elist
+                    []
+                    [(()
+                    maxerr
+                    ())]
+                    []
+                    []
+                )
+                error2
+                ()
+            )
+            (=
+                0
+                (FuncCallOrArray
+                    elist
+                    []
+                    [(()
+                    last
+                    ())]
+                    []
+                    []
+                )
+                error1
+                ()
+            )
+            (SubroutineCall
+                50
+                dqpsrt
+                []
+                [(()
+                limit
                 ())
-                (() 
-                last 
+                (()
+                last
                 ())
-                (() 
-                maxerr 
+                (()
+                maxerr
                 ())
-                (() 
-                errmax 
+                (()
+                errmax
                 ())
-                (() 
-                elist 
+                (()
+                elist
                 ())
-                (() 
-                iord 
+                (()
+                iord
                 ())
-                (() 
-                nrmax 
-                ())] 
-                [] 
+                (()
+                nrmax
+                ())]
+                []
                 ()
             )
-            (If 
-                0 
-                () 
-                (BoolOp 
-                    (/= ier 0) 
-                    Or 
+            (If
+                0
+                ()
+                (BoolOp
+                    (/= ier 0)
+                    Or
                     (<= errsum errbnd)
-                ) 
-                [(GoTo 
-                    0 
-                    () 
-                    70 
-                    [] 
+                )
+                [(GoTo
+                    0
                     ()
-                )] 
-                [] 
-                () 
-                () 
-                ()
-            )
-            (Continue 
-                60 
-                ()
-            )] 
-            () 
-            ()
-        )
-        (= 
-            70 
-            result 
-            (Real "0.0d+00") 
-            ()
-        )
-        (DoLoop 
-            0 
-            () 
-            80 
-            k 
-            1 
-            last 
-            () 
-            [(= 
-                0 
-                result 
-                (+ result (FuncCallOrArray 
-                    rlist 
-                    [] 
-                    [(() 
-                    k 
-                    ())] 
-                    [] 
+                    70
                     []
-                )) 
+                    ()
+                )]
+                []
+                ()
+                ()
                 ()
             )
-            (Continue 
-                80 
+            (Continue
+                60
                 ()
-            )] 
-            () 
+            )]
+            ()
             ()
         )
-        (= 
-            0 
-            abserr 
-            errsum 
+        (=
+            70
+            result
+            (Real "0.0d+00")
             ()
         )
-        (Return 
-            999 
-            () 
+        (DoLoop
+            0
             ()
-        )] 
+            80
+            k
+            1
+            last
+            ()
+            [(=
+                0
+                result
+                (+ result (FuncCallOrArray
+                    rlist
+                    []
+                    [(()
+                    k
+                    ())]
+                    []
+                    []
+                ))
+                ()
+            )
+            (Continue
+                80
+                ()
+            )]
+            ()
+            ()
+        )
+        (=
+            0
+            abserr
+            errsum
+            ()
+        )
+        (Return
+            999
+            ()
+            ()
+        )]
         []
     )]
 )

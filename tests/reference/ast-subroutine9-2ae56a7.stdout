@@ -1,158 +1,158 @@
-(TranslationUnit 
-    [(Subroutine 
-        a 
-        [] 
-        [] 
-        () 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(Subroutine
+        a
+        []
+        []
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(Import 
-            [] 
-            ImportNone 
+        )
+        []
+        [(Import
+            []
+            ImportNone
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
+        )]
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [] 
-        [] 
+        )]
+        []
+        []
         []
     )
-    (Subroutine 
-        b 
-        [] 
-        [] 
-        () 
-        (TriviaNode 
-            [] 
+    (Subroutine
+        b
+        []
+        []
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(Import 
-            [] 
-            ImportAll 
+        )
+        []
+        [(Import
+            []
+            ImportAll
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
+        )]
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [] 
-        [] 
+        )]
+        []
+        []
         []
     )
-    (Subroutine 
-        c 
-        [] 
-        [] 
-        () 
-        (TriviaNode 
-            [] 
+    (Subroutine
+        c
+        []
+        []
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(Import 
+        )
+        []
+        [(Import
             [a
-            b] 
-            ImportDefault 
+            b]
+            ImportDefault
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
+        )]
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [] 
-        [] 
+        )]
+        []
+        []
         []
     )
-    (Subroutine 
-        d 
-        [] 
-        [] 
-        () 
-        (TriviaNode 
-            [] 
+    (Subroutine
+        d
+        []
+        []
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(Import 
+        )
+        []
+        [(Import
             [a
-            b] 
-            ImportDefault 
+            b]
+            ImportDefault
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
+        )]
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [] 
-        [] 
+        )]
+        []
+        []
         []
     )
-    (Subroutine 
-        e 
-        [] 
-        [] 
-        () 
-        (TriviaNode 
-            [] 
+    (Subroutine
+        e
+        []
+        []
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(Import 
+        )
+        []
+        [(Import
             [a
-            b] 
-            ImportOnly 
+            b]
+            ImportOnly
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
+        )]
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [] 
-        [] 
+        )]
+        []
+        []
         []
     )
-    (Subroutine 
-        f 
-        [] 
-        [] 
-        () 
-        () 
-        [] 
-        [(Import 
+    (Subroutine
+        f
+        []
+        []
+        ()
+        ()
+        []
+        [(Import
             [a
-            b] 
-            ImportDefault 
+            b]
+            ImportDefault
             ()
         )
-        (Import 
-            [c] 
-            ImportDefault 
+        (Import
+            [c]
+            ImportDefault
             ()
         )
-        (Import 
+        (Import
             [d
             e
-            f] 
-            ImportDefault 
+            f]
+            ImportDefault
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
+        )]
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [] 
-        [] 
+        )]
+        []
+        []
         []
     )]
 )

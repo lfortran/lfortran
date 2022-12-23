@@ -1,310 +1,310 @@
-(TranslationUnit 
-    [(Module 
-        derived_types_02_m 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(Module
+        derived_types_02_m
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
-                [(EndOfLine)
-                (EndOfLine)]
-            )
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
-                None
-            ) 
-            [(SimpleAttribute 
-                AttrParameter
-            )] 
-            [(r8 
-            [] 
-            [] 
-            (FuncCallOrArray 
-                kind 
-                [] 
-                [(() 
-                (Real "0.d0") 
-                ())] 
-                [] 
+        )
+        []
+        [(ImplicitNone
+            []
+            (TriviaNode
                 []
-            ) 
-            Equal 
-            ())] 
-            (TriviaNode 
-                [] 
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                None
+            )
+            [(SimpleAttribute
+                AttrParameter
+            )]
+            [(r8
+            []
+            []
+            (FuncCallOrArray
+                kind
+                []
+                [(()
+                (Real "0.d0")
+                ())]
+                []
+                []
+            )
+            Equal
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (DerivedType 
-            B 
-            [] 
-            (TriviaNode 
-                [] 
+        (DerivedType
+            B
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [] 
+            )
+            []
+            []
             []
         )
-        (DerivedType 
-            C 
-            [] 
-            (TriviaNode 
-                [] 
+        (DerivedType
+            C
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [] 
+            )
+            []
+            []
             []
         )
-        (DerivedType 
-            X 
-            [] 
-            (TriviaNode 
-                [] 
+        (DerivedType
+            X
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)
                 (EndOfLine)]
-            ) 
-            [(AttrExtends 
+            )
+            [(AttrExtends
                 B
             )
-            (SimpleAttribute 
+            (SimpleAttribute
                 AttrPublic
-            )] 
-            [(Declaration 
-                () 
-                [(SimpleAttribute 
+            )]
+            [(Declaration
+                ()
+                [(SimpleAttribute
                     AttrPrivate
-                )] 
-                [] 
+                )]
+                []
                 ()
             )
-            (Declaration 
-                (AttrType 
-                    TypeReal 
-                    [(() 
-                    r8 
-                    Value)] 
-                    () 
+            (Declaration
+                (AttrType
+                    TypeReal
+                    [(()
+                    r8
+                    Value)]
+                    ()
                     None
-                ) 
-                [] 
-                [(r1 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
-                (TriviaNode 
-                    [] 
+                )
+                []
+                [(r1
+                []
+                []
+                ()
+                None
+                ())]
+                (TriviaNode
+                    []
                     [(EndOfLine)
                     (EndOfLine)]
                 )
             )
-            (Declaration 
-                (AttrType 
-                    TypeType 
-                    [] 
-                    C 
-                    None
-                ) 
-                [(SimpleAttribute 
-                    AttrPointer
-                )] 
-                [(cc 
-                [] 
-                [] 
-                (FuncCallOrArray 
-                    null 
-                    [] 
-                    [] 
-                    [] 
+            (Declaration
+                (AttrType
+                    TypeType
                     []
-                ) 
-                Arrow 
-                ())] 
+                    C
+                    None
+                )
+                [(SimpleAttribute
+                    AttrPointer
+                )]
+                [(cc
+                []
+                []
+                (FuncCallOrArray
+                    null
+                    []
+                    []
+                    []
+                    []
+                )
+                Arrow
+                ())]
                 ()
             )
-            (Declaration 
-                (AttrType 
-                    TypeReal 
-                    [(() 
-                    r8 
-                    Value)] 
-                    () 
+            (Declaration
+                (AttrType
+                    TypeReal
+                    [(()
+                    r8
+                    Value)]
+                    ()
                     None
-                ) 
-                [(SimpleAttribute 
+                )
+                [(SimpleAttribute
                     AttrPointer
-                )] 
-                [(r2 
-                [(() 
-                () 
-                DimensionExpr)] 
-                [] 
-                (FuncCallOrArray 
-                    null 
-                    [] 
-                    [] 
-                    [] 
+                )]
+                [(r2
+                [(()
+                ()
+                DimensionExpr)]
+                []
+                (FuncCallOrArray
+                    null
                     []
-                ) 
-                Arrow 
+                    []
+                    []
+                    []
+                )
+                Arrow
                 ())
-                (r3 
-                [(() 
-                () 
-                DimensionExpr)] 
-                [] 
-                (FuncCallOrArray 
-                    null 
-                    [] 
-                    [] 
-                    [] 
+                (r3
+                [(()
+                ()
+                DimensionExpr)]
+                []
+                (FuncCallOrArray
+                    null
                     []
-                ) 
-                Arrow 
-                ())] 
-                ()
-            )] 
-            [(DerivedTypeProc 
-                () 
-                [(SimpleAttribute 
-                    AttrPrivate
-                )] 
-                [(UseSymbol 
-                    p1 
-                    ()
-                )] 
-                ()
-            )
-            (DerivedTypeProc 
-                () 
-                [] 
-                [(UseSymbol 
-                    p2 
-                    ()
-                )] 
+                    []
+                    []
+                    []
+                )
+                Arrow
+                ())]
                 ()
             )]
-        )] 
-        [(Subroutine 
-            p1 
-            [(this)] 
-            [] 
-            () 
-            (TriviaNode 
-                [] 
+            [(DerivedTypeProc
+                ()
+                [(SimpleAttribute
+                    AttrPrivate
+                )]
+                [(UseSymbol
+                    p1
+                    ()
+                )]
+                ()
+            )
+            (DerivedTypeProc
+                ()
+                []
+                [(UseSymbol
+                    p2
+                    ()
+                )]
+                ()
+            )]
+        )]
+        [(Subroutine
+            p1
+            [(this)]
+            []
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [] 
-            [] 
-            [(Declaration 
-                (AttrType 
-                    TypeClass 
-                    [] 
-                    X 
+            )
+            []
+            []
+            []
+            [(Declaration
+                (AttrType
+                    TypeClass
+                    []
+                    X
                     None
-                ) 
-                [(AttrIntent 
+                )
+                [(AttrIntent
                     Out
-                )] 
-                [(this 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )]
+                [(this
+                []
+                []
                 ()
-            )] 
-            [] 
+                None
+                ())]
+                ()
+            )]
+            []
             []
         )
-        (Subroutine 
-            p2 
-            [(this)] 
-            [] 
-            () 
-            (TriviaNode 
-                [] 
+        (Subroutine
+            p2
+            [(this)]
+            []
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [] 
-            [] 
-            [(Declaration 
-                (AttrType 
-                    TypeClass 
-                    [] 
-                    X 
+            )
+            []
+            []
+            []
+            [(Declaration
+                (AttrType
+                    TypeClass
+                    []
+                    X
                     None
-                ) 
-                [(AttrIntent 
+                )
+                [(AttrIntent
                     InOut
-                )] 
-                [(this 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )]
+                [(this
+                []
+                []
                 ()
-            )] 
-            [] 
+                None
+                ())]
+                ()
+            )]
+            []
             []
         )]
     )
-    (Program 
-        derived_types_02 
-        () 
-        [(Use 
-            [] 
-            derived_types_02_m 
-            [(UseSymbol 
-                X 
+    (Program
+        derived_types_02
+        ()
+        [(Use
+            []
+            derived_types_02_m
+            [(UseSymbol
+                X
                 ()
-            )] 
-            .true. 
+            )]
+            .true.
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
+        )]
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeType 
-                [] 
-                X 
+        )]
+        [(Declaration
+            (AttrType
+                TypeType
+                []
+                X
                 None
-            ) 
-            [] 
-            [(b 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(b
+            []
+            []
             ()
-        )] 
-        [] 
+            None
+            ())]
+            ()
+        )]
+        []
         []
     )]
 )

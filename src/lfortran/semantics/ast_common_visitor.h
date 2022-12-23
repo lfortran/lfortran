@@ -1011,15 +1011,11 @@ public:
                             v2->m_symbolic_value, v2->m_value);
                         v2->m_dependencies = var_deps_vec.p;
                         v2->n_dependencies = var_deps_vec.size();
+                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
+                                    object->base.loc, object, expression_value, nullptr));
+                        LFORTRAN_ASSERT(current_body != nullptr)
+                        current_body->push_back(al, assign_stmt);
                     } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
-                        if (current_body == nullptr) {
-                            diag.semantic_warning_label(
-                                "Data statement with ArrayItem has current_body == nullptr, it's a bug that we will fix later, for now we will ignore it",
-                                {x.base.base.loc},
-                                "ignored for now"
-                            );
-                            continue;
-                        }
                         // This is the following case:
                         // x(2) / 2 /
                         // We create an assignment node and insert into the current body.
@@ -1031,6 +1027,7 @@ public:
                         // but we can fix that later.
                         ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
                                     object->base.loc, object, expression_value, nullptr));
+                        LFORTRAN_ASSERT(current_body != nullptr)
                         current_body->push_back(al, assign_stmt);
                     } else {
                         throw SemanticError("The variable (object) type is not supported (only variables and array items are supported so far)",
@@ -1212,6 +1209,7 @@ public:
             // real(dp), private :: x, y(3), z
             for (size_t i=0; i<x.n_syms; i++) {
                 bool is_compile_time = false;
+                bool is_implicitly_declared = false;
                 AST::var_sym_t &s = x.m_syms[i];
                 std::string sym = to_lower(s.m_name);
                 ASR::accessType s_access = dflt_access;
@@ -1231,15 +1229,20 @@ public:
                 if (current_scope->get_symbol(sym) !=
                         nullptr) {
                     if (current_scope->parent != nullptr) {
-                        // re-declaring a global scope variable is allowed
-                        // Otherwise raise an error
-                        ASR::symbol_t *orig_decl = current_scope->get_symbol(sym);
-                        throw SemanticError(diag::Diagnostic(
-                            "Symbol is already declared in the same scope",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("redeclaration", {s.loc}),
-                                diag::Label("original declaration", {orig_decl->base.loc}, false),
-                            }));
+                        if ( compiler_options.implicit_typing && implicit_dictionary[sym]!=nullptr ) {
+                            // sym is implicitly declared
+                            is_implicitly_declared = true;
+                        } else {
+                            // re-declaring a global scope variable is allowed
+                            // Otherwise raise an error
+                            ASR::symbol_t *orig_decl = current_scope->get_symbol(sym);
+                            throw SemanticError(diag::Diagnostic(
+                                "Symbol is already declared in the same scope",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("redeclaration", {s.loc}),
+                                    diag::Label("original declaration", {orig_decl->base.loc}, false),
+                                }));
+                        }
                     }
                 }
                 ASR::intentType s_intent;
@@ -1417,17 +1420,19 @@ public:
                     }
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
-                    Vec<char*> variable_dependencies_vec;
-                    variable_dependencies_vec.reserve(al, 1);
-                    ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
-                    ASR::asr_t *v = ASR::make_Variable_t(al, s.loc, current_scope,
-                            s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
-                            variable_dependencies_vec.size(), s_intent, init_expr, value,
-                            storage_type, type, current_procedure_abi_type, s_access, s_presence,
-                            value_attr);
-                    current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
-                    if( is_derived_type ) {
-                        data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
+                    if ( !is_implicitly_declared ) {
+                        Vec<char*> variable_dependencies_vec;
+                        variable_dependencies_vec.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
+                        ASR::asr_t *v = ASR::make_Variable_t(al, s.loc, current_scope,
+                                s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
+                                variable_dependencies_vec.size(), s_intent, init_expr, value,
+                                storage_type, type, current_procedure_abi_type, s_access, s_presence,
+                                value_attr);
+                        current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
+                        if( is_derived_type ) {
+                            data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
+                        }
                     }
                 }
             } // for m_syms
@@ -1504,7 +1509,25 @@ public:
                             char_data->expr = sym_type->m_kind->m_value;
                             char_data->scope = current_scope;
                             char_data->sym_type = current_symbol;
-                            a_len = 1;
+                            AST::FuncCallOrArray_t* call =
+                                AST::down_cast<AST::FuncCallOrArray_t>(
+                                sym_type->m_kind->m_value);
+                            if (AST::is_a<AST::Name_t>(*call->m_args->m_end)) {
+                                ASR::symbol_t* sym = current_scope->get_symbol(
+                                    AST::down_cast<AST::Name_t>(call->m_args->m_end)->m_id);
+                                if (sym != nullptr) {
+                                    sym = ASRUtils::symbol_get_past_external(sym);
+                                    ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
+                                        ASRUtils::symbol_get_past_external(sym));
+                                    if (ASR::is_a<ASR::Character_t>(*v->m_type)) {
+                                        a_len = ASR::down_cast<ASR::Character_t>(
+                                            v->m_type)->m_len;
+                                    }
+                                }
+                            }
+                            if (a_len == -10) {
+                                a_len = 1;
+                            }
                         } else {
                             this->visit_expr(*sym_type->m_kind->m_value);
                             ASR::expr_t* len_expr0 = LFortran::ASRUtils::EXPR(tmp);
@@ -1761,6 +1784,10 @@ public:
         }
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 1);
+        if (x.m_vartype != nullptr) {
+            std::string sym = "";
+            type = determine_type(x.base.base.loc, sym, x.m_vartype, false, dims);
+        }
         ASR::dimension_t dim;
         dim.loc = x.base.base.loc;
         ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,

@@ -1,321 +1,317 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             program3:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             func1:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         3
                                         {
                                             a:
-                                                (Variable 
-                                                    3 
-                                                    a 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             b:
-                                                (Variable 
-                                                    3 
-                                                    b 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             c:
-                                                (Variable 
-                                                    3 
-                                                    c 
-                                                    [] 
-                                                    ReturnVar 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    c
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    func1 
-                                    [func2] 
+                                        })
+                                    func1
+                                    [func2]
                                     [(Var 3 a)
-                                    (Var 3 b)] 
-                                    [(= 
-                                        (Var 3 c) 
-                                        (RealBinOp 
-                                            (Var 3 a) 
-                                            Add 
-                                            (Var 3 b) 
-                                            (Real 4 []) 
+                                    (Var 3 b)]
+                                    [(=
+                                        (Var 3 c)
+                                        (RealBinOp
+                                            (Var 3 a)
+                                            Add
+                                            (Var 3 b)
+                                            (Real 4 [])
                                             ()
-                                        ) 
+                                        )
                                         ()
                                     )
-                                    (= 
-                                        (Var 3 c) 
-                                        (FunctionCall 
-                                            2 func2 
-                                            () 
-                                            [((Var 3 c))
-                                            ((Var 3 c))] 
-                                            (Real 4 []) 
-                                            () 
+                                    (=
+                                        (Var 3 c)
+                                        (FunctionCall
+                                            2 func2
                                             ()
-                                        ) 
+                                            [((Var 3 c))
+                                            ((Var 3 c))]
+                                            (Real 4 [])
+                                            ()
+                                            ()
+                                        )
                                         ()
-                                    )] 
-                                    (Var 3 c) 
-                                    Source 
-                                    Public 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                    )]
+                                    (Var 3 c)
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
                                     .false.
-                                ), 
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
                             func2:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         4
                                         {
                                             a:
-                                                (Variable 
-                                                    4 
-                                                    a 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    4
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             b:
-                                                (Variable 
-                                                    4 
-                                                    b 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    4
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             c:
-                                                (Variable 
-                                                    4 
-                                                    c 
-                                                    [] 
-                                                    ReturnVar 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    4
+                                                    c
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    func2 
-                                    [] 
+                                        })
+                                    func2
+                                    []
                                     [(Var 4 a)
-                                    (Var 4 b)] 
-                                    [(= 
-                                        (Var 4 c) 
-                                        (RealBinOp 
-                                            (Var 4 a) 
-                                            Mul 
-                                            (Var 4 b) 
-                                            (Real 4 []) 
+                                    (Var 4 b)]
+                                    [(=
+                                        (Var 4 c)
+                                        (RealBinOp
+                                            (Var 4 a)
+                                            Mul
+                                            (Var 4 b)
+                                            (Real 4 [])
                                             ()
-                                        ) 
+                                        )
                                         ()
-                                    )] 
-                                    (Var 4 c) 
-                                    Source 
-                                    Public 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                    )]
+                                    (Var 4 c)
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
                                     .false.
-                                ), 
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
                             x:
-                                (Variable 
-                                    2 
-                                    x 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             y:
-                                (Variable 
-                                    2 
-                                    y 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             z:
-                                (Variable 
-                                    2 
-                                    z 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    program3 
-                    [] 
-                    [(= 
-                        (Var 2 x) 
-                        (RealConstant 
-                            5.000000 
+                        })
+                    program3
+                    []
+                    [(=
+                        (Var 2 x)
+                        (RealConstant
+                            5.000000
                             (Real 4 [])
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 y) 
-                        (RealConstant 
-                            2.000000 
+                    (=
+                        (Var 2 y)
+                        (RealConstant
+                            2.000000
                             (Real 4 [])
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 z) 
-                        (RealBinOp 
-                            (Var 2 x) 
-                            Mul 
-                            (Var 2 y) 
-                            (Real 4 []) 
+                    (=
+                        (Var 2 z)
+                        (RealBinOp
+                            (Var 2 x)
+                            Mul
+                            (Var 2 y)
+                            (Real 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (Print 
-                        () 
-                        [(StringConstant 
-                            "10.0 ==" 
+                    (Print
+                        ()
+                        [(StringConstant
+                            "10.0 =="
                             (Character 1 7 () [])
                         )
-                        (Var 2 z)] 
-                        () 
+                        (Var 2 z)]
+                        ()
                         ()
                     )
-                    (= 
-                        (Var 2 z) 
-                        (FunctionCall 
-                            2 func1 
-                            () 
+                    (=
+                        (Var 2 z)
+                        (FunctionCall
+                            2 func1
+                            ()
                             [((Var 2 x))
-                            ((Var 2 y))] 
-                            (Real 4 []) 
-                            () 
+                            ((Var 2 y))]
+                            (Real 4 [])
                             ()
-                        ) 
+                            ()
+                        )
                         ()
                     )
-                    (Print 
-                        () 
-                        [(StringConstant 
-                            "49.0 ==" 
+                    (Print
+                        ()
+                        [(StringConstant
+                            "49.0 =="
                             (Character 1 7 () [])
                         )
-                        (Var 2 z)] 
-                        () 
+                        (Var 2 z)]
+                        ()
                         ()
                     )
-                    (= 
-                        (Var 2 z) 
-                        (FunctionCall 
-                            2 func2 
-                            () 
+                    (=
+                        (Var 2 z)
+                        (FunctionCall
+                            2 func2
+                            ()
                             [((Var 2 x))
-                            ((Var 2 y))] 
-                            (Real 4 []) 
-                            () 
+                            ((Var 2 y))]
+                            (Real 4 [])
                             ()
-                        ) 
+                            ()
+                        )
                         ()
                     )
-                    (Print 
-                        () 
-                        [(StringConstant 
-                            "10.0 ==" 
+                    (Print
+                        ()
+                        [(StringConstant
+                            "10.0 =="
                             (Character 1 7 () [])
                         )
-                        (Var 2 z)] 
-                        () 
+                        (Var 2 z)]
+                        ()
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )

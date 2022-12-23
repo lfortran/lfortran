@@ -1,165 +1,165 @@
-(TranslationUnit 
-    [(Program 
-        types_08 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+(TranslationUnit
+    [(Program
+        types_08
+        ()
+        []
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [] 
-        [] 
-        [(Subroutine 
-            f 
+        )]
+        []
+        []
+        [(Subroutine
+            f
             [(i)
-            (j)] 
-            [] 
-            () 
-            (TriviaNode 
-                [] 
+            (j)]
+            []
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [] 
-            [] 
-            [(Declaration 
-                (AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
+            )
+            []
+            []
+            []
+            [(Declaration
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
                     None
-                ) 
-                [(SimpleAttribute 
+                )
+                [(SimpleAttribute
                     AttrOptional
                 )
-                (AttrIntent 
+                (AttrIntent
                     In
-                )] 
-                [(i 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )]
+                [(i
+                []
+                []
+                ()
+                None
+                ())]
                 ()
             )
-            (Declaration 
-                (AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
+            (Declaration
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
                     None
-                ) 
-                [(AttrIntent 
+                )
+                [(AttrIntent
                     In
-                )] 
-                [(j 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )]
+                [(j
+                []
+                []
+                ()
+                None
+                ())]
                 ()
             )
-            (Declaration 
-                () 
-                [(SimpleAttribute 
-                    AttrOptional
-                )] 
-                [(j 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+            (Declaration
                 ()
-            )] 
-            [] 
+                [(SimpleAttribute
+                    AttrOptional
+                )]
+                [(j
+                []
+                []
+                ()
+                None
+                ())]
+                ()
+            )]
+            []
             []
         )
-        (Subroutine 
-            g 
+        (Subroutine
+            g
             [(i)
-            (j)] 
-            [] 
-            () 
-            (TriviaNode 
-                [] 
+            (j)]
+            []
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [] 
-            [] 
-            [(Declaration 
-                (AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
+            )
+            []
+            []
+            []
+            [(Declaration
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
                     None
-                ) 
-                [(SimpleAttribute 
+                )
+                [(SimpleAttribute
                     AttrOptional
                 )
-                (AttrIntent 
+                (AttrIntent
                     In
-                )] 
-                [(i 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )]
+                [(i
+                []
+                []
+                ()
+                None
+                ())]
                 ()
             )
-            (Declaration 
-                (AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
+            (Declaration
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
                     None
-                ) 
-                [] 
-                [(j 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )
+                []
+                [(j
+                []
+                []
+                ()
+                None
+                ())]
                 ()
             )
-            (Declaration 
-                () 
-                [(AttrIntent 
+            (Declaration
+                ()
+                [(AttrIntent
                     In
-                )] 
-                [(j 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )]
+                [(j
+                []
+                []
+                ()
+                None
+                ())]
                 ()
             )
-            (Declaration 
-                () 
-                [(SimpleAttribute 
-                    AttrOptional
-                )] 
-                [(j 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+            (Declaration
                 ()
-            )] 
-            [] 
+                [(SimpleAttribute
+                    AttrOptional
+                )]
+                [(j
+                []
+                []
+                ()
+                None
+                ())]
+                ()
+            )]
+            []
             []
         )]
     )]

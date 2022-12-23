@@ -1,123 +1,123 @@
-(TranslationUnit 
-    [(Module 
-        modules_05_mod 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(Module
+        modules_05_mod
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(ImplicitNone 
-            [] 
+        )
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            () 
-            [(SimpleAttribute 
+        )]
+        [(Declaration
+            ()
+            [(SimpleAttribute
                 AttrPrivate
-            )] 
-            [] 
+            )]
+            []
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrParameter
             )
-            (SimpleAttribute 
+            (SimpleAttribute
                 AttrPublic
-            )] 
-            [(a 
-            [] 
-            [] 
-            5 
-            Equal 
-            ())] 
+            )]
+            [(a
+            []
+            []
+            5
+            Equal
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrParameter
-            )] 
-            [(b 
-            [] 
-            [] 
-            6 
-            Equal 
-            ())] 
+            )]
+            [(b
+            []
+            []
+            6
+            Equal
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrParameter
-            )] 
-            [(c 
-            [] 
-            [] 
-            7 
-            Equal 
-            ())] 
+            )]
+            [(c
+            []
+            []
+            7
+            Equal
+            ())]
             ()
         )
-        (Declaration 
-            () 
-            [(SimpleAttribute 
+        (Declaration
+            ()
+            [(SimpleAttribute
                 AttrPublic
-            )] 
-            [(c 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )]
+            [(c
+            []
+            []
             ()
-        )] 
+            None
+            ())]
+            ()
+        )]
         []
     )
-    (Program 
-        modules_05 
-        () 
-        [(Use 
-            [] 
-            modules_05_mod 
-            [(UseSymbol 
-                a 
+    (Program
+        modules_05
+        ()
+        [(Use
+            []
+            modules_05_mod
+            [(UseSymbol
+                a
                 ()
             )
-            (UseSymbol 
-                c 
+            (UseSymbol
+                c
                 ()
-            )] 
-            .true. 
+            )]
+            .true.
             ()
-        )] 
-        [] 
-        [] 
-        [(Print 
-            0 
-            () 
+        )]
+        []
+        []
+        [(Print
+            0
+            ()
             [a
-            c] 
+            c]
             ()
-        )] 
+        )]
         []
     )]
 )

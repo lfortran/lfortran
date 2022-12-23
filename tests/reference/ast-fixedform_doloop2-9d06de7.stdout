@@ -1,105 +1,105 @@
-(TranslationUnit 
-    [(Program 
-        main 
-        () 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+(TranslationUnit
+    [(Program
+        main
+        ()
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(k 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(k
+            []
+            []
             ()
-        )] 
-        [(DoLoop 
-            0 
-            () 
-            0 
-            k 
-            1 
-            10 
-            () 
-            [(Print 
-                0 
-                () 
-                [k] 
+            None
+            ())]
+            ()
+        )]
+        [(DoLoop
+            0
+            ()
+            0
+            k
+            1
+            10
+            ()
+            [(Print
+                0
                 ()
-            )] 
-            () 
+                [k]
+                ()
+            )]
+            ()
             ()
         )
-        (DoLoop 
-            0 
-            () 
-            80 
-            k 
-            1 
-            10 
-            () 
-            [(Print 
-                0 
-                () 
-                [k] 
+        (DoLoop
+            0
+            ()
+            80
+            k
+            1
+            10
+            ()
+            [(Print
+                0
+                ()
+                [k]
                 ()
             )
-            (Continue 
-                80 
+            (Continue
+                80
                 ()
-            )] 
-            () 
+            )]
+            ()
             ()
         )
-        (DoLoop 
-            0 
-            () 
-            800 
-            k 
-            1 
-            10 
-            () 
-            [(Print 
-                0 
-                () 
-                [k] 
+        (DoLoop
+            0
+            ()
+            800
+            k
+            1
+            10
+            ()
+            [(Print
+                0
+                ()
+                [k]
                 ()
             )
-            (Continue 
-                800 
+            (Continue
+                800
                 ()
-            )] 
-            () 
+            )]
+            ()
             ()
         )
-        (DoLoop 
-            0 
-            () 
-            8000 
-            k 
-            1 
-            10 
-            () 
-            [(Print 
-                0 
-                () 
-                [k] 
+        (DoLoop
+            0
+            ()
+            8000
+            k
+            1
+            10
+            ()
+            [(Print
+                0
+                ()
+                [k]
                 ()
             )
-            (Continue 
-                8000 
+            (Continue
+                8000
                 ()
-            )] 
-            () 
+            )]
             ()
-        )] 
+            ()
+        )]
         []
     )]
 )

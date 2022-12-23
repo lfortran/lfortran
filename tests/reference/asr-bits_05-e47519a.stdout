@@ -1,366 +1,364 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             bits_05:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             from:
-                                (Variable 
-                                    2 
-                                    from 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    from
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             from8:
-                                (Variable 
-                                    2 
-                                    from8 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 8 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    from8
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             ibits:
-                                (ExternalSymbol 
-                                    2 
-                                    ibits 
-                                    4 ibits 
-                                    lfortran_intrinsic_bit 
-                                    [] 
-                                    ibits 
+                                (ExternalSymbol
+                                    2
+                                    ibits
+                                    4 ibits
+                                    lfortran_intrinsic_bit
+                                    []
+                                    ibits
                                     Private
-                                ), 
+                                ),
                             ibits@ibits32:
-                                (ExternalSymbol 
-                                    2 
-                                    ibits@ibits32 
-                                    4 ibits32 
-                                    lfortran_intrinsic_bit 
-                                    [] 
-                                    ibits32 
+                                (ExternalSymbol
+                                    2
+                                    ibits@ibits32
+                                    4 ibits32
+                                    lfortran_intrinsic_bit
+                                    []
+                                    ibits32
                                     Private
-                                ), 
+                                ),
                             ibits@ibits64:
-                                (ExternalSymbol 
-                                    2 
-                                    ibits@ibits64 
-                                    4 ibits64 
-                                    lfortran_intrinsic_bit 
-                                    [] 
-                                    ibits64 
+                                (ExternalSymbol
+                                    2
+                                    ibits@ibits64
+                                    4 ibits64
+                                    lfortran_intrinsic_bit
+                                    []
+                                    ibits64
                                     Private
-                                ), 
+                                ),
                             res:
-                                (Variable 
-                                    2 
-                                    res 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    res
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             res8:
-                                (Variable 
-                                    2 
-                                    res8 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 8 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    res8
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    bits_05 
-                    [] 
-                    [(= 
-                        (Var 2 from) 
-                        (IntegerConstant 10 (Integer 4 [])) 
+                        })
+                    bits_05
+                    []
+                    [(=
+                        (Var 2 from)
+                        (IntegerConstant 10 (Integer 4 []))
                         ()
                     )
-                    (= 
-                        (Var 2 from8) 
-                        (IntegerConstant 10 (Integer 8 [])) 
+                    (=
+                        (Var 2 from8)
+                        (IntegerConstant 10 (Integer 8 []))
                         ()
                     )
-                    (= 
-                        (Var 2 res) 
-                        (FunctionCall 
-                            2 ibits@ibits32 
-                            2 ibits 
+                    (=
+                        (Var 2 res)
+                        (FunctionCall
+                            2 ibits@ibits32
+                            2 ibits
                             [((Var 2 from))
                             ((IntegerConstant 2 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))] 
-                            (Integer 4 []) 
-                            () 
+                            ((IntegerConstant 2 (Integer 4 [])))]
+                            (Integer 4 [])
                             ()
-                        ) 
+                            ()
+                        )
                         ()
                     )
-                    (If 
-                        (IntegerCompare 
-                            (Var 2 res) 
-                            NotEq 
-                            (IntegerConstant 2 (Integer 4 [])) 
-                            (Logical 4 []) 
+                    (If
+                        (IntegerCompare
+                            (Var 2 res)
+                            NotEq
+                            (IntegerConstant 2 (Integer 4 []))
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (= 
-                        (Var 2 res8) 
-                        (FunctionCall 
-                            2 ibits@ibits64 
-                            2 ibits 
+                    (=
+                        (Var 2 res8)
+                        (FunctionCall
+                            2 ibits@ibits64
+                            2 ibits
                             [((Var 2 from8))
                             ((IntegerConstant 2 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))] 
-                            (Integer 8 []) 
-                            () 
+                            ((IntegerConstant 2 (Integer 4 [])))]
+                            (Integer 8 [])
                             ()
-                        ) 
+                            ()
+                        )
                         ()
                     )
-                    (If 
-                        (IntegerCompare 
-                            (Var 2 res8) 
-                            NotEq 
-                            (IntegerConstant 2 (Integer 8 [])) 
-                            (Logical 4 []) 
+                    (If
+                        (IntegerCompare
+                            (Var 2 res8)
+                            NotEq
+                            (IntegerConstant 2 (Integer 8 []))
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (= 
-                        (Var 2 res) 
-                        (FunctionCall 
-                            2 ibits@ibits32 
-                            2 ibits 
+                    (=
+                        (Var 2 res)
+                        (FunctionCall
+                            2 ibits@ibits32
+                            2 ibits
                             [((Var 2 from))
                             ((IntegerConstant 0 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))] 
-                            (Integer 4 []) 
-                            () 
+                            ((IntegerConstant 2 (Integer 4 [])))]
+                            (Integer 4 [])
                             ()
-                        ) 
+                            ()
+                        )
                         ()
                     )
-                    (If 
-                        (IntegerCompare 
-                            (Var 2 res) 
-                            NotEq 
-                            (IntegerConstant 2 (Integer 4 [])) 
-                            (Logical 4 []) 
+                    (If
+                        (IntegerCompare
+                            (Var 2 res)
+                            NotEq
+                            (IntegerConstant 2 (Integer 4 []))
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (= 
-                        (Var 2 res8) 
-                        (FunctionCall 
-                            2 ibits@ibits64 
-                            2 ibits 
+                    (=
+                        (Var 2 res8)
+                        (FunctionCall
+                            2 ibits@ibits64
+                            2 ibits
                             [((Var 2 from8))
                             ((IntegerConstant 0 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))] 
-                            (Integer 8 []) 
-                            () 
+                            ((IntegerConstant 2 (Integer 4 [])))]
+                            (Integer 8 [])
                             ()
-                        ) 
+                            ()
+                        )
                         ()
                     )
-                    (If 
-                        (IntegerCompare 
-                            (Var 2 res8) 
-                            NotEq 
-                            (IntegerConstant 2 (Integer 8 [])) 
-                            (Logical 4 []) 
+                    (If
+                        (IntegerCompare
+                            (Var 2 res8)
+                            NotEq
+                            (IntegerConstant 2 (Integer 8 []))
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (= 
-                        (Var 2 from) 
-                        (IntegerUnaryMinus 
-                            (IntegerConstant 20 (Integer 4 [])) 
-                            (Integer 4 []) 
+                    (=
+                        (Var 2 from)
+                        (IntegerUnaryMinus
+                            (IntegerConstant 20 (Integer 4 []))
+                            (Integer 4 [])
                             (IntegerConstant -20 (Integer 4 []))
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 from8) 
-                        (IntegerUnaryMinus 
-                            (IntegerConstant 20 (Integer 8 [])) 
-                            (Integer 8 []) 
+                    (=
+                        (Var 2 from8)
+                        (IntegerUnaryMinus
+                            (IntegerConstant 20 (Integer 8 []))
+                            (Integer 8 [])
                             (IntegerConstant -20 (Integer 8 []))
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 res) 
-                        (FunctionCall 
-                            2 ibits@ibits32 
-                            2 ibits 
+                    (=
+                        (Var 2 res)
+                        (FunctionCall
+                            2 ibits@ibits32
+                            2 ibits
                             [((Var 2 from))
                             ((IntegerConstant 29 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))] 
-                            (Integer 4 []) 
-                            () 
+                            ((IntegerConstant 2 (Integer 4 [])))]
+                            (Integer 4 [])
                             ()
-                        ) 
+                            ()
+                        )
                         ()
                     )
-                    (If 
-                        (IntegerCompare 
-                            (Var 2 res) 
-                            NotEq 
-                            (IntegerConstant 3 (Integer 4 [])) 
-                            (Logical 4 []) 
+                    (If
+                        (IntegerCompare
+                            (Var 2 res)
+                            NotEq
+                            (IntegerConstant 3 (Integer 4 []))
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (= 
-                        (Var 2 res8) 
-                        (FunctionCall 
-                            2 ibits@ibits64 
-                            2 ibits 
+                    (=
+                        (Var 2 res8)
+                        (FunctionCall
+                            2 ibits@ibits64
+                            2 ibits
                             [((Var 2 from8))
                             ((IntegerConstant 29 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))] 
-                            (Integer 8 []) 
-                            () 
+                            ((IntegerConstant 2 (Integer 4 [])))]
+                            (Integer 8 [])
                             ()
-                        ) 
+                            ()
+                        )
                         ()
                     )
-                    (If 
-                        (IntegerCompare 
-                            (Var 2 res8) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 3 (Integer 4 [])) 
-                                IntegerToInteger 
-                                (Integer 8 []) 
+                    (If
+                        (IntegerCompare
+                            (Var 2 res8)
+                            NotEq
+                            (Cast
+                                (IntegerConstant 3 (Integer 4 []))
+                                IntegerToInteger
+                                (Integer 8 [])
                                 (IntegerConstant 3 (Integer 8 []))
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (= 
-                        (Var 2 res) 
-                        (FunctionCall 
-                            2 ibits@ibits32 
-                            2 ibits 
+                    (=
+                        (Var 2 res)
+                        (FunctionCall
+                            2 ibits@ibits32
+                            2 ibits
                             [((Var 2 from))
                             ((IntegerConstant 2 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))] 
-                            (Integer 4 []) 
-                            () 
+                            ((IntegerConstant 2 (Integer 4 [])))]
+                            (Integer 4 [])
                             ()
-                        ) 
+                            ()
+                        )
                         ()
                     )
-                    (If 
-                        (IntegerCompare 
-                            (Var 2 res) 
-                            NotEq 
-                            (IntegerConstant 3 (Integer 4 [])) 
-                            (Logical 4 []) 
+                    (If
+                        (IntegerCompare
+                            (Var 2 res)
+                            NotEq
+                            (IntegerConstant 3 (Integer 4 []))
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (= 
-                        (Var 2 res8) 
-                        (FunctionCall 
-                            2 ibits@ibits64 
-                            2 ibits 
+                    (=
+                        (Var 2 res8)
+                        (FunctionCall
+                            2 ibits@ibits64
+                            2 ibits
                             [((Var 2 from8))
                             ((IntegerConstant 2 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))] 
-                            (Integer 8 []) 
-                            () 
+                            ((IntegerConstant 2 (Integer 4 [])))]
+                            (Integer 8 [])
                             ()
-                        ) 
+                            ()
+                        )
                         ()
                     )
-                    (If 
-                        (IntegerCompare 
-                            (Var 2 res8) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 3 (Integer 4 [])) 
-                                IntegerToInteger 
-                                (Integer 8 []) 
+                    (If
+                        (IntegerCompare
+                            (Var 2 res8)
+                            NotEq
+                            (Cast
+                                (IntegerConstant 3 (Integer 4 []))
+                                IntegerToInteger
+                                (Integer 8 [])
                                 (IntegerConstant 3 (Integer 8 []))
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )]
-                ), 
+                ),
             iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_bit:
                 (IntrinsicModule lfortran_intrinsic_bit)
-            
-        }) 
+        })
     []
 )

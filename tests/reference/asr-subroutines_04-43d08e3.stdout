@@ -1,69 +1,66 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             print_it:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             print_int:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         3
                                         {
                                             a:
-                                                (Variable 
-                                                    3 
-                                                    a 
-                                                    [] 
-                                                    Local 
-                                                    (IntegerConstant 5 (Integer 4 [])) 
-                                                    () 
-                                                    Save 
-                                                    (Integer 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    a
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 5 (Integer 4 []))
+                                                    ()
+                                                    Save
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    print_int 
-                                    [] 
-                                    [] 
-                                    [(Print 
-                                        () 
-                                        [(Var 3 a)] 
-                                        () 
+                                        })
+                                    print_int
+                                    []
+                                    []
+                                    [(Print
                                         ()
-                                    )] 
-                                    () 
-                                    Source 
-                                    Public 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                        [(Var 3 a)]
+                                        ()
+                                        ()
+                                    )]
+                                    ()
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
                                     .false.
                                 )
-                            
-                        }) 
-                    print_it 
-                    [] 
-                    [(SubroutineCall 
-                        2 print_int 
-                        () 
-                        [] 
+                        })
+                    print_it
+                    []
+                    [(SubroutineCall
+                        2 print_int
+                        ()
+                        []
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )

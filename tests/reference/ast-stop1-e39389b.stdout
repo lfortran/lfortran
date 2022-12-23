@@ -1,223 +1,223 @@
-(TranslationUnit 
-    [(Program 
-        stop1 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+(TranslationUnit
+    [(Program
+        stop1
+        ()
+        []
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
-                (Comment 
+                (Comment
                     "! AST only(Syntax check)"
                 )]
             )
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(stop 
-            [] 
-            [] 
-            15 
-            Equal 
-            ())] 
+            )
+            []
+            [(stop
+            []
+            []
+            15
+            Equal
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(errstop 
-            [] 
-            [] 
-            25 
-            Equal 
-            ())] 
-            (TriviaNode 
-                [] 
+            )
+            []
+            [(errstop
+            []
+            []
+            25
+            Equal
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(If 
-            0 
-            () 
-            (/= stop 15) 
-            [(Stop 
-                0 
-                () 
-                () 
+        )]
+        [(If
+            0
+            ()
+            (/= stop 15)
+            [(Stop
+                0
                 ()
-            )] 
-            [(If 
-                0 
-                () 
-                (/= errstop 25) 
-                [(ErrorStop 
-                    0 
-                    () 
-                    () 
+                ()
+                ()
+            )]
+            [(If
+                0
+                ()
+                (/= errstop 25)
+                [(ErrorStop
+                    0
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                    ()
+                    ()
+                )]
+                []
                 ()
-            )] 
-            () 
-            () 
-            (TriviaNode 
-                [] 
+                ()
+                ()
+            )]
+            ()
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (If 
-            0 
-            () 
-            (/= stop 15) 
-            [(Stop 
-                0 
-                (String 
+        (If
+            0
+            ()
+            (/= stop 15)
+            [(Stop
+                0
+                (String
                     "message"
-                ) 
-                () 
+                )
                 ()
-            )] 
-            [(If 
-                0 
-                () 
-                (/= errstop 25) 
-                [(ErrorStop 
-                    0 
-                    (String 
+                ()
+            )]
+            [(If
+                0
+                ()
+                (/= errstop 25)
+                [(ErrorStop
+                    0
+                    (String
                         "message"
-                    ) 
-                    () 
+                    )
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                    ()
+                )]
+                []
                 ()
-            )] 
-            () 
-            () 
-            (TriviaNode 
-                [] 
+                ()
+                ()
+            )]
+            ()
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (If 
-            0 
-            () 
-            (/= stop 15) 
-            [(Stop 
-                0 
-                0 
-                () 
+        (If
+            0
+            ()
+            (/= stop 15)
+            [(Stop
+                0
+                0
                 ()
-            )] 
-            [(If 
-                0 
-                () 
-                (/= errstop 25) 
-                [(ErrorStop 
-                    0 
-                    0 
-                    () 
+                ()
+            )]
+            [(If
+                0
+                ()
+                (/= errstop 25)
+                [(ErrorStop
+                    0
+                    0
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                    ()
+                )]
+                []
                 ()
-            )] 
-            () 
-            () 
-            (TriviaNode 
-                [] 
+                ()
+                ()
+            )]
+            ()
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (If 
-            0 
-            () 
-            (/= stop 15) 
-            [(Stop 
-                0 
-                () 
-                (Logical .true.) 
+        (If
+            0
+            ()
+            (/= stop 15)
+            [(Stop
+                0
                 ()
-            )] 
-            [(If 
-                0 
-                () 
-                (/= errstop 25) 
-                [(ErrorStop 
-                    0 
-                    () 
-                    (Logical .true.) 
+                (Logical .true.)
+                ()
+            )]
+            [(If
+                0
+                ()
+                (/= errstop 25)
+                [(ErrorStop
+                    0
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                    (Logical .true.)
+                    ()
+                )]
+                []
                 ()
-            )] 
-            () 
-            () 
-            (TriviaNode 
-                [] 
+                ()
+                ()
+            )]
+            ()
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (If 
-            0 
-            () 
-            (/= stop 15) 
-            [(Stop 
-                0 
-                1 
-                (Logical .false.) 
+        (If
+            0
+            ()
+            (/= stop 15)
+            [(Stop
+                0
+                1
+                (Logical .false.)
                 ()
-            )] 
-            [(If 
-                0 
-                () 
-                (/= errstop 25) 
-                [(ErrorStop 
-                    0 
-                    1 
-                    (Logical .false.) 
+            )]
+            [(If
+                0
+                ()
+                (/= errstop 25)
+                [(ErrorStop
+                    0
+                    1
+                    (Logical .false.)
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                )]
+                []
                 ()
-            )] 
-            () 
-            () 
-            (TriviaNode 
-                [] 
+                ()
+                ()
+            )]
+            ()
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

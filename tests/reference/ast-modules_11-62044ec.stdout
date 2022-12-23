@@ -1,114 +1,114 @@
-(TranslationUnit 
-    [(Module 
-        module_11 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(Module
+        module_11
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(ImplicitNone 
-            [] 
+        )
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(i 
-            [] 
-            [] 
-            1 
-            Equal 
-            ())] 
+            )
+            []
+            [(i
+            []
+            []
+            1
+            Equal
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(j 
-            [] 
-            [] 
-            2 
-            Equal 
-            ())] 
-            (TriviaNode 
-                [] 
+            )
+            []
+            [(j
+            []
+            []
+            2
+            Equal
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(Subroutine 
-            access_internally 
-            [] 
-            [] 
-            () 
-            (TriviaNode 
-                [] 
+        )]
+        [(Subroutine
+            access_internally
+            []
+            []
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [] 
-            [] 
-            [] 
-            [(Print 
-                0 
-                () 
-                [(String 
+            )
+            []
+            []
+            []
+            []
+            [(Print
+                0
+                ()
+                [(String
                     "i = "
                 )
-                i] 
+                i]
                 ()
-            )] 
+            )]
             []
         )]
     )
-    (Program 
-        access_externally 
-        () 
-        [(Use 
-            [] 
-            module_11 
-            [] 
-            .false. 
+    (Program
+        access_externally
+        ()
+        [(Use
+            []
+            module_11
+            []
+            .false.
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
+        )]
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [] 
-        [(Print 
-            0 
-            () 
-            [(String 
+        )]
+        []
+        [(Print
+            0
+            ()
+            [(String
                 "j = "
             )
-            j] 
+            j]
             ()
         )
-        (SubroutineCall 
-            0 
-            access_internally 
-            [] 
-            [] 
-            [] 
-            (TriviaNode 
-                [] 
+        (SubroutineCall
+            0
+            access_internally
+            []
+            []
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

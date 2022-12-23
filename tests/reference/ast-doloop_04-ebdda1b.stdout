@@ -1,361 +1,361 @@
-(TranslationUnit 
-    [(Program 
-        doloop_04 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
+(TranslationUnit
+    [(Program
+        doloop_04
+        ()
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(i 
-            [] 
-            [] 
-            () 
-            None 
+            )
+            []
+            [(i
+            []
+            []
+            ()
+            None
             ())
-            (j 
-            [] 
-            [] 
-            () 
-            None 
+            (j
+            []
+            []
+            ()
+            None
             ())
-            (k 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
-            (TriviaNode 
-                [] 
+            (k
+            []
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(= 
-            0 
-            j 
-            0 
+        )]
+        [(=
+            0
+            j
+            0
             ()
         )
-        (= 
-            0 
-            k 
-            2 
+        (=
+            0
+            k
+            2
             ()
         )
-        (DoLoop 
-            0 
-            () 
-            0 
-            i 
-            1 
-            10 
-            k 
-            [(= 
-                0 
-                j 
-                (+ j i) 
+        (DoLoop
+            0
+            ()
+            0
+            i
+            1
+            10
+            k
+            [(=
+                0
+                j
+                (+ j i)
                 ()
-            )] 
-            () 
+            )]
+            ()
             ()
         )
-        (If 
-            0 
-            () 
-            (/= j 25) 
-            [(ErrorStop 
-                0 
-                () 
-                () 
+        (If
+            0
+            ()
+            (/= j 25)
+            [(ErrorStop
+                0
                 ()
-            )] 
-            [] 
-            () 
-            () 
-            ()
-        )
-        (Print 
-            0 
-            () 
-            [j] 
-            (TriviaNode 
-                [] 
-                [(EndOfLine)
-                (EndOfLine)]
-            )
-        )
-        (= 
-            0 
-            j 
-            0 
-            ()
-        )
-        (= 
-            0 
-            k 
-            (u- 2) 
-            ()
-        )
-        (DoLoop 
-            0 
-            () 
-            0 
-            i 
-            10 
-            1 
-            k 
-            [(= 
-                0 
-                j 
-                (+ j i) 
                 ()
-            )] 
-            () 
-            ()
-        )
-        (If 
-            0 
-            () 
-            (/= j 30) 
-            [(ErrorStop 
-                0 
-                () 
-                () 
                 ()
-            )] 
-            [] 
-            () 
-            () 
+            )]
+            []
+            ()
+            ()
             ()
         )
-        (Print 
-            0 
-            () 
-            [j] 
-            (TriviaNode 
-                [] 
+        (Print
+            0
+            ()
+            [j]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (= 
-            0 
-            j 
-            0 
+        (=
+            0
+            j
+            0
             ()
         )
-        (DoLoop 
-            0 
-            a 
-            0 
-            i 
-            1 
-            10 
-            () 
-            [(= 
-                0 
-                j 
-                (+ j i) 
+        (=
+            0
+            k
+            (u- 2)
+            ()
+        )
+        (DoLoop
+            0
+            ()
+            0
+            i
+            10
+            1
+            k
+            [(=
+                0
+                j
+                (+ j i)
+                ()
+            )]
+            ()
+            ()
+        )
+        (If
+            0
+            ()
+            (/= j 30)
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (Print
+            0
+            ()
+            [j]
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+        )
+        (=
+            0
+            j
+            0
+            ()
+        )
+        (DoLoop
+            0
+            a
+            0
+            i
+            1
+            10
+            ()
+            [(=
+                0
+                j
+                (+ j i)
                 ()
             )
-            (If 
-                0 
-                () 
-                (== i 2) 
-                [(Exit 
-                    0 
-                    a 
+            (If
+                0
+                ()
+                (== i 2)
+                [(Exit
+                    0
+                    a
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                )]
+                []
                 ()
-            )] 
-            () 
+                ()
+                ()
+            )]
+            ()
             ()
         )
-        (If 
-            0 
-            () 
-            (/= j 3) 
-            [(ErrorStop 
-                0 
-                () 
-                () 
+        (If
+            0
+            ()
+            (/= j 3)
+            [(ErrorStop
+                0
                 ()
-            )] 
-            [] 
-            () 
-            () 
-            (TriviaNode 
-                [] 
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (= 
-            0 
-            j 
-            0 
+        (=
+            0
+            j
+            0
             ()
         )
-        (DoLoop 
-            0 
-            b 
-            0 
-            i 
-            1 
-            10 
-            2 
-            [(= 
-                0 
-                j 
-                (+ j i) 
+        (DoLoop
+            0
+            b
+            0
+            i
+            1
+            10
+            2
+            [(=
+                0
+                j
+                (+ j i)
                 ()
             )
-            (If 
-                0 
-                () 
-                (== i 3) 
-                [(Exit 
-                    0 
-                    b 
-                    ()
-                )] 
-                [] 
-                () 
-                () 
+            (If
+                0
                 ()
-            )] 
-            () 
+                (== i 3)
+                [(Exit
+                    0
+                    b
+                    ()
+                )]
+                []
+                ()
+                ()
+                ()
+            )]
+            ()
             ()
         )
-        (If 
-            0 
-            () 
-            (/= j 4) 
-            [(ErrorStop 
-                0 
-                () 
-                () 
+        (If
+            0
+            ()
+            (/= j 4)
+            [(ErrorStop
+                0
                 ()
-            )] 
-            [] 
-            () 
-            () 
-            (TriviaNode 
-                [] 
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (= 
-            0 
-            j 
-            0 
+        (=
+            0
+            j
+            0
             ()
         )
-        (= 
-            0 
-            i 
-            1 
+        (=
+            0
+            i
+            1
             ()
         )
-        (DoLoop 
-            0 
-            c 
-            0 
-            () 
-            () 
-            () 
-            () 
-            [(= 
-                0 
-                j 
-                (+ j i) 
+        (DoLoop
+            0
+            c
+            0
+            ()
+            ()
+            ()
+            ()
+            [(=
+                0
+                j
+                (+ j i)
                 ()
             )
-            (If 
-                0 
-                () 
-                (== i 2) 
-                [(Exit 
-                    0 
-                    c 
+            (If
+                0
+                ()
+                (== i 2)
+                [(Exit
+                    0
+                    c
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                )]
+                []
+                ()
+                ()
                 ()
             )
-            (= 
-                0 
-                i 
-                (+ i 1) 
+            (=
+                0
+                i
+                (+ i 1)
                 ()
-            )] 
-            () 
+            )]
+            ()
             ()
         )
-        (If 
-            0 
-            () 
-            (/= j 3) 
-            [(ErrorStop 
-                0 
-                () 
-                () 
+        (If
+            0
+            ()
+            (/= j 3)
+            [(ErrorStop
+                0
                 ()
-            )] 
-            [] 
-            () 
-            () 
-            (TriviaNode 
-                [] 
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)
-                (Comment 
+                (Comment
                     "!test-issue 746"
                 )
                 (EndOfLine)]
             )
         )
-        (= 
-            0 
-            k 
-            2 
+        (=
+            0
+            k
+            2
             ()
         )
-        (DoLoop 
-            0 
-            () 
-            0 
-            i 
-            1 
-            10 
-            k 
-            [(Continue 
-                100 
+        (DoLoop
+            0
+            ()
+            0
+            i
+            1
+            10
+            k
+            [(Continue
+                100
                 ()
-            )] 
-            () 
-            (TriviaNode 
-                [] 
+            )]
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

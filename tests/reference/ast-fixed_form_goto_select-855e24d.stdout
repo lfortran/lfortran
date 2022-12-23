@@ -1,95 +1,95 @@
-(TranslationUnit 
-    [(Program 
-        main 
-        () 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+(TranslationUnit
+    [(Program
+        main
+        ()
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(k 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(k
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(m 
-            [] 
-            [] 
-            () 
-            None 
+            )
+            []
+            [(m
+            []
+            []
+            ()
+            None
             ())
-            (n 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            (n
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            k 
-            1 
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            k
+            1
             ()
         )
-        (Print 
-            100 
-            () 
-            [(String 
+        (Print
+            100
+            ()
+            [(String
                 "hello"
-            )] 
+            )]
             ()
         )
-        (= 
-            200 
-            k 
-            (+ k 1) 
+        (=
+            200
+            k
+            (+ k 1)
             ()
         )
-        (= 
-            0 
-            m 
-            1 
+        (=
+            0
+            m
+            1
             ()
         )
-        (= 
-            0 
-            n 
-            2 
+        (=
+            0
+            n
+            2
             ()
         )
-        (GoTo 
-            0 
-            () 
-            m 
+        (GoTo
+            0
+            ()
+            m
             [200
-            100] 
+            100]
             ()
         )
-        (GoTo 
-            0 
-            () 
-            n 
-            [100
-            200] 
+        (GoTo
+            0
             ()
-        )] 
+            n
+            [100
+            200]
+            ()
+        )]
         []
     )]
 )

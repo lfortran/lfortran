@@ -1,290 +1,290 @@
-(TranslationUnit 
-    [(Program 
-        attributes1 
-        (TriviaNode 
+(TranslationUnit
+    [(Program
+        attributes1
+        (TriviaNode
             [(EndOfLine)
-            (Comment 
+            (Comment
                 "! test for AST(to fmt) only"
-            )] 
+            )]
             []
-        ) 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeCharacter 
-                [(len 
-                4 
-                Value)] 
-                () 
+        )
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeCharacter
+                [(len
+                4
+                Value)]
+                ()
                 None
-            ) 
-            [] 
-            [(a 
-            [] 
-            [] 
-            () 
-            None 
+            )
+            []
+            [(a
+            []
+            []
+            ()
+            None
             ())
-            (b 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            (b
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeCharacter 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeCharacter
+                []
+                ()
                 None
-            ) 
-            [(AttrIntent 
+            )
+            [(AttrIntent
                 In
-            )] 
-            [(str 
-            [] 
-            [] 
-            () 
-            DoubleAsterisk 
-            ())] 
+            )]
+            [(str
+            []
+            []
+            ()
+            DoubleAsterisk
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeCharacter 
-                [(len 
-                1 
+        (Declaration
+            (AttrType
+                TypeCharacter
+                [(len
+                1
                 Value)
-                (kind 
-                c_char 
-                Value)] 
-                () 
+                (kind
+                c_char
+                Value)]
+                ()
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrTarget
             )
-            (AttrBind 
-                (Bind 
-                    [C] 
-                    [(name 
-                    (String 
+            (AttrBind
+                (Bind
+                    [C]
+                    [(name
+                    (String
                         "_binary_fclKernels_cl_start"
                     ))]
                 )
-            )] 
-            [(fclKernelStart 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )]
+            [(fclKernelStart
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeCharacter 
-                [(len 
-                3 
-                Value)] 
-                () 
+        (Declaration
+            (AttrType
+                TypeCharacter
+                [(len
+                3
+                Value)]
+                ()
                 None
-            ) 
-            [] 
-            [(c 
-            [(1 
-            2 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(c
+            [(1
+            2
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrVolatile
-            )] 
-            [(d 
-            [] 
-            [] 
-            () 
-            None 
+            )]
+            [(d
+            []
+            []
+            ()
+            None
             ())
-            (e 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            (e
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeReal 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrExternal
-            )] 
-            [(g 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )]
+            [(g
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            () 
-            [(AttrEquivalence 
+        (Declaration
+            ()
+            [(AttrEquivalence
                 [([a
-                (FuncCallOrArray 
-                    c 
-                    [] 
-                    [(() 
-                    1 
-                    ())] 
-                    [] 
+                (FuncCallOrArray
+                    c
+                    []
+                    [(()
+                    1
+                    ())]
+                    []
                     []
                 )])
                 ([b
-                (FuncCallOrArray 
-                    c 
-                    [] 
-                    [(() 
-                    2 
-                    ())] 
-                    [] 
+                (FuncCallOrArray
+                    c
+                    []
+                    [(()
+                    2
+                    ())]
+                    []
                     []
                 )])]
-            )] 
-            [] 
+            )]
+            []
             ()
         )
-        (DerivedType 
-            details 
-            [] 
-            () 
-            [] 
-            [(Declaration 
-                () 
-                [(SimpleAttribute 
+        (DerivedType
+            details
+            []
+            ()
+            []
+            [(Declaration
+                ()
+                [(SimpleAttribute
                     AttrSequence
-                )] 
-                [] 
+                )]
+                []
                 ()
             )
-            (Declaration 
-                (AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
-                    None
-                ) 
-                [] 
-                [(age 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
-                ()
-            )
-            (Declaration 
-                (AttrType 
-                    TypeCharacter 
-                    [(() 
-                    50 
-                    Value)] 
-                    () 
-                    None
-                ) 
-                [] 
-                [(name 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
-                ()
-            )] 
-            [(DerivedTypeProc 
-                () 
-                [(AttrPass 
+            (Declaration
+                (AttrType
+                    TypeInteger
+                    []
                     ()
-                )] 
-                [(UseSymbol 
-                    sample 
+                    None
+                )
+                []
+                [(age
+                []
+                []
+                ()
+                None
+                ())]
+                ()
+            )
+            (Declaration
+                (AttrType
+                    TypeCharacter
+                    [(()
+                    50
+                    Value)]
+                    ()
+                    None
+                )
+                []
+                [(name
+                []
+                []
+                ()
+                None
+                ())]
+                ()
+            )]
+            [(DerivedTypeProc
+                ()
+                [(AttrPass
+                    ()
+                )]
+                [(UseSymbol
+                    sample
                     name
-                )] 
+                )]
                 ()
             )]
         )
-        (Declaration 
-            () 
-            [(SimpleAttribute 
+        (Declaration
+            ()
+            [(SimpleAttribute
                 AttrIntrinsic
-            )] 
-            [(sin 
-            [] 
-            [] 
-            () 
-            None 
+            )]
+            [(sin
+            []
+            []
+            ()
+            None
             ())
-            (cos 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            (cos
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeDoublePrecision 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeDoublePrecision
+                []
+                ()
                 None
-            ) 
-            [(AttrIntent 
+            )
+            [(AttrIntent
                 In
-            )] 
-            [(x 
-            [(() 
-            () 
-            AssumedRank)] 
-            [] 
-            () 
-            None 
-            ())] 
+            )]
+            [(x
+            [(()
+            ()
+            AssumedRank)]
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            () 
-            [(SimpleAttribute 
-                AttrSave
-            )] 
-            [(zzrayc 
-            [] 
-            [] 
-            () 
-            Slash 
-            ())] 
+        (Declaration
             ()
-        )] 
-        [] 
+            [(SimpleAttribute
+                AttrSave
+            )]
+            [(zzrayc
+            []
+            []
+            ()
+            Slash
+            ())]
+            ()
+        )]
+        []
         []
     )]
 )

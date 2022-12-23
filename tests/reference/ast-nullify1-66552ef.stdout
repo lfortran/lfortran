@@ -1,31 +1,31 @@
-(TranslationUnit 
-    [(Program 
-        nullify1 
-        (TriviaNode 
+(TranslationUnit
+    [(Program
+        nullify1
+        (TriviaNode
             [(EndOfLine)
-            (Comment 
+            (Comment
                 "! Tests for syntax (AST) only:"
-            )] 
+            )]
             []
-        ) 
-        [] 
-        [] 
-        [] 
-        [(Nullify 
-            0 
-            [a] 
-            [] 
+        )
+        []
+        []
+        []
+        [(Nullify
+            0
+            [a]
+            []
             ()
         )
-        (Nullify 
-            0 
+        (Nullify
+            0
             [a
             b
             c
-            d] 
-            [] 
+            d]
+            []
             ()
-        )] 
+        )]
         []
     )]
 )

@@ -1,54 +1,52 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             arrays_10:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             x:
-                                (Variable 
-                                    2 
-                                    x 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Pointer 
-                                        (Integer 4 [(() 
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Integer 4 [(()
                                         ())])
-                                    ) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    )
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    arrays_10 
-                    [] 
-                    [(Allocate 
-                        [(2 x 
-                        [((IntegerConstant 1 (Integer 4 [])) 
-                        (IntegerConstant 1 (Integer 4 [])))])] 
-                        () 
-                        () 
+                        })
+                    arrays_10
+                    []
+                    [(Allocate
+                        [(2 x
+                        [((IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4 [])))])]
+                        ()
+                        ()
                         ()
                     )
-                    (= 
-                        (Var 2 x) 
-                        (ArrayConstant 
-                            [(IntegerConstant 1 (Integer 4 []))] 
-                            (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
-                            (IntegerConstant 1 (Integer 4 [])))]) 
+                    (=
+                        (Var 2 x)
+                        (ArrayConstant
+                            [(IntegerConstant 1 (Integer 4 []))]
+                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4 [])))])
                             ColMajor
-                        ) 
+                        )
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )

@@ -1,19 +1,18 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             implicit_program_lfortran:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             
-                        }) 
-                    implicit_program_lfortran 
-                    [] 
+                        })
+                    implicit_program_lfortran
+                    []
                     []
                 )
-            
-        }) 
+        })
     []
 )

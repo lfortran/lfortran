@@ -1,98 +1,98 @@
-(TranslationUnit 
-    [(Program 
-        main 
-        () 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+(TranslationUnit
+    [(Program
+        main
+        ()
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(i 
-            [] 
-            [] 
-            () 
-            None 
+            )
+            []
+            [(i
+            []
+            []
+            ()
+            None
             ())
-            (sum 
-            [] 
-            [] 
-            () 
-            None 
+            (sum
+            []
+            []
+            ()
+            None
             ())
-            (ZERO 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            (ZERO
+            []
+            []
             ()
-        )] 
-        [(Assign 
-            10 
-            30 
-            next 
+            None
+            ())]
             ()
-        )
-        (= 
-            0 
-            sum 
-            ZERO 
+        )]
+        [(Assign
+            10
+            30
+            next
             ()
         )
-        (= 
-            0 
-            i 
-            1 
+        (=
+            0
+            sum
+            ZERO
             ()
         )
-        (GoTo 
-            20 
-            next 
-            () 
+        (=
+            0
+            i
+            1
+            ()
+        )
+        (GoTo
+            20
+            next
+            ()
             [30
             50
-            70] 
+            70]
             ()
         )
-        (If 
-            30 
-            () 
-            (< 0 1) 
-            [(GoTo 
-                0 
-                () 
-                70 
-                [] 
+        (If
+            30
+            ()
+            (< 0 1)
+            [(GoTo
+                0
                 ()
-            )] 
-            [] 
-            () 
-            () 
+                70
+                []
+                ()
+            )]
+            []
+            ()
+            ()
             ()
         )
-        (Print 
-            50 
-            () 
-            [50] 
+        (Print
+            50
+            ()
+            [50]
             ()
         )
-        (Assign 
-            0 
-            50 
-            next 
+        (Assign
+            0
+            50
+            next
             ()
         )
-        (Print 
-            70 
-            () 
-            [70] 
+        (Print
+            70
             ()
-        )] 
+            [70]
+            ()
+        )]
         []
     )]
 )
