@@ -1,23 +1,23 @@
-(TranslationUnit 
-    [(Function 
-        f 
-        [] 
-        [(AttrType 
-            TypeReal 
-            [(() 
-            8 
-            Value)] 
-            () 
+(TranslationUnit
+    [(Function
+        f
+        []
+        [(AttrType
+            TypeReal
+            [(()
+            8
+            Value)]
+            ()
             None
-        )] 
-        () 
-        () 
-        () 
-        [] 
-        [] 
-        [] 
-        [] 
-        [] 
+        )]
+        ()
+        ()
+        ()
+        []
+        []
+        []
+        []
+        []
         []
     )]
 )

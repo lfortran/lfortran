@@ -1,270 +1,270 @@
-(TranslationUnit 
-    [(Program 
-        array9 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(Program
+        array9
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [] 
-        [(DerivedType 
-            varying_string 
-            [] 
-            (TriviaNode 
-                [] 
+        )
+        []
+        []
+        [(DerivedType
+            varying_string
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [(Declaration 
-                (AttrType 
-                    TypeCharacter 
-                    [(len 
-                    1 
-                    Value)] 
-                    () 
+            )
+            []
+            [(Declaration
+                (AttrType
+                    TypeCharacter
+                    [(len
+                    1
+                    Value)]
+                    ()
                     None
-                ) 
-                [(SimpleAttribute 
+                )
+                [(SimpleAttribute
                     AttrAllocatable
-                )] 
-                [(characters 
-                [(() 
-                () 
-                DimensionExpr)] 
-                [] 
-                () 
-                None 
-                ())] 
+                )]
+                [(characters
+                [(()
                 ()
-            )] 
+                DimensionExpr)]
+                []
+                ()
+                None
+                ())]
+                ()
+            )]
             []
         )
-        (Declaration 
-            (AttrType 
-                TypeType 
-                [] 
-                varying_string 
+        (Declaration
+            (AttrType
+                TypeType
+                []
+                varying_string
                 None
-            ) 
-            [] 
-            [(x 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(x
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeType 
-                [] 
-                varying_string 
+        (Declaration
+            (AttrType
+                TypeType
+                []
+                varying_string
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrAllocatable
-            )] 
-            [(a 
-            [(() 
-            () 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())] 
+            )]
+            [(a
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeReal 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrAllocatable
-            )] 
-            [(b 
-            [(() 
-            () 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())] 
+            )]
+            [(b
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrAllocatable
-            )] 
-            [(c 
-            [(() 
-            () 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())] 
+            )]
+            [(c
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeReal 
-                [(kind 
-                4 
-                Value)] 
-                () 
+        (Declaration
+            (AttrType
+                TypeReal
+                [(kind
+                4
+                Value)]
+                ()
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrAllocatable
-            )] 
-            [(d 
-            [(() 
-            () 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())] 
-            (TriviaNode 
-                [] 
+            )]
+            [(d
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(= 
-            0 
-            a 
-            (ArrayInitializer 
-                () 
-                varying_string 
+        )]
+        [(=
+            0
+            a
+            (ArrayInitializer
+                ()
+                varying_string
                 []
-            ) 
+            )
             ()
         )
-        (= 
-            0 
-            b 
-            (ArrayInitializer 
-                (AttrType 
-                    TypeReal 
-                    [] 
-                    () 
+        (=
+            0
+            b
+            (ArrayInitializer
+                (AttrType
+                    TypeReal
+                    []
+                    ()
                     None
-                ) 
-                () 
+                )
+                ()
                 []
-            ) 
+            )
             ()
         )
-        (= 
-            0 
-            b 
-            (ArrayInitializer 
-                (AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
+        (=
+            0
+            b
+            (ArrayInitializer
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
                     None
-                ) 
-                () 
+                )
+                ()
                 []
-            ) 
+            )
             ()
         )
-        (= 
-            0 
-            d 
-            (ArrayInitializer 
-                (AttrType 
-                    TypeReal 
-                    [(kind 
-                    4 
-                    Value)] 
-                    () 
+        (=
+            0
+            d
+            (ArrayInitializer
+                (AttrType
+                    TypeReal
+                    [(kind
+                    4
+                    Value)]
+                    ()
                     None
-                ) 
-                () 
+                )
+                ()
                 []
-            ) 
-            (TriviaNode 
-                [] 
+            )
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (= 
-            0 
-            a 
-            (ArrayInitializer 
-                () 
-                varying_string 
+        (=
+            0
+            a
+            (ArrayInitializer
+                ()
+                varying_string
                 [x
                 x]
-            ) 
+            )
             ()
         )
-        (= 
-            0 
-            b 
-            (ArrayInitializer 
-                (AttrType 
-                    TypeReal 
-                    [] 
-                    () 
+        (=
+            0
+            b
+            (ArrayInitializer
+                (AttrType
+                    TypeReal
+                    []
+                    ()
                     None
-                ) 
-                () 
+                )
+                ()
                 [(Real "1.0")
                 (Real "2.0")]
-            ) 
+            )
             ()
         )
-        (= 
-            0 
-            b 
-            (ArrayInitializer 
-                (AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
+        (=
+            0
+            b
+            (ArrayInitializer
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
                     None
-                ) 
-                () 
+                )
+                ()
                 [1
                 2]
-            ) 
+            )
             ()
         )
-        (= 
-            0 
-            d 
-            (ArrayInitializer 
-                (AttrType 
-                    TypeReal 
-                    [(kind 
-                    4 
-                    Value)] 
-                    () 
+        (=
+            0
+            d
+            (ArrayInitializer
+                (AttrType
+                    TypeReal
+                    [(kind
+                    4
+                    Value)]
+                    ()
                     None
-                ) 
-                () 
+                )
+                ()
                 [(Real "1.0")
                 (Real "2.0")]
-            ) 
+            )
             ()
-        )] 
+        )]
         []
     )]
 )

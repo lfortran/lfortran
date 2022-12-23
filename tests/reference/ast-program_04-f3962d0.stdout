@@ -1,14 +1,14 @@
-(TranslationUnit 
-    [(ImplicitNone 
-        [] 
+(TranslationUnit
+    [(ImplicitNone
+        []
         ()
     )
-    (Print 
-        0 
-        () 
-        [(String 
+    (Print
+        0
+        ()
+        [(String
             "hello world"
-        )] 
+        )]
         ()
     )
     end]

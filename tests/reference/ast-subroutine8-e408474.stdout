@@ -1,111 +1,111 @@
-(TranslationUnit 
-    [(Subroutine 
-        a 
-        [] 
-        [(SimpleAttribute 
+(TranslationUnit
+    [(Subroutine
+        a
+        []
+        [(SimpleAttribute
             AttrRecursive
         )
-        (SimpleAttribute 
+        (SimpleAttribute
             AttrPure
-        )] 
-        () 
-        (TriviaNode 
-            [] 
+        )]
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [] 
-        [] 
-        [] 
-        [] 
+        )
+        []
+        []
+        []
+        []
+        []
         []
     )
-    (Subroutine 
-        b 
-        [] 
-        [(SimpleAttribute 
+    (Subroutine
+        b
+        []
+        [(SimpleAttribute
             AttrPure
         )
-        (SimpleAttribute 
+        (SimpleAttribute
             AttrElemental
-        )] 
-        () 
-        (TriviaNode 
-            [] 
+        )]
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [] 
-        [] 
-        [] 
-        [] 
+        )
+        []
+        []
+        []
+        []
+        []
         []
     )
-    (Subroutine 
-        c 
-        [] 
-        [(SimpleAttribute 
+    (Subroutine
+        c
+        []
+        [(SimpleAttribute
             AttrElemental
         )
-        (SimpleAttribute 
+        (SimpleAttribute
             AttrPure
-        )] 
-        () 
-        (TriviaNode 
-            [] 
+        )]
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [] 
-        [] 
-        [] 
-        [] 
+        )
+        []
+        []
+        []
+        []
+        []
         []
     )
-    (Subroutine 
-        d 
-        [] 
-        [(SimpleAttribute 
+    (Subroutine
+        d
+        []
+        [(SimpleAttribute
             AttrPure
         )
-        (SimpleAttribute 
+        (SimpleAttribute
             AttrRecursive
-        )] 
-        () 
-        (TriviaNode 
-            [] 
+        )]
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [] 
-        [] 
-        [] 
-        [] 
+        )
+        []
+        []
+        []
+        []
+        []
         []
     )
-    (Subroutine 
-        e 
-        [] 
-        [(SimpleAttribute 
+    (Subroutine
+        e
+        []
+        [(SimpleAttribute
             AttrImpure
         )
-        (SimpleAttribute 
+        (SimpleAttribute
             AttrElemental
         )
-        (SimpleAttribute 
+        (SimpleAttribute
             AttrModule
-        )] 
-        () 
-        () 
-        [] 
-        [] 
-        [] 
-        [] 
-        [] 
+        )]
+        ()
+        ()
+        []
+        []
+        []
+        []
+        []
         []
     )]
 )

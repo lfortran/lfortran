@@ -1,69 +1,69 @@
-(TranslationUnit 
-    [(Subroutine 
-        f 
-        [] 
-        [] 
-        () 
-        () 
-        [] 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+(TranslationUnit
+    [(Subroutine
+        f
+        []
+        []
+        ()
+        ()
+        []
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(x 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(x
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeReal 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(one 
-            [] 
-            [] 
-            () 
-            None 
+            )
+            []
+            [(one
+            []
+            []
+            ()
+            None
             ())
-            (two 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            (two
+            []
+            []
             ()
-        )] 
-        [(DataStmt 
-            0 
-            [(DataStmtSet 
-                [x] 
+            None
+            ())]
+            ()
+        )]
+        [(DataStmt
+            0
+            [(DataStmtSet
+                [x]
                 [1]
-            )] 
+            )]
             ()
         )
-        (DataStmt 
-            0 
-            [(DataStmtSet 
+        (DataStmt
+            0
+            [(DataStmtSet
                 [one
-                two] 
+                two]
                 [(Real "1.0")
                 (Real "2.0")]
-            )] 
+            )]
             ()
-        )] 
+        )]
         []
     )]
 )

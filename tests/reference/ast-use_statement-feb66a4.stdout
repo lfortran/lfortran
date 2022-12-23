@@ -1,289 +1,289 @@
-(TranslationUnit 
-    [(Program 
-        use_statement 
-        (TriviaNode 
+(TranslationUnit
+    [(Program
+        use_statement
+        (TriviaNode
             [(EndOfLine)
-            (Comment 
+            (Comment
                 "! AST"
             )
-            (Comment 
+            (Comment
                 "! Syntax check only"
-            )] 
+            )]
             []
-        ) 
-        [(Use 
-            [(SimpleAttribute 
+        )
+        [(Use
+            [(SimpleAttribute
                 AttrIntrinsic
-            )] 
-            example 
-            [(UseSymbol 
-                rename 
+            )]
+            example
+            [(UseSymbol
+                rename
                 name
             )
-            (UseSymbol 
-                RENAME 
+            (UseSymbol
+                RENAME
                 NAME
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [(SimpleAttribute 
+        (Use
+            [(SimpleAttribute
                 AttrIntrinsic
-            )] 
-            example 
-            [(IntrinsicOperator 
+            )]
+            example
+            [(IntrinsicOperator
                 POW
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [(SimpleAttribute 
+        (Use
+            [(SimpleAttribute
                 AttrIntrinsic
-            )] 
-            example 
-            [(IntrinsicOperator 
+            )]
+            example
+            [(IntrinsicOperator
                 NOT
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [(SimpleAttribute 
+        (Use
+            [(SimpleAttribute
                 AttrIntrinsic
-            )] 
-            example 
-            [(DefinedOperator 
+            )]
+            example
+            [(DefinedOperator
                 "in"
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [(SimpleAttribute 
+        (Use
+            [(SimpleAttribute
                 AttrIntrinsic
-            )] 
-            example 
-            [(RenameOperator 
-                "plus" 
+            )]
+            example
+            [(RenameOperator
+                "plus"
                 "add"
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [(SimpleAttribute 
+        (Use
+            [(SimpleAttribute
                 AttrNon_Intrinsic
-            )] 
-            example 
-            [] 
-            .false. 
+            )]
+            example
+            []
+            .false.
             ()
         )
-        (Use 
-            [(SimpleAttribute 
+        (Use
+            [(SimpleAttribute
                 AttrNon_Intrinsic
-            )] 
-            EXAMPLE 
-            [] 
-            .false. 
+            )]
+            EXAMPLE
+            []
+            .false.
             ()
         )
-        (Use 
-            [(SimpleAttribute 
+        (Use
+            [(SimpleAttribute
                 AttrNon_Intrinsic
-            )] 
-            example 
-            [(UseAssignment)] 
-            .true. 
+            )]
+            example
+            [(UseAssignment)]
+            .true.
             ()
         )
-        (Use 
-            [(SimpleAttribute 
+        (Use
+            [(SimpleAttribute
                 AttrNon_Intrinsic
-            )] 
-            example 
-            [(IntrinsicOperator 
+            )]
+            example
+            [(IntrinsicOperator
                 EQ
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [(SimpleAttribute 
+        (Use
+            [(SimpleAttribute
                 AttrNon_Intrinsic
-            )] 
-            example 
-            [(IntrinsicOperator 
+            )]
+            example
+            [(IntrinsicOperator
                 OR
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [(SimpleAttribute 
+        (Use
+            [(SimpleAttribute
                 AttrNon_Intrinsic
-            )] 
-            example 
-            [(DefinedOperator 
+            )]
+            example
+            [(DefinedOperator
                 "definedoperator"
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [] 
-            example 
-            [(IntrinsicOperator 
+        (Use
+            []
+            example
+            [(IntrinsicOperator
                 PLUS
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [] 
-            example 
-            [(UseSymbol 
-                sample 
-                ()
-            )] 
-            .true. 
-            ()
-        )
-        (Use 
-            [] 
-            example 
-            [(UseSymbol 
-                rename 
+        (Use
+            []
+            example
+            [(UseSymbol
                 sample
-            )] 
-            .true. 
+                ()
+            )]
+            .true.
             ()
         )
-        (Use 
-            [] 
-            example 
-            [(IntrinsicOperator 
+        (Use
+            []
+            example
+            [(UseSymbol
+                rename
+                sample
+            )]
+            .true.
+            ()
+        )
+        (Use
+            []
+            example
+            [(IntrinsicOperator
                 STAR
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [] 
-            example 
-            [(IntrinsicOperator 
+        (Use
+            []
+            example
+            [(IntrinsicOperator
                 DIV
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [] 
-            example 
-            [(IntrinsicOperator 
+        (Use
+            []
+            example
+            [(IntrinsicOperator
                 DIV
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [] 
-            example 
-            [(IntrinsicOperator 
+        (Use
+            []
+            example
+            [(IntrinsicOperator
                 NOTEQ
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [] 
-            example 
-            [(IntrinsicOperator 
+        (Use
+            []
+            example
+            [(IntrinsicOperator
                 GT
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [] 
-            example 
-            [(IntrinsicOperator 
+        (Use
+            []
+            example
+            [(IntrinsicOperator
                 LTE
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [] 
-            example 
-            [(IntrinsicOperator 
+        (Use
+            []
+            example
+            [(IntrinsicOperator
                 AND
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [] 
-            example 
-            [(IntrinsicOperator 
+        (Use
+            []
+            example
+            [(IntrinsicOperator
                 EQV
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [] 
-            example 
-            [(DefinedOperator 
+        (Use
+            []
+            example
+            [(DefinedOperator
                 "dot"
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [] 
-            example 
-            [(UseWrite 
+        (Use
+            []
+            example
+            [(UseWrite
                 formatted
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [] 
-            example 
-            [(UseRead 
+        (Use
+            []
+            example
+            [(UseRead
                 unformatted
-            )] 
-            .true. 
+            )]
+            .true.
             ()
         )
-        (Use 
-            [] 
-            example 
-            [] 
-            .true. 
+        (Use
+            []
+            example
+            []
+            .true.
             ()
         )
-        (Use 
-            [] 
-            example 
-            [(RenameOperator 
-                "localDefop" 
+        (Use
+            []
+            example
+            [(RenameOperator
+                "localDefop"
                 "useDefop"
             )
-            (UseSymbol 
-                b 
+            (UseSymbol
+                b
                 a
-            )] 
-            .false. 
+            )]
+            .false.
             ()
-        )] 
-        [] 
-        [] 
-        [] 
+        )]
+        []
+        []
+        []
         []
     )]
 )

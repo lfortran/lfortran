@@ -1,358 +1,356 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             goto_04:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             a:
-                                (Variable 
-                                    2 
-                                    a 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             n:
-                                (Variable 
-                                    2 
-                                    n 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    goto_04 
-                    [] 
-                    [(= 
-                        (Var 2 n) 
-                        (IntegerConstant 2 (Integer 4 [])) 
+                        })
+                    goto_04
+                    []
+                    [(=
+                        (Var 2 n)
+                        (IntegerConstant 2 (Integer 4 []))
                         ()
                     )
-                    (= 
-                        (Var 2 a) 
-                        (IntegerConstant 10 (Integer 4 [])) 
+                    (=
+                        (Var 2 a)
+                        (IntegerConstant 10 (Integer 4 []))
                         ()
                     )
-                    (Select 
-                        (IntegerBinOp 
-                            (Var 2 n) 
-                            Sub 
-                            (IntegerConstant 1 (Integer 4 [])) 
-                            (Integer 4 []) 
+                    (Select
+                        (IntegerBinOp
+                            (Var 2 n)
+                            Sub
+                            (IntegerConstant 1 (Integer 4 []))
+                            (Integer 4 [])
                             ()
-                        ) 
-                        [(CaseStmt 
-                            [(IntegerConstant 1 (Integer 4 []))] 
-                            [(GoTo 
-                                1 
+                        )
+                        [(CaseStmt
+                            [(IntegerConstant 1 (Integer 4 []))]
+                            [(GoTo
+                                1
                                 1
                             )]
                         )
-                        (CaseStmt 
-                            [(IntegerConstant 2 (Integer 4 []))] 
-                            [(GoTo 
-                                2 
+                        (CaseStmt
+                            [(IntegerConstant 2 (Integer 4 []))]
+                            [(GoTo
+                                2
                                 2
                             )]
                         )
-                        (CaseStmt 
-                            [(IntegerConstant 3 (Integer 4 []))] 
-                            [(GoTo 
-                                3 
+                        (CaseStmt
+                            [(IntegerConstant 3 (Integer 4 []))]
+                            [(GoTo
+                                3
                                 3
                             )]
-                        )] 
+                        )]
                         []
                     )
-                    (= 
-                        (Var 2 a) 
-                        (IntegerBinOp 
-                            (Var 2 a) 
-                            Add 
-                            (IntegerConstant 5 (Integer 4 [])) 
-                            (Integer 4 []) 
+                    (=
+                        (Var 2 a)
+                        (IntegerBinOp
+                            (Var 2 a)
+                            Add
+                            (IntegerConstant 5 (Integer 4 []))
+                            (Integer 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (GoToTarget 
-                        1 
+                    (GoToTarget
+                        1
                         1
                     )
-                    (= 
-                        (Var 2 a) 
-                        (IntegerBinOp 
-                            (Var 2 a) 
-                            Add 
-                            (IntegerConstant 10 (Integer 4 [])) 
-                            (Integer 4 []) 
+                    (=
+                        (Var 2 a)
+                        (IntegerBinOp
+                            (Var 2 a)
+                            Add
+                            (IntegerConstant 10 (Integer 4 []))
+                            (Integer 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (GoToTarget 
-                        2 
+                    (GoToTarget
+                        2
                         2
                     )
-                    (= 
-                        (Var 2 a) 
-                        (IntegerBinOp 
-                            (Var 2 a) 
-                            Add 
-                            (IntegerConstant 20 (Integer 4 [])) 
-                            (Integer 4 []) 
+                    (=
+                        (Var 2 a)
+                        (IntegerBinOp
+                            (Var 2 a)
+                            Add
+                            (IntegerConstant 20 (Integer 4 []))
+                            (Integer 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (GoToTarget 
-                        3 
+                    (GoToTarget
+                        3
                         3
                     )
-                    (= 
-                        (Var 2 a) 
-                        (IntegerBinOp 
-                            (Var 2 a) 
-                            Add 
-                            (IntegerConstant 30 (Integer 4 [])) 
-                            (Integer 4 []) 
+                    (=
+                        (Var 2 a)
+                        (IntegerBinOp
+                            (Var 2 a)
+                            Add
+                            (IntegerConstant 30 (Integer 4 []))
+                            (Integer 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (If 
-                        (IntegerCompare 
-                            (Var 2 a) 
-                            NotEq 
-                            (IntegerConstant 70 (Integer 4 [])) 
-                            (Logical 4 []) 
+                    (If
+                        (IntegerCompare
+                            (Var 2 a)
+                            NotEq
+                            (IntegerConstant 70 (Integer 4 []))
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (Select 
-                        (IntegerBinOp 
-                            (Var 2 n) 
-                            Add 
-                            (IntegerConstant 1 (Integer 4 [])) 
-                            (Integer 4 []) 
+                    (Select
+                        (IntegerBinOp
+                            (Var 2 n)
+                            Add
+                            (IntegerConstant 1 (Integer 4 []))
+                            (Integer 4 [])
                             ()
-                        ) 
-                        [(CaseStmt 
-                            [(IntegerConstant 1 (Integer 4 []))] 
-                            [(GoTo 
-                                4 
+                        )
+                        [(CaseStmt
+                            [(IntegerConstant 1 (Integer 4 []))]
+                            [(GoTo
+                                4
                                 4
                             )]
                         )
-                        (CaseStmt 
-                            [(IntegerConstant 2 (Integer 4 []))] 
-                            [(GoTo 
-                                5 
+                        (CaseStmt
+                            [(IntegerConstant 2 (Integer 4 []))]
+                            [(GoTo
+                                5
                                 5
                             )]
                         )
-                        (CaseStmt 
-                            [(IntegerConstant 3 (Integer 4 []))] 
-                            [(GoTo 
-                                6 
+                        (CaseStmt
+                            [(IntegerConstant 3 (Integer 4 []))]
+                            [(GoTo
+                                6
                                 6
                             )]
-                        )] 
+                        )]
                         []
                     )
-                    (= 
-                        (Var 2 a) 
-                        (IntegerBinOp 
-                            (Var 2 a) 
-                            Add 
-                            (IntegerConstant 5 (Integer 4 [])) 
-                            (Integer 4 []) 
+                    (=
+                        (Var 2 a)
+                        (IntegerBinOp
+                            (Var 2 a)
+                            Add
+                            (IntegerConstant 5 (Integer 4 []))
+                            (Integer 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (GoToTarget 
-                        4 
+                    (GoToTarget
+                        4
                         4
                     )
-                    (= 
-                        (Var 2 a) 
-                        (IntegerBinOp 
-                            (Var 2 a) 
-                            Add 
-                            (IntegerConstant 40 (Integer 4 [])) 
-                            (Integer 4 []) 
+                    (=
+                        (Var 2 a)
+                        (IntegerBinOp
+                            (Var 2 a)
+                            Add
+                            (IntegerConstant 40 (Integer 4 []))
+                            (Integer 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (GoToTarget 
-                        5 
+                    (GoToTarget
+                        5
                         5
                     )
-                    (= 
-                        (Var 2 a) 
-                        (IntegerBinOp 
-                            (Var 2 a) 
-                            Add 
-                            (IntegerConstant 50 (Integer 4 [])) 
-                            (Integer 4 []) 
+                    (=
+                        (Var 2 a)
+                        (IntegerBinOp
+                            (Var 2 a)
+                            Add
+                            (IntegerConstant 50 (Integer 4 []))
+                            (Integer 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (GoToTarget 
-                        6 
+                    (GoToTarget
+                        6
                         6
                     )
-                    (= 
-                        (Var 2 a) 
-                        (IntegerBinOp 
-                            (Var 2 a) 
-                            Add 
-                            (IntegerConstant 60 (Integer 4 [])) 
-                            (Integer 4 []) 
+                    (=
+                        (Var 2 a)
+                        (IntegerBinOp
+                            (Var 2 a)
+                            Add
+                            (IntegerConstant 60 (Integer 4 []))
+                            (Integer 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (If 
-                        (IntegerCompare 
-                            (Var 2 a) 
-                            NotEq 
-                            (IntegerConstant 130 (Integer 4 [])) 
-                            (Logical 4 []) 
+                    (If
+                        (IntegerCompare
+                            (Var 2 a)
+                            NotEq
+                            (IntegerConstant 130 (Integer 4 []))
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (Select 
-                        (IntegerBinOp 
-                            (Var 2 n) 
-                            Mul 
-                            (Var 2 n) 
-                            (Integer 4 []) 
+                    (Select
+                        (IntegerBinOp
+                            (Var 2 n)
+                            Mul
+                            (Var 2 n)
+                            (Integer 4 [])
                             ()
-                        ) 
-                        [(CaseStmt 
-                            [(IntegerConstant 1 (Integer 4 []))] 
-                            [(GoTo 
-                                7 
+                        )
+                        [(CaseStmt
+                            [(IntegerConstant 1 (Integer 4 []))]
+                            [(GoTo
+                                7
                                 7
                             )]
                         )
-                        (CaseStmt 
-                            [(IntegerConstant 2 (Integer 4 []))] 
-                            [(GoTo 
-                                8 
+                        (CaseStmt
+                            [(IntegerConstant 2 (Integer 4 []))]
+                            [(GoTo
+                                8
                                 8
                             )]
                         )
-                        (CaseStmt 
-                            [(IntegerConstant 3 (Integer 4 []))] 
-                            [(GoTo 
-                                9 
+                        (CaseStmt
+                            [(IntegerConstant 3 (Integer 4 []))]
+                            [(GoTo
+                                9
                                 9
                             )]
-                        )] 
+                        )]
                         []
                     )
-                    (= 
-                        (Var 2 a) 
-                        (IntegerBinOp 
-                            (Var 2 a) 
-                            Add 
-                            (IntegerConstant 5 (Integer 4 [])) 
-                            (Integer 4 []) 
+                    (=
+                        (Var 2 a)
+                        (IntegerBinOp
+                            (Var 2 a)
+                            Add
+                            (IntegerConstant 5 (Integer 4 []))
+                            (Integer 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (GoToTarget 
-                        7 
+                    (GoToTarget
+                        7
                         7
                     )
-                    (= 
-                        (Var 2 a) 
-                        (IntegerBinOp 
-                            (Var 2 a) 
-                            Add 
-                            (IntegerConstant 70 (Integer 4 [])) 
-                            (Integer 4 []) 
+                    (=
+                        (Var 2 a)
+                        (IntegerBinOp
+                            (Var 2 a)
+                            Add
+                            (IntegerConstant 70 (Integer 4 []))
+                            (Integer 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (GoToTarget 
-                        8 
+                    (GoToTarget
+                        8
                         8
                     )
-                    (= 
-                        (Var 2 a) 
-                        (IntegerBinOp 
-                            (Var 2 a) 
-                            Add 
-                            (IntegerConstant 80 (Integer 4 [])) 
-                            (Integer 4 []) 
+                    (=
+                        (Var 2 a)
+                        (IntegerBinOp
+                            (Var 2 a)
+                            Add
+                            (IntegerConstant 80 (Integer 4 []))
+                            (Integer 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (GoToTarget 
-                        9 
+                    (GoToTarget
+                        9
                         9
                     )
-                    (= 
-                        (Var 2 a) 
-                        (IntegerBinOp 
-                            (Var 2 a) 
-                            Add 
-                            (IntegerConstant 90 (Integer 4 [])) 
-                            (Integer 4 []) 
+                    (=
+                        (Var 2 a)
+                        (IntegerBinOp
+                            (Var 2 a)
+                            Add
+                            (IntegerConstant 90 (Integer 4 []))
+                            (Integer 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (If 
-                        (IntegerCompare 
-                            (Var 2 a) 
-                            NotEq 
-                            (IntegerConstant 375 (Integer 4 [])) 
-                            (Logical 4 []) 
+                    (If
+                        (IntegerCompare
+                            (Var 2 a)
+                            NotEq
+                            (IntegerConstant 375 (Integer 4 []))
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )]
                 )
-            
-        }) 
+        })
     []
 )

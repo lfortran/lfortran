@@ -1209,6 +1209,7 @@ public:
             // real(dp), private :: x, y(3), z
             for (size_t i=0; i<x.n_syms; i++) {
                 bool is_compile_time = false;
+                bool is_implicitly_declared = false;
                 AST::var_sym_t &s = x.m_syms[i];
                 std::string sym = to_lower(s.m_name);
                 ASR::accessType s_access = dflt_access;
@@ -1228,15 +1229,20 @@ public:
                 if (current_scope->get_symbol(sym) !=
                         nullptr) {
                     if (current_scope->parent != nullptr) {
-                        // re-declaring a global scope variable is allowed
-                        // Otherwise raise an error
-                        ASR::symbol_t *orig_decl = current_scope->get_symbol(sym);
-                        throw SemanticError(diag::Diagnostic(
-                            "Symbol is already declared in the same scope",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("redeclaration", {s.loc}),
-                                diag::Label("original declaration", {orig_decl->base.loc}, false),
-                            }));
+                        if ( compiler_options.implicit_typing && implicit_dictionary[sym]!=nullptr ) {
+                            // sym is implicitly declared
+                            is_implicitly_declared = true;
+                        } else {
+                            // re-declaring a global scope variable is allowed
+                            // Otherwise raise an error
+                            ASR::symbol_t *orig_decl = current_scope->get_symbol(sym);
+                            throw SemanticError(diag::Diagnostic(
+                                "Symbol is already declared in the same scope",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("redeclaration", {s.loc}),
+                                    diag::Label("original declaration", {orig_decl->base.loc}, false),
+                                }));
+                        }
                     }
                 }
                 ASR::intentType s_intent;
@@ -1414,17 +1420,19 @@ public:
                     }
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
-                    Vec<char*> variable_dependencies_vec;
-                    variable_dependencies_vec.reserve(al, 1);
-                    ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
-                    ASR::asr_t *v = ASR::make_Variable_t(al, s.loc, current_scope,
-                            s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
-                            variable_dependencies_vec.size(), s_intent, init_expr, value,
-                            storage_type, type, current_procedure_abi_type, s_access, s_presence,
-                            value_attr);
-                    current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
-                    if( is_derived_type ) {
-                        data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
+                    if ( !is_implicitly_declared ) {
+                        Vec<char*> variable_dependencies_vec;
+                        variable_dependencies_vec.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
+                        ASR::asr_t *v = ASR::make_Variable_t(al, s.loc, current_scope,
+                                s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
+                                variable_dependencies_vec.size(), s_intent, init_expr, value,
+                                storage_type, type, current_procedure_abi_type, s_access, s_presence,
+                                value_attr);
+                        current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
+                        if( is_derived_type ) {
+                            data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
+                        }
                     }
                 }
             } // for m_syms

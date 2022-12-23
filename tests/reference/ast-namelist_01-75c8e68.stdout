@@ -1,88 +1,88 @@
-(TranslationUnit 
-    [(Program 
-        namelist1 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
+(TranslationUnit
+    [(Program
+        namelist1
+        ()
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(N 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(N
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeReal 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(t 
-            [] 
-            [] 
-            () 
-            None 
+            )
+            []
+            [(t
+            []
+            []
+            ()
+            None
             ())
-            (x 
-            [] 
-            [] 
-            () 
-            None 
+            (x
+            []
+            []
+            ()
+            None
             ())
-            (Ecut 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            (Ecut
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            () 
-            [(AttrNamelist 
+        (Declaration
+            ()
+            [(AttrNamelist
                 domain
-            )] 
-            [(N 
-            [] 
-            [] 
-            () 
-            None 
-            ())
-            (t 
-            [] 
-            [] 
-            () 
-            None 
-            ())
-            (x 
-            [] 
-            [] 
-            () 
-            None 
-            ())
-            (Ecut 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )]
+            [(N
+            []
+            []
             ()
-        )] 
-        [] 
+            None
+            ())
+            (t
+            []
+            []
+            ()
+            None
+            ())
+            (x
+            []
+            []
+            ()
+            None
+            ())
+            (Ecut
+            []
+            []
+            ()
+            None
+            ())]
+            ()
+        )]
+        []
         []
     )]
 )

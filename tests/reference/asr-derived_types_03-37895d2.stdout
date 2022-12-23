@@ -1,235 +1,228 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             derived_types_03:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             b:
-                                (Variable 
-                                    2 
-                                    b 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Struct 
-                                        2 x 
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        2 x
                                         []
-                                    ) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    )
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             x:
-                                (StructType 
+                                (StructType
                                     (SymbolTable
                                         3
                                         {
                                             i:
-                                                (Variable 
-                                                    3 
-                                                    i 
-                                                    [] 
-                                                    Local 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    x 
-                                    [] 
-                                    [i] 
-                                    Source 
-                                    Public 
-                                    .false. 
-                                    () 
+                                        })
+                                    x
+                                    []
+                                    [i]
+                                    Source
+                                    Public
+                                    .false.
                                     ()
-                                ), 
+                                    ()
+                                ),
                             y:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         4
                                         {
                                             a:
-                                                (StructType 
+                                                (StructType
                                                     (SymbolTable
                                                         5
                                                         {
                                                             i:
-                                                                (Variable 
-                                                                    5 
-                                                                    i 
-                                                                    [] 
-                                                                    Local 
-                                                                    () 
-                                                                    () 
-                                                                    Default 
-                                                                    (Integer 4 []) 
-                                                                    Source 
-                                                                    Public 
-                                                                    Required 
+                                                                (Variable
+                                                                    5
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4 [])
+                                                                    Source
+                                                                    Public
+                                                                    Required
                                                                     .false.
                                                                 )
-                                                            
-                                                        }) 
-                                                    a 
-                                                    [] 
-                                                    [i] 
-                                                    Source 
-                                                    Public 
-                                                    .false. 
-                                                    () 
+                                                        })
+                                                    a
+                                                    []
+                                                    [i]
+                                                    Source
+                                                    Public
+                                                    .false.
                                                     ()
-                                                ), 
+                                                    ()
+                                                ),
                                             b:
-                                                (Variable 
-                                                    4 
-                                                    b 
-                                                    [] 
-                                                    Local 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Struct 
-                                                        4 a 
+                                                (Variable
+                                                    4
+                                                    b
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        4 a
                                                         []
-                                                    ) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    y 
-                                    [] 
-                                    [] 
-                                    [] 
-                                    () 
-                                    Source 
-                                    Public 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                        })
+                                    y
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
                                     .false.
-                                ), 
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
                             z:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         6
                                         {
                                             a:
-                                                (StructType 
+                                                (StructType
                                                     (SymbolTable
                                                         7
                                                         {
                                                             i:
-                                                                (Variable 
-                                                                    7 
-                                                                    i 
-                                                                    [] 
-                                                                    Local 
-                                                                    () 
-                                                                    () 
-                                                                    Default 
-                                                                    (Integer 4 []) 
-                                                                    Source 
-                                                                    Public 
-                                                                    Required 
+                                                                (Variable
+                                                                    7
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4 [])
+                                                                    Source
+                                                                    Public
+                                                                    Required
                                                                     .false.
                                                                 )
-                                                            
-                                                        }) 
-                                                    a 
-                                                    [] 
-                                                    [i] 
-                                                    Source 
-                                                    Public 
-                                                    .false. 
-                                                    () 
-                                                    ()
-                                                ), 
-                                            b:
-                                                (Variable 
-                                                    6 
-                                                    b 
-                                                    [] 
-                                                    Local 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Struct 
-                                                        6 a 
-                                                        []
-                                                    ) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                        })
+                                                    a
+                                                    []
+                                                    [i]
+                                                    Source
+                                                    Public
                                                     .false.
-                                                ), 
+                                                    ()
+                                                    ()
+                                                ),
+                                            b:
+                                                (Variable
+                                                    6
+                                                    b
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        6 a
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
                                             z:
-                                                (Variable 
-                                                    6 
-                                                    z 
-                                                    [] 
-                                                    ReturnVar 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    6
+                                                    z
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    z 
-                                    [] 
-                                    [] 
-                                    [(= 
-                                        (Var 6 z) 
-                                        (IntegerConstant 5 (Integer 4 [])) 
+                                        })
+                                    z
+                                    []
+                                    []
+                                    [(=
+                                        (Var 6 z)
+                                        (IntegerConstant 5 (Integer 4 []))
                                         ()
-                                    )] 
-                                    (Var 6 z) 
-                                    Source 
-                                    Public 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                    )]
+                                    (Var 6 z)
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
                                     .false.
                                 )
-                            
-                        }) 
-                    derived_types_03 
-                    [] 
+                        })
+                    derived_types_03
+                    []
                     []
                 )
-            
-        }) 
+        })
     []
 )

@@ -1,76 +1,73 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             interface_08:
-                (Module 
+                (Module
                     (SymbolTable
                         2
                         {
                             sub:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         3
                                         {
                                             x:
-                                                (Variable 
-                                                    3 
-                                                    x 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             y:
-                                                (Variable 
-                                                    3 
-                                                    y 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    sub 
-                                    [] 
+                                        })
+                                    sub
+                                    []
                                     [(Var 3 x)
-                                    (Var 3 y)] 
-                                    [] 
-                                    () 
-                                    Source 
-                                    Public 
-                                    Interface 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                    (Var 3 y)]
+                                    []
+                                    ()
+                                    Source
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
                                     .false.
                                 )
-                            
-                        }) 
-                    interface_08 
-                    [] 
-                    .false. 
+                        })
+                    interface_08
+                    []
+                    .false.
                     .false.
                 )
-            
-        }) 
+        })
     []
 )

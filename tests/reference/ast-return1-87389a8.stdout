@@ -1,105 +1,105 @@
-(TranslationUnit 
-    [(Subroutine 
-        example 
-        [(s)] 
-        [] 
-        () 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(Subroutine
+        example
+        [(s)]
+        []
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
-            (Comment 
+            (Comment
                 "! Syntax check only"
             )]
-        ) 
-        [] 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeCharacter 
-                [] 
-                () 
+        )
+        []
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeCharacter
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(s 
-            [] 
-            [] 
-            32 
-            Asterisk 
-            ())] 
+            )
+            []
+            [(s
+            []
+            []
+            32
+            Asterisk
+            ())]
             ()
-        )] 
-        [(Write 
-            0 
+        )]
+        [(Write
+            0
             [(())
-            (())] 
-            [] 
-            [s] 
+            (())]
+            []
+            [s]
             ()
         )
-        (Return 
-            0 
-            () 
+        (Return
+            0
             ()
-        )] 
+            ()
+        )]
         []
     )
-    (Subroutine 
-        example1 
+    (Subroutine
+        example1
         [(i)
         (a)
         (b)
-        (c)] 
-        [] 
-        () 
-        () 
-        [] 
-        [] 
-        [] 
-        [] 
-        [(If 
-            0 
-            () 
-            (== i a) 
-            [(Return 
-                0 
-                1 
+        (c)]
+        []
+        ()
+        ()
+        []
+        []
+        []
+        []
+        [(If
+            0
+            ()
+            (== i a)
+            [(Return
+                0
+                1
                 ()
-            )] 
-            [] 
-            () 
-            () 
+            )]
+            []
+            ()
+            ()
             ()
         )
-        (If 
-            0 
-            () 
-            (== i b) 
-            [(Return 
-                0 
-                2 
+        (If
+            0
+            ()
+            (== i b)
+            [(Return
+                0
+                2
                 ()
-            )] 
-            [] 
-            () 
-            () 
+            )]
+            []
+            ()
+            ()
             ()
         )
-        (If 
-            0 
-            () 
-            (== i c) 
-            [(Return 
-                0 
-                3 
-                ()
-            )] 
-            [] 
-            () 
-            () 
+        (If
+            0
             ()
-        )] 
+            (== i c)
+            [(Return
+                0
+                3
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )]
         []
     )]
 )

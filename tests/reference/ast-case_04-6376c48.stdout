@@ -1,88 +1,88 @@
-(TranslationUnit 
-    [(Program 
-        case_04 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
+(TranslationUnit
+    [(Program
+        case_04
+        ()
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(i 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(i
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            i 
-            4 
-            (TriviaNode 
-                [] 
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            i
+            4
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Select 
-            0 
-            () 
-            i 
-            [(CaseStmt 
-                [(CaseCondExpr 
+        (Select
+            0
+            ()
+            i
+            [(CaseStmt
+                [(CaseCondExpr
                     1
-                )] 
-                () 
-                [(Print 
-                    0 
-                    () 
-                    [(String 
+                )]
+                ()
+                [(Print
+                    0
+                    ()
+                    [(String
                         "1"
-                    )] 
+                    )]
                     ()
                 )]
             )
-            (CaseStmt 
-                [(CaseCondExpr 
+            (CaseStmt
+                [(CaseCondExpr
                     2
                 )
-                (CaseCondRange 
-                    3 
+                (CaseCondRange
+                    3
                     5
                 )
-                (CaseCondExpr 
+                (CaseCondExpr
                     6
                 )
-                (CaseCondRange 
-                    8 
+                (CaseCondRange
+                    8
                     10
-                )] 
-                () 
-                [(Print 
-                    0 
-                    () 
-                    [(String 
+                )]
+                ()
+                [(Print
+                    0
+                    ()
+                    [(String
                         "2,3:5,6,8:10"
-                    )] 
+                    )]
                     ()
                 )]
-            )] 
-            () 
-            (TriviaNode 
-                [] 
+            )]
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

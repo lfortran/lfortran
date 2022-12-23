@@ -1,202 +1,199 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             f1:
-                (Function 
+                (Function
                     (SymbolTable
                         2
                         {
                             dimag:
-                                (ExternalSymbol 
-                                    2 
-                                    dimag 
-                                    5 dimag 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    dimag 
+                                (ExternalSymbol
+                                    2
+                                    dimag
+                                    5 dimag
+                                    lfortran_intrinsic_math
+                                    []
+                                    dimag
                                     Private
-                                ), 
+                                ),
                             dimag@zaimag:
-                                (ExternalSymbol 
-                                    2 
-                                    dimag@zaimag 
-                                    5 zaimag 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    zaimag 
+                                (ExternalSymbol
+                                    2
+                                    dimag@zaimag
+                                    5 zaimag
+                                    lfortran_intrinsic_math
+                                    []
+                                    zaimag
                                     Private
-                                ), 
+                                ),
                             f1:
-                                (Variable 
-                                    2 
-                                    f1 
-                                    [] 
-                                    ReturnVar 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    f1
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             i:
-                                (Variable 
-                                    2 
-                                    i 
-                                    [] 
-                                    Unspecified 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Complex 8 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             z:
-                                (Variable 
-                                    2 
-                                    z 
-                                    [] 
-                                    Unspecified 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Complex 8 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    f1 
-                    [dimag@zaimag] 
+                        })
+                    f1
+                    [dimag@zaimag]
                     [(Var 2 z)
-                    (Var 2 i)] 
-                    [(= 
-                        (Var 2 z) 
-                        (Cast 
-                            (IntegerConstant 5 (Integer 4 [])) 
-                            IntegerToComplex 
-                            (Complex 8 []) 
-                            ()
-                        ) 
-                        ()
-                    )
-                    (Print 
-                        () 
-                        [(FunctionCall 
-                            2 dimag@zaimag 
-                            2 dimag 
-                            [((Var 2 z))] 
-                            (Real 8 []) 
-                            () 
+                    (Var 2 i)]
+                    [(=
+                        (Var 2 z)
+                        (Cast
+                            (IntegerConstant 5 (Integer 4 []))
+                            IntegerToComplex
+                            (Complex 8 [])
                             ()
                         )
-                        (FunctionCall 
-                            2 dimag@zaimag 
-                            2 dimag 
-                            [((Var 2 i))] 
-                            (Real 8 []) 
-                            () 
-                            ()
-                        )] 
-                        () 
                         ()
-                    )] 
-                    (Var 2 f1) 
-                    Source 
-                    Public 
-                    Implementation 
-                    () 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    [] 
-                    [] 
+                    )
+                    (Print
+                        ()
+                        [(FunctionCall
+                            2 dimag@zaimag
+                            2 dimag
+                            [((Var 2 z))]
+                            (Real 8 [])
+                            ()
+                            ()
+                        )
+                        (FunctionCall
+                            2 dimag@zaimag
+                            2 dimag
+                            [((Var 2 i))]
+                            (Real 8 [])
+                            ()
+                            ()
+                        )]
+                        ()
+                        ()
+                    )]
+                    (Var 2 f1)
+                    Source
+                    Public
+                    Implementation
+                    ()
                     .false.
-                ), 
+                    .false.
+                    .false.
+                    .false.
+                    .false.
+                    []
+                    []
+                    .false.
+                ),
             f2:
-                (Function 
+                (Function
                     (SymbolTable
                         3
                         {
                             i:
-                                (Variable 
-                                    3 
-                                    i 
-                                    [] 
-                                    Unspecified 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Complex 8 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    3
+                                    i
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             z:
-                                (Variable 
-                                    3 
-                                    z 
-                                    [] 
-                                    Unspecified 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Complex 8 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    3
+                                    z
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    f2 
-                    [] 
+                        })
+                    f2
+                    []
                     [(Var 3 z)
-                    (Var 3 i)] 
-                    [(= 
-                        (Var 3 z) 
-                        (Cast 
-                            (IntegerConstant 5 (Integer 4 [])) 
-                            IntegerToComplex 
-                            (Complex 8 []) 
+                    (Var 3 i)]
+                    [(=
+                        (Var 3 z)
+                        (Cast
+                            (IntegerConstant 5 (Integer 4 []))
+                            IntegerToComplex
+                            (Complex 8 [])
                             ()
-                        ) 
+                        )
                         ()
-                    )] 
-                    () 
-                    Source 
-                    Public 
-                    Implementation 
-                    () 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    [] 
-                    [] 
+                    )]
+                    ()
+                    Source
+                    Public
+                    Implementation
+                    ()
                     .false.
-                ), 
+                    .false.
+                    .false.
+                    .false.
+                    .false.
+                    []
+                    []
+                    .false.
+                ),
             iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding), 
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
             iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin), 
+                (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_math:
                 (IntrinsicModule lfortran_intrinsic_math)
-            
-        }) 
+        })
     []
 )

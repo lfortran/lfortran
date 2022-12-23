@@ -1,40 +1,40 @@
-(TranslationUnit 
-    [(Program 
-        main 
-        () 
-        [] 
-        [] 
-        [] 
-        [(If 
-            1000 
-            () 
-            (< 0 1) 
-            [(Assign 
-                0 
-                15 
-                k 
+(TranslationUnit
+    [(Program
+        main
+        ()
+        []
+        []
+        []
+        [(If
+            1000
+            ()
+            (< 0 1)
+            [(Assign
+                0
+                15
+                k
                 ()
-            )] 
-            [] 
-            () 
-            () 
+            )]
+            []
+            ()
+            ()
             ()
         )
-        (GoTo 
-            100 
-            k 
-            () 
-            [] 
+        (GoTo
+            100
+            k
+            ()
+            []
             ()
         )
-        (Print 
-            15 
-            () 
-            [(String 
+        (Print
+            15
+            ()
+            [(String
                 "run"
-            )] 
+            )]
             ()
-        )] 
+        )]
         []
     )]
 )

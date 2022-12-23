@@ -1,69 +1,69 @@
-(TranslationUnit 
-    [(Program 
-        types_11 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+(TranslationUnit
+    [(Program
+        types_11
+        ()
+        []
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(Enum 
-            [(AttrBind 
-                (Bind 
-                    [c] 
+        )]
+        [(Enum
+            [(AttrBind
+                (Bind
+                    [c]
                     []
                 )
-            )] 
-            (TriviaNode 
-                [] 
+            )]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [(Declaration 
-                () 
-                [(SimpleAttribute 
+            )
+            [(Declaration
+                ()
+                [(SimpleAttribute
                     AttrEnumerator
-                )] 
-                [(a 
-                [] 
-                [] 
-                1 
-                Equal 
-                ())] 
+                )]
+                [(a
+                []
+                []
+                1
+                Equal
+                ())]
                 ()
             )
-            (Declaration 
-                () 
-                [(SimpleAttribute 
+            (Declaration
+                ()
+                [(SimpleAttribute
                     AttrEnumerator
-                )] 
-                [(b 
-                [] 
-                [] 
-                2 
-                Equal 
-                ())] 
+                )]
+                [(b
+                []
+                []
+                2
+                Equal
+                ())]
                 ()
             )
-            (Declaration 
-                () 
-                [(SimpleAttribute 
+            (Declaration
+                ()
+                [(SimpleAttribute
                     AttrEnumerator
-                )] 
-                [(c 
-                [] 
-                [] 
-                3 
-                Equal 
-                ())] 
+                )]
+                [(c
+                []
+                []
+                3
+                Equal
+                ())]
                 ()
             )]
-        )] 
-        [] 
+        )]
+        []
         []
     )]
 )

@@ -1,16 +1,16 @@
-(TranslationUnit 
-    [(Program 
-        assign1 
-        () 
-        [] 
-        [] 
-        [] 
-        [(Assign 
-            10 
-            10 
-            next 
+(TranslationUnit
+    [(Program
+        assign1
+        ()
+        []
+        []
+        []
+        [(Assign
+            10
+            10
+            next
             ()
-        )] 
+        )]
         []
     )]
 )

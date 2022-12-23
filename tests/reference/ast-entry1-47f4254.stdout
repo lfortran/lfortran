@@ -1,109 +1,109 @@
-(TranslationUnit 
-    [(Program 
-        entry1 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(Program
+        entry1
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeReal 
-                [] 
-                () 
+        )
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(dummy 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(dummy
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            dummy 
-            10 
+            None
+            ())]
             ()
-        )
-        (SubroutineCall 
-            0 
-            x 
-            [] 
-            [(() 
-            dummy 
-            ())] 
-            [] 
+        )]
+        [(=
+            0
+            dummy
+            10
             ()
         )
-        (SubroutineCall 
-            0 
-            y 
-            [] 
-            [(() 
-            dummy 
-            ())] 
-            [] 
+        (SubroutineCall
+            0
+            x
+            []
+            [(()
+            dummy
+            ())]
+            []
             ()
-        )] 
+        )
+        (SubroutineCall
+            0
+            y
+            []
+            [(()
+            dummy
+            ())]
+            []
+            ()
+        )]
         []
     )
-    (Subroutine 
-        x 
-        [(dummy)] 
-        [] 
-        () 
-        () 
-        [] 
-        [] 
-        [] 
-        [] 
-        [(Print 
-            0 
-            () 
-            [(String 
+    (Subroutine
+        x
+        [(dummy)]
+        []
+        ()
+        ()
+        []
+        []
+        []
+        []
+        [(Print
+            0
+            ()
+            [(String
                 "Printed using subroutine call: "
             )
-            dummy] 
+            dummy]
             ()
         )
-        (= 
-            0 
-            dummy 
-            5 
+        (=
+            0
+            dummy
+            5
             ()
         )
-        (Return 
-            0 
-            () 
+        (Return
+            0
+            ()
             ()
         )
-        (Entry 
-            0 
-            y 
-            [(dummy)] 
-            () 
-            () 
+        (Entry
+            0
+            y
+            [(dummy)]
+            ()
+            ()
             ()
         )
-        (Print 
-            0 
-            () 
-            [(String 
+        (Print
+            0
+            ()
+            [(String
                 "Printed using entry statement: "
             )
-            dummy] 
+            dummy]
             ()
         )
-        (Return 
-            0 
-            () 
+        (Return
+            0
             ()
-        )] 
+            ()
+        )]
         []
     )]
 )
