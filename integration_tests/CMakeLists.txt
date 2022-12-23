@@ -479,6 +479,7 @@ RUN(NAME derived_types_07 LABELS gfortran)
 RUN(NAME derived_types_08 LABELS gfortran)
 RUN(NAME derived_types_09 LABELS gfortran EXTRAFILES
         derived_types_09b.f90 derived_types_09c.f90)
+RUN(NAME derived_types_10 LABELS gfortran llvm)
 
 RUN(NAME line_continuation_01 LABELS gfortran llvm wasm)
 RUN(NAME line_continuation_02 LABELS gfortran llvm wasm)
