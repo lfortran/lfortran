@@ -25,6 +25,21 @@ to:
     do i = 1, 3
         print *, y(i)
     end do
+
+
+Converts:
+    a: not_array
+    b: array
+    c: not_array
+    d: not_array
+    print *, a, b(1:10), c, d
+
+to:
+    print *, a
+    do i = 1, 10
+        print *, b(i)
+    end do
+    print *, c, d
 */
 
 class PrintArrVisitor : public PassUtils::PassVisitor<PrintArrVisitor>
