@@ -2,7 +2,7 @@
     "basename": "asr-character1-776697a",
     "cmd": "lfortran --indent --show-asr --allow-implicit-interface --no-color {infile} -o {outfile}",
     "infile": "tests/character1.f90",
-    "infile_hash": "e488ad1d203df5884bda7425ec44e96927695edf53e10b7f55004b50",
+    "infile_hash": "83f86b3c6ec94d478c82439a20e7af4238dbd1d867cae8efbb7b1f39",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-character1-776697a.stdout",
