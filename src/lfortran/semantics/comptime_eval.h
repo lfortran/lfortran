@@ -25,7 +25,7 @@ struct IntrinsicProceduresAsASRNodes {
         IntrinsicProceduresAsASRNodes() {
             intrinsics_present_in_ASR = {"size", "lbound", "ubound",
                 "transpose", "matmul", "pack", "transfer", "cmplx",
-                "dcmplx", "reshape", "ichar", "iachar"};
+                "dcmplx", "reshape", "ichar", "iachar", "maxloc"};
         }
 
         bool is_intrinsic_present_in_ASR(std::string& name) {
@@ -828,9 +828,6 @@ TRIG2(sqrt, dsqrt)
         ASR::ttype_t* real_type = LFortran::ASRUtils::expr_type(real_expr);
         if (LFortran::ASR::is_a<LFortran::ASR::Integer_t>(*real_type)) {
             int64_t c = ASR::down_cast<ASR::IntegerConstant_t>(real_expr)->m_n;
-            ASR::ttype_t* str_type =
-                LFortran::ASRUtils::TYPE(ASR::make_Character_t(al,
-                loc, 1, 1, nullptr, nullptr, 0));
             if (! (c >= 0 && c <= 127) ) {
                 throw SemanticError("The argument 'x' in char(x) must be in the range 0 <= x <= 127.", loc);
             }
@@ -840,6 +837,9 @@ TRIG2(sqrt, dsqrt)
             Str s;
             s.from_str_view(svalue);
             char *str_val = s.c_str(al);
+            // TODO: Should be 0 for char(0) but we store it as 1
+            ASR::ttype_t* str_type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al,
+                loc, 1, 1, nullptr, nullptr, 0));
             return ASR::down_cast<ASR::expr_t>(
                 ASR::make_StringConstant_t(al, loc,
                 str_val, str_type));
