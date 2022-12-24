@@ -1,98 +1,96 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             case_07:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             c:
-                                (Variable 
-                                    2 
-                                    c 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Character 1 1 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Character 1 1 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    case_07 
-                    [] 
-                    [(Select 
-                        (Var 2 c) 
-                        [(CaseStmt_Range 
-                            (StringConstant 
-                                "a" 
+                        })
+                    case_07
+                    []
+                    [(Select
+                        (Var 2 c)
+                        [(CaseStmt_Range
+                            (StringConstant
+                                "a"
                                 (Character 1 1 () [])
-                            ) 
-                            (StringConstant 
-                                "j" 
+                            )
+                            (StringConstant
+                                "j"
                                 (Character 1 1 () [])
-                            ) 
-                            [(Print 
-                                () 
-                                [(StringConstant 
-                                    "one of the first ten letters" 
+                            )
+                            [(Print
+                                ()
+                                [(StringConstant
+                                    "one of the first ten letters"
                                     (Character 1 28 () [])
-                                )] 
-                                () 
+                                )]
+                                ()
                                 ()
                             )]
                         )
-                        (CaseStmt_Range 
-                            (StringConstant 
-                                "l" 
+                        (CaseStmt_Range
+                            (StringConstant
+                                "l"
                                 (Character 1 1 () [])
-                            ) 
-                            (StringConstant 
-                                "p" 
+                            )
+                            (StringConstant
+                                "p"
                                 (Character 1 1 () [])
-                            ) 
-                            [(Print 
-                                () 
-                                [(StringConstant 
-                                    "one of l, m, n, o, p" 
+                            )
+                            [(Print
+                                ()
+                                [(StringConstant
+                                    "one of l, m, n, o, p"
                                     (Character 1 20 () [])
-                                )] 
-                                () 
+                                )]
+                                ()
                                 ()
                             )]
                         )
-                        (CaseStmt 
-                            [(StringConstant 
-                                "z" 
+                        (CaseStmt
+                            [(StringConstant
+                                "z"
                                 (Character 1 1 () [])
-                            )] 
-                            [(Print 
-                                () 
-                                [(StringConstant 
-                                    "one of z" 
+                            )]
+                            [(Print
+                                ()
+                                [(StringConstant
+                                    "one of z"
                                     (Character 1 8 () [])
-                                )] 
-                                () 
+                                )]
+                                ()
                                 ()
                             )]
-                        )] 
-                        [(Print 
-                            () 
-                            [(StringConstant 
-                                "other characters, which may not be letters" 
+                        )]
+                        [(Print
+                            ()
+                            [(StringConstant
+                                "other characters, which may not be letters"
                                 (Character 1 42 () [])
-                            )] 
-                            () 
+                            )]
+                            ()
                             ()
                         )]
                     )]
                 )
-            
-        }) 
+        })
     []
 )
