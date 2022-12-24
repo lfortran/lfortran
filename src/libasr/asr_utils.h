@@ -170,6 +170,9 @@ static inline ASR::abiType expr_abi(ASR::expr_t* e) {
         case ASR::exprType::StructInstanceMember: {
             return ASRUtils::symbol_abi(ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m);
         }
+        case ASR::exprType::ArrayReshape: {
+            return ASRUtils::expr_abi(ASR::down_cast<ASR::ArrayReshape_t>(e)->m_array);
+        }
         default:
             throw LCompilersException("Cannot extract the ABI of " +
                     std::to_string(e->type) + " expression.");
