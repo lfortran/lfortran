@@ -1,0 +1,5 @@
+ASR verify pass error: ASR verify: The variable in ArrayItem must be an array, not a scalar
+ --> tests/statement1.f90:4:2
+  |
+4 |  q(x) = .NOT. ( a == b .AND. c == 0.0 )
+  |  ^^^^ failed here
