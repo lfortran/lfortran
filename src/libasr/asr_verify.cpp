@@ -515,7 +515,7 @@ public:
         require( sym != nullptr,
             "Var::m_v `" + x_mv_name + "` cannot point outside of its symbol table");
         require( sym == x.m_v,
-            "Var::m_v `" + x_mv_name + "` is different from what is expected!");
+            "Var::m_v `" + x_mv_name + "` must point to the same symbol as the one in the symbol table");
         variable_dependencies.push_back(x_mv_name);
     }
 
@@ -563,6 +563,8 @@ public:
     }
 
     void visit_SubroutineCall(const SubroutineCall_t &x) {
+        std::string sym_name = std::string(symbol_name(x.m_name));
+        ASR::symbol_t *sym = current_symtab->resolve_symbol(sym_name);
         if (x.m_dt) {
             SymbolTable *symtab = get_dt_symtab(x.m_dt);
             bool result = symtab_in_scope(symtab, x.m_name);
@@ -572,11 +574,16 @@ public:
                 result = symtab_in_scope(symtab, x.m_name);
                 parent = get_parent_type_dt(parent);
             }
-            require(symtab_in_scope(symtab, x.m_name),
+            sym = symtab->resolve_symbol(sym_name);
+            require( sym != nullptr,
                 "SubroutineCall::m_name cannot point outside of its symbol table");
+            require( sym == x.m_name,
+                "SubroutineCall::m_name must point to the same symbol as the one in the symbol table");
         } else {
-            require(symtab_in_scope(current_symtab, x.m_name),
-                "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table");
+            require(sym != nullptr,
+                "SubroutineCall::m_name '" + sym_name + "' cannot point outside of its symbol table");
+            require( sym == x.m_name,
+                "SubroutineCall::m_name '" + sym_name + "' must point to the same symbol as the one in the symbol table");
             if (check_external) {
                 ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
                 require(ASR::is_a<ASR::Function_t>(*s),
@@ -679,6 +686,7 @@ public:
     }
 
     void visit_FunctionCall(const FunctionCall_t &x) {
+        std::string sym_name = std::string(symbol_name(x.m_name));
         require(x.m_name,
             "FunctionCall::m_name must be present");
         function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
@@ -688,12 +696,18 @@ public:
         }
         if (x.m_dt) {
             SymbolTable *symtab = get_dt_symtab(x.m_dt);
-            require(symtab_in_scope(symtab, x.m_name),
+            ASR::symbol_t* sym = symtab->resolve_symbol(sym_name);
+            require(sym != nullptr,
                 "FunctionCall::m_name cannot point outside of its symbol table");
+            require(sym == x.m_name,
+                "FunctionCall::m_name must point to the same symbol as the one in the symbol table");
         } else {
-            require(symtab_in_scope(current_symtab, x.m_name),
-                "FunctionCall::m_name `" + std::string(symbol_name(x.m_name)) +
+            ASR::symbol_t* sym = current_symtab->resolve_symbol(sym_name);
+            require(sym != nullptr,
+                "FunctionCall::m_name `" + std::string(sym_name) +
                 "` cannot point outside of its symbol table");
+            require(sym == x.m_name,
+                "FunctionCall::m_name `" + std::string(sym_name) +"` must point to the same symbol as the one in the symbol table");
             // Check both `name` and `orig_name` that `orig_name` points
             // to GenericProcedure (if applicable), both external and non
             // external
@@ -713,7 +727,7 @@ public:
 
     void visit_Struct(const Struct_t &x) {
         require(symtab_in_scope(current_symtab, x.m_derived_type),
-            "Struct::m_derived_type cannot point outside of its symbol table");
+            "Struct::m_derived_type `" + std::string(symbol_name(x.m_derived_type)) + "` cannot point outside of its symbol table");
         for (size_t i=0; i<x.n_dims; i++) {
             visit_dimension(x.m_dims[i]);
         }
