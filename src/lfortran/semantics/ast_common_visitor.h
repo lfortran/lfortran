@@ -1608,7 +1608,7 @@ public:
             }
 
             ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
-            if(!type_param){
+            if(!type_param) {
                 if( is_c_ptr(v, derived_type_name) ) {
                     type = LFortran::ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
                 } else {
@@ -1619,6 +1619,10 @@ public:
                     }
                     type = LFortran::ASRUtils::TYPE(ASR::make_Struct_t(al, loc, v,
                         dims.p, dims.size()));
+                    if (is_pointer) {
+                        type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                            type));
+                    }
                 }
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeClass) {
@@ -1645,6 +1649,10 @@ public:
             }
             type = LFortran::ASRUtils::TYPE(ASR::make_Class_t(al,
                 loc, v, dims.p, dims.size()));
+            if (is_pointer) {
+                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                    type));
+            }
         } else {
             throw SemanticError("Type not implemented yet.",
                     loc);
@@ -2239,7 +2247,7 @@ public:
         }
         ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(v);
         if (ASR::is_a<ASR::Struct_t>(*ASRUtils::type_get_past_pointer(v_variable->m_type)) ||
-                ASR::is_a<ASR::Class_t>(*v_variable->m_type)) {
+                ASR::is_a<ASR::Class_t>(*ASRUtils::type_get_past_pointer(v_variable->m_type))) {
             ASR::ttype_t* v_type = ASRUtils::type_get_past_pointer(v_variable->m_type);
             ASR::symbol_t *derived_type = nullptr;
             if (ASR::is_a<ASR::Struct_t>(*v_type)) {

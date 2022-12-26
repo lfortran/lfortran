@@ -1675,7 +1675,12 @@ inline bool is_same_type_pointer(ASR::ttype_t* source, ASR::ttype_t* dest) {
         source = dest;
         dest = temp;
     }
-    bool res = source->type == ASR::down_cast<ASR::Pointer_t>(dest)->m_type->type;
+    dest = ASR::down_cast<ASR::Pointer_t>(dest)->m_type;
+    if( (ASR::is_a<ASR::Class_t>(*source) || ASR::is_a<ASR::Struct_t>(*source)) &&
+        (ASR::is_a<ASR::Class_t>(*dest) || ASR::is_a<ASR::Struct_t>(*dest)) ) {
+        return true;
+    }
+    bool res = source->type == dest->type;
     return res;
 }
 

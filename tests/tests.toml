@@ -1332,7 +1332,11 @@ ast_f90 = true
 
 [[test]]
 filename = "../integration_tests/select_type_01.f90"
-ast = true
+asr = true
+
+[[test]]
+filename = "../integration_tests/select_type_02.f90"
+asr = true
 
 [[test]]
 filename = "../integration_tests/format_01.f90"
