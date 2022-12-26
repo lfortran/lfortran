@@ -1,316 +1,309 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             select_type_02:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             color_point:
-                                (StructType 
+                                (StructType
                                     (SymbolTable
                                         5
                                         {
                                             color:
-                                                (Variable 
-                                                    5 
-                                                    color 
-                                                    [] 
-                                                    Local 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    5
+                                                    color
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    color_point 
-                                    [] 
-                                    [color] 
-                                    Source 
-                                    Public 
-                                    .false. 
-                                    () 
+                                        })
+                                    color_point
+                                    []
+                                    [color]
+                                    Source
+                                    Public
+                                    .false.
+                                    ()
                                     2 point
-                                ), 
+                                ),
                             cp:
-                                (Variable 
-                                    2 
-                                    cp 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Struct 
-                                        2 color_point 
+                                (Variable
+                                    2
+                                    cp
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        2 color_point
                                         []
-                                    ) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    )
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             p:
-                                (Variable 
-                                    2 
-                                    p 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Struct 
-                                        2 point 
+                                (Variable
+                                    2
+                                    p
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        2 point
                                         []
-                                    ) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    )
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             p3d:
-                                (Variable 
-                                    2 
-                                    p3d 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Struct 
-                                        2 point_3d 
+                                (Variable
+                                    2
+                                    p3d
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        2 point_3d
                                         []
-                                    ) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    )
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             p_or_cp:
-                                (Variable 
-                                    2 
-                                    p_or_cp 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Pointer 
-                                        (Class 
-                                            2 point 
+                                (Variable
+                                    2
+                                    p_or_cp
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Class
+                                            2 point
                                             []
                                         )
-                                    ) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    )
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             point:
-                                (StructType 
+                                (StructType
                                     (SymbolTable
                                         3
                                         {
                                             x:
-                                                (Variable 
-                                                    3 
-                                                    x 
-                                                    [] 
-                                                    Local 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             y:
-                                                (Variable 
-                                                    3 
-                                                    y 
-                                                    [] 
-                                                    Local 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    y
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    point 
-                                    [] 
+                                        })
+                                    point
+                                    []
                                     [x
-                                    y] 
-                                    Source 
-                                    Public 
-                                    .false. 
-                                    () 
+                                    y]
+                                    Source
+                                    Public
+                                    .false.
                                     ()
-                                ), 
+                                    ()
+                                ),
                             point_3d:
-                                (StructType 
+                                (StructType
                                     (SymbolTable
                                         4
                                         {
                                             z:
-                                                (Variable 
-                                                    4 
-                                                    z 
-                                                    [] 
-                                                    Local 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    4
+                                                    z
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    point_3d 
-                                    [] 
-                                    [z] 
-                                    Source 
-                                    Public 
-                                    .false. 
-                                    () 
+                                        })
+                                    point_3d
+                                    []
+                                    [z]
+                                    Source
+                                    Public
+                                    .false.
+                                    ()
                                     2 point
-                                ), 
+                                ),
                             ~select_type_block_:
-                                (Block 
+                                (Block
                                     (SymbolTable
                                         6
                                         {
                                             an:
-                                                (Variable 
-                                                    6 
-                                                    an 
-                                                    [p_or_cp] 
-                                                    Local 
-                                                    (Var 2 p_or_cp) 
-                                                    () 
-                                                    Default 
-                                                    (Struct 
-                                                        2 point 
+                                                (Variable
+                                                    6
+                                                    an
+                                                    [p_or_cp]
+                                                    Local
+                                                    (Var 2 p_or_cp)
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 point
                                                         []
-                                                    ) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    ~select_type_block_ 
-                                    [(Print 
-                                        () 
-                                        [(StructInstanceMember 
-                                            (Var 6 an) 
-                                            3 x 
-                                            (Real 4 []) 
+                                        })
+                                    ~select_type_block_
+                                    [(Print
+                                        ()
+                                        [(StructInstanceMember
+                                            (Var 6 an)
+                                            3 x
+                                            (Real 4 [])
                                             ()
                                         )
-                                        (StructInstanceMember 
-                                            (Var 6 an) 
-                                            3 y 
-                                            (Real 4 []) 
+                                        (StructInstanceMember
+                                            (Var 6 an)
+                                            3 y
+                                            (Real 4 [])
                                             ()
-                                        )] 
-                                        () 
+                                        )]
+                                        ()
                                         ()
                                     )]
-                                ), 
+                                ),
                             ~select_type_block_1:
-                                (Block 
+                                (Block
                                     (SymbolTable
                                         7
                                         {
                                             an:
-                                                (Variable 
-                                                    7 
-                                                    an 
-                                                    [p_or_cp] 
-                                                    Local 
-                                                    (Var 2 p_or_cp) 
-                                                    () 
-                                                    Default 
-                                                    (Struct 
-                                                        2 point_3d 
+                                                (Variable
+                                                    7
+                                                    an
+                                                    [p_or_cp]
+                                                    Local
+                                                    (Var 2 p_or_cp)
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 point_3d
                                                         []
-                                                    ) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    ~select_type_block_1 
-                                    [(Print 
-                                        () 
-                                        [(StructInstanceMember 
-                                            (Var 7 an) 
-                                            3 x 
-                                            (Real 4 []) 
+                                        })
+                                    ~select_type_block_1
+                                    [(Print
+                                        ()
+                                        [(StructInstanceMember
+                                            (Var 7 an)
+                                            3 x
+                                            (Real 4 [])
                                             ()
                                         )
-                                        (StructInstanceMember 
-                                            (Var 7 an) 
-                                            3 y 
-                                            (Real 4 []) 
+                                        (StructInstanceMember
+                                            (Var 7 an)
+                                            3 y
+                                            (Real 4 [])
                                             ()
                                         )
-                                        (StructInstanceMember 
-                                            (Var 7 an) 
-                                            4 z 
-                                            (Real 4 []) 
+                                        (StructInstanceMember
+                                            (Var 7 an)
+                                            4 z
+                                            (Real 4 [])
                                             ()
-                                        )] 
-                                        () 
+                                        )]
+                                        ()
                                         ()
                                     )]
                                 )
-                            
-                        }) 
-                    select_type_02 
-                    [] 
-                    [(=> 
-                        (Var 2 p_or_cp) 
+                        })
+                    select_type_02
+                    []
+                    [(=>
+                        (Var 2 p_or_cp)
                         (Var 2 cp)
                     )
-                    (SelectType 
-                        [(TypeStmt 
-                            2 point 
-                            [(BlockCall 
-                                -1 
+                    (SelectType
+                        [(TypeStmt
+                            2 point
+                            [(BlockCall
+                                -1
                                 2 ~select_type_block_
                             )]
                         )
-                        (TypeStmt 
-                            2 point_3d 
-                            [(BlockCall 
-                                -1 
+                        (TypeStmt
+                            2 point_3d
+                            [(BlockCall
+                                -1
                                 2 ~select_type_block_1
                             )]
-                        )] 
+                        )]
                         []
                     )]
                 )
-            
-        }) 
+        })
     []
 )
