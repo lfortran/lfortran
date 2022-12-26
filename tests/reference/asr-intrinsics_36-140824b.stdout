@@ -88,23 +88,13 @@
                                     .false.
                                 ),
                             len:
-<<<<<<< HEAD
                                 (ExternalSymbol
                                     2
                                     len
-                                    24 len
+                                    28 len
                                     lfortran_intrinsic_builtin
                                     []
                                     len
-=======
-                                (ExternalSymbol 
-                                    2 
-                                    len 
-                                    28 len 
-                                    lfortran_intrinsic_builtin 
-                                    [] 
-                                    len 
->>>>>>> 9ff1b8b69 (wip)
                                     Private
                                 ),
                             simple:
