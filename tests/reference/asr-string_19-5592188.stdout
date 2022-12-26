@@ -1181,11 +1181,11 @@
             stdlib_strings_use:
                 (Program
                     (SymbolTable
-                        106
+                        107
                         {
                             char:
                                 (ExternalSymbol
-                                    106
+                                    107
                                     char
                                     2 char
                                     stdlib_string_type
@@ -1195,7 +1195,7 @@
                                 ),
                             char_string:
                                 (ExternalSymbol
-                                    106
+                                    107
                                     char_string
                                     2 char_string
                                     stdlib_string_type
@@ -1205,7 +1205,7 @@
                                 ),
                             compute_lps:
                                 (ExternalSymbol
-                                    106
+                                    107
                                     compute_lps
                                     6 compute_lps
                                     stdlib_strings
@@ -1215,7 +1215,7 @@
                                 ),
                             compute_lps_use:
                                 (ExternalSymbol
-                                    106
+                                    107
                                     compute_lps_use
                                     6 compute_lps_use
                                     stdlib_strings
@@ -1225,7 +1225,7 @@
                                 ),
                             compute_lps_use1:
                                 (ExternalSymbol
-                                    106
+                                    107
                                     compute_lps_use1
                                     6 compute_lps_use1
                                     stdlib_strings
@@ -1235,7 +1235,7 @@
                                 ),
                             len:
                                 (ExternalSymbol
-                                    106
+                                    107
                                     len
                                     2 len
                                     stdlib_string_type
@@ -1245,7 +1245,7 @@
                                 ),
                             len_string:
                                 (ExternalSymbol
-                                    106
+                                    107
                                     len_string
                                     2 len_string
                                     stdlib_string_type
@@ -1255,7 +1255,7 @@
                                 ),
                             padl:
                                 (ExternalSymbol
-                                    106
+                                    107
                                     padl
                                     6 padl
                                     stdlib_strings
@@ -1265,7 +1265,7 @@
                                 ),
                             padl_char_default:
                                 (ExternalSymbol
-                                    106
+                                    107
                                     padl_char_default
                                     6 padl_char_default
                                     stdlib_strings
@@ -1275,7 +1275,7 @@
                                 ),
                             padl_char_pad_with:
                                 (ExternalSymbol
-                                    106
+                                    107
                                     padl_char_pad_with
                                     6 padl_char_pad_with
                                     stdlib_strings
@@ -1285,7 +1285,7 @@
                                 ),
                             padl_string_default:
                                 (ExternalSymbol
-                                    106
+                                    107
                                     padl_string_default
                                     6 padl_string_default
                                     stdlib_strings
@@ -1295,7 +1295,7 @@
                                 ),
                             padl_string_pad_with:
                                 (ExternalSymbol
-                                    106
+                                    107
                                     padl_string_pad_with
                                     6 padl_string_pad_with
                                     stdlib_strings
@@ -1305,7 +1305,7 @@
                                 ),
                             string_type:
                                 (ExternalSymbol
-                                    106
+                                    107
                                     string_type
                                     2 string_type
                                     stdlib_string_type
