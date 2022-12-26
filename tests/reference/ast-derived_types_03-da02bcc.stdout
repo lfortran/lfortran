@@ -22,7 +22,10 @@
             [(=
                 0
                 ing
-                len
+                len [(diag
+                [(()
+                nn
+                ())])]
                 ()
             )
             (Allocate
@@ -66,7 +69,10 @@
                     SIZE
                     []
                     [(()
-                    cell_id
+                    cell_id [(diag
+                    [(()
+                    nn
+                    ())])]
                     ())]
                     []
                     []
@@ -148,19 +154,37 @@
                     )
                     (=
                         0
-                        ic
+                        ic [(diag
+                        [(()
+                        nn
+                        ())]) (cell_id
+                        [(()
+                        ing
+                        ())])]
                         i
                         ()
                     )
                     (=
                         0
-                        j
+                        j [(diag
+                        [(()
+                        nn
+                        ())]) (cell_id
+                        [(()
+                        ing
+                        ())])]
                         j
                         ()
                     )
                     (=
                         0
-                        k
+                        k [(diag
+                        [(()
+                        nn
+                        ())]) (cell_id
+                        [(()
+                        ing
+                        ())])]
                         k
                         ()
                     )]

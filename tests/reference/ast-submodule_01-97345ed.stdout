@@ -735,19 +735,22 @@
         )]
         [(=>
             0
-            pp1
+            pp1 [(c1
+            [])]
             sub1
             ()
         )
         (=>
             0
-            pp2
+            pp2 [(c1
+            [])]
             func1
             ()
         )
         (=>
             0
-            pp3
+            pp3 [(c1
+            [])]
             func2
             (TriviaNode
                 []

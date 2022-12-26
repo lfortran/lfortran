@@ -156,6 +156,12 @@ public:
         if (use_colors) {
             s.append(color(fg::reset));
         }
+        for (size_t i=0; i<x.n_member; i++) {
+            if (i == 0) s.append(" [");
+            this->visit_struct_member(x.m_member[i]);
+            if (i < x.n_member-1) s.append(" ");
+            if (i == x.n_member-1) s.append("]");
+        }
     }
     void visit_Num(const Num_t &x) {
         if (use_colors) {
