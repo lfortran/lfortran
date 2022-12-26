@@ -967,6 +967,9 @@ asr = true
 filename = "../integration_tests/derived_types_08.f90"
 asr = true
 
+[[test]]
+filename = "../integration_tests/derived_types_11.f90"
+asr = true
 
 [[test]]
 filename = "fn2.f90"
