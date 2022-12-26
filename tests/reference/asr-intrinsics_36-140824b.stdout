@@ -91,7 +91,7 @@
                                 (ExternalSymbol
                                     2
                                     len
-                                    24 len
+                                    28 len
                                     lfortran_intrinsic_builtin
                                     []
                                     len
