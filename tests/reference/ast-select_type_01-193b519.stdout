@@ -1,243 +1,249 @@
-(TranslationUnit 
-    [(Program 
-        select_type_01 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
+(TranslationUnit
+    [(Program
+        select_type_01
+        ()
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(DerivedType 
-            base 
-            [] 
-            (TriviaNode 
-                [] 
+        )]
+        [(DerivedType
+            base
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [(Declaration 
-                (AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
+            )
+            []
+            [(Declaration
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
                     None
-                ) 
-                [] 
-                [(i 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )
+                []
+                [(i
+                []
+                []
                 ()
-            )] 
+                None
+                ())]
+                ()
+            )]
             []
         )
-        (DerivedType 
-            child 
-            [] 
-            (TriviaNode 
-                [] 
+        (DerivedType
+            child
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [(AttrExtends 
+            )
+            [(AttrExtends
                 base
-            )] 
-            [(Declaration 
-                (AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
+            )]
+            [(Declaration
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
                     None
-                ) 
-                [] 
-                [(j 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )
+                []
+                [(j
+                []
+                []
                 ()
-            )] 
+                None
+                ())]
+                ()
+            )]
             []
         )
-        (Declaration 
-            (AttrType 
-                TypeClass 
-                [] 
-                base 
+        (Declaration
+            (AttrType
+                TypeClass
+                []
+                base
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrPointer
-            )] 
-            [(bptr 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )]
+            [(bptr
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeType 
-                [] 
-                base 
-                None
-            ) 
-            [(SimpleAttribute 
-                AttrTarget
-            )] 
-            [(base_target 
-            [] 
-            [] 
-            (FuncCallOrArray 
-                base 
-                [] 
-                [(() 
-                10 
-                ())] 
-                [] 
+        (Declaration
+            (AttrType
+                TypeType
                 []
-            ) 
-            Equal 
-            ())] 
+                base
+                None
+            )
+            [(SimpleAttribute
+                AttrTarget
+            )]
+            [(base_target
+            []
+            []
+            (FuncCallOrArray
+                base
+                []
+                [(()
+                10
+                ())]
+                []
+                []
+            )
+            Equal
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeType 
-                [] 
-                child 
+        (Declaration
+            (AttrType
+                TypeType
+                []
+                child
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrTarget
-            )] 
-            [(child_target 
-            [] 
-            [] 
-            (FuncCallOrArray 
-                child 
-                [] 
-                [(() 
-                20 
+            )]
+            [(child_target
+            []
+            []
+            (FuncCallOrArray
+                child
+                []
+                [(()
+                20
                 ())
-                (() 
-                30 
-                ())] 
-                [] 
+                (()
+                30
+                ())]
                 []
-            ) 
-            Equal 
-            ())] 
-            (TriviaNode 
-                [] 
+                []
+            )
+            Equal
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(=> 
-            0 
-            bptr 
-            child_target 
-            (TriviaNode 
-                [] 
+        )]
+        [(=>
+            0
+            bptr
+            child_target
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (SelectType 
-            0 
-            () 
-            () 
-            bptr 
-            [(TypeStmtName 
-                base 
-                () 
-                [(Print 
-                    0 
-                    () 
-                    [(String 
+        (SelectType
+            0
+            ()
+            ()
+            bptr
+            [(TypeStmtName
+                base
+                ()
+                [(Print
+                    0
+                    ()
+                    [(String
                         "base type: component value: "
                     )
-                    i] 
+                    i [(bptr
+                    [])]]
                     ()
                 )]
             )
-            (TypeStmtName 
-                child 
-                () 
-                [(Print 
-                    0 
-                    () 
-                    [(String 
+            (TypeStmtName
+                child
+                ()
+                [(Print
+                    0
+                    ()
+                    [(String
                         "child type: component values: "
                     )
-                    i
-                    j] 
+                    i [(bptr
+                    [])]
+                    j [(bptr
+                    [])]]
                     ()
                 )]
-            )] 
-            () 
-            (TriviaNode 
-                [] 
+            )]
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (=> 
-            0 
-            bptr 
-            base_target 
-            (TriviaNode 
-                [] 
+        (=>
+            0
+            bptr
+            base_target
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (SelectType 
-            0 
-            () 
-            () 
-            bptr 
-            [(TypeStmtName 
-                base 
-                () 
-                [(Print 
-                    0 
-                    () 
-                    [(String 
+        (SelectType
+            0
+            ()
+            ()
+            bptr
+            [(TypeStmtName
+                base
+                ()
+                [(Print
+                    0
+                    ()
+                    [(String
                         "base type: component value: "
                     )
-                    i] 
+                    i [(bptr
+                    [])]]
                     ()
                 )]
             )
-            (TypeStmtName 
-                child 
-                () 
-                [(Print 
-                    0 
-                    () 
-                    [(String 
+            (TypeStmtName
+                child
+                ()
+                [(Print
+                    0
+                    ()
+                    [(String
                         "child type: component values: "
                     )
-                    i
-                    j] 
+                    i [(bptr
+                    [])]
+                    j [(bptr
+                    [])]]
                     ()
                 )]
-            )] 
-            () 
-            (TriviaNode 
-                [] 
+            )]
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

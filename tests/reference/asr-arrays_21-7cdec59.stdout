@@ -1,0 +1,210 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            arrays_21:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            i23:
+                                (Variable
+                                    2
+                                    i23
+                                    []
+                                    Local
+                                    (ArrayReshape
+                                        (ArrayConstant
+                                            [(IntegerUnaryMinus
+                                                (IntegerConstant 14 (Integer 4 []))
+                                                (Integer 4 [])
+                                                (IntegerConstant -14 (Integer 4 []))
+                                            )
+                                            (IntegerConstant 3 (Integer 4 []))
+                                            (IntegerConstant 0 (Integer 4 []))
+                                            (IntegerUnaryMinus
+                                                (IntegerConstant 2 (Integer 4 []))
+                                                (Integer 4 [])
+                                                (IntegerConstant -2 (Integer 4 []))
+                                            )
+                                            (IntegerConstant 19 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4 []))]
+                                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 6 (Integer 4 [])))])
+                                            ColMajor
+                                        )
+                                        (ArrayConstant
+                                            [(IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 3 (Integer 4 []))]
+                                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4 [])))])
+                                            ColMajor
+                                        )
+                                        (Integer 4 [(()
+                                        ())])
+                                        ()
+                                    )
+                                    ()
+                                    Save
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 2 (Integer 4 [])))
+                                    ((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 3 (Integer 4 [])))])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            i6:
+                                (Variable
+                                    2
+                                    i6
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        [(IntegerUnaryMinus
+                                            (IntegerConstant 14 (Integer 4 []))
+                                            (Integer 4 [])
+                                            (IntegerConstant -14 (Integer 4 []))
+                                        )
+                                        (IntegerConstant 3 (Integer 4 []))
+                                        (IntegerConstant 0 (Integer 4 []))
+                                        (IntegerUnaryMinus
+                                            (IntegerConstant 2 (Integer 4 []))
+                                            (Integer 4 [])
+                                            (IntegerConstant -2 (Integer 4 []))
+                                        )
+                                        (IntegerConstant 19 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4 []))]
+                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 6 (Integer 4 [])))])
+                                        ColMajor
+                                    )
+                                    ()
+                                    Save
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 6 (Integer 4 [])))])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    arrays_21
+                    []
+                    [(Print
+                        ()
+                        [(Var 2 i23)]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(ArrayMaxloc
+                            (Var 2 i6)
+                            ()
+                            ()
+                            ()
+                            ()
+                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                            (ArraySize
+                                (Var 2 i6)
+                                ()
+                                (Integer 4 [])
+                                ()
+                            ))])
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(ArrayMaxloc
+                            (Var 2 i23)
+                            ()
+                            ()
+                            ()
+                            ()
+                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                            (ArraySize
+                                (Var 2 i23)
+                                ()
+                                (Integer 4 [])
+                                ()
+                            ))])
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(ArrayMaxloc
+                            (Var 2 i23)
+                            ()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ()
+                            ()
+                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                            (ArraySize
+                                (Var 2 i23)
+                                ()
+                                (Integer 4 [])
+                                ()
+                            ))])
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(ArrayMaxloc
+                            (Var 2 i23)
+                            ()
+                            (IntegerConstant 2 (Integer 4 []))
+                            ()
+                            ()
+                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                            (ArraySize
+                                (Var 2 i23)
+                                ()
+                                (Integer 4 [])
+                                ()
+                            ))])
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(ArrayMaxloc
+                            (Var 2 i23)
+                            ()
+                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerCompare
+                                (Var 2 i23)
+                                Lt
+                                (IntegerConstant 10 (Integer 4 []))
+                                (Logical 4 [])
+                                ()
+                            )
+                            ()
+                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                            (ArraySize
+                                (Var 2 i23)
+                                ()
+                                (Integer 4 [])
+                                ()
+                            ))])
+                            ()
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

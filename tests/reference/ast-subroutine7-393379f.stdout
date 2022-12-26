@@ -1,62 +1,62 @@
-(TranslationUnit 
-    [(Subroutine 
-        f 
+(TranslationUnit
+    [(Subroutine
+        f
         [(a)
-        (b)] 
-        [] 
-        () 
-        () 
-        [] 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (b)]
+        []
+        ()
+        ()
+        []
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [(AttrIntent 
+            )
+            [(AttrIntent
                 InOut
-            )] 
-            [(a 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )]
+            [(a
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [(AttrIntent 
+            )
+            [(AttrIntent
                 InOut
-            )] 
-            [(b 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )]
+            [(b
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            a 
-            (+ b 1) 
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            a
+            (+ b 1)
             ()
         )
-        (= 
-            0 
-            b 
-            (+ a 1) 
+        (=
+            0
+            b
+            (+ a 1)
             ()
-        )] 
+        )]
         []
     )]
 )

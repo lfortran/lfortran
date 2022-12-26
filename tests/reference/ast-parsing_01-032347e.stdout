@@ -1,223 +1,223 @@
-(TranslationUnit 
-    [(Module 
-        submodule 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(Module
+        submodule
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(ImplicitNone 
-            [] 
+        )
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(complex 
-            [] 
-            [] 
-            1 
-            Equal 
-            ())] 
+            )
+            []
+            [(complex
+            []
+            []
+            1
+            Equal
+            ())]
             ()
         )
-        (Interface 
-            (InterfaceHeader) 
-            () 
-            [(InterfaceProc 
-                (Subroutine 
-                    function 
+        (Interface
+            (InterfaceHeader)
+            ()
+            [(InterfaceProc
+                (Subroutine
+                    function
                     [(integer)
-                    (real)] 
-                    [(SimpleAttribute 
+                    (real)]
+                    [(SimpleAttribute
                         AttrModule
-                    )] 
-                    () 
-                    () 
-                    [] 
-                    [] 
-                    [] 
-                    [(Declaration 
-                        (AttrType 
-                            TypeInteger 
-                            [] 
-                            () 
+                    )]
+                    ()
+                    ()
+                    []
+                    []
+                    []
+                    [(Declaration
+                        (AttrType
+                            TypeInteger
+                            []
+                            ()
                             None
-                        ) 
-                        [(AttrIntent 
+                        )
+                        [(AttrIntent
                             In
-                        )] 
-                        [(integer 
-                        [] 
-                        [] 
-                        () 
-                        None 
-                        ())] 
+                        )]
+                        [(integer
+                        []
+                        []
+                        ()
+                        None
+                        ())]
                         ()
                     )
-                    (Declaration 
-                        (AttrType 
-                            TypeInteger 
-                            [] 
-                            () 
+                    (Declaration
+                        (AttrType
+                            TypeInteger
+                            []
+                            ()
                             None
-                        ) 
-                        [(AttrIntent 
+                        )
+                        [(AttrIntent
                             Out
-                        )] 
-                        [(real 
-                        [] 
-                        [] 
-                        () 
-                        None 
-                        ())] 
+                        )]
+                        [(real
+                        []
+                        []
                         ()
-                    )] 
-                    [] 
+                        None
+                        ())]
+                        ()
+                    )]
+                    []
                     []
                 )
             )]
-        )] 
+        )]
         []
     )
-    (Submodule 
-        submodule 
-        () 
-        module 
-        (TriviaNode 
-            [] 
+    (Submodule
+        submodule
+        ()
+        module
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [] 
-        [] 
-        [(Procedure 
-            function 
-            [] 
-            [(SimpleAttribute 
+        )
+        []
+        []
+        []
+        [(Procedure
+            function
+            []
+            [(SimpleAttribute
                 AttrModule
-            )] 
-            () 
-            [] 
-            [] 
-            [] 
-            [] 
-            [(= 
-                0 
-                real 
-                (* 2 integer) 
+            )]
+            ()
+            []
+            []
+            []
+            []
+            [(=
+                0
+                real
+                (* 2 integer)
                 ()
-            )] 
+            )]
             []
         )]
     )
-    (Program 
-        program 
-        (TriviaNode 
+    (Program
+        program
+        (TriviaNode
             [(EndOfLine)
-            (EndOfLine)] 
+            (EndOfLine)]
             []
-        ) 
-        [(Use 
-            [] 
-            submodule 
-            [(UseSymbol 
-                complex 
+        )
+        [(Use
+            []
+            submodule
+            [(UseSymbol
+                complex
                 character
             )
-            (UseSymbol 
-                function 
+            (UseSymbol
+                function
                 subroutine
-            )] 
-            .true. 
+            )]
+            .true.
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+        )]
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(integer 
-            [] 
-            [] 
-            () 
-            None 
-            ())
-            (real 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(integer
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            integer 
-            character 
+            None
+            ())
+            (real
+            []
+            []
+            ()
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            integer
+            character
             ()
         )
-        (AssociateBlock 
-            0 
-            associate 
-            [(logical 
-            [] 
-            [] 
-            character 
-            Arrow 
+        (AssociateBlock
+            0
+            associate
+            [(logical
+            []
+            []
+            character
+            Arrow
             ())
-            (complex 
-            [] 
-            [] 
-            real 
-            Arrow 
-            ())] 
-            [(SubroutineCall 
-                0 
-                subroutine 
-                [] 
-                [(() 
-                logical 
+            (complex
+            []
+            []
+            real
+            Arrow
+            ())]
+            [(SubroutineCall
+                0
+                subroutine
+                []
+                [(()
+                logical
                 ())
-                (() 
-                complex 
-                ())] 
-                [] 
+                (()
+                complex
+                ())]
+                []
                 ()
             )
-            (Print 
-                0 
-                () 
-                [(Parenthesis 
-                    complex
-                )] 
+            (Print
+                0
                 ()
-            )] 
-            () 
-            (TriviaNode 
-                [] 
+                [(Parenthesis
+                    complex
+                )]
+                ()
+            )]
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

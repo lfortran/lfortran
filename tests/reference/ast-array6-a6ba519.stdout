@@ -1,143 +1,143 @@
-(TranslationUnit 
-    [(Program 
-        array6 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
+(TranslationUnit
+    [(Program
+        array6
+        ()
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [] 
-        [] 
-        [(Subroutine 
-            t 
+        )]
+        []
+        []
+        [(Subroutine
+            t
             [(n)
             (a)
             (b)
             (c)
             (d)
-            (e)] 
-            [] 
-            () 
-            () 
-            [] 
-            [] 
-            [] 
-            [(Declaration 
-                (AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
+            (e)]
+            []
+            ()
+            ()
+            []
+            []
+            []
+            [(Declaration
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
                     None
-                ) 
-                [(AttrIntent 
+                )
+                [(AttrIntent
                     In
-                )] 
-                [(n 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )]
+                [(n
+                []
+                []
+                ()
+                None
+                ())]
                 ()
             )
-            (Declaration 
-                (AttrType 
-                    TypeReal 
-                    [] 
-                    () 
+            (Declaration
+                (AttrType
+                    TypeReal
+                    []
+                    ()
                     None
-                ) 
-                [] 
-                [(a 
-                [(() 
-                () 
-                DimensionStar)] 
-                [] 
-                () 
-                None 
+                )
+                []
+                [(a
+                [(()
+                ()
+                DimensionStar)]
+                []
+                ()
+                None
                 ())
-                (b 
-                [(3 
-                () 
-                DimensionStar)] 
-                [] 
-                () 
-                None 
-                ())] 
+                (b
+                [(3
+                ()
+                DimensionStar)]
+                []
+                ()
+                None
+                ())]
                 ()
             )
-            (Declaration 
-                (AttrType 
-                    TypeReal 
-                    [] 
-                    () 
+            (Declaration
+                (AttrType
+                    TypeReal
+                    []
+                    ()
                     None
-                ) 
-                [(AttrDimension 
-                    [(1 
-                    3 
+                )
+                [(AttrDimension
+                    [(1
+                    3
                     DimensionExpr)
-                    (1 
-                    n 
+                    (1
+                    n
                     DimensionExpr)
-                    (() 
-                    () 
+                    (()
+                    ()
                     DimensionStar)]
-                )] 
-                [(c 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )]
+                [(c
+                []
+                []
+                ()
+                None
+                ())]
                 ()
             )
-            (Declaration 
-                (AttrType 
-                    TypeReal 
-                    [] 
-                    () 
+            (Declaration
+                (AttrType
+                    TypeReal
+                    []
+                    ()
                     None
-                ) 
-                [(AttrDimension 
-                    [(1 
-                    3 
+                )
+                [(AttrDimension
+                    [(1
+                    3
                     DimensionExpr)
-                    (1 
-                    n 
+                    (1
+                    n
                     DimensionExpr)
-                    (4 
-                    () 
+                    (4
+                    ()
                     DimensionStar)]
-                )] 
-                [(d 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                )]
+                [(d
+                []
+                []
+                ()
+                None
+                ())]
                 ()
             )
-            (Declaration 
-                (AttrType 
-                    TypeReal 
-                    [] 
-                    () 
+            (Declaration
+                (AttrType
+                    TypeReal
+                    []
+                    ()
                     None
-                ) 
-                [] 
-                [(e 
-                [(n 
-                () 
-                DimensionStar)] 
-                [] 
-                () 
-                None 
-                ())] 
+                )
+                []
+                [(e
+                [(n
                 ()
-            )] 
-            [] 
+                DimensionStar)]
+                []
+                ()
+                None
+                ())]
+                ()
+            )]
+            []
             []
         )]
     )]

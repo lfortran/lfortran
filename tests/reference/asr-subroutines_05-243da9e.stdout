@@ -1,157 +1,154 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             bugsize:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             f:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         3
                                         {
                                             e:
-                                                (Variable 
-                                                    3 
-                                                    e 
-                                                    [x] 
-                                                    Local 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                                    (ArraySize 
-                                                        (Var 3 x) 
-                                                        () 
-                                                        (Integer 4 []) 
+                                                (Variable
+                                                    3
+                                                    e
+                                                    [x]
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                                    (ArraySize
+                                                        (Var 3 x)
                                                         ()
-                                                    ))]) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                        (Integer 4 [])
+                                                        ()
+                                                    ))])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             x:
-                                                (Variable 
-                                                    3 
-                                                    x 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 4 [(() 
-                                                    ())]) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [(()
+                                                    ())])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    f 
-                                    [] 
-                                    [(Var 3 x)] 
-                                    [(= 
-                                        (Var 3 e) 
-                                        (Cast 
-                                            (Var 3 x) 
-                                            IntegerToReal 
-                                            (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                            (ArraySize 
-                                                (Var 3 x) 
-                                                () 
-                                                (Integer 4 []) 
+                                        })
+                                    f
+                                    []
+                                    [(Var 3 x)]
+                                    [(=
+                                        (Var 3 e)
+                                        (Cast
+                                            (Var 3 x)
+                                            IntegerToReal
+                                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                            (ArraySize
+                                                (Var 3 x)
                                                 ()
-                                            ))]) 
+                                                (Integer 4 [])
+                                                ()
+                                            ))])
                                             ()
-                                        ) 
+                                        )
                                         ()
                                     )
-                                    (= 
-                                        (Var 3 e) 
-                                        (Cast 
-                                            (ArrayConstant 
+                                    (=
+                                        (Var 3 e)
+                                        (Cast
+                                            (ArrayConstant
                                                 [(IntegerConstant 1 (Integer 4 []))
                                                 (IntegerConstant 2 (Integer 4 []))
                                                 (IntegerConstant 3 (Integer 4 []))
-                                                (IntegerConstant 4 (Integer 4 []))] 
-                                                (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                                (IntegerConstant 4 (Integer 4 [])))]) 
+                                                (IntegerConstant 4 (Integer 4 []))]
+                                                (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                                (IntegerConstant 4 (Integer 4 [])))])
                                                 ColMajor
-                                            ) 
-                                            IntegerToReal 
-                                            (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                            (ArraySize 
-                                                (Var 3 x) 
-                                                () 
-                                                (Integer 4 []) 
+                                            )
+                                            IntegerToReal
+                                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                            (ArraySize
+                                                (Var 3 x)
                                                 ()
-                                            ))]) 
+                                                (Integer 4 [])
+                                                ()
+                                            ))])
                                             ()
-                                        ) 
+                                        )
                                         ()
                                     )
-                                    (Print 
-                                        () 
-                                        [(Var 3 e)] 
-                                        () 
+                                    (Print
                                         ()
-                                    )] 
-                                    () 
-                                    Source 
-                                    Public 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                        [(Var 3 e)]
+                                        ()
+                                        ()
+                                    )]
+                                    ()
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
                                     .false.
-                                ), 
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
                             x:
-                                (Variable 
-                                    2 
-                                    x 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Pointer 
-                                        (Integer 4 [(() 
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Integer 4 [(()
                                         ())])
-                                    ) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    )
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    bugsize 
-                    [] 
-                    [(Allocate 
-                        [(2 x 
-                        [((IntegerConstant 1 (Integer 4 [])) 
-                        (IntegerConstant 4 (Integer 4 [])))])] 
-                        () 
-                        () 
+                        })
+                    bugsize
+                    []
+                    [(Allocate
+                        [(2 x
+                        [((IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 4 (Integer 4 [])))])]
+                        ()
+                        ()
                         ()
                     )
-                    (SubroutineCall 
-                        2 f 
-                        () 
-                        [((Var 2 x))] 
+                    (SubroutineCall
+                        2 f
+                        ()
+                        [((Var 2 x))]
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )

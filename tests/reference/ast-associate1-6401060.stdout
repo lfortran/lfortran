@@ -1,91 +1,91 @@
-(TranslationUnit 
-    [(AssociateBlock 
-        0 
-        () 
-        [(x 
-        [] 
-        [] 
-        y 
-        Arrow 
-        ())] 
-        [] 
-        () 
+(TranslationUnit
+    [(AssociateBlock
+        0
+        ()
+        [(x
+        []
+        []
+        y
+        Arrow
+        ())]
+        []
+        ()
         ()
     )
-    (AssociateBlock 
-        0 
-        () 
-        [(x 
-        [] 
-        [] 
-        (Parenthesis 
+    (AssociateBlock
+        0
+        ()
+        [(x
+        []
+        []
+        (Parenthesis
             y
-        ) 
-        Arrow 
-        ())] 
-        [] 
-        () 
+        )
+        Arrow
+        ())]
+        []
+        ()
         ()
     )
-    (AssociateBlock 
-        0 
-        () 
-        [(x 
-        [] 
-        [] 
-        (+ y z) 
-        Arrow 
-        ())] 
-        [] 
-        () 
+    (AssociateBlock
+        0
+        ()
+        [(x
+        []
+        []
+        (+ y z)
+        Arrow
+        ())]
+        []
+        ()
         ()
     )
-    (AssociateBlock 
-        0 
-        () 
-        [(x 
-        [] 
-        [] 
-        (u- y) 
-        Arrow 
-        ())] 
-        [] 
-        () 
-        (TriviaNode 
-            [] 
+    (AssociateBlock
+        0
+        ()
+        [(x
+        []
+        []
+        (u- y)
+        Arrow
+        ())]
+        []
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
         )
     )
-    (SubroutineCall 
-        0 
-        some_subroutine 
-        [] 
-        [(() 
-        x 
+    (SubroutineCall
+        0
+        some_subroutine
+        []
+        [(()
+        x
         ())
-        (() 
-        (Parenthesis 
+        (()
+        (Parenthesis
             x
-        ) 
-        ())] 
-        [] 
+        )
+        ())]
+        []
         ()
     )
-    (= 
-        0 
-        x 
-        (FuncCallOrArray 
-            f 
-            [] 
-            [(() 
-            (Parenthesis 
-                x
-            ) 
-            ())] 
-            [] 
+    (=
+        0
+        x
+        (FuncCallOrArray
+            f
             []
-        ) 
+            [(()
+            (Parenthesis
+                x
+            )
+            ())]
+            []
+            []
+        )
         ()
     )]
 )

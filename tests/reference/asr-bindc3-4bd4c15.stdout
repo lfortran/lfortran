@@ -1,155 +1,153 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             bindc3:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             c_f_pointer:
-                                (ExternalSymbol 
-                                    2 
-                                    c_f_pointer 
-                                    4 c_f_pointer 
-                                    lfortran_intrinsic_iso_c_binding 
-                                    [] 
-                                    c_f_pointer 
+                                (ExternalSymbol
+                                    2
+                                    c_f_pointer
+                                    4 c_f_pointer
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_f_pointer
                                     Public
-                                ), 
+                                ),
                             c_loc:
-                                (ExternalSymbol 
-                                    2 
-                                    c_loc 
-                                    4 c_loc 
-                                    lfortran_intrinsic_iso_c_binding 
-                                    [] 
-                                    c_loc 
+                                (ExternalSymbol
+                                    2
+                                    c_loc
+                                    4 c_loc
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_loc
                                     Public
-                                ), 
+                                ),
                             c_ptr:
-                                (ExternalSymbol 
-                                    2 
-                                    c_ptr 
-                                    4 c_ptr 
-                                    lfortran_intrinsic_iso_c_binding 
-                                    [] 
-                                    c_ptr 
+                                (ExternalSymbol
+                                    2
+                                    c_ptr
+                                    4 c_ptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_ptr
                                     Public
-                                ), 
+                                ),
                             idx:
-                                (Variable 
-                                    2 
-                                    idx 
-                                    [] 
-                                    Local 
-                                    (IntegerConstant 1 (Integer 4 [])) 
-                                    () 
-                                    Save 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    idx
+                                    []
+                                    Local
+                                    (IntegerConstant 1 (Integer 4 []))
+                                    ()
+                                    Save
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             queries:
-                                (Variable 
-                                    2 
-                                    queries 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (CPtr) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    queries
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (CPtr)
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             x:
-                                (Variable 
-                                    2 
-                                    x 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Pointer 
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
                                         (Integer 2 [])
-                                    ) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    )
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             y:
-                                (Variable 
-                                    2 
-                                    y 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 2 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 2 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    bindc3 
-                    [iso_c_binding] 
-                    [(CPtrToPointer 
-                        (Var 2 queries) 
-                        (Var 2 x) 
+                        })
+                    bindc3
+                    [iso_c_binding]
+                    [(CPtrToPointer
+                        (Var 2 queries)
+                        (Var 2 x)
                         ()
                     )
-                    (Print 
-                        () 
-                        [(PointerToCPtr 
-                            (Var 2 x) 
-                            (CPtr) 
+                    (Print
+                        ()
+                        [(PointerToCPtr
+                            (Var 2 x)
+                            (CPtr)
                             ()
                         )
-                        (Var 2 queries)] 
-                        () 
+                        (Var 2 queries)]
+                        ()
                         ()
                     )
-                    (=> 
-                        (Var 2 x) 
+                    (=>
+                        (Var 2 x)
                         (Var 2 y)
                     )
-                    (Print 
-                        () 
-                        [(PointerToCPtr 
-                            (Var 2 x) 
-                            (CPtr) 
+                    (Print
+                        ()
+                        [(PointerToCPtr
+                            (Var 2 x)
+                            (CPtr)
                             ()
                         )
-                        (PointerToCPtr 
-                            (GetPointer 
-                                (Var 2 y) 
-                                (Pointer 
+                        (PointerToCPtr
+                            (GetPointer
+                                (Var 2 y)
+                                (Pointer
                                     (Integer 2 [])
-                                ) 
+                                )
                                 ()
-                            ) 
-                            (CPtr) 
+                            )
+                            (CPtr)
                             ()
-                        )] 
-                        () 
+                        )]
+                        ()
                         ()
                     )]
-                ), 
+                ),
             iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding), 
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin)
-            
-        }) 
+        })
     []
 )

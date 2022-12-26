@@ -1,299 +1,297 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             intrinsics_32:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             fsource:
-                                (Variable 
-                                    2 
-                                    fsource 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                    (IntegerConstant 6 (Integer 4 [])))]) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    fsource
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 6 (Integer 4 [])))])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             i:
-                                (Variable 
-                                    2 
-                                    i 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             mask:
-                                (Variable 
-                                    2 
-                                    mask 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Logical 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                    (IntegerConstant 6 (Integer 4 [])))]) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    mask
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Logical 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 6 (Integer 4 [])))])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             merge:
-                                (ExternalSymbol 
-                                    2 
-                                    merge 
-                                    4 merge 
-                                    lfortran_intrinsic_math2 
-                                    [] 
-                                    merge 
+                                (ExternalSymbol
+                                    2
+                                    merge
+                                    4 merge
+                                    lfortran_intrinsic_math2
+                                    []
+                                    merge
                                     Private
-                                ), 
+                                ),
                             merge@merger32:
-                                (ExternalSymbol 
-                                    2 
-                                    merge@merger32 
-                                    4 merger32 
-                                    lfortran_intrinsic_math2 
-                                    [] 
-                                    merger32 
+                                (ExternalSymbol
+                                    2
+                                    merge@merger32
+                                    4 merger32
+                                    lfortran_intrinsic_math2
+                                    []
+                                    merger32
                                     Private
-                                ), 
+                                ),
                             result:
-                                (Variable 
-                                    2 
-                                    result 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                    (IntegerConstant 6 (Integer 4 [])))]) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    result
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 6 (Integer 4 [])))])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             tsource:
-                                (Variable 
-                                    2 
-                                    tsource 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                    (IntegerConstant 6 (Integer 4 [])))]) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    tsource
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 6 (Integer 4 [])))])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    intrinsics_32 
-                    [] 
-                    [(DoLoop 
-                        ((Var 2 i) 
-                        (IntegerConstant 1 (Integer 4 [])) 
-                        (IntegerConstant 6 (Integer 4 [])) 
-                        ()) 
-                        [(= 
-                            (ArrayItem 
-                                (Var 2 tsource) 
-                                [(() 
-                                (Var 2 i) 
-                                ())] 
-                                (Real 4 []) 
-                                ColMajor 
+                        })
+                    intrinsics_32
+                    []
+                    [(DoLoop
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 6 (Integer 4 []))
+                        ())
+                        [(=
+                            (ArrayItem
+                                (Var 2 tsource)
+                                [(()
+                                (Var 2 i)
+                                ())]
+                                (Real 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            (Cast 
-                                (IntegerBinOp 
-                                    (Var 2 i) 
-                                    Mul 
-                                    (IntegerConstant 2 (Integer 4 [])) 
-                                    (Integer 4 []) 
+                            )
+                            (Cast
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Mul
+                                    (IntegerConstant 2 (Integer 4 []))
+                                    (Integer 4 [])
                                     ()
-                                ) 
-                                IntegerToReal 
-                                (Real 4 []) 
+                                )
+                                IntegerToReal
+                                (Real 4 [])
                                 ()
-                            ) 
+                            )
                             ()
                         )
-                        (= 
-                            (ArrayItem 
-                                (Var 2 fsource) 
-                                [(() 
-                                (Var 2 i) 
-                                ())] 
-                                (Real 4 []) 
-                                ColMajor 
+                        (=
+                            (ArrayItem
+                                (Var 2 fsource)
+                                [(()
+                                (Var 2 i)
+                                ())]
+                                (Real 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            (Cast 
-                                (IntegerBinOp 
-                                    (IntegerUnaryMinus 
-                                        (Var 2 i) 
-                                        (Integer 4 []) 
+                            )
+                            (Cast
+                                (IntegerBinOp
+                                    (IntegerUnaryMinus
+                                        (Var 2 i)
+                                        (Integer 4 [])
                                         ()
-                                    ) 
-                                    Mul 
-                                    (IntegerConstant 2 (Integer 4 [])) 
-                                    (Integer 4 []) 
+                                    )
+                                    Mul
+                                    (IntegerConstant 2 (Integer 4 []))
+                                    (Integer 4 [])
                                     ()
-                                ) 
-                                IntegerToReal 
-                                (Real 4 []) 
+                                )
+                                IntegerToReal
+                                (Real 4 [])
                                 ()
-                            ) 
+                            )
                             ()
                         )]
                     )
-                    (= 
-                        (ArrayItem 
-                            (Var 2 mask) 
-                            [(() 
-                            (IntegerConstant 1 (Integer 4 [])) 
-                            ())] 
-                            (Logical 4 []) 
-                            ColMajor 
-                            ()
-                        ) 
-                        (LogicalConstant 
-                            .true. 
+                    (=
+                        (ArrayItem
+                            (Var 2 mask)
+                            [(()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())]
                             (Logical 4 [])
-                        ) 
+                            ColMajor
+                            ()
+                        )
+                        (LogicalConstant
+                            .true.
+                            (Logical 4 [])
+                        )
                         ()
                     )
-                    (= 
-                        (ArrayItem 
-                            (Var 2 mask) 
-                            [(() 
-                            (IntegerConstant 2 (Integer 4 [])) 
-                            ())] 
-                            (Logical 4 []) 
-                            ColMajor 
-                            ()
-                        ) 
-                        (LogicalConstant 
-                            .false. 
+                    (=
+                        (ArrayItem
+                            (Var 2 mask)
+                            [(()
+                            (IntegerConstant 2 (Integer 4 []))
+                            ())]
                             (Logical 4 [])
-                        ) 
+                            ColMajor
+                            ()
+                        )
+                        (LogicalConstant
+                            .false.
+                            (Logical 4 [])
+                        )
                         ()
                     )
-                    (= 
-                        (ArrayItem 
-                            (Var 2 mask) 
-                            [(() 
-                            (IntegerConstant 3 (Integer 4 [])) 
-                            ())] 
-                            (Logical 4 []) 
-                            ColMajor 
-                            ()
-                        ) 
-                        (LogicalConstant 
-                            .false. 
+                    (=
+                        (ArrayItem
+                            (Var 2 mask)
+                            [(()
+                            (IntegerConstant 3 (Integer 4 []))
+                            ())]
                             (Logical 4 [])
-                        ) 
+                            ColMajor
+                            ()
+                        )
+                        (LogicalConstant
+                            .false.
+                            (Logical 4 [])
+                        )
                         ()
                     )
-                    (= 
-                        (ArrayItem 
-                            (Var 2 mask) 
-                            [(() 
-                            (IntegerConstant 4 (Integer 4 [])) 
-                            ())] 
-                            (Logical 4 []) 
-                            ColMajor 
-                            ()
-                        ) 
-                        (LogicalConstant 
-                            .true. 
+                    (=
+                        (ArrayItem
+                            (Var 2 mask)
+                            [(()
+                            (IntegerConstant 4 (Integer 4 []))
+                            ())]
                             (Logical 4 [])
-                        ) 
+                            ColMajor
+                            ()
+                        )
+                        (LogicalConstant
+                            .true.
+                            (Logical 4 [])
+                        )
                         ()
                     )
-                    (= 
-                        (ArrayItem 
-                            (Var 2 mask) 
-                            [(() 
-                            (IntegerConstant 5 (Integer 4 [])) 
-                            ())] 
-                            (Logical 4 []) 
-                            ColMajor 
-                            ()
-                        ) 
-                        (LogicalConstant 
-                            .true. 
+                    (=
+                        (ArrayItem
+                            (Var 2 mask)
+                            [(()
+                            (IntegerConstant 5 (Integer 4 []))
+                            ())]
                             (Logical 4 [])
-                        ) 
+                            ColMajor
+                            ()
+                        )
+                        (LogicalConstant
+                            .true.
+                            (Logical 4 [])
+                        )
                         ()
                     )
-                    (= 
-                        (ArrayItem 
-                            (Var 2 mask) 
-                            [(() 
-                            (IntegerConstant 6 (Integer 4 [])) 
-                            ())] 
-                            (Logical 4 []) 
-                            ColMajor 
-                            ()
-                        ) 
-                        (LogicalConstant 
-                            .false. 
+                    (=
+                        (ArrayItem
+                            (Var 2 mask)
+                            [(()
+                            (IntegerConstant 6 (Integer 4 []))
+                            ())]
                             (Logical 4 [])
-                        ) 
+                            ColMajor
+                            ()
+                        )
+                        (LogicalConstant
+                            .false.
+                            (Logical 4 [])
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 result) 
-                        (FunctionCall 
-                            2 merge@merger32 
-                            2 merge 
+                    (=
+                        (Var 2 result)
+                        (FunctionCall
+                            2 merge@merger32
+                            2 merge
                             [((Var 2 tsource))
                             ((Var 2 fsource))
-                            ((Var 2 mask))] 
-                            (Real 4 []) 
-                            () 
+                            ((Var 2 mask))]
+                            (Real 4 [])
                             ()
-                        ) 
+                            ()
+                        )
                         ()
                     )
-                    (Print 
-                        () 
-                        [(Var 2 result)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 result)]
+                        ()
                         ()
                     )]
-                ), 
+                ),
             iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin), 
+                (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2), 
+                (IntrinsicModule lfortran_intrinsic_math2),
             lfortran_intrinsic_math3:
                 (IntrinsicModule lfortran_intrinsic_math3)
-            
-        }) 
+        })
     []
 )

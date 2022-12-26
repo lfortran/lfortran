@@ -1,433 +1,426 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             bitset:
-                (Module 
+                (Module
                     (SymbolTable
                         2
                         {
                             assign_large:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         3
                                         {
                                             set1:
-                                                (Variable 
-                                                    3 
-                                                    set1 
-                                                    [] 
-                                                    Out 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    set1
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             set2:
-                                                (Variable 
-                                                    3 
-                                                    set2 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    set2
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    assign_large 
-                                    [] 
+                                        })
+                                    assign_large
+                                    []
                                     [(Var 3 set1)
-                                    (Var 3 set2)] 
-                                    [] 
-                                    () 
-                                    Source 
-                                    Public 
-                                    Interface 
-                                    () 
-                                    .true. 
-                                    .true. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                    (Var 3 set2)]
+                                    []
+                                    ()
+                                    Source
+                                    Public
+                                    Interface
+                                    ()
+                                    .true.
+                                    .true.
                                     .false.
-                                ), 
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
                             assign_logint8_large:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         4
                                         {
                                             logical_vector:
-                                                (Variable 
-                                                    4 
-                                                    logical_vector 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Logical 4 [(() 
-                                                    ())]) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    4
+                                                    logical_vector
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [(()
+                                                    ())])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             self:
-                                                (Variable 
-                                                    4 
-                                                    self 
-                                                    [] 
-                                                    Out 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    4
+                                                    self
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    assign_logint8_large 
-                                    [] 
+                                        })
+                                    assign_logint8_large
+                                    []
                                     [(Var 4 self)
-                                    (Var 4 logical_vector)] 
-                                    [] 
-                                    () 
-                                    Source 
-                                    Public 
-                                    Interface 
-                                    () 
-                                    .true. 
-                                    .true. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                    (Var 4 logical_vector)]
+                                    []
+                                    ()
+                                    Source
+                                    Public
+                                    Interface
+                                    ()
+                                    .true.
+                                    .true.
                                     .false.
-                                ), 
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
                             error_handler:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         6
                                         {
                                             error:
-                                                (Variable 
-                                                    6 
-                                                    error 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    6
+                                                    error
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             message:
-                                                (Variable 
-                                                    6 
-                                                    message 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Character 1 -1 () []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    6
+                                                    message
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             module:
-                                                (Variable 
-                                                    6 
-                                                    module 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Character 1 -1 () []) 
-                                                    Source 
-                                                    Public 
-                                                    Optional 
+                                                (Variable
+                                                    6
+                                                    module
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Optional
                                                     .false.
-                                                ), 
+                                                ),
                                             procedure:
-                                                (Variable 
-                                                    6 
-                                                    procedure 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Character 1 -1 () []) 
-                                                    Source 
-                                                    Public 
-                                                    Optional 
+                                                (Variable
+                                                    6
+                                                    procedure
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Optional
                                                     .false.
-                                                ), 
+                                                ),
                                             status:
-                                                (Variable 
-                                                    6 
-                                                    status 
-                                                    [] 
-                                                    Out 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Optional 
+                                                (Variable
+                                                    6
+                                                    status
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Optional
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    error_handler 
-                                    [] 
+                                        })
+                                    error_handler
+                                    []
                                     [(Var 6 message)
                                     (Var 6 error)
                                     (Var 6 status)
                                     (Var 6 module)
-                                    (Var 6 procedure)] 
-                                    [(Print 
-                                        () 
-                                        [(Var 6 error)
-                                        (Var 6 status)] 
-                                        () 
+                                    (Var 6 procedure)]
+                                    [(Print
                                         ()
-                                    )] 
-                                    () 
-                                    Source 
-                                    Public 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .true. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                        [(Var 6 error)
+                                        (Var 6 status)]
+                                        ()
+                                        ()
+                                    )]
+                                    ()
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
                                     .false.
-                                ), 
+                                    .true.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
                             error_handler~genericprocedure:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         5
                                         {
                                             error:
-                                                (Variable 
-                                                    5 
-                                                    error 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    5
+                                                    error
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             message:
-                                                (Variable 
-                                                    5 
-                                                    message 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Character 1 -1 () []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    5
+                                                    message
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             module:
-                                                (Variable 
-                                                    5 
-                                                    module 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Character 1 -1 () []) 
-                                                    Source 
-                                                    Public 
-                                                    Optional 
+                                                (Variable
+                                                    5
+                                                    module
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Optional
                                                     .false.
-                                                ), 
+                                                ),
                                             procedure:
-                                                (Variable 
-                                                    5 
-                                                    procedure 
-                                                    [] 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Character 1 -1 () []) 
-                                                    Source 
-                                                    Public 
-                                                    Optional 
+                                                (Variable
+                                                    5
+                                                    procedure
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Optional
                                                     .false.
-                                                ), 
+                                                ),
                                             status:
-                                                (Variable 
-                                                    5 
-                                                    status 
-                                                    [] 
-                                                    Out 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Optional 
+                                                (Variable
+                                                    5
+                                                    status
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Optional
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    error_handler~genericprocedure 
-                                    [] 
+                                        })
+                                    error_handler~genericprocedure
+                                    []
                                     [(Var 5 message)
                                     (Var 5 error)
                                     (Var 5 status)
                                     (Var 5 module)
-                                    (Var 5 procedure)] 
-                                    [] 
-                                    () 
-                                    Source 
-                                    Public 
-                                    Interface 
-                                    () 
-                                    .false. 
-                                    .true. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
-                                    .false.
-                                ), 
-                            ~assign:
-                                (CustomOperator 
-                                    2 
-                                    ~assign 
-                                    [2 assign_large
-                                    2 assign_logint8_large] 
+                                    (Var 5 procedure)]
+                                    []
+                                    ()
+                                    Source
                                     Public
-                                ), 
+                                    Interface
+                                    ()
+                                    .false.
+                                    .true.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            ~assign:
+                                (CustomOperator
+                                    2
+                                    ~assign
+                                    [2 assign_large
+                                    2 assign_logint8_large]
+                                    Public
+                                ),
                             ~error_handler:
-                                (GenericProcedure 
-                                    2 
-                                    ~error_handler 
-                                    [2 error_handler~genericprocedure] 
+                                (GenericProcedure
+                                    2
+                                    ~error_handler
+                                    [2 error_handler~genericprocedure]
                                     Public
                                 )
-                            
-                        }) 
-                    bitset 
-                    [] 
-                    .false. 
+                        })
+                    bitset
+                    []
                     .false.
-                ), 
+                    .false.
+                ),
             subroutines_06:
-                (Program 
+                (Program
                     (SymbolTable
                         7
                         {
                             assign_large:
-                                (ExternalSymbol 
-                                    7 
-                                    assign_large 
-                                    2 assign_large 
-                                    bitset 
-                                    [] 
-                                    assign_large 
+                                (ExternalSymbol
+                                    7
+                                    assign_large
+                                    2 assign_large
+                                    bitset
+                                    []
+                                    assign_large
                                     Public
-                                ), 
+                                ),
                             assign_logint8_large:
-                                (ExternalSymbol 
-                                    7 
-                                    assign_logint8_large 
-                                    2 assign_logint8_large 
-                                    bitset 
-                                    [] 
-                                    assign_logint8_large 
+                                (ExternalSymbol
+                                    7
+                                    assign_logint8_large
+                                    2 assign_logint8_large
+                                    bitset
+                                    []
+                                    assign_logint8_large
                                     Public
-                                ), 
+                                ),
                             error_handler:
-                                (ExternalSymbol 
-                                    7 
-                                    error_handler 
-                                    2 error_handler 
-                                    bitset 
-                                    [] 
-                                    error_handler 
+                                (ExternalSymbol
+                                    7
+                                    error_handler
+                                    2 error_handler
+                                    bitset
+                                    []
+                                    error_handler
                                     Public
-                                ), 
+                                ),
                             error_handler~genericprocedure:
-                                (ExternalSymbol 
-                                    7 
-                                    error_handler~genericprocedure 
-                                    2 error_handler~genericprocedure 
-                                    bitset 
-                                    [] 
-                                    error_handler~genericprocedure 
+                                (ExternalSymbol
+                                    7
+                                    error_handler~genericprocedure
+                                    2 error_handler~genericprocedure
+                                    bitset
+                                    []
+                                    error_handler~genericprocedure
                                     Public
-                                ), 
+                                ),
                             ~assign:
-                                (ExternalSymbol 
-                                    7 
-                                    ~assign 
-                                    2 ~assign 
-                                    bitset 
-                                    [] 
-                                    ~assign 
+                                (ExternalSymbol
+                                    7
+                                    ~assign
+                                    2 ~assign
+                                    bitset
+                                    []
+                                    ~assign
                                     Public
-                                ), 
+                                ),
                             ~error_handler:
-                                (ExternalSymbol 
-                                    7 
-                                    ~error_handler 
-                                    2 ~error_handler 
-                                    bitset 
-                                    [] 
-                                    ~error_handler 
+                                (ExternalSymbol
+                                    7
+                                    ~error_handler
+                                    2 ~error_handler
+                                    bitset
+                                    []
+                                    ~error_handler
                                     Public
                                 )
-                            
-                        }) 
-                    subroutines_06 
-                    [bitset] 
+                        })
+                    subroutines_06
+                    [bitset]
                     []
                 )
-            
-        }) 
+        })
     []
 )

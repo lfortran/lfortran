@@ -1,753 +1,751 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             arrays_01_complex:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             a:
-                                (Variable 
-                                    2 
-                                    a 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Complex 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                    (IntegerConstant 3 (Integer 4 [])))]) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 3 (Integer 4 [])))])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             b:
-                                (Variable 
-                                    2 
-                                    b 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Complex 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                    (IntegerConstant 4 (Integer 4 [])))]) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             c:
-                                (Variable 
-                                    2 
-                                    c 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Complex 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4 [((IntegerConstant 1 (Integer 4 []))
                                     (IntegerConstant 2 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 [])) 
-                                    (IntegerConstant 2 (Integer 4 [])))]) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    ((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 2 (Integer 4 [])))])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             i:
-                                (Variable 
-                                    2 
-                                    i 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             j:
-                                (Variable 
-                                    2 
-                                    j 
-                                    [] 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    j
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    arrays_01_complex 
-                    [] 
-                    [(DoLoop 
-                        ((Var 2 i) 
-                        (IntegerConstant 1 (Integer 4 [])) 
-                        (IntegerConstant 3 (Integer 4 [])) 
-                        ()) 
-                        [(= 
-                            (ArrayItem 
-                                (Var 2 a) 
-                                [(() 
-                                (Var 2 i) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                        })
+                    arrays_01_complex
+                    []
+                    [(DoLoop
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 3 (Integer 4 []))
+                        ())
+                        [(=
+                            (ArrayItem
+                                (Var 2 a)
+                                [(()
+                                (Var 2 i)
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            (Cast 
-                                (IntegerBinOp 
-                                    (Var 2 i) 
-                                    Add 
-                                    (IntegerConstant 10 (Integer 4 [])) 
-                                    (Integer 4 []) 
+                            )
+                            (Cast
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Add
+                                    (IntegerConstant 10 (Integer 4 []))
+                                    (Integer 4 [])
                                     ()
-                                ) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                                )
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
+                            )
                             ()
                         )]
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 a) 
-                                [(() 
-                                (IntegerConstant 1 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 a)
+                                [(()
+                                (IntegerConstant 1 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 11 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 11 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 a) 
-                                [(() 
-                                (IntegerConstant 2 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 a)
+                                [(()
+                                (IntegerConstant 2 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 12 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 12 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 a) 
-                                [(() 
-                                (IntegerConstant 3 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 a)
+                                [(()
+                                (IntegerConstant 3 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 13 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 13 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (DoLoop 
-                        ((Var 2 i) 
-                        (IntegerConstant 11 (Integer 4 [])) 
-                        (IntegerConstant 14 (Integer 4 [])) 
-                        ()) 
-                        [(= 
-                            (ArrayItem 
-                                (Var 2 b) 
-                                [(() 
-                                (IntegerBinOp 
-                                    (Var 2 i) 
-                                    Sub 
-                                    (IntegerConstant 10 (Integer 4 [])) 
-                                    (Integer 4 []) 
+                    (DoLoop
+                        ((Var 2 i)
+                        (IntegerConstant 11 (Integer 4 []))
+                        (IntegerConstant 14 (Integer 4 []))
+                        ())
+                        [(=
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Sub
+                                    (IntegerConstant 10 (Integer 4 []))
+                                    (Integer 4 [])
                                     ()
-                                ) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                                )
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            (Cast 
-                                (Var 2 i) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            (Cast
+                                (Var 2 i)
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
+                            )
                             ()
                         )]
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 b) 
-                                [(() 
-                                (IntegerConstant 1 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 1 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 11 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 11 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 b) 
-                                [(() 
-                                (IntegerConstant 2 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 2 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 12 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 12 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 b) 
-                                [(() 
-                                (IntegerConstant 3 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 3 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 13 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 13 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 b) 
-                                [(() 
-                                (IntegerConstant 4 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 4 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 14 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 14 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (DoLoop 
-                        ((Var 2 i) 
-                        (IntegerConstant 1 (Integer 4 [])) 
-                        (IntegerConstant 3 (Integer 4 [])) 
-                        ()) 
-                        [(= 
-                            (ArrayItem 
-                                (Var 2 b) 
-                                [(() 
-                                (Var 2 i) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                    (DoLoop
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 3 (Integer 4 []))
+                        ())
+                        [(=
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (Var 2 i)
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            (ComplexBinOp 
-                                (ArrayItem 
-                                    (Var 2 a) 
-                                    [(() 
-                                    (Var 2 i) 
-                                    ())] 
-                                    (Complex 4 []) 
-                                    ColMajor 
+                            )
+                            (ComplexBinOp
+                                (ArrayItem
+                                    (Var 2 a)
+                                    [(()
+                                    (Var 2 i)
+                                    ())]
+                                    (Complex 4 [])
+                                    ColMajor
                                     ()
-                                ) 
-                                Sub 
-                                (Cast 
-                                    (IntegerConstant 10 (Integer 4 [])) 
-                                    IntegerToComplex 
-                                    (Complex 4 []) 
+                                )
+                                Sub
+                                (Cast
+                                    (IntegerConstant 10 (Integer 4 []))
+                                    IntegerToComplex
+                                    (Complex 4 [])
                                     ()
-                                ) 
-                                (Complex 4 []) 
+                                )
+                                (Complex 4 [])
                                 ()
-                            ) 
+                            )
                             ()
                         )]
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 b) 
-                                [(() 
-                                (IntegerConstant 1 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 1 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 1 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 1 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 b) 
-                                [(() 
-                                (IntegerConstant 2 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 2 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 2 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 2 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 b) 
-                                [(() 
-                                (IntegerConstant 3 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 3 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 3 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 3 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (= 
-                        (ArrayItem 
-                            (Var 2 b) 
-                            [(() 
-                            (IntegerConstant 4 (Integer 4 [])) 
-                            ())] 
-                            (Complex 4 []) 
-                            ColMajor 
+                    (=
+                        (ArrayItem
+                            (Var 2 b)
+                            [(()
+                            (IntegerConstant 4 (Integer 4 []))
+                            ())]
+                            (Complex 4 [])
+                            ColMajor
                             ()
-                        ) 
-                        (ComplexBinOp 
-                            (ComplexBinOp 
-                                (ComplexBinOp 
-                                    (ArrayItem 
-                                        (Var 2 b) 
-                                        [(() 
-                                        (IntegerConstant 1 (Integer 4 [])) 
-                                        ())] 
-                                        (Complex 4 []) 
-                                        ColMajor 
+                        )
+                        (ComplexBinOp
+                            (ComplexBinOp
+                                (ComplexBinOp
+                                    (ArrayItem
+                                        (Var 2 b)
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        ())]
+                                        (Complex 4 [])
+                                        ColMajor
                                         ()
-                                    ) 
-                                    Add 
-                                    (ArrayItem 
-                                        (Var 2 b) 
-                                        [(() 
-                                        (IntegerConstant 2 (Integer 4 [])) 
-                                        ())] 
-                                        (Complex 4 []) 
-                                        ColMajor 
+                                    )
+                                    Add
+                                    (ArrayItem
+                                        (Var 2 b)
+                                        [(()
+                                        (IntegerConstant 2 (Integer 4 []))
+                                        ())]
+                                        (Complex 4 [])
+                                        ColMajor
                                         ()
-                                    ) 
-                                    (Complex 4 []) 
+                                    )
+                                    (Complex 4 [])
                                     ()
-                                ) 
-                                Add 
-                                (ArrayItem 
-                                    (Var 2 b) 
-                                    [(() 
-                                    (IntegerConstant 3 (Integer 4 [])) 
-                                    ())] 
-                                    (Complex 4 []) 
-                                    ColMajor 
+                                )
+                                Add
+                                (ArrayItem
+                                    (Var 2 b)
+                                    [(()
+                                    (IntegerConstant 3 (Integer 4 []))
+                                    ())]
+                                    (Complex 4 [])
+                                    ColMajor
                                     ()
-                                ) 
-                                (Complex 4 []) 
+                                )
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            Add 
-                            (ArrayItem 
-                                (Var 2 a) 
-                                [(() 
-                                (IntegerConstant 1 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                            )
+                            Add
+                            (ArrayItem
+                                (Var 2 a)
+                                [(()
+                                (IntegerConstant 1 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            (Complex 4 []) 
+                            )
+                            (Complex 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 b) 
-                                [(() 
-                                (IntegerConstant 4 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 4 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 17 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 17 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (= 
-                        (ArrayItem 
-                            (Var 2 b) 
-                            [(() 
-                            (IntegerConstant 4 (Integer 4 [])) 
-                            ())] 
-                            (Complex 4 []) 
-                            ColMajor 
+                    (=
+                        (ArrayItem
+                            (Var 2 b)
+                            [(()
+                            (IntegerConstant 4 (Integer 4 []))
+                            ())]
+                            (Complex 4 [])
+                            ColMajor
                             ()
-                        ) 
-                        (ArrayItem 
-                            (Var 2 a) 
-                            [(() 
-                            (IntegerConstant 1 (Integer 4 [])) 
-                            ())] 
-                            (Complex 4 []) 
-                            ColMajor 
+                        )
+                        (ArrayItem
+                            (Var 2 a)
+                            [(()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())]
+                            (Complex 4 [])
+                            ColMajor
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 b) 
-                                [(() 
-                                (IntegerConstant 4 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 4 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 11 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 11 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (DoLoop 
-                        ((Var 2 i) 
-                        (IntegerConstant 1 (Integer 4 [])) 
-                        (IntegerConstant 2 (Integer 4 [])) 
-                        ()) 
-                        [(DoLoop 
-                            ((Var 2 j) 
-                            (IntegerConstant 1 (Integer 4 [])) 
-                            (IntegerConstant 2 (Integer 4 [])) 
-                            ()) 
-                            [(= 
-                                (ArrayItem 
-                                    (Var 2 c) 
-                                    [(() 
-                                    (Var 2 i) 
+                    (DoLoop
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 2 (Integer 4 []))
+                        ())
+                        [(DoLoop
+                            ((Var 2 j)
+                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4 []))
+                            ())
+                            [(=
+                                (ArrayItem
+                                    (Var 2 c)
+                                    [(()
+                                    (Var 2 i)
                                     ())
-                                    (() 
-                                    (Var 2 j) 
-                                    ())] 
-                                    (Complex 4 []) 
-                                    ColMajor 
+                                    (()
+                                    (Var 2 j)
+                                    ())]
+                                    (Complex 4 [])
+                                    ColMajor
                                     ()
-                                ) 
-                                (Cast 
-                                    (IntegerBinOp 
-                                        (IntegerBinOp 
-                                            (Var 2 i) 
-                                            Add 
-                                            (Var 2 j) 
-                                            (Integer 4 []) 
+                                )
+                                (Cast
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 2 i)
+                                            Add
+                                            (Var 2 j)
+                                            (Integer 4 [])
                                             ()
-                                        ) 
-                                        Add 
-                                        (IntegerConstant 10 (Integer 4 [])) 
-                                        (Integer 4 []) 
+                                        )
+                                        Add
+                                        (IntegerConstant 10 (Integer 4 []))
+                                        (Integer 4 [])
                                         ()
-                                    ) 
-                                    IntegerToComplex 
-                                    (Complex 4 []) 
+                                    )
+                                    IntegerToComplex
+                                    (Complex 4 [])
                                     ()
-                                ) 
+                                )
                                 ()
                             )]
                         )]
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 c) 
-                                [(() 
-                                (IntegerConstant 1 (Integer 4 [])) 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 c)
+                                [(()
+                                (IntegerConstant 1 (Integer 4 []))
                                 ())
-                                (() 
-                                (IntegerConstant 1 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                                (()
+                                (IntegerConstant 1 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 12 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 12 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 c) 
-                                [(() 
-                                (IntegerConstant 1 (Integer 4 [])) 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 c)
+                                [(()
+                                (IntegerConstant 1 (Integer 4 []))
                                 ())
-                                (() 
-                                (IntegerConstant 2 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                                (()
+                                (IntegerConstant 2 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 13 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 13 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 c) 
-                                [(() 
-                                (IntegerConstant 2 (Integer 4 [])) 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 c)
+                                [(()
+                                (IntegerConstant 2 (Integer 4 []))
                                 ())
-                                (() 
-                                (IntegerConstant 1 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                                (()
+                                (IntegerConstant 1 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 13 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 13 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )
-                    (If 
-                        (ComplexCompare 
-                            (ArrayItem 
-                                (Var 2 c) 
-                                [(() 
-                                (IntegerConstant 2 (Integer 4 [])) 
+                    (If
+                        (ComplexCompare
+                            (ArrayItem
+                                (Var 2 c)
+                                [(()
+                                (IntegerConstant 2 (Integer 4 []))
                                 ())
-                                (() 
-                                (IntegerConstant 2 (Integer 4 [])) 
-                                ())] 
-                                (Complex 4 []) 
-                                ColMajor 
+                                (()
+                                (IntegerConstant 2 (Integer 4 []))
+                                ())]
+                                (Complex 4 [])
+                                ColMajor
                                 ()
-                            ) 
-                            NotEq 
-                            (Cast 
-                                (IntegerConstant 14 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 14 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )]
                 )
-            
-        }) 
+        })
     []
 )

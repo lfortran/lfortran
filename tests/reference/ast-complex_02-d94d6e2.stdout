@@ -1,128 +1,128 @@
-(TranslationUnit 
-    [(Program 
-        complex_02 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+(TranslationUnit
+    [(Program
+        complex_02
+        ()
+        []
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeComplex 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeComplex
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(x 
-            [] 
-            [] 
-            () 
-            None 
+            )
+            []
+            [(x
+            []
+            []
+            ()
+            None
             ())
-            (z 
-            [] 
-            [] 
-            () 
-            None 
+            (z
+            []
+            []
+            ()
+            None
             ())
-            (w 
-            [] 
-            [] 
-            () 
-            None 
+            (w
+            []
+            []
+            ()
+            None
             ())
-            (i_ 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            (i_
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeReal 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(a 
-            [] 
-            [] 
-            () 
-            None 
+            )
+            []
+            [(a
+            []
+            []
+            ()
+            None
             ())
-            (b 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
-            (TriviaNode 
-                [] 
+            (b
+            []
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(= 
-            0 
-            x 
-            (Complex (Real "1.0") (u- (Real "3.0"))) 
+        )]
+        [(=
+            0
+            x
+            (Complex (Real "1.0") (u- (Real "3.0")))
             ()
         )
-        (= 
-            0 
-            a 
-            (Real "3.0") 
+        (=
+            0
+            a
+            (Real "3.0")
             ()
         )
-        (= 
-            0 
-            b 
-            (Real "4.0") 
+        (=
+            0
+            b
+            (Real "4.0")
             ()
         )
-        (= 
-            0 
-            i_ 
-            (Complex 0 1) 
+        (=
+            0
+            i_
+            (Complex 0 1)
             ()
         )
-        (= 
-            0 
-            z 
-            (+ a (* i_ b)) 
+        (=
+            0
+            z
+            (+ a (* i_ b))
             ()
         )
-        (= 
-            0 
-            w 
-            (+ (+ a b) (* i_ (- a b))) 
-            (TriviaNode 
-                [] 
+        (=
+            0
+            w
+            (+ (+ a b) (* i_ (- a b)))
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Print 
-            0 
-            () 
+        (Print
+            0
+            ()
             [x
             z
-            w] 
-            (TriviaNode 
-                [] 
+            w]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

@@ -1,165 +1,165 @@
-(TranslationUnit 
-    [(Module 
-        nested_01_a 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(Module
+        nested_01_a
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+        )
+        []
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [] 
-        [(Function 
-            b 
-            [] 
-            [(AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        []
+        [(Function
+            b
+            []
+            [(AttrType
+                TypeInteger
+                []
+                ()
                 None
-            )] 
-            () 
-            () 
-            (TriviaNode 
-                [] 
+            )]
+            ()
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [] 
-            [] 
-            [(Declaration 
-                (AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
-                    None
-                ) 
-                [] 
-                [(e 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
-                ()
-            )] 
-            [(Print 
-                0 
-                () 
-                [(String 
-                    "b()"
-                )] 
-                ()
             )
-            (= 
-                0 
-                e 
-                (FuncCallOrArray 
-                    d 
-                    [] 
-                    [] 
-                    [] 
+            []
+            []
+            []
+            [(Declaration
+                (AttrType
+                    TypeInteger
                     []
-                ) 
+                    ()
+                    None
+                )
+                []
+                [(e
+                []
+                []
+                ()
+                None
+                ())]
+                ()
+            )]
+            [(Print
+                0
+                ()
+                [(String
+                    "b()"
+                )]
                 ()
             )
-            (= 
-                0 
-                b 
-                0 
+            (=
+                0
+                e
+                (FuncCallOrArray
+                    d
+                    []
+                    []
+                    []
+                    []
+                )
                 ()
-            )] 
-            [(Function 
-                d 
-                [] 
-                [(AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
+            )
+            (=
+                0
+                b
+                0
+                ()
+            )]
+            [(Function
+                d
+                []
+                [(AttrType
+                    TypeInteger
+                    []
+                    ()
                     None
-                )] 
-                () 
-                () 
-                () 
-                [] 
-                [] 
-                [] 
-                [] 
-                [(Print 
-                    0 
-                    () 
-                    [(String 
+                )]
+                ()
+                ()
+                ()
+                []
+                []
+                []
+                []
+                [(Print
+                    0
+                    ()
+                    [(String
                         "d()"
-                    )] 
+                    )]
                     ()
                 )
-                (= 
-                    0 
-                    d 
-                    1 
+                (=
+                    0
+                    d
+                    1
                     ()
-                )] 
+                )]
                 []
             )]
         )]
     )
-    (Program 
-        nested_01 
-        () 
-        [(Use 
-            [] 
-            nested_01_a 
-            [(UseSymbol 
-                b 
+    (Program
+        nested_01
+        ()
+        [(Use
+            []
+            nested_01_a
+            [(UseSymbol
+                b
                 ()
-            )] 
-            .true. 
+            )]
+            .true.
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
+        )]
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
-                None
-            ) 
-            [] 
-            [(c 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
-            ()
-        )] 
-        [(= 
-            0 
-            c 
-            (FuncCallOrArray 
-                b 
-                [] 
-                [] 
-                [] 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
                 []
-            ) 
-            (TriviaNode 
-                [] 
+                ()
+                None
+            )
+            []
+            [(c
+            []
+            []
+            ()
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            c
+            (FuncCallOrArray
+                b
+                []
+                []
+                []
+                []
+            )
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

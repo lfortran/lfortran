@@ -1,112 +1,112 @@
-(TranslationUnit 
-    [(Program 
-        types_12 
-        () 
-        [(Use 
-            [] 
-            iso_c_binding 
-            [(UseSymbol 
-                c_int 
+(TranslationUnit
+    [(Program
+        types_12
+        ()
+        [(Use
+            []
+            iso_c_binding
+            [(UseSymbol
+                c_int
                 ()
             )
-            (UseSymbol 
-                c_double 
+            (UseSymbol
+                c_double
                 ()
-            )] 
-            .true. 
+            )]
+            .true.
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+        )]
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(Interface 
-            (InterfaceHeader) 
-            (TriviaNode 
-                [] 
+        )]
+        [(Interface
+            (InterfaceHeader)
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [(InterfaceProc 
-                (Function 
-                    f 
+            )
+            [(InterfaceProc
+                (Function
+                    f
                     [(a)
-                    (b)] 
-                    [(AttrType 
-                        TypeInteger 
-                        [(() 
-                        c_int 
-                        Value)] 
-                        () 
-                        None
-                    )] 
-                    r 
-                    () 
-                    () 
-                    [] 
-                    [(Import 
-                        [c_int
-                        c_double] 
-                        ImportDefault 
+                    (b)]
+                    [(AttrType
+                        TypeInteger
+                        [(()
+                        c_int
+                        Value)]
                         ()
-                    )] 
-                    [] 
-                    [(Declaration 
-                        (AttrType 
-                            TypeInteger 
-                            [(() 
-                            c_int 
-                            Value)] 
-                            () 
+                        None
+                    )]
+                    r
+                    ()
+                    ()
+                    []
+                    [(Import
+                        [c_int
+                        c_double]
+                        ImportDefault
+                        ()
+                    )]
+                    []
+                    [(Declaration
+                        (AttrType
+                            TypeInteger
+                            [(()
+                            c_int
+                            Value)]
+                            ()
                             None
-                        ) 
-                        [(SimpleAttribute 
+                        )
+                        [(SimpleAttribute
                             AttrValue
                         )
-                        (AttrIntent 
+                        (AttrIntent
                             In
-                        )] 
-                        [(a 
-                        [] 
-                        [] 
-                        () 
-                        None 
-                        ())] 
+                        )]
+                        [(a
+                        []
+                        []
+                        ()
+                        None
+                        ())]
                         ()
                     )
-                    (Declaration 
-                        (AttrType 
-                            TypeReal 
-                            [(() 
-                            c_double 
-                            Value)] 
-                            () 
+                    (Declaration
+                        (AttrType
+                            TypeReal
+                            [(()
+                            c_double
+                            Value)]
+                            ()
                             None
-                        ) 
-                        [(SimpleAttribute 
+                        )
+                        [(SimpleAttribute
                             AttrValue
                         )
-                        (AttrIntent 
+                        (AttrIntent
                             In
-                        )] 
-                        [(b 
-                        [] 
-                        [] 
-                        () 
-                        None 
-                        ())] 
+                        )]
+                        [(b
+                        []
+                        []
                         ()
-                    )] 
-                    [] 
+                        None
+                        ())]
+                        ()
+                    )]
+                    []
                     []
                 )
             )]
-        )] 
-        [] 
+        )]
+        []
         []
     )]
 )

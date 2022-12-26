@@ -1,211 +1,211 @@
-(TranslationUnit 
-    [(DoLoop 
-        0 
-        () 
-        0 
-        i 
-        1 
-        5 
-        () 
-        [(= 
-            0 
-            a 
-            (+ a i) 
+(TranslationUnit
+    [(DoLoop
+        0
+        ()
+        0
+        i
+        1
+        5
+        ()
+        [(=
+            0
+            a
+            (+ a i)
             ()
-        )] 
-        () 
-        (TriviaNode 
-            [] 
+        )]
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
         )
     )
-    (DoLoop 
-        0 
-        () 
-        0 
-        i 
-        1 
-        5 
-        () 
-        [] 
-        () 
-        (TriviaNode 
-            [] 
+    (DoLoop
+        0
+        ()
+        0
+        i
+        1
+        5
+        ()
+        []
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
         )
     )
-    (DoLoop 
-        0 
-        () 
-        0 
-        i 
-        1 
-        5 
-        2 
-        [(= 
-            0 
-            a 
-            (+ a i) 
+    (DoLoop
+        0
+        ()
+        0
+        i
+        1
+        5
+        2
+        [(=
+            0
+            a
+            (+ a i)
             ()
-        )] 
-        () 
-        (TriviaNode 
-            [] 
+        )]
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
         )
     )
-    (DoLoop 
-        0 
-        () 
-        0 
-        () 
-        () 
-        () 
-        () 
-        [(= 
-            0 
-            a 
-            (+ a i) 
+    (DoLoop
+        0
+        ()
+        0
+        ()
+        ()
+        ()
+        ()
+        [(=
+            0
+            a
+            (+ a i)
             ()
         )
-        (= 
-            0 
-            b 
-            3 
+        (=
+            0
+            b
+            3
             ()
-        )] 
-        () 
-        (TriviaNode 
-            [] 
+        )]
+        ()
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
         )
     )
-    (Subroutine 
-        g 
-        [] 
-        [] 
-        () 
-        () 
-        [] 
-        [] 
-        [] 
-        [] 
-        [(DoLoop 
-            0 
-            () 
-            0 
-            () 
-            () 
-            () 
-            () 
-            [(= 
-                0 
-                a 
-                (+ a i) 
+    (Subroutine
+        g
+        []
+        []
+        ()
+        ()
+        []
+        []
+        []
+        []
+        [(DoLoop
+            0
+            ()
+            0
+            ()
+            ()
+            ()
+            ()
+            [(=
+                0
+                a
+                (+ a i)
                 ()
             )
-            (= 
-                0 
-                b 
-                3 
+            (=
+                0
+                b
+                3
                 ()
-            )] 
-            () 
-            (TriviaNode 
-                [] 
+            )]
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (DoLoop 
-            0 
-            () 
-            0 
-            i 
-            1 
-            5 
-            () 
-            [(= 
-                0 
-                a 
-                (+ a i) 
+        (DoLoop
+            0
+            ()
+            0
+            i
+            1
+            5
+            ()
+            [(=
+                0
+                a
+                (+ a i)
                 ()
-            )] 
-            () 
-            (TriviaNode 
-                [] 
+            )]
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (= 
-            0 
-            n 
-            0 
+        (=
+            0
+            n
+            0
             ()
         )
-        (DoLoop 
-            0 
-            () 
-            50 
-            i 
-            1 
-            10 
-            () 
-            [(= 
-                0 
-                j 
-                i 
+        (DoLoop
+            0
+            ()
+            50
+            i
+            1
+            10
+            ()
+            [(=
+                0
+                j
+                i
                 ()
             )
-            (DoLoop 
-                0 
-                () 
-                0 
-                k 
-                1 
-                5 
-                () 
-                [(= 
-                    0 
-                    l 
-                    k 
+            (DoLoop
+                0
+                ()
+                0
+                k
+                1
+                5
+                ()
+                [(=
+                    0
+                    l
+                    k
                     ()
                 )
-                (= 
-                    0 
-                    n 
-                    (+ n 1) 
-                    (TriviaNode 
-                        [] 
-                        [(EOLComment 
+                (=
+                    0
+                    n
+                    (+ n 1)
+                    (TriviaNode
+                        []
+                        [(EOLComment
                             "! this statement executes 50 times"
                         )]
                     )
-                )] 
-                () 
-                (TriviaNode 
-                    [] 
-                    [(EOLComment 
+                )]
+                ()
+                (TriviaNode
+                    []
+                    [(EOLComment
                         "! nonlabeled do inside a labeled do"
                     )]
                 )
             )
-            (Continue 
-                50 
+            (Continue
+                50
                 ()
-            )] 
-            () 
-            (TriviaNode 
-                [] 
+            )]
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

@@ -1,107 +1,107 @@
-(TranslationUnit 
-    [(Module 
-        interface2 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+(TranslationUnit
+    [(Module
+        interface2
+        ()
+        []
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(Interface 
-            (AbstractInterfaceHeader) 
-            (TriviaNode 
-                [] 
+        )]
+        [(Interface
+            (AbstractInterfaceHeader)
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [(InterfaceProc 
-                (Subroutine 
-                    read_params 
+            )
+            [(InterfaceProc
+                (Subroutine
+                    read_params
                     [(this)
-                    (params)] 
-                    [] 
-                    () 
-                    () 
-                    [] 
-                    [(Import 
-                        [] 
-                        ImportDefault 
+                    (params)]
+                    []
+                    ()
+                    ()
+                    []
+                    [(Import
+                        []
+                        ImportDefault
                         ()
-                    )] 
-                    [] 
-                    [(Declaration 
-                        (AttrType 
-                            TypeClass 
-                            [] 
-                            porous_drag_model 
+                    )]
+                    []
+                    [(Declaration
+                        (AttrType
+                            TypeClass
+                            []
+                            porous_drag_model
                             None
-                        ) 
-                        [(AttrIntent 
+                        )
+                        [(AttrIntent
                             InOut
-                        )] 
-                        [(this 
-                        [] 
-                        [] 
-                        () 
-                        None 
-                        ())] 
+                        )]
+                        [(this
+                        []
+                        []
+                        ()
+                        None
+                        ())]
                         ()
                     )
-                    (Declaration 
-                        (AttrType 
-                            TypeType 
-                            [] 
-                            parameter_list 
+                    (Declaration
+                        (AttrType
+                            TypeType
+                            []
+                            parameter_list
                             None
-                        ) 
-                        [(SimpleAttribute 
+                        )
+                        [(SimpleAttribute
                             AttrPointer
                         )
-                        (AttrIntent 
+                        (AttrIntent
                             In
-                        )] 
-                        [(params 
-                        [] 
-                        [] 
-                        () 
-                        None 
-                        ())] 
+                        )]
+                        [(params
+                        []
+                        []
                         ()
-                    )] 
-                    [] 
+                        None
+                        ())]
+                        ()
+                    )]
+                    []
                     []
                 )
             )]
         )
-        (Interface 
-            (InterfaceHeaderAssignment) 
-            (TriviaNode 
-                [] 
+        (Interface
+            (InterfaceHeaderAssignment)
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [(InterfaceModuleProcedure 
-                [SomeProc] 
-                [(SimpleAttribute 
+            )
+            [(InterfaceModuleProcedure
+                [SomeProc]
+                [(SimpleAttribute
                     AttrModule
-                )] 
+                )]
                 ()
             )
-            (InterfaceModuleProcedure 
-                [SomeProc2] 
-                [] 
+            (InterfaceModuleProcedure
+                [SomeProc2]
+                []
                 ()
             )
-            (InterfaceModuleProcedure 
-                [SomeProc3] 
-                [] 
+            (InterfaceModuleProcedure
+                [SomeProc3]
+                []
                 ()
             )]
-        )] 
+        )]
         []
     )]
 )

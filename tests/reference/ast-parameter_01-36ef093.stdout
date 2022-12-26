@@ -1,80 +1,80 @@
-(TranslationUnit 
-    [(Program 
-        parameter_01 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
+(TranslationUnit
+    [(Program
+        parameter_01
+        ()
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(i 
-            [] 
-            [] 
-            () 
-            None 
+            )
+            []
+            [(i
+            []
+            []
+            ()
+            None
             ())
-            (j 
-            [] 
-            [] 
-            () 
-            None 
+            (j
+            []
+            []
+            ()
+            None
             ())
-            (k 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            (k
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            () 
-            [(SimpleAttribute 
+        (Declaration
+            ()
+            [(SimpleAttribute
                 AttrParameter
-            )] 
-            [(i 
-            [] 
-            [] 
-            1 
-            Equal 
-            ())] 
+            )]
+            [(i
+            []
+            []
+            1
+            Equal
+            ())]
             ()
         )
-        (Declaration 
-            () 
-            [(SimpleAttribute 
-                AttrParameter
-            )] 
-            [(j 
-            [] 
-            [] 
-            2 
-            Equal 
-            ())
-            (k 
-            [] 
-            [] 
-            3 
-            Equal 
-            ())] 
+        (Declaration
             ()
-        )] 
-        [(Print 
-            0 
-            () 
+            [(SimpleAttribute
+                AttrParameter
+            )]
+            [(j
+            []
+            []
+            2
+            Equal
+            ())
+            (k
+            []
+            []
+            3
+            Equal
+            ())]
+            ()
+        )]
+        [(Print
+            0
+            ()
             [i
             j
-            k] 
+            k]
             ()
-        )] 
+        )]
         []
     )]
 )

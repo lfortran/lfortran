@@ -1,179 +1,179 @@
-(TranslationUnit 
-    [(Program 
-        if_04 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
+(TranslationUnit
+    [(Program
+        if_04
+        ()
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(i 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(i
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            i 
-            1 
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            i
+            1
             ()
         )
-        (If 
-            0 
-            () 
-            (== i 1) 
-            [(Print 
-                0 
-                () 
-                [(String 
+        (If
+            0
+            ()
+            (== i 1)
+            [(Print
+                0
+                ()
+                [(String
                     "1"
-                )] 
+                )]
                 ()
-            )] 
-            [(If 
-                0 
-                () 
-                (== i 2) 
-                [(Print 
-                    0 
-                    () 
-                    [(String 
+            )]
+            [(If
+                0
+                ()
+                (== i 2)
+                [(Print
+                    0
+                    ()
+                    [(String
                         "2"
-                    )] 
+                    )]
                     ()
-                )] 
-                [(If 
-                    0 
-                    () 
-                    (== i 3) 
-                    [(Print 
-                        0 
-                        () 
-                        [(String 
+                )]
+                [(If
+                    0
+                    ()
+                    (== i 3)
+                    [(Print
+                        0
+                        ()
+                        [(String
                             "3"
-                        )] 
+                        )]
                         ()
-                    )] 
-                    [(If 
-                        0 
-                        () 
-                        (== i 4) 
-                        [(Print 
-                            0 
-                            () 
-                            [(String 
-                                "4"
-                            )] 
+                    )]
+                    [(If
+                        0
+                        ()
+                        (== i 4)
+                        [(Print
+                            0
                             ()
-                        )] 
-                        [] 
-                        () 
-                        () 
+                            [(String
+                                "4"
+                            )]
+                            ()
+                        )]
+                        []
                         ()
-                    )] 
-                    () 
-                    () 
+                        ()
+                        ()
+                    )]
                     ()
-                )] 
-                () 
-                () 
+                    ()
+                    ()
+                )]
                 ()
-            )] 
-            () 
-            () 
-            (TriviaNode 
-                [] 
+                ()
+                ()
+            )]
+            ()
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (If 
-            0 
-            name 
-            (== i 1) 
-            [(Print 
-                0 
-                () 
-                [(String 
-                    "1"
-                )] 
+        (If
+            0
+            name
+            (== i 1)
+            [(Print
+                0
                 ()
-            )] 
-            [(If 
-                0 
-                () 
-                (== i 2) 
-                [(Print 
-                    0 
-                    () 
-                    [(String 
-                        "2"
-                    )] 
+                [(String
+                    "1"
+                )]
+                ()
+            )]
+            [(If
+                0
+                ()
+                (== i 2)
+                [(Print
+                    0
                     ()
-                )] 
-                [(If 
-                    0 
-                    () 
-                    (== i 3) 
-                    [(Print 
-                        0 
-                        () 
-                        [(String 
-                            "3"
-                        )] 
+                    [(String
+                        "2"
+                    )]
+                    ()
+                )]
+                [(If
+                    0
+                    ()
+                    (== i 3)
+                    [(Print
+                        0
                         ()
-                    )] 
-                    [(If 
-                        0 
-                        () 
-                        (== i 4) 
-                        [(Print 
-                            0 
-                            () 
-                            [(String 
-                                "4"
-                            )] 
+                        [(String
+                            "3"
+                        )]
+                        ()
+                    )]
+                    [(If
+                        0
+                        ()
+                        (== i 4)
+                        [(Print
+                            0
                             ()
-                        )] 
-                        [(Print 
-                            0 
-                            () 
-                            [(String 
+                            [(String
+                                "4"
+                            )]
+                            ()
+                        )]
+                        [(Print
+                            0
+                            ()
+                            [(String
                                 "Invalid!"
-                            )] 
+                            )]
                             ()
-                        )] 
-                        () 
-                        () 
+                        )]
                         ()
-                    )] 
-                    () 
-                    () 
+                        ()
+                        ()
+                    )]
                     ()
-                )] 
-                () 
-                () 
+                    ()
+                    ()
+                )]
                 ()
-            )] 
-            () 
-            () 
-            (TriviaNode 
-                [] 
+                ()
+                ()
+            )]
+            ()
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

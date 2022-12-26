@@ -1,0 +1,182 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            statement1:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8 [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8 [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            c:
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8 [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            q:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            q_return_var_name:
+                                                (Variable
+                                                    3
+                                                    q_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    q
+                                    []
+                                    [(Var 3 x)]
+                                    [(=
+                                        (Var 3 q_return_var_name)
+                                        (LogicalNot
+                                            (LogicalBinOp
+                                                (RealCompare
+                                                    (Var 2 a)
+                                                    Eq
+                                                    (Var 2 b)
+                                                    (Logical 4 [])
+                                                    ()
+                                                )
+                                                And
+                                                (RealCompare
+                                                    (Var 2 c)
+                                                    Eq
+                                                    (Cast
+                                                        (RealConstant
+                                                            0.000000
+                                                            (Real 4 [])
+                                                        )
+                                                        RealToReal
+                                                        (Real 8 [])
+                                                        (RealConstant
+                                                            0.000000
+                                                            (Real 8 [])
+                                                        )
+                                                    )
+                                                    (Logical 4 [])
+                                                    ()
+                                                )
+                                                (Logical 4 [])
+                                                ()
+                                            )
+                                            (Logical 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 3 q_return_var_name)
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8 [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    statement1
+                    []
+                    []
+                    []
+                    ()
+                    Source
+                    Public
+                    Implementation
+                    ()
+                    .false.
+                    .false.
+                    .false.
+                    .false.
+                    .false.
+                    []
+                    []
+                    .false.
+                )
+        })
+    []
+)

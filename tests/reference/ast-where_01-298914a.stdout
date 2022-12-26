@@ -1,103 +1,103 @@
-(TranslationUnit 
-    [(Program 
-        where_01 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
+(TranslationUnit
+    [(Program
+        where_01
+        ()
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeReal 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(a 
-            [(1 
-            10 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
+            )
+            []
+            [(a
+            [(1
+            10
+            DimensionExpr)]
+            []
+            ()
+            None
             ())
-            (b 
-            [(1 
-            10 
-            DimensionExpr)] 
-            [] 
-            () 
-            None 
-            ())] 
+            (b
+            [(1
+            10
+            DimensionExpr)]
+            []
             ()
-        )] 
-        [(Where 
-            0 
-            () 
-            (>= a 0) 
-            [(= 
-                0 
-                b 
-                1 
+            None
+            ())]
+            ()
+        )]
+        [(Where
+            0
+            ()
+            (>= a 0)
+            [(=
+                0
+                b
+                1
                 ()
-            )] 
-            [(= 
-                0 
-                b 
-                0 
+            )]
+            [(=
+                0
+                b
+                0
                 ()
-            )] 
-            () 
-            (TriviaNode 
-                [] 
+            )]
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Where 
-            0 
-            () 
-            (>= a 0) 
-            [(= 
-                0 
-                b 
-                1 
+        (Where
+            0
+            ()
+            (>= a 0)
+            [(=
+                0
+                b
+                1
                 ()
-            )] 
-            [(= 
-                0 
-                b 
-                0 
+            )]
+            [(=
+                0
+                b
+                0
                 ()
-            )] 
-            () 
-            (TriviaNode 
-                [] 
+            )]
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Where 
-            0 
-            () 
-            (>= a 0) 
-            [(= 
-                0 
-                b 
-                1 
-                ()
-            )] 
-            [(= 
-                0 
-                b 
-                0 
-                ()
-            )] 
-            () 
+        (Where
+            0
             ()
-        )] 
+            (>= a 0)
+            [(=
+                0
+                b
+                1
+                ()
+            )]
+            [(=
+                0
+                b
+                0
+                ()
+            )]
+            ()
+            ()
+        )]
         []
     )]
 )

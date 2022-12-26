@@ -1,124 +1,124 @@
-(TranslationUnit 
-    [(Program 
-        if1 
-        () 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+(TranslationUnit
+    [(Program
+        if1
+        ()
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(i 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(i
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            i 
-            5 
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            i
+            5
             ()
         )
-        (If 
-            0 
-            () 
-            (== i 5) 
-            [(Print 
-                0 
-                () 
-                [(String 
+        (If
+            0
+            ()
+            (== i 5)
+            [(Print
+                0
+                ()
+                [(String
                     "correct"
-                )] 
+                )]
                 ()
-            )] 
-            [] 
-            () 
-            () 
+            )]
+            []
+            ()
+            ()
             ()
         )
-        (If 
-            0 
-            () 
-            (== i 6) 
-            [(Print 
-                0 
-                () 
-                [(String 
+        (If
+            0
+            ()
+            (== i 6)
+            [(Print
+                0
+                ()
+                [(String
                     "incorrect"
-                )] 
+                )]
                 ()
-            )] 
-            [] 
-            () 
-            () 
+            )]
+            []
+            ()
+            ()
             ()
         )
-        (= 
-            0 
-            i 
-            (u- 2) 
+        (=
+            0
+            i
+            (u- 2)
             ()
         )
-        (= 
-            40 
-            i 
-            (+ i 1) 
+        (=
+            40
+            i
+            (+ i 1)
             ()
         )
-        (IfArithmetic 
-            0 
-            () 
-            i 
-            50 
-            60 
-            70 
+        (IfArithmetic
+            0
+            ()
+            i
+            50
+            60
+            70
             ()
         )
-        (Print 
-            50 
-            () 
-            [(String 
+        (Print
+            50
+            ()
+            [(String
                 "i < 0"
-            )] 
+            )]
             ()
         )
-        (GoTo 
-            0 
-            () 
-            40 
-            [] 
+        (GoTo
+            0
+            ()
+            40
+            []
             ()
         )
-        (Print 
-            60 
-            () 
-            [(String 
+        (Print
+            60
+            ()
+            [(String
                 "i == 0"
-            )] 
+            )]
             ()
         )
-        (GoTo 
-            0 
-            () 
-            40 
-            [] 
+        (GoTo
+            0
+            ()
+            40
+            []
             ()
         )
-        (Print 
-            70 
-            () 
-            [(String 
+        (Print
+            70
+            ()
+            [(String
                 "i > 0"
-            )] 
+            )]
             ()
-        )] 
+        )]
         []
     )]
 )

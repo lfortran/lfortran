@@ -1,47 +1,47 @@
-(TranslationUnit 
-    [(Program 
-        goto_01 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
+(TranslationUnit
+    [(Program
+        goto_01
+        ()
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(a 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(a
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            a 
-            5 
+            None
+            ())]
             ()
-        )
-        (GoTo 
-            0 
-            () 
-            1 
-            [] 
+        )]
+        [(=
+            0
+            a
+            5
             ()
         )
-        (Print 
-            1 
-            () 
-            [a] 
+        (GoTo
+            0
             ()
-        )] 
+            1
+            []
+            ()
+        )
+        (Print
+            1
+            ()
+            [a]
+            ()
+        )]
         []
     )]
 )
