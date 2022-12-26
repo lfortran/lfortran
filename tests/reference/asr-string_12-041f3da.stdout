@@ -106,26 +106,6 @@
                                     .false.
                                 ),
                             lowercase:
-<<<<<<< HEAD
-                                (Variable 
-                                    2 
-                                    lowercase 
-                                    [letters] 
-                                    Local 
-                                    (ArraySection 
-                                        (Var 2 letters) 
-                                        [((IntegerConstant 27 (Integer 4 [])) 
-                                        (IntegerConstant 52 (Integer 4 [])) 
-                                        (IntegerConstant 1 (Integer 4 [])))] 
-                                        (Character 1 52 () []) 
-                                        (StringConstant 
-                                            "abcdefghijklmnopqrstuvwxyz" 
-                                            (Character 1 52 () [])
-                                        )
-                                    ) 
-                                    (StringConstant 
-                                        "abcdefghijklmnopqrstuvwxyz" 
-=======
                                 (Variable
                                     2
                                     lowercase
@@ -134,17 +114,16 @@
                                     (ArraySection
                                         (Var 2 letters)
                                         [((IntegerConstant 27 (Integer 4 []))
-                                        ()
+                                        (IntegerConstant 52 (Integer 4 []))
                                         (IntegerConstant 1 (Integer 4 [])))]
                                         (Character 1 52 () [])
                                         (StringConstant
-                                            "abcdefghijklmnopqrstuvwxy"
+                                            "abcdefghijklmnopqrstuvwxyz"
                                             (Character 1 52 () [])
                                         )
                                     )
                                     (StringConstant
-                                        "abcdefghijklmnopqrstuvwxy"
->>>>>>> main
+                                        "abcdefghijklmnopqrstuvwxyz"
                                         (Character 1 52 () [])
                                     )
                                     Parameter
