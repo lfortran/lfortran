@@ -1,0 +1,97 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            derived_types_10:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            type_y:
+                                (Variable
+                                    2
+                                    type_y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Parameter
+                                    (Struct
+                                        2 y
+                                        []
+                                    )
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    [type_y]
+                                    Local
+                                    (StringConcat
+                                        (StringConstant
+                                            "  "
+                                            (Character 1 2 () [])
+                                        )
+                                        (StructInstanceMember
+                                            (Var 2 type_y)
+                                            3 backslash
+                                            (Character 1 1 () [])
+                                            ()
+                                        )
+                                        (Character 1 3 () [])
+                                        ()
+                                    )
+                                    ()
+                                    Save
+                                    (Character 1 3 () [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            y:
+                                (StructType
+                                    (SymbolTable
+                                        3
+                                        {
+                                            backslash:
+                                                (Variable
+                                                    3
+                                                    backslash
+                                                    []
+                                                    Local
+                                                    (StringConstant
+                                                        "\"
+                                                        (Character 1 1 () [])
+                                                    )
+                                                    ()
+                                                    Save
+                                                    (Character 1 1 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    y
+                                    []
+                                    [backslash]
+                                    Source
+                                    Public
+                                    .false.
+                                    ()
+                                    ()
+                                )
+                        })
+                    derived_types_10
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)
