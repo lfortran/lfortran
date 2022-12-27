@@ -1989,6 +1989,14 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
             replace_expr(x->m_args[i].m_value);
             current_expr = current_expr_copy_;
         }
+
+        if ( ASR::is_a<ASR::Character_t>(*x->m_type) ) {
+            ASR::expr_t** current_expr_copy_ = current_expr;
+            ASR::expr_t *e = ASR::down_cast<ASR::Character_t>(x->m_type)->m_len_expr;
+            current_expr = &(e); replace_expr(e);
+            current_expr = current_expr_copy_;
+        }
+
         current_function_dependencies.insert(std::string(ASRUtils::symbol_name(new_es)));
         x->m_name = new_es;
     }
