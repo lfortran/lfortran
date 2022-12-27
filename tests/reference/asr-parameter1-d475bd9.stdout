@@ -11,7 +11,7 @@
                                 (ExternalSymbol
                                     2
                                     abs
-                                    96 abs
+                                    97 abs
                                     lfortran_intrinsic_math
                                     []
                                     abs
@@ -21,7 +21,7 @@
                                 (ExternalSymbol
                                     2
                                     abs@dabs
-                                    96 dabs
+                                    97 dabs
                                     lfortran_intrinsic_math
                                     []
                                     dabs

@@ -2024,8 +2024,7 @@ public:
         //     specific_procedure_remote_name
         std::string local_sym = std::string(p->m_name) + "@"
             + LFortran::ASRUtils::symbol_name(final_sym);
-        if (current_scope->get_symbol(local_sym)
-            == nullptr) {
+        if (current_scope->get_symbol(local_sym) == nullptr) {
             Str name;
             name.from_str(al, local_sym);
             char *cname = name.c_str(al);
@@ -2053,7 +2052,7 @@ public:
                 ASR::asr_t *result = intrinsic_function_transformation(al, loc, gp->m_name, args);
                 if (result) {
                     return result;
-                } else {
+                } else if (args.size() <= 2) {
                     value = intrinsic_procedures.comptime_eval(gp->m_name, al, loc, args);
                 }
             }
