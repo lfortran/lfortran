@@ -198,6 +198,14 @@ namespace LFortran {
                     transform_stmts(xx.m_orelse, xx.n_orelse);
                 }
 
+                void visit_CaseStmt(const ASR::CaseStmt_t& x) {
+                    ASR::CaseStmt_t &xx = const_cast<ASR::CaseStmt_t&>(x);
+                    for (size_t i=0; i<xx.n_test; i++) {
+                        self().visit_expr(*xx.m_test[i]);
+                    }
+                    transform_stmts(xx.m_body, xx.n_body);
+                }
+
         };
 
         template <class Struct>
