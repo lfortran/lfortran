@@ -129,6 +129,7 @@ RUN(NAME stop_01 LABELS llvm wasm llvm2)
 
 RUN(NAME print_01 LABELS gfortran llvm cpp llvm2 wasm)
 RUN(NAME print_02 LABELS gfortran llvm llvm2)
+RUN(NAME print_arr_01 LABELS gfortran llvm llvm2)
 
 RUN(NAME include_01 LABELS gfortran llvm)
 RUN(NAME include_02 LABELS gfortran llvm)
