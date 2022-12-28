@@ -628,7 +628,7 @@ int emit_asr(const std::string &infile,
 
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     if (compiler_options.json) {
-        std::cout << LFortran::pickle_json(*asr) << std::endl;
+        std::cout << LFortran::pickle_json(*asr, lm) << std::endl;
     } else {
         std::cout << LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
                 with_intrinsic_modules) << std::endl;
