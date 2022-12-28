@@ -206,6 +206,15 @@ namespace LFortran {
                     transform_stmts(xx.m_body, xx.n_body);
                 }
 
+                void visit_CaseStmt_Range(const ASR::CaseStmt_Range_t& x) {
+                    ASR::CaseStmt_Range_t &xx = const_cast<ASR::CaseStmt_Range_t&>(x);
+                    if (xx.m_start)
+                        self().visit_expr(*xx.m_start);
+                    if (xx.m_end)
+                        self().visit_expr(*xx.m_end);
+                    transform_stmts(xx.m_body, xx.n_body);
+                }
+
         };
 
         template <class Struct>
