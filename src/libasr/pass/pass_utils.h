@@ -215,6 +215,15 @@ namespace LFortran {
                     transform_stmts(xx.m_body, xx.n_body);
                 }
 
+                void visit_Select(const ASR::Select_t& x) {
+                    ASR::Select_t &xx = const_cast<ASR::Select_t&>(x);
+                    self().visit_expr(*xx.m_test);
+                    for (size_t i=0; i<xx.n_body; i++) {
+                        self().visit_case_stmt(*xx.m_body[i]);
+                    }
+                    transform_stmts(xx.m_default, xx.n_default);
+                }
+
         };
 
         template <class Struct>
