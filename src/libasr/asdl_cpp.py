@@ -1491,10 +1491,9 @@ class JsonVisitorVisitor(ASDLVisitor):
         # One must make sure JsonBaseVisitor isn't reused in a case where `lm` is no longer relevant.
         # If LocationManager becomes needed in any of the other visitors, it should be 
         # passed by reference into all the visit functions instead of storing the pointer here.
-        self.emit(  "LocationManager* lm = nullptr;", 1)
+        self.emit(  "LocationManager &lm;", 1)
         self.emit("public:")
-        self.emit(  "JsonBaseVisitor(LocationManager &lmref) {", 1);
-        self.emit(     "lm = &lmref;", 2);
+        self.emit(  "JsonBaseVisitor(LocationManager &lmref) : lm(lmref) {", 1);
         self.emit(     "s.reserve(100000);", 2)
         self.emit(  "}", 1)
         self.emit(  "void inc_indent() {", 1)
@@ -1519,8 +1518,8 @@ class JsonVisitorVisitor(ASDLVisitor):
         self.emit(      'uint32_t last_line = 0, last_col = 0;', 2)
         self.emit(      'std::string last_filename;', 2)
         self.emit(      '')
-        self.emit(      'lm->pos_to_linecol(first, first_line, first_col, first_filename);', 2)
-        self.emit(      'lm->pos_to_linecol(last, last_line, last_col, last_filename);', 2)
+        self.emit(      'lm.pos_to_linecol(first, first_line, first_col, first_filename);', 2)
+        self.emit(      'lm.pos_to_linecol(last, last_line, last_col, last_filename);', 2)
         self.emit(      '')
         self.emit(      's.append(",\\n" + indtd);', 2)
         self.emit(      's.append("\\"first_filename\\": \\"" + first_filename + "\\"");', 2)
