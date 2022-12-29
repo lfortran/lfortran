@@ -183,7 +183,7 @@ std::string pickle(LFortran::AST::ast_t &ast, bool colors, bool indent) {
     return v.get_str();
 }
 
-std::string pickle(AST::TranslationUnit_t &ast, bool colors,bool indent) {
+std::string pickle(AST::TranslationUnit_t &ast, bool colors, bool indent) {
     PickleVisitor v;
     v.use_colors = colors;
     v.indent = indent;
@@ -205,7 +205,6 @@ public:
 
 std::string pickle_json(LFortran::AST::ast_t &ast, LocationManager &lm) {
     ASTJsonVisitor v(lm);
-    
     v.visit_ast(ast);
     return v.get_str();
 }
