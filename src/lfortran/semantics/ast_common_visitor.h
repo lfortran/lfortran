@@ -359,7 +359,7 @@ public:
         diag.semantic_warning_label(
             ".xor. is an LFortran extension",
             {x.base.base.loc},
-            "please help us: what is the Fortran way to specify xor?"
+            "LFortran extension"
         );
       break;
     case (AST::NEqv):
