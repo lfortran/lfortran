@@ -6,7 +6,7 @@ source_filename = "LFortran"
 %array.0 = type { i32*, i32, %dimension_descriptor*, i1, i32 }
 %array.1 = type { i1*, i32, %dimension_descriptor*, i1, i32 }
 %array.2 = type { %der_type*, i32, %dimension_descriptor*, i1, i32 }
-%der_type = type { i32, float }
+%der_type = type { float, i32 }
 %array.3 = type { %complex_4*, i32, %dimension_descriptor*, i1, i32 }
 %complex_4 = type { float, float }
 

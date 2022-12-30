@@ -1,7 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%x = type { i32, float }
+%x = type { float, i32 }
 %z = type { %complex_4, %y }
 %complex_4 = type { float, float }
 %y = type { %complex_4, %x }
@@ -21,9 +21,9 @@ source_filename = "LFortran"
 
 define void @__module_derived_types_01_m_01_set(%x* %a) {
 .entry:
-  %0 = getelementptr %x, %x* %a, i32 0, i32 0
+  %0 = getelementptr %x, %x* %a, i32 0, i32 1
   store i32 1, i32* %0, align 4
-  %1 = getelementptr %x, %x* %a, i32 0, i32 1
+  %1 = getelementptr %x, %x* %a, i32 0, i32 0
   store float 1.500000e+00, float* %1, align 4
   br label %return
 
@@ -34,39 +34,39 @@ return:                                           ; preds = %.entry
 define i32 @main() {
 .entry:
   %b = alloca %x, align 8
-  %0 = getelementptr %x, %x* %b, i32 0, i32 0
-  %1 = getelementptr %x, %x* %b, i32 0, i32 1
+  %0 = getelementptr %x, %x* %b, i32 0, i32 1
+  %1 = getelementptr %x, %x* %b, i32 0, i32 0
   %c = alloca %z, align 8
   %2 = getelementptr %z, %z* %c, i32 0, i32 0
   %3 = getelementptr %z, %z* %c, i32 0, i32 1
   %4 = getelementptr %y, %y* %3, i32 0, i32 0
   %5 = getelementptr %y, %y* %3, i32 0, i32 1
-  %6 = getelementptr %x, %x* %5, i32 0, i32 0
-  %7 = getelementptr %x, %x* %5, i32 0, i32 1
-  %8 = getelementptr %x, %x* %b, i32 0, i32 0
+  %6 = getelementptr %x, %x* %5, i32 0, i32 1
+  %7 = getelementptr %x, %x* %5, i32 0, i32 0
+  %8 = getelementptr %x, %x* %b, i32 0, i32 1
   store i32 5, i32* %8, align 4
-  %9 = getelementptr %x, %x* %b, i32 0, i32 1
+  %9 = getelementptr %x, %x* %b, i32 0, i32 0
   store float 3.500000e+00, float* %9, align 4
-  %10 = getelementptr %x, %x* %b, i32 0, i32 0
+  %10 = getelementptr %x, %x* %b, i32 0, i32 1
   %11 = load i32, i32* %10, align 4
-  %12 = getelementptr %x, %x* %b, i32 0, i32 1
+  %12 = getelementptr %x, %x* %b, i32 0, i32 0
   %13 = load float, float* %12, align 4
   %14 = fpext float %13 to double
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([13 x i8], [13 x i8]* @2, i32 0, i32 0), i32 %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %14, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
   call void @__module_derived_types_01_m_01_set(%x* %b)
-  %15 = getelementptr %x, %x* %b, i32 0, i32 0
+  %15 = getelementptr %x, %x* %b, i32 0, i32 1
   %16 = load i32, i32* %15, align 4
-  %17 = getelementptr %x, %x* %b, i32 0, i32 1
+  %17 = getelementptr %x, %x* %b, i32 0, i32 0
   %18 = load float, float* %17, align 4
   %19 = fpext float %18 to double
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([13 x i8], [13 x i8]* @5, i32 0, i32 0), i32 %16, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), double %19, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
   %20 = getelementptr %z, %z* %c, i32 0, i32 1
   %21 = getelementptr %y, %y* %20, i32 0, i32 1
-  %22 = getelementptr %x, %x* %21, i32 0, i32 1
+  %22 = getelementptr %x, %x* %21, i32 0, i32 0
   store float 2.000000e+00, float* %22, align 4
   %23 = getelementptr %z, %z* %c, i32 0, i32 1
   %24 = getelementptr %y, %y* %23, i32 0, i32 1
-  %25 = getelementptr %x, %x* %24, i32 0, i32 0
+  %25 = getelementptr %x, %x* %24, i32 0, i32 1
   store i32 2, i32* %25, align 4
   %26 = getelementptr %z, %z* %c, i32 0, i32 0
   %27 = alloca %complex_4, align 8
@@ -78,12 +78,12 @@ define i32 @main() {
   store %complex_4 %30, %complex_4* %26, align 4
   %31 = getelementptr %z, %z* %c, i32 0, i32 1
   %32 = getelementptr %y, %y* %31, i32 0, i32 1
-  %33 = getelementptr %x, %x* %32, i32 0, i32 1
+  %33 = getelementptr %x, %x* %32, i32 0, i32 0
   %34 = load float, float* %33, align 4
   %35 = fpext float %34 to double
   %36 = getelementptr %z, %z* %c, i32 0, i32 1
   %37 = getelementptr %y, %y* %36, i32 0, i32 1
-  %38 = getelementptr %x, %x* %37, i32 0, i32 0
+  %38 = getelementptr %x, %x* %37, i32 0, i32 1
   %39 = load i32, i32* %38, align 4
   %40 = getelementptr %z, %z* %c, i32 0, i32 0
   %41 = load %complex_4, %complex_4* %40, align 4
@@ -103,12 +103,12 @@ define i32 @main() {
   call void @__module_derived_types_01_m_01_set(%x* %51)
   %52 = getelementptr %z, %z* %c, i32 0, i32 1
   %53 = getelementptr %y, %y* %52, i32 0, i32 1
-  %54 = getelementptr %x, %x* %53, i32 0, i32 1
+  %54 = getelementptr %x, %x* %53, i32 0, i32 0
   %55 = load float, float* %54, align 4
   %56 = fpext float %55 to double
   %57 = getelementptr %z, %z* %c, i32 0, i32 1
   %58 = getelementptr %y, %y* %57, i32 0, i32 1
-  %59 = getelementptr %x, %x* %58, i32 0, i32 0
+  %59 = getelementptr %x, %x* %58, i32 0, i32 1
   %60 = load i32, i32* %59, align 4
   %61 = getelementptr %z, %z* %c, i32 0, i32 0
   %62 = load %complex_4, %complex_4* %61, align 4
