@@ -232,6 +232,7 @@ expr
                     expr? increment, ttype type, expr? value)
     | IntegerConstant(int n, ttype type)
     | NullPointerConstant(ttype type)
+    | Associated(expr ptr, expr? tgt, ttype type, expr? value)
     | IntegerBOZ(int v, integerboz intboz_type, ttype? type)
     | IntegerBitNot(expr arg, ttype type, expr? value)
     | IntegerUnaryMinus(expr arg, ttype type, expr? value)
