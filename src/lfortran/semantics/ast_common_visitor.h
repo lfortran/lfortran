@@ -2820,6 +2820,16 @@ public:
         return ASR::make_NullPointerConstant_t(al, x.base.base.loc, null_ptr_type_);
     }
 
+    ASR::asr_t* create_Associated(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"tgt"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
+        ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
+        ASR::ttype_t* associated_type_ = ASRUtils::TYPE(ASR::make_Logical_t(
+                                            al, x.base.base.loc, 4, nullptr, 0));
+        return ASR::make_Associated_t(al, x.base.base.loc, ptr_, tgt_, associated_type_, nullptr);
+    }
+
     ASR::asr_t* create_DCmplx(const AST::FuncCallOrArray_t& x) {
         std::vector<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"y"};
@@ -2969,6 +2979,8 @@ public:
                 tmp = create_ArrayMaxloc(x);
             } else if( var_name == "null" ) {
                 tmp = create_NullPointerConstant(x);
+            } else if( var_name == "associated" ) {
+                tmp = create_Associated(x);
             } else {
                 LCompilersException("create_" + var_name + " not implemented yet.");
             }
