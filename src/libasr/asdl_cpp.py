@@ -768,9 +768,11 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
     def __init__(self, stream, data):
         self.duplicate_stmt = []
         self.duplicate_expr = []
+        self.duplicate_ttype = []
         self.duplicate_case_stmt = []
         self.is_stmt = False
         self.is_expr = False
+        self.is_ttype = False
         self.is_case_stmt = False
         self.is_product = False
         super(ExprStmtDuplicatorVisitor, self).__init__(stream, data)
@@ -805,6 +807,13 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_expr.append(("", 0))
         self.duplicate_expr.append(("    switch(x->type) {", 1))
 
+        self.duplicate_ttype.append(("    ASR::ttype_t* duplicate_ttype(ASR::ttype_t* x) {", 0))
+        self.duplicate_ttype.append(("    if( !x ) {", 1))
+        self.duplicate_ttype.append(("    return nullptr;", 2))
+        self.duplicate_ttype.append(("    }", 1))
+        self.duplicate_ttype.append(("", 0))
+        self.duplicate_ttype.append(("    switch(x->type) {", 1))
+
         self.duplicate_case_stmt.append(("    ASR::case_stmt_t* duplicate_case_stmt(ASR::case_stmt_t* x) {", 0))
         self.duplicate_case_stmt.append(("    if( !x ) {", 1))
         self.duplicate_case_stmt.append(("    return nullptr;", 2))
@@ -829,6 +838,14 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_expr.append(("    return nullptr;", 1))
         self.duplicate_expr.append(("    }", 0))
 
+        self.duplicate_ttype.append(("    default: {", 2))
+        self.duplicate_ttype.append(('    LFORTRAN_ASSERT_MSG(false, "Duplication of " + std::to_string(x->type) + " type is not supported yet.");', 3))
+        self.duplicate_ttype.append(("    }", 2))
+        self.duplicate_ttype.append(("    }", 1))
+        self.duplicate_ttype.append(("", 0))
+        self.duplicate_ttype.append(("    return nullptr;", 1))
+        self.duplicate_ttype.append(("    }", 0))
+
         self.duplicate_case_stmt.append(("    default: {", 2))
         self.duplicate_case_stmt.append(('    LCOMPILERS_ASSERT_MSG(false, "Duplication of " + std::to_string(x->type) + " case statement is not supported yet.");', 3))
         self.duplicate_case_stmt.append(("    }", 2))
@@ -841,6 +858,9 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             self.emit(line, level=level)
         self.emit("")
         for line, level in self.duplicate_expr:
+            self.emit(line, level=level)
+        self.emit("")
+        for line, level in self.duplicate_ttype:
             self.emit(line, level=level)
         self.emit("")
         for line, level in self.duplicate_case_stmt:
@@ -856,8 +876,9 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
     def visitSum(self, sum, *args):
         self.is_stmt = args[0] == 'stmt'
         self.is_expr = args[0] == 'expr'
+        self.is_ttype = args[0] == "ttype"
         self.is_case_stmt = args[0] == 'case_stmt'
-        if self.is_stmt or self.is_expr or self.is_case_stmt:
+        if self.is_stmt or self.is_expr or self.is_case_stmt or self.is_ttype:
             for tp in sum.types:
                 self.visit(tp, *args)
 
@@ -904,6 +925,10 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                 self.duplicate_expr.append(("    }", 3))
             self.duplicate_expr.append(("    return down_cast<ASR::expr_t>(self().duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
             self.duplicate_expr.append(("    }", 2))
+        elif self.is_ttype:
+            self.duplicate_ttype.append(("    case ASR::ttypeType::%s: {" % name, 2))
+            self.duplicate_ttype.append(("    return down_cast<ASR::ttype_t>(self().duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
+            self.duplicate_ttype.append(("    }", 2))
         elif self.is_case_stmt:
             self.duplicate_case_stmt.append(("    case ASR::case_stmtType::%s: {" % name, 2))
             self.duplicate_case_stmt.append(("    return down_cast<ASR::case_stmt_t>(self().duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
@@ -920,7 +945,8 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             field.type == "do_loop_head" or
             field.type == "array_index" or
             field.type == "alloc_arg" or
-            field.type == "case_stmt"):
+            field.type == "case_stmt" or
+            field.type == "ttype"):
             level = 2
             if field.seq:
                 self.used = True
