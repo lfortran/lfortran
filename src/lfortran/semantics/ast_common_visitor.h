@@ -1672,12 +1672,21 @@ public:
 
     ASR::asr_t* create_ArrayRef(const Location &loc,
                 AST::fnarg_t* m_args, size_t n_args,
+                    ASR::expr_t* v_expr,
                     ASR::symbol_t *v,
                     ASR::symbol_t *f2) {
         bool is_item = true;
         Vec<ASR::array_index_t> args;
         args.reserve(al, n_args);
-        ASR::expr_t* v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
+        ASR::expr_t* v_Var = nullptr;
+        if( v_expr ) {
+            v_Var = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
+                        al, v_expr->base.loc, v_expr, v,
+                        ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)),
+                        nullptr));
+        } else {
+            v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
+        }
         for (size_t i=0; i<n_args; i++) {
             ASR::array_index_t ai;
             ai.loc = loc;
@@ -3380,7 +3389,7 @@ public:
             switch (f2->type) {
             case(ASR::symbolType::Variable): {
                 // TODO: Make create_StringRef for character (non-array) variables.
-                tmp = create_ArrayRef(x.base.base.loc, x.m_args, x.n_args, v, f2);
+                tmp = create_ArrayRef(x.base.base.loc, x.m_args, x.n_args, v_expr, v, f2);
                 break;
             }
             case(ASR::symbolType::StructType):
