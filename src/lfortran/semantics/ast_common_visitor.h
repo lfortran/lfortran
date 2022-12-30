@@ -699,12 +699,14 @@ public:
 
     Vec<char*> data_member_names;
     std::set<std::string> current_function_dependencies;
+    ASR::ttype_t* current_variable_type_;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
             std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
-          current_scope{symbol_table}, implicit_mapping{implicit_mapping} {
+          current_scope{symbol_table}, implicit_mapping{implicit_mapping},
+          current_variable_type_{nullptr} {
         current_module_dependencies.reserve(al, 4);
     }
 
@@ -1341,6 +1343,7 @@ public:
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time);
                 }
                 ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer, dims);
+                current_variable_type_ = type;
 
                 ASR::expr_t* init_expr = nullptr;
                 ASR::expr_t* value = nullptr;
@@ -2802,6 +2805,21 @@ public:
         return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, nullptr);
     }
 
+    ASR::asr_t* create_NullPointerConstant(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"mold"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 0, 1, "null");
+        ASR::expr_t *mold_ = args[0];
+        ASR::ttype_t* null_ptr_type_ = nullptr;
+        if( mold_ ) {
+            null_ptr_type_ = ASRUtils::expr_type(mold_);
+        } else {
+            LFORTRAN_ASSERT(current_variable_type_ != nullptr);
+            null_ptr_type_ = current_variable_type_;
+        }
+        return ASR::make_NullPointerConstant_t(al, x.base.base.loc, null_ptr_type_);
+    }
+
     ASR::asr_t* create_DCmplx(const AST::FuncCallOrArray_t& x) {
         std::vector<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"y"};
@@ -2949,6 +2967,8 @@ public:
                 tmp = create_ScanVerify_util(x, var_name);
             } else if( var_name == "maxloc" ) {
                 tmp = create_ArrayMaxloc(x);
+            } else if( var_name == "null" ) {
+                tmp = create_NullPointerConstant(x);
             } else {
                 LCompilersException("create_" + var_name + " not implemented yet.");
             }
