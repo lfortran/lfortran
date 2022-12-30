@@ -1487,10 +1487,11 @@ class JsonVisitorVisitor(ASDLVisitor):
         self.emit("public:")
         self.emit(  "std::string s, indtd = \"\";", 1)
         self.emit(  "int indent_level = 0, indent_spaces = 4;", 1)
-        # Storing LocationManager* like this isn't ideal.
-        # One must make sure JsonBaseVisitor isn't reused in a case where `lm` is no longer relevant.
+        # Storing a reference to LocationManager like this isn't ideal.
+        # One must make sure JsonBaseVisitor isn't reused in a case where AST/ASR has changed
+        # but lm wasn't updated correspondingly.
         # If LocationManager becomes needed in any of the other visitors, it should be 
-        # passed by reference into all the visit functions instead of storing the pointer here.
+        # passed by reference into all the visit functions instead of storing the reference here.
         self.emit(  "LocationManager &lm;", 1)
         self.emit("public:")
         self.emit(  "JsonBaseVisitor(LocationManager &lmref) : lm(lmref) {", 1);
