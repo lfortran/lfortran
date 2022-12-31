@@ -1683,12 +1683,13 @@ public:
         ASR::expr_t *v_expr = nullptr;
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
-        if (x.n_member == 1) {
-            ASR::symbol_t *v = current_scope->resolve_symbol(to_lower(x.m_member[0].m_name));
-            ASR::asr_t *v_var = ASR::make_Var_t(al, x.base.base.loc, v);
-            v_expr = LFortran::ASRUtils::EXPR(v_var);
-            original_sym = resolve_deriv_type_proc(x.base.base.loc, to_lower(x.m_name),
-                to_lower(x.m_member[0].m_name), scope);
+        if (x.n_member >= 1) {
+            visit_NameUtil(x.m_member, x.n_member - 1,
+                x.m_member[x.n_member - 1].m_name, x.base.base.loc);
+            v_expr = ASRUtils::EXPR(tmp);
+            original_sym = resolve_deriv_type_proc(x.base.base.loc, sub_name,
+                            to_lower(x.m_member[x.n_member - 1].m_name),
+                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
         } else {
             original_sym = current_scope->resolve_symbol(sub_name);
         }

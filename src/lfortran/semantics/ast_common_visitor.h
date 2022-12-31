@@ -2325,29 +2325,14 @@ public:
     }
 
     ASR::symbol_t* resolve_deriv_type_proc(const Location &loc, const std::string &var_name,
-            const std::string dt_name, SymbolTable*& scope, ASR::symbol_t* parent=nullptr) {
+            const std::string dt_name, ASR::ttype_t* dt_type, SymbolTable*& scope,
+            ASR::symbol_t* parent=nullptr) {
         ASR::symbol_t* v = nullptr;
         ASR::StructType_t* der_type = nullptr;
         if( parent == nullptr ) {
-            v = scope->resolve_symbol(dt_name);
-            if (!v) {
-                throw SemanticError("Variable '" + dt_name + "' not declared", loc);
-            }
-            ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(v);
-            ASR::ttype_t* v_type = ASRUtils::type_get_past_pointer(v_variable->m_type);
-            if ( ASR::is_a<ASR::Struct_t>(*v_type) || ASR::is_a<ASR::Class_t>(*v_type)) {
-                ASR::Struct_t* der = (ASR::Struct_t*)(&(v_type->base));
-                if( der->m_derived_type->type == ASR::symbolType::ExternalSymbol ) {
-                    ASR::ExternalSymbol_t* der_ext = (ASR::ExternalSymbol_t*)(&(der->m_derived_type->base));
-                    ASR::symbol_t* der_sym = der_ext->m_external;
-                    if( der_sym == nullptr ) {
-                        throw SemanticError("'" + std::string(der_ext->m_name) + "' isn't a Derived type.", loc);
-                    } else {
-                        der_type = (ASR::StructType_t*)(&(der_sym->base));
-                    }
-                } else {
-                    der_type = (ASR::StructType_t*)(&(der->m_derived_type->base));
-                }
+            if ( ASR::is_a<ASR::Struct_t>(*dt_type) || ASR::is_a<ASR::Class_t>(*dt_type)) {
+                ASR::Struct_t* der = ASR::down_cast<ASR::Struct_t>(dt_type);
+                der_type = ASR::down_cast<ASR::StructType_t>(ASRUtils::symbol_get_past_external(der->m_derived_type));
             } else {
                 throw SemanticError("Variable '" + dt_name + "' is not a derived type", loc);
             }
@@ -2359,7 +2344,7 @@ public:
         if( member != nullptr ) {
             scope = der_type->m_symtab;
         } else if( der_type->m_parent != nullptr ) {
-            member = resolve_deriv_type_proc(loc, var_name, "", scope, der_type->m_parent);
+            member = resolve_deriv_type_proc(loc, var_name, "", nullptr, scope, der_type->m_parent);
         } else {
             throw SemanticError("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.", loc);
         }
@@ -3196,11 +3181,12 @@ public:
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
         if (x.n_member == 1) {
-            ASR::symbol_t *obj = current_scope->resolve_symbol(x.m_member[0].m_name);
-            ASR::asr_t *obj_var = ASR::make_Var_t(al, x.base.base.loc, obj);
-            v_expr = LFortran::ASRUtils::EXPR(obj_var);
+            visit_NameUtil(x.m_member, x.n_member - 1,
+                x.m_member[x.n_member - 1].m_name, x.base.base.loc);
+            v_expr = ASRUtils::EXPR(tmp);
             v = resolve_deriv_type_proc(x.base.base.loc, var_name,
-                x.m_member[0].m_name, scope);
+                    to_lower(x.m_member[x.n_member - 1].m_name),
+                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
         } else {
             v = current_scope->resolve_symbol(var_name);
         }
@@ -4037,34 +4023,44 @@ public:
         }
     }
 
-    void visit_Name(const AST::Name_t &x) {
-        if (x.n_member == 0) {
-            tmp = resolve_variable(x.base.base.loc, to_lower(x.m_id));
-        } else if (x.n_member == 1) {
-            if (x.m_member[0].n_args == 0) {
+    void visit_NameUtil(AST::struct_member_t* x_m_member, size_t x_n_member,
+                        char* x_m_id, const Location& loc) {
+        if (x_n_member == 0) {
+            tmp = resolve_variable(loc, to_lower(x_m_id));
+        } else if (x_n_member == 1) {
+            if (x_m_member[0].n_args == 0) {
                 SymbolTable* scope = current_scope;
-                tmp = this->resolve_variable2(x.base.base.loc, to_lower(x.m_id),
-                    to_lower(x.m_member[0].m_name), scope);
+                tmp = this->resolve_variable2(loc, to_lower(x_m_id),
+                    to_lower(x_m_member[0].m_name), scope);
             } else {
                 // TODO: incorporate m_args
                 SymbolTable* scope = current_scope;
-                tmp = this->resolve_variable2(x.base.base.loc, to_lower(x.m_id),
-                    to_lower(x.m_member[0].m_name), scope);
+                tmp = this->resolve_variable2(loc, to_lower(x_m_id),
+                    to_lower(x_m_member[0].m_name), scope);
             }
         } else {
             SymbolTable* scope = current_scope;
-            tmp = this->resolve_variable2(x.base.base.loc, to_lower(x.m_member[1].m_name), to_lower(x.m_member[0].m_name), scope);
+            tmp = this->resolve_variable2(loc, to_lower(x_m_member[1].m_name),
+                                          to_lower(x_m_member[0].m_name), scope);
             ASR::StructInstanceMember_t* tmp2;
             std::uint32_t i;
-            for( i = 2; i < x.n_member; i++ ) {
-                tmp2 = (ASR::StructInstanceMember_t*)this->resolve_variable2(x.base.base.loc,
-                                            to_lower(x.m_member[i].m_name), to_lower(x.m_member[i - 1].m_name), scope);
-                tmp = ASR::make_StructInstanceMember_t(al, x.base.base.loc, LFortran::ASRUtils::EXPR(tmp), tmp2->m_m, tmp2->m_type, nullptr);
+            for( i = 2; i < x_n_member; i++ ) {
+                tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc,
+                        to_lower(x_m_member[i].m_name), to_lower(x_m_member[i - 1].m_name),
+                        scope);
+                tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp),
+                                                       tmp2->m_m, tmp2->m_type, nullptr);
             }
-            i = x.n_member - 1;
-            tmp2 = (ASR::StructInstanceMember_t*)this->resolve_variable2(x.base.base.loc, to_lower(x.m_id), to_lower(x.m_member[i].m_name), scope);
-            tmp = ASR::make_StructInstanceMember_t(al, x.base.base.loc, LFortran::ASRUtils::EXPR(tmp), tmp2->m_m, tmp2->m_type, nullptr);
+            i = x_n_member - 1;
+            tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc, to_lower(x_m_id),
+                        to_lower(x_m_member[i].m_name), scope);
+            tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2->m_m,
+                                                   tmp2->m_type, nullptr);
         }
+    }
+
+    void visit_Name(const AST::Name_t &x) {
+        visit_NameUtil(x.m_member, x.n_member, x.m_id, x.base.base.loc);
     }
 
 
