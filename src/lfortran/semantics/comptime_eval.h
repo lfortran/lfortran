@@ -81,6 +81,10 @@ struct IntrinsicProcedures {
             {"any", {m_builtin, &not_implemented, false}},
             {"is_iostat_eor", {m_builtin, &not_implemented, false}},
             {"is_iostat_end", {m_builtin, &not_implemented, false}},
+            {"get_command_argument", {m_builtin, &not_implemented, false}},
+            {"command_argument_count", {m_builtin, &not_implemented, false}},
+            {"execute_command_line", {m_builtin, &not_implemented, false}},
+            {"get_environment_variable", {m_builtin, &not_implemented, false}},
 
             // Require evaluated arguments
             {"aimag", {m_math, &eval_aimag, true}},
@@ -118,6 +122,7 @@ struct IntrinsicProcedures {
             {"erf", {m_math, &eval_erf, true}},
             {"erfc", {m_math, &eval_erfc, true}},
             {"abs", {m_math, &eval_abs, true}},
+            {"iabs", {m_math, &eval_abs, true}},
             {"sqrt", {m_math, &eval_sqrt, true}},
             {"dsqrt", {m_math, &eval_dsqrt, true}},
             {"datan", {m_math, &eval_datan, true}},
