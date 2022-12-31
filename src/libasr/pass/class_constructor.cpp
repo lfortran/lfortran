@@ -30,7 +30,12 @@ public:
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
-        if( x.m_value->type == ASR::exprType::StructTypeConstructor ) {
+        if( x.m_value->type == ASR::exprType::StructTypeConstructor &&
+            x.m_overloaded == nullptr ) {
+            // TODO: For overloaded assignment, first
+            // make a new struct variable and put it in result_var
+            // and then replace the argument in overloaded procedure
+            // with result_var
             is_constructor_present = true;
             result_var = x.m_target;
             visit_expr(*x.m_value);
@@ -40,6 +45,7 @@ public:
     void visit_StructTypeConstructor(const ASR::StructTypeConstructor_t &x) {
         is_init_constructor = true;
         if( x.n_args == 0 ) {
+            // Do not remove in case of overloaded assignment
             remove_original_stmt = true;
         }
         ASR::Struct_t* dt_der = down_cast<ASR::Struct_t>(x.m_type);

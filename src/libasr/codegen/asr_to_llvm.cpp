@@ -822,7 +822,8 @@ public:
             int member_idx = 0;
             for( auto itr = scope.begin(); itr != scope.end(); itr++ ) {
                 if (!ASR::is_a<ASR::ClassProcedure_t>(*itr->second) &&
-                    !ASR::is_a<ASR::GenericProcedure_t>(*itr->second)) {
+                    !ASR::is_a<ASR::GenericProcedure_t>(*itr->second) &&
+                    !ASR::is_a<ASR::CustomOperator_t>(*itr->second)) {
                     ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(itr->second);
                     llvm::Type* mem_type = nullptr;
                     switch( member->m_type->type ) {
@@ -2687,7 +2688,8 @@ public:
         std::string struct_type_name = struct_type_t->m_name;
         for( auto item: struct_type_t->m_symtab->get_scope() ) {
             if( ASR::is_a<ASR::ClassProcedure_t>(*item.second) ||
-                ASR::is_a<ASR::GenericProcedure_t>(*item.second) ) {
+                ASR::is_a<ASR::GenericProcedure_t>(*item.second) ||
+                ASR::is_a<ASR::CustomOperator_t>(*item.second) ) {
                 continue ;
             }
             ASR::ttype_t* symbol_type = ASRUtils::symbol_type(item.second);

@@ -341,7 +341,8 @@ public:
             this->visit_symbol(*a.second);
             if( ASR::is_a<ASR::ClassProcedure_t>(*a.second) ||
                 ASR::is_a<ASR::GenericProcedure_t>(*a.second) ||
-                ASR::is_a<ASR::ExternalSymbol_t>(*a.second) ) {
+                ASR::is_a<ASR::ExternalSymbol_t>(*a.second) ||
+                ASR::is_a<ASR::CustomOperator_t>(*a.second) ) {
                 continue ;
             }
             ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a.second));

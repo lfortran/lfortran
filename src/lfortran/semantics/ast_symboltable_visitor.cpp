@@ -1192,9 +1192,16 @@ public:
                 Str s;
                 s.from_str_view(pname.first);
                 char *generic_name = s.c_str(al);
-                ASR::asr_t *v = ASR::make_GenericProcedure_t(al, loc,
-                    clss->m_symtab, generic_name, cand_procs.p, cand_procs.size(),
-                    ASR::accessType::Public); // Update the access as per the input Fortran code
+                ASR::asr_t *v = nullptr;
+                if( pname.first == "~assign"  ) {
+                    v = ASR::make_CustomOperator_t(al, loc, clss->m_symtab,
+                        generic_name, cand_procs.p, cand_procs.size(),
+                        ASR::accessType::Public);
+                } else {
+                    v = ASR::make_GenericProcedure_t(al, loc,
+                        clss->m_symtab, generic_name, cand_procs.p, cand_procs.size(),
+                        ASR::accessType::Public); // Update the access as per the input Fortran code
+                }
                 ASR::symbol_t *cls_proc_sym = ASR::down_cast<ASR::symbol_t>(v);
                 clss->m_symtab->add_symbol(pname.first, cls_proc_sym);
             }
@@ -1583,6 +1590,14 @@ public:
 
     void visit_GenericName(const AST::GenericName_t& x) {
         std::string generic_name = to_lower(std::string(x.m_name));
+        for( size_t i = 0; i < x.n_names; i++ ) {
+            std::string x_m_name = std::string(x.m_names[i]);
+            generic_class_procedures[dt_name][generic_name].push_back(to_lower(x_m_name));
+        }
+    }
+
+    void visit_GenericAssignment(const AST::GenericAssignment_t& x) {
+        std::string generic_name = "~assign";
         for( size_t i = 0; i < x.n_names; i++ ) {
             std::string x_m_name = std::string(x.m_names[i]);
             generic_class_procedures[dt_name][generic_name].push_back(to_lower(x_m_name));
