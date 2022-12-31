@@ -648,7 +648,7 @@ bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
 void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* target, ASR::expr_t* value,
     ASR::ttype_t* target_type, ASR::ttype_t* value_type, bool& found, Allocator& al, const Location& target_loc,
     const Location& value_loc, SymbolTable* curr_scope, std::set<std::string>& current_function_dependencies,
-    Vec<char*>& current_module_dependencies, ASR::asr_t*& asr, ASR::symbol_t* sym, const Location& loc, ASR::expr_t* expr_dt,
+    Vec<char*>& current_module_dependencies, ASR::asr_t*& asr, ASR::symbol_t* sym, const Location& loc, ASR::expr_t* /*expr_dt*/,
     const std::function<void (const std::string &, const Location &)> err) {
     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(proc);
     std::string matched_subrout_name = "";
@@ -698,11 +698,17 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     ASR::symbol_t* sym = curr_scope->resolve_symbol("~assign");
     ASR::expr_t* expr_dt = nullptr;
     if( !sym ) {
+        // TODO: Check for pass(rhs) or pass(lhs) attribute and then pick target_type or value_type
         if( ASR::is_a<ASR::Struct_t>(*target_type) ) {
             ASR::StructType_t* target_struct = ASR::down_cast<ASR::StructType_t>(
                 ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Struct_t>(target_type)->m_derived_type));
             sym = target_struct->m_symtab->resolve_symbol("~assign");
             expr_dt = target;
+        } else if( ASR::is_a<ASR::Struct_t>(*value_type) ) {
+            ASR::StructType_t* value_struct = ASR::down_cast<ASR::StructType_t>(
+                ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Struct_t>(value_type)->m_derived_type));
+            sym = value_struct->m_symtab->resolve_symbol("~assign");
+            expr_dt = value;
         }
     }
     if (sym) {
