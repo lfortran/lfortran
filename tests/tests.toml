@@ -2331,6 +2331,14 @@ filename = "../integration_tests/bindc4.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/cmd_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/cmd_02.f90"
+asr = true
+
+[[test]]
 filename = "errors/c_f_pointer_01.f90"
 asr = true
 
