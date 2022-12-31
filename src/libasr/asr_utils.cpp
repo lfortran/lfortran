@@ -686,11 +686,17 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     ASR::symbol_t* sym = curr_scope->resolve_symbol("~assign");
     ASR::expr_t* expr_dt = nullptr;
     if( !sym ) {
+        // TODO: Check for pass(rhs) or pass(lhs) attribute and then pick target_type or value_type
         if( ASR::is_a<ASR::Struct_t>(*target_type) ) {
             ASR::StructType_t* target_struct = ASR::down_cast<ASR::StructType_t>(
                 ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Struct_t>(target_type)->m_derived_type));
             sym = target_struct->m_symtab->resolve_symbol("~assign");
             expr_dt = target;
+        } else if( ASR::is_a<ASR::Struct_t>(*value_type) ) {
+            ASR::StructType_t* value_struct = ASR::down_cast<ASR::StructType_t>(
+                ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Struct_t>(value_type)->m_derived_type));
+            sym = value_struct->m_symtab->resolve_symbol("~assign");
+            expr_dt = value;
         }
     }
     if (sym) {
