@@ -354,13 +354,7 @@ public:
         dec_indent(); s.append("\n" + indtd);
         s.append("}");
         s.append(",\n" + indtd);
-        s.append("\"loc\": {");
-        inc_indent(); s.append("\n" + indtd);
-        s.append("\"first\": " + std::to_string(x.base.base.loc.first));
-        s.append(",\n" + indtd);
-        s.append("\"last\": " + std::to_string(x.base.base.loc.last));
-        dec_indent(); s.append("\n" + indtd);
-        s.append("}");
+        append_location(s, x.base.base.loc.first, x.base.base.loc.last);
         dec_indent(); s.append("\n" + indtd);
         s.append("}");
     }
