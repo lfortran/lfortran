@@ -74,11 +74,11 @@
                             call_fortran_f32:
                                 (Function
                                     (SymbolTable
-                                        67
+                                        71
                                         {
                                             i:
                                                 (Variable
-                                                    67
+                                                    71
                                                     i
                                                     []
                                                     In
@@ -93,7 +93,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    67
+                                                    71
                                                     r
                                                     []
                                                     ReturnVar
@@ -108,6 +108,222 @@
                                                 )
                                         })
                                     call_fortran_f32
+                                    []
+                                    [(Var 71 i)]
+                                    []
+                                    (Var 71 r)
+                                    BindC
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            call_fortran_f32_value:
+                                (Function
+                                    (SymbolTable
+                                        72
+                                        {
+                                            i:
+                                                (Variable
+                                                    72
+                                                    i
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    72
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    call_fortran_f32_value
+                                    []
+                                    [(Var 72 i)]
+                                    []
+                                    (Var 72 r)
+                                    BindC
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            call_fortran_f64:
+                                (Function
+                                    (SymbolTable
+                                        73
+                                        {
+                                            i:
+                                                (Variable
+                                                    73
+                                                    i
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    73
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    call_fortran_f64
+                                    []
+                                    [(Var 73 i)]
+                                    []
+                                    (Var 73 r)
+                                    BindC
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            call_fortran_f64_value:
+                                (Function
+                                    (SymbolTable
+                                        74
+                                        {
+                                            i:
+                                                (Variable
+                                                    74
+                                                    i
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    74
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    call_fortran_f64_value
+                                    []
+                                    [(Var 74 i)]
+                                    []
+                                    (Var 74 r)
+                                    BindC
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            call_fortran_i32:
+                                (Function
+                                    (SymbolTable
+                                        67
+                                        {
+                                            i:
+                                                (Variable
+                                                    67
+                                                    i
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    67
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    call_fortran_i32
                                     []
                                     [(Var 67 i)]
                                     []
@@ -125,7 +341,7 @@
                                     []
                                     .false.
                                 ),
-                            call_fortran_f32_value:
+                            call_fortran_i32_value:
                                 (Function
                                     (SymbolTable
                                         68
@@ -139,7 +355,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Integer 4 [])
                                                     BindC
                                                     Public
                                                     Required
@@ -154,14 +370,14 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Integer 4 [])
                                                     BindC
                                                     Public
                                                     Required
                                                     .false.
                                                 )
                                         })
-                                    call_fortran_f32_value
+                                    call_fortran_i32_value
                                     []
                                     [(Var 68 i)]
                                     []
@@ -179,7 +395,7 @@
                                     []
                                     .false.
                                 ),
-                            call_fortran_f64:
+                            call_fortran_i64:
                                 (Function
                                     (SymbolTable
                                         69
@@ -193,7 +409,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Integer 8 [])
                                                     BindC
                                                     Public
                                                     Required
@@ -208,14 +424,14 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Integer 8 [])
                                                     BindC
                                                     Public
                                                     Required
                                                     .false.
                                                 )
                                         })
-                                    call_fortran_f64
+                                    call_fortran_i64
                                     []
                                     [(Var 69 i)]
                                     []
@@ -233,7 +449,7 @@
                                     []
                                     .false.
                                 ),
-                            call_fortran_f64_value:
+                            call_fortran_i64_value:
                                 (Function
                                     (SymbolTable
                                         70
@@ -247,7 +463,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Integer 8 [])
                                                     BindC
                                                     Public
                                                     Required
@@ -262,14 +478,14 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Integer 8 [])
                                                     BindC
                                                     Public
                                                     Required
                                                     .false.
                                                 )
                                         })
-                                    call_fortran_f64_value
+                                    call_fortran_i64_value
                                     []
                                     [(Var 70 i)]
                                     []
@@ -287,230 +503,14 @@
                                     []
                                     .false.
                                 ),
-                            call_fortran_i32:
-                                (Function
-                                    (SymbolTable
-                                        63
-                                        {
-                                            i:
-                                                (Variable
-                                                    63
-                                                    i
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .true.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    63
-                                                    r
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    call_fortran_i32
-                                    []
-                                    [(Var 63 i)]
-                                    []
-                                    (Var 63 r)
-                                    BindC
-                                    Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            call_fortran_i32_value:
-                                (Function
-                                    (SymbolTable
-                                        64
-                                        {
-                                            i:
-                                                (Variable
-                                                    64
-                                                    i
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .true.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    64
-                                                    r
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    call_fortran_i32_value
-                                    []
-                                    [(Var 64 i)]
-                                    []
-                                    (Var 64 r)
-                                    BindC
-                                    Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            call_fortran_i64:
-                                (Function
-                                    (SymbolTable
-                                        65
-                                        {
-                                            i:
-                                                (Variable
-                                                    65
-                                                    i
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 8 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .true.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    65
-                                                    r
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 8 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    call_fortran_i64
-                                    []
-                                    [(Var 65 i)]
-                                    []
-                                    (Var 65 r)
-                                    BindC
-                                    Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            call_fortran_i64_value:
-                                (Function
-                                    (SymbolTable
-                                        66
-                                        {
-                                            i:
-                                                (Variable
-                                                    66
-                                                    i
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 8 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .true.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    66
-                                                    r
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 8 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    call_fortran_i64_value
-                                    []
-                                    [(Var 66 i)]
-                                    []
-                                    (Var 66 r)
-                                    BindC
-                                    Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
                             f_double_complex_value_return:
                                 (Function
                                     (SymbolTable
-                                        40
+                                        44
                                         {
                                             b:
                                                 (Variable
-                                                    40
+                                                    44
                                                     b
                                                     []
                                                     In
@@ -525,7 +525,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    40
+                                                    44
                                                     r
                                                     []
                                                     ReturnVar
@@ -541,9 +541,9 @@
                                         })
                                     f_double_complex_value_return
                                     []
-                                    [(Var 40 b)]
+                                    [(Var 44 b)]
                                     []
-                                    (Var 40 r)
+                                    (Var 44 r)
                                     BindC
                                     Public
                                     Interface
@@ -560,11 +560,11 @@
                             f_float_complex_value_return:
                                 (Function
                                     (SymbolTable
-                                        39
+                                        43
                                         {
                                             b:
                                                 (Variable
-                                                    39
+                                                    43
                                                     b
                                                     []
                                                     In
@@ -579,7 +579,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    39
+                                                    43
                                                     r
                                                     []
                                                     ReturnVar
@@ -595,9 +595,9 @@
                                         })
                                     f_float_complex_value_return
                                     []
-                                    [(Var 39 b)]
+                                    [(Var 43 b)]
                                     []
-                                    (Var 39 r)
+                                    (Var 43 r)
                                     BindC
                                     Public
                                     Interface
@@ -612,146 +612,6 @@
                                     .false.
                                 ),
                             f_int_double:
-                                (Function
-                                    (SymbolTable
-                                        34
-                                        {
-                                            a:
-                                                (Variable
-                                                    34
-                                                    a
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            b:
-                                                (Variable
-                                                    34
-                                                    b
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 8 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    34
-                                                    r
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    f_int_double
-                                    []
-                                    [(Var 34 a)
-                                    (Var 34 b)]
-                                    []
-                                    (Var 34 r)
-                                    BindC
-                                    Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            f_int_double_complex:
-                                (Function
-                                    (SymbolTable
-                                        36
-                                        {
-                                            a:
-                                                (Variable
-                                                    36
-                                                    a
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            b:
-                                                (Variable
-                                                    36
-                                                    b
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Complex 8 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    36
-                                                    r
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    f_int_double_complex
-                                    []
-                                    [(Var 36 a)
-                                    (Var 36 b)]
-                                    []
-                                    (Var 36 r)
-                                    BindC
-                                    Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            f_int_double_complex_value:
                                 (Function
                                     (SymbolTable
                                         38
@@ -769,7 +629,7 @@
                                                     BindC
                                                     Public
                                                     Required
-                                                    .true.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -780,11 +640,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Complex 8 [])
+                                                    (Real 8 [])
                                                     BindC
                                                     Public
                                                     Required
-                                                    .true.
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -802,7 +662,7 @@
                                                     .false.
                                                 )
                                         })
-                                    f_int_double_complex_value
+                                    f_int_double
                                     []
                                     [(Var 38 a)
                                     (Var 38 b)]
@@ -821,7 +681,77 @@
                                     []
                                     .false.
                                 ),
-                            f_int_double_value:
+                            f_int_double_complex:
+                                (Function
+                                    (SymbolTable
+                                        40
+                                        {
+                                            a:
+                                                (Variable
+                                                    40
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    40
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 8 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    40
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    f_int_double_complex
+                                    []
+                                    [(Var 40 a)
+                                    (Var 40 b)]
+                                    []
+                                    (Var 40 r)
+                                    BindC
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            f_int_double_complex_value:
                                 (Function
                                     (SymbolTable
                                         42
@@ -850,7 +780,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Complex 8 [])
                                                     BindC
                                                     Public
                                                     Required
@@ -872,7 +802,7 @@
                                                     .false.
                                                 )
                                         })
-                                    f_int_double_value
+                                    f_int_double_complex_value
                                     []
                                     [(Var 42 a)
                                     (Var 42 b)]
@@ -891,14 +821,14 @@
                                     []
                                     .false.
                                 ),
-                            f_int_double_value_name:
+                            f_int_double_value:
                                 (Function
                                     (SymbolTable
-                                        49
+                                        46
                                         {
                                             a:
                                                 (Variable
-                                                    49
+                                                    46
                                                     a
                                                     []
                                                     In
@@ -913,7 +843,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    49
+                                                    46
                                                     b
                                                     []
                                                     In
@@ -928,7 +858,77 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    49
+                                                    46
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    f_int_double_value
+                                    []
+                                    [(Var 46 a)
+                                    (Var 46 b)]
+                                    []
+                                    (Var 46 r)
+                                    BindC
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            f_int_double_value_name:
+                                (Function
+                                    (SymbolTable
+                                        53
+                                        {
+                                            a:
+                                                (Variable
+                                                    53
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    53
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    53
                                                     r
                                                     []
                                                     ReturnVar
@@ -944,10 +944,10 @@
                                         })
                                     f_int_double_value_name
                                     []
-                                    [(Var 49 a)
-                                    (Var 49 b)]
+                                    [(Var 53 a)
+                                    (Var 53 b)]
                                     []
-                                    (Var 49 r)
+                                    (Var 53 r)
                                     BindC
                                     Public
                                     Interface
@@ -964,11 +964,11 @@
                             f_int_doublearray:
                                 (Function
                                     (SymbolTable
-                                        45
+                                        49
                                         {
                                             b:
                                                 (Variable
-                                                    45
+                                                    49
                                                     b
                                                     [n]
                                                     In
@@ -976,7 +976,7 @@
                                                     ()
                                                     Default
                                                     (Real 8 [((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 45 n))])
+                                                    (Var 49 n))])
                                                     BindC
                                                     Public
                                                     Required
@@ -984,7 +984,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    45
+                                                    49
                                                     n
                                                     []
                                                     In
@@ -999,7 +999,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    45
+                                                    49
                                                     r
                                                     []
                                                     ReturnVar
@@ -1015,10 +1015,10 @@
                                         })
                                     f_int_doublearray
                                     []
-                                    [(Var 45 n)
-                                    (Var 45 b)]
+                                    [(Var 49 n)
+                                    (Var 49 b)]
                                     []
-                                    (Var 45 r)
+                                    (Var 49 r)
                                     BindC
                                     Public
                                     Interface
@@ -1035,11 +1035,11 @@
                             f_int_doublearray_star:
                                 (Function
                                     (SymbolTable
-                                        48
+                                        52
                                         {
                                             b:
                                                 (Variable
-                                                    48
+                                                    52
                                                     b
                                                     []
                                                     In
@@ -1055,7 +1055,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    48
+                                                    52
                                                     n
                                                     []
                                                     In
@@ -1070,7 +1070,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    48
+                                                    52
                                                     r
                                                     []
                                                     ReturnVar
@@ -1086,10 +1086,10 @@
                                         })
                                     f_int_doublearray_star
                                     []
-                                    [(Var 48 n)
-                                    (Var 48 b)]
+                                    [(Var 52 n)
+                                    (Var 52 b)]
                                     []
-                                    (Var 48 r)
+                                    (Var 52 r)
                                     BindC
                                     Public
                                     Interface
@@ -1104,146 +1104,6 @@
                                     .false.
                                 ),
                             f_int_float:
-                                (Function
-                                    (SymbolTable
-                                        33
-                                        {
-                                            a:
-                                                (Variable
-                                                    33
-                                                    a
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            b:
-                                                (Variable
-                                                    33
-                                                    b
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    33
-                                                    r
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    f_int_float
-                                    []
-                                    [(Var 33 a)
-                                    (Var 33 b)]
-                                    []
-                                    (Var 33 r)
-                                    BindC
-                                    Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            f_int_float_complex:
-                                (Function
-                                    (SymbolTable
-                                        35
-                                        {
-                                            a:
-                                                (Variable
-                                                    35
-                                                    a
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            b:
-                                                (Variable
-                                                    35
-                                                    b
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Complex 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    35
-                                                    r
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    f_int_float_complex
-                                    []
-                                    [(Var 35 a)
-                                    (Var 35 b)]
-                                    []
-                                    (Var 35 r)
-                                    BindC
-                                    Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            f_int_float_complex_value:
                                 (Function
                                     (SymbolTable
                                         37
@@ -1261,7 +1121,7 @@
                                                     BindC
                                                     Public
                                                     Required
-                                                    .true.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -1272,11 +1132,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Complex 4 [])
+                                                    (Real 4 [])
                                                     BindC
                                                     Public
                                                     Required
-                                                    .true.
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -1294,7 +1154,7 @@
                                                     .false.
                                                 )
                                         })
-                                    f_int_float_complex_value
+                                    f_int_float
                                     []
                                     [(Var 37 a)
                                     (Var 37 b)]
@@ -1313,7 +1173,77 @@
                                     []
                                     .false.
                                 ),
-                            f_int_float_value:
+                            f_int_float_complex:
+                                (Function
+                                    (SymbolTable
+                                        39
+                                        {
+                                            a:
+                                                (Variable
+                                                    39
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    39
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    39
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    f_int_float_complex
+                                    []
+                                    [(Var 39 a)
+                                    (Var 39 b)]
+                                    []
+                                    (Var 39 r)
+                                    BindC
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            f_int_float_complex_value:
                                 (Function
                                     (SymbolTable
                                         41
@@ -1342,7 +1272,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Complex 4 [])
                                                     BindC
                                                     Public
                                                     Required
@@ -1364,7 +1294,7 @@
                                                     .false.
                                                 )
                                         })
-                                    f_int_float_value
+                                    f_int_float_complex_value
                                     []
                                     [(Var 41 a)
                                     (Var 41 b)]
@@ -1383,14 +1313,84 @@
                                     []
                                     .false.
                                 ),
+                            f_int_float_value:
+                                (Function
+                                    (SymbolTable
+                                        45
+                                        {
+                                            a:
+                                                (Variable
+                                                    45
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    45
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    45
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    f_int_float_value
+                                    []
+                                    [(Var 45 a)
+                                    (Var 45 b)]
+                                    []
+                                    (Var 45 r)
+                                    BindC
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
                             f_int_floatarray:
                                 (Function
                                     (SymbolTable
-                                        44
+                                        48
                                         {
                                             b:
                                                 (Variable
-                                                    44
+                                                    48
                                                     b
                                                     [n]
                                                     In
@@ -1398,7 +1398,7 @@
                                                     ()
                                                     Default
                                                     (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 44 n))])
+                                                    (Var 48 n))])
                                                     BindC
                                                     Public
                                                     Required
@@ -1406,7 +1406,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    44
+                                                    48
                                                     n
                                                     []
                                                     In
@@ -1421,7 +1421,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    44
+                                                    48
                                                     r
                                                     []
                                                     ReturnVar
@@ -1437,10 +1437,10 @@
                                         })
                                     f_int_floatarray
                                     []
-                                    [(Var 44 n)
-                                    (Var 44 b)]
+                                    [(Var 48 n)
+                                    (Var 48 b)]
                                     []
-                                    (Var 44 r)
+                                    (Var 48 r)
                                     BindC
                                     Public
                                     Interface
@@ -1457,11 +1457,11 @@
                             f_int_floatarray_star:
                                 (Function
                                     (SymbolTable
-                                        47
+                                        51
                                         {
                                             b:
                                                 (Variable
-                                                    47
+                                                    51
                                                     b
                                                     []
                                                     In
@@ -1470,6 +1470,77 @@
                                                     Default
                                                     (Real 4 [(()
                                                     ())])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            n:
+                                                (Variable
+                                                    51
+                                                    n
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    51
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    f_int_floatarray_star
+                                    []
+                                    [(Var 51 n)
+                                    (Var 51 b)]
+                                    []
+                                    (Var 51 r)
+                                    BindC
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            f_int_intarray:
+                                (Function
+                                    (SymbolTable
+                                        47
+                                        {
+                                            b:
+                                                (Variable
+                                                    47
+                                                    b
+                                                    [n]
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                                    (Var 47 n))])
                                                     BindC
                                                     Public
                                                     Required
@@ -1499,14 +1570,14 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Integer 4 [])
                                                     BindC
                                                     Public
                                                     Required
                                                     .false.
                                                 )
                                         })
-                                    f_int_floatarray_star
+                                    f_int_intarray
                                     []
                                     [(Var 47 n)
                                     (Var 47 b)]
@@ -1525,85 +1596,14 @@
                                     []
                                     .false.
                                 ),
-                            f_int_intarray:
-                                (Function
-                                    (SymbolTable
-                                        43
-                                        {
-                                            b:
-                                                (Variable
-                                                    43
-                                                    b
-                                                    [n]
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 43 n))])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            n:
-                                                (Variable
-                                                    43
-                                                    n
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .true.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    43
-                                                    r
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    f_int_intarray
-                                    []
-                                    [(Var 43 n)
-                                    (Var 43 b)]
-                                    []
-                                    (Var 43 r)
-                                    BindC
-                                    Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
                             f_int_intarray_star:
                                 (Function
                                     (SymbolTable
-                                        46
+                                        50
                                         {
                                             b:
                                                 (Variable
-                                                    46
+                                                    50
                                                     b
                                                     []
                                                     In
@@ -1619,7 +1619,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    46
+                                                    50
                                                     n
                                                     []
                                                     In
@@ -1634,7 +1634,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    46
+                                                    50
                                                     r
                                                     []
                                                     ReturnVar
@@ -1650,10 +1650,10 @@
                                         })
                                     f_int_intarray_star
                                     []
-                                    [(Var 46 n)
-                                    (Var 46 b)]
+                                    [(Var 50 n)
+                                    (Var 50 b)]
                                     []
-                                    (Var 46 r)
+                                    (Var 50 r)
                                     BindC
                                     Public
                                     Interface
@@ -1670,11 +1670,11 @@
                             f_string:
                                 (Function
                                     (SymbolTable
-                                        71
+                                        75
                                         {
                                             r:
                                                 (Variable
-                                                    71
+                                                    75
                                                     r
                                                     []
                                                     ReturnVar
@@ -1689,7 +1689,7 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    71
+                                                    75
                                                     s
                                                     []
                                                     In
@@ -1705,14 +1705,14 @@
                                         })
                                     f_string
                                     [f_string0]
-                                    [(Var 71 s)]
+                                    [(Var 75 s)]
                                     [(=
-                                        (Var 71 r)
+                                        (Var 75 r)
                                         (FunctionCall
                                             2 f_string0
                                             ()
                                             [((StringConcat
-                                                (Var 71 s)
+                                                (Var 75 s)
                                                 (Var 2 c_null_char)
                                                 (Character 1 0 () [])
                                                 ()
@@ -1723,7 +1723,7 @@
                                         )
                                         ()
                                     )]
-                                    (Var 71 r)
+                                    (Var 75 r)
                                     Source
                                     Public
                                     Implementation
@@ -1740,11 +1740,11 @@
                             f_string0:
                                 (Function
                                     (SymbolTable
-                                        62
+                                        66
                                         {
                                             r:
                                                 (Variable
-                                                    62
+                                                    66
                                                     r
                                                     []
                                                     ReturnVar
@@ -1759,7 +1759,7 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    62
+                                                    66
                                                     s
                                                     []
                                                     In
@@ -1776,9 +1776,9 @@
                                         })
                                     f_string0
                                     []
-                                    [(Var 62 s)]
+                                    [(Var 66 s)]
                                     []
-                                    (Var 62 r)
+                                    (Var 66 r)
                                     BindC
                                     Public
                                     Interface
@@ -1795,11 +1795,11 @@
                             fortran_f32:
                                 (Function
                                     (SymbolTable
-                                        76
+                                        80
                                         {
                                             i:
                                                 (Variable
-                                                    76
+                                                    80
                                                     i
                                                     []
                                                     In
@@ -1814,7 +1814,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    76
+                                                    80
                                                     r
                                                     []
                                                     ReturnVar
@@ -1830,17 +1830,282 @@
                                         })
                                     fortran_f32
                                     []
-                                    [(Var 76 i)]
+                                    [(Var 80 i)]
                                     [(=
-                                        (Var 76 r)
+                                        (Var 80 r)
                                         (RealBinOp
-                                            (Var 76 i)
+                                            (Var 80 i)
                                             Add
                                             (RealConstant
                                                 2.300000
                                                 (Real 4 [])
                                             )
                                             (Real 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 80 r)
+                                    BindC
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            fortran_f32_value:
+                                (Function
+                                    (SymbolTable
+                                        81
+                                        {
+                                            i:
+                                                (Variable
+                                                    81
+                                                    i
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    81
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    fortran_f32_value
+                                    []
+                                    [(Var 81 i)]
+                                    [(=
+                                        (Var 81 r)
+                                        (RealBinOp
+                                            (Var 81 i)
+                                            Add
+                                            (RealConstant
+                                                2.300000
+                                                (Real 4 [])
+                                            )
+                                            (Real 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 81 r)
+                                    BindC
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            fortran_f64:
+                                (Function
+                                    (SymbolTable
+                                        82
+                                        {
+                                            i:
+                                                (Variable
+                                                    82
+                                                    i
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    82
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    fortran_f64
+                                    []
+                                    [(Var 82 i)]
+                                    [(=
+                                        (Var 82 r)
+                                        (RealBinOp
+                                            (Var 82 i)
+                                            Add
+                                            (RealConstant
+                                                2.300000
+                                                (Real 8 [])
+                                            )
+                                            (Real 8 [])
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 82 r)
+                                    BindC
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            fortran_f64_value:
+                                (Function
+                                    (SymbolTable
+                                        83
+                                        {
+                                            i:
+                                                (Variable
+                                                    83
+                                                    i
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    83
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    fortran_f64_value
+                                    []
+                                    [(Var 83 i)]
+                                    [(=
+                                        (Var 83 r)
+                                        (RealBinOp
+                                            (Var 83 i)
+                                            Add
+                                            (RealConstant
+                                                2.300000
+                                                (Real 8 [])
+                                            )
+                                            (Real 8 [])
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 83 r)
+                                    BindC
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            fortran_i32:
+                                (Function
+                                    (SymbolTable
+                                        76
+                                        {
+                                            i:
+                                                (Variable
+                                                    76
+                                                    i
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    76
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    fortran_i32
+                                    []
+                                    [(Var 76 i)]
+                                    [(=
+                                        (Var 76 r)
+                                        (IntegerBinOp
+                                            (Var 76 i)
+                                            Add
+                                            (IntegerConstant 2 (Integer 4 []))
+                                            (Integer 4 [])
                                             ()
                                         )
                                         ()
@@ -1859,7 +2124,7 @@
                                     []
                                     .false.
                                 ),
-                            fortran_f32_value:
+                            fortran_i32_value:
                                 (Function
                                     (SymbolTable
                                         77
@@ -1873,7 +2138,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Integer 4 [])
                                                     BindC
                                                     Public
                                                     Required
@@ -1888,26 +2153,23 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Integer 4 [])
                                                     BindC
                                                     Public
                                                     Required
                                                     .false.
                                                 )
                                         })
-                                    fortran_f32_value
+                                    fortran_i32_value
                                     []
                                     [(Var 77 i)]
                                     [(=
                                         (Var 77 r)
-                                        (RealBinOp
+                                        (IntegerBinOp
                                             (Var 77 i)
                                             Add
-                                            (RealConstant
-                                                2.300000
-                                                (Real 4 [])
-                                            )
-                                            (Real 4 [])
+                                            (IntegerConstant 2 (Integer 4 []))
+                                            (Integer 4 [])
                                             ()
                                         )
                                         ()
@@ -1926,7 +2188,7 @@
                                     []
                                     .false.
                                 ),
-                            fortran_f64:
+                            fortran_i64:
                                 (Function
                                     (SymbolTable
                                         78
@@ -1940,7 +2202,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Integer 8 [])
                                                     BindC
                                                     Public
                                                     Required
@@ -1955,26 +2217,28 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Integer 8 [])
                                                     BindC
                                                     Public
                                                     Required
                                                     .false.
                                                 )
                                         })
-                                    fortran_f64
+                                    fortran_i64
                                     []
                                     [(Var 78 i)]
                                     [(=
                                         (Var 78 r)
-                                        (RealBinOp
+                                        (IntegerBinOp
                                             (Var 78 i)
                                             Add
-                                            (RealConstant
-                                                2.300000
-                                                (Real 8 [])
+                                            (Cast
+                                                (IntegerConstant 2 (Integer 4 []))
+                                                IntegerToInteger
+                                                (Integer 8 [])
+                                                (IntegerConstant 2 (Integer 8 []))
                                             )
-                                            (Real 8 [])
+                                            (Integer 8 [])
                                             ()
                                         )
                                         ()
@@ -1993,7 +2257,7 @@
                                     []
                                     .false.
                                 ),
-                            fortran_f64_value:
+                            fortran_i64_value:
                                 (Function
                                     (SymbolTable
                                         79
@@ -2007,7 +2271,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Integer 8 [])
                                                     BindC
                                                     Public
                                                     Required
@@ -2022,26 +2286,28 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Integer 8 [])
                                                     BindC
                                                     Public
                                                     Required
                                                     .false.
                                                 )
                                         })
-                                    fortran_f64_value
+                                    fortran_i64_value
                                     []
                                     [(Var 79 i)]
                                     [(=
                                         (Var 79 r)
-                                        (RealBinOp
+                                        (IntegerBinOp
                                             (Var 79 i)
                                             Add
-                                            (RealConstant
-                                                2.300000
-                                                (Real 8 [])
+                                            (Cast
+                                                (IntegerConstant 2 (Integer 4 []))
+                                                IntegerToInteger
+                                                (Integer 8 [])
+                                                (IntegerConstant 2 (Integer 8 []))
                                             )
-                                            (Real 8 [])
+                                            (Integer 8 [])
                                             ()
                                         )
                                         ()
@@ -2060,486 +2326,7 @@
                                     []
                                     .false.
                                 ),
-                            fortran_i32:
-                                (Function
-                                    (SymbolTable
-                                        72
-                                        {
-                                            i:
-                                                (Variable
-                                                    72
-                                                    i
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    72
-                                                    r
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    fortran_i32
-                                    []
-                                    [(Var 72 i)]
-                                    [(=
-                                        (Var 72 r)
-                                        (IntegerBinOp
-                                            (Var 72 i)
-                                            Add
-                                            (IntegerConstant 2 (Integer 4 []))
-                                            (Integer 4 [])
-                                            ()
-                                        )
-                                        ()
-                                    )]
-                                    (Var 72 r)
-                                    BindC
-                                    Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            fortran_i32_value:
-                                (Function
-                                    (SymbolTable
-                                        73
-                                        {
-                                            i:
-                                                (Variable
-                                                    73
-                                                    i
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .true.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    73
-                                                    r
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    fortran_i32_value
-                                    []
-                                    [(Var 73 i)]
-                                    [(=
-                                        (Var 73 r)
-                                        (IntegerBinOp
-                                            (Var 73 i)
-                                            Add
-                                            (IntegerConstant 2 (Integer 4 []))
-                                            (Integer 4 [])
-                                            ()
-                                        )
-                                        ()
-                                    )]
-                                    (Var 73 r)
-                                    BindC
-                                    Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            fortran_i64:
-                                (Function
-                                    (SymbolTable
-                                        74
-                                        {
-                                            i:
-                                                (Variable
-                                                    74
-                                                    i
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 8 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    74
-                                                    r
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 8 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    fortran_i64
-                                    []
-                                    [(Var 74 i)]
-                                    [(=
-                                        (Var 74 r)
-                                        (IntegerBinOp
-                                            (Var 74 i)
-                                            Add
-                                            (Cast
-                                                (IntegerConstant 2 (Integer 4 []))
-                                                IntegerToInteger
-                                                (Integer 8 [])
-                                                (IntegerConstant 2 (Integer 8 []))
-                                            )
-                                            (Integer 8 [])
-                                            ()
-                                        )
-                                        ()
-                                    )]
-                                    (Var 74 r)
-                                    BindC
-                                    Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            fortran_i64_value:
-                                (Function
-                                    (SymbolTable
-                                        75
-                                        {
-                                            i:
-                                                (Variable
-                                                    75
-                                                    i
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 8 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .true.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    75
-                                                    r
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 8 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    fortran_i64_value
-                                    []
-                                    [(Var 75 i)]
-                                    [(=
-                                        (Var 75 r)
-                                        (IntegerBinOp
-                                            (Var 75 i)
-                                            Add
-                                            (Cast
-                                                (IntegerConstant 2 (Integer 4 []))
-                                                IntegerToInteger
-                                                (Integer 8 [])
-                                                (IntegerConstant 2 (Integer 8 []))
-                                            )
-                                            (Integer 8 [])
-                                            ()
-                                        )
-                                        ()
-                                    )]
-                                    (Var 75 r)
-                                    BindC
-                                    Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
                             sub_int_double:
-                                (Function
-                                    (SymbolTable
-                                        51
-                                        {
-                                            a:
-                                                (Variable
-                                                    51
-                                                    a
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            b:
-                                                (Variable
-                                                    51
-                                                    b
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 8 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    51
-                                                    r
-                                                    []
-                                                    Out
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    sub_int_double
-                                    []
-                                    [(Var 51 a)
-                                    (Var 51 b)
-                                    (Var 51 r)]
-                                    []
-                                    ()
-                                    BindC
-                                    Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            sub_int_double_complex:
-                                (Function
-                                    (SymbolTable
-                                        53
-                                        {
-                                            a:
-                                                (Variable
-                                                    53
-                                                    a
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            b:
-                                                (Variable
-                                                    53
-                                                    b
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Complex 8 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    53
-                                                    r
-                                                    []
-                                                    Out
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    sub_int_double_complex
-                                    []
-                                    [(Var 53 a)
-                                    (Var 53 b)
-                                    (Var 53 r)]
-                                    []
-                                    ()
-                                    BindC
-                                    Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            sub_int_double_complex_value:
-                                (Function
-                                    (SymbolTable
-                                        57
-                                        {
-                                            a:
-                                                (Variable
-                                                    57
-                                                    a
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .true.
-                                                ),
-                                            b:
-                                                (Variable
-                                                    57
-                                                    b
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Complex 8 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .true.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    57
-                                                    r
-                                                    []
-                                                    Out
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    sub_int_double_complex_value
-                                    []
-                                    [(Var 57 a)
-                                    (Var 57 b)
-                                    (Var 57 r)]
-                                    []
-                                    ()
-                                    BindC
-                                    Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            sub_int_double_value:
                                 (Function
                                     (SymbolTable
                                         55
@@ -2557,7 +2344,7 @@
                                                     BindC
                                                     Public
                                                     Required
-                                                    .true.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -2572,7 +2359,7 @@
                                                     BindC
                                                     Public
                                                     Required
-                                                    .true.
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -2590,7 +2377,7 @@
                                                     .false.
                                                 )
                                         })
-                                    sub_int_double_value
+                                    sub_int_double
                                     []
                                     [(Var 55 a)
                                     (Var 55 b)
@@ -2610,7 +2397,78 @@
                                     []
                                     .false.
                                 ),
-                            sub_int_double_value_name:
+                            sub_int_double_complex:
+                                (Function
+                                    (SymbolTable
+                                        57
+                                        {
+                                            a:
+                                                (Variable
+                                                    57
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    57
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 8 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    57
+                                                    r
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    sub_int_double_complex
+                                    []
+                                    [(Var 57 a)
+                                    (Var 57 b)
+                                    (Var 57 r)]
+                                    []
+                                    ()
+                                    BindC
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            sub_int_double_complex_value:
                                 (Function
                                     (SymbolTable
                                         61
@@ -2639,7 +2497,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Complex 8 [])
                                                     BindC
                                                     Public
                                                     Required
@@ -2661,11 +2519,153 @@
                                                     .false.
                                                 )
                                         })
-                                    sub_int_double_value_name
+                                    sub_int_double_complex_value
                                     []
                                     [(Var 61 a)
                                     (Var 61 b)
                                     (Var 61 r)]
+                                    []
+                                    ()
+                                    BindC
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            sub_int_double_value:
+                                (Function
+                                    (SymbolTable
+                                        59
+                                        {
+                                            a:
+                                                (Variable
+                                                    59
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    59
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    59
+                                                    r
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    sub_int_double_value
+                                    []
+                                    [(Var 59 a)
+                                    (Var 59 b)
+                                    (Var 59 r)]
+                                    []
+                                    ()
+                                    BindC
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            sub_int_double_value_name:
+                                (Function
+                                    (SymbolTable
+                                        65
+                                        {
+                                            a:
+                                                (Variable
+                                                    65
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    65
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    65
+                                                    r
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    sub_int_double_value_name
+                                    []
+                                    [(Var 65 a)
+                                    (Var 65 b)
+                                    (Var 65 r)]
                                     []
                                     ()
                                     BindC
@@ -2684,11 +2684,11 @@
                             sub_int_doublearray:
                                 (Function
                                     (SymbolTable
-                                        60
+                                        64
                                         {
                                             b:
                                                 (Variable
-                                                    60
+                                                    64
                                                     b
                                                     [n]
                                                     In
@@ -2696,7 +2696,7 @@
                                                     ()
                                                     Default
                                                     (Real 8 [((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 60 n))])
+                                                    (Var 64 n))])
                                                     BindC
                                                     Public
                                                     Required
@@ -2704,7 +2704,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    60
+                                                    64
                                                     n
                                                     []
                                                     In
@@ -2719,7 +2719,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    60
+                                                    64
                                                     r
                                                     []
                                                     Out
@@ -2735,9 +2735,9 @@
                                         })
                                     sub_int_doublearray
                                     []
-                                    [(Var 60 n)
-                                    (Var 60 b)
-                                    (Var 60 r)]
+                                    [(Var 64 n)
+                                    (Var 64 b)
+                                    (Var 64 r)]
                                     []
                                     ()
                                     BindC
@@ -2756,219 +2756,6 @@
                             sub_int_float:
                                 (Function
                                     (SymbolTable
-                                        50
-                                        {
-                                            a:
-                                                (Variable
-                                                    50
-                                                    a
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            b:
-                                                (Variable
-                                                    50
-                                                    b
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    50
-                                                    r
-                                                    []
-                                                    Out
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    sub_int_float
-                                    []
-                                    [(Var 50 a)
-                                    (Var 50 b)
-                                    (Var 50 r)]
-                                    []
-                                    ()
-                                    BindC
-                                    Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            sub_int_float_complex:
-                                (Function
-                                    (SymbolTable
-                                        52
-                                        {
-                                            a:
-                                                (Variable
-                                                    52
-                                                    a
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            b:
-                                                (Variable
-                                                    52
-                                                    b
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Complex 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    52
-                                                    r
-                                                    []
-                                                    Out
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    sub_int_float_complex
-                                    []
-                                    [(Var 52 a)
-                                    (Var 52 b)
-                                    (Var 52 r)]
-                                    []
-                                    ()
-                                    BindC
-                                    Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            sub_int_float_complex_value:
-                                (Function
-                                    (SymbolTable
-                                        56
-                                        {
-                                            a:
-                                                (Variable
-                                                    56
-                                                    a
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .true.
-                                                ),
-                                            b:
-                                                (Variable
-                                                    56
-                                                    b
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Complex 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .true.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    56
-                                                    r
-                                                    []
-                                                    Out
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    sub_int_float_complex_value
-                                    []
-                                    [(Var 56 a)
-                                    (Var 56 b)
-                                    (Var 56 r)]
-                                    []
-                                    ()
-                                    BindC
-                                    Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
-                            sub_int_float_value:
-                                (Function
-                                    (SymbolTable
                                         54
                                         {
                                             a:
@@ -2984,7 +2771,7 @@
                                                     BindC
                                                     Public
                                                     Required
-                                                    .true.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -2999,7 +2786,7 @@
                                                     BindC
                                                     Public
                                                     Required
-                                                    .true.
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -3017,7 +2804,7 @@
                                                     .false.
                                                 )
                                         })
-                                    sub_int_float_value
+                                    sub_int_float
                                     []
                                     [(Var 54 a)
                                     (Var 54 b)
@@ -3037,14 +2824,227 @@
                                     []
                                     .false.
                                 ),
+                            sub_int_float_complex:
+                                (Function
+                                    (SymbolTable
+                                        56
+                                        {
+                                            a:
+                                                (Variable
+                                                    56
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    56
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    56
+                                                    r
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    sub_int_float_complex
+                                    []
+                                    [(Var 56 a)
+                                    (Var 56 b)
+                                    (Var 56 r)]
+                                    []
+                                    ()
+                                    BindC
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            sub_int_float_complex_value:
+                                (Function
+                                    (SymbolTable
+                                        60
+                                        {
+                                            a:
+                                                (Variable
+                                                    60
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    60
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    60
+                                                    r
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    sub_int_float_complex_value
+                                    []
+                                    [(Var 60 a)
+                                    (Var 60 b)
+                                    (Var 60 r)]
+                                    []
+                                    ()
+                                    BindC
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            sub_int_float_value:
+                                (Function
+                                    (SymbolTable
+                                        58
+                                        {
+                                            a:
+                                                (Variable
+                                                    58
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    58
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    58
+                                                    r
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    sub_int_float_value
+                                    []
+                                    [(Var 58 a)
+                                    (Var 58 b)
+                                    (Var 58 r)]
+                                    []
+                                    ()
+                                    BindC
+                                    Public
+                                    Interface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
                             sub_int_floatarray:
                                 (Function
                                     (SymbolTable
-                                        59
+                                        63
                                         {
                                             b:
                                                 (Variable
-                                                    59
+                                                    63
                                                     b
                                                     [n]
                                                     In
@@ -3052,7 +3052,7 @@
                                                     ()
                                                     Default
                                                     (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 59 n))])
+                                                    (Var 63 n))])
                                                     BindC
                                                     Public
                                                     Required
@@ -3060,7 +3060,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    59
+                                                    63
                                                     n
                                                     []
                                                     In
@@ -3075,7 +3075,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    59
+                                                    63
                                                     r
                                                     []
                                                     Out
@@ -3091,9 +3091,9 @@
                                         })
                                     sub_int_floatarray
                                     []
-                                    [(Var 59 n)
-                                    (Var 59 b)
-                                    (Var 59 r)]
+                                    [(Var 63 n)
+                                    (Var 63 b)
+                                    (Var 63 r)]
                                     []
                                     ()
                                     BindC
@@ -3112,11 +3112,11 @@
                             sub_int_intarray:
                                 (Function
                                     (SymbolTable
-                                        58
+                                        62
                                         {
                                             b:
                                                 (Variable
-                                                    58
+                                                    62
                                                     b
                                                     [n]
                                                     In
@@ -3124,7 +3124,7 @@
                                                     ()
                                                     Default
                                                     (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 58 n))])
+                                                    (Var 62 n))])
                                                     BindC
                                                     Public
                                                     Required
@@ -3132,7 +3132,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    58
+                                                    62
                                                     n
                                                     []
                                                     In
@@ -3147,7 +3147,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    58
+                                                    62
                                                     r
                                                     []
                                                     Out
@@ -3163,9 +3163,9 @@
                                         })
                                     sub_int_intarray
                                     []
-                                    [(Var 58 n)
-                                    (Var 58 b)
-                                    (Var 58 r)]
+                                    [(Var 62 n)
+                                    (Var 62 b)
+                                    (Var 62 r)]
                                     []
                                     ()
                                     BindC
