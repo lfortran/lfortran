@@ -93,26 +93,26 @@ public:
         contains_array = left_array || right_array;
     }
 
-    void create_do_loop(ASR::ImpliedDoLoop_t* idoloop, ASR::Var_t* arr_var, ASR::expr_t* arr_idx=nullptr) {
+    void create_do_loop(const ASR::ImpliedDoLoop_t &idoloop, ASR::Var_t* arr_var, ASR::expr_t* arr_idx=nullptr) {
         ASR::do_loop_head_t head;
-        head.m_v = idoloop->m_var;
-        head.m_start = idoloop->m_start;
-        head.m_end = idoloop->m_end;
-        head.m_increment = idoloop->m_increment;
+        head.m_v = idoloop.m_var;
+        head.m_start = idoloop.m_start;
+        head.m_end = idoloop.m_end;
+        head.m_increment = idoloop.m_increment;
         head.loc = head.m_v->base.loc;
         Vec<ASR::stmt_t*> doloop_body;
         doloop_body.reserve(al, 1);
-        ASR::ttype_t *_type = LFortran::ASRUtils::expr_type(idoloop->m_start);
+        ASR::ttype_t *_type = LFortran::ASRUtils::expr_type(idoloop.m_start);
         ASR::expr_t* const_1 = LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_var->base.base.loc, 1, _type));
         ASR::expr_t *const_n, *offset, *num_grps, *grp_start;
         const_n = offset = num_grps = grp_start = nullptr;
         if( arr_idx == nullptr ) {
-            const_n = LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_var->base.base.loc, idoloop->n_values, _type));
-            offset = LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.base.loc, idoloop->m_var, ASR::binopType::Sub, idoloop->m_start, _type, nullptr));
+            const_n = LFortran::ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_var->base.base.loc, idoloop.n_values, _type));
+            offset = LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.base.loc, idoloop.m_var, ASR::binopType::Sub, idoloop.m_start, _type, nullptr));
             num_grps = LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.base.loc, offset, ASR::binopType::Mul, const_n, _type, nullptr));
             grp_start = LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.base.loc, num_grps, ASR::binopType::Add, const_1, _type, nullptr));
         }
-        for( size_t i = 0; i < idoloop->n_values; i++ ) {
+        for( size_t i = 0; i < idoloop.n_values; i++ ) {
             Vec<ASR::array_index_t> args;
             ASR::array_index_t ai;
             ai.loc = arr_var->base.base.loc;
@@ -137,10 +137,10 @@ public:
                                                               args.p, args.size(),
                                                               array_ref_type, ASR::arraystorageType::RowMajor,
                                                               nullptr));
-            if( idoloop->m_values[i]->type == ASR::exprType::ImpliedDoLoop ) {
+            if( idoloop.m_values[i]->type == ASR::exprType::ImpliedDoLoop ) {
                 throw LCompilersException("Pass for nested ImpliedDoLoop nodes isn't implemented yet."); // idoloop->m_values[i]->base.loc
             }
-            ASR::stmt_t* doloop_stmt = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, arr_var->base.base.loc, array_ref, idoloop->m_values[i], nullptr));
+            ASR::stmt_t* doloop_stmt = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al, arr_var->base.base.loc, array_ref, idoloop.m_values[i], nullptr));
             doloop_body.push_back(al, doloop_stmt);
             if( arr_idx != nullptr ) {
                 ASR::expr_t* increment = LFortran::ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.base.loc, arr_idx, ASR::binopType::Add, const_1, LFortran::ASRUtils::expr_type(arr_idx), nullptr));
@@ -150,6 +150,135 @@ public:
         }
         ASR::stmt_t* doloop = LFortran::ASRUtils::STMT(ASR::make_DoLoop_t(al, arr_var->base.base.loc, head, doloop_body.p, doloop_body.size()));
         pass_result.push_back(al, doloop);
+    }
+
+    void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {
+        /*
+        The function `visit_ImpliedDoLoop` transforms the ASR tree in-place.
+
+        Converts:
+            
+            (i*2, i = 1, 6)
+
+        to:
+
+            pure function implied_do_loop( start, end, step ) result( x )
+                integer, intent(in) :: start
+                integer, intent(in) :: end
+                integer, intent(in) :: step
+                integer :: x( end - start + 1 )
+                do i = start, end, step
+                    x(i) = i*2
+                end do
+            end function
+        */
+
+        // create a pure function as described above
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        // get unique name for the function
+        std::string func_name = "idoloop_Function";
+        func_name = to_lower(func_name);
+        std::string unique_name = current_scope->get_unique_name(func_name);
+        func_name = unique_name;
+
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 3);
+
+        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                                                                        4, nullptr, 0));
+        ASR::expr_t* start = x.m_start;
+        ASR::expr_t* end = x.m_end;
+        if( x.m_increment != nullptr ) {
+            ASR::expr_t* step = x.m_increment;
+            args.push_back(al, step);
+        } else {
+            ASR::expr_t* step = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+            args.push_back(al, step);
+        }
+        args.push_back(al, start);
+        args.push_back(al, end);
+
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = x.base.base.loc;
+        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+        dim.m_start = one;
+        dim.m_length = end;
+        dims.push_back(al, dim);
+        ASR::ttype_t* obj_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+        obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
+
+        // Create an empty array
+        LFortran::Location arr_var_loc = x.base.base.loc;
+        ASR::expr_t* arr_var_expr = PassUtils::create_auxiliary_variable(arr_var_loc, func_name, al, current_scope, obj_type);
+        ASR::Var_t* arr_var = ASR::down_cast<ASR::Var_t>(arr_var_expr);
+
+        // create a doloop body
+        Vec<ASR::stmt_t*> doloop_body;
+        doloop_body.reserve(al, 1);
+        create_do_loop(x, arr_var);
+        // push the last element of pass_result to doloop_body
+        doloop_body.push_back(al, pass_result[pass_result.size()-1]);
+        // remove the last element of pass_result
+        pass_result.resize(al, pass_result.size()-1);
+        
+        ASR::asr_t* func = ASR::make_Function_t(
+            al, x.base.base.loc,
+            /* a_symtab */ current_scope,
+            /* a_name */ s2c(al, func_name),
+            /* a_args */ args.p,
+            /* n_args */ args.size(),
+            /* a_body */ doloop_body.p,
+            /* n_body */ doloop_body.size(),
+            /* a_return_var */ nullptr,
+            ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface,
+            nullptr, false, false, false, false, false, /* a_type_parameters */ nullptr,
+            /* n_type_parameters */ 0, nullptr, 0, false);
+        
+        parent_scope->add_symbol(func_name, ASR::down_cast<ASR::symbol_t>(func));
+        current_scope = parent_scope;
+
+        // create a call to the function
+        Vec<ASR::call_arg_t> call_args;
+        call_args.reserve(al, 3);;
+        ASR::call_arg_t start_call_arg;
+        start_call_arg.loc = x.m_start->base.loc;
+        start_call_arg.m_value = x.m_start;
+        call_args.push_back(al, start_call_arg);
+        ASR::call_arg_t end_call_arg;
+        end_call_arg.loc = x.m_end->base.loc;
+        end_call_arg.m_value = x.m_end;
+        call_args.push_back(al, end_call_arg);
+        if( x.m_increment != nullptr ) {
+            ASR::call_arg_t increment_call_arg;
+            increment_call_arg.loc = x.m_increment->base.loc;
+            increment_call_arg.m_value = x.m_increment;
+            call_args.push_back(al, increment_call_arg);
+        } else {
+            ASR::expr_t *increment_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+            ASR::call_arg_t increment_call_arg;
+            increment_call_arg.loc = increment_expr->base.loc;
+            increment_call_arg.m_value = increment_expr;
+            call_args.push_back(al, increment_call_arg);
+        }
+
+        ASR::symbol_t *final_sym = ASR::down_cast<ASR::symbol_t>(func);
+        ASR::asr_t* func_call = ASR::make_FunctionCall_t(al, x.base.base.loc,
+            final_sym, final_sym, call_args.p, call_args.size(), obj_type,
+            nullptr, nullptr);
+
+        // create an assignment
+        ASR::expr_t* func_call_expr = ASRUtils::EXPR(func_call);
+
+        
+        // push the assignment to pass_result
+        ASR::stmt_t* assign_stmt = LFortran::ASRUtils::STMT(ASR::make_Assignment_t(al,
+                                            x.base.base.loc, arr_var_expr, func_call_expr, nullptr));
+        pass_result.push_back(al, assign_stmt);
+
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
@@ -183,7 +312,7 @@ public:
                 ASR::expr_t* curr_init = arr_init->m_args[k];
                 if( ASR::is_a<ASR::ImpliedDoLoop_t>(*curr_init) ) {
                     ASR::ImpliedDoLoop_t* idoloop = ASR::down_cast<ASR::ImpliedDoLoop_t>(curr_init);
-                    create_do_loop(idoloop, arr_var, idx_var);
+                    create_do_loop(*idoloop, arr_var, idx_var);
                 } else {
                     Vec<ASR::array_index_t> args;
                     ASR::array_index_t ai;
