@@ -3,13 +3,13 @@ implicit none
    type :: toml_context
 
       !> Current internal position
-      integer :: pos = 0
+      integer :: pos
 
       !> Current internal count
-      integer :: num = 0
+      integer :: num
 
       !> Current internal location on the string buffer
-      character(kind=tfc, len=:), pointer :: ptr => null()
+      character(len=:), pointer :: ptr
 
    end type toml_context
 contains
@@ -30,15 +30,9 @@ subroutine add_context(message, context)
       message = num(1:len_trim(num)+1) // message
    end if
 
-   if (associated(context%ptr)) then
-      ! if (line_break < 0) line_break = len(context%ptr)
-      message = message // &
-         & '   | '// context%ptr(1:line_break) // &
-         & '   |'
-      ! if (context%pos > 0 .and. context%pos <= line_break) then
-      !    message = message // repeat('-', context%pos) // '^'
-      ! end if
-   end if
+   message = message // &
+      & '   | '// context%ptr(1:line_break) // &
+      & '   |'
 
 end subroutine add_context
 end module arrays_22
