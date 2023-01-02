@@ -843,6 +843,10 @@ filename = "../integration_tests/arrays_20.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/arrays_22.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/arrays_21.f90"
 asr = true
 
