@@ -354,6 +354,17 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %token <string> KW_WHILE
 %token <string> KW_WRITE
 
+// Pre-processor directives
+%token <string> KW_DEFINE_DIR
+%token <string> KW_UNDEF_DIR
+%token <string> KW_IF_DIR
+%token <string> KW_IFDEF_DIR
+%token <string> KW_IFNDEF_DIR
+%token <string> KW_ELIF_DIR
+%token <string> KW_ELSE_DIR
+%token <string> KW_ENDIF_DIR
+%token <string> KW_INCLUDE_DIR
+
 // Nonterminal tokens
 
 %type <ast> expr
