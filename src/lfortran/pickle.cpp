@@ -189,7 +189,7 @@ std::string pickle(LFortran::AST::ast_t &ast, bool colors, bool indent) {
     return v.get_str();
 }
 
-std::string pickle(AST::TranslationUnit_t &ast, bool colors,bool indent) {
+std::string pickle(AST::TranslationUnit_t &ast, bool colors, bool indent) {
     PickleVisitor v;
     v.use_colors = colors;
     v.indent = indent;
@@ -202,19 +202,21 @@ class ASTJsonVisitor :
     public LFortran::AST::JsonBaseVisitor<ASTJsonVisitor>
 {
 public:
+    using LFortran::AST::JsonBaseVisitor<ASTJsonVisitor>::JsonBaseVisitor;
+
     std::string get_str() {
         return s;
     }
 };
 
-std::string pickle_json(LFortran::AST::ast_t &ast) {
-    ASTJsonVisitor v;
+std::string pickle_json(LFortran::AST::ast_t &ast, LocationManager &lm) {
+    ASTJsonVisitor v(lm);
     v.visit_ast(ast);
     return v.get_str();
 }
 
-std::string pickle_json(LFortran::AST::TranslationUnit_t &ast) {
-    return pickle_json((LFortran::AST::ast_t &)ast);
+std::string pickle_json(LFortran::AST::TranslationUnit_t &ast, LocationManager &lm) {
+    return pickle_json((LFortran::AST::ast_t &)ast, lm);
 }
 
 /* -----------------------------------------------------------------------*/
@@ -304,6 +306,8 @@ class ASRJsonVisitor :
     public LFortran::ASR::JsonBaseVisitor<ASRJsonVisitor>
 {
 public:
+    using LFortran::ASR::JsonBaseVisitor<ASRJsonVisitor>::JsonBaseVisitor;
+
     std::string get_str() {
         return s;
     }
@@ -356,25 +360,20 @@ public:
         dec_indent(); s.append("\n" + indtd);
         s.append("}");
         s.append(",\n" + indtd);
-        s.append("\"loc\": {");
-        inc_indent(); s.append("\n" + indtd);
-        s.append("\"first\": " + std::to_string(x.base.base.loc.first));
-        s.append(",\n" + indtd);
-        s.append("\"last\": " + std::to_string(x.base.base.loc.last));
-        dec_indent(); s.append("\n" + indtd);
-        s.append("}");
+        append_location(s, x.base.base.loc.first, x.base.base.loc.last);
         dec_indent(); s.append("\n" + indtd);
         s.append("}");
     }
 };
 
-std::string pickle_json(LFortran::ASR::asr_t &asr) {
-    ASRJsonVisitor v;
+std::string pickle_json(LFortran::ASR::asr_t &asr, LocationManager &lm) {
+    ASRJsonVisitor v(lm);
     v.visit_asr(asr);
     return v.get_str();
 }
 
-std::string pickle_json(LFortran::ASR::TranslationUnit_t &asr) {
-    return pickle_json((LFortran::ASR::asr_t &)asr);
+std::string pickle_json(LFortran::ASR::TranslationUnit_t &asr, LocationManager &lm) {
+    return pickle_json((LFortran::ASR::asr_t &)asr, lm);
 }
+
 }
