@@ -26,5 +26,7 @@ type(t) :: xt, yt
 xt = t(5)
 yt = xt
 print *, xt%i, yt%i
+if( xt%i /= 6 ) error stop
+if( yt%i /= 7 ) error stop
 
 end program alloc_assign
