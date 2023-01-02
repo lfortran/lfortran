@@ -1515,6 +1515,9 @@ public:
                 if (sym_type->m_kind[i].m_id != nullptr
                         && to_lower(sym_type->m_kind[i].m_id) == "kind") {
                     // TODO: take into account m_kind->m_id and all kind items
+                    if (a_len == -10) {
+                        a_len = -1; // "character(kind=1) :: x"
+                    }
                     continue;
                 }
                 switch (sym_type->m_kind[i].m_type) {
