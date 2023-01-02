@@ -999,6 +999,9 @@ decl_star
 
 decl
     : var_decl
+    // TODO: Store directives information in the AST
+    | KW_IFNDEF_DIR id sep var_decl KW_ELSE_DIR sep
+        var_decl KW_ENDIF_DIR sep { $$ = $4; }
     | interface_decl
     | derived_type_decl
     | template_decl
@@ -1031,6 +1034,9 @@ sub_args
 
 bind_opt
     : bind { $$ = $1; }
+    // TODO: Store directives information in the AST
+    | KW_IFNDEF_DIR id sep bind sep KW_ELSE_DIR sep
+        bind sep KW_ENDIF_DIR { $$ = $4; }
     | %empty { $$ = nullptr; }
     ;
 
