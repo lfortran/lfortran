@@ -3211,22 +3211,12 @@ public:
         }
         ASR::expr_t** a_values = a_values_vec.p;
         size_t n_values = a_values_vec.size();
-        // std::string a_var_name = std::to_string(iloop_counter) + std::string(x.m_var);
-        // iloop_counter += 1;
-        // Str a_var_name_f;
-        // a_var_name_f.from_str(al, a_var_name);
-        // ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
-        //                                                 ASR::intentType::Local, nullptr,
-        //                                                 ASR::storage_typeType::Default, ASRUtils::expr_type(a_start),
-        //                                                 ASR::abiType::Source, ASR::Public);
-        std::string var_name = to_lower(x.m_var);
-        if (current_scope->get_symbol(var_name) == nullptr) {
-            throw SemanticError("The implied do loop variable '" + var_name + "' is not declared", x.base.base.loc);
-        };
 
-        LCOMPILERS_ASSERT(current_scope->get_symbol(var_name) != nullptr);
-        ASR::symbol_t* a_sym = current_scope->get_symbol(var_name);
-        // current_scope->scope[a_var_name] = a_sym;
+        ASR::symbol_t* a_sym = current_scope->resolve_symbol(to_lower(x.m_var));
+        if (a_sym == nullptr) {
+            throw SemanticError("The implied do loop variable '" +
+                to_lower(x.m_var) + "' is not declared", x.base.base.loc);
+        }
         ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
         tmp = ASR::make_ImpliedDoLoop_t(al, x.base.base.loc, a_values, n_values,
                                             a_var, a_start, a_end, a_increment,
