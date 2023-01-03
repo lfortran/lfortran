@@ -107,8 +107,8 @@ symbol
         intent intent, expr? symbolic_value, expr? value, storage_type storage, ttype type,
         abi abi, access access, presence presence, bool value_attr)
     | ClassType(symbol_table symtab, identifier name, abi abi, access access)
-    | ClassProcedure(symbol_table parent_symtab, identifier name, identifier proc_name,
-        symbol proc, abi abi)
+    | ClassProcedure(symbol_table parent_symtab, identifier name, identifier? pass_argument,
+        identifier proc_name, symbol proc, abi abi)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
 
@@ -231,6 +231,8 @@ expr
     | ImpliedDoLoop(expr* values, expr var, expr start, expr end,
                     expr? increment, ttype type, expr? value)
     | IntegerConstant(int n, ttype type)
+    | NullPointerConstant(ttype type)
+    | Associated(expr ptr, expr? tgt, ttype type, expr? value)
     | IntegerBOZ(int v, integerboz intboz_type, ttype? type)
     | IntegerBitNot(expr arg, ttype type, expr? value)
     | IntegerUnaryMinus(expr arg, ttype type, expr? value)
@@ -407,7 +409,7 @@ do_loop_head = (expr? v, expr? start, expr? end, expr? increment)
 
 case_stmt = CaseStmt(expr* test, stmt* body) | CaseStmt_Range(expr? start, expr? end, stmt* body)
 
-type_stmt = TypeStmt(symbol sym, stmt* body)
+type_stmt = TypeStmtName(symbol sym, stmt* body) | TypeStmtType(ttype type, stmt* body)
 
 enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
 

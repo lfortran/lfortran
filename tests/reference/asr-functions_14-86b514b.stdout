@@ -1,0 +1,1314 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            functions_14:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            journal:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            g0:
+                                                (Variable
+                                                    6
+                                                    g0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        6 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            g1:
+                                                (Variable
+                                                    6
+                                                    g1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        6 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            g2:
+                                                (Variable
+                                                    6
+                                                    g2
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        6 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            g3:
+                                                (Variable
+                                                    6
+                                                    g3
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        6 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            ga:
+                                                (Variable
+                                                    6
+                                                    ga
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        6 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            gb:
+                                                (Variable
+                                                    6
+                                                    gb
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        6 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            gc:
+                                                (Variable
+                                                    6
+                                                    gc
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        6 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            gd:
+                                                (Variable
+                                                    6
+                                                    gd
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        6 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            sep:
+                                                (Variable
+                                                    6
+                                                    sep
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            where:
+                                                (Variable
+                                                    6
+                                                    where
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            ~abstract_type:
+                                                (StructType
+                                                    (SymbolTable
+                                                        7
+                                                        {
+                                                            
+                                                        })
+                                                    ~abstract_type
+                                                    []
+                                                    []
+                                                    Source
+                                                    Public
+                                                    .false.
+                                                    ()
+                                                    ()
+                                                )
+                                        })
+                                    journal
+                                    [msg_scalar]
+                                    [(Var 6 where)
+                                    (Var 6 g0)
+                                    (Var 6 g1)
+                                    (Var 6 g2)
+                                    (Var 6 g3)
+                                    (Var 6 ga)
+                                    (Var 6 gb)
+                                    (Var 6 gc)
+                                    (Var 6 gd)
+                                    (Var 6 sep)]
+                                    [(FileWrite
+                                        0
+                                        ()
+                                        (StringConstant
+                                            "(a)"
+                                            (Character 1 3 () [])
+                                        )
+                                        ()
+                                        ()
+                                        ()
+                                        [(FunctionCall
+                                            2 msg_scalar
+                                            2 str
+                                            [((Var 6 g0))
+                                            ((Var 6 g1))
+                                            ((Var 6 g2))
+                                            ((Var 6 g3))
+                                            ((Var 6 ga))
+                                            ((Var 6 gb))
+                                            ((Var 6 gc))
+                                            ((Var 6 gd))
+                                            ((Var 6 sep))]
+                                            (Character 1 -2 () [])
+                                            ()
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )]
+                                    ()
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            msg_scalar:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            generic0:
+                                                (Variable
+                                                    3
+                                                    generic0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        3 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            generic1:
+                                                (Variable
+                                                    3
+                                                    generic1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        3 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            generic2:
+                                                (Variable
+                                                    3
+                                                    generic2
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        3 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            generic3:
+                                                (Variable
+                                                    3
+                                                    generic3
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        3 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            generica:
+                                                (Variable
+                                                    3
+                                                    generica
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        3 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            genericb:
+                                                (Variable
+                                                    3
+                                                    genericb
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        3 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            genericc:
+                                                (Variable
+                                                    3
+                                                    genericc
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        3 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            genericd:
+                                                (Variable
+                                                    3
+                                                    genericd
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        3 ~abstract_type
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            increment:
+                                                (Variable
+                                                    3
+                                                    increment
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            istart:
+                                                (Variable
+                                                    3
+                                                    istart
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            len:
+                                                (ExternalSymbol
+                                                    3
+                                                    len
+                                                    9 len
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    len
+                                                    Private
+                                                ),
+                                            len_trim:
+                                                (ExternalSymbol
+                                                    3
+                                                    len_trim
+                                                    37 len_trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    len_trim
+                                                    Private
+                                                ),
+                                            line:
+                                                (Variable
+                                                    3
+                                                    line
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 4096 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            msg_scalar:
+                                                (Variable
+                                                    3
+                                                    msg_scalar
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            present:
+                                                (ExternalSymbol
+                                                    3
+                                                    present
+                                                    9 present
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    present
+                                                    Private
+                                                ),
+                                            print_generic:
+                                                (Function
+                                                    (SymbolTable
+                                                        5
+                                                        {
+                                                            generic:
+                                                                (Variable
+                                                                    5
+                                                                    generic
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Class
+                                                                        3 ~abstract_type
+                                                                        []
+                                                                    )
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            len_trim:
+                                                                (ExternalSymbol
+                                                                    5
+                                                                    len_trim
+                                                                    37 len_trim
+                                                                    lfortran_intrinsic_string
+                                                                    []
+                                                                    len_trim
+                                                                    Private
+                                                                ),
+                                                            ~select_type_block_:
+                                                                (Block
+                                                                    (SymbolTable
+                                                                        60
+                                                                        {
+                                                                            
+                                                                        })
+                                                                    ~select_type_block_
+                                                                    [(FileWrite
+                                                                        0
+                                                                        (ArraySection
+                                                                            (Var 3 line)
+                                                                            [((Var 3 istart)
+                                                                            (StringLen
+                                                                                (Var 3 line)
+                                                                                (Integer 4 [])
+                                                                                ()
+                                                                            )
+                                                                            (IntegerConstant 1 (Integer 4 [])))]
+                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                        )
+                                                                        (StringConstant
+                                                                            "(i0)"
+                                                                            (Character 1 4 () [])
+                                                                        )
+                                                                        ()
+                                                                        ()
+                                                                        ()
+                                                                        [(Var 5 generic)]
+                                                                        ()
+                                                                        ()
+                                                                    )]
+                                                                ),
+                                                            ~select_type_block_1:
+                                                                (Block
+                                                                    (SymbolTable
+                                                                        61
+                                                                        {
+                                                                            
+                                                                        })
+                                                                    ~select_type_block_1
+                                                                    [(FileWrite
+                                                                        0
+                                                                        (ArraySection
+                                                                            (Var 3 line)
+                                                                            [((Var 3 istart)
+                                                                            (StringLen
+                                                                                (Var 3 line)
+                                                                                (Integer 4 [])
+                                                                                ()
+                                                                            )
+                                                                            (IntegerConstant 1 (Integer 4 [])))]
+                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                        )
+                                                                        (StringConstant
+                                                                            "(i0)"
+                                                                            (Character 1 4 () [])
+                                                                        )
+                                                                        ()
+                                                                        ()
+                                                                        ()
+                                                                        [(Var 5 generic)]
+                                                                        ()
+                                                                        ()
+                                                                    )]
+                                                                ),
+                                                            ~select_type_block_2:
+                                                                (Block
+                                                                    (SymbolTable
+                                                                        62
+                                                                        {
+                                                                            
+                                                                        })
+                                                                    ~select_type_block_2
+                                                                    [(FileWrite
+                                                                        0
+                                                                        (ArraySection
+                                                                            (Var 3 line)
+                                                                            [((Var 3 istart)
+                                                                            (StringLen
+                                                                                (Var 3 line)
+                                                                                (Integer 4 [])
+                                                                                ()
+                                                                            )
+                                                                            (IntegerConstant 1 (Integer 4 [])))]
+                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                        )
+                                                                        (StringConstant
+                                                                            "(i0)"
+                                                                            (Character 1 4 () [])
+                                                                        )
+                                                                        ()
+                                                                        ()
+                                                                        ()
+                                                                        [(Var 5 generic)]
+                                                                        ()
+                                                                        ()
+                                                                    )]
+                                                                ),
+                                                            ~select_type_block_3:
+                                                                (Block
+                                                                    (SymbolTable
+                                                                        63
+                                                                        {
+                                                                            
+                                                                        })
+                                                                    ~select_type_block_3
+                                                                    [(FileWrite
+                                                                        0
+                                                                        (ArraySection
+                                                                            (Var 3 line)
+                                                                            [((Var 3 istart)
+                                                                            (StringLen
+                                                                                (Var 3 line)
+                                                                                (Integer 4 [])
+                                                                                ()
+                                                                            )
+                                                                            (IntegerConstant 1 (Integer 4 [])))]
+                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                        )
+                                                                        (StringConstant
+                                                                            "(i0)"
+                                                                            (Character 1 4 () [])
+                                                                        )
+                                                                        ()
+                                                                        ()
+                                                                        ()
+                                                                        [(Var 5 generic)]
+                                                                        ()
+                                                                        ()
+                                                                    )]
+                                                                ),
+                                                            ~select_type_block_4:
+                                                                (Block
+                                                                    (SymbolTable
+                                                                        64
+                                                                        {
+                                                                            
+                                                                        })
+                                                                    ~select_type_block_4
+                                                                    [(FileWrite
+                                                                        0
+                                                                        (ArraySection
+                                                                            (Var 3 line)
+                                                                            [((Var 3 istart)
+                                                                            (StringLen
+                                                                                (Var 3 line)
+                                                                                (Integer 4 [])
+                                                                                ()
+                                                                            )
+                                                                            (IntegerConstant 1 (Integer 4 [])))]
+                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                        )
+                                                                        (StringConstant
+                                                                            "(1pg0)"
+                                                                            (Character 1 6 () [])
+                                                                        )
+                                                                        ()
+                                                                        ()
+                                                                        ()
+                                                                        [(Var 5 generic)]
+                                                                        ()
+                                                                        ()
+                                                                    )]
+                                                                ),
+                                                            ~select_type_block_5:
+                                                                (Block
+                                                                    (SymbolTable
+                                                                        65
+                                                                        {
+                                                                            
+                                                                        })
+                                                                    ~select_type_block_5
+                                                                    [(FileWrite
+                                                                        0
+                                                                        (ArraySection
+                                                                            (Var 3 line)
+                                                                            [((Var 3 istart)
+                                                                            (StringLen
+                                                                                (Var 3 line)
+                                                                                (Integer 4 [])
+                                                                                ()
+                                                                            )
+                                                                            (IntegerConstant 1 (Integer 4 [])))]
+                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                        )
+                                                                        (StringConstant
+                                                                            "(1pg0)"
+                                                                            (Character 1 6 () [])
+                                                                        )
+                                                                        ()
+                                                                        ()
+                                                                        ()
+                                                                        [(Var 5 generic)]
+                                                                        ()
+                                                                        ()
+                                                                    )]
+                                                                ),
+                                                            ~select_type_block_6:
+                                                                (Block
+                                                                    (SymbolTable
+                                                                        66
+                                                                        {
+                                                                            
+                                                                        })
+                                                                    ~select_type_block_6
+                                                                    [(FileWrite
+                                                                        0
+                                                                        (ArraySection
+                                                                            (Var 3 line)
+                                                                            [((Var 3 istart)
+                                                                            (StringLen
+                                                                                (Var 3 line)
+                                                                                (Integer 4 [])
+                                                                                ()
+                                                                            )
+                                                                            (IntegerConstant 1 (Integer 4 [])))]
+                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                        )
+                                                                        (StringConstant
+                                                                            "(l1)"
+                                                                            (Character 1 4 () [])
+                                                                        )
+                                                                        ()
+                                                                        ()
+                                                                        ()
+                                                                        [(Var 5 generic)]
+                                                                        ()
+                                                                        ()
+                                                                    )]
+                                                                ),
+                                                            ~select_type_block_7:
+                                                                (Block
+                                                                    (SymbolTable
+                                                                        67
+                                                                        {
+                                                                            len_trim:
+                                                                                (ExternalSymbol
+                                                                                    67
+                                                                                    len_trim
+                                                                                    37 len_trim
+                                                                                    lfortran_intrinsic_string
+                                                                                    []
+                                                                                    len_trim
+                                                                                    Private
+                                                                                )
+                                                                        })
+                                                                    ~select_type_block_7
+                                                                    [(FileWrite
+                                                                        0
+                                                                        (ArraySection
+                                                                            (Var 3 line)
+                                                                            [((Var 3 istart)
+                                                                            (StringLen
+                                                                                (Var 3 line)
+                                                                                (Integer 4 [])
+                                                                                ()
+                                                                            )
+                                                                            (IntegerConstant 1 (Integer 4 [])))]
+                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                        )
+                                                                        (StringConstant
+                                                                            "(a)"
+                                                                            (Character 1 3 () [])
+                                                                        )
+                                                                        ()
+                                                                        ()
+                                                                        ()
+                                                                        [(FunctionCall
+                                                                            3 trim
+                                                                            ()
+                                                                            [((Var 5 generic))]
+                                                                            (Character 1 -3 (FunctionCall
+                                                                                67 len_trim
+                                                                                ()
+                                                                                [((Var 5 generic))]
+                                                                                (Integer 4 [])
+                                                                                ()
+                                                                                ()
+                                                                            ) [])
+                                                                            ()
+                                                                            ()
+                                                                        )]
+                                                                        ()
+                                                                        ()
+                                                                    )]
+                                                                ),
+                                                            ~select_type_block_8:
+                                                                (Block
+                                                                    (SymbolTable
+                                                                        68
+                                                                        {
+                                                                            
+                                                                        })
+                                                                    ~select_type_block_8
+                                                                    [(FileWrite
+                                                                        0
+                                                                        (ArraySection
+                                                                            (Var 3 line)
+                                                                            [((Var 3 istart)
+                                                                            (StringLen
+                                                                                (Var 3 line)
+                                                                                (Integer 4 [])
+                                                                                ()
+                                                                            )
+                                                                            (IntegerConstant 1 (Integer 4 [])))]
+                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                        )
+                                                                        (StringConstant
+                                                                            "("(",1pg0,",",1pg0,")")"
+                                                                            (Character 1 23 () [])
+                                                                        )
+                                                                        ()
+                                                                        ()
+                                                                        ()
+                                                                        [(Var 5 generic)]
+                                                                        ()
+                                                                        ()
+                                                                    )]
+                                                                )
+                                                        })
+                                                    print_generic
+                                                    [len_trim
+                                                    trim]
+                                                    [(Var 5 generic)]
+                                                    [(SelectType
+                                                        [(TypeStmtType
+                                                            (Integer 1 [])
+                                                            [(BlockCall
+                                                                -1
+                                                                5 ~select_type_block_
+                                                            )]
+                                                        )
+                                                        (TypeStmtType
+                                                            (Integer 2 [])
+                                                            [(BlockCall
+                                                                -1
+                                                                5 ~select_type_block_1
+                                                            )]
+                                                        )
+                                                        (TypeStmtType
+                                                            (Integer 4 [])
+                                                            [(BlockCall
+                                                                -1
+                                                                5 ~select_type_block_2
+                                                            )]
+                                                        )
+                                                        (TypeStmtType
+                                                            (Integer 8 [])
+                                                            [(BlockCall
+                                                                -1
+                                                                5 ~select_type_block_3
+                                                            )]
+                                                        )
+                                                        (TypeStmtType
+                                                            (Real 4 [])
+                                                            [(BlockCall
+                                                                -1
+                                                                5 ~select_type_block_4
+                                                            )]
+                                                        )
+                                                        (TypeStmtType
+                                                            (Real 8 [])
+                                                            [(BlockCall
+                                                                -1
+                                                                5 ~select_type_block_5
+                                                            )]
+                                                        )
+                                                        (TypeStmtType
+                                                            (Logical 4 [])
+                                                            [(BlockCall
+                                                                -1
+                                                                5 ~select_type_block_6
+                                                            )]
+                                                        )
+                                                        (TypeStmtType
+                                                            (Character 1 -1 () [])
+                                                            [(BlockCall
+                                                                -1
+                                                                5 ~select_type_block_7
+                                                            )]
+                                                        )
+                                                        (TypeStmtType
+                                                            (Complex 4 [])
+                                                            [(BlockCall
+                                                                -1
+                                                                5 ~select_type_block_8
+                                                            )]
+                                                        )]
+                                                        []
+                                                    )
+                                                    (=
+                                                        (Var 3 istart)
+                                                        (IntegerBinOp
+                                                            (FunctionCall
+                                                                3 len_trim
+                                                                ()
+                                                                [((Var 3 line))]
+                                                                (Integer 4 [])
+                                                                ()
+                                                                ()
+                                                            )
+                                                            Add
+                                                            (Var 3 increment)
+                                                            (Integer 4 [])
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 3 line)
+                                                        (StringConcat
+                                                            (FunctionCall
+                                                                3 trim
+                                                                ()
+                                                                [((Var 3 line))]
+                                                                (Character 1 -3 (FunctionCall
+                                                                    5 len_trim
+                                                                    ()
+                                                                    [((Var 3 line))]
+                                                                    (Integer 4 [])
+                                                                    ()
+                                                                    ()
+                                                                ) [])
+                                                                ()
+                                                                ()
+                                                            )
+                                                            (Var 3 sep_local)
+                                                            (Character 1 -5 () [])
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Implementation
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    []
+                                                    []
+                                                    .false.
+                                                ),
+                                            sep:
+                                                (Variable
+                                                    3
+                                                    sep
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            sep_local:
+                                                (Variable
+                                                    3
+                                                    sep_local
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            trim:
+                                                (ExternalSymbol
+                                                    3
+                                                    trim
+                                                    37 trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    trim
+                                                    Private
+                                                ),
+                                            ~abstract_type:
+                                                (StructType
+                                                    (SymbolTable
+                                                        4
+                                                        {
+                                                            
+                                                        })
+                                                    ~abstract_type
+                                                    []
+                                                    []
+                                                    Source
+                                                    Public
+                                                    .false.
+                                                    ()
+                                                    ()
+                                                )
+                                        })
+                                    msg_scalar
+                                    [len
+                                    len_trim
+                                    present
+                                    print_generic
+                                    trim]
+                                    [(Var 3 generic0)
+                                    (Var 3 generic1)
+                                    (Var 3 generic2)
+                                    (Var 3 generic3)
+                                    (Var 3 generica)
+                                    (Var 3 genericb)
+                                    (Var 3 genericc)
+                                    (Var 3 genericd)
+                                    (Var 3 sep)]
+                                    [(If
+                                        (FunctionCall
+                                            3 present
+                                            ()
+                                            [((Var 3 sep))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(=
+                                            (Var 3 sep_local)
+                                            (Var 3 sep)
+                                            ()
+                                        )
+                                        (=
+                                            (Var 3 increment)
+                                            (IntegerBinOp
+                                                (FunctionCall
+                                                    3 len
+                                                    ()
+                                                    [((Var 3 sep_local))]
+                                                    (Integer 4 [])
+                                                    ()
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4 []))
+                                                (Integer 4 [])
+                                                ()
+                                            )
+                                            ()
+                                        )]
+                                        [(=
+                                            (Var 3 sep_local)
+                                            (StringConstant
+                                                " "
+                                                (Character 1 1 () [])
+                                            )
+                                            ()
+                                        )
+                                        (=
+                                            (Var 3 increment)
+                                            (IntegerConstant 2 (Integer 4 []))
+                                            ()
+                                        )]
+                                    )
+                                    (=
+                                        (Var 3 istart)
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        ()
+                                    )
+                                    (=
+                                        (Var 3 line)
+                                        (StringConstant
+                                            ""
+                                            (Character 1 0 () [])
+                                        )
+                                        ()
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            3 present
+                                            ()
+                                            [((Var 3 generic0))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(SubroutineCall
+                                            3 print_generic
+                                            ()
+                                            [((Var 3 generic0))]
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            3 present
+                                            ()
+                                            [((Var 3 generic1))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(SubroutineCall
+                                            3 print_generic
+                                            ()
+                                            [((Var 3 generic1))]
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            3 present
+                                            ()
+                                            [((Var 3 generic2))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(SubroutineCall
+                                            3 print_generic
+                                            ()
+                                            [((Var 3 generic2))]
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            3 present
+                                            ()
+                                            [((Var 3 generic3))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(SubroutineCall
+                                            3 print_generic
+                                            ()
+                                            [((Var 3 generic3))]
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            3 present
+                                            ()
+                                            [((Var 3 generica))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(SubroutineCall
+                                            3 print_generic
+                                            ()
+                                            [((Var 3 generica))]
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            3 present
+                                            ()
+                                            [((Var 3 genericb))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(SubroutineCall
+                                            3 print_generic
+                                            ()
+                                            [((Var 3 genericb))]
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            3 present
+                                            ()
+                                            [((Var 3 genericc))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(SubroutineCall
+                                            3 print_generic
+                                            ()
+                                            [((Var 3 genericc))]
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            3 present
+                                            ()
+                                            [((Var 3 genericd))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(SubroutineCall
+                                            3 print_generic
+                                            ()
+                                            [((Var 3 genericd))]
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (=
+                                        (Var 3 msg_scalar)
+                                        (FunctionCall
+                                            3 trim
+                                            ()
+                                            [((Var 3 line))]
+                                            (Character 1 -3 (FunctionCall
+                                                3 len_trim
+                                                ()
+                                                [((Var 3 line))]
+                                                (Integer 4 [])
+                                                ()
+                                                ()
+                                            ) [])
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (ImplicitDeallocate
+                                        [3 sep_local]
+                                    )]
+                                    (Var 3 msg_scalar)
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            str:
+                                (GenericProcedure
+                                    2
+                                    str
+                                    [2 msg_scalar]
+                                    Public
+                                )
+                        })
+                    functions_14
+                    [lfortran_intrinsic_builtin
+                    lfortran_intrinsic_string]
+                    .false.
+                    .false.
+                ),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_string:
+                (IntrinsicModule lfortran_intrinsic_string)
+        })
+    []
+)

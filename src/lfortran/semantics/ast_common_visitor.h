@@ -699,12 +699,14 @@ public:
 
     Vec<char*> data_member_names;
     std::set<std::string> current_function_dependencies;
+    ASR::ttype_t* current_variable_type_;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
             std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
-          current_scope{symbol_table}, implicit_mapping{implicit_mapping} {
+          current_scope{symbol_table}, implicit_mapping{implicit_mapping},
+          current_variable_type_{nullptr} {
         current_module_dependencies.reserve(al, 4);
     }
 
@@ -1351,6 +1353,7 @@ public:
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time);
                 }
                 ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer, dims);
+                current_variable_type_ = type;
 
                 ASR::expr_t* init_expr = nullptr;
                 ASR::expr_t* value = nullptr;
@@ -1524,6 +1527,9 @@ public:
                 if (sym_type->m_kind[i].m_id != nullptr
                         && to_lower(sym_type->m_kind[i].m_id) == "kind") {
                     // TODO: take into account m_kind->m_id and all kind items
+                    if (a_len == -10) {
+                        a_len = -1; // "character(kind=1) :: x"
+                    }
                     continue;
                 }
                 switch (sym_type->m_kind[i].m_type) {
@@ -1681,12 +1687,21 @@ public:
 
     ASR::asr_t* create_ArrayRef(const Location &loc,
                 AST::fnarg_t* m_args, size_t n_args,
+                    ASR::expr_t* v_expr,
                     ASR::symbol_t *v,
                     ASR::symbol_t *f2) {
         bool is_item = true;
         Vec<ASR::array_index_t> args;
         args.reserve(al, n_args);
-        ASR::expr_t* v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
+        ASR::expr_t* v_Var = nullptr;
+        if( v_expr ) {
+            v_Var = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
+                        al, v_expr->base.loc, v_expr, v,
+                        ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)),
+                        nullptr));
+        } else {
+            v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
+        }
         for (size_t i=0; i<n_args; i++) {
             ASR::array_index_t ai;
             ai.loc = loc;
@@ -2324,29 +2339,17 @@ public:
     }
 
     ASR::symbol_t* resolve_deriv_type_proc(const Location &loc, const std::string &var_name,
-            const std::string dt_name, SymbolTable*& scope, ASR::symbol_t* parent=nullptr) {
+            const std::string dt_name, ASR::ttype_t* dt_type, SymbolTable*& scope,
+            ASR::symbol_t* parent=nullptr) {
         ASR::symbol_t* v = nullptr;
         ASR::StructType_t* der_type = nullptr;
         if( parent == nullptr ) {
-            v = scope->resolve_symbol(dt_name);
-            if (!v) {
-                throw SemanticError("Variable '" + dt_name + "' not declared", loc);
-            }
-            ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(v);
-            ASR::ttype_t* v_type = ASRUtils::type_get_past_pointer(v_variable->m_type);
-            if ( ASR::is_a<ASR::Struct_t>(*v_type) || ASR::is_a<ASR::Class_t>(*v_type)) {
-                ASR::Struct_t* der = (ASR::Struct_t*)(&(v_type->base));
-                if( der->m_derived_type->type == ASR::symbolType::ExternalSymbol ) {
-                    ASR::ExternalSymbol_t* der_ext = (ASR::ExternalSymbol_t*)(&(der->m_derived_type->base));
-                    ASR::symbol_t* der_sym = der_ext->m_external;
-                    if( der_sym == nullptr ) {
-                        throw SemanticError("'" + std::string(der_ext->m_name) + "' isn't a Derived type.", loc);
-                    } else {
-                        der_type = (ASR::StructType_t*)(&(der_sym->base));
-                    }
-                } else {
-                    der_type = (ASR::StructType_t*)(&(der->m_derived_type->base));
-                }
+            if ( ASR::is_a<ASR::Struct_t>(*dt_type) ) {
+                ASR::Struct_t* der = ASR::down_cast<ASR::Struct_t>(dt_type);
+                der_type = ASR::down_cast<ASR::StructType_t>(ASRUtils::symbol_get_past_external(der->m_derived_type));
+            } else if( ASR::is_a<ASR::Class_t>(*dt_type) ) {
+                ASR::Class_t* der = ASR::down_cast<ASR::Class_t>(dt_type);
+                der_type = ASR::down_cast<ASR::StructType_t>(ASRUtils::symbol_get_past_external(der->m_class_type));
             } else {
                 throw SemanticError("Variable '" + dt_name + "' is not a derived type", loc);
             }
@@ -2358,7 +2361,7 @@ public:
         if( member != nullptr ) {
             scope = der_type->m_symtab;
         } else if( der_type->m_parent != nullptr ) {
-            member = resolve_deriv_type_proc(loc, var_name, "", scope, der_type->m_parent);
+            member = resolve_deriv_type_proc(loc, var_name, "", nullptr, scope, der_type->m_parent);
         } else {
             throw SemanticError("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.", loc);
         }
@@ -2813,6 +2816,31 @@ public:
         return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, nullptr);
     }
 
+    ASR::asr_t* create_NullPointerConstant(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"mold"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 0, 1, "null");
+        ASR::expr_t *mold_ = args[0];
+        ASR::ttype_t* null_ptr_type_ = nullptr;
+        if( mold_ ) {
+            null_ptr_type_ = ASRUtils::expr_type(mold_);
+        } else {
+            LFORTRAN_ASSERT(current_variable_type_ != nullptr);
+            null_ptr_type_ = current_variable_type_;
+        }
+        return ASR::make_NullPointerConstant_t(al, x.base.base.loc, null_ptr_type_);
+    }
+
+    ASR::asr_t* create_Associated(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"tgt"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
+        ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
+        ASR::ttype_t* associated_type_ = ASRUtils::TYPE(ASR::make_Logical_t(
+                                            al, x.base.base.loc, 4, nullptr, 0));
+        return ASR::make_Associated_t(al, x.base.base.loc, ptr_, tgt_, associated_type_, nullptr);
+    }
+
     ASR::asr_t* create_DCmplx(const AST::FuncCallOrArray_t& x) {
         std::vector<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"y"};
@@ -2960,6 +2988,10 @@ public:
                 tmp = create_ScanVerify_util(x, var_name);
             } else if( var_name == "verify" ) {
                 tmp = create_ScanVerify_util(x, var_name);
+            } else if( var_name == "null" ) {
+                tmp = create_NullPointerConstant(x);
+            } else if( var_name == "associated" ) {
+                tmp = create_Associated(x);
             } else {
                 LCompilersException("create_" + var_name + " not implemented yet.");
             }
@@ -3146,22 +3178,12 @@ public:
         }
         ASR::expr_t** a_values = a_values_vec.p;
         size_t n_values = a_values_vec.size();
-        // std::string a_var_name = std::to_string(iloop_counter) + std::string(x.m_var);
-        // iloop_counter += 1;
-        // Str a_var_name_f;
-        // a_var_name_f.from_str(al, a_var_name);
-        // ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
-        //                                                 ASR::intentType::Local, nullptr,
-        //                                                 ASR::storage_typeType::Default, LFortran::ASRUtils::expr_type(a_start),
-        //                                                 ASR::abiType::Source, ASR::Public);
-        std::string var_name = to_lower(x.m_var);
-        if (current_scope->get_symbol(var_name) == nullptr) {
-            throw SemanticError("The implied do loop variable '" + var_name + "' is not declared", x.base.base.loc);
-        };
 
-        LFORTRAN_ASSERT(current_scope->get_symbol(var_name) != nullptr);
-        ASR::symbol_t* a_sym = current_scope->get_symbol(var_name);
-        // current_scope->scope[a_var_name] = a_sym;
+        ASR::symbol_t* a_sym = current_scope->resolve_symbol(to_lower(x.m_var));
+        if (a_sym == nullptr) {
+            throw SemanticError("The implied do loop variable '" +
+                to_lower(x.m_var) + "' is not declared", x.base.base.loc);
+        }
         ASR::expr_t* a_var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
         tmp = ASR::make_ImpliedDoLoop_t(al, x.base.base.loc, a_values, n_values,
                                             a_var, a_start, a_end, a_increment,
@@ -3176,11 +3198,12 @@ public:
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
         if (x.n_member == 1) {
-            ASR::symbol_t *obj = current_scope->resolve_symbol(x.m_member[0].m_name);
-            ASR::asr_t *obj_var = ASR::make_Var_t(al, x.base.base.loc, obj);
-            v_expr = LFortran::ASRUtils::EXPR(obj_var);
+            visit_NameUtil(x.m_member, x.n_member - 1,
+                x.m_member[x.n_member - 1].m_name, x.base.base.loc);
+            v_expr = ASRUtils::EXPR(tmp);
             v = resolve_deriv_type_proc(x.base.base.loc, var_name,
-                x.m_member[0].m_name, scope);
+                    to_lower(x.m_member[x.n_member - 1].m_name),
+                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
         } else {
             v = current_scope->resolve_symbol(var_name);
         }
@@ -3369,7 +3392,7 @@ public:
             switch (f2->type) {
             case(ASR::symbolType::Variable): {
                 // TODO: Make create_StringRef for character (non-array) variables.
-                tmp = create_ArrayRef(x.base.base.loc, x.m_args, x.n_args, v, f2);
+                tmp = create_ArrayRef(x.base.base.loc, x.m_args, x.n_args, v_expr, v, f2);
                 break;
             }
             case(ASR::symbolType::StructType):
@@ -4017,34 +4040,44 @@ public:
         }
     }
 
-    void visit_Name(const AST::Name_t &x) {
-        if (x.n_member == 0) {
-            tmp = resolve_variable(x.base.base.loc, to_lower(x.m_id));
-        } else if (x.n_member == 1) {
-            if (x.m_member[0].n_args == 0) {
+    void visit_NameUtil(AST::struct_member_t* x_m_member, size_t x_n_member,
+                        char* x_m_id, const Location& loc) {
+        if (x_n_member == 0) {
+            tmp = resolve_variable(loc, to_lower(x_m_id));
+        } else if (x_n_member == 1) {
+            if (x_m_member[0].n_args == 0) {
                 SymbolTable* scope = current_scope;
-                tmp = this->resolve_variable2(x.base.base.loc, to_lower(x.m_id),
-                    to_lower(x.m_member[0].m_name), scope);
+                tmp = this->resolve_variable2(loc, to_lower(x_m_id),
+                    to_lower(x_m_member[0].m_name), scope);
             } else {
                 // TODO: incorporate m_args
                 SymbolTable* scope = current_scope;
-                tmp = this->resolve_variable2(x.base.base.loc, to_lower(x.m_id),
-                    to_lower(x.m_member[0].m_name), scope);
+                tmp = this->resolve_variable2(loc, to_lower(x_m_id),
+                    to_lower(x_m_member[0].m_name), scope);
             }
         } else {
             SymbolTable* scope = current_scope;
-            tmp = this->resolve_variable2(x.base.base.loc, to_lower(x.m_member[1].m_name), to_lower(x.m_member[0].m_name), scope);
+            tmp = this->resolve_variable2(loc, to_lower(x_m_member[1].m_name),
+                                          to_lower(x_m_member[0].m_name), scope);
             ASR::StructInstanceMember_t* tmp2;
             std::uint32_t i;
-            for( i = 2; i < x.n_member; i++ ) {
-                tmp2 = (ASR::StructInstanceMember_t*)this->resolve_variable2(x.base.base.loc,
-                                            to_lower(x.m_member[i].m_name), to_lower(x.m_member[i - 1].m_name), scope);
-                tmp = ASR::make_StructInstanceMember_t(al, x.base.base.loc, LFortran::ASRUtils::EXPR(tmp), tmp2->m_m, tmp2->m_type, nullptr);
+            for( i = 2; i < x_n_member; i++ ) {
+                tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc,
+                        to_lower(x_m_member[i].m_name), to_lower(x_m_member[i - 1].m_name),
+                        scope);
+                tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp),
+                                                       tmp2->m_m, tmp2->m_type, nullptr);
             }
-            i = x.n_member - 1;
-            tmp2 = (ASR::StructInstanceMember_t*)this->resolve_variable2(x.base.base.loc, to_lower(x.m_id), to_lower(x.m_member[i].m_name), scope);
-            tmp = ASR::make_StructInstanceMember_t(al, x.base.base.loc, LFortran::ASRUtils::EXPR(tmp), tmp2->m_m, tmp2->m_type, nullptr);
+            i = x_n_member - 1;
+            tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc, to_lower(x_m_id),
+                        to_lower(x_m_member[i].m_name), scope);
+            tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2->m_m,
+                                                   tmp2->m_type, nullptr);
         }
+    }
+
+    void visit_Name(const AST::Name_t &x) {
+        visit_NameUtil(x.m_member, x.n_member, x.m_id, x.base.base.loc);
     }
 
 

@@ -904,7 +904,8 @@ public:
                                         tmp_expr->base.loc);
                 } else {
                     ASR::Variable_t* tmp_v = ASR::down_cast<ASR::Variable_t>(tmp_sym);
-                    if( tmp_v->m_storage != ASR::storage_typeType::Allocatable ) {
+                    if( tmp_v->m_storage != ASR::storage_typeType::Allocatable &&
+                        tmp_v->m_storage != ASR::storage_typeType::Save ) {
                         // If it is not allocatable, it can also be a pointer
                         if (ASR::is_a<ASR::Pointer_t>(*tmp_v->m_type)) {
                             // OK
@@ -1085,7 +1086,7 @@ public:
                     Vec<ASR::stmt_t*> block_call_stmt;
                     block_call_stmt.reserve(al, 1);
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, class_stmt->base.base.loc, -1, block_sym)));
-                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmt_t(al,
+                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmtName_t(al,
                         class_stmt->base.base.loc, sym, block_call_stmt.p, block_call_stmt.size())));
                     break;
                 }
@@ -1121,8 +1122,46 @@ public:
                     Vec<ASR::stmt_t*> block_call_stmt;
                     block_call_stmt.reserve(al, 1);
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, type_stmt_name->base.base.loc, -1, block_sym)));
-                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmt_t(al,
+                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmtName_t(al,
                         type_stmt_name->base.base.loc, sym, block_call_stmt.p, block_call_stmt.size())));
+                    break;
+                }
+                case AST::type_stmtType::TypeStmtType: {
+                    AST::TypeStmtType_t* type_stmt_type = AST::down_cast<AST::TypeStmtType_t>(x.m_body[i]);
+                    ASR::ttype_t* selector_type = nullptr;
+                    if( assoc_variable ) {
+                        Vec<ASR::dimension_t> m_dims;
+                        m_dims.reserve(al, 1);
+                        std::string assoc_variable_name = std::string(assoc_variable->m_name);
+                        selector_type = determine_type(type_stmt_type->base.base.loc,
+                                                       assoc_variable_name,
+                                                       type_stmt_type->m_vartype, false, m_dims);
+                        Vec<char*> assoc_deps;
+                        assoc_deps.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, m_selector);
+                        assoc_variable->m_dependencies = assoc_deps.p;
+                        assoc_variable->n_dependencies = assoc_deps.size();
+                        assoc_variable->m_type = selector_type;
+                    }
+                    Vec<ASR::stmt_t*> type_stmt_type_body;
+                    type_stmt_type_body.reserve(al, type_stmt_type->n_body);
+                    transform_stmts(type_stmt_type_body, type_stmt_type->n_body, type_stmt_type->m_body);
+                    std::string block_name = parent_scope->get_unique_name("~select_type_block_");
+                    ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
+                                                    al, type_stmt_type->base.base.loc,
+                                                    current_scope, s2c(al, block_name), type_stmt_type_body.p,
+                                                    type_stmt_type_body.size()));
+                    parent_scope->add_symbol(block_name, block_sym);
+                    Vec<ASR::stmt_t*> block_call_stmt;
+                    block_call_stmt.reserve(al, 1);
+                    block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, type_stmt_type->base.base.loc, -1, block_sym)));
+                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmtType_t(al,
+                        type_stmt_type->base.base.loc, selector_type, block_call_stmt.p, block_call_stmt.size())));
+                    break;
+                }
+                case AST::type_stmtType::ClassDefault: {
+                    AST::ClassDefault_t* class_default = AST::down_cast<AST::ClassDefault_t>(x.m_body[i]);
+                    transform_stmts(select_type_default, class_default->n_body, class_default->m_body);
                     break;
                 }
                 default: {
@@ -1643,12 +1682,13 @@ public:
         ASR::expr_t *v_expr = nullptr;
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
-        if (x.n_member == 1) {
-            ASR::symbol_t *v = current_scope->resolve_symbol(to_lower(x.m_member[0].m_name));
-            ASR::asr_t *v_var = ASR::make_Var_t(al, x.base.base.loc, v);
-            v_expr = LFortran::ASRUtils::EXPR(v_var);
-            original_sym = resolve_deriv_type_proc(x.base.base.loc, to_lower(x.m_name),
-                to_lower(x.m_member[0].m_name), scope);
+        if (x.n_member >= 1) {
+            visit_NameUtil(x.m_member, x.n_member - 1,
+                x.m_member[x.n_member - 1].m_name, x.base.base.loc);
+            v_expr = ASRUtils::EXPR(tmp);
+            original_sym = resolve_deriv_type_proc(x.base.base.loc, sub_name,
+                            to_lower(x.m_member[x.n_member - 1].m_name),
+                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
         } else {
             original_sym = current_scope->resolve_symbol(sub_name);
         }

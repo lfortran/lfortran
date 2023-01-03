@@ -1339,6 +1339,10 @@ filename = "../integration_tests/select_type_02.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/select_type_03.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/format_01.f90"
 ast = true
 ast_f90 = true
@@ -2306,6 +2310,14 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/functions_13.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/functions_14.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/functions_15.f90"
 asr = true
 
 [[test]]

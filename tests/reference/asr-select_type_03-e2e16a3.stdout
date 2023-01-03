@@ -1,0 +1,244 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            select_type_03:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            get_sum:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            generic:
+                                                (Variable
+                                                    3
+                                                    generic
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        3 ~abstract_type
+                                                        [(()
+                                                        ())]
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    3
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            isum:
+                                                (Variable
+                                                    3
+                                                    isum
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            rsum:
+                                                (Variable
+                                                    3
+                                                    rsum
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            ~abstract_type:
+                                                (StructType
+                                                    (SymbolTable
+                                                        4
+                                                        {
+                                                            
+                                                        })
+                                                    ~abstract_type
+                                                    []
+                                                    []
+                                                    Source
+                                                    Public
+                                                    .false.
+                                                    ()
+                                                    ()
+                                                ),
+                                            ~select_type_block_:
+                                                (Block
+                                                    (SymbolTable
+                                                        5
+                                                        {
+                                                            
+                                                        })
+                                                    ~select_type_block_
+                                                    [(=
+                                                        (Var 3 isum)
+                                                        (IntegerConstant 0 (Integer 4 []))
+                                                        ()
+                                                    )
+                                                    (DoLoop
+                                                        ((Var 3 i)
+                                                        (IntegerConstant 0 (Integer 4 []))
+                                                        (IntegerConstant 10 (Integer 4 []))
+                                                        ())
+                                                        [(=
+                                                            (Var 3 isum)
+                                                            (IntegerBinOp
+                                                                (Var 3 isum)
+                                                                Add
+                                                                (ArrayItem
+                                                                    (Var 3 generic)
+                                                                    [(()
+                                                                    (Var 3 i)
+                                                                    ())]
+                                                                    (Integer 4 [])
+                                                                    ColMajor
+                                                                    ()
+                                                                )
+                                                                (Integer 4 [])
+                                                                ()
+                                                            )
+                                                            ()
+                                                        )]
+                                                    )
+                                                    (Print
+                                                        (Var 3 isum)
+                                                        []
+                                                        ()
+                                                        ()
+                                                    )]
+                                                ),
+                                            ~select_type_block_1:
+                                                (Block
+                                                    (SymbolTable
+                                                        6
+                                                        {
+                                                            
+                                                        })
+                                                    ~select_type_block_1
+                                                    [(=
+                                                        (Var 3 rsum)
+                                                        (RealConstant
+                                                            0.000000
+                                                            (Real 4 [])
+                                                        )
+                                                        ()
+                                                    )
+                                                    (DoLoop
+                                                        ((Var 3 i)
+                                                        (IntegerConstant 0 (Integer 4 []))
+                                                        (IntegerConstant 10 (Integer 4 []))
+                                                        ())
+                                                        [(=
+                                                            (Var 3 rsum)
+                                                            (RealBinOp
+                                                                (Var 3 rsum)
+                                                                Add
+                                                                (Cast
+                                                                    (ArrayItem
+                                                                        (Var 3 generic)
+                                                                        [(()
+                                                                        (Var 3 i)
+                                                                        ())]
+                                                                        (Real 8 [])
+                                                                        ColMajor
+                                                                        ()
+                                                                    )
+                                                                    RealToReal
+                                                                    (Real 4 [])
+                                                                    ()
+                                                                )
+                                                                (Real 4 [])
+                                                                ()
+                                                            )
+                                                            ()
+                                                        )]
+                                                    )
+                                                    (Print
+                                                        (Var 3 rsum)
+                                                        []
+                                                        ()
+                                                        ()
+                                                    )]
+                                                )
+                                        })
+                                    get_sum
+                                    []
+                                    [(Var 3 generic)]
+                                    [(SelectType
+                                        [(TypeStmtType
+                                            (Integer 4 [])
+                                            [(BlockCall
+                                                -1
+                                                3 ~select_type_block_
+                                            )]
+                                        )
+                                        (TypeStmtType
+                                            (Real 8 [])
+                                            [(BlockCall
+                                                -1
+                                                3 ~select_type_block_1
+                                            )]
+                                        )]
+                                        [(Print
+                                            ()
+                                            [(StringConstant
+                                                "*get_sum* crud -- procedure does not know about this type"
+                                                (Character 1 57 () [])
+                                            )]
+                                            ()
+                                            ()
+                                        )]
+                                    )]
+                                    ()
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                )
+                        })
+                    select_type_03
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

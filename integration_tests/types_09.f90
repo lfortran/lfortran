@@ -13,4 +13,9 @@ contains
       & 'abcdefghijklmnopqrstuvwxyz'
     end subroutine
 
+    subroutine s()
+        use,intrinsic :: iso_fortran_env, only : int32
+        integer(int32) :: x = 1
+    end subroutine s
+
 end program

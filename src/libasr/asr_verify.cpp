@@ -340,7 +340,9 @@ public:
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
             if( ASR::is_a<ASR::ClassProcedure_t>(*a.second) ||
-                ASR::is_a<ASR::GenericProcedure_t>(*a.second) ) {
+                ASR::is_a<ASR::GenericProcedure_t>(*a.second) ||
+                ASR::is_a<ASR::ExternalSymbol_t>(*a.second) ||
+                ASR::is_a<ASR::CustomOperator_t>(*a.second) ) {
                 continue ;
             }
             ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a.second));
@@ -608,11 +610,7 @@ public:
     }
 
     SymbolTable *get_dt_symtab(ASR::expr_t *dt) {
-        require_impl(ASR::is_a<ASR::Var_t>(*dt),
-            "m_dt must point to a Var", dt->base.loc);
-        ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(dt);
-        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var->m_v);
-        ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(v->m_type);
+        ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(dt));
         ASR::symbol_t *type_sym=nullptr;
         switch (t2->type) {
             case (ASR::ttypeType::Struct): {
@@ -649,11 +647,7 @@ public:
     }
 
     ASR::symbol_t *get_parent_type_dt(ASR::expr_t *dt) {
-        require_impl(ASR::is_a<ASR::Var_t>(*dt),
-            "m_dt must point to a Var", dt->base.loc);
-        ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(dt);
-        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var->m_v);
-        ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(v->m_type);
+        ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(dt));
         ASR::symbol_t *type_sym=nullptr;
         ASR::symbol_t *parent = nullptr;
         switch (t2->type) {
@@ -679,6 +673,10 @@ public:
                     dt->base.loc);
         }
         return parent;
+    }
+
+    void visit_NullPointerConstant(const NullPointerConstant_t& x) {
+        require(x.m_type != nullptr, "null() must have a type");
     }
 
     void visit_FunctionCall(const FunctionCall_t &x) {

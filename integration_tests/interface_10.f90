@@ -7,7 +7,7 @@ contains
 
     subroutine identity(x, y)
         character, intent(in) :: x
-        character, intent(out) :: y
+        character(kind=1), intent(out) :: y
         y = x
     end subroutine
 end module
