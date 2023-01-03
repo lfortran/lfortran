@@ -2329,9 +2329,12 @@ public:
         ASR::symbol_t* v = nullptr;
         ASR::StructType_t* der_type = nullptr;
         if( parent == nullptr ) {
-            if ( ASR::is_a<ASR::Struct_t>(*dt_type) || ASR::is_a<ASR::Class_t>(*dt_type)) {
+            if ( ASR::is_a<ASR::Struct_t>(*dt_type) ) {
                 ASR::Struct_t* der = ASR::down_cast<ASR::Struct_t>(dt_type);
                 der_type = ASR::down_cast<ASR::StructType_t>(ASRUtils::symbol_get_past_external(der->m_derived_type));
+            } else if( ASR::is_a<ASR::Class_t>(*dt_type) ) {
+                ASR::Class_t* der = ASR::down_cast<ASR::Class_t>(dt_type);
+                der_type = ASR::down_cast<ASR::StructType_t>(ASRUtils::symbol_get_past_external(der->m_class_type));
             } else {
                 throw SemanticError("Variable '" + dt_name + "' is not a derived type", loc);
             }

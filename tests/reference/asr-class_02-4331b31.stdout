@@ -41,6 +41,7 @@
                                                 (ClassProcedure
                                                     3
                                                     circle_area
+                                                    ()
                                                     circle_area
                                                     2 circle_area
                                                     Source
@@ -49,6 +50,7 @@
                                                 (ClassProcedure
                                                     3
                                                     circle_print
+                                                    ()
                                                     circle_print
                                                     2 circle_print
                                                     Source

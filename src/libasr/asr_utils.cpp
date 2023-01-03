@@ -636,8 +636,8 @@ bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
 void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* target, ASR::expr_t* value,
     ASR::ttype_t* target_type, ASR::ttype_t* value_type, bool& found, Allocator& al, const Location& target_loc,
     const Location& value_loc, SymbolTable* curr_scope, std::set<std::string>& current_function_dependencies,
-    Vec<char*>& current_module_dependencies, ASR::asr_t*& asr, ASR::symbol_t* sym, const Location& loc, ASR::expr_t* /*expr_dt*/,
-    const std::function<void (const std::string &, const Location &)> err) {
+    Vec<char*>& current_module_dependencies, ASR::asr_t*& asr, ASR::symbol_t* sym, const Location& loc, ASR::expr_t* expr_dt,
+    const std::function<void (const std::string &, const Location &)> err, char* pass_arg=nullptr) {
     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(proc);
     std::string matched_subrout_name = "";
     if( subrout->n_args == 2 ) {
@@ -645,6 +645,25 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
         ASR::ttype_t* value_arg_type = ASRUtils::expr_type(subrout->m_args[1]);
         if( ASRUtils::types_equal(*target_arg_type, *target_type) &&
             ASRUtils::types_equal(*value_arg_type, *value_type) ) {
+            std::string arg0_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[0])->m_v);
+            std::string arg1_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[1])->m_v);
+            if( pass_arg != nullptr ) {
+                std::string pass_arg_str = std::string(pass_arg);
+                if( arg0_name != pass_arg_str && arg1_name != pass_arg_str ) {
+                    err(pass_arg_str + " argument is not present in " + std::string(subrout->m_name),
+                        proc->base.loc);
+                }
+                if( (arg0_name == pass_arg_str && target != expr_dt) ) {
+                    err(std::string(subrout->m_name) + " is not a procedure of " +
+                        ASRUtils::type_to_str(target_type),
+                        loc);
+                }
+                if( (arg1_name == pass_arg_str && value != expr_dt) ) {
+                    err(std::string(subrout->m_name) + " is not a procedure of " +
+                        ASRUtils::type_to_str(value_type),
+                        loc);
+                }
+            }
             found = true;
             Vec<ASR::call_arg_t> a_args;
             a_args.reserve(al, 2);
@@ -686,7 +705,6 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     ASR::symbol_t* sym = curr_scope->resolve_symbol("~assign");
     ASR::expr_t* expr_dt = nullptr;
     if( !sym ) {
-        // TODO: Check for pass(rhs) or pass(lhs) attribute and then pick target_type or value_type
         if( ASR::is_a<ASR::Struct_t>(*target_type) ) {
             ASR::StructType_t* target_struct = ASR::down_cast<ASR::StructType_t>(
                 ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Struct_t>(target_type)->m_derived_type));
@@ -713,11 +731,12 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                     break;
                 }
                 case ASR::symbolType::ClassProcedure: {
+                    ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(proc);
                     ASR::symbol_t* proc_func = ASR::down_cast<ASR::ClassProcedure_t>(proc)->m_proc;
                     process_overloaded_assignment_function(proc_func, target, value, target_type,
                         value_type, found, al, target->base.loc, value->base.loc, curr_scope,
                         current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
-                        expr_dt, err);
+                        expr_dt, err, class_proc->m_pass_argument);
                     break;
                 }
                 default: {

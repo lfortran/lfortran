@@ -73,6 +73,7 @@
                                                 (ClassProcedure
                                                     3
                                                     all
+                                                    self
                                                     all_abstract
                                                     2 all_abstract
                                                     Source

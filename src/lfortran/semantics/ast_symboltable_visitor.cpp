@@ -71,7 +71,7 @@ public:
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
     std::map<AST::intrinsicopType, std::vector<std::string>> overloaded_op_procs;
     std::map<std::string, std::vector<std::string>> defined_op_procs;
-    std::map<std::string, std::map<std::string, std::string>> class_procedures;
+    std::map<std::string, std::map<std::string, std::map<std::string, std::string>>> class_procedures;
     std::vector<std::string> assgn_proc_names;
     std::string dt_name;
     bool in_submodule = false;
@@ -957,10 +957,25 @@ public:
             } else {
                 remote_sym_str = to_lower(use_sym->m_remote_sym);
             }
+            std::string use_sym_name = "";
             if (use_sym->m_local_rename) {
-                class_procedures[dt_name][to_lower(use_sym->m_local_rename)] = remote_sym_str;
+                use_sym_name = to_lower(use_sym->m_local_rename);
             } else {
-                class_procedures[dt_name][to_lower(use_sym->m_remote_sym)] = remote_sym_str;
+                use_sym_name = to_lower(use_sym->m_remote_sym);
+            }
+            class_procedures[dt_name][use_sym_name]["procedure"] = remote_sym_str;
+            for( size_t i = 0; i < x.n_attr; i++ ) {
+                switch( x.m_attr[i]->type ) {
+                    case AST::decl_attributeType::AttrPass: {
+                        AST::AttrPass_t* attr_pass = AST::down_cast<AST::AttrPass_t>(x.m_attr[i]);
+                        LFORTRAN_ASSERT(class_procedures[dt_name][use_sym_name].find("pass") == class_procedures[dt_name][use_sym_name].end());
+                        class_procedures[dt_name][use_sym_name]["pass"] = std::string(attr_pass->m_name);
+                        break ;
+                    }
+                    default: {
+                        break ;
+                    }
+                }
             }
         }
     }
@@ -1158,8 +1173,8 @@ public:
             s.from_str_view(sym_name_str);
             char *generic_name = s.c_str(al);
             ASR::asr_t *v = ASR::make_GenericProcedure_t(al, loc,
-                current_scope,
-                generic_name, symbols.p, symbols.size(), ASR::Public);
+                current_scope, generic_name,
+                symbols.p, symbols.size(), ASR::Public);
             current_scope->add_symbol(sym_name_str, ASR::down_cast<ASR::symbol_t>(v));
         }
     }
@@ -1191,8 +1206,8 @@ public:
                         ASR::accessType::Public);
                 } else {
                     v = ASR::make_GenericProcedure_t(al, loc,
-                        clss->m_symtab, generic_name, cand_procs.p, cand_procs.size(),
-                        ASR::accessType::Public); // Update the access as per the input Fortran code
+                        clss->m_symtab, generic_name,
+                        cand_procs.p, cand_procs.size(), ASR::accessType::Public); // Update the access as per the input Fortran code
                 }
                 ASR::symbol_t *cls_proc_sym = ASR::down_cast<ASR::symbol_t>(v);
                 clss->m_symtab->add_symbol(pname.first, cls_proc_sym);
@@ -1209,15 +1224,19 @@ public:
             ASR::StructType_t *clss = ASR::down_cast<ASR::StructType_t>(
                 current_scope->get_symbol(proc.first));
             for (auto &pname : proc.second) {
-                ASR::symbol_t *proc_sym = current_scope->get_symbol(pname.second);
+                ASR::symbol_t *proc_sym = current_scope->get_symbol(pname.second["procedure"]);
                 Str s;
                 s.from_str_view(pname.first);
                 char *name = s.c_str(al);
-                s.from_str_view(pname.second);
+                s.from_str_view(pname.second["procedure"]);
                 char *proc_name = s.c_str(al);
+                char* pass_arg_name = nullptr;
+                if( pname.second.find("pass") != pname.second.end() ) {
+                    pass_arg_name = s2c(al, pname.second["pass"]);
+                }
                 ASR::asr_t *v = ASR::make_ClassProcedure_t(al, loc,
-                    clss->m_symtab, name, proc_name, proc_sym,
-                    ASR::abiType::Source);
+                    clss->m_symtab, name, pass_arg_name,
+                    proc_name, proc_sym, ASR::abiType::Source);
                 ASR::symbol_t *cls_proc_sym = ASR::down_cast<ASR::symbol_t>(v);
                 clss->m_symtab->add_symbol(pname.first, cls_proc_sym);
             }
