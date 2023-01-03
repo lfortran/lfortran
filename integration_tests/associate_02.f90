@@ -1,11 +1,11 @@
 program associate_02
     implicit none
 
-    integer, pointer :: p1 => null()
-    real(8), pointer :: p2 => null()
+    integer, pointer :: p1
+    real(8), pointer :: p2
     integer, target :: t1 = 2
     real(8), target :: t2 = 2.0_8
-    complex(4), pointer :: p3 => null()
+    complex(4), pointer :: p3
     complex(4), target :: t3 = (2.0_4, 3.0_4)
 
     p1 => t1
