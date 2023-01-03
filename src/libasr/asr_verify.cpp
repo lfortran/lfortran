@@ -382,6 +382,7 @@ public:
                 ASR::is_a<ASR::GenericProcedure_t>(*a.second) ||
                 ASR::is_a<ASR::StructType_t>(*a.second) ||
                 ASR::is_a<ASR::UnionType_t>(*a.second) ||
+                ASR::is_a<ASR::ExternalSymbol_t>(*a.second) ||
                 ASR::is_a<ASR::CustomOperator_t>(*a.second) ) {
                 continue ;
             }
