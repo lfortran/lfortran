@@ -1025,6 +1025,8 @@ sub_or_func_plus
 
 sub_or_func
     : subroutine
+    | KW_IFNDEF_DIR id sep subroutine KW_ELSE_DIR sep
+        subroutine KW_ENDIF_DIR sep { $$ = $4; }
     | function
     | procedure
     ;
