@@ -90,7 +90,7 @@ macro(RUN)
             target_link_options(${name} PUBLIC  --generate-object-code)
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvmImplicit")
-            execute_process(COMMAND lfortran --implicit-typing --allow-implicit-interface
+            execute_process(COMMAND lfortran --implicit-typing --implicit-interface
                         ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90 -o ${name})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         else ()
