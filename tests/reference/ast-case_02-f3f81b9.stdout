@@ -27,6 +27,12 @@
             []
             ()
             None
+            ())
+            (out
+            []
+            []
+            ()
+            None
             ())]
             ()
         )]
@@ -50,7 +56,13 @@
                     100
                 )]
                 ()
-                [(Print
+                [(=
+                    0
+                    out
+                    0
+                    ()
+                )
+                (Print
                     0
                     ()
                     [(String
@@ -69,7 +81,13 @@
                     90
                 )]
                 ()
-                [(Print
+                [(=
+                    0
+                    out
+                    1
+                    ()
+                )
+                (Print
                     0
                     ()
                     [(String
@@ -88,7 +106,13 @@
                     80
                 )]
                 ()
-                [(Print
+                [(=
+                    0
+                    out
+                    2
+                    ()
+                )
+                (Print
                     0
                     ()
                     [(String
@@ -107,7 +131,13 @@
                     70
                 )]
                 ()
-                [(Print
+                [(=
+                    0
+                    out
+                    3
+                    ()
+                )
+                (Print
                     0
                     ()
                     [(String
@@ -126,7 +156,13 @@
                     60
                 )]
                 ()
-                [(Print
+                [(=
+                    0
+                    out
+                    4
+                    ()
+                )
+                (Print
                     0
                     ()
                     [(String
@@ -145,7 +181,13 @@
                     40
                 )]
                 ()
-                [(Print
+                [(=
+                    0
+                    out
+                    5
+                    ()
+                )
+                (Print
                     0
                     ()
                     [(String
@@ -160,7 +202,13 @@
             )
             (CaseStmt_Default
                 ()
-                [(Print
+                [(=
+                    0
+                    out
+                    6
+                    ()
+                )
+                (Print
                     0
                     ()
                     [(String
@@ -187,6 +235,25 @@
                 "Your marks are "
             )
             marks]
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+        )
+        (If
+            0
+            ()
+            (/= out 1)
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
             (TriviaNode
                 []
                 [(EndOfLine)

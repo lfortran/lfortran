@@ -2,11 +2,11 @@
     "basename": "cpp-case_01-49038b7",
     "cmd": "lfortran --no-color --show-cpp {infile}",
     "infile": "tests/../integration_tests/case_01.f90",
-    "infile_hash": "50b2ffd2a03a6c41a881d9c5cd2e1a0941707b9200f12c16f1bd48ea",
+    "infile_hash": "b0377013ea9328e6a8544ad056d49280c21a7b4c96cd9ee7670ddf0d",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "cpp-case_01-49038b7.stdout",
-    "stdout_hash": "110f03d23a0b6d5bb04092f1557de107415e6e54fbbb8fc5c7685af6",
+    "stdout_hash": "08fc9f5143bd383a80687515ab1d4030ba517005a5edf45eb87d1181",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
