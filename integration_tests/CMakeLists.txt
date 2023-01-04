@@ -208,6 +208,7 @@ RUN(NAME functions_08 LABELS gfortran llvm)
 RUN(NAME functions_09 LABELS gfortran)
 RUN(NAME functions_10 LABELS gfortran)
 RUN(NAME functions_11 LABELS gfortran llvm wasm)
+RUN(NAME functions_13 LABELS gfortran)
 
 
 RUN(NAME types_01 LABELS gfortran llvm cpp wasm)
