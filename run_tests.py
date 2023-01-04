@@ -152,7 +152,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
         run_test(
             filename,
             "asr",
-            "lfortran --indent --show-asr --implicit-typing --allow-implicit-interface --no-color {infile} -o {outfile}",
+            "lfortran --indent --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
@@ -164,7 +164,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
             run_test(
                 filename,
                 "llvm",
-                "lfortran --show-llvm --implicit-typing --allow-implicit-interface {infile} -o {outfile}",
+                "lfortran --show-llvm --implicit-typing --implicit-interface {infile} -o {outfile}",
                 filename,
                 update_reference,
                 extra_args)
@@ -183,7 +183,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
             run_test(
                 filename,
                 "asr",
-                "lfortran --indent --fixed-form --allow-implicit-interface --show-asr --no-color {infile} -o {outfile}",
+                "lfortran --indent --fixed-form --implicit-interface --show-asr --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
                 extra_args)
@@ -191,7 +191,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
             run_test(
                 filename,
                 "asr",
-                "lfortran --indent --show-asr --allow-implicit-interface --no-color {infile} -o {outfile}",
+                "lfortran --indent --show-asr --implicit-interface --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
                 extra_args)

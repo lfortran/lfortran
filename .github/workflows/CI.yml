@@ -366,7 +366,7 @@ jobs:
                 gfortran -fallow-argument-mismatch -ffree-line-length-none -c $file.f90 -o $file.o
                 #if [[ "$file" == *"minpack"* ]]; then
                 #    if [[ "$file" != *"dpmpar.f"* ]]; then
-                #        ../src/bin/lfortran --show-asr --no-color --fixed-form --implicit-typing --allow-implicit-interface $file > $file.asr
+                #        ../src/bin/lfortran --show-asr --no-color --fixed-form --implicit-typing --implicit-interface $file > $file.asr
                 #    fi
                 #fi
 

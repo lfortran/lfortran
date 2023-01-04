@@ -1669,7 +1669,7 @@ int main(int argc, char *argv[])
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
         app.add_flag("--print-targets", print_targets, "Print the registered targets");
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
-        app.add_flag("--allow-implicit-interface", compiler_options.implicit_interface, "Allow implicit interface");
+        app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface");
 
 
         if( compiler_options.fast ) {
