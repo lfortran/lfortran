@@ -681,7 +681,7 @@ public:
         return parent;
     }
 
-    void visit_NullPointerConstant(const NullPointerConstant_t& x) {
+    void visit_PointerNullConstant(const PointerNullConstant_t& x) {
         require(x.m_type != nullptr, "null() must have a type");
     }
 

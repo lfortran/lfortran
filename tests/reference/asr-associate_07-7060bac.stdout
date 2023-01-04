@@ -13,7 +13,7 @@
                                     p1
                                     []
                                     Local
-                                    (NullPointerConstant
+                                    (PointerNullConstant
                                         (Pointer
                                             (Integer 4 [])
                                         )
@@ -34,7 +34,7 @@
                                     p2
                                     []
                                     Local
-                                    (NullPointerConstant
+                                    (PointerNullConstant
                                         (Pointer
                                             (Real 8 [(()
                                             ())
@@ -61,7 +61,7 @@
                                     p3
                                     []
                                     Local
-                                    (NullPointerConstant
+                                    (PointerNullConstant
                                         (Pointer
                                             (Complex 4 [(()
                                             ())
@@ -146,7 +146,7 @@
                     )
                     (If
                         (LogicalNot
-                            (Associated
+                            (PointerAssociated
                                 (Var 2 p1)
                                 ()
                                 (Logical 4 [])
@@ -162,7 +162,7 @@
                     )
                     (If
                         (LogicalNot
-                            (Associated
+                            (PointerAssociated
                                 (Var 2 p2)
                                 ()
                                 (Logical 4 [])
@@ -178,7 +178,7 @@
                     )
                     (If
                         (LogicalNot
-                            (Associated
+                            (PointerAssociated
                                 (Var 2 p1)
                                 (Var 2 t1)
                                 (Logical 4 [])
@@ -194,7 +194,7 @@
                     )
                     (If
                         (LogicalNot
-                            (Associated
+                            (PointerAssociated
                                 (Var 2 p2)
                                 (Var 2 t2)
                                 (Logical 4 [])
@@ -209,7 +209,7 @@
                         []
                     )
                     (If
-                        (Associated
+                        (PointerAssociated
                             (Var 2 p3)
                             ()
                             (Logical 4 [])
@@ -221,7 +221,7 @@
                         []
                     )
                     (If
-                        (Associated
+                        (PointerAssociated
                             (Var 2 p3)
                             (Var 2 t3)
                             (Logical 4 [])

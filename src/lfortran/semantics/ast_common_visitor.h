@@ -2828,7 +2828,7 @@ public:
             LFORTRAN_ASSERT(current_variable_type_ != nullptr);
             null_ptr_type_ = current_variable_type_;
         }
-        return ASR::make_NullPointerConstant_t(al, x.base.base.loc, null_ptr_type_);
+        return ASR::make_PointerNullConstant_t(al, x.base.base.loc, null_ptr_type_);
     }
 
     ASR::asr_t* create_Associated(const AST::FuncCallOrArray_t& x) {
@@ -2838,7 +2838,7 @@ public:
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
         ASR::ttype_t* associated_type_ = ASRUtils::TYPE(ASR::make_Logical_t(
                                             al, x.base.base.loc, 4, nullptr, 0));
-        return ASR::make_Associated_t(al, x.base.base.loc, ptr_, tgt_, associated_type_, nullptr);
+        return ASR::make_PointerAssociated_t(al, x.base.base.loc, ptr_, tgt_, associated_type_, nullptr);
     }
 
     ASR::asr_t* create_DCmplx(const AST::FuncCallOrArray_t& x) {
