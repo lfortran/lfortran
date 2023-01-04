@@ -774,7 +774,15 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
-            ASR::symbol_t* proc = gen_proc->m_procs[i];
+            ASR::symbol_t* proc;
+            if ( ASR::is_a<ASR::ClassProcedure_t>(*gen_proc->m_procs[i]) ) {
+                proc =  ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::ClassProcedure_t>(
+                    gen_proc->m_procs[i])->m_proc);
+            } else {
+                proc = gen_proc->m_procs[i];
+            }
+
             switch(proc->type) {
                 case ASR::symbolType::Function: {
                     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
@@ -782,8 +790,12 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     if( func->n_args == 2 ) {
                         ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
                         ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
-                        if( left_arg_type->type == left_type->type &&
-                            right_arg_type->type == right_type->type ) {
+                        if( (left_arg_type->type == left_type->type &&
+                            right_arg_type->type == right_type->type)
+                         || (ASR::is_a<ASR::Class_t>(*left_arg_type) &&
+                            ASR::is_a<ASR::Struct_t>(*left_type))
+                         || (ASR::is_a<ASR::Class_t>(*right_arg_type) &&
+                            ASR::is_a<ASR::Struct_t>(*right_type))) {
                             found = true;
                             Vec<ASR::call_arg_t> a_args;
                             a_args.reserve(al, 2);
