@@ -274,6 +274,44 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);
     }
 
+    void visit_ClassProcedure(const ClassProcedure_t &x) {
+        require(x.m_name != nullptr,
+            "The ClassProcedure::m_name cannot be nullptr");
+        require(x.m_proc != nullptr,
+            "The ClassProcedure::m_proc cannot be nullptr");
+        require(x.m_proc_name != nullptr,
+            "The ClassProcedure::m_proc_name cannot be nullptr");
+
+        SymbolTable *symtab = x.m_parent_symtab;
+        require(symtab != nullptr,
+            "ClassProcedure::m_parent_symtab cannot be nullptr");
+        require(symtab->get_symbol(std::string(x.m_name)) != nullptr,
+            "ClassProcedure '" + std::string(x.m_name) + "' not found in parent_symtab symbol table");
+        symbol_t *symtab_sym = symtab->get_symbol(std::string(x.m_name));
+        const symbol_t *current_sym = &x.base;
+        require(symtab_sym == current_sym,
+            "ClassProcedure's parent symbol table does not point to it");
+        require(id_symtab_map.find(symtab->counter) != id_symtab_map.end(),
+            "ClassProcedure::m_parent_symtab must be present in the ASR ("
+                + std::string(x.m_name) + ")");
+
+        ASR::Function_t* x_m_proc = ASR::down_cast<ASR::Function_t>(x.m_proc);
+        if( x.m_self_argument ) {
+            bool arg_found = false;
+            std::string self_arg_name = std::string(x.m_self_argument);
+            for( size_t i = 0; i < x_m_proc->n_args; i++ ) {
+                std::string arg_name = std::string(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(x_m_proc->m_args[i])->m_v));
+                if( self_arg_name == arg_name ) {
+                    arg_found = true;
+                    break ;
+                }
+            }
+            require(arg_found, self_arg_name + " must be present in " +
+                    std::string(x.m_name) + " procedures.");
+        }
+    }
+
     void visit_Function(const Function_t &x) {
         function_dependencies.clear();
         function_dependencies.reserve(x.n_dependencies);
@@ -340,7 +378,8 @@ public:
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
             if( ASR::is_a<ASR::ClassProcedure_t>(*a.second) ||
-                ASR::is_a<ASR::GenericProcedure_t>(*a.second) ) {
+                ASR::is_a<ASR::GenericProcedure_t>(*a.second) ||
+                ASR::is_a<ASR::CustomOperator_t>(*a.second) ) {
                 continue ;
             }
             ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a.second));
@@ -608,11 +647,7 @@ public:
     }
 
     SymbolTable *get_dt_symtab(ASR::expr_t *dt) {
-        require_impl(ASR::is_a<ASR::Var_t>(*dt),
-            "m_dt must point to a Var", dt->base.loc);
-        ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(dt);
-        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var->m_v);
-        ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(v->m_type);
+        ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(dt));
         ASR::symbol_t *type_sym=nullptr;
         switch (t2->type) {
             case (ASR::ttypeType::Struct): {
@@ -649,11 +684,7 @@ public:
     }
 
     ASR::symbol_t *get_parent_type_dt(ASR::expr_t *dt) {
-        require_impl(ASR::is_a<ASR::Var_t>(*dt),
-            "m_dt must point to a Var", dt->base.loc);
-        ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(dt);
-        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var->m_v);
-        ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(v->m_type);
+        ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(dt));
         ASR::symbol_t *type_sym=nullptr;
         ASR::symbol_t *parent = nullptr;
         switch (t2->type) {
