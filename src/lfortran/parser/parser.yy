@@ -995,13 +995,15 @@ fn_mod
 
 decl_star
     : decl_star decl { $$ = $1; LIST_ADD($$, $2); }
+    // TODO: Store directives information in the AST
+    | decl_star KW_IFNDEF_DIR id sep decl KW_ELSE_DIR sep
+        decl KW_ENDIF_DIR sep { $$ = $1; LIST_ADD($$, $5); }
+    | decl_star KW_IFNDEF_DIR id sep decl KW_ENDIF_DIR sep {
+        $$ = $1; LIST_ADD($$, $5); }
     | %empty { LIST_NEW($$); }
 
 decl
     : var_decl
-    // TODO: Store directives information in the AST
-    | KW_IFNDEF_DIR id sep var_decl KW_ELSE_DIR sep
-        var_decl KW_ENDIF_DIR sep { $$ = $4; }
     | interface_decl
     | derived_type_decl
     | template_decl
