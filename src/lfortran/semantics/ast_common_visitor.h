@@ -2921,7 +2921,16 @@ public:
         ASR::symbol_t* function = current_scope->resolve_symbol(function_name);
         if( !function ) {
             function = resolve_intrinsic_function(x.base.base.loc, function_name);
+            ASR::Module_t* function_module = ASRUtils::get_sym_module(ASRUtils::symbol_get_past_external(function));
+            if( function_module ) {
+                char* module_name = function_module->m_name;
+                if (!present(current_module_dependencies, module_name)) {
+                    current_module_dependencies.push_back(al, module_name);
+                }
+            }
         }
+
+        current_function_dependencies.insert(function_name);
         return ASR::make_FunctionCall_t(al, x.base.base.loc, function, nullptr, func_args.p,
             func_args.size(), type, nullptr, nullptr);
     }
