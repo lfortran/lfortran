@@ -681,6 +681,10 @@ public:
         return parent;
     }
 
+    void visit_PointerNullConstant(const PointerNullConstant_t& x) {
+        require(x.m_type != nullptr, "null() must have a type");
+    }
+
     void visit_FunctionCall(const FunctionCall_t &x) {
         require(x.m_name,
             "FunctionCall::m_name must be present");
