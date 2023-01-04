@@ -2499,16 +2499,34 @@ public:
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(v_Var), m_dims);
         int64_t compile_time_size = 1;
-        for( int i = 0; i < n_dims; i++ ) {
-            ASR::dimension_t m_dim = m_dims[i];
-            ASR::expr_t* length_expr = m_dim.m_length;
-            int64_t length = -1;
-            ASRUtils::extract_value(length_expr, length);
-            if( length == -1 ) {
+        if (dim != nullptr) {
+            int32_t dim_idx = -1;
+            ASRUtils::extract_value(dim, dim_idx);
+            if (dim_idx == -1) {
                 compile_time_size = -1;
-                break ;
+            } else {
+                ASR::dimension_t m_dim = m_dims[dim_idx - 1];
+                ASR::expr_t* length_expr = m_dim.m_length;
+                int64_t length = -1;
+                ASRUtils::extract_value(length_expr, length);
+                if (length == -1) {
+                    compile_time_size = -1;
+                } else {
+                    compile_time_size = length;
+                }
             }
-            compile_time_size *= length;
+        } else {
+            for( int i = 0; i < n_dims; i++ ) {
+                ASR::dimension_t m_dim = m_dims[i];
+                ASR::expr_t* length_expr = m_dim.m_length;
+                int64_t length = -1;
+                ASRUtils::extract_value(length_expr, length);
+                if( length == -1 ) {
+                    compile_time_size = -1;
+                    break ;
+                }
+                compile_time_size *= length;
+            }
         }
         ASR::expr_t* size_compiletime = nullptr;
         if( compile_time_size != -1 ) {
