@@ -34,8 +34,9 @@ symbol
         expr? symbolic_value, expr? value, storage_type storage, ttype type,
         abi abi, access access, presence presence, bool value_attr)
     | ClassType(symbol_table symtab, identifier name, abi abi, access access)
-    | ClassProcedure(symbol_table parent_symtab, identifier name, identifier
-        proc_name, symbol proc, abi abi)
+    | ClassProcedure(symbol_table parent_symtab, identifier name,
+    identifier?
+        self_argument, identifier proc_name, symbol proc, abi abi)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
 ```
@@ -60,6 +61,7 @@ symbol
 | `intent`                   |Local/In/Out/InOut/ReturnVar/Unspecified|
 | `deftype`                  |Implementation/Interface|
 | `presence`                 |Required/Optional|
+| `self_argument`            |the argument which contains the object calling the class procedure |
 
 ### Return values
 

@@ -736,7 +736,7 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                     process_overloaded_assignment_function(proc_func, target, value, target_type,
                         value_type, found, al, target->base.loc, value->base.loc, curr_scope,
                         current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
-                        expr_dt, err, class_proc->m_pass_argument);
+                        expr_dt, err, class_proc->m_self_argument);
                     break;
                 }
                 default: {
