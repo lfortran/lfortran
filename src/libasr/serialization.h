@@ -14,6 +14,7 @@ namespace LFortran {
 
     void fix_external_symbols(ASR::TranslationUnit_t &unit,
             SymbolTable &external_symtab);
+    void fix_struct_instance_member_symbols(ASR::TranslationUnit_t &unit);
 }
 
 #endif // LIBASR_SERIALIZATION_H

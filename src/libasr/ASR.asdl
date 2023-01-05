@@ -290,7 +290,7 @@ expr
     | ArrayMaxloc(expr array, expr? dim, expr? mask, expr? kind, expr? back, ttype type, expr? value)
 
     | BitCast(expr source, expr mold, expr? size, ttype type, expr? value)
-    | StructInstanceMember(expr v, symbol m, ttype type, expr? value)
+    | StructInstanceMember(expr v, symbol m, identifier name, ttype type, expr? value)
     | EnumMember(expr v, symbol m, ttype type, expr? value)
     | UnionRef(expr v, symbol m, ttype type, expr? value)
     | EnumName(expr v, ttype enum_type, ttype type, expr? value)

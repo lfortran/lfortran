@@ -1516,7 +1516,7 @@ class JsonVisitorVisitor(ASDLVisitor):
         # Storing a reference to LocationManager like this isn't ideal.
         # One must make sure JsonBaseVisitor isn't reused in a case where AST/ASR has changed
         # but lm wasn't updated correspondingly.
-        # If LocationManager becomes needed in any of the other visitors, it should be 
+        # If LocationManager becomes needed in any of the other visitors, it should be
         # passed by reference into all the visit functions instead of storing the reference here.
         self.emit(  "LocationManager &lm;", 1)
         self.emit("public:")
@@ -1565,7 +1565,7 @@ class JsonVisitorVisitor(ASDLVisitor):
         self.emit(      's.append("\\n" + indtd);', 2)
         self.emit(      's.append("}");', 2)
         self.emit(  '}', 1)
-        
+
         self.mod = mod
         super(JsonVisitorVisitor, self).visitModule(mod)
         self.emit("};")
@@ -1835,8 +1835,8 @@ class SerializationVisitorVisitor(ASDLVisitor):
                     template = "self().visit_%s(x.m_%s);" % (field.type, field.name)
             else:
                 if field.type == "symbol":
-                    if cons_name == "ExternalSymbol":
-                        template = "// We skip the symbol for ExternalSymbol"
+                    if cons_name == "ExternalSymbol" or cons_name == "StructInstanceMember":
+                        template = "// We skip the symbol for " + cons_name
                     else:
                         template = "self().write_symbol(*x.m_%s);" \
                             % field.name
@@ -1903,14 +1903,16 @@ class SerializationVisitorVisitor(ASDLVisitor):
                     self.emit('self().write_int64(x.m_%s->counter);' % field.name, level)
                     self.emit('self().write_int64(x.m_%s->get_scope().size());' % field.name, level)
                     self.emit('for (auto &a : x.m_%s->get_scope()) {' % field.name, level)
-                    self.emit('    if (ASR::is_a<ASR::Function_t>(*a.second)) {', level)
+                    self.emit('    if (ASR::is_a<ASR::Function_t>(*a.second) || ', level)
+                    self.emit('        ASR::is_a<ASR::GenericProcedure_t>(*a.second)) {', level)
                     self.emit('        continue;', level)
                     self.emit('    }', level)
                     self.emit('    self().write_string(a.first);', level)
                     self.emit('    this->visit_symbol(*a.second);', level)
                     self.emit('}', level)
                     self.emit('for (auto &a : x.m_%s->get_scope()) {' % field.name, level)
-                    self.emit('    if (ASR::is_a<ASR::Function_t>(*a.second)) {', level)
+                    self.emit('    if (ASR::is_a<ASR::Function_t>(*a.second) || ', level)
+                    self.emit('        ASR::is_a<ASR::GenericProcedure_t>(*a.second)) {', level)
                     self.emit('        self().write_string(a.first);', level)
                     self.emit('        this->visit_symbol(*a.second);', level)
                     self.emit('    }', level)
@@ -2224,8 +2226,8 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             if f.opt:
                                 lines.append("if (self().read_bool()) {")
                             if f.type == "symbol":
-                                if name == "ExternalSymbol":
-                                    lines.append("// We skip the symbol for ExternalSymbol")
+                                if name == "ExternalSymbol" or name == "StructInstanceMember":
+                                    lines.append("// We skip the symbol for %s" % name)
                                     lines.append("m_%s = nullptr;" % (f.name))
                                 else:
                                     lines.append("m_%s = self().read_symbol();" % (f.name))

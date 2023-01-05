@@ -296,6 +296,29 @@ public:
 
 };
 
+class FixStructInstanceMemberSymbolsVisitor : public BaseWalkVisitor<FixStructInstanceMemberSymbolsVisitor>
+{
+
+public:
+    FixStructInstanceMemberSymbolsVisitor() {}
+
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+        ASR::ttype_t* struct_type = ASRUtils::expr_type(x.m_v);
+        ASR::symbol_t* struct_sym = nullptr;
+        if( ASR::is_a<ASR::Struct_t>(*struct_type) ) {
+            struct_sym = ASR::down_cast<ASR::Struct_t>(struct_type)->m_derived_type;
+        } else if( ASR::is_a<ASR::Class_t>(*struct_type) ) {
+            struct_sym = ASR::down_cast<ASR::Class_t>(struct_type)->m_class_type;
+        }
+        LFORTRAN_ASSERT(struct_sym != nullptr);
+        ASR::StructType_t* struct_type_sym = ASR::down_cast<ASR::StructType_t>(
+            ASRUtils::symbol_get_past_external(struct_sym));
+        ASR::StructInstanceMember_t& xx = const_cast<ASR::StructInstanceMember_t&>(x);
+        xx.m_m = struct_type_sym->m_symtab->resolve_symbol(std::string(x.m_name));
+    }
+
+};
+
 } // namespace ASR
 
 // Fix ExternalSymbol's symbol to point to symbols from `external_symtab`
@@ -303,6 +326,11 @@ public:
 void fix_external_symbols(ASR::TranslationUnit_t &unit,
         SymbolTable &external_symtab) {
     ASR::FixExternalSymbolsVisitor e(external_symtab);
+    e.visit_TranslationUnit(unit);
+}
+
+void fix_struct_instance_member_symbols(ASR::TranslationUnit_t &unit) {
+    ASR::FixStructInstanceMemberSymbolsVisitor e;
     e.visit_TranslationUnit(unit);
 }
 

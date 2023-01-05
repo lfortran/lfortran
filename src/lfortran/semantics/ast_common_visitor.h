@@ -1696,7 +1696,7 @@ public:
         ASR::expr_t* v_Var = nullptr;
         if( v_expr ) {
             v_Var = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
-                        al, v_expr->base.loc, v_expr, v,
+                        al, v_expr->base.loc, v_expr, v, ASRUtils::symbol_name(v),
                         ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)),
                         nullptr));
         } else {
@@ -4065,13 +4065,14 @@ public:
                         to_lower(x_m_member[i].m_name), to_lower(x_m_member[i - 1].m_name),
                         scope);
                 tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp),
-                                                       tmp2->m_m, tmp2->m_type, nullptr);
+                                                       tmp2->m_m, ASRUtils::symbol_name(tmp2->m_m),
+                                                       tmp2->m_type, nullptr);
             }
             i = x_n_member - 1;
             tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc, to_lower(x_m_id),
                         to_lower(x_m_member[i].m_name), scope);
             tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2->m_m,
-                                                   tmp2->m_type, nullptr);
+                                                   ASRUtils::symbol_name(tmp2->m_m), tmp2->m_type, nullptr);
         }
     }
 

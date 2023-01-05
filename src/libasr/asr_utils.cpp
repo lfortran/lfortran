@@ -223,6 +223,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
 
     // Fix all external symbols
     fix_external_symbols(*tu, *symtab);
+    fix_struct_instance_member_symbols(*tu);
     PassUtils::UpdateDependenciesVisitor v(al);
     v.visit_TranslationUnit(*tu);
     if (run_verify) {
@@ -372,7 +373,8 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             value = expr_value(v->m_symbolic_value);
         }
     }
-    return ASR::make_StructInstanceMember_t(al, loc, LFortran::ASRUtils::EXPR(v_var), member, member_type, value);
+    return ASR::make_StructInstanceMember_t(al, loc, LFortran::ASRUtils::EXPR(v_var),
+            member, ASRUtils::symbol_name(member), member_type, value);
 }
 
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,

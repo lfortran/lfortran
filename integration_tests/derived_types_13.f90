@@ -103,5 +103,4 @@ elemental function new_toml_time(hour, minute, second, millisec, zone) &
    if (present(zone)) self%zone = zone
 end function new_toml_time
 
-
 end module tomlf_datetime
