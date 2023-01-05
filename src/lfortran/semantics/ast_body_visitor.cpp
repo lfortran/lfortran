@@ -1614,10 +1614,10 @@ public:
             throw SemanticError("ArrayInitalizer expressions can only be assigned array references", x.base.base.loc);
         }
         if( overloaded_stmt == nullptr ) {
-            if (target->type == ASR::exprType::Var ||
+            if ((target->type == ASR::exprType::Var ||
                 target->type == ASR::exprType::ArrayItem ||
-                target->type == ASR::exprType::ArraySection) {
-
+                target->type == ASR::exprType::ArraySection) &&
+                !ASRUtils::check_equal_type(target_type, value_type)) {
                 ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                                         value_type, target_type);
 
