@@ -3255,7 +3255,8 @@ public:
         }
         if (compiler_options.implicit_interface
                 && ASR::is_a<ASR::Variable_t>(*v)
-                && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))) {
+                && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))
+                && (!ASRUtils::is_character(*ASR::down_cast<ASR::Variable_t>(v)->m_type))) {
             // If implicit interface is allowed, we have to handle the
             // following case here:
             // real :: x
