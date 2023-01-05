@@ -1,9 +1,0 @@
-semantic error: Expression in Case selector can only be an Integer
- --> tests/../integration_tests/case_07.f90:5:5 - 6:48
-  |
-5 |        case ('a' : 'j')
-  |        ^^^^^^^^^^^^^^^^...
-...
-  |
-6 |            print *, 'one of the first ten letters'
-  | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

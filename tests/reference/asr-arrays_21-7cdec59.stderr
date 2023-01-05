@@ -1,5 +1,0 @@
-semantic error: Function 'maxloc' not found or not implemented yet (if it is intrinsic)
- --> tests/../integration_tests/arrays_21.f90:7:13
-  |
-7 |    print *, maxloc(i6)              ! writes 5
-  |             ^^^^^^^^^^ 
