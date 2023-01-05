@@ -3409,8 +3409,7 @@ public:
         if (!intrinsic_procedures.is_intrinsic(remote_sym)) {
             if (compiler_options.implicit_interface) {
                 return nullptr;
-            }
-            else{
+            } else {
                 throw SemanticError("Function '" + remote_sym + "' not found"
                     " or not implemented yet (if it is intrinsic)",
                     loc);

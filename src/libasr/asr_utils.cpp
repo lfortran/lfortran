@@ -509,17 +509,19 @@ bool is_derived_type_similar(ASR::StructType_t* a, ASR::StructType_t* b) {
         std::string(b->m_name) == "~abstract_type");
 }
 
-bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
+bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b) {
     // TODO: If anyone of the input or argument is derived type then
     // add support for checking member wise types and do not compare
-    // directly. From stdlib_string len(pattern) error.
-    if (a.type == b.type) {
+    // directly. From stdlib_string len(pattern) error
+    a = ASRUtils::type_get_past_pointer(a);
+    b = ASRUtils::type_get_past_pointer(b);
+    if (a->type == b->type) {
         // TODO: check dims
         // TODO: check all types
-        switch (a.type) {
+        switch (a->type) {
             case (ASR::ttypeType::Integer) : {
-                ASR::Integer_t *a2 = ASR::down_cast<ASR::Integer_t>(&a);
-                ASR::Integer_t *b2 = ASR::down_cast<ASR::Integer_t>(&b);
+                ASR::Integer_t *a2 = ASR::down_cast<ASR::Integer_t>(a);
+                ASR::Integer_t *b2 = ASR::down_cast<ASR::Integer_t>(b);
                 if (a2->m_kind == b2->m_kind) {
                     return true;
                 } else {
@@ -527,9 +529,12 @@ bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
                 }
                 break;
             }
+            case ASR::ttypeType::CPtr: {
+                return true;
+            }
             case (ASR::ttypeType::Real) : {
-                ASR::Real_t *a2 = ASR::down_cast<ASR::Real_t>(&a);
-                ASR::Real_t *b2 = ASR::down_cast<ASR::Real_t>(&b);
+                ASR::Real_t *a2 = ASR::down_cast<ASR::Real_t>(a);
+                ASR::Real_t *b2 = ASR::down_cast<ASR::Real_t>(b);
                 if (a2->m_kind == b2->m_kind) {
                     return true;
                 } else {
@@ -538,8 +543,8 @@ bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
                 break;
             }
             case (ASR::ttypeType::Complex) : {
-                ASR::Complex_t *a2 = ASR::down_cast<ASR::Complex_t>(&a);
-                ASR::Complex_t *b2 = ASR::down_cast<ASR::Complex_t>(&b);
+                ASR::Complex_t *a2 = ASR::down_cast<ASR::Complex_t>(a);
+                ASR::Complex_t *b2 = ASR::down_cast<ASR::Complex_t>(b);
                 if (a2->m_kind == b2->m_kind) {
                     return true;
                 } else {
@@ -548,8 +553,8 @@ bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
                 break;
             }
             case (ASR::ttypeType::Logical) : {
-                ASR::Logical_t *a2 = ASR::down_cast<ASR::Logical_t>(&a);
-                ASR::Logical_t *b2 = ASR::down_cast<ASR::Logical_t>(&b);
+                ASR::Logical_t *a2 = ASR::down_cast<ASR::Logical_t>(a);
+                ASR::Logical_t *b2 = ASR::down_cast<ASR::Logical_t>(b);
                 if (a2->m_kind == b2->m_kind) {
                     return true;
                 } else {
@@ -558,8 +563,8 @@ bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
                 break;
             }
             case (ASR::ttypeType::Character) : {
-                ASR::Character_t *a2 = ASR::down_cast<ASR::Character_t>(&a);
-                ASR::Character_t *b2 = ASR::down_cast<ASR::Character_t>(&b);
+                ASR::Character_t *a2 = ASR::down_cast<ASR::Character_t>(a);
+                ASR::Character_t *b2 = ASR::down_cast<ASR::Character_t>(b);
                 if (a2->m_kind == b2->m_kind) {
                     return true;
                 } else {
@@ -568,13 +573,13 @@ bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
                 break;
             }
             case (ASR::ttypeType::List) : {
-                ASR::List_t *a2 = ASR::down_cast<ASR::List_t>(&a);
-                ASR::List_t *b2 = ASR::down_cast<ASR::List_t>(&b);
-                return types_equal(*a2->m_type, *b2->m_type);
+                ASR::List_t *a2 = ASR::down_cast<ASR::List_t>(a);
+                ASR::List_t *b2 = ASR::down_cast<ASR::List_t>(b);
+                return types_equal(a2->m_type, b2->m_type);
             }
             case (ASR::ttypeType::Struct) : {
-                ASR::Struct_t *a2 = ASR::down_cast<ASR::Struct_t>(&a);
-                ASR::Struct_t *b2 = ASR::down_cast<ASR::Struct_t>(&b);
+                ASR::Struct_t *a2 = ASR::down_cast<ASR::Struct_t>(a);
+                ASR::Struct_t *b2 = ASR::down_cast<ASR::Struct_t>(b);
                 ASR::StructType_t *a2_type = ASR::down_cast<ASR::StructType_t>(
                                                 ASRUtils::symbol_get_past_external(
                                                     a2->m_derived_type));
@@ -584,8 +589,8 @@ bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
                 return a2_type == b2_type;
             }
             case (ASR::ttypeType::Class) : {
-                ASR::Class_t *a2 = ASR::down_cast<ASR::Class_t>(&a);
-                ASR::Class_t *b2 = ASR::down_cast<ASR::Class_t>(&b);
+                ASR::Class_t *a2 = ASR::down_cast<ASR::Class_t>(a);
+                ASR::Class_t *b2 = ASR::down_cast<ASR::Class_t>(b);
                 ASR::symbol_t* a2_typesym = ASRUtils::symbol_get_past_external(a2->m_class_type);
                 ASR::symbol_t* b2_typesym = ASRUtils::symbol_get_past_external(b2->m_class_type);
                 if( a2_typesym->type != b2_typesym->type ) {
@@ -604,10 +609,10 @@ bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
             }
             default : return false;
         }
-    } else if( a.type == ASR::ttypeType::Struct &&
-               b.type == ASR::ttypeType::Class ) {
-        ASR::Struct_t *a2 = ASR::down_cast<ASR::Struct_t>(&a);
-        ASR::Class_t *b2 = ASR::down_cast<ASR::Class_t>(&b);
+    } else if( a->type == ASR::ttypeType::Struct &&
+               b->type == ASR::ttypeType::Class ) {
+        ASR::Struct_t *a2 = ASR::down_cast<ASR::Struct_t>(a);
+        ASR::Class_t *b2 = ASR::down_cast<ASR::Class_t>(b);
         ASR::symbol_t* a2_typesym = ASRUtils::symbol_get_past_external(a2->m_derived_type);
         ASR::symbol_t* b2_typesym = ASRUtils::symbol_get_past_external(b2->m_class_type);
         if( a2_typesym->type != b2_typesym->type ) {
@@ -622,10 +627,10 @@ bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
             ASR::StructType_t *b2_type = ASR::down_cast<ASR::StructType_t>(b2_typesym);
             return is_derived_type_similar(a2_type, b2_type);
         }
-    } else if( a.type == ASR::ttypeType::Class &&
-               b.type == ASR::ttypeType::Struct ) {
-        ASR::Class_t *a2 = ASR::down_cast<ASR::Class_t>(&a);
-        ASR::Struct_t *b2 = ASR::down_cast<ASR::Struct_t>(&b);
+    } else if( a->type == ASR::ttypeType::Class &&
+               b->type == ASR::ttypeType::Struct ) {
+        ASR::Class_t *a2 = ASR::down_cast<ASR::Class_t>(a);
+        ASR::Struct_t *b2 = ASR::down_cast<ASR::Struct_t>(b);
         ASR::symbol_t* a2_typesym = ASRUtils::symbol_get_past_external(a2->m_class_type);
         ASR::symbol_t* b2_typesym = ASRUtils::symbol_get_past_external(b2->m_derived_type);
         if( a2_typesym->type != b2_typesym->type ) {
@@ -654,8 +659,8 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
     if( subrout->n_args == 2 ) {
         ASR::ttype_t* target_arg_type = ASRUtils::expr_type(subrout->m_args[0]);
         ASR::ttype_t* value_arg_type = ASRUtils::expr_type(subrout->m_args[1]);
-        if( ASRUtils::types_equal(*target_arg_type, *target_type) &&
-            ASRUtils::types_equal(*value_arg_type, *value_type) ) {
+        if( ASRUtils::types_equal(target_arg_type, target_type) &&
+            ASRUtils::types_equal(value_arg_type, value_type) ) {
             std::string arg0_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[0])->m_v);
             std::string arg1_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[1])->m_v);
             if( pass_arg != nullptr ) {
@@ -899,7 +904,7 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
             ASR::Variable_t *v = LFortran::ASRUtils::EXPR2VAR(sub.m_args[i]);
             ASR::ttype_t *arg1 = LFortran::ASRUtils::expr_type(args[i].m_value);
             ASR::ttype_t *arg2 = v->m_type;
-            if (!types_equal(*arg1, *arg2)) {
+            if (!types_equal(arg1, arg2)) {
                 return false;
             }
         }
