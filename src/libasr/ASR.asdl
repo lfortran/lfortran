@@ -107,8 +107,8 @@ symbol
         intent intent, expr? symbolic_value, expr? value, storage_type storage, ttype type,
         abi abi, access access, presence presence, bool value_attr)
     | ClassType(symbol_table symtab, identifier name, abi abi, access access)
-    | ClassProcedure(symbol_table parent_symtab, identifier name, identifier proc_name,
-        symbol proc, abi abi)
+    | ClassProcedure(symbol_table parent_symtab, identifier name, identifier? self_argument,
+        identifier proc_name, symbol proc, abi abi)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
 
@@ -207,6 +207,7 @@ stmt
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
     | ListAppend(expr a, expr ele)
     | AssociateBlockCall(symbol m)
+    | SelectType(type_stmt* body, stmt* default)
     | CPtrToPointer(expr cptr, expr ptr, expr? shape)
     | BlockCall(int label, symbol m)
     | SetInsert(expr a, expr ele)
@@ -313,6 +314,9 @@ expr
 
     | SizeOfType(ttype arg, ttype type, expr? value)
 
+    | PointerNullConstant(ttype type)
+    | PointerAssociated(expr ptr, expr? tgt, ttype type, expr? value)
+
 
 -- `len` in Character:
 -- >=0 ... the length of the string, known at compile time
@@ -405,6 +409,8 @@ array_index = (expr? left, expr? right, expr? step)
 do_loop_head = (expr? v, expr? start, expr? end, expr? increment)
 
 case_stmt = CaseStmt(expr* test, stmt* body) | CaseStmt_Range(expr? start, expr? end, stmt* body)
+
+type_stmt = TypeStmt(symbol sym, stmt* body)
 
 enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
 

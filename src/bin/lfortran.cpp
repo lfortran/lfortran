@@ -628,7 +628,7 @@ int emit_asr(const std::string &infile,
 
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     if (compiler_options.json) {
-        std::cout << LFortran::pickle_json(*asr) << std::endl;
+        std::cout << LFortran::pickle_json(*asr, lm) << std::endl;
     } else {
         std::cout << LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
                 with_intrinsic_modules) << std::endl;
@@ -1669,7 +1669,7 @@ int main(int argc, char *argv[])
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
         app.add_flag("--print-targets", print_targets, "Print the registered targets");
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
-        app.add_flag("--allow-implicit-interface", compiler_options.implicit_interface, "Allow implicit interface");
+        app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface");
 
 
         if( compiler_options.fast ) {

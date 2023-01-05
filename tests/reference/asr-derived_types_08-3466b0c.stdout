@@ -431,6 +431,7 @@
                                                 (ClassProcedure
                                                     3
                                                     initialize
+                                                    ()
                                                     initialize_subrout
                                                     2 initialize_subrout
                                                     Source

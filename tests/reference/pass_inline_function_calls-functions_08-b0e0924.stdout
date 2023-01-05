@@ -404,88 +404,7 @@
                                     f_real
                                     [f]
                                     [(Var 5 a)]
-                                    [(=
-                                        (Var 5 a_f)
-                                        (RealConstant
-                                            1.000000
-                                            (Real 4 [])
-                                        )
-                                        ()
-                                    )
-                                    (=
-                                        (Var 5 x_f)
-                                        (Cast
-                                            (IntegerConstant 2 (Integer 4 []))
-                                            IntegerToReal
-                                            (Real 4 [])
-                                            (RealConstant
-                                                2.000000
-                                                (Real 4 [])
-                                            )
-                                        )
-                                        ()
-                                    )
-                                    (=
-                                        (Var 5 a_f_real_f)
-                                        (RealConstant
-                                            0.000000
-                                            (Real 4 [])
-                                        )
-                                        ()
-                                    )
-                                    (If
-                                        (RealCompare
-                                            (Var 5 a_f_real_f)
-                                            Eq
-                                            (RealConstant
-                                                0.000000
-                                                (Real 4 [])
-                                            )
-                                            (Logical 4 [])
-                                            ()
-                                        )
-                                        [(=
-                                            (Var 5 b_f_real_f)
-                                            (RealConstant
-                                                2.000000
-                                                (Real 4 [])
-                                            )
-                                            ()
-                                        )]
-                                        [(=
-                                            (Var 5 b_f_real_f)
-                                            (RealBinOp
-                                                (Var 5 a_f_real_f)
-                                                Add
-                                                (FunctionCall
-                                                    3 f
-                                                    ()
-                                                    [((RealConstant
-                                                        1.000000
-                                                        (Real 4 [])
-                                                    ))]
-                                                    (Real 4 [])
-                                                    ()
-                                                    ()
-                                                )
-                                                (Real 4 [])
-                                                ()
-                                            )
-                                            ()
-                                        )]
-                                    )
-                                    (=
-                                        (Var 5 b_f)
-                                        (RealBinOp
-                                            (Var 5 a_f)
-                                            Add
-                                            (Var 5 b_f_real_f)
-                                            (Real 4 [])
-                                            ()
-                                        )
-                                        ()
-                                    )
-                                    (If
+                                    [(If
                                         (RealCompare
                                             (Var 5 a)
                                             Eq
@@ -505,6 +424,87 @@
                                             ()
                                         )]
                                         [(=
+                                            (Var 5 a_f)
+                                            (RealConstant
+                                                1.000000
+                                                (Real 4 [])
+                                            )
+                                            ()
+                                        )
+                                        (=
+                                            (Var 5 x_f)
+                                            (Cast
+                                                (IntegerConstant 2 (Integer 4 []))
+                                                IntegerToReal
+                                                (Real 4 [])
+                                                (RealConstant
+                                                    2.000000
+                                                    (Real 4 [])
+                                                )
+                                            )
+                                            ()
+                                        )
+                                        (=
+                                            (Var 5 a_f_real_f)
+                                            (RealConstant
+                                                0.000000
+                                                (Real 4 [])
+                                            )
+                                            ()
+                                        )
+                                        (If
+                                            (RealCompare
+                                                (Var 5 a_f_real_f)
+                                                Eq
+                                                (RealConstant
+                                                    0.000000
+                                                    (Real 4 [])
+                                                )
+                                                (Logical 4 [])
+                                                ()
+                                            )
+                                            [(=
+                                                (Var 5 b_f_real_f)
+                                                (RealConstant
+                                                    2.000000
+                                                    (Real 4 [])
+                                                )
+                                                ()
+                                            )]
+                                            [(=
+                                                (Var 5 b_f_real_f)
+                                                (RealBinOp
+                                                    (Var 5 a_f_real_f)
+                                                    Add
+                                                    (FunctionCall
+                                                        3 f
+                                                        ()
+                                                        [((RealConstant
+                                                            1.000000
+                                                            (Real 4 [])
+                                                        ))]
+                                                        (Real 4 [])
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (Real 4 [])
+                                                    ()
+                                                )
+                                                ()
+                                            )]
+                                        )
+                                        (=
+                                            (Var 5 b_f)
+                                            (RealBinOp
+                                                (Var 5 a_f)
+                                                Add
+                                                (Var 5 b_f_real_f)
+                                                (Real 4 [])
+                                                ()
+                                            )
+                                            ()
+                                        )
+                                        (=
                                             (Var 5 b)
                                             (RealBinOp
                                                 (Var 5 a)

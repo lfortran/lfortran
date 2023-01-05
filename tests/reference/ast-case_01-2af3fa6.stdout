@@ -20,6 +20,12 @@
             []
             ()
             None
+            ())
+            (out
+            []
+            []
+            ()
+            None
             ())]
             ()
         )]
@@ -42,7 +48,13 @@
                     1
                 )]
                 ()
-                [(Print
+                [(=
+                    0
+                    out
+                    10
+                    ()
+                )
+                (Print
                     0
                     ()
                     [(String
@@ -56,7 +68,13 @@
                     2
                 )]
                 ()
-                [(Print
+                [(=
+                    0
+                    out
+                    20
+                    ()
+                )
+                (Print
                     0
                     ()
                     [(String
@@ -70,7 +88,13 @@
                     3
                 )]
                 ()
-                [(Print
+                [(=
+                    0
+                    out
+                    30
+                    ()
+                )
+                (Print
                     0
                     ()
                     [(String
@@ -84,7 +108,13 @@
                     4
                 )]
                 ()
-                [(Print
+                [(=
+                    0
+                    out
+                    40
+                    ()
+                )
+                (Print
                     0
                     ()
                     [(String
@@ -93,6 +123,25 @@
                     ()
                 )]
             )]
+            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+        )
+        (If
+            0
+            ()
+            (/= out 40)
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
             ()
             (TriviaNode
                 []
@@ -109,7 +158,13 @@
                     1
                 )]
                 ()
-                [(Print
+                [(=
+                    0
+                    out
+                    11
+                    ()
+                )
+                (Print
                     0
                     ()
                     [(String
@@ -129,7 +184,13 @@
                     4
                 )]
                 ()
-                [(Print
+                [(=
+                    0
+                    out
+                    22
+                    ()
+                )
+                (Print
                     0
                     ()
                     [(String
@@ -138,6 +199,25 @@
                     ()
                 )]
             )]
+            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+        )
+        (If
+            0
+            ()
+            (/= out 22)
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
             ()
             (TriviaNode
                 []

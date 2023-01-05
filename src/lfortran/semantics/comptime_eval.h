@@ -19,17 +19,25 @@ struct IntrinsicProceduresAsASRNodes {
     private:
 
         std::set<std::string> intrinsics_present_in_ASR;
+        std::set<std::string> kind_based_intrinsics;
 
     public:
 
         IntrinsicProceduresAsASRNodes() {
             intrinsics_present_in_ASR = {"size", "lbound", "ubound",
                 "transpose", "matmul", "pack", "transfer", "cmplx",
-                "dcmplx", "reshape", "ichar", "iachar", "maxloc"};
+                "dcmplx", "reshape", "ichar", "iachar", "maxloc",
+                "null", "associated"};
+
+            kind_based_intrinsics = {"scan", "verify"};
         }
 
         bool is_intrinsic_present_in_ASR(std::string& name) {
             return intrinsics_present_in_ASR.find(name) != intrinsics_present_in_ASR.end();
+        }
+
+        bool is_kind_based_selection_required(std::string& name) {
+            return kind_based_intrinsics.find(name) != kind_based_intrinsics.end();
         }
 
 };
@@ -74,6 +82,10 @@ struct IntrinsicProcedures {
             {"any", {m_builtin, &not_implemented, false}},
             {"is_iostat_eor", {m_builtin, &not_implemented, false}},
             {"is_iostat_end", {m_builtin, &not_implemented, false}},
+            {"get_command_argument", {m_builtin, &not_implemented, false}},
+            {"command_argument_count", {m_builtin, &not_implemented, false}},
+            {"execute_command_line", {m_builtin, &not_implemented, false}},
+            {"get_environment_variable", {m_builtin, &not_implemented, false}},
 
             // Require evaluated arguments
             {"aimag", {m_math, &eval_aimag, true}},
@@ -111,6 +123,7 @@ struct IntrinsicProcedures {
             {"erf", {m_math, &eval_erf, true}},
             {"erfc", {m_math, &eval_erfc, true}},
             {"abs", {m_math, &eval_abs, true}},
+            {"iabs", {m_math, &eval_abs, true}},
             {"sqrt", {m_math, &eval_sqrt, true}},
             {"dsqrt", {m_math, &eval_dsqrt, true}},
             {"datan", {m_math, &eval_datan, true}},
@@ -169,6 +182,10 @@ struct IntrinsicProcedures {
             {"len_adjustl", {m_string, &not_implemented, false}},
             {"repeat", {m_string, &not_implemented, false}},
             {"new_line", {m_string, &eval_new_line, false}},
+            {"scan_kind4", {m_string, &not_implemented, false}},
+            {"scan_kind8", {m_string, &not_implemented, false}},
+            {"verify_kind4", {m_string, &not_implemented, false}},
+            {"verify_kind8", {m_string, &not_implemented, false}},
 
             // Subroutines
             {"cpu_time", {m_math, &not_implemented, false}},
@@ -468,10 +485,9 @@ struct IntrinsicProcedures {
     static ASR::expr_t *eval_2args_ri(Allocator &al, const Location &loc,
             Vec<ASR::expr_t*> &args,
             eval2_callback_double eval2_double,
-            eval2_callback_int eval2_int,
-            bool is_variadic=false) {
+            eval2_callback_int eval2_int) {
         LFORTRAN_ASSERT(ASRUtils::all_args_evaluated(args));
-        if (args.size() != 2 && !is_variadic) {
+        if (args.size() != 2) {
             throw SemanticError("This intrinsic function accepts exactly 2 arguments", loc);
         }
         ASR::expr_t* trig_arg1 = args[0];
@@ -627,22 +643,19 @@ TRIG2(sqrt, dsqrt)
     static ASR::expr_t *eval_min(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         return eval_2args_ri(al, loc, args,
             &IntrinsicProcedures::lfortran_min,
-            &IntrinsicProcedures::lfortran_min_i,
-        true);
+            &IntrinsicProcedures::lfortran_min_i);
     }
 
     static ASR::expr_t *eval_dmin1(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         return eval_2args_ri(al, loc, args,
             &IntrinsicProcedures::lfortran_min,
-            &IntrinsicProcedures::lfortran_min_i,
-        true);
+            &IntrinsicProcedures::lfortran_min_i);
     }
 
     static ASR::expr_t *eval_min0(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         return eval_2args_ri(al, loc, args,
             &IntrinsicProcedures::lfortran_min,
-            &IntrinsicProcedures::lfortran_min_i,
-        true);
+            &IntrinsicProcedures::lfortran_min_i);
     }
 
     static double lfortran_max(double x, double y) {
@@ -656,22 +669,19 @@ TRIG2(sqrt, dsqrt)
     static ASR::expr_t *eval_max(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         return eval_2args_ri(al, loc, args,
             &IntrinsicProcedures::lfortran_max,
-            &IntrinsicProcedures::lfortran_max_i,
-            true);
+            &IntrinsicProcedures::lfortran_max_i);
     }
 
     static ASR::expr_t *eval_dmax1(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         return eval_2args_ri(al, loc, args,
             &IntrinsicProcedures::lfortran_max,
-            &IntrinsicProcedures::lfortran_max_i,
-            true);
+            &IntrinsicProcedures::lfortran_max_i);
     }
 
     static ASR::expr_t *eval_max0(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         return eval_2args_ri(al, loc, args,
             &IntrinsicProcedures::lfortran_max,
-            &IntrinsicProcedures::lfortran_max_i,
-            true);
+            &IntrinsicProcedures::lfortran_max_i);
     }
 
     static ASR::expr_t *eval_abs(Allocator &al, const Location &loc,

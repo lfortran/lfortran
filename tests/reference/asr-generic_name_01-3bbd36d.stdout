@@ -39,6 +39,7 @@
                                                 (ClassProcedure
                                                     3
                                                     integer_add_subrout
+                                                    ()
                                                     integer_add_subrout
                                                     2 integer_add_subrout
                                                     Source
@@ -62,6 +63,7 @@
                                                 (ClassProcedure
                                                     3
                                                     real_add_subrout
+                                                    ()
                                                     real_add_subrout
                                                     2 real_add_subrout
                                                     Source
