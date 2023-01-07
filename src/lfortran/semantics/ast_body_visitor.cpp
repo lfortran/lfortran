@@ -751,7 +751,7 @@ public:
             ASR::expr_t* tmp_stmt = LFortran::ASRUtils::EXPR(tmp);
             if( ASR::is_a<ASR::ArraySection_t>(*tmp_stmt) ) {
                 ASR::ArraySection_t* array_ref = ASR::down_cast<ASR::ArraySection_t>(tmp_stmt);
-                new_arg.m_a = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)ASRUtils::EXPR2VAR(array_ref->m_v));
+                new_arg.m_a = array_ref->m_v;
                 Vec<ASR::dimension_t> dims_vec;
                 dims_vec.reserve(al, array_ref->n_args);
                 for( size_t j = 0; j < array_ref->n_args; j++ ) {
@@ -772,7 +772,7 @@ public:
                 alloc_args_vec.push_back(al, new_arg);
             } else if( ASR::is_a<ASR::ArrayItem_t>(*tmp_stmt) ) {
                 ASR::ArrayItem_t* array_ref = ASR::down_cast<ASR::ArrayItem_t>(tmp_stmt);
-                new_arg.m_a = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)ASRUtils::EXPR2VAR(array_ref->m_v));
+                new_arg.m_a = array_ref->m_v;
                 Vec<ASR::dimension_t> dims_vec;
                 dims_vec.reserve(al, array_ref->n_args);
                 for( size_t j = 0; j < array_ref->n_args; j++ ) {
@@ -787,8 +787,7 @@ public:
                 new_arg.n_dims = dims_vec.size();
                 alloc_args_vec.push_back(al, new_arg);
             } else if( ASR::is_a<ASR::Var_t>(*tmp_stmt) ) {
-                ASR::Var_t* array_var = ASR::down_cast<ASR::Var_t>(tmp_stmt);
-                new_arg.m_a = array_var->m_v;
+                new_arg.m_a = tmp_stmt;
                 new_arg.m_dims = nullptr;
                 new_arg.n_dims = 0;
                 alloc_args_vec.push_back(al, new_arg);

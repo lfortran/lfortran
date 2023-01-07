@@ -1289,10 +1289,20 @@ public:
     void visit_Allocate(const ASR::Allocate_t& x) {
         for( size_t i = 0; i < x.n_args; i++ ) {
             ASR::alloc_arg_t curr_arg = x.m_args[i];
-            std::uint32_t h = get_hash((ASR::asr_t*)curr_arg.m_a);
+            ASR::symbol_t* tmp_sym = nullptr;
+            ASR::expr_t* tmp_expr = x.m_args[i].m_a;
+            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
+                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
+                tmp_sym = tmp_var->m_v;
+            } else {
+                throw CodeGenError("Cannot deallocate variables in expression " +
+                                    std::to_string(tmp_expr->type),
+                                    tmp_expr->base.loc);
+            }
+            std::uint32_t h = get_hash((ASR::asr_t*)tmp_sym);
             LFORTRAN_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
             llvm::Value* x_arr = llvm_symtab[h];
-            ASR::ttype_t* curr_arg_m_a_type = ASRUtils::symbol_type(curr_arg.m_a);
+            ASR::ttype_t* curr_arg_m_a_type = ASRUtils::symbol_type(tmp_sym);
             ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
                 curr_arg_m_a_type, curr_arg_m_a_type->base.loc);
             llvm::Type* llvm_data_type = get_type_from_ttype_t_util(asr_data_type);

@@ -398,7 +398,7 @@ cast_kind
 
 dimension = (expr? start, expr? length)
 
-alloc_arg = (symbol a, dimension* dims)
+alloc_arg = (expr a, dimension* dims)
 
 attribute = Attribute(identifier name, attribute_arg *args)
 

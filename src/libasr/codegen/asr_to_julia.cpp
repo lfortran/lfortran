@@ -920,8 +920,18 @@ public:
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string out, _dims;
         for (size_t i = 0; i < x.n_args; i++) {
+            ASR::symbol_t* tmp_sym = nullptr;
+            ASR::expr_t* tmp_expr = x.m_args[i].m_a;
+            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
+                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
+                tmp_sym = tmp_var->m_v;
+            } else {
+                throw CodeGenError("Cannot deallocate variables in expression " +
+                                    std::to_string(tmp_expr->type),
+                                    tmp_expr->base.loc);
+            }
             const ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
-                ASRUtils::symbol_get_past_external(x.m_args[i].m_a));
+                ASRUtils::symbol_get_past_external(tmp_sym));
 
             // Skip pointer allocation
             if (!ASRUtils::is_array(v->m_type))

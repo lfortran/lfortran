@@ -52,11 +52,31 @@ module tomlf_structure_vector
    use tomlf_type_value, only : toml_value
    implicit none
 
-
    type :: toml_node
 
       class(toml_value), allocatable :: val
 
    end type toml_node
+
+   type :: toml_vector
+
+      integer :: n = 0
+      type(toml_node), allocatable :: lst(:)
+
+   end type toml_vector
+
+contains
+
+    subroutine new_vector(self, n)
+        type(toml_vector), intent(out) :: self
+        integer, intent(in), optional :: n
+
+        self%n = 0
+        if (present(n)) then
+            allocate(self%lst(min(1, n)))
+        else
+            allocate(self%lst(initial_size))
+        end if
+    end subroutine new_vector
 
 end module tomlf_structure_vector
