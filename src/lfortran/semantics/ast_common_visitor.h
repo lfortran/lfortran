@@ -3217,7 +3217,8 @@ public:
         ASR::expr_t *v_expr = nullptr;
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
-        if (x.n_member == 1) {
+        std::cout<<"x.n_member: "<<x.n_member<<std::endl;
+        if (x.n_member >= 1) {
             visit_NameUtil(x.m_member, x.n_member - 1,
                 x.m_member[x.n_member - 1].m_name, x.base.base.loc);
             v_expr = ASRUtils::EXPR(tmp);

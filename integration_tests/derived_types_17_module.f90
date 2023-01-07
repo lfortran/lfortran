@@ -5,6 +5,7 @@ module tomlf_type_value
       character(len=:), allocatable :: key
    contains
       procedure(destroy), deferred :: destroy
+      procedure :: match_key
    end type toml_value
 
    abstract interface
@@ -13,6 +14,20 @@ module tomlf_type_value
          class(toml_value), intent(inout) :: self
       end subroutine destroy
    end interface
+
+contains
+
+    pure function match_key(self, key) result(match)
+        class(toml_value), intent(in) :: self
+        character(len=*), intent(in) :: key
+        logical :: match
+
+        if (allocated(self%key)) then
+            match = key == self%key
+        else
+            match = .false.
+        end if
+    end function match_key
 
 end module
 
@@ -74,9 +89,27 @@ contains
         self%n = 0
         if (present(n)) then
             allocate(self%lst(min(1, n)))
-        else
-            allocate(self%lst(initial_size))
         end if
     end subroutine new_vector
+
+    subroutine find(self, key, ptr)
+
+        class(toml_vector), intent(inout), target :: self
+        character(len=*), intent(in) :: key
+        class(toml_value), pointer, intent(out) :: ptr
+        integer :: i
+
+        nullify(ptr)
+
+        do i = 1, self%n
+            if (allocated(self%lst(i)%val)) then
+                if (self%lst(i)%val%match_key(key)) then
+                    ptr => self%lst(i)%val
+                    exit
+                end if
+            end if
+        end do
+
+    end subroutine find
 
 end module tomlf_structure_vector
