@@ -3142,7 +3142,7 @@ public:
                 ASR::down_cast<ASR::symbol_t>(return_var)));
         }
 
-        tmp = ASR::make_Function_t(
+        tmp = ASRUtils::make_Function_t_util(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, sym_name),

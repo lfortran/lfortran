@@ -84,7 +84,8 @@ symbol
         stmt* body)
     | Module(symbol_table symtab, identifier name, identifier* dependencies,
         bool loaded_from_mod, bool intrinsic)
-    | Function(symbol_table symtab, identifier name, identifier* dependencies, expr* args, stmt* body,
+    | Function(symbol_table symtab, identifier name, ttype function_signature,
+        identifier* dependencies, expr* args, stmt* body,
         expr? return_var, abi abi, access access, deftype deftype,
         string? bindc_name, bool elemental, bool pure, bool module, bool inline,
         bool static, ttype* type_params, symbol* restrictions, bool is_restriction)
@@ -354,6 +355,10 @@ ttype
     | Const(ttype type)
     | CPtr()
     | TypeParameter(identifier param, dimension* dims)
+    | FunctionType(ttype* arg_types, ttype? return_var_type,
+        abi abi, deftype deftype, string? bindc_name, bool elemental,
+        bool pure, bool module, bool inline, bool static, ttype* type_params,
+        symbol* restrictions, bool is_restriction)
 
 restriction_arg = RestrictionArg(identifier restriction_name, symbol restriction_func)
 

@@ -122,7 +122,7 @@ public:
             deps_vec.push_back(al, s2c(al, dep));
         }
 
-        ASR::asr_t *result = ASR::make_Function_t(
+        ASR::asr_t *result = ASRUtils::make_Function_t_util(
             al, x->base.base.loc,
             current_scope, s2c(al, new_func_name),
             deps_vec.p, deps_vec.size(),

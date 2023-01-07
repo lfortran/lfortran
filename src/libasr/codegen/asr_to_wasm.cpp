@@ -173,7 +173,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             params.push_back(m_al, ASRUtils::EXPR(var));
         }
 
-        auto func = ASR::make_Function_t(
+        auto func = ASRUtils::make_Function_t_util(
             m_al, global_scope_loc, global_scope, s2c(m_al, import_func.name),
             nullptr, 0, params.data(), params.size(), nullptr, 0, nullptr,
             ASR::abiType::Source, ASR::accessType::Public,
@@ -350,7 +350,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         declare_all_functions(*x.m_symtab);
 
         // Generate main program code
-        auto main_func = ASR::make_Function_t(
+        auto main_func = ASRUtils::make_Function_t_util(
             m_al, x.base.base.loc, x.m_symtab, s2c(m_al, "_lcompilers_main"),
             nullptr, 0, nullptr, 0, x.m_body, x.n_body, nullptr,
             ASR::abiType::Source, ASR::accessType::Public,
