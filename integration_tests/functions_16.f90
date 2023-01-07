@@ -2,7 +2,7 @@ module tomlf_utils_sort
    implicit none
 
    type :: toml_key
-      character(len=:) :: key
+      character(len=:), allocatable :: key
    end type toml_key
 
    interface sort

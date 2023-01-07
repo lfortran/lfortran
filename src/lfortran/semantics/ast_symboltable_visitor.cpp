@@ -1246,10 +1246,12 @@ public:
             Location loc;
             loc.first = 1;
             loc.last = 1;
-            ASR::StructType_t *clss = ASR::down_cast<ASR::StructType_t>(
-                current_scope->get_symbol(proc.first));
+            ASR::symbol_t* clss_sym = ASRUtils::symbol_get_past_external(
+                current_scope->resolve_symbol(proc.first));
+            ASR::StructType_t *clss = ASR::down_cast<ASR::StructType_t>(clss_sym);
+            SymbolTable* proc_scope = ASRUtils::symbol_parent_symtab(clss_sym);
             for (auto &pname : proc.second) {
-                ASR::symbol_t *proc_sym = current_scope->get_symbol(pname.second["procedure"]);
+                ASR::symbol_t *proc_sym = proc_scope->resolve_symbol(pname.second["procedure"]);
                 Str s;
                 s.from_str_view(pname.first);
                 char *name = s.c_str(al);
