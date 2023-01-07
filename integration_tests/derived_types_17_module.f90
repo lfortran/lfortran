@@ -35,13 +35,13 @@ subroutine destroy(self)
 
    class(toml_keyval), intent(inout) :: self
 
-!    if (allocated(self%key)) then
-!       deallocate(self%key)
-!    end if
+   if (allocated(self%key)) then
+      deallocate(self%key)
+   end if
 
-!    if (allocated(self%raw)) then
-!       deallocate(self%raw)
-!    end if
+   if (allocated(self%raw)) then
+      deallocate(self%raw)
+   end if
 
 end subroutine destroy
 

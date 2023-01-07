@@ -885,39 +885,46 @@ public:
                     del_syms.p, del_syms.size()));
     }
 
+    inline void check_for_deallocation(ASR::symbol_t* tmp_sym, const Location& loc) {
+        if( !ASR::is_a<ASR::Variable_t>(*
+            LFortran::ASRUtils::symbol_get_past_external(tmp_sym)) ) {
+            throw SemanticError("Only an allocatable variable symbol "
+                                "can be deallocated.", loc);
+        }
+
+        ASR::Variable_t* tmp_v = ASR::down_cast<ASR::Variable_t>(tmp_sym);
+        if( tmp_v->m_storage != ASR::storage_typeType::Allocatable &&
+            tmp_v->m_storage != ASR::storage_typeType::Save ) {
+            // If it is not allocatable, it can also be a pointer
+            if (ASR::is_a<ASR::Pointer_t>(*tmp_v->m_type)) {
+                // OK
+            } else {
+                throw SemanticError("Only an allocatable or a pointer variable "
+                                    "can be deallocated.", loc);
+            }
+        }
+    }
+
     void visit_Deallocate(const AST::Deallocate_t& x) {
-        Vec<ASR::symbol_t*> arg_vec;
+        Vec<ASR::expr_t*> arg_vec;
         arg_vec.reserve(al, x.n_args);
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*(x.m_args[i].m_end));
             ASR::expr_t* tmp_expr = LFortran::ASRUtils::EXPR(tmp);
-            if( tmp_expr->type != ASR::exprType::Var ) {
-                throw SemanticError("Only an allocatable variable symbol "
-                                    "can be deallocated.",
-                                    tmp_expr->base.loc);
-            } else {
+            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                 const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
                 ASR::symbol_t* tmp_sym = tmp_var->m_v;
-                if( LFortran::ASRUtils::symbol_get_past_external(tmp_sym)->type != ASR::symbolType::Variable ) {
-                    throw SemanticError("Only an allocatable variable symbol "
-                                        "can be deallocated.",
-                                        tmp_expr->base.loc);
-                } else {
-                    ASR::Variable_t* tmp_v = ASR::down_cast<ASR::Variable_t>(tmp_sym);
-                    if( tmp_v->m_storage != ASR::storage_typeType::Allocatable &&
-                        tmp_v->m_storage != ASR::storage_typeType::Save ) {
-                        // If it is not allocatable, it can also be a pointer
-                        if (ASR::is_a<ASR::Pointer_t>(*tmp_v->m_type)) {
-                            // OK
-                        } else {
-                            throw SemanticError("Only an allocatable or a pointer variable "
-                                                "can be deallocated.",
-                                                tmp_expr->base.loc);
-                        }
-                    }
-                    arg_vec.push_back(al, tmp_sym);
-                }
+                check_for_deallocation(tmp_sym, tmp_expr->base.loc);
+            } else if( ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) ) {
+                const ASR::StructInstanceMember_t* tmp_struct_ref = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
+                ASR::symbol_t* tmp_member = tmp_struct_ref->m_m;
+                check_for_deallocation(tmp_member, tmp_expr->base.loc);
+            } else {
+                throw SemanticError("Cannot deallocate variables in expression " +
+                                    std::to_string(tmp_expr->type),
+                                    tmp_expr->base.loc);
             }
+            arg_vec.push_back(al, tmp_expr);
         }
         tmp = ASR::make_ExplicitDeallocate_t(al, x.base.base.loc,
                                             arg_vec.p, arg_vec.size());

@@ -1333,8 +1333,7 @@ public:
         arr_descr->set_is_allocated_flag(tmp, 0);
     }
 
-    template <typename T>
-    void _Deallocate(const T& x) {
+    llvm::Function* _Deallocate() {
         std::string func_name = "_lfortran_free";
         llvm::Function *free_fn = module->getFunction(func_name);
         if (!free_fn) {
@@ -1345,28 +1344,41 @@ public:
             free_fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, func_name, *module);
         }
+        return free_fn;
+    }
+
+    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& x) {
+        llvm::Function* free_fn = _Deallocate();
         for( size_t i = 0; i < x.n_vars; i++ ) {
             const ASR::symbol_t* curr_obj = x.m_vars[i];
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                                     symbol_get_past_external(curr_obj));
             fetch_var(v);
-            if( x.class_type == ASR::stmtType::ImplicitDeallocate ) {
-                llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp);
-                create_if_else(cond, [=]() {
-                    call_lfortran_free(free_fn);
-                }, [](){});
-            } else {
+            llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp);
+            create_if_else(cond, [=]() {
                 call_lfortran_free(free_fn);
-            }
+            }, [](){});
         }
     }
 
-    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& x) {
-        _Deallocate<ASR::ImplicitDeallocate_t>(x);
-    }
-
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t& x) {
-        _Deallocate<ASR::ExplicitDeallocate_t>(x);
+        llvm::Function* free_fn = _Deallocate();
+        for( size_t i = 0; i < x.n_vars; i++ ) {
+            const ASR::expr_t* tmp_expr = x.m_vars[i];
+            ASR::symbol_t* curr_obj = nullptr;
+            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
+                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
+                curr_obj = tmp_var->m_v;
+            } else {
+                throw CodeGenError("Cannot deallocate variables in expression " +
+                                    std::to_string(tmp_expr->type),
+                                    tmp_expr->base.loc);
+            }
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                                    symbol_get_past_external(curr_obj));
+            fetch_var(v);
+            call_lfortran_free(free_fn);
+        }
     }
 
     void visit_ListConstant(const ASR::ListConstant_t& x) {
