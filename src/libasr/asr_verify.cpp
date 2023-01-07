@@ -322,7 +322,7 @@ public:
     }
 
     template <typename T>
-    void visit_StructTypeEnumTypeUnionType(const T &x) {
+    void visit_UserDefinedType(const T &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
@@ -356,6 +356,9 @@ public:
             } else if( ASR::is_a<ASR::Union_t>(*var_type) ) {
                 ASR::symbol_t* sym = ASR::down_cast<ASR::Union_t>(var_type)->m_union_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
+            } else if( ASR::is_a<ASR::Class_t>(*var_type) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Class_t>(var_type)->m_class_type;
+                aggregate_type_name = ASRUtils::symbol_name(sym);
             }
             if( aggregate_type_name ) {
                 struct_dependencies.push_back(std::string(aggregate_type_name));
@@ -374,7 +377,7 @@ public:
     }
 
     void visit_StructType(const StructType_t& x) {
-        visit_StructTypeEnumTypeUnionType(x);
+        visit_UserDefinedType(x);
         if( !x.m_alignment ) {
             return ;
         }
@@ -389,7 +392,7 @@ public:
     }
 
     void visit_EnumType(const EnumType_t& x) {
-        visit_StructTypeEnumTypeUnionType(x);
+        visit_UserDefinedType(x);
         require(x.m_type != nullptr,
             "The common type of Enum cannot be nullptr. " +
             std::string(x.m_name) + " doesn't seem to follow this rule.");
@@ -442,7 +445,7 @@ public:
     }
 
     void visit_UnionType(const UnionType_t& x) {
-        visit_StructTypeEnumTypeUnionType(x);
+        visit_UserDefinedType(x);
     }
 
     void visit_Variable(const Variable_t &x) {

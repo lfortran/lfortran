@@ -47,3 +47,16 @@ end subroutine destroy
 
 
 end module tomlf_type_keyval
+
+module tomlf_structure_vector
+   use tomlf_type_value, only : toml_value
+   implicit none
+
+
+   type :: toml_node
+
+      class(toml_value), allocatable :: val
+
+   end type toml_node
+
+end module tomlf_structure_vector
