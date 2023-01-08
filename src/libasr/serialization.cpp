@@ -315,6 +315,12 @@ public:
             ASRUtils::symbol_get_past_external(struct_sym));
         ASR::StructInstanceMember_t& xx = const_cast<ASR::StructInstanceMember_t&>(x);
         xx.m_m = struct_type_sym->m_symtab->resolve_symbol(std::string(x.m_name));
+        while (struct_type_sym->m_parent && xx.m_m == nullptr) {
+            struct_type_sym = ASR::down_cast<ASR::StructType_t>(
+                ASRUtils::symbol_get_past_external(struct_type_sym->m_parent));
+            xx.m_m = struct_type_sym->m_symtab->resolve_symbol(std::string(x.m_name));
+        }
+        LFORTRAN_ASSERT(xx.m_m != nullptr);
     }
 
 };
