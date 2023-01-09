@@ -696,6 +696,7 @@ public:
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
+    std::map<std::string, std::pair<Location, ASR::ttype_t*>> &ext_syms;
 
     Vec<char*> data_member_names;
     std::set<std::string> current_function_dependencies;
@@ -703,10 +704,11 @@ public:
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
-            std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
+            std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+            std::map<std::string, std::pair<Location, ASR::ttype_t*>>& ext_syms)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
-          current_variable_type_{nullptr} {
+          current_variable_type_{nullptr}, ext_syms{ext_syms} {
         current_module_dependencies.reserve(al, 4);
     }
 
@@ -1042,6 +1044,29 @@ public:
         tmp = nullptr;
     }
 
+    void validate_external() {
+        for(auto it: ext_syms) {
+            std::string sym = it.first;
+            Location loc = it.second.first;
+            ASR::ttype_t* expected_type = it.second.second;
+            ASR::symbol_t *ext_sym = current_scope->resolve_symbol(sym);
+            if (!ext_sym) {
+                throw SemanticError("External symbol `"+ sym +"` not found", loc);
+            } else {
+                if (ASR::is_a<ASR::Function_t>(*ext_sym)) {
+                    ASR::Function_t *ext_asr = ASR::down_cast<ASR::Function_t>(ext_sym);
+                    ASR::expr_t *ret_var = ext_asr->m_return_var;
+                    if (ret_var) {
+                        ASR::ttype_t * ret_type = ASRUtils::expr_type(ret_var);
+                        if (ret_type != expected_type) {
+                            throw SemanticError("External function `"+ sym +"` return type must be `" + ASRUtils::type_to_str(ret_type) +"`", loc);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
@@ -1135,8 +1160,10 @@ public:
                                     assgnd_access[sym] = ASR::accessType::Private;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrPublic || sa->m_attr == AST::simple_attributeType
-                                                ::AttrParameter || sa->m_attr == AST::simple_attributeType
-                                                        ::AttrExternal) {
+                                                ::AttrParameter 
+                                                // || sa->m_attr == AST::simple_attributeType
+                                                //         ::AttrExternal
+                                                        ) {
                                     assgnd_access[sym] = ASR::accessType::Public;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrOptional) {
@@ -1146,9 +1173,9 @@ public:
                                     // Ignore Intrinsic attribute
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrExternal) {
-                                    // TODO
-                                    throw SemanticError("Attribute declaration not "
-                                        "supported yet", x.base.base.loc);
+                                    assgnd_access[sym] = ASR::accessType::Public;
+                                    ASR::ttype_t* real_4 = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+                                    ext_syms.insert({sym, {x.base.base.loc, real_4}});
                                 } else {
                                     throw SemanticError("Attribute declaration not "
                                             "supported", x.base.base.loc);
