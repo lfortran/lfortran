@@ -92,13 +92,16 @@ return:                                           ; preds = %.entry
 
 declare void @_lfortran_sp_rand_num(float*)
 
-define i32 @main() {
+define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
   %x = alloca double, align 8
   store double 0x3FEFEB7A9B2C6D8B, double* %x, align 8
-  %0 = load double, double* %x, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([10 x i8], [10 x i8]* @3, i32 0, i32 0), double %0, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  %2 = load double, double* %x, align 8
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([10 x i8], [10 x i8]* @3, i32 0, i32 0), double %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
   ret i32 0
 }
+
+declare void @_lpython_set_argv(i32, i8**)
 
 declare void @_lfortran_printf(i8*, ...)

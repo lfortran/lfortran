@@ -128,22 +128,25 @@ return:                                           ; preds = %.entry
 
 declare float @_lfortran_stanh(float)
 
-define i32 @main() {
+define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
   %x = alloca float, align 4
   store float 0x3FF2CD9FC0000000, float* %x, align 4
-  %0 = load float, float* %x, align 4
-  %1 = fpext float %0 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @3, i32 0, i32 0), double %1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
-  store float 0x3FF8B07560000000, float* %x, align 4
   %2 = load float, float* %x, align 4
   %3 = fpext float %2 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @6, i32 0, i32 0), double %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
-  store float 0x3FE85EFAC0000000, float* %x, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @3, i32 0, i32 0), double %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  store float 0x3FF8B07560000000, float* %x, align 4
   %4 = load float, float* %x, align 4
   %5 = fpext float %4 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @9, i32 0, i32 0), double %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @6, i32 0, i32 0), double %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
+  store float 0x3FE85EFAC0000000, float* %x, align 4
+  %6 = load float, float* %x, align 4
+  %7 = fpext float %6 to double
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @9, i32 0, i32 0), double %7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
   ret i32 0
 }
+
+declare void @_lpython_set_argv(i32, i8**)
 
 declare void @_lfortran_printf(i8*, ...)

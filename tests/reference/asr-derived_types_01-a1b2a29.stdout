@@ -7,16 +7,6 @@
                     (SymbolTable
                         8
                         {
-                            1_derived_types_01_m_01_y:
-                                (ExternalSymbol
-                                    8
-                                    1_derived_types_01_m_01_y
-                                    2 y
-                                    derived_types_01_m_01
-                                    []
-                                    y
-                                    Public
-                                ),
                             b:
                                 (Variable
                                     8
@@ -52,6 +42,76 @@
                                     Public
                                     Required
                                     .false.
+                                ),
+                            derived_types_01_m_01_y:
+                                (ExternalSymbol
+                                    8
+                                    derived_types_01_m_01_y
+                                    2 y
+                                    derived_types_01_m_01
+                                    []
+                                    y
+                                    Public
+                                ),
+                            derived_types_01_m_01_y1:
+                                (ExternalSymbol
+                                    8
+                                    derived_types_01_m_01_y1
+                                    2 y
+                                    derived_types_01_m_01
+                                    []
+                                    y
+                                    Public
+                                ),
+                            derived_types_01_m_01_y2:
+                                (ExternalSymbol
+                                    8
+                                    derived_types_01_m_01_y2
+                                    2 y
+                                    derived_types_01_m_01
+                                    []
+                                    y
+                                    Public
+                                ),
+                            derived_types_01_m_01_y3:
+                                (ExternalSymbol
+                                    8
+                                    derived_types_01_m_01_y3
+                                    2 y
+                                    derived_types_01_m_01
+                                    []
+                                    y
+                                    Public
+                                ),
+                            derived_types_01_m_01_y4:
+                                (ExternalSymbol
+                                    8
+                                    derived_types_01_m_01_y4
+                                    2 y
+                                    derived_types_01_m_01
+                                    []
+                                    y
+                                    Public
+                                ),
+                            derived_types_01_m_01_y5:
+                                (ExternalSymbol
+                                    8
+                                    derived_types_01_m_01_y5
+                                    2 y
+                                    derived_types_01_m_01
+                                    []
+                                    y
+                                    Public
+                                ),
+                            derived_types_01_m_01_y6:
+                                (ExternalSymbol
+                                    8
+                                    derived_types_01_m_01_y6
+                                    2 y
+                                    derived_types_01_m_01
+                                    []
+                                    y
+                                    Public
                                 ),
                             set:
                                 (ExternalSymbol
@@ -157,7 +217,7 @@
                                     (Var 8 c)
                                     7 l
                                     (Struct
-                                        8 1_derived_types_01_m_01_y
+                                        8 derived_types_01_m_01_y
                                         []
                                     )
                                     ()
@@ -186,7 +246,7 @@
                                     (Var 8 c)
                                     7 l
                                     (Struct
-                                        8 1_derived_types_01_m_01_y
+                                        8 derived_types_01_m_01_y1
                                         []
                                     )
                                     ()
@@ -238,7 +298,7 @@
                                     (Var 8 c)
                                     7 l
                                     (Struct
-                                        8 1_derived_types_01_m_01_y
+                                        8 derived_types_01_m_01_y2
                                         []
                                     )
                                     ()
@@ -260,7 +320,7 @@
                                     (Var 8 c)
                                     7 l
                                     (Struct
-                                        8 1_derived_types_01_m_01_y
+                                        8 derived_types_01_m_01_y3
                                         []
                                     )
                                     ()
@@ -293,7 +353,7 @@
                                 (Var 8 c)
                                 7 l
                                 (Struct
-                                    8 1_derived_types_01_m_01_y
+                                    8 derived_types_01_m_01_y4
                                     []
                                 )
                                 ()
@@ -315,7 +375,7 @@
                                     (Var 8 c)
                                     7 l
                                     (Struct
-                                        8 1_derived_types_01_m_01_y
+                                        8 derived_types_01_m_01_y5
                                         []
                                     )
                                     ()
@@ -337,7 +397,7 @@
                                     (Var 8 c)
                                     7 l
                                     (Struct
-                                        8 1_derived_types_01_m_01_y
+                                        8 derived_types_01_m_01_y6
                                         []
                                     )
                                     ()
