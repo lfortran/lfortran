@@ -89,6 +89,13 @@ macro(RUN)
             target_compile_options(${name} PUBLIC --generate-object-code)
             target_link_options(${name} PUBLIC  --generate-object-code)
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+        elseif (LFORTRAN_BACKEND STREQUAL "llvm3")
+            add_executable(${name} ${name}.f90 ${RUN_EXTRAFILES})
+            target_compile_options(${name} PUBLIC --generate-object-code)
+            target_link_options(${name} PUBLIC  --generate-object-code)
+            execute_process(COMMAND lfortran --rtlib
+                        ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90 -o ${name})
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvmImplicit")
             execute_process(COMMAND lfortran --implicit-typing --implicit-interface
                         ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90 -o ${name})
@@ -113,6 +120,7 @@ endmacro(RUN)
 # gfortran --- compile with GFortran
 # llvm     --- compile with LFortran, only generate binary code at the very end
 # llvm2    --- compile with LFortran, generate object files
+# llvm3    --- compile with LFortran loading ASR runtime library, generate object files
 # cpp      --- compile to C++, compile C++ to binary
 # x86      --- compile to x86 binary directly
 # wasm     --- compile to WASM binary directly
@@ -620,3 +628,6 @@ RUN(NAME statement1 LABELS gfortran llvm)
 RUN(NAME implied_do_loops1 LABELS gfortran)
 RUN(NAME implied_do_loops2 LABELS gfortran)
 RUN(NAME implied_do_loops3 LABELS gfortran)
+
+RUN(NAME minpack_01 LABELS gfortran llvm3 EXTRAFILES
+        minpack_01_module.f90 minpack_01_func.f)
