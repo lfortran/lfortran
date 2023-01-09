@@ -3434,9 +3434,32 @@ public:
                     }
                 }
             }
-            // check whether the requirement function is included in the template
-            if (ASR::is_a<ASR::Function_t>(*v)) {
-                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(v);
+            if (ASR::is_a<ASR::Function_t>(*f2) && !ASRUtils::is_intrinsic_symbol(f2)) {
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
+                // check type mismatch (only function in templates)
+                if (is_template) {
+                    for (size_t i = 0; i < f->n_args; i++) {
+                        ASR::expr_t *dest = f->m_args[i];
+                        ASR::expr_t *source = args.p[i].m_value;
+
+                        ASR::ttype_t *dest_type = ASRUtils::expr_type(dest);
+                        ASR::ttype_t *source_type = ASRUtils::expr_type(source);
+
+                        if (!ASRUtils::check_equal_type(dest_type, source_type)) {
+                            std::string dtype = ASRUtils::type_to_str(dest_type);
+                            std::string stype = ASRUtils::type_to_str(source_type);
+                            diag.add(Diagnostic(
+                                "Type mismatch in function call, the types must be compatible",
+                                Level::Error, Stage::Semantic, {
+                                    Label("type mismatch (" + dtype + " and " + stype + ")",
+                                            {dest->base.loc, source->base.loc})
+                                })
+                            );
+                            throw SemanticAbort();
+                        }
+                    }
+                }
+                // check whether the requirement function is included in the template
                 if (f->m_is_restriction) {
                     if (!is_template) {
                         throw SemanticError("A requirement function must be called from a template",
