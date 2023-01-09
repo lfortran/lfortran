@@ -161,7 +161,8 @@ LFORTRAN_API int _lfortran_str_ord(char** s);
 LFORTRAN_API int _lfortran_str_ord_c(char* s);
 LFORTRAN_API char* _lfortran_str_chr(int c);
 LFORTRAN_API int _lfortran_str_to_int(char** s);
-LFORTRAN_API char* _lfortran_malloc(int size);
+LFORTRAN_API void* _lfortran_malloc(int32_t size);
+LFORTRAN_API void _lfortran_memset(void* s, int32_t c, int32_t size);
 LFORTRAN_API int8_t* _lfortran_realloc(int8_t* ptr, int32_t size);
 LFORTRAN_API int8_t* _lfortran_calloc(int32_t count, int32_t size);
 LFORTRAN_API void _lfortran_free(char* ptr);
@@ -210,6 +211,9 @@ LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n);
 LFORTRAN_API void _lpython_close(int64_t fd);
 LFORTRAN_API int32_t _lfortran_ichar(char *c);
 LFORTRAN_API int32_t _lfortran_iachar(char *c);
+LFORTRAN_API void _lpython_set_argv(int32_t argc_1, char *argv_1[]);
+LFORTRAN_API int32_t _lpython_get_argc();
+LFORTRAN_API char *_lpython_get_argv(int32_t index);
 
 #ifdef __cplusplus
 }

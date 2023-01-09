@@ -1490,7 +1490,7 @@ class JsonVisitorVisitor(ASDLVisitor):
         # Storing a reference to LocationManager like this isn't ideal.
         # One must make sure JsonBaseVisitor isn't reused in a case where AST/ASR has changed
         # but lm wasn't updated correspondingly.
-        # If LocationManager becomes needed in any of the other visitors, it should be 
+        # If LocationManager becomes needed in any of the other visitors, it should be
         # passed by reference into all the visit functions instead of storing the reference here.
         self.emit(  "LocationManager &lm;", 1)
         self.emit("public:")
@@ -1539,7 +1539,7 @@ class JsonVisitorVisitor(ASDLVisitor):
         self.emit(      's.append("\\n" + indtd);', 2)
         self.emit(      's.append("}");', 2)
         self.emit(  '}', 1)
-        
+
         self.mod = mod
         super(JsonVisitorVisitor, self).visitModule(mod)
         self.emit("};")

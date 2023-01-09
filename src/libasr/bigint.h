@@ -110,7 +110,7 @@ inline static bool is_int64(std::string str_repr) {
     if( str_repr.size() > str_int64.size() ) {
         return false;
     }
-    
+
     if( str_repr.size() < str_int64.size() ) {
         return true;
     }

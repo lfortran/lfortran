@@ -92,7 +92,8 @@ public:
                                             nullptr, nullptr, 0, nullptr, nullptr));
         ASR::stmt_t* print_stmt;
         for (size_t i=0; i<x.n_values; i++) {
-            if (PassUtils::is_array(x.m_values[i])) {
+            if (!ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_values[i])) &&
+                PassUtils::is_array(x.m_values[i])) {
                 if (print_body.size() > 0) {
                     Vec<ASR::expr_t*> body;
                     body.reserve(al, print_body.size());
