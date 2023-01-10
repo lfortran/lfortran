@@ -620,3 +620,5 @@ RUN(NAME statement1 LABELS gfortran llvm)
 RUN(NAME implied_do_loops1 LABELS gfortran)
 RUN(NAME implied_do_loops2 LABELS gfortran)
 RUN(NAME implied_do_loops3 LABELS gfortran)
+
+RUN(NAME external_01 LABELS gfortran llvm)
