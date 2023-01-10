@@ -38,17 +38,17 @@ struct dimension_descriptor
 // Implementations
 int main(int argc, char* argv[])
 {
-    static int32_t a=1;
-    int32_t ap=1;
-    static int32_t b=2;
-    int32_t bp=2;
-    static float c=  1.00000000000000000e+00;
-    float cp=  1.00000000000000000e+00;
-    static float d=  2.00000000000000000e+00;
-    float dp=  2.00000000000000000e+00;
+    static int32_t a = 1;
+    int32_t ap = 1;
+    static int32_t b = 2;
+    int32_t bp = 2;
+    static float c =   1.00000000000000000e+00;
+    float cp =   1.00000000000000000e+00;
+    static float d =   2.00000000000000000e+00;
+    float dp =   2.00000000000000000e+00;
     char * grade_fixed = (char*) malloc(40 * sizeof(char));
     int32_t marks;
-    int32_t marks_fixed=94;
+    int32_t marks_fixed = 94;
     if (grade_fixed == "A") {
         printf("%s\n", "Excellent!");
     }

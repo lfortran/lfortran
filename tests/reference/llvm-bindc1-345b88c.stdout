@@ -19,12 +19,15 @@ declare void @__module_lfortran_intrinsic_builtin_move_alloc(i32*, i32*)
 
 declare void @__module_lfortran_intrinsic_iso_c_binding_c_f_pointer(%c_ptr*, i32**, %array*)
 
-define i32 @main() {
+define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
   %p = alloca void*, align 8
   %x = alloca i32*, align 8
-  %0 = load i32*, i32** %x, align 8
-  %1 = bitcast i32* %0 to void*
-  store void* %1, void** %p, align 8
+  %2 = load i32*, i32** %x, align 8
+  %3 = bitcast i32* %2 to void*
+  store void* %3, void** %p, align 8
   ret i32 0
 }
+
+declare void @_lpython_set_argv(i32, i8**)

@@ -24,6 +24,7 @@ set(SRC
     codegen/asr_to_wasm.cpp
     codegen/wasm_to_wat.cpp
     codegen/wasm_to_x86.cpp
+    codegen/wasm_to_x64.cpp
     codegen/wasm_utils.cpp
 
     pass/param_to_const.cpp
@@ -53,6 +54,7 @@ set(SRC
     pass/update_array_dim_intrinsic_calls.cpp
     pass/pass_array_by_data.cpp
     pass/pass_list_expr.cpp
+    pass/pass_compare.cpp
 
     asr_verify.cpp
     asr_utils.cpp
