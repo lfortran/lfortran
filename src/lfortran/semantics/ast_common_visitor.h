@@ -1051,7 +1051,9 @@ public:
             ASR::ttype_t* expected_type = it.second.second;
             ASR::symbol_t *ext_sym = current_scope->resolve_symbol(sym);
             if (!ext_sym) {
-                throw SemanticError("External symbol `"+ sym +"` not found", loc);
+                if(!compiler_options.implicit_interface) {
+                    throw SemanticError("External symbol `"+ sym +"` not found", loc);
+                }
             } else {
                 if (ASR::is_a<ASR::Function_t>(*ext_sym)) {
                     ASR::Function_t *ext_asr = ASR::down_cast<ASR::Function_t>(ext_sym);
@@ -1160,10 +1162,7 @@ public:
                                     assgnd_access[sym] = ASR::accessType::Private;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrPublic || sa->m_attr == AST::simple_attributeType
-                                                ::AttrParameter 
-                                                // || sa->m_attr == AST::simple_attributeType
-                                                //         ::AttrExternal
-                                                        ) {
+                                                ::AttrParameter) {
                                     assgnd_access[sym] = ASR::accessType::Public;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrOptional) {
@@ -1488,6 +1487,9 @@ public:
                         if( is_derived_type ) {
                             data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
                         }
+                    }
+                    if ( is_external ) {
+                        ext_syms.insert({sym, {x.base.base.loc, type}});
                     }
                 }
             } // for m_syms
