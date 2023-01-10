@@ -1,0 +1,5 @@
+semantic error: External function `enorm` return type must be `real`
+ --> tests/errors/external_02.f90:2:5
+  |
+2 |     real, external :: enorm
+  |     ^^^^^^^^^^^^^^^^^^^^^^^ 
