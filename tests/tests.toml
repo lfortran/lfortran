@@ -2681,7 +2681,3 @@ asr_implicit_typing = true
 [[test]]
 filename = "character1.f90"
 asr_implicit_interface = true
-
-[[test]]
-filename = "../integration_tests/external_01.f90"
-llvm = true
