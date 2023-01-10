@@ -5,8 +5,7 @@
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/bigint.h>
 
-namespace LFortran
-{
+namespace LCompilers::LFortran {
 
 void Tokenizer::set_string(const std::string &str)
 {
@@ -772,4 +771,4 @@ void lex_format(unsigned char *&cur, Location &loc,
     }
 }
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran

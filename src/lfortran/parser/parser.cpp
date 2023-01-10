@@ -13,8 +13,7 @@
 
 #include <lfortran/pickle.h>
 
-namespace LFortran
-{
+namespace LCompilers::LFortran {
 
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         diag::Diagnostics &diagnostics, const bool &fixed_form)
@@ -807,4 +806,4 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
     throw parser_local::ParserError(message, loc);
 }
 
-}
+} // namespace LCompilers::LFortran

@@ -13,8 +13,7 @@
 int position = 0;
 #define TOK(pos, arg) std::cout << std::string(pos, ' ') << "TOKEN: " << arg << std::endl;
 
-namespace LFortran
-{
+namespace LCompilers::LFortran {
 
 std::map<std::string, yytokentype> identifiers_map = {
     {"EOF", END_OF_FILE},
@@ -1489,4 +1488,4 @@ int FixedFormTokenizer::lex(Allocator &/*al*/, YYSTYPE &yylval,
 }
 
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran

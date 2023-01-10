@@ -8,7 +8,7 @@
 
 #define num_types 6
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 class ImplicitCastRules {
 private:
   //! Default case when no conversion is needed.
@@ -107,8 +107,8 @@ public:
         dest_type = temp;
       }
       int source_kind = 0, dest_kind = 1;
-      source_kind = LFortran::ASRUtils::extract_kind_from_ttype_t(source_type);
-      dest_kind = LFortran::ASRUtils::extract_kind_from_ttype_t(dest_type);
+      source_kind = ASRUtils::extract_kind_from_ttype_t(source_type);
+      dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type);
       if (source_kind == dest_kind) {
         return;
       }
@@ -275,6 +275,6 @@ public:
     return type_priority[(int) type_kind];
   }
 };
-} // namespace LFortran
+} // namespace LCompilers::LFortran
 
 #endif /* LFORTRAN_SEMANTICS_ASR_IMPLICIT_CAST_RULES_H */

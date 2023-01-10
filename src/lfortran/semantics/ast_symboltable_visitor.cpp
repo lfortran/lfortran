@@ -21,7 +21,7 @@
 #include <libasr/utils.h>
 
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
 template <typename T>
 void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name) {
@@ -312,15 +312,15 @@ public:
 
     void populate_implicit_dictionary(Location &a_loc, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         for (char ch='i'; ch<='n'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4, nullptr, 0));
+            implicit_dictionary[std::string(1, ch)] = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4, nullptr, 0));
         }
 
         for (char ch='o'; ch<='z'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, a_loc, 4, nullptr, 0));
+            implicit_dictionary[std::string(1, ch)] = ASRUtils::TYPE(ASR::make_Real_t(al, a_loc, 4, nullptr, 0));
         }
 
         for (char ch='a'; ch<='h'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, a_loc, 4, nullptr, 0));
+            implicit_dictionary[std::string(1, ch)] = ASRUtils::TYPE(ASR::make_Real_t(al, a_loc, 4, nullptr, 0));
         }
     }
 
@@ -350,7 +350,7 @@ public:
                 if (attr_type->m_kind != nullptr) {
                     if (attr_type->n_kind == 1) {
                         visit_expr(*attr_type->m_kind->m_value);
-                        ASR::expr_t* kind_expr = LFortran::ASRUtils::EXPR(tmp);
+                        ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                         if (attr_type->m_type == AST::decl_typeType::TypeCharacter) {
                             a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
                         } else {
@@ -362,27 +362,27 @@ public:
                 }
                 switch (ast_type) {
                     case (AST::decl_typeType::TypeInteger) : {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind, nullptr, 0));
+                        type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind, nullptr, 0));
                         break;
                     }
                     case (AST::decl_typeType::TypeReal) : {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind, nullptr, 0));
+                        type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind, nullptr, 0));
                         break;
                     }
                     case (AST::decl_typeType::TypeDoublePrecision) : {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
+                        type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
                         break;
                     }
                     case (AST::decl_typeType::TypeComplex) : {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind, nullptr, 0));
+                        type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind, nullptr, 0));
                         break;
                     }
                     case (AST::decl_typeType::TypeLogical) : {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+                        type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
                         break;
                     }
                     case (AST::decl_typeType::TypeCharacter) : {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr, nullptr, 0));
+                        type = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr, nullptr, 0));
                         break;
                     }
                     default :
@@ -465,7 +465,7 @@ public:
                 }
             }
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
-            args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 var)));
         }
         std::string sym_name = to_lower(x.m_name);
@@ -621,7 +621,7 @@ public:
                 }
             }
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
-            args.push_back(al, LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 var)));
         }
 
@@ -660,7 +660,7 @@ public:
             if (return_type->m_kind != nullptr) {
                 if (return_type->n_kind == 1) {
                     visit_expr(*return_type->m_kind->m_value);
-                    ASR::expr_t* kind_expr = LFortran::ASRUtils::EXPR(tmp);
+                    ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                     if (return_type->m_type == AST::decl_typeType::TypeCharacter) {
                         a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
                     } else {
@@ -672,27 +672,27 @@ public:
             }
             switch (return_type->m_type) {
                 case (AST::decl_typeType::TypeInteger) : {
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind, nullptr, 0));
+                    type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind, nullptr, 0));
                     break;
                 }
                 case (AST::decl_typeType::TypeReal) : {
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind, nullptr, 0));
+                    type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind, nullptr, 0));
                     break;
                 }
                 case (AST::decl_typeType::TypeDoublePrecision) : {
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
+                    type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
                     break;
                 }
                 case (AST::decl_typeType::TypeComplex) : {
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind, nullptr, 0));
+                    type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind, nullptr, 0));
                     break;
                 }
                 case (AST::decl_typeType::TypeLogical) : {
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
                     break;
                 }
                 case (AST::decl_typeType::TypeCharacter) : {
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr, nullptr, 0));
+                    type = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr, nullptr, 0));
                     break;
                 }
                 case (AST::decl_typeType::TypeType) : {
@@ -733,7 +733,7 @@ public:
                         }
                     }
                     if (!type_param) {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v, nullptr, 0));
+                        type = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v, nullptr, 0));
                     }
                     break;
                 }
@@ -747,7 +747,7 @@ public:
             // Add it as a local variable:
             return_var = ASR::make_Variable_t(al, x.base.base.loc,
                 current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
-                variable_dependencies_vec.size(), LFortran::ASRUtils::intent_return_var,
+                variable_dependencies_vec.size(), ASRUtils::intent_return_var,
                 nullptr, nullptr, ASR::storage_typeType::Default, type,
                 current_procedure_abi_type, ASR::Public, ASR::presenceType::Required,
                 false);
@@ -760,7 +760,7 @@ public:
             // Extract the variable from the local scope
             return_var = (ASR::asr_t*) current_scope->get_symbol(return_var_name);
             ASR::Variable_t* return_variable = ASR::down_cast2<ASR::Variable_t>(return_var);
-            return_variable->m_intent = LFortran::ASRUtils::intent_return_var;
+            return_variable->m_intent = ASRUtils::intent_return_var;
             Vec<char*> variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, return_variable->m_type,
@@ -841,7 +841,7 @@ public:
             /* n_args */ args.size(),
             /* a_body */ nullptr,
             /* n_body */ 0,
-            /* a_return_var */ LFortran::ASRUtils::EXPR(return_var_ref),
+            /* a_return_var */ ASRUtils::EXPR(return_var_ref),
             current_procedure_abi_type, s_access, deftype,
             bindc_name, is_elemental, false, false, false, false,
             /* a_type_parameters */ (params.size() > 0) ? params.p : nullptr,
@@ -1710,4 +1710,4 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
     return unit;
 }
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran

@@ -3,16 +3,16 @@
 #include <libasr/string_utils.h>
 #include <libasr/bigint.h>
 
-using LFortran::AST::expr_t;
-using LFortran::AST::Name_t;
-using LFortran::AST::Num_t;
-using LFortran::AST::BinOp_t;
-using LFortran::AST::operatorType;
-using LFortran::AST::BaseVisitor;
-using LFortran::AST::StrOp_t;
+using LCompilers::LFortran::AST::expr_t;
+using LCompilers::LFortran::AST::Name_t;
+using LCompilers::LFortran::AST::Num_t;
+using LCompilers::LFortran::AST::BinOp_t;
+using LCompilers::LFortran::AST::operatorType;
+using LCompilers::LFortran::AST::BaseVisitor;
+using LCompilers::LFortran::AST::StrOp_t;
 
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
 namespace {
 
@@ -4446,4 +4446,4 @@ std::string ast_to_src(AST::TranslationUnit_t &ast, bool color, int indent,
     return v.s;
 }
 
-}
+} // namespace LCompilers::LFortran

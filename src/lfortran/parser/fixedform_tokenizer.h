@@ -4,8 +4,8 @@
 #include <libasr/exception.h>
 #include <lfortran/parser/parser_stype.h>
 
-namespace LFortran
-{
+namespace LCompilers::LFortran {
+
 class FixedFormTokenizer
 {
 public:
@@ -83,6 +83,6 @@ public:
 bool lex_int(const unsigned char *s, const unsigned char *e, uint64_t &u,
     Str &suffix);
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran
 
 #endif

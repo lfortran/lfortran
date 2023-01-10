@@ -3,10 +3,10 @@
 
 #include <lfortran/ast.h>
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
     std::string ast_to_json(LFortran::AST::ast_t &ast);
 
-}
+} // namespace LCompilers::LFortran
 
 #endif // LFORTRAN_AST_TO_JSON_H

@@ -6,8 +6,7 @@
 #include <lfortran/utils.h>
 #include <libasr/string_utils.h>
 
-namespace LFortran
-{
+namespace LCompilers::LFortran {
 
 CPreprocessor::CPreprocessor(CompilerOptions &compiler_options)
     : compiler_options{compiler_options} {
@@ -821,4 +820,4 @@ int parse_bfactor(unsigned char *&cur, const cpp_symtab &macro_definitions) {
 
 }
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran

@@ -5,8 +5,7 @@
 #include <lfortran/utils.h>
 #include <lfortran/parser/parser.h>
 
-namespace LFortran
-{
+namespace LCompilers::LFortran {
 
 struct CPPMacro {
     /*
@@ -45,6 +44,6 @@ public:
     }
 };
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran
 
 #endif // LFORTRAN_SRC_PARSER_PREPROCESSOR_H
