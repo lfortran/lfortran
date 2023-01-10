@@ -1593,6 +1593,7 @@ int main(int argc, char *argv[])
         bool show_julia = false;
         bool time_report = false;
         bool static_link = false;
+        std::string skip_pass;
         std::string arg_backend = "llvm";
         std::string arg_kernel_f;
         bool print_targets = false;
@@ -1647,6 +1648,7 @@ int main(int argc, char *argv[])
         app.add_flag("--indent", compiler_options.indent, "Indented print ASR/AST");
         app.add_flag("--json", compiler_options.json, "Print ASR/AST Json format");
         app.add_option("--pass", arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)");
+        app.add_option("--skip-pass", skip_pass, "Skip an ASR pass in default pipeline");
         app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
         app.add_flag("--show-cpp", show_cpp, "Show C++ translation source for the given file and exit");
         app.add_flag("--show-c", show_c, "Show C translation source for the given file and exit");
@@ -1845,7 +1847,7 @@ int main(int argc, char *argv[])
         if (show_ast_f90) {
             return emit_ast_f90(arg_file, compiler_options);
         }
-        lfortran_pass_manager.parse_pass_arg(arg_pass);
+        lfortran_pass_manager.parse_pass_arg(arg_pass, skip_pass);
         if (show_asr) {
             return emit_asr(arg_file, lfortran_pass_manager,
                     with_intrinsic_modules, compiler_options);
