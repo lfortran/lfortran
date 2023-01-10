@@ -92,9 +92,7 @@ macro(RUN)
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_rtlib")
             add_executable(${name} ${name}.f90 ${RUN_EXTRAFILES})
             target_compile_options(${name} PUBLIC --generate-object-code)
-            target_link_options(${name} PUBLIC  --generate-object-code)
-            execute_process(COMMAND lfortran --rtlib
-                        ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90 -o ${name})
+            set_source_files_properties(${name}.f90 PROPERTIES COMPILE_OPTIONS "--rtlib")
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvmImplicit")
             execute_process(COMMAND lfortran --implicit-typing --implicit-interface
