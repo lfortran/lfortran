@@ -51,12 +51,15 @@ return:                                           ; preds = %.entry
 
 declare void @_lfortran_printf(i8*, ...)
 
-define i32 @main() {
+define i32 @main(i32 %0, i8** %1) {
 .entry:
   %call_arg_value1 = alloca float, align 4
   %call_arg_value = alloca float, align 4
+  call void @_lpython_set_argv(i32 %0, i8** %1)
   store float 1.500000e+00, float* %call_arg_value, align 4
   store float 2.000000e+00, float* %call_arg_value1, align 4
   call void @__module_callback_01_foo(float* %call_arg_value, float* %call_arg_value1)
   ret i32 0
 }
+
+declare void @_lpython_set_argv(i32, i8**)

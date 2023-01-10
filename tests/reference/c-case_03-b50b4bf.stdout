@@ -38,8 +38,8 @@ struct dimension_descriptor
 // Implementations
 int main(int argc, char* argv[])
 {
-    int32_t a=1;
-    int32_t b=2;
+    int32_t a = 1;
+    int32_t b = 2;
     int32_t marks;
     marks = 94;
     if (marks >= 40 + b) {

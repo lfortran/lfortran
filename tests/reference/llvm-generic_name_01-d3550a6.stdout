@@ -64,14 +64,15 @@ return:                                           ; preds = %.entry
 
 declare void @_lfortran_printf(i8*, ...)
 
-define i32 @main() {
+define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
   %a = alloca %complextype, align 8
-  %0 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
-  %1 = getelementptr %complextype, %complextype* %a, i32 0, i32 1
+  %2 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
+  %3 = getelementptr %complextype, %complextype* %a, i32 0, i32 1
   %c = alloca %complextype, align 8
-  %2 = getelementptr %complextype, %complextype* %c, i32 0, i32 0
-  %3 = getelementptr %complextype, %complextype* %c, i32 0, i32 1
+  %4 = getelementptr %complextype, %complextype* %c, i32 0, i32 0
+  %5 = getelementptr %complextype, %complextype* %c, i32 0, i32 1
   %fpone = alloca float, align 4
   %fptwo = alloca float, align 4
   %fpzero = alloca float, align 4
@@ -84,27 +85,29 @@ define i32 @main() {
   store i32 1, i32* %ione, align 4
   store i32 0, i32* %izero, align 4
   store float -1.000000e+00, float* %negfpone, align 4
-  %4 = getelementptr %complextype, %complextype* %c, i32 0, i32 1
-  %5 = load float, float* %fpone, align 4
-  store float %5, float* %4, align 4
-  %6 = getelementptr %complextype, %complextype* %c, i32 0, i32 0
-  %7 = load float, float* %fptwo, align 4
+  %6 = getelementptr %complextype, %complextype* %c, i32 0, i32 1
+  %7 = load float, float* %fpone, align 4
   store float %7, float* %6, align 4
+  %8 = getelementptr %complextype, %complextype* %c, i32 0, i32 0
+  %9 = load float, float* %fptwo, align 4
+  store float %9, float* %8, align 4
   call void @__module_complex_module_integer_add_subrout(%complextype* %c, i32* %ione, i32* %izero, %complextype* %a)
-  %8 = getelementptr %complextype, %complextype* %a, i32 0, i32 1
-  %9 = load float, float* %8, align 4
-  %10 = fpext float %9 to double
-  %11 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
-  %12 = load float, float* %11, align 4
-  %13 = fpext float %12 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([17 x i8], [17 x i8]* @10, i32 0, i32 0), double %10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0), double %13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
+  %10 = getelementptr %complextype, %complextype* %a, i32 0, i32 1
+  %11 = load float, float* %10, align 4
+  %12 = fpext float %11 to double
+  %13 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
+  %14 = load float, float* %13, align 4
+  %15 = fpext float %14 to double
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([17 x i8], [17 x i8]* @10, i32 0, i32 0), double %12, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0), double %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
   call void @__module_complex_module_real_add_subrout(%complextype* %c, float* %fpzero, float* %negfpone, %complextype* %a)
-  %14 = getelementptr %complextype, %complextype* %a, i32 0, i32 1
-  %15 = load float, float* %14, align 4
-  %16 = fpext float %15 to double
-  %17 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
-  %18 = load float, float* %17, align 4
-  %19 = fpext float %18 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([17 x i8], [17 x i8]* @13, i32 0, i32 0), double %16, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0), double %19, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
+  %16 = getelementptr %complextype, %complextype* %a, i32 0, i32 1
+  %17 = load float, float* %16, align 4
+  %18 = fpext float %17 to double
+  %19 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
+  %20 = load float, float* %19, align 4
+  %21 = fpext float %20 to double
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([17 x i8], [17 x i8]* @13, i32 0, i32 0), double %18, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0), double %21, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
   ret i32 0
 }
+
+declare void @_lpython_set_argv(i32, i8**)

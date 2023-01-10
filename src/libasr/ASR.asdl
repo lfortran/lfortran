@@ -253,12 +253,14 @@ expr
     | ListConstant(expr* args, ttype type)
     | ListLen(expr arg, ttype type, expr? value)
     | ListConcat(expr left, expr right, ttype type, expr? value)
+    | ListCompare(expr left, cmpop op, expr right, ttype type, expr? value)
 
     | SetConstant(expr* elements, ttype type)
     | SetLen(expr arg, ttype type, expr? value)
 
     | TupleConstant(expr* elements, ttype type)
     | TupleLen(expr arg, ttype type, expr value)
+    | TupleCompare(expr left, cmpop op, expr right, ttype type, expr? value)
 
     | StringConstant(string s, ttype type)
     | StringConcat(expr left, expr right, ttype type, expr? value)
@@ -289,6 +291,7 @@ expr
 
     | BitCast(expr source, expr mold, expr? size, ttype type, expr? value)
     | StructInstanceMember(expr v, symbol m, ttype type, expr? value)
+    | StructStaticMember(expr v, symbol m, ttype type, expr? value)
     | EnumMember(expr v, symbol m, ttype type, expr? value)
     | UnionRef(expr v, symbol m, ttype type, expr? value)
     | EnumName(expr v, ttype enum_type, ttype type, expr? value)
