@@ -1213,6 +1213,7 @@ public:
             for (size_t i=0; i<x.n_syms; i++) {
                 bool is_compile_time = false;
                 bool is_implicitly_declared = false;
+                bool is_external = false;
                 AST::var_sym_t &s = x.m_syms[i];
                 std::string sym = to_lower(s.m_name);
                 ASR::accessType s_access = dflt_access;
@@ -1299,6 +1300,13 @@ public:
                             } else if(sa->m_attr == AST::simple_attributeType
                                     ::AttrIntrinsic) {
                                 excluded_from_symtab.push_back(sym);
+                            } else if(sa->m_attr == AST::simple_attributeType
+                                    ::AttrExternal) {
+                                assgnd_access[sym] = ASR::accessType::Public;
+                                if (assgnd_access.count(sym)) {
+                                    s_access = assgnd_access[sym];
+                                }
+                                is_external = true;
                             } else {
                                 throw SemanticError("Attribute type not implemented yet",
                                         x.base.base.loc);
@@ -1440,7 +1448,7 @@ public:
                     }
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
-                    if ( !is_implicitly_declared ) {
+                    if ( !is_implicitly_declared && !is_external) {
                         Vec<char*> variable_dependencies_vec;
                         variable_dependencies_vec.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
