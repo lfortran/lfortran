@@ -48,17 +48,20 @@ declare float @llvm.pow.f32(float, float) #0
 
 declare void @_lfortran_printf(i8*, ...)
 
-define i32 @main() {
+define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
   %c = alloca %circle, align 8
-  %0 = getelementptr %circle, %circle* %c, i32 0, i32 0
-  %1 = getelementptr %circle, %circle* %c, i32 0, i32 0
-  store float 1.500000e+00, float* %1, align 4
-  call void @__module_class_circle1_circle_print(%circle* %c)
   %2 = getelementptr %circle, %circle* %c, i32 0, i32 0
-  store float 2.000000e+00, float* %2, align 4
+  %3 = getelementptr %circle, %circle* %c, i32 0, i32 0
+  store float 1.500000e+00, float* %3, align 4
+  call void @__module_class_circle1_circle_print(%circle* %c)
+  %4 = getelementptr %circle, %circle* %c, i32 0, i32 0
+  store float 2.000000e+00, float* %4, align 4
   call void @__module_class_circle1_circle_print(%circle* %c)
   ret i32 0
 }
+
+declare void @_lpython_set_argv(i32, i8**)
 
 attributes #0 = { nounwind readnone speculatable willreturn }

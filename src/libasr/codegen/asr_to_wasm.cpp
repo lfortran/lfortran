@@ -1747,9 +1747,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         wasm::emit_i32_eqz(m_code_section, m_al);
                         wasm::emit_i32_eqz(m_code_section, m_al);
                     } else if (arg_kind == 8 && dest_kind == 4) {
-                        wasm::emit_i32_eqz(m_code_section, m_al);
-                        wasm::emit_i32_eqz(m_code_section, m_al);
-                        wasm::emit_i64_extend_i32_s(m_code_section, m_al);
+                        wasm::emit_i64_eqz(m_code_section, m_al);
+                        wasm::emit_i64_eqz(m_code_section, m_al);
+                        wasm::emit_i32_wrap_i64(m_code_section, m_al);
                     } else {
                         std::string msg = "Conversion from kinds " +
                                           std::to_string(arg_kind) + " to " +
@@ -2116,9 +2116,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     void visit_Assert(const ASR::Assert_t &x) {
         this->visit_expr(*x.m_test);
-        wasm::emit_i32_eqz(m_code_section, m_al);
         wasm::emit_b8(m_code_section, m_al, 0x04);  // emit if start
         wasm::emit_b8(m_code_section, m_al, 0x40);  // empty block type
+        wasm::emit_b8(m_code_section, m_al, 0x05);  // starting of else
         if (x.m_msg) {
             std::string msg =
                 ASR::down_cast<ASR::StringConstant_t>(x.m_msg)->m_s;
@@ -2128,7 +2128,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         wasm::emit_i32_const(m_code_section, m_al, 1);  // non-zero exit code
         exit();
-        wasm::emit_b8(m_code_section, m_al, 0x05);  // starting of else
         wasm::emit_expr_end(m_code_section, m_al);  // emit if end
     }
 };

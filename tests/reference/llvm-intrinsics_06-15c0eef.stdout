@@ -211,40 +211,43 @@ return:                                           ; preds = %.entry
 
 declare void @_lfortran_sp_rand_num(float*)
 
-define i32 @main() {
+define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
   %dp = alloca i32, align 4
   store i32 8, i32* %dp, align 4
   %x = alloca float, align 4
   store float 1.000000e+00, float* %x, align 4
-  %0 = load float, float* %x, align 4
-  %1 = fpext float %0 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @3, i32 0, i32 0), double %1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
-  store float 1.000000e+00, float* %x, align 4
   %2 = load float, float* %x, align 4
   %3 = fpext float %2 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @6, i32 0, i32 0), double %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @3, i32 0, i32 0), double %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
   store float 1.000000e+00, float* %x, align 4
   %4 = load float, float* %x, align 4
   %5 = fpext float %4 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @9, i32 0, i32 0), double %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @6, i32 0, i32 0), double %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
   store float 1.000000e+00, float* %x, align 4
   %6 = load float, float* %x, align 4
   %7 = fpext float %6 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @12, i32 0, i32 0), double %7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @9, i32 0, i32 0), double %7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
   store float 1.000000e+00, float* %x, align 4
   %8 = load float, float* %x, align 4
   %9 = fpext float %8 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @15, i32 0, i32 0), double %9, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @12, i32 0, i32 0), double %9, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0))
   store float 1.000000e+00, float* %x, align 4
   %10 = load float, float* %x, align 4
   %11 = fpext float %10 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @18, i32 0, i32 0), double %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @15, i32 0, i32 0), double %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0))
   store float 1.000000e+00, float* %x, align 4
   %12 = load float, float* %x, align 4
   %13 = fpext float %12 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @21, i32 0, i32 0), double %13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @18, i32 0, i32 0), double %13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0))
+  store float 1.000000e+00, float* %x, align 4
+  %14 = load float, float* %x, align 4
+  %15 = fpext float %14 to double
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @21, i32 0, i32 0), double %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0))
   ret i32 0
 }
+
+declare void @_lpython_set_argv(i32, i8**)
 
 declare void @_lfortran_printf(i8*, ...)

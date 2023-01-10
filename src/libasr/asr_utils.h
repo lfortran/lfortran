@@ -458,6 +458,34 @@ static inline ASR::Module_t *get_sym_module(const ASR::symbol_t *sym) {
     return nullptr;
 }
 
+// Returns the ASR owner of the symbol
+static inline ASR::symbol_t *get_asr_owner(const ASR::symbol_t *sym) {
+    const SymbolTable *s = symbol_parent_symtab(sym);
+    if( !ASR::is_a<ASR::symbol_t>(*s->asr_owner) ) {
+        return nullptr;
+    }
+    return ASR::down_cast<ASR::symbol_t>(s->asr_owner);
+}
+
+static inline ASR::symbol_t *get_asr_owner(const ASR::expr_t *expr) {
+    switch( expr->type ) {
+        case ASR::exprType::Var: {
+            return ASRUtils::get_asr_owner(ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        }
+        case ASR::exprType::StructInstanceMember: {
+            return ASRUtils::get_asr_owner(ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
+        }
+        case ASR::exprType::GetPointer: {
+            return ASRUtils::get_asr_owner(ASR::down_cast<ASR::GetPointer_t>(expr)->m_arg);
+        }
+        default: {
+            throw LCompilersException("Cannot find the ASR owner of underlying symbol of expression "
+                                        + std::to_string(expr->type));
+        }
+    }
+    return nullptr;
+}
+
 // Returns the Module_t the symbol is in, or nullptr if not in a module
 // or no asr_owner yet
 static inline ASR::Module_t *get_sym_module0(const ASR::symbol_t *sym) {
@@ -669,6 +697,15 @@ static inline bool all_args_evaluated(const Vec<ASR::expr_t*> &args) {
         }
     }
     return true;
+}
+
+static inline std::string get_mangled_name(ASR::Module_t* module, std::string symbol_name) {
+    std::string module_name = module->m_name;
+    if( module_name == symbol_name ) {
+        return "__" + std::string(module->m_name) + "_" + symbol_name;
+    } else {
+        return symbol_name;
+    }
 }
 
 // Returns true if all arguments are evaluated
@@ -1544,9 +1581,9 @@ static inline bool is_aggregate_type(ASR::ttype_t* asr_type) {
     }
     return ASRUtils::is_array(asr_type) ||
             !(ASR::is_a<ASR::Integer_t>(*asr_type) ||
-            ASR::is_a<ASR::Real_t>(*asr_type) ||
-            ASR::is_a<ASR::Complex_t>(*asr_type) ||
-            ASR::is_a<ASR::Logical_t>(*asr_type));
+              ASR::is_a<ASR::Real_t>(*asr_type) ||
+              ASR::is_a<ASR::Complex_t>(*asr_type) ||
+              ASR::is_a<ASR::Logical_t>(*asr_type));
 }
 
 static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
