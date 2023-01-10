@@ -98,7 +98,7 @@ public:
         if (!current_scope) {
             current_scope = al.make_new<SymbolTable>(nullptr);
         }
-        LFORTRAN_ASSERT(current_scope != nullptr);
+        LCOMPILERS_ASSERT(current_scope != nullptr);
         global_scope = current_scope;
 
         // Create the TU early, so that asr_owner is set, so that
@@ -696,7 +696,7 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeType) : {
-                    LFORTRAN_ASSERT(return_type->m_name);
+                    LCOMPILERS_ASSERT(return_type->m_name);
                     std::string derived_type_name = to_lower(return_type->m_name);
                     ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
                     if (!v) {
@@ -968,7 +968,7 @@ public:
                 switch( x.m_attr[i]->type ) {
                     case AST::decl_attributeType::AttrPass: {
                         AST::AttrPass_t* attr_pass = AST::down_cast<AST::AttrPass_t>(x.m_attr[i]);
-                        LFORTRAN_ASSERT(class_procedures[dt_name][use_sym_name].find("pass") == class_procedures[dt_name][use_sym_name].end());
+                        LCOMPILERS_ASSERT(class_procedures[dt_name][use_sym_name].find("pass") == class_procedures[dt_name][use_sym_name].end());
                         class_procedures[dt_name][use_sym_name]["pass"] = std::string(attr_pass->m_name);
                         break ;
                     }
@@ -1013,7 +1013,7 @@ public:
                         break;
                     }
                     default: {
-                        LFORTRAN_ASSERT(false);
+                        LCOMPILERS_ASSERT(false);
                         break;
                     }
                 }
@@ -1450,7 +1450,7 @@ public:
                         // doesn't import a procedure for a custom operator
                         // the lfortran is supposed to do that with help
                         // of to_be_imported_later queue.
-                        LFORTRAN_ASSERT(false);
+                        LCOMPILERS_ASSERT(false);
                     }
                     to_be_imported_later.push(std::make_pair(proc_remote_sym, mangled_name));
                 }
@@ -1657,7 +1657,7 @@ public:
         // TODO: check arguments given to requires
         if (requirement_map.find(req_name) == requirement_map.end()) {
             // TODO: provide error message for undefined requirement
-            LFORTRAN_ASSERT(false);
+            LCOMPILERS_ASSERT(false);
         }
         called_requirement = requirement_map[req_name];
     }

@@ -67,7 +67,7 @@ template <typename T, astType type>
 static inline T** vec_cast(const Vec<ast_t*> &x) {
     T **s = (T**)x.p;
     for (size_t i=0; i < x.size(); i++) {
-        LFORTRAN_ASSERT((s[i]->base.type == type))
+        LCOMPILERS_ASSERT((s[i]->base.type == type))
     }
     return s;
 }
@@ -763,10 +763,10 @@ ast_t* implied_do3(Allocator &al, Location &loc,
 
 char *str2str_null(Allocator &al, const LFortran::Str &s) {
     if (s.p == nullptr) {
-        LFORTRAN_ASSERT(s.n == 0)
+        LCOMPILERS_ASSERT(s.n == 0)
         return nullptr;
     } else {
-        LFORTRAN_ASSERT(s.n > 0)
+        LCOMPILERS_ASSERT(s.n > 0)
         return s.c_str(al);
     }
 }
@@ -859,8 +859,8 @@ ast_t* ALLOCATE_STMT0(Allocator &al,
 #define DEALLOCATE_STMT(args, l) DEALLOCATE_STMT1(p.m_a, args, l)
 
 char* def_op_to_str(Allocator &al, const LFortran::Str &s) {
-    LFORTRAN_ASSERT(s.p[0] == '.');
-    LFORTRAN_ASSERT(s.p[s.size()-1] == '.');
+    LCOMPILERS_ASSERT(s.p[0] == '.');
+    LCOMPILERS_ASSERT(s.p[s.size()-1] == '.');
     std::string s0 = s.str();
     s0 = s0.substr(1, s.size()-2);
     LFortran::Str s2;
@@ -935,13 +935,13 @@ void extract_args1(Allocator &al,
     for (auto &item : args0) {
         if (item.keyword) {
             keyword_t kw;
-            LFORTRAN_ASSERT(item.kw.m_value != nullptr);
+            LCOMPILERS_ASSERT(item.kw.m_value != nullptr);
             kw.loc = item.kw.loc;
             kw.m_value = item.kw.m_value;
             kw.m_arg = item.kw.m_arg;
             v2.push_back(al, kw);
         } else {
-            LFORTRAN_ASSERT(item.arg.m_value != nullptr);
+            LCOMPILERS_ASSERT(item.arg.m_value != nullptr);
             v.push_back(al, item.arg.m_value);
         }
     }
@@ -1047,7 +1047,7 @@ void CONVERT_FNARRAYARG_FNARG(Allocator &al,
     Vec<fnarg_t> v;
     v.reserve(al, args.size());
     for (auto &item : args) {
-        LFORTRAN_ASSERT(!item.keyword);
+        LCOMPILERS_ASSERT(!item.keyword);
         v.push_back(al, item.arg);
     }
     s.m_args = v.p;
@@ -1329,7 +1329,7 @@ for (size_t i=0; i<decl_stmts.size(); i++) {
     if (is_a<unit_decl2_t>(*decl_stmts[i])) {
         decl.push_back(al, decl_stmts[i]);
     } else {
-        LFORTRAN_ASSERT(is_a<stmt_t>(*decl_stmts[i]))
+        LCOMPILERS_ASSERT(is_a<stmt_t>(*decl_stmts[i]))
         stmt.push_back(al, decl_stmts[i]);
     }
 }

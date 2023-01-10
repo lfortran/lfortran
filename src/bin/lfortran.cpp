@@ -132,7 +132,7 @@ int emit_tokens2(const std::string &input, std::vector<std::string>
     if (res.ok) {
         toks = res.result;
     } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
     for (size_t i=0; i < toks.size(); i++) {
@@ -305,7 +305,7 @@ int prompt(bool verbose)
             if (res.ok) {
                 r = res.result;
             } else {
-                LFORTRAN_ASSERT(diagnostics.has_error())
+                LCOMPILERS_ASSERT(diagnostics.has_error())
                 continue;
             }
         } catch (const LFortran::LCompilersException &e) {
@@ -429,9 +429,9 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         toks = res.result;
-        LFORTRAN_ASSERT(toks.size() == stypes.size())
+        LCOMPILERS_ASSERT(toks.size() == stypes.size())
     } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
     for (size_t i=0; i < toks.size(); i++) {
@@ -463,7 +463,7 @@ int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
         std::cout << r.result << std::endl;
         return 0;
     } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 2;
     }
 }
@@ -488,7 +488,7 @@ int emit_ast_f90(const std::string &infile, CompilerOptions &compiler_options)
             compiler_options.use_colors);
         return 0;
     } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 2;
     }
 }
@@ -511,7 +511,7 @@ int format(const std::string &infile, bool inplace, bool color, int indent,
         r = fe.get_ast2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!r.ok) {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 2;
     }
     LFortran::AST::TranslationUnit_t* ast = r.result;
@@ -558,7 +558,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
     if (result.ok) {
         asr = result.result;
     } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
 
@@ -612,7 +612,7 @@ int emit_asr(const std::string &infile,
         r = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!r.ok) {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 2;
     }
     LFortran::ASR::TranslationUnit_t* asr = r.result;
@@ -655,7 +655,7 @@ int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
         std::cout << cpp.result;
         return 0;
     } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
 }
@@ -679,7 +679,7 @@ int emit_c(const std::string &infile, CompilerOptions &compiler_options)
         std::cout << cpp.result;
         return 0;
     } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
 }
@@ -703,7 +703,7 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
         std::cout << julia.result;
         return 0;
     } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
 }
@@ -732,13 +732,13 @@ int save_mod_files(const LFortran::ASR::TranslationUnit_t &u,
             LFortran::ASR::TranslationUnit_t *tu =
                 LFortran::ASR::down_cast2<LFortran::ASR::TranslationUnit_t>(asr);
             LFortran::diag::Diagnostics diagnostics;
-            LFORTRAN_ASSERT(LFortran::asr_verify(*tu, true, diagnostics));
+            LCOMPILERS_ASSERT(LFortran::asr_verify(*tu, true, diagnostics));
 
             std::string modfile_binary = LFortran::save_modfile(*tu);
 
             m->m_symtab->parent = orig_symtab;
 
-            LFORTRAN_ASSERT(LFortran::asr_verify(u, true, diagnostics));
+            LCOMPILERS_ASSERT(LFortran::asr_verify(u, true, diagnostics));
 
 	    std::filesystem::path filename { std::string(m->m_name) + ".mod" };
             std::filesystem::path fullpath = compiler_options.mod_files_dir / filename;
@@ -775,7 +775,7 @@ int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
         std::cout << llvm.result;
         return 0;
     } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
 }
@@ -801,7 +801,7 @@ int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
         std::cout << r.result;
         return 0;
     } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
 }
@@ -835,7 +835,7 @@ int compile_to_object_file(const std::string &infile,
     if (result.ok) {
         asr = result.result;
     } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
 
@@ -864,7 +864,7 @@ int compile_to_object_file(const std::string &infile,
     if (res.ok) {
         m = std::move(res.result);
     } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 5;
     }
 
@@ -909,7 +909,7 @@ int emit_wat(const std::string &infile, CompilerOptions &compiler_options)
         std::cout << r.result;
         return 0;
     } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
 }
@@ -956,7 +956,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         if (result.ok) {
             ast = result.result;
         } else {
-            LFORTRAN_ASSERT(diagnostics.has_error())
+            LCOMPILERS_ASSERT(diagnostics.has_error())
             return 1;
         }
     }
@@ -974,7 +974,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         if (result.ok) {
             asr = result.result;
         } else {
-            LFORTRAN_ASSERT(diagnostics.has_error())
+            LCOMPILERS_ASSERT(diagnostics.has_error())
             return 2;
         }
     }
@@ -992,7 +992,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         if (result.ok) {
             // pass
         } else {
-            LFORTRAN_ASSERT(diagnostics.has_error())
+            LCOMPILERS_ASSERT(diagnostics.has_error())
             return 3;
         }
     }
@@ -1057,7 +1057,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         if (result.ok) {
             ast = result.result;
         } else {
-            LFORTRAN_ASSERT(diagnostics.has_error())
+            LCOMPILERS_ASSERT(diagnostics.has_error())
             return 1;
         }
     }
@@ -1075,7 +1075,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         if (result.ok) {
             asr = result.result;
         } else {
-            LFORTRAN_ASSERT(diagnostics.has_error())
+            LCOMPILERS_ASSERT(diagnostics.has_error())
             return 2;
         }
     }
@@ -1093,7 +1093,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         if (result.ok) {
             // pass
         } else {
-            LFORTRAN_ASSERT(diagnostics.has_error())
+            LCOMPILERS_ASSERT(diagnostics.has_error())
             return 3;
         }
     }
@@ -1142,7 +1142,7 @@ int compile_to_object_file_cpp(const std::string &infile,
     if (result.ok) {
         asr = result.result;
     } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
 
@@ -1190,7 +1190,7 @@ int compile_to_object_file_cpp(const std::string &infile,
     if (res.ok) {
         src = res.result;
     } else {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return 5;
     }
 
@@ -1410,7 +1410,7 @@ int link_executable(const std::vector<std::string> &infiles,
         }
         return 0;
     } else {
-        LFORTRAN_ASSERT(false);
+        LCOMPILERS_ASSERT(false);
         return 1;
     }
 }
@@ -1894,7 +1894,7 @@ int main(int argc, char *argv[])
                 std::cerr << "The C++ backend does not work with the -S option yet." << std::endl;
                 return 1;
             } else {
-                LFORTRAN_ASSERT(false);
+                LCOMPILERS_ASSERT(false);
             }
         }
         if (arg_c) {

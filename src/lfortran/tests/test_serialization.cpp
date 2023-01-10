@@ -91,7 +91,7 @@ void asr_ser(const std::string &src) {
     LFortran::ASR::TranslationUnit_t *tu
         = LFortran::ASR::down_cast2<LFortran::ASR::TranslationUnit_t>(asr_new0);
     fix_external_symbols(*tu, symtab);
-    LFORTRAN_ASSERT(LFortran::asr_verify(*tu, true, diagnostics));
+    LCOMPILERS_ASSERT(LFortran::asr_verify(*tu, true, diagnostics));
 
     std::string asr_new = LFortran::pickle(*asr_new0);
 
@@ -113,7 +113,7 @@ void asr_mod(const std::string &src) {
     LFortran::ASR::TranslationUnit_t *asr2 = LFortran::load_modfile(al,
             modfile, true, symtab);
     fix_external_symbols(*asr2, symtab);
-    LFORTRAN_ASSERT(LFortran::asr_verify(*asr2, true, diagnostics));
+    LCOMPILERS_ASSERT(LFortran::asr_verify(*asr2, true, diagnostics));
 
     CHECK(LFortran::pickle(*asr) == LFortran::pickle(*asr2));
 }

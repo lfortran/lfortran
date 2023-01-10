@@ -87,7 +87,7 @@ public:
                 body.push_back(al, ASR::down_cast<ASR::stmt_t>(l));
             }
             // Visit the statement
-            LFORTRAN_ASSERT(current_body != nullptr)
+            LCOMPILERS_ASSERT(current_body != nullptr)
             this->visit_stmt(*m_body[i]);
             if (tmp != nullptr) {
                 ASR::stmt_t* tmp_stmt = LFortran::ASRUtils::STMT(tmp);
@@ -695,7 +695,7 @@ public:
             bool create_associate_stmt = false;
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                 ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
-                LFORTRAN_ASSERT(ASR::is_a<ASR::Variable_t>(*(tmp_var->m_v)));
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*(tmp_var->m_v)));
                 ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(tmp_var->m_v);
                 tmp_storage = variable->m_storage;
                 tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, tmp_type->base.loc, variable->m_type));
@@ -1031,7 +1031,7 @@ public:
         size_t selector_variable_n_dependencies = 0;
         if( ASR::is_a<ASR::Var_t>(*m_selector) ) {
             ASR::symbol_t* selector_sym = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
-            LFORTRAN_ASSERT(ASR::is_a<ASR::Variable_t>(*selector_sym));
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*selector_sym));
             selector_variable = ASR::down_cast<ASR::Variable_t>(selector_sym);
             selector_variable_type = selector_variable->m_type;
             selector_variable_dependencies = selector_variable->m_dependencies;
@@ -1658,7 +1658,7 @@ public:
             if (!original_sym && compiler_options.implicit_interface) {
                 create_implicit_interface_function(x, sub_name, false);
                 original_sym = current_scope->resolve_symbol(sub_name);
-                LFORTRAN_ASSERT(original_sym!=nullptr);
+                LCOMPILERS_ASSERT(original_sym!=nullptr);
             }
         }
         ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(original_sym);
@@ -1670,7 +1670,7 @@ public:
                     if (sub_name == "c_f_pointer") {
                         tmp = create_CFPointer(x);
                     } else {
-                        LFORTRAN_ASSERT(false)
+                        LCOMPILERS_ASSERT(false)
                     }
                     return;
                 }
@@ -1754,7 +1754,7 @@ public:
                 final_sym = p->m_external;
                 // Enforced by verify(), but we ensure anyway that
                 // ExternalSymbols are not chained:
-                LFORTRAN_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*final_sym))
+                LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*final_sym))
                 if (ASR::is_a<ASR::GenericProcedure_t>(*final_sym)) {
                     ASR::GenericProcedure_t *g = ASR::down_cast<ASR::GenericProcedure_t>(final_sym);
                     int idx = ASRUtils::select_generic_procedure(args, *g, x.base.base.loc,
@@ -1812,7 +1812,7 @@ public:
                     current_scope->erase_symbol(sub_name);
                     create_implicit_interface_function(x, sub_name, false);
                     original_sym = current_scope->resolve_symbol(sub_name);
-                    LFORTRAN_ASSERT(original_sym!=nullptr);
+                    LCOMPILERS_ASSERT(original_sym!=nullptr);
 
                     // One issue to solve is if `sub_name` is an argument of
                     // the current function, such as in:
@@ -1830,7 +1830,7 @@ public:
                     //
                     // We simply redo function arguments based on the updated
                     // symbol table:
-                    LFORTRAN_ASSERT(current_scope->asr_owner != nullptr)
+                    LCOMPILERS_ASSERT(current_scope->asr_owner != nullptr)
                     ASR::Function_t *current_function = ASR::down_cast2
                         <ASR::Function_t>(current_scope->asr_owner);
                     redo_function_argument(*current_function, sub_name);
