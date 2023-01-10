@@ -628,6 +628,6 @@ RUN(NAME implied_do_loops2 LABELS gfortran)
 RUN(NAME implied_do_loops3 LABELS gfortran)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
-        minpack_01_module.f90 minpack_01_func.f)
+        minpack_01_module.f90 minpack_01_func.f90)
 
 RUN(NAME external_01 LABELS gfortran llvm)
