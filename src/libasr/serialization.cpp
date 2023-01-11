@@ -237,15 +237,24 @@ class FixExternalSymbolsVisitor : public BaseWalkVisitor<FixExternalSymbolsVisit
 {
 private:
     SymbolTable *global_symtab;
+    SymbolTable *current_scope;
     SymbolTable *external_symtab;
 public:
-    FixExternalSymbolsVisitor(SymbolTable &symtab) : external_symtab{&symtab} {}
+
+    bool fixed_external_syms;
+
+    FixExternalSymbolsVisitor(SymbolTable &symtab) : external_symtab{&symtab}, fixed_external_syms{true} {}
 
     void visit_TranslationUnit(const TranslationUnit_t &x) {
         global_symtab = x.m_global_scope;
         for (auto &a : x.m_global_scope->get_scope()) {
             this->visit_symbol(*a.second);
         }
+    }
+
+    void visit_Module(const Module_t& x) {
+        current_scope = x.m_symtab;
+        BaseWalkVisitor<FixExternalSymbolsVisitor>::visit_Module(x);
     }
 
     void visit_ExternalSymbol(const ExternalSymbol_t &x) {
@@ -276,6 +285,24 @@ public:
             }
         } else if (external_symtab->get_symbol(module_name) != nullptr) {
             Module_t *m = down_cast<Module_t>(external_symtab->get_symbol(module_name));
+            symbol_t *sym = m->m_symtab->find_scoped_symbol(original_name, x.n_scope_names, x.m_scope_names);
+            if (sym) {
+                // FIXME: this is a hack, we need to pass in a non-const `x`.
+                ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
+                xx.m_external = sym;
+            } else {
+                throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
+                    + original_name + "' was not found in the module '"
+                    + module_name + "' (but the module was found)");
+            }
+        } else if (current_scope->resolve_symbol(module_name) != nullptr) {
+            ASR::symbol_t* m_sym = ASRUtils::symbol_get_past_external(
+                                    current_scope->resolve_symbol(module_name));
+            if( !m_sym ) {
+                fixed_external_syms = false;
+                return ;
+            }
+            StructType_t *m = down_cast<StructType_t>(m_sym);
             symbol_t *sym = m->m_symtab->find_scoped_symbol(original_name, x.n_scope_names, x.m_scope_names);
             if (sym) {
                 // FIXME: this is a hack, we need to pass in a non-const `x`.
@@ -332,7 +359,11 @@ public:
 void fix_external_symbols(ASR::TranslationUnit_t &unit,
         SymbolTable &external_symtab) {
     ASR::FixExternalSymbolsVisitor e(external_symtab);
-    e.visit_TranslationUnit(unit);
+    e.fixed_external_syms = false;
+    while( !e.fixed_external_syms ) {
+        e.fixed_external_syms = true;
+        e.visit_TranslationUnit(unit);
+    }
 }
 
 void fix_struct_instance_member_symbols(ASR::TranslationUnit_t &unit) {

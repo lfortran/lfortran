@@ -2126,7 +2126,7 @@ public:
                     ASR::expr_t *v_expr) {
         Vec<ASR::call_arg_t> args;
         visit_expr_list(m_args, n_args, args);
-        ASR::ClassProcedure_t *v_class_proc = ASR::down_cast<ASR::ClassProcedure_t>(v);
+        ASR::ClassProcedure_t *v_class_proc = ASR::down_cast<ASR::ClassProcedure_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t *type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
         if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
@@ -3217,7 +3217,6 @@ public:
         ASR::expr_t *v_expr = nullptr;
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
-        std::cout<<"x.n_member: "<<x.n_member<<std::endl;
         if (x.n_member >= 1) {
             visit_NameUtil(x.m_member, x.n_member - 1,
                 x.m_member[x.n_member - 1].m_name, x.base.base.loc);
@@ -3225,6 +3224,26 @@ public:
             v = resolve_deriv_type_proc(x.base.base.loc, var_name,
                     to_lower(x.m_member[x.n_member - 1].m_name),
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
+            if( v && ASR::is_a<ASR::ClassProcedure_t>(*v) ) {
+                std::string class_proc_name = ASRUtils::symbol_name(v);
+                if( v != current_scope->resolve_symbol(class_proc_name) ) {
+                    std::string imported_proc_name = "1_" + class_proc_name;
+                    if( current_scope->resolve_symbol(imported_proc_name) == nullptr ) {
+                        std::string module_name = ASRUtils::symbol_name(ASRUtils::get_asr_owner(v));
+                        ASR::symbol_t* imported_sym = ASR::down_cast<ASR::symbol_t>(
+                            ASR::make_ExternalSymbol_t(
+                                al, x.base.base.loc, current_scope, s2c(al, imported_proc_name),
+                                v, s2c(al, module_name), nullptr, 0,
+                                ASRUtils::symbol_name(v), ASR::accessType::Public
+                            )
+                        );
+                        current_scope->add_symbol(imported_proc_name, imported_sym);
+                        v = imported_sym;
+                    } else {
+                        v = current_scope->resolve_symbol(imported_proc_name);
+                    }
+                }
+            }
         } else {
             v = current_scope->resolve_symbol(var_name);
         }

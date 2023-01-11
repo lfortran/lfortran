@@ -1695,6 +1695,26 @@ public:
             original_sym = resolve_deriv_type_proc(x.base.base.loc, sub_name,
                             to_lower(x.m_member[x.n_member - 1].m_name),
                             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
+            if( original_sym && ASR::is_a<ASR::ClassProcedure_t>(*original_sym) ) {
+                std::string class_proc_name = ASRUtils::symbol_name(original_sym);
+                if( original_sym != current_scope->resolve_symbol(class_proc_name) ) {
+                    std::string imported_proc_name = "1_" + class_proc_name;
+                    if( current_scope->resolve_symbol(imported_proc_name) == nullptr ) {
+                        std::string module_name = ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_sym));
+                        ASR::symbol_t* imported_sym = ASR::down_cast<ASR::symbol_t>(
+                            ASR::make_ExternalSymbol_t(
+                                al, x.base.base.loc, current_scope, s2c(al, imported_proc_name),
+                                original_sym, s2c(al, module_name), nullptr, 0,
+                                ASRUtils::symbol_name(original_sym), ASR::accessType::Public
+                            )
+                        );
+                        current_scope->add_symbol(imported_proc_name, imported_sym);
+                        original_sym = imported_sym;
+                    } else {
+                        original_sym = current_scope->resolve_symbol(imported_proc_name);
+                    }
+                }
+            }
         } else {
             original_sym = current_scope->resolve_symbol(sub_name);
         }
@@ -1759,7 +1779,7 @@ public:
             }
         }
         Vec<ASR::call_arg_t> args_with_mdt;
-        if( x.n_member == 1 ) {
+        if( x.n_member >= 1 ) {
             args_with_mdt.reserve(al, x.n_args + 1);
             ASR::call_arg_t v_expr_call_arg;
             v_expr_call_arg.loc = v_expr->base.loc, v_expr_call_arg.m_value = v_expr;
@@ -1834,7 +1854,8 @@ public:
                         final_sym = current_scope->get_symbol(local_sym);
                     }
                 } else {
-                    if (!ASR::is_a<ASR::Function_t>(*final_sym)) {
+                    if (!ASR::is_a<ASR::Function_t>(*final_sym) &&
+                        !ASR::is_a<ASR::ClassProcedure_t>(*final_sym)) {
                         throw SemanticError("ExternalSymbol must point to a Subroutine", x.base.base.loc);
                     }
                     final_sym=original_sym;

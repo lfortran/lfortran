@@ -48,6 +48,9 @@ static inline ASR::symbol_t *symbol_get_past_external(ASR::symbol_t *f)
 {
     if (f && f->type == ASR::symbolType::ExternalSymbol) {
         ASR::ExternalSymbol_t *e = ASR::down_cast<ASR::ExternalSymbol_t>(f);
+        if( e->m_external == nullptr ) {
+            return nullptr;
+        }
         LFORTRAN_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*e->m_external));
         return e->m_external;
     } else {
@@ -443,6 +446,14 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         }
         default : throw LCompilersException("Not implemented");
     }
+}
+
+static inline ASR::symbol_t *get_asr_owner(const ASR::symbol_t *sym) {
+    const SymbolTable *s = symbol_parent_symtab(sym);
+    if( !ASR::is_a<ASR::symbol_t>(*s->asr_owner) ) {
+        return nullptr;
+    }
+    return ASR::down_cast<ASR::symbol_t>(s->asr_owner);
 }
 
 // Returns the Module_t the symbol is in, or nullptr if not in a module
