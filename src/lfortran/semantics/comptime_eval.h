@@ -906,11 +906,11 @@ TRIG2(sqrt, dsqrt)
         }
         ASR::Real_t* t_real = ASR::down_cast<ASR::Real_t>(t);
         if( t_real->m_kind == 4 ) {
-            float epsilon_val = std::numeric_limits<float>::min();
+            float epsilon_val = std::numeric_limits<float>::epsilon();
             return ASR::down_cast<ASR::expr_t>(
                     ASR::make_RealConstant_t(al, loc, epsilon_val, t));
         } else if( t_real->m_kind == 8 ) {
-            double epsilon_val = std::numeric_limits<double>::min();
+            double epsilon_val = std::numeric_limits<double>::epsilon();
             return ASR::down_cast<ASR::expr_t>(
                     ASR::make_RealConstant_t(al, loc, epsilon_val, t));
         } else {
