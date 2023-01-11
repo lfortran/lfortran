@@ -3,7 +3,7 @@
 
 #include <libasr/exception.h>
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
 namespace parser_local {
 
@@ -29,9 +29,9 @@ namespace parser_local {
     class ParserError
     {
     public:
-        LFortran::diag::Diagnostic d;
+        diag::Diagnostic d;
     public:
-        ParserError(const std::string &msg, const LFortran::Location &loc)
+        ParserError(const std::string &msg, const Location &loc)
             : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::Parser, {
                     diag::Label("", {loc})
                 })}
@@ -43,7 +43,8 @@ namespace parser_local {
     };
 
 }
-}
+
+} // namespace LCompilers::LFortran
 
 
 #endif

@@ -15,12 +15,12 @@
 #include <set>
 #include <map>
 
-using LFortran::diag::Level;
-using LFortran::diag::Stage;
-using LFortran::diag::Label;
-using LFortran::diag::Diagnostic;
+using LCompilers::diag::Level;
+using LCompilers::diag::Stage;
+using LCompilers::diag::Label;
+using LCompilers::diag::Diagnostic;
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
 uint64_t static inline get_hash(ASR::asr_t *node)
 {
@@ -129,8 +129,8 @@ public:
         }
     }
     // Cast LHS or RHS if necessary
-    ASR::ttype_t *left_type = LFortran::ASRUtils::expr_type(left);
-    ASR::ttype_t *right_type = LFortran::ASRUtils::expr_type(right);
+    ASR::ttype_t *left_type = ASRUtils::expr_type(left);
+    ASR::ttype_t *right_type = ASRUtils::expr_type(right);
 
     ASR::expr_t *overloaded = nullptr;
     if ( ASRUtils::use_overloaded(left, right, asr_op,
@@ -138,7 +138,7 @@ public:
         x.base.base.loc, current_function_dependencies,
         current_module_dependencies,
         [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }) ) {
-        overloaded = LFortran::ASRUtils::EXPR(asr);
+        overloaded = ASRUtils::EXPR(asr);
     }
 
     ASR::ttype_t *source_type = nullptr;
@@ -173,11 +173,11 @@ public:
     }
 
     if( overloaded == nullptr ) {
-        LFORTRAN_ASSERT(
-            ASRUtils::check_equal_type(LFortran::ASRUtils::expr_type(left),
-                                    LFortran::ASRUtils::expr_type(right)));
+        LCOMPILERS_ASSERT(
+            ASRUtils::check_equal_type(ASRUtils::expr_type(left),
+                                    ASRUtils::expr_type(right)));
     }
-    ASR::ttype_t *type = LFortran::ASRUtils::TYPE(
+    ASR::ttype_t *type = ASRUtils::TYPE(
         ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
 
     ASR::expr_t *value = nullptr;
@@ -329,7 +329,7 @@ public:
                     result = (strcmp < 0 || strcmp == 0);
                     break;
                 }
-                default: LFORTRAN_ASSERT(false); // should never happen
+                default: LCOMPILERS_ASSERT(false); // should never happen
             }
             value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
                 al, x.base.base.loc, result, type));
@@ -375,8 +375,8 @@ public:
     }
 
     // Cast LHS or RHS if necessary
-    ASR::ttype_t *left_type = LFortran::ASRUtils::expr_type(left);
-    ASR::ttype_t *right_type = LFortran::ASRUtils::expr_type(right);
+    ASR::ttype_t *left_type = ASRUtils::expr_type(left);
+    ASR::ttype_t *right_type = ASRUtils::expr_type(right);
     ASR::expr_t **conversion_cand = &left;
     ASR::ttype_t *source_type = left_type;
     ASR::ttype_t *dest_type = right_type;
@@ -387,21 +387,21 @@ public:
     ImplicitCastRules::set_converted_value(al, x.base.base.loc, conversion_cand,
                                            source_type, dest_type);
 
-    LFORTRAN_ASSERT(
-        ASRUtils::check_equal_type(LFortran::ASRUtils::expr_type(left),
-                                   LFortran::ASRUtils::expr_type(right)));
+    LCOMPILERS_ASSERT(
+        ASRUtils::check_equal_type(ASRUtils::expr_type(left),
+                                   ASRUtils::expr_type(right)));
 
     ASR::expr_t *value = nullptr;
     // Assign evaluation to `value` if possible, otherwise leave nullptr
-    if (LFortran::ASRUtils::expr_value(left) != nullptr &&
-        LFortran::ASRUtils::expr_value(right) != nullptr) {
-        LFORTRAN_ASSERT(ASR::is_a<LFortran::ASR::Logical_t>(*dest_type))
+    if (ASRUtils::expr_value(left) != nullptr &&
+        ASRUtils::expr_value(right) != nullptr) {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Logical_t>(*dest_type))
 
         bool left_value = ASR::down_cast<ASR::LogicalConstant_t>(
-                                 LFortran::ASRUtils::expr_value(left))
+                                 ASRUtils::expr_value(left))
                                  ->m_value;
         bool right_value = ASR::down_cast<ASR::LogicalConstant_t>(
-                                  LFortran::ASRUtils::expr_value(right))
+                                  ASRUtils::expr_value(right))
                                   ->m_value;
         bool result;
         switch (op) {
@@ -433,21 +433,21 @@ public:
   inline static void visit_UnaryOp(Allocator &al, const AST::UnaryOp_t &x,
                                    ASR::expr_t *&operand, ASR::asr_t *&asr) {
 
-    ASR::ttype_t *operand_type = LFortran::ASRUtils::expr_type(operand);
+    ASR::ttype_t *operand_type = ASRUtils::expr_type(operand);
     ASR::expr_t *value = nullptr;
     if (x.m_op == AST::unaryopType::UAdd) {
 
-        if (LFortran::ASRUtils::is_integer(*operand_type)) {
-            if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
+        if (ASRUtils::is_integer(*operand_type)) {
+            if (ASRUtils::expr_value(operand) != nullptr) {
                 int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                        LFortran::ASRUtils::expr_value(operand))->m_n;
+                                        ASRUtils::expr_value(operand))->m_n;
                 asr = ASR::make_IntegerConstant_t(al, x.base.base.loc, op_value, operand_type);
             }
         }
-        else if (LFortran::ASRUtils::is_real(*operand_type)) {
-            if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
+        else if (ASRUtils::is_real(*operand_type)) {
+            if (ASRUtils::expr_value(operand) != nullptr) {
                 double op_value = ASR::down_cast<ASR::RealConstant_t>(
-                                LFortran::ASRUtils::expr_value(operand))->m_r;
+                                ASRUtils::expr_value(operand))->m_r;
                 asr = ASR::make_RealConstant_t(al, x.base.base.loc, op_value, operand_type);
             }
         }
@@ -455,10 +455,10 @@ public:
 
     } else if (x.m_op == AST::unaryopType::USub) {
 
-        if (LFortran::ASRUtils::is_integer(*operand_type)) {
-            if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
+        if (ASRUtils::is_integer(*operand_type)) {
+            if (ASRUtils::expr_value(operand) != nullptr) {
                 int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                        LFortran::ASRUtils::expr_value(operand))->m_n;
+                                        ASRUtils::expr_value(operand))->m_n;
                 value = ASR::down_cast<ASR::expr_t>(
                     ASR::make_IntegerConstant_t(al, x.base.base.loc, -op_value, operand_type));
             }
@@ -466,10 +466,10 @@ public:
                                                     operand_type, value);
             return;
         }
-        else if (LFortran::ASRUtils::is_real(*operand_type)) {
-            if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
+        else if (ASRUtils::is_real(*operand_type)) {
+            if (ASRUtils::expr_value(operand) != nullptr) {
                 double op_value = ASR::down_cast<ASR::RealConstant_t>(
-                                        LFortran::ASRUtils::expr_value(operand))->m_r;
+                                        ASRUtils::expr_value(operand))->m_r;
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
                     al, x.base.base.loc, -op_value, operand_type));
             }
@@ -477,10 +477,10 @@ public:
                                              operand_type, value);
             return;
         }
-        else if (LFortran::ASRUtils::is_complex(*operand_type)) {
-            if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
+        else if (ASRUtils::is_complex(*operand_type)) {
+            if (ASRUtils::expr_value(operand) != nullptr) {
                 ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(
-                                    LFortran::ASRUtils::expr_value(operand));
+                                    ASRUtils::expr_value(operand));
                 std::complex<double> op_value(c->m_re, c->m_im);
                 std::complex<double> result;
                 result = -op_value;
@@ -495,10 +495,10 @@ public:
 
     } else if (x.m_op == AST::unaryopType::Invert) {
 
-        if (LFortran::ASRUtils::is_integer(*operand_type)) {
-            if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
+        if (ASRUtils::is_integer(*operand_type)) {
+            if (ASRUtils::expr_value(operand) != nullptr) {
                 int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                        LFortran::ASRUtils::expr_value(operand))->m_n;
+                                        ASRUtils::expr_value(operand))->m_n;
                 value = ASR::down_cast<ASR::expr_t>(
                     ASR::make_IntegerConstant_t(al, x.base.base.loc, ~op_value, operand_type));
             }
@@ -511,7 +511,7 @@ public:
 
     } else if (x.m_op == AST::unaryopType::Not) {
 
-        if (LFortran::ASRUtils::is_logical(*operand_type)) {
+        if (ASRUtils::is_logical(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 bool op_value = ASR::down_cast<ASR::LogicalConstant_t>(
                                 ASRUtils::expr_value(operand))->m_value;
@@ -532,22 +532,22 @@ public:
   static inline void visit_StrOp(Allocator &al, const AST::StrOp_t &x,
                                  ASR::expr_t *&left, ASR::expr_t *&right,
                                  ASR::asr_t *&asr) {
-    LFORTRAN_ASSERT(x.m_op == AST::Concat)
-    ASR::ttype_t *left_type = LFortran::ASRUtils::expr_type(left);
-    ASR::ttype_t *right_type = LFortran::ASRUtils::expr_type(right);
-    LFORTRAN_ASSERT(ASR::is_a<ASR::Character_t>(*left_type))
-    LFORTRAN_ASSERT(ASR::is_a<ASR::Character_t>(*right_type))
+    LCOMPILERS_ASSERT(x.m_op == AST::Concat)
+    ASR::ttype_t *left_type = ASRUtils::expr_type(left);
+    ASR::ttype_t *right_type = ASRUtils::expr_type(right);
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::Character_t>(*left_type))
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::Character_t>(*right_type))
     ASR::Character_t *left_type2 = ASR::down_cast<ASR::Character_t>(left_type);
     ASR::Character_t *right_type2 = ASR::down_cast<ASR::Character_t>(right_type);
-    LFORTRAN_ASSERT(left_type2->n_dims == 0);
-    LFORTRAN_ASSERT(right_type2->n_dims == 0);
+    LCOMPILERS_ASSERT(left_type2->n_dims == 0);
+    LCOMPILERS_ASSERT(right_type2->n_dims == 0);
     ASR::ttype_t *dest_type = ASR::down_cast<ASR::ttype_t>(ASR::make_Character_t(al, x.base.base.loc, left_type2->m_kind,
         left_type2->m_len + right_type2->m_len, nullptr, nullptr, 0));
 
     ASR::expr_t *value = nullptr;
     // Assign evaluation to `value` if possible, otherwise leave nullptr
-    ASR::expr_t* left_value = LFortran::ASRUtils::expr_value(left);
-    ASR::expr_t* right_value = LFortran::ASRUtils::expr_value(right);
+    ASR::expr_t* left_value = ASRUtils::expr_value(left);
+    ASR::expr_t* right_value = ASRUtils::expr_value(right);
     if (left_value != nullptr && right_value != nullptr) {
         ASR::ttype_t* left_value_type = ASRUtils::expr_type(left_value);
         ASR::Character_t* left_value_type2 = ASR::down_cast<ASR::Character_t>(left_value_type);
@@ -559,7 +559,7 @@ public:
         std::string result_s = std::string(left_value_) + std::string(right_value_);
         Str s; s.from_str_view(result_s);
         result = s.c_str(al);
-        LFORTRAN_ASSERT((int64_t)strlen(result) == ASR::down_cast<ASR::Character_t>(dest_value_type)->m_len)
+        LCOMPILERS_ASSERT((int64_t)strlen(result) == ASR::down_cast<ASR::Character_t>(dest_value_type)->m_len)
         value = ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(
             al, x.base.base.loc, result, dest_value_type));
       }
@@ -572,7 +572,7 @@ static ASR::asr_t* comptime_intrinsic_real(ASR::expr_t *A,
         Allocator &al, const Location &loc) {
     int kind_int = 4;
     if (kind) {
-        ASR::expr_t* kind_value = LFortran::ASRUtils::expr_value(kind);
+        ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
         if (kind_value) {
             if (ASR::is_a<ASR::IntegerConstant_t>(*kind_value)) {
                 kind_int = ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n;
@@ -584,9 +584,9 @@ static ASR::asr_t* comptime_intrinsic_real(ASR::expr_t *A,
         }
     }
     ASR::expr_t *result = A;
-    ASR::ttype_t *dest_type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+    ASR::ttype_t *dest_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                 kind_int, nullptr, 0));
-    ASR::ttype_t *source_type = LFortran::ASRUtils::expr_type(A);
+    ASR::ttype_t *source_type = ASRUtils::expr_type(A);
 
     // TODO: this is implicit cast, use ExplicitCast
     ImplicitCastRules::set_converted_value(al, loc, &result,
@@ -599,7 +599,7 @@ static ASR::asr_t* comptime_intrinsic_int(ASR::expr_t *A,
         Allocator &al, const Location &loc) {
     int kind_int = 4;
     if (kind) {
-        ASR::expr_t* kind_value = LFortran::ASRUtils::expr_value(kind);
+        ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
         if (kind_value) {
             if (ASR::is_a<ASR::IntegerConstant_t>(*kind_value)) {
                 kind_int = ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n;
@@ -611,9 +611,9 @@ static ASR::asr_t* comptime_intrinsic_int(ASR::expr_t *A,
         }
     }
     ASR::expr_t *result = A;
-    ASR::ttype_t *dest_type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+    ASR::ttype_t *dest_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
                 kind_int, nullptr, 0));
-    ASR::ttype_t *source_type = LFortran::ASRUtils::expr_type(A);
+    ASR::ttype_t *source_type = ASRUtils::expr_type(A);
 
     // TODO: this is implicit cast, use ExplicitCast
     ImplicitCastRules::set_converted_value(al, loc, &result,
@@ -787,9 +787,9 @@ public:
                     if (std::find(current_procedure_args.begin(),
                             current_procedure_args.end(), var_name) !=
                             current_procedure_args.end()) {
-                        intent = LFortran::ASRUtils::intent_unspecified;
+                        intent = ASRUtils::intent_unspecified;
                     } else {
-                        intent = LFortran::ASRUtils::intent_local;
+                        intent = ASRUtils::intent_local;
                     }
                     v = declare_implicit_variable2(loc, var_name, intent, t);
                 } else {
@@ -797,9 +797,9 @@ public:
                     if (std::find(current_procedure_args.begin(),
                             current_procedure_args.end(), var_name) !=
                             current_procedure_args.end()) {
-                        intent = LFortran::ASRUtils::intent_unspecified;
+                        intent = ASRUtils::intent_unspecified;
                     } else {
-                        intent = LFortran::ASRUtils::intent_local;
+                        intent = ASRUtils::intent_local;
                     }
                     v = declare_implicit_variable(loc, var_name, intent);
                 }
@@ -807,7 +807,7 @@ public:
                 // DONE: fix this ad-hoc solution ==> remove this solution
                 /*
                 if (is_instantiate) {
-                    ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, loc,
+                    ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
                             1, strlen(s2c(al, var_name)), nullptr, nullptr, 0));
                     return ASR::make_StringConstant_t(al, loc, s2c(al, var_name), type);
                 }
@@ -823,7 +823,7 @@ public:
 
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
         AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time) {
-        LFORTRAN_ASSERT(dims.size() == 0);
+        LCOMPILERS_ASSERT(dims.size() == 0);
         is_compile_time = false;
         dims.reserve(al, n_dim);
         for (size_t i=0; i<n_dim; i++) {
@@ -831,14 +831,14 @@ public:
             dim.loc = m_dim[i].loc;
             if (m_dim[i].m_start) {
                 this->visit_expr(*m_dim[i].m_start);
-                dim.m_start = LFortran::ASRUtils::EXPR(tmp);
+                dim.m_start = ASRUtils::EXPR(tmp);
             } else {
                 dim.m_start = nullptr;
             }
             if (m_dim[i].m_end) {
                 this->visit_expr(*m_dim[i].m_end);
                 dim.m_length = ASRUtils::compute_length_from_start_end(al, dim.m_start,
-                                    LFortran::ASRUtils::EXPR(tmp));
+                                    ASRUtils::EXPR(tmp));
             } else {
                 dim.m_length = nullptr;
             }
@@ -861,7 +861,7 @@ public:
                 break;
             }
             default:
-                LFORTRAN_ASSERT(false);
+                LCOMPILERS_ASSERT(false);
         }
         return access_type;
     }
@@ -988,9 +988,9 @@ public:
                     // x(2) / 2 /
                     //
                     this->visit_expr(*a->m_object[i]);
-                    ASR::expr_t* object = LFortran::ASRUtils::EXPR(tmp);
+                    ASR::expr_t* object = ASRUtils::EXPR(tmp);
                     this->visit_expr(*a->m_value[i]);
-                    ASR::expr_t* value = LFortran::ASRUtils::EXPR(tmp);
+                    ASR::expr_t* value = ASRUtils::EXPR(tmp);
                     // The parser ensures object is a TK_NAME
                     // The `visit_expr` ensures it resolves as an expression
                     // which must be a `Var_t` pointing to a `Variable_t`,
@@ -1016,7 +1016,7 @@ public:
                         v2->n_dependencies = var_deps_vec.size();
                         ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
                                     object->base.loc, object, expression_value, nullptr));
-                        LFORTRAN_ASSERT(current_body != nullptr)
+                        LCOMPILERS_ASSERT(current_body != nullptr)
                         current_body->push_back(al, assign_stmt);
                     } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
                         // This is the following case:
@@ -1030,7 +1030,7 @@ public:
                         // but we can fix that later.
                         ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
                                     object->base.loc, object, expression_value, nullptr));
-                        LFORTRAN_ASSERT(current_body != nullptr)
+                        LCOMPILERS_ASSERT(current_body != nullptr)
                         current_body->push_back(al, assign_stmt);
                     } else {
                         throw SemanticError("The variable (object) type is not supported (only variables and array items are supported so far)",
@@ -1077,7 +1077,7 @@ public:
                         } else if (sa->m_attr == AST::simple_attributeType
                                 ::AttrPublic) {
                             // Do nothing (public access is the default)
-                            LFORTRAN_ASSERT(dflt_access == ASR::accessType::Public);
+                            LCOMPILERS_ASSERT(dflt_access == ASR::accessType::Public);
                         } else if (sa->m_attr == AST::simple_attributeType
                                 ::AttrSave) {
                             if (in_module) {
@@ -1169,9 +1169,9 @@ public:
                                 if (std::find(current_procedure_args.begin(),
                                         current_procedure_args.end(), sym) !=
                                         current_procedure_args.end()) {
-                                    intent = LFortran::ASRUtils::intent_unspecified;
+                                    intent = ASRUtils::intent_unspecified;
                                 } else {
-                                    intent = LFortran::ASRUtils::intent_local;
+                                    intent = ASRUtils::intent_local;
                                 }
                                 get_sym = declare_implicit_variable(s.loc, sym, intent);
                             } else {
@@ -1253,9 +1253,9 @@ public:
                 if (std::find(current_procedure_args.begin(),
                         current_procedure_args.end(), to_lower(s.m_name)) !=
                         current_procedure_args.end()) {
-                    s_intent = LFortran::ASRUtils::intent_unspecified;
+                    s_intent = ASRUtils::intent_unspecified;
                 } else {
-                    s_intent = LFortran::ASRUtils::intent_local;
+                    s_intent = ASRUtils::intent_local;
                 }
                 Vec<ASR::dimension_t> dims;
                 dims.reserve(al, 0);
@@ -1316,19 +1316,19 @@ public:
                                 AST::down_cast<AST::AttrIntent_t>(a);
                             switch (ai->m_intent) {
                                 case (AST::attr_intentType::In) : {
-                                    s_intent = LFortran::ASRUtils::intent_in;
+                                    s_intent = ASRUtils::intent_in;
                                     break;
                                 }
                                 case (AST::attr_intentType::Out) : {
-                                    s_intent = LFortran::ASRUtils::intent_out;
+                                    s_intent = ASRUtils::intent_out;
                                     break;
                                 }
                                 case (AST::attr_intentType::InOut) : {
-                                    s_intent = LFortran::ASRUtils::intent_inout;
+                                    s_intent = ASRUtils::intent_inout;
                                     break;
                                 }
                                 default : {
-                                    s_intent = LFortran::ASRUtils::intent_unspecified;
+                                    s_intent = ASRUtils::intent_unspecified;
                                     break;
                                 }
                             }
@@ -1400,10 +1400,10 @@ public:
                         temp_dims.push_back(al, temp_dim);
                         type = ASRUtils::duplicate_type(al, type, &temp_dims);
                     }
-                    init_expr = LFortran::ASRUtils::EXPR(tmp);
-                    ASR::ttype_t *init_type = LFortran::ASRUtils::expr_type(init_expr);
+                    init_expr = ASRUtils::EXPR(tmp);
+                    ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &init_expr, init_type, type);
-                    LFORTRAN_ASSERT(init_expr != nullptr);
+                    LCOMPILERS_ASSERT(init_expr != nullptr);
                     if (storage_type == ASR::storage_typeType::Parameter) {
                         value = ASRUtils::expr_value(init_expr);
                         if (value == nullptr) {
@@ -1431,7 +1431,7 @@ public:
                                             + " are not equal.", x.base.base.loc);
                                     }
                                 } else {
-                                    LFORTRAN_ASSERT(lhs_len == -2)
+                                    LCOMPILERS_ASSERT(lhs_len == -2)
                                     throw SemanticError("The LHS character len must not be allocatable in a parameter declaration",
                                         x.base.base.loc);
                                 }
@@ -1439,8 +1439,8 @@ public:
                                 throw SemanticError("The RHS character len must be known at compile time",
                                     x.base.base.loc);
                             }
-                            LFORTRAN_ASSERT(lhs_len == rhs_len)
-                            LFORTRAN_ASSERT(lhs_len >= 0)
+                            LCOMPILERS_ASSERT(lhs_len == rhs_len)
+                            LCOMPILERS_ASSERT(lhs_len >= 0)
                             lhs_type->m_len = lhs_len;
                         }
                     } else {
@@ -1476,51 +1476,51 @@ public:
             sym_type->m_kind != nullptr &&
             sym_type->m_kind->m_value != nullptr) {
             this->visit_expr(*sym_type->m_kind->m_value);
-            ASR::expr_t* kind_expr = LFortran::ASRUtils::EXPR(tmp);
+            ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
             a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
         }
         if (sym_type->m_type == AST::decl_typeType::TypeReal) {
-            type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+            type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                 a_kind, dims.p, dims.size()));
             if (is_pointer) {
-                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     type));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeDoublePrecision) {
             a_kind = 8;
-            type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+            type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                 a_kind, dims.p, dims.size()));
             if (is_pointer) {
-                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     type));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
-            type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+            type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
                 a_kind, dims.p, dims.size()));
             if (is_pointer) {
-                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     type));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeLogical) {
-            type = LFortran::ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4,
+            type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4,
                 dims.p, dims.size()));
             if (is_pointer) {
-                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     type));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeComplex) {
-            type = LFortran::ASRUtils::TYPE(ASR::make_Complex_t(al, loc,
+            type = ASRUtils::TYPE(ASR::make_Complex_t(al, loc,
                 a_kind, dims.p, dims.size()));
             if (is_pointer) {
-                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     type));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeDoubleComplex) {
             a_kind = 8;
-            type = LFortran::ASRUtils::TYPE(ASR::make_Complex_t(al, loc,
+            type = ASRUtils::TYPE(ASR::make_Complex_t(al, loc,
                 a_kind, dims.p, dims.size()));
             if (is_pointer) {
-                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     type));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeCharacter) {
@@ -1529,7 +1529,7 @@ public:
             ASR::expr_t *len_expr = nullptr;
             TypeMissingData* char_data = al.make_new<TypeMissingData>();
             char_data->sym_name = sym;
-            LFORTRAN_ASSERT(sym_type->n_kind < 3) // TODO
+            LCOMPILERS_ASSERT(sym_type->n_kind < 3) // TODO
             for (size_t i = 0; i < sym_type->n_kind; i++) {
                 // TODO: Allow len or/and kind only once (else throw SyntaxError)
                 if (sym_type->m_kind[i].m_id != nullptr
@@ -1539,7 +1539,7 @@ public:
                 }
                 switch (sym_type->m_kind[i].m_type) {
                     case (AST::kind_item_typeType::Value) : {
-                        LFORTRAN_ASSERT(sym_type->m_kind[i].m_value != nullptr);
+                        LCOMPILERS_ASSERT(sym_type->m_kind[i].m_value != nullptr);
                         if( sym_type->m_kind[i].m_value->type == AST::exprType::FuncCallOrArray ) {
                             char_data->expr = sym_type->m_kind[i].m_value;
                             char_data->scope = current_scope;
@@ -1564,7 +1564,7 @@ public:
                             }
                         } else {
                             this->visit_expr(*sym_type->m_kind[i].m_value);
-                            ASR::expr_t* len_expr0 = LFortran::ASRUtils::EXPR(tmp);
+                            ASR::expr_t* len_expr0 = ASRUtils::EXPR(tmp);
                             a_len = ASRUtils::extract_len<SemanticError>(len_expr0, loc);
                             if (a_len == -3) {
                                 len_expr = len_expr0;
@@ -1573,12 +1573,12 @@ public:
                         break;
                     }
                     case (AST::kind_item_typeType::Star) : {
-                        LFORTRAN_ASSERT(sym_type->m_kind[i].m_value == nullptr);
+                        LCOMPILERS_ASSERT(sym_type->m_kind[i].m_value == nullptr);
                         a_len = -1;
                         break;
                     }
                     case (AST::kind_item_typeType::Colon) : {
-                        LFORTRAN_ASSERT(sym_type->m_kind[i].m_value == nullptr);
+                        LCOMPILERS_ASSERT(sym_type->m_kind[i].m_value == nullptr);
                         a_len = -2;
                         break;
                     }
@@ -1587,19 +1587,19 @@ public:
             if (sym_type->m_kind == nullptr) {
                 a_len = 1; // The default len of "character :: x" is 1
             }
-            LFORTRAN_ASSERT(a_len != -10)
-            type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, loc, a_kind,
+            LCOMPILERS_ASSERT(a_len != -10)
+            type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, a_kind,
                 a_len, len_expr, dims.p, dims.size()));
             if( char_data->scope != nullptr ) {
                 char_data->type = type;
                 type_info.push_back(char_data);
             }
             if (is_pointer) {
-                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     type));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeType) {
-            LFORTRAN_ASSERT(sym_type->m_name);
+            LCOMPILERS_ASSERT(sym_type->m_name);
             std::string derived_type_name = to_lower(sym_type->m_name);
             bool type_param = false;
             if (is_requirement) {
@@ -1608,7 +1608,7 @@ public:
                     std::string name = std::string(param->m_param);
                     if(name.compare(derived_type_name) == 0){
                         type_param = true;
-                        type = LFortran::ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
+                        type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
                                                         param->m_param, param->m_dims, param->n_dims));
                     }
                 }
@@ -1618,7 +1618,7 @@ public:
                         ASR::asr_t *req_asr = pair.second;
                         if (ASR::is_a<ASR::ttype_t>(*req_asr)) {
                             type_param = true;
-                            type = LFortran::ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
+                            type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
                                                             s2c(al, derived_type_name), nullptr, 0));
                         }
                     }
@@ -1628,17 +1628,17 @@ public:
             ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
             if(!type_param) {
                 if( is_c_ptr(v, derived_type_name) ) {
-                    type = LFortran::ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+                    type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
                 } else {
                     if (!v) {
                         throw SemanticError("Derived type '"
                             + derived_type_name + "' not declared", loc);
 
                     }
-                    type = LFortran::ASRUtils::TYPE(ASR::make_Struct_t(al, loc, v,
+                    type = ASRUtils::TYPE(ASR::make_Struct_t(al, loc, v,
                         dims.p, dims.size()));
                     if (is_pointer) {
-                        type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                        type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                             type));
                     }
                 }
@@ -1665,10 +1665,10 @@ public:
                 parent_scope->add_symbol(derived_type_name, v);
                 current_scope = parent_scope;
             }
-            type = LFortran::ASRUtils::TYPE(ASR::make_Class_t(al,
+            type = ASRUtils::TYPE(ASR::make_Class_t(al,
                 loc, v, dims.p, dims.size()));
             if (is_pointer) {
-                type = LFortran::ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     type));
             }
         } else {
@@ -1683,7 +1683,7 @@ public:
     ASR::asr_t* create_DerivedTypeConstructor(const Location &loc,
             AST::fnarg_t* m_args, size_t n_args, ASR::symbol_t *v) {
         Vec<ASR::expr_t*> vals = visit_expr_list(m_args, n_args);
-        ASR::ttype_t* der = LFortran::ASRUtils::TYPE(
+        ASR::ttype_t* der = ASRUtils::TYPE(
                             ASR::make_Struct_t(al, loc, v,
                                                 nullptr, 0));
         return ASR::make_StructTypeConstructor_t(al, loc,
@@ -1705,12 +1705,12 @@ public:
             m_start = m_end = m_step = nullptr;
             if (m_args[i].m_start != nullptr) {
                 this->visit_expr(*(m_args[i].m_start));
-                m_start = LFortran::ASRUtils::EXPR(tmp);
+                m_start = ASRUtils::EXPR(tmp);
                 ai.loc = m_start->base.loc;
             }
             if (m_args[i].m_end != nullptr) {
                 this->visit_expr(*(m_args[i].m_end));
-                m_end = LFortran::ASRUtils::EXPR(tmp);
+                m_end = ASRUtils::EXPR(tmp);
                 ai.loc = m_end->base.loc;
             } else {
                 if( ASR::is_a<ASR::Character_t>(*ASRUtils::symbol_type(v)) ) {
@@ -1750,7 +1750,7 @@ public:
             }
             if (m_args[i].m_step != nullptr) {
                 this->visit_expr(*(m_args[i].m_step));
-                m_step = LFortran::ASRUtils::EXPR(tmp);
+                m_step = ASRUtils::EXPR(tmp);
                 ai.loc = m_step->base.loc;
             }
             if( m_start != nullptr &&
@@ -1849,11 +1849,11 @@ public:
         ASR::ttype_t *type = nullptr;
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_expr(*x.m_args[i]);
-            ASR::expr_t *expr = LFortran::ASRUtils::EXPR(tmp);
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             if (type == nullptr) {
-                type = LFortran::ASRUtils::expr_type(expr);
+                type = ASRUtils::expr_type(expr);
             } else {
-                if (LFortran::ASRUtils::expr_type(expr)->type != type->type) {
+                if (ASRUtils::expr_type(expr)->type != type->type) {
                     throw SemanticError("Type mismatch in array initializer",
                         x.base.base.loc);
                 }
@@ -1899,7 +1899,7 @@ public:
             if (expri) {
                 expr_duplicator.success = true;
                 ASR::expr_t* expri_copy = expr_duplicator.duplicate_expr(expri);
-                LFORTRAN_ASSERT(expr_duplicator.success);
+                LCOMPILERS_ASSERT(expr_duplicator.success);
                 arg_replacer.current_expr = &expri_copy;
                 arg_replacer.replace_expr(expri_copy);
                 exprs[i] = expri_copy;
@@ -2026,7 +2026,7 @@ public:
         if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
             return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
         } else {
-            return_type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+            return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             return_type = handle_return_type(return_type, loc, args, func);
         }
         // Create ExternalSymbol for the final subroutine:
@@ -2034,7 +2034,7 @@ public:
         //   generic_procedure_local_name @
         //     specific_procedure_remote_name
         std::string local_sym = std::string(p->m_name) + "@"
-            + LFortran::ASRUtils::symbol_name(final_sym);
+            + ASRUtils::symbol_name(final_sym);
         if (current_scope->get_symbol(local_sym) == nullptr) {
             Str name;
             name.from_str(al, local_sym);
@@ -2044,7 +2044,7 @@ public:
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 final_sym,
-                p->m_module_name, nullptr, 0, LFortran::ASRUtils::symbol_name(final_sym),
+                p->m_module_name, nullptr, 0, ASRUtils::symbol_name(final_sym),
                 ASR::accessType::Private
                 );
             final_sym = ASR::down_cast<ASR::symbol_t>(sub);
@@ -2057,7 +2057,7 @@ public:
         if (ASR::is_a<ASR::Function_t>(*final_sym2)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(final_sym2);
             if (ASRUtils::is_intrinsic_procedure(f)) {
-                ASR::symbol_t* v2 = LFortran::ASRUtils::symbol_get_past_external(v);
+                ASR::symbol_t* v2 = ASRUtils::symbol_get_past_external(v);
                 ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(v2);
 
                 ASR::asr_t *result = intrinsic_function_transformation(al, loc, gp->m_name, args);
@@ -2119,7 +2119,7 @@ public:
         if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
             type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
         } else {
-            type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+            type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
         }
         current_function_dependencies.insert(std::string(ASRUtils::symbol_name(v)));
         return ASR::make_FunctionCall_t(al, loc,
@@ -2153,7 +2153,7 @@ public:
             if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
                 type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
             } else {
-                type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+                type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
                 type = handle_return_type(type, loc, args, func);
             }
             current_function_dependencies.insert(std::string(ASRUtils::symbol_name(final_sym)));
@@ -2189,7 +2189,7 @@ public:
             if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
                 type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
             } else {
-                type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+                type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
                 type = handle_return_type(type, loc, args, func);
             }
             current_function_dependencies.insert(std::string(ASRUtils::symbol_name(final_sym)));
@@ -2207,7 +2207,7 @@ public:
         if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
             return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
         } else {
-            return_type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+            return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             return_type = handle_return_type(return_type, loc, args, func);
         }
         ASR::expr_t* value = nullptr;
@@ -2244,7 +2244,7 @@ public:
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             return create_Function(loc, args, fn);
         } else {
-            LFORTRAN_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
             return create_GenericProcedure(loc, args, fn);
         }
     }
@@ -2255,7 +2255,7 @@ public:
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             return create_Function(x.base.base.loc, args, v);
         } else {
-            LFORTRAN_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
             return create_GenericProcedureWithASTNode(x, args, v);
         }
     }
@@ -2296,7 +2296,7 @@ public:
                 scope = par_der_type->m_symtab;
                 member = par_der_type->m_symtab->resolve_symbol(var_name);
                 if( par_der_type->m_parent != nullptr ) {
-                    par_der_type = ASR::down_cast<ASR::StructType_t>(LFortran::ASRUtils::symbol_get_past_external(par_der_type->m_parent));
+                    par_der_type = ASR::down_cast<ASR::StructType_t>(ASRUtils::symbol_get_past_external(par_der_type->m_parent));
                 } else {
                     par_der_type = nullptr;
                 }
@@ -2839,7 +2839,7 @@ public:
         if( mold_ ) {
             null_ptr_type_ = ASRUtils::expr_type(mold_);
         } else {
-            LFORTRAN_ASSERT(current_variable_type_ != nullptr);
+            LCOMPILERS_ASSERT(current_variable_type_ != nullptr);
             null_ptr_type_ = current_variable_type_;
         }
         return ASR::make_PointerNullConstant_t(al, x.base.base.loc, null_ptr_type_);
@@ -3134,19 +3134,19 @@ public:
                 v = ASR::down_cast<ASR::symbol_t>(
                     ASR::make_Variable_t(al, x.base.base.loc,
                     current_scope, s2c(al, arg_name), variable_dependencies_vec.p,
-                    variable_dependencies_vec.size(), LFortran::ASRUtils::intent_unspecified,
+                    variable_dependencies_vec.size(), ASRUtils::intent_unspecified,
                     nullptr, nullptr, ASR::storage_typeType::Default, var_type,
                     ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                     false));
                 current_scope->add_symbol(arg_name, v);
             }
-            LFORTRAN_ASSERT(v != nullptr)
+            LCOMPILERS_ASSERT(v != nullptr)
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 v)));
         }
         // FIXME: accept this type as an argument
         // currently hardcoding the return type to real-8
-        ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
                                 8, nullptr, 0));
         ASR::expr_t *to_return = nullptr;
         if (add_return) {
@@ -3156,7 +3156,7 @@ public:
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
             ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
                 current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
-                variable_dependencies_vec.size(), LFortran::ASRUtils::intent_return_var,
+                variable_dependencies_vec.size(), ASRUtils::intent_return_var,
                 nullptr, nullptr, ASR::storage_typeType::Default, type,
                 ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                 false);
@@ -3189,15 +3189,15 @@ public:
         a_values_vec.reserve(al, x.n_values);
         for( size_t i = 0; i < x.n_values; i++ ) {
             this->visit_expr(*(x.m_values[i]));
-            a_values_vec.push_back(al, LFortran::ASRUtils::EXPR(tmp));
+            a_values_vec.push_back(al, ASRUtils::EXPR(tmp));
         }
         this->visit_expr(*(x.m_start));
-        a_start = LFortran::ASRUtils::EXPR(tmp);
+        a_start = ASRUtils::EXPR(tmp);
         this->visit_expr(*(x.m_end));
-        a_end = LFortran::ASRUtils::EXPR(tmp);
+        a_end = ASRUtils::EXPR(tmp);
         if( x.m_increment != nullptr ) {
             this->visit_expr(*(x.m_increment));
-            a_increment = LFortran::ASRUtils::EXPR(tmp);
+            a_increment = ASRUtils::EXPR(tmp);
         }
         ASR::expr_t** a_values = a_values_vec.p;
         size_t n_values = a_values_vec.size();
@@ -3207,20 +3207,20 @@ public:
         // a_var_name_f.from_str(al, a_var_name);
         // ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
         //                                                 ASR::intentType::Local, nullptr,
-        //                                                 ASR::storage_typeType::Default, LFortran::ASRUtils::expr_type(a_start),
+        //                                                 ASR::storage_typeType::Default, ASRUtils::expr_type(a_start),
         //                                                 ASR::abiType::Source, ASR::Public);
         std::string var_name = to_lower(x.m_var);
         if (current_scope->get_symbol(var_name) == nullptr) {
             throw SemanticError("The implied do loop variable '" + var_name + "' is not declared", x.base.base.loc);
         };
 
-        LFORTRAN_ASSERT(current_scope->get_symbol(var_name) != nullptr);
+        LCOMPILERS_ASSERT(current_scope->get_symbol(var_name) != nullptr);
         ASR::symbol_t* a_sym = current_scope->get_symbol(var_name);
         // current_scope->scope[a_var_name] = a_sym;
-        ASR::expr_t* a_var = LFortran::ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
+        ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
         tmp = ASR::make_ImpliedDoLoop_t(al, x.base.base.loc, a_values, n_values,
                                             a_var, a_start, a_end, a_increment,
-                                            LFortran::ASRUtils::expr_type(a_start), nullptr);
+                                            ASRUtils::expr_type(a_start), nullptr);
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
@@ -3258,7 +3258,7 @@ public:
                 // the symbol table.
                 create_implicit_interface_function(x, var_name, true);
                 v = current_scope->resolve_symbol(var_name);
-                LFORTRAN_ASSERT(v!=nullptr);
+                LCOMPILERS_ASSERT(v!=nullptr);
             }
         }
         if (compiler_options.implicit_interface
@@ -3276,7 +3276,7 @@ public:
             current_scope->erase_symbol(var_name);
             create_implicit_interface_function(x, var_name, true);
             v = current_scope->resolve_symbol(var_name);
-            LFORTRAN_ASSERT(v!=nullptr);
+            LCOMPILERS_ASSERT(v!=nullptr);
         }
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Function_t>(*f2)) {
@@ -3286,7 +3286,7 @@ public:
                     if (var_name == "c_loc") {
                         tmp = create_PointerToCptr(x);
                     } else {
-                        LFORTRAN_ASSERT(false)
+                        LCOMPILERS_ASSERT(false)
                     }
                     return;
                 }
@@ -3309,7 +3309,7 @@ public:
                         ASR::ExternalSymbol_t *p = ASR::down_cast<ASR::ExternalSymbol_t>(v);
                         ASR::symbol_t *f2 = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_external;
                         if (ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
-                            LFORTRAN_ASSERT(std::string(ASR::down_cast<ASR::GenericProcedure_t>(f2)->m_name) == "floor")
+                            LCOMPILERS_ASSERT(std::string(ASR::down_cast<ASR::GenericProcedure_t>(f2)->m_name) == "floor")
                             tmp = create_Floor(x, p, v);
                             return;
                         }
@@ -3317,14 +3317,14 @@ public:
                 } else if (var_name == "not") {
                     Vec<ASR::call_arg_t> args;
                     visit_expr_list(x.m_args, x.n_args, args);
-                    LFORTRAN_ASSERT(args.size() == 1);
+                    LCOMPILERS_ASSERT(args.size() == 1);
                     ASR::expr_t* operand = args[0].m_value;
                     ASR::expr_t* value = nullptr;
                     ASR::ttype_t* operand_type = ASRUtils::expr_type(operand);
-                    if (LFortran::ASRUtils::is_integer(*operand_type)) {
-                        if (LFortran::ASRUtils::expr_value(operand) != nullptr) {
+                    if (ASRUtils::is_integer(*operand_type)) {
+                        if (ASRUtils::expr_value(operand) != nullptr) {
                             int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                                   LFortran::ASRUtils::expr_value(operand))
+                                                   ASRUtils::expr_value(operand))
                                                    ->m_n;
                             value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(
                                 al, x.base.base.loc, ~op_value, operand_type));
@@ -3353,7 +3353,7 @@ public:
                         throw SemanticAbort();
                     }
                 } else {
-                    LFORTRAN_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
                     ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(f2);
                     bool function_found = false;
                     for( int i = 0; i < (int) gp->n_procs; i++ ) {
@@ -3555,21 +3555,21 @@ public:
                 break;
             // Fix compiler warning:
             default: {
-                LFORTRAN_ASSERT(false);
+                LCOMPILERS_ASSERT(false);
                 op = ASR::binopType::Pow;
             }
         }
 
         // Cast LHS or RHS if necessary
-        ASR::ttype_t *left_type = LFortran::ASRUtils::expr_type(left);
-        ASR::ttype_t *right_type = LFortran::ASRUtils::expr_type(right);
+        ASR::ttype_t *left_type = ASRUtils::expr_type(left);
+        ASR::ttype_t *right_type = ASRUtils::expr_type(right);
         ASR::expr_t *overloaded = nullptr;
         if ( ASRUtils::use_overloaded(left, right, op,
             intrinsic_op_name, curr_scope, asr, al,
             x.base.base.loc, current_function_dependencies,
             current_module_dependencies,
             [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }) ) {
-            overloaded = LFortran::ASRUtils::EXPR(asr);
+            overloaded = ASRUtils::EXPR(asr);
         }
 
         ASR::expr_t **conversion_cand = &left;
@@ -3603,10 +3603,10 @@ public:
 
             if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
                 int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                        LFortran::ASRUtils::expr_value(left))
+                                        ASRUtils::expr_value(left))
                                         ->m_n;
                 int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                        LFortran::ASRUtils::expr_value(right))
+                                        ASRUtils::expr_value(right))
                                         ->m_n;
                 int64_t result;
                 switch (op) {
@@ -3627,7 +3627,7 @@ public:
                         break;
                     // Reconsider
                     default: {
-                        LFORTRAN_ASSERT(false);
+                        LCOMPILERS_ASSERT(false);
                         op = ASR::binopType::Pow;
                     }
                 }
@@ -3643,10 +3643,10 @@ public:
 
             if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
                 double left_value = ASR::down_cast<ASR::RealConstant_t>(
-                                        LFortran::ASRUtils::expr_value(left))
+                                        ASRUtils::expr_value(left))
                                         ->m_r;
                 double right_value = ASR::down_cast<ASR::RealConstant_t>(
-                                        LFortran::ASRUtils::expr_value(right))
+                                        ASRUtils::expr_value(right))
                                         ->m_r;
                 double result;
                 switch (op) {
@@ -3667,7 +3667,7 @@ public:
                         break;
                     // Reconsider
                     default: {
-                        LFORTRAN_ASSERT(false);
+                        LCOMPILERS_ASSERT(false);
                         op = ASR::binopType::Pow;
                     }
                 }
@@ -3682,10 +3682,10 @@ public:
             if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
                 ASR::ComplexConstant_t *left0
                     = ASR::down_cast<ASR::ComplexConstant_t>(
-                            LFortran::ASRUtils::expr_value(left));
+                            ASRUtils::expr_value(left));
                 ASR::ComplexConstant_t *right0
                     = ASR::down_cast<ASR::ComplexConstant_t>(
-                            LFortran::ASRUtils::expr_value(right));
+                            ASRUtils::expr_value(right));
                 std::complex<double> left_value(left0->m_re, left0->m_im);
                 std::complex<double> right_value(right0->m_re, right0->m_im);
                 std::complex<double> result;
@@ -3707,7 +3707,7 @@ public:
                         break;
                     // Reconsider
                     default: {
-                        LFORTRAN_ASSERT(false);
+                        LCOMPILERS_ASSERT(false);
                         op = ASR::binopType::Pow;
                     }
                 }
@@ -3729,39 +3729,39 @@ public:
 
     void visit_BinOp(const AST::BinOp_t &x) {
         this->visit_expr(*x.m_left);
-        ASR::expr_t *left = LFortran::ASRUtils::EXPR(tmp);
+        ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
-        ASR::expr_t *right = LFortran::ASRUtils::EXPR(tmp);
+        ASR::expr_t *right = ASRUtils::EXPR(tmp);
         visit_BinOp2(al, x, left, right, tmp, binop2str[x.m_op], current_scope);
     }
 
     void visit_BoolOp(const AST::BoolOp_t &x) {
         this->visit_expr(*x.m_left);
-        ASR::expr_t *left = LFortran::ASRUtils::EXPR(tmp);
+        ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
-        ASR::expr_t *right = LFortran::ASRUtils::EXPR(tmp);
+        ASR::expr_t *right = ASRUtils::EXPR(tmp);
         CommonVisitorMethods::visit_BoolOp(al, x, left, right, tmp, diag);
     }
 
     void visit_StrOp(const AST::StrOp_t &x) {
         this->visit_expr(*x.m_left);
-        ASR::expr_t *left = LFortran::ASRUtils::EXPR(tmp);
+        ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
-        ASR::expr_t *right = LFortran::ASRUtils::EXPR(tmp);
+        ASR::expr_t *right = ASRUtils::EXPR(tmp);
         CommonVisitorMethods::visit_StrOp(al, x, left, right, tmp);
     }
 
     void visit_UnaryOp(const AST::UnaryOp_t &x) {
         this->visit_expr(*x.m_operand);
-        ASR::expr_t *operand = LFortran::ASRUtils::EXPR(tmp);
+        ASR::expr_t *operand = ASRUtils::EXPR(tmp);
         CommonVisitorMethods::visit_UnaryOp(al, x, operand, tmp);
     }
 
     void visit_Compare(const AST::Compare_t &x) {
         this->visit_expr(*x.m_left);
-        ASR::expr_t *left = LFortran::ASRUtils::EXPR(tmp);
+        ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
-        ASR::expr_t *right = LFortran::ASRUtils::EXPR(tmp);
+        ASR::expr_t *right = ASRUtils::EXPR(tmp);
         CommonVisitorMethods::visit_Compare(al, x, left, right, tmp,
                                             cmpop2str[x.m_op], current_scope,
                                             current_function_dependencies,
@@ -3773,14 +3773,14 @@ public:
     }
 
     void visit_Logical(const AST::Logical_t &x) {
-        ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc,
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc,
                 4, nullptr, 0));
         tmp = ASR::make_LogicalConstant_t(al, x.base.base.loc, x.m_value, type);
     }
 
     void visit_String(const AST::String_t &x) {
         int s_len = strlen(x.m_s);
-        ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc,
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc,
                 1, s_len, nullptr, nullptr, 0));
         tmp = ASR::make_StringConstant_t(al, x.base.base.loc, x.m_s, type);
     }
@@ -3818,7 +3818,7 @@ public:
                 std::string var_name = x.m_kind;
                 ASR::symbol_t *v = current_scope->resolve_symbol(var_name);
                 if (v) {
-                    const ASR::symbol_t *v3 = LFortran::ASRUtils::symbol_get_past_external(v);
+                    const ASR::symbol_t *v3 = ASRUtils::symbol_get_past_external(v);
                     if (ASR::is_a<ASR::Variable_t>(*v3)) {
                         ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v3);
                         if (v2->m_value) {
@@ -3842,7 +3842,7 @@ public:
                 }
             }
         }
-        ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Integer_t(al,
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al,
                 x.base.base.loc, ikind, nullptr, 0));
         if (BigInt::is_int_ptr(x.m_n)) {
             std::string str_repr = BigInt::largeint_to_string(x.m_n);
@@ -3866,7 +3866,7 @@ public:
             std::string var_name = s_kind;
             ASR::symbol_t *v = current_scope->resolve_symbol(var_name);
             if (v) {
-                const ASR::symbol_t *v3 = LFortran::ASRUtils::symbol_get_past_external(v);
+                const ASR::symbol_t *v3 = ASRUtils::symbol_get_past_external(v);
                 if (ASR::is_a<ASR::Variable_t>(*v3)) {
                     ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v3);
                     if (v2->m_value) {
@@ -3889,7 +3889,7 @@ public:
                     x.base.base.loc);
             }
         }
-        ASR::ttype_t *type = LFortran::ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
                 r_kind, nullptr, 0));
         tmp = ASR::make_RealConstant_t(al, x.base.base.loc, r, type);
     }
@@ -3938,9 +3938,9 @@ public:
         Vec<ASR::expr_t*> asr_list;
         asr_list.reserve(al, n);
         for (size_t i=0; i<n; i++) {
-            LFORTRAN_ASSERT(ast_list[i].m_end != nullptr);
+            LCOMPILERS_ASSERT(ast_list[i].m_end != nullptr);
             this->visit_expr(*ast_list[i].m_end);
-            ASR::expr_t *expr = LFortran::ASRUtils::EXPR(tmp);
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             asr_list.push_back(al, expr);
         }
         return asr_list;
@@ -3949,9 +3949,9 @@ public:
     void visit_expr_list(AST::fnarg_t *ast_list, size_t n, Vec<ASR::call_arg_t>& call_args) {
         call_args.reserve(al, n);
         for (size_t i = 0; i < n; i++) {
-            LFORTRAN_ASSERT(ast_list[i].m_end != nullptr);
+            LCOMPILERS_ASSERT(ast_list[i].m_end != nullptr);
             this->visit_expr(*ast_list[i].m_end);
-            ASR::expr_t *expr = LFortran::ASRUtils::EXPR(tmp);
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             ASR::call_arg_t call_arg;
             call_arg.loc = expr->base.loc;
             call_arg.m_value = expr;
@@ -4026,7 +4026,7 @@ public:
         }
         for (size_t i = 0; i < n; i++) {
             this->visit_expr(*kwargs[i].m_value);
-            ASR::expr_t *expr = LFortran::ASRUtils::EXPR(tmp);
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             std::string name = to_lower(kwargs[i].m_arg);
             auto search_optional = std::find(optional_args.begin(), optional_args.end(), name);
             if( search_optional != optional_args.end() ) {
@@ -4117,6 +4117,6 @@ public:
 
 };
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran
 
 #endif /* LFORTRAN_SEMANTICS_AST_COMMON_VISITOR_H */

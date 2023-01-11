@@ -6,36 +6,36 @@
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 
-using LFortran::AST::ast_t;
-using LFortran::AST::Declaration_t;
-using LFortran::AST::expr_t;
-using LFortran::AST::stmt_t;
-using LFortran::AST::Name_t;
-using LFortran::AST::Num_t;
-using LFortran::AST::BinOp_t;
-using LFortran::AST::UnaryOp_t;
-using LFortran::AST::Compare_t;
-using LFortran::AST::If_t;
-using LFortran::AST::Assignment_t;
-using LFortran::AST::WhileLoop_t;
-using LFortran::AST::Exit_t;
-using LFortran::AST::Return_t;
-using LFortran::AST::Cycle_t;
-using LFortran::AST::DoLoop_t;
-using LFortran::AST::Subroutine_t;
-using LFortran::AST::Function_t;
-using LFortran::AST::Program_t;
-using LFortran::AST::astType;
-using LFortran::AST::exprType;
-using LFortran::AST::stmtType;
-using LFortran::AST::operatorType;
-using LFortran::AST::unaryopType;
-using LFortran::AST::cmpopType;
-using LFortran::AST::TranslationUnit_t;
-using LFortran::AST::PickleBaseVisitor;
+using LCompilers::LFortran::AST::ast_t;
+using LCompilers::LFortran::AST::Declaration_t;
+using LCompilers::LFortran::AST::expr_t;
+using LCompilers::LFortran::AST::stmt_t;
+using LCompilers::LFortran::AST::Name_t;
+using LCompilers::LFortran::AST::Num_t;
+using LCompilers::LFortran::AST::BinOp_t;
+using LCompilers::LFortran::AST::UnaryOp_t;
+using LCompilers::LFortran::AST::Compare_t;
+using LCompilers::LFortran::AST::If_t;
+using LCompilers::LFortran::AST::Assignment_t;
+using LCompilers::LFortran::AST::WhileLoop_t;
+using LCompilers::LFortran::AST::Exit_t;
+using LCompilers::LFortran::AST::Return_t;
+using LCompilers::LFortran::AST::Cycle_t;
+using LCompilers::LFortran::AST::DoLoop_t;
+using LCompilers::LFortran::AST::Subroutine_t;
+using LCompilers::LFortran::AST::Function_t;
+using LCompilers::LFortran::AST::Program_t;
+using LCompilers::LFortran::AST::astType;
+using LCompilers::LFortran::AST::exprType;
+using LCompilers::LFortran::AST::stmtType;
+using LCompilers::LFortran::AST::operatorType;
+using LCompilers::LFortran::AST::unaryopType;
+using LCompilers::LFortran::AST::cmpopType;
+using LCompilers::LFortran::AST::TranslationUnit_t;
+using LCompilers::LFortran::AST::PickleBaseVisitor;
 
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
 std::string pickle(int token, const LFortran::YYSTYPE &yystype,
         bool /* colors */)
@@ -223,7 +223,7 @@ std::string pickle_json(LFortran::AST::TranslationUnit_t &ast, LocationManager &
 // ASR
 
 class ASRPickleVisitor :
-    public LFortran::ASR::PickleBaseVisitor<ASRPickleVisitor>
+    public ASR::PickleBaseVisitor<ASRPickleVisitor>
 {
 public:
     bool show_intrinsic_modules;
@@ -232,12 +232,12 @@ public:
         return s;
     }
     void visit_symbol(const ASR::symbol_t &x) {
-        s.append(LFortran::ASRUtils::symbol_parent_symtab(&x)->get_counter());
+        s.append(ASRUtils::symbol_parent_symtab(&x)->get_counter());
         s.append(" ");
         if (use_colors) {
             s.append(color(fg::yellow));
         }
-        s.append(LFortran::ASRUtils::symbol_name(&x));
+        s.append(ASRUtils::symbol_name(&x));
         if (use_colors) {
             s.append(color(fg::reset));
         }
@@ -282,12 +282,12 @@ public:
             s.append(x.m_name);
             s.append(")");
         } else {
-            LFortran::ASR::PickleBaseVisitor<ASRPickleVisitor>::visit_Module(x);
+            ASR::PickleBaseVisitor<ASRPickleVisitor>::visit_Module(x);
         };
     }
 };
 
-std::string pickle(LFortran::ASR::asr_t &asr, bool colors, bool indent,
+std::string pickle(ASR::asr_t &asr, bool colors, bool indent,
         bool show_intrinsic_modules) {
     ASRPickleVisitor v;
     v.use_colors = colors;
@@ -297,16 +297,16 @@ std::string pickle(LFortran::ASR::asr_t &asr, bool colors, bool indent,
     return v.get_str();
 }
 
-std::string pickle(LFortran::ASR::TranslationUnit_t &asr, bool colors, bool indent, bool show_intrinsic_modules) {
+std::string pickle(ASR::TranslationUnit_t &asr, bool colors, bool indent, bool show_intrinsic_modules) {
     return pickle((ASR::asr_t &)asr, colors, indent, show_intrinsic_modules);
 }
 
 /********************** Pickle Json *******************/
 class ASRJsonVisitor :
-    public LFortran::ASR::JsonBaseVisitor<ASRJsonVisitor>
+    public ASR::JsonBaseVisitor<ASRJsonVisitor>
 {
 public:
-    using LFortran::ASR::JsonBaseVisitor<ASRJsonVisitor>::JsonBaseVisitor;
+    using ASR::JsonBaseVisitor<ASRJsonVisitor>::JsonBaseVisitor;
 
     std::string get_str() {
         return s;
@@ -314,9 +314,9 @@ public:
 
     void visit_symbol(const ASR::symbol_t &x) {
         s.append("\"");
-        s.append(LFortran::ASRUtils::symbol_name(&x));
+        s.append(ASRUtils::symbol_name(&x));
         s.append(" (SymbolTable");
-        s.append(LFortran::ASRUtils::symbol_parent_symtab(&x)->get_counter());
+        s.append(ASRUtils::symbol_parent_symtab(&x)->get_counter());
         s.append(")\"");
     }
 
@@ -366,14 +366,14 @@ public:
     }
 };
 
-std::string pickle_json(LFortran::ASR::asr_t &asr, LocationManager &lm) {
+std::string pickle_json(ASR::asr_t &asr, LocationManager &lm) {
     ASRJsonVisitor v(lm);
     v.visit_asr(asr);
     return v.get_str();
 }
 
-std::string pickle_json(LFortran::ASR::TranslationUnit_t &asr, LocationManager &lm) {
-    return pickle_json((LFortran::ASR::asr_t &)asr, lm);
+std::string pickle_json(ASR::TranslationUnit_t &asr, LocationManager &lm) {
+    return pickle_json((ASR::asr_t &)asr, lm);
 }
 
-}
+} // namespace LCompilers::LFortran

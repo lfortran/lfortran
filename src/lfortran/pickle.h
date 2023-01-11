@@ -6,7 +6,7 @@
 #include <libasr/asr.h>
 #include <libasr/location.h>
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
     // Pickle a token
     std::string pickle(int token, const YYSTYPE &yystype, bool colors=false);
@@ -25,6 +25,6 @@ namespace LFortran {
     std::string pickle_json(ASR::asr_t &asr, LocationManager &lm);
     std::string pickle_json(ASR::TranslationUnit_t &asr, LocationManager &lm);
 
-}
+} // namespace LCompilers::LFortran
 
 #endif // LFORTRAN_PICKLE_H

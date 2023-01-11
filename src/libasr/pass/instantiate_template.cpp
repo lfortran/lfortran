@@ -5,7 +5,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/semantic_exception.h>
 
-namespace LFortran {
+namespace LCompilers {
 
 class FunctionInstantiator : public ASR::BaseExprStmtDuplicator<FunctionInstantiator>
 {
@@ -275,7 +275,7 @@ public:
                 ASR::expr_t* right_arg = duplicate_expr(x->m_args[1].m_value);
                 return make_BinOp_helper(left_arg, right_arg, ASR::binopType::Div, x->base.base.loc);
             }
-            LFORTRAN_ASSERT(false); // should never happen
+            LCOMPILERS_ASSERT(false); // should never happen
         }
         if (ASRUtils::is_restriction_function(name)) {
             name = rt_subs[call_name];
@@ -381,7 +381,7 @@ public:
                 switch (op) {
                     case (ASR::binopType::Add): { result = left_value + right_value; break; }
                     case (ASR::binopType::Div): { result = left_value / right_value; break; }
-                    default: { LFORTRAN_ASSERT(false); } // should never happen
+                    default: { LCOMPILERS_ASSERT(false); } // should never happen
                 }
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, result, dest_type));
             }
@@ -396,7 +396,7 @@ public:
                 switch (op) {
                     case (ASR::binopType::Add): { result = left_value + right_value; break; }
                     case (ASR::binopType::Div): { result = left_value / right_value; break; }
-                    default: { LFORTRAN_ASSERT(false); }
+                    default: { LCOMPILERS_ASSERT(false); }
                 }
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, result, dest_type));
             }
@@ -433,4 +433,4 @@ ASR::symbol_t* pass_instantiate_generic_function(Allocator &al, std::map<std::st
     return ASR::down_cast<ASR::symbol_t>(new_function);
 }
 
-}
+} // namespace LCompilers
