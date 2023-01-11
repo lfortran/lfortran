@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-10-30 20:02+0000\n"
-"Last-Translator: Ian Giestas Pauli <iangiestaspauli@gmail.com>\n"
+"PO-Revision-Date: 2023-01-12 15:52+0000\n"
+"Last-Translator: ssantos <ssantos@web.de>\n"
 "Language-Team: Portuguese <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/pt/>\n"
 "Language: pt\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.14.2-dev\n"
+"X-Generator: Weblate 4.15.1-dev\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../../doc/src/ast_and_asr.ipynb:9
@@ -201,7 +201,7 @@ msgstr "Passo 1. Crie um novo ramo"
 
 #: ../../doc/src/contributing.md:42
 msgid "Step 2. Make changes in relevant file(s)"
-msgstr "Passo 3. Faça mudanças no(s) arquivo(s) relevante(s)"
+msgstr "Passo 3. Faça mudanças no(s) ficheiro(s) relevante(s)"
 
 #: ../../doc/src/contributing.md:44
 msgid "Step 3. Commit the changes:"
@@ -292,11 +292,11 @@ msgid ""
 "*semantics.h*.Finally we extend *pickle.cpp* so that the new operator can"
 " print itself."
 msgstr ""
-"Agora temos que fazer o parsing do novo operador. Nós adicionamos ele à AST "
-"ao extender o BinOp com o operador \"chapéu\" ao modificar o arquivo *AST."
-"asdl*. Então, colocamos ele no *parse.yy* para realizar o parsing "
-"apropriadamente e gerar a nova AST em *semantics.h*. Por fim, estendemos o "
-"arquivo *pickle.cpp* para que o novo operador possa ser mostrado."
+"Agora temos que fazer o parsing do novo operador. Adicionamo-lo à AST ao "
+"extender o BinOp com o operador \"chapéu\" ao modificar o ficheiro *AST.asdl*"
+". Então, colocamos-o no *parse.yy* para realizar o parsing apropriadamente e "
+"gerar a nova AST em *semantics.h*. Por fim, estendemos o ficheiro *pickle."
+"cpp* para que o novo operador possa ser mostrado."
 
 #: ../../doc/src/contributing.md:102
 msgid ":fontawesome-solid-code:*grammar/AST.asdl*"
@@ -516,8 +516,8 @@ msgid ""
 "LFortran session or in a Jupyter kernel)."
 msgstr ""
 "Geração de código de máquina: LLVM fará todas as suas otimizações e gerará "
-"código de máquina (como um executável, uma biblioteca, um arquivo objeto, ou "
-"carregado e executado usando JIT como parte de uma sessão interativa "
+"código de máquina (como um executável, uma biblioteca, um ficheiro objeto, "
+"ou carregado e executado usando JIT como parte de uma sessão interativa "
 "LFortran ou em um kernel do Jupyter)."
 
 #: ../../doc/src/design.md:34
@@ -3941,7 +3941,7 @@ msgstr "RUN"
 
 #: ../../doc/src/progress.md
 msgid "Filename"
-msgstr "Nome do arquivo"
+msgstr "Nome do ficheiro"
 
 #: ../../doc/src/progress.md
 msgid "`Pure Fortran sin(x) implementation`"
