@@ -241,9 +241,10 @@ private:
     SymbolTable *external_symtab;
 public:
 
+    int attempt;
     bool fixed_external_syms;
 
-    FixExternalSymbolsVisitor(SymbolTable &symtab) : external_symtab{&symtab}, fixed_external_syms{true} {}
+    FixExternalSymbolsVisitor(SymbolTable &symtab) : external_symtab{&symtab}, attempt{0}, fixed_external_syms{true} {}
 
     void visit_TranslationUnit(const TranslationUnit_t &x) {
         global_symtab = x.m_global_scope;
@@ -314,6 +315,10 @@ public:
                     + module_name + "' (but the module was found)");
             }
         } else {
+            if( attempt <= 1 ) {
+                fixed_external_syms = false;
+                return ;
+            }
             throw LCompilersException("ExternalSymbol cannot be resolved, the module '"
                 + module_name + "' was not found, so the symbol '"
                 + original_name + "' could not be resolved");
@@ -359,9 +364,11 @@ public:
 void fix_external_symbols(ASR::TranslationUnit_t &unit,
         SymbolTable &external_symtab) {
     ASR::FixExternalSymbolsVisitor e(external_symtab);
-    e.fixed_external_syms = false;
-    while( !e.fixed_external_syms ) {
-        e.fixed_external_syms = true;
+    e.fixed_external_syms = true;
+    e.attempt = 1;
+    e.visit_TranslationUnit(unit);
+    if( !e.fixed_external_syms ) {
+        e.attempt = 2;
         e.visit_TranslationUnit(unit);
     }
 }

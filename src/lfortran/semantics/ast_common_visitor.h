@@ -2377,7 +2377,7 @@ public:
             v = ASRUtils::symbol_get_past_external(parent);
             der_type = ASR::down_cast<ASR::StructType_t>(v);
         }
-        ASR::symbol_t* member = der_type->m_symtab->resolve_symbol(var_name);
+        ASR::symbol_t* member = der_type->m_symtab->get_symbol(var_name);
         if( member != nullptr ) {
             scope = der_type->m_symtab;
         } else if( der_type->m_parent != nullptr ) {
