@@ -1405,22 +1405,49 @@ public:
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(sub));
         } else if (ASR::is_a<ASR::GenericProcedure_t>(*t)) {
             if (current_scope->get_symbol(local_sym) != nullptr) {
-                throw SemanticError("Symbol already defined",
-                    loc);
+                ASR::symbol_t* gp_sym = current_scope->get_symbol(local_sym);
+                LFORTRAN_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*gp_sym));
+                ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(gp_sym);
+                ASR::GenericProcedure_t* gp_ext = ASR::down_cast<ASR::GenericProcedure_t>(t);
+                Vec<ASR::symbol_t*> gp_procs;
+                gp_procs.reserve(al, gp->n_procs + gp_ext->n_procs);
+                for( size_t i = 0; i < gp->n_procs; i++ ) {
+                    gp_procs.push_back(al, gp->m_procs[i]);
+                }
+                for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
+                    ASR::symbol_t* m_proc = current_scope->resolve_symbol(
+                        ASRUtils::symbol_name(gp_ext->m_procs[i]));
+                    LFORTRAN_ASSERT(m_proc != nullptr);
+                    gp_procs.push_back(al, m_proc);
+                }
+                gp->m_procs = gp_procs.p;
+                gp->n_procs = gp_procs.size();
+            } else {
+                ASR::GenericProcedure_t *gp_ext = ASR::down_cast<ASR::GenericProcedure_t>(t);
+                Vec<ASR::symbol_t*> gp_procs;
+                gp_procs.reserve(al, gp_ext->n_procs);
+                bool are_all_present = true;
+                for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
+                    ASR::symbol_t* m_proc = current_scope->resolve_symbol(
+                        ASRUtils::symbol_name(gp_ext->m_procs[i]));
+                    if( m_proc == nullptr ) {
+                        are_all_present = false;
+                        break;
+                    }
+                    gp_procs.push_back(al, m_proc);
+                }
+                ASR::asr_t *ep = nullptr;
+                if( are_all_present ) {
+                    ep = ASR::make_GenericProcedure_t(
+                        al, t->base.loc, current_scope, s2c(al, local_sym),
+                        gp_procs.p, gp_procs.size(), dflt_access);
+                } else {
+                    ep = ASR::make_ExternalSymbol_t(al, t->base.loc,
+                        current_scope, s2c(al, local_sym), t,
+                        m->m_name, nullptr, 0, gp_ext->m_name, dflt_access);
+                }
+                current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
             }
-            ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(t);
-            Str name;
-            name.from_str(al, local_sym);
-            char *cname = name.c_str(al);
-            ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
-                al, t->base.loc,
-                current_scope,
-                /* a_name */ cname,
-                t,
-                m->m_name, nullptr, 0, gp->m_name,
-                dflt_access
-                );
-            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
         } else if (ASR::is_a<ASR::CustomOperator_t>(*t)) {
             if (current_scope->get_symbol(local_sym) != nullptr) {
                 throw SemanticError("Symbol already defined",
@@ -1447,7 +1474,7 @@ public:
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
         } else if (ASR::is_a<ASR::ExternalSymbol_t>(*t)) {
             if (current_scope->get_symbol(local_sym) != nullptr) {
-                throw SemanticError("Symbol already defined", loc);
+                throw SemanticError("Symbol " + local_sym +" already defined", loc);
             }
             // Repack ExternalSymbol to point directly to the original symbol
             ASR::ExternalSymbol_t *es = ASR::down_cast<ASR::ExternalSymbol_t>(t);

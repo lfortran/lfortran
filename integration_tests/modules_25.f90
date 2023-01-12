@@ -13,6 +13,10 @@ module tomlf_type_array
 
    end type toml_array
 
+   interface new
+      module procedure :: new_array
+   end interface
+
 
 contains
 
@@ -27,5 +31,8 @@ subroutine destroy(self)
    end if
 end subroutine destroy
 
+subroutine new_array(self)
+   type(toml_array), intent(out) :: self
+end subroutine new_array
 
 end module tomlf_type_array
