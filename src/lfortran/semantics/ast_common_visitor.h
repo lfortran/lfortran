@@ -1365,9 +1365,8 @@ public:
                         ASR::symbol_t *sym_found = current_scope->resolve_symbol(
                             func_call->m_func);
                         if (sym_found == nullptr) {
-                            std::string type_name(func_call->m_func);
-                            throw SemanticError("Derived type `" + type_name +
-                                "` is not defined", func_call->base.base.loc);
+                            visit_FuncCallOrArray(*func_call);
+                            init_expr = ASRUtils::EXPR(tmp);
                         }
                     } else {
                         throw SemanticError("Only function call assignment is allowed for now",
