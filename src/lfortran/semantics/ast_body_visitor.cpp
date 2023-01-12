@@ -1064,9 +1064,10 @@ public:
                     ASR::symbol_t* sym = current_scope->resolve_symbol(std::string(class_stmt->m_id));
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
-                        if( ASR::is_a<ASR::StructType_t>(*sym) ) {
+                        ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
+                        if( ASR::is_a<ASR::StructType_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_Struct_t(al, sym->base.loc, sym, nullptr, 0));
-                        } else if( ASR::is_a<ASR::ClassType_t>(*sym) ) {
+                        } else if( ASR::is_a<ASR::ClassType_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_Class_t(al, sym->base.loc, sym, nullptr, 0));
                         } else {
                             throw SemanticError("Only class and derived type in select type test expressions.",
@@ -1100,9 +1101,10 @@ public:
                     ASR::symbol_t* sym = current_scope->resolve_symbol(std::string(type_stmt_name->m_name));
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
-                        if( ASR::is_a<ASR::StructType_t>(*sym) ) {
+                        ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
+                        if( ASR::is_a<ASR::StructType_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_Struct_t(al, sym->base.loc, sym, nullptr, 0));
-                        } else if( ASR::is_a<ASR::ClassType_t>(*sym) ) {
+                        } else if( ASR::is_a<ASR::ClassType_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_Class_t(al, sym->base.loc, sym, nullptr, 0));
                         } else {
                             throw SemanticError("Only class and derived type in select type test expressions.",
