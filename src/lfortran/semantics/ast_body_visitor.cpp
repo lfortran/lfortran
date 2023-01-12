@@ -1700,7 +1700,23 @@ public:
                 if( original_sym != current_scope->resolve_symbol(class_proc_name) ) {
                     std::string imported_proc_name = "1_" + class_proc_name;
                     if( current_scope->resolve_symbol(imported_proc_name) == nullptr ) {
-                        std::string module_name = ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_sym));
+                        ASR::symbol_t* module_sym = ASRUtils::get_asr_owner(original_sym);
+                        std::string module_name = ASRUtils::symbol_name(module_sym);
+                        if( current_scope->resolve_symbol(module_name) == nullptr ) {
+                            std::string imported_module_name = "1_" + module_name;
+                            if( current_scope->resolve_symbol(imported_module_name) == nullptr ) {
+                                LFORTRAN_ASSERT(ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(module_sym)));
+                                ASR::symbol_t* imported_module = ASR::down_cast<ASR::symbol_t>(
+                                    ASR::make_ExternalSymbol_t(
+                                        al, x.base.base.loc, current_scope, s2c(al, imported_module_name),
+                                        module_sym, ASRUtils::symbol_name(ASRUtils::get_asr_owner(module_sym)),
+                                        nullptr, 0, s2c(al, module_name), ASR::accessType::Public
+                                    )
+                                );
+                                current_scope->add_symbol(imported_module_name, imported_module);
+                            }
+                            module_name = imported_module_name;
+                        }
                         ASR::symbol_t* imported_sym = ASR::down_cast<ASR::symbol_t>(
                             ASR::make_ExternalSymbol_t(
                                 al, x.base.base.loc, current_scope, s2c(al, imported_proc_name),

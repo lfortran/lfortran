@@ -254,8 +254,17 @@ public:
     }
 
     void visit_Module(const Module_t& x) {
+        SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         BaseWalkVisitor<FixExternalSymbolsVisitor>::visit_Module(x);
+        current_scope = current_scope_copy;
+    }
+
+    void visit_Function(const Function_t& x) {
+        SymbolTable* current_scope_copy = current_scope;
+        current_scope = x.m_symtab;
+        BaseWalkVisitor<FixExternalSymbolsVisitor>::visit_Function(x);
+        current_scope = current_scope_copy;
     }
 
     void visit_ExternalSymbol(const ExternalSymbol_t &x) {

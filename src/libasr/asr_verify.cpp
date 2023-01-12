@@ -507,10 +507,16 @@ public:
             } else {
                 asr_owner_name = m->m_name;
             }
+            std::string x_m_module_name = x.m_module_name;
+            if( current_symtab->resolve_symbol(x.m_module_name) ) {
+                x_m_module_name = ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(
+                        current_symtab->resolve_symbol(x.m_module_name)));
+            }
             require(is_valid_owner,
                 "ExternalSymbol::m_external is not in a module or struct type");
-            require(std::string(x.m_module_name) == asr_owner_name,
-                "ExternalSymbol::m_module_name `" + std::string(x.m_module_name)
+            require(x_m_module_name == asr_owner_name,
+                "ExternalSymbol::m_module_name `" + x_m_module_name
                 + "` must match external's module name `" + asr_owner_name + "`");
             ASR::symbol_t *s = nullptr;
             if( m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external)) ) {
