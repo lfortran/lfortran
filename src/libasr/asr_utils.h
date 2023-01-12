@@ -1811,6 +1811,7 @@ inline bool is_parent(ASR::StructType_t* a, ASR::StructType_t* b) {
         if( current_parent == (ASR::symbol_t*) a ) {
             return true;
         }
+        current_parent = ASRUtils::symbol_get_past_external(current_parent);
         LFORTRAN_ASSERT(ASR::is_a<ASR::StructType_t>(*current_parent));
         current_parent = ASR::down_cast<ASR::StructType_t>(current_parent)->m_parent;
     }
