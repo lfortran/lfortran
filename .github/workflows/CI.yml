@@ -225,7 +225,7 @@ jobs:
             git checkout c5b5f86be92fd80aa0449aa24a44d6209b277633
             mkdir lf
             cd lf
-            FC=$(PWD)/../../src/bin/lfortran cmake ..
+            FC=$(pwd)/../../src/bin/lfortran cmake ..
             make
             examples/example_hybrd
 
