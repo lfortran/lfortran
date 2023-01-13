@@ -289,17 +289,9 @@
                                         ()
                                     )
                                     Sub
-                                    (Cast
-                                        (RealConstant
-                                            0.000000
-                                            (Real 4 [])
-                                        )
-                                        RealToReal
+                                    (RealConstant
+                                        0.000000
                                         (Real 8 [])
-                                        (RealConstant
-                                            0.000000
-                                            (Real 8 [])
-                                        )
                                     )
                                     (Real 8 [])
                                     (RealConstant
@@ -315,17 +307,9 @@
                                 ()
                             )
                             Gt
-                            (Cast
-                                (RealConstant
-                                    0.000000
-                                    (Real 4 [])
-                                )
-                                RealToReal
+                            (RealConstant
+                                0.000000
                                 (Real 8 [])
-                                (RealConstant
-                                    0.000000
-                                    (Real 8 [])
-                                )
                             )
                             (Logical 4 [])
                             (LogicalConstant
@@ -360,17 +344,9 @@
                                             ()
                                         )
                                         Pow
-                                        (Cast
-                                            (RealConstant
-                                                0.500000
-                                                (Real 4 [])
-                                            )
-                                            RealToReal
+                                        (RealConstant
+                                            0.500000
                                             (Real 8 [])
-                                            (RealConstant
-                                                0.500000
-                                                (Real 8 [])
-                                            )
                                         )
                                         (Real 8 [])
                                         (RealConstant
@@ -379,17 +355,9 @@
                                         )
                                     )
                                     Sub
-                                    (Cast
-                                        (RealConstant
-                                            0.000000
-                                            (Real 4 [])
-                                        )
-                                        RealToReal
+                                    (RealConstant
+                                        0.000000
                                         (Real 8 [])
-                                        (RealConstant
-                                            0.000000
-                                            (Real 8 [])
-                                        )
                                     )
                                     (Real 8 [])
                                     (RealConstant
@@ -405,17 +373,9 @@
                                 ()
                             )
                             Gt
-                            (Cast
-                                (RealConstant
-                                    0.000000
-                                    (Real 4 [])
-                                )
-                                RealToReal
+                            (RealConstant
+                                0.000000
                                 (Real 8 [])
-                                (RealConstant
-                                    0.000000
-                                    (Real 8 [])
-                                )
                             )
                             (Logical 4 [])
                             (LogicalConstant
