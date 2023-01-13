@@ -102,26 +102,6 @@
                                     kind
                                     Private
                                 ),
-                            sqrt:
-                                (ExternalSymbol
-                                    2
-                                    sqrt
-                                    13 sqrt
-                                    lfortran_intrinsic_math
-                                    []
-                                    sqrt
-                                    Private
-                                ),
-                            sqrt@dsqrt:
-                                (ExternalSymbol
-                                    2
-                                    sqrt@dsqrt
-                                    13 dsqrt
-                                    lfortran_intrinsic_math
-                                    []
-                                    dsqrt
-                                    Private
-                                ),
                             x:
                                 (Variable
                                     2
@@ -203,10 +183,8 @@
                     )
                     (Print
                         ()
-                        [(FunctionCall
-                            2 sqrt@dsqrt
-                            2 sqrt
-                            [((FunctionCall
+                        [(RealBinOp
+                            (FunctionCall
                                 2 epsilon@depsilon
                                 2 epsilon
                                 [((RealConstant
@@ -219,13 +197,25 @@
                                     (Real 8 [])
                                 )
                                 ()
-                            ))]
+                            )
+                            Pow
+                            (Cast
+                                (RealConstant
+                                    0.500000
+                                    (Real 4 [])
+                                )
+                                RealToReal
+                                (Real 8 [])
+                                (RealConstant
+                                    0.500000
+                                    (Real 8 [])
+                                )
+                            )
                             (Real 8 [])
                             (RealConstant
                                 0.000000
                                 (Real 8 [])
                             )
-                            ()
                         )]
                         ()
                         ()
@@ -354,10 +344,8 @@
                                 2 abs@dabs
                                 2 abs
                                 [((RealBinOp
-                                    (FunctionCall
-                                        2 sqrt@dsqrt
-                                        2 sqrt
-                                        [((FunctionCall
+                                    (RealBinOp
+                                        (FunctionCall
                                             2 epsilon@depsilon
                                             2 epsilon
                                             [((RealConstant
@@ -370,13 +358,25 @@
                                                 (Real 8 [])
                                             )
                                             ()
-                                        ))]
+                                        )
+                                        Pow
+                                        (Cast
+                                            (RealConstant
+                                                0.500000
+                                                (Real 4 [])
+                                            )
+                                            RealToReal
+                                            (Real 8 [])
+                                            (RealConstant
+                                                0.500000
+                                                (Real 8 [])
+                                            )
+                                        )
                                         (Real 8 [])
                                         (RealConstant
                                             0.000000
                                             (Real 8 [])
                                         )
-                                        ()
                                     )
                                     Sub
                                     (Cast
