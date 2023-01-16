@@ -63,10 +63,13 @@ declare float @llvm.pow.f32(float, float) #0
 
 declare void @_lfortran_printf(i8*, ...)
 
-define i32 @main() {
+define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
   call void @__module_class_circle2__xx_lcompilers_changed_main_xx()
   ret i32 0
 }
+
+declare void @_lpython_set_argv(i32, i8**)
 
 attributes #0 = { nounwind readnone speculatable willreturn }

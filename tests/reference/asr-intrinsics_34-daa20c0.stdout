@@ -262,7 +262,7 @@
                             )
                             (Logical 4 [])
                             (LogicalConstant
-                                .true.
+                                .false.
                                 (Logical 4 [])
                             )
                         )
@@ -295,7 +295,7 @@
                                     )
                                     (Real 8 [])
                                     (RealConstant
-                                        -0.000000
+                                        0.000000
                                         (Real 8 [])
                                     )
                                 ))]
@@ -361,7 +361,7 @@
                                     )
                                     (Real 8 [])
                                     (RealConstant
-                                        -0.000000
+                                        0.000000
                                         (Real 8 [])
                                     )
                                 ))]
@@ -379,7 +379,7 @@
                             )
                             (Logical 4 [])
                             (LogicalConstant
-                                .true.
+                                .false.
                                 (Logical 4 [])
                             )
                         )
