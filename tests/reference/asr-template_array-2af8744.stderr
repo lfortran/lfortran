@@ -1,0 +1,5 @@
+ASR verify pass error: ASR verify: The variable in ArrayItem must be an array, not a scalar
+  --> tests/../integration_tests/template_array.f90:65:24
+   |
+65 |             r = zero_t(a(0))
+   |                        ^^^^ failed here
