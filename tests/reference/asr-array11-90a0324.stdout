@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            arrays_22:
+            array11:
                 (Module
                     (SymbolTable
                         2
@@ -271,7 +271,7 @@
                                     ()
                                 )
                         })
-                    arrays_22
+                    array11
                     [lfortran_intrinsic_string]
                     .false.
                     .false.

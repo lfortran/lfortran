@@ -1,0 +1,13 @@
+{
+    "basename": "asr-array11-90a0324",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/array11.f90",
+    "infile_hash": "2e27f90604873d1c890436631e01993aa5a5517c66076e862354d6a0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-array11-90a0324.stdout",
+    "stdout_hash": "e82e5d727ac8db3d4300c0e2c96f86798fcf6ce3e914c7f6957d9985",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

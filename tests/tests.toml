@@ -685,6 +685,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "array11.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/arrays_01.f90"
 cpp = true
 asr = true
@@ -840,10 +844,6 @@ llvm = true
 
 [[test]]
 filename = "../integration_tests/arrays_20.f90"
-asr = true
-
-[[test]]
-filename = "../integration_tests/arrays_22.f90"
 asr = true
 
 [[test]]
