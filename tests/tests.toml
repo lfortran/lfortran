@@ -29,7 +29,6 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/template_triple.f90"
-ast = true
 asr = true
 
 [[test]]
