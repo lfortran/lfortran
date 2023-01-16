@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            functions_15:
+            fn5:
                 (Module
                     (SymbolTable
                         2
@@ -758,7 +758,7 @@
                                     .false.
                                 )
                         })
-                    functions_15
+                    fn5
                     [lfortran_intrinsic_math2
                     lfortran_intrinsic_builtin
                     lfortran_intrinsic_string]

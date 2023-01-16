@@ -990,6 +990,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "fn5.f90"
+asr = true
+
+[[test]]
 filename = "fn6.f90"
 asr = true
 
@@ -2327,10 +2331,6 @@ asr = true
 [[test]]
 filename = "../integration_tests/functions_14.f90"
 llvm = true
-
-[[test]]
-filename = "../integration_tests/functions_15.f90"
-asr = true
 
 [[test]]
 filename = "../integration_tests/arrays_elemental_15.f90"

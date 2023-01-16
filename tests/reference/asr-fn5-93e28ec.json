@@ -1,0 +1,13 @@
+{
+    "basename": "asr-fn5-93e28ec",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/fn5.f90",
+    "infile_hash": "0f5a55688443ee8c8f4f70a1f78d616d25b3c2647bed1fd7ba267f51",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-fn5-93e28ec.stdout",
+    "stdout_hash": "041dd5357bc20dd43ac159a96e72e5c283b50294d0465cf6154eb22c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

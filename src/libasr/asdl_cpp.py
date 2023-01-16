@@ -839,7 +839,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_expr.append(("    }", 0))
 
         self.duplicate_ttype.append(("    default: {", 2))
-        self.duplicate_ttype.append(('    LFORTRAN_ASSERT_MSG(false, "Duplication of " + std::to_string(x->type) + " type is not supported yet.");', 3))
+        self.duplicate_ttype.append(('    LCOMPILERS_ASSERT_MSG(false, "Duplication of " + std::to_string(x->type) + " type is not supported yet.");', 3))
         self.duplicate_ttype.append(("    }", 2))
         self.duplicate_ttype.append(("    }", 1))
         self.duplicate_ttype.append(("", 0))
