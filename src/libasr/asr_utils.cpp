@@ -9,7 +9,7 @@
 #include <libasr/modfile.h>
 #include <libasr/pass/pass_utils.h>
 
-namespace LFortran {
+namespace LCompilers {
 
     namespace ASRUtils  {
 
@@ -74,7 +74,12 @@ std::vector<std::string> determine_function_definition_order(
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(itr.second);
             for( size_t i = 0; i < func->n_dependencies; i++ ) {
                 std::string dep = func->m_dependencies[i];
-                deps.push_back(dep);
+                // Check if the dependent variable is present in the symtab.
+                // This will help us to include only local dependencies, and we
+                // assume that dependencies in the parent symtab are already declared
+                // earlier.
+                if (symtab->get_symbol(dep) != nullptr)
+                    deps.push_back(dep);
             }
             func_dep_graph[itr.first] = deps;
         }
@@ -91,7 +96,12 @@ std::vector<std::string> determine_variable_declaration_order(
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(itr.second);
             for( size_t i = 0; i < var->n_dependencies; i++ ) {
                 std::string dep = var->m_dependencies[i];
-                deps.push_back(dep);
+                // Check if the dependent variable is present in the symtab.
+                // This will help us to include only local dependencies, and we
+                // assume that dependencies in the parent symtab are already declared
+                // earlier.
+                if (symtab->get_symbol(dep) != nullptr)
+                    deps.push_back(dep);
             }
             var_dep_graph[itr.first] = deps;
         }
@@ -121,9 +131,9 @@ void extract_module_python(const ASR::TranslationUnit_t &m,
 }
 
 ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
-    LFORTRAN_ASSERT(m.m_global_scope->get_scope().size()== 1);
+    LCOMPILERS_ASSERT(m.m_global_scope->get_scope().size()== 1);
     for (auto &a : m.m_global_scope->get_scope()) {
-        LFORTRAN_ASSERT(ASR::is_a<ASR::Module_t>(*a.second));
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*a.second));
         return ASR::down_cast<ASR::Module_t>(a.second);
     }
     throw LCompilersException("ICE: Module not found");
@@ -135,7 +145,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             LCompilers::PassOptions& pass_options,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err) {
-    LFORTRAN_ASSERT(symtab);
+    LCOMPILERS_ASSERT(symtab);
     if (symtab->get_symbol(module_name) != nullptr) {
         ASR::symbol_t *m = symtab->get_symbol(module_name);
         if (ASR::is_a<ASR::Module_t>(*m)) {
@@ -144,7 +154,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
             err("The symbol '" + module_name + "' is not a module", loc);
         }
     }
-    LFORTRAN_ASSERT(symtab->parent == nullptr);
+    LCOMPILERS_ASSERT(symtab->parent == nullptr);
     ASR::TranslationUnit_t *mod1 = find_and_load_module(al, module_name,
             *symtab, intrinsic, pass_options);
     if (mod1 == nullptr && !intrinsic) {
@@ -164,7 +174,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     symtab->add_symbol(module_name, (ASR::symbol_t*)mod2);
     mod2->m_symtab->parent = symtab;
     mod2->m_loaded_from_mod = true;
-    LFORTRAN_ASSERT(symtab->resolve_symbol(module_name));
+    LCOMPILERS_ASSERT(symtab->resolve_symbol(module_name));
 
     // Create a temporary TranslationUnit just for fixing the symbols
     ASR::asr_t *orig_asr_owner = symtab->asr_owner;
@@ -306,7 +316,7 @@ ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &m
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                             ASR::asr_t* v_var, ASR::symbol_t* member,
                             SymbolTable* current_scope) {
-    ASR::Variable_t* member_variable = ((ASR::Variable_t*)(&(member->base)));
+    ASR::Variable_t* member_variable = ASR::down_cast<ASR::Variable_t>(member);
     ASR::ttype_t* member_type = member_variable->m_type;
     switch( member_type->type ) {
         case ASR::ttypeType::Struct: {
@@ -317,23 +327,27 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                 ASR::symbol_t* der_ext;
                 char* module_name = (char*)"~nullptr";
                 ASR::symbol_t* m_external = der->m_derived_type;
-                if( m_external->type == ASR::symbolType::ExternalSymbol ) {
-                    ASR::ExternalSymbol_t* m_ext = (ASR::ExternalSymbol_t*)(&(m_external->base));
+                if( ASR::is_a<ASR::ExternalSymbol_t>(*m_external) ) {
+                    ASR::ExternalSymbol_t* m_ext = ASR::down_cast<ASR::ExternalSymbol_t>(m_external);
                     m_external = m_ext->m_external;
                     module_name = m_ext->m_module_name;
+                } else if( ASR::is_a<ASR::StructType_t>(*m_external) ) {
+                    ASR::symbol_t* asr_owner = ASRUtils::get_asr_owner(m_external);
+                    if( ASR::is_a<ASR::StructType_t>(*asr_owner) ) {
+                        module_name = ASRUtils::symbol_name(asr_owner);
+                    }
                 }
-                Str mangled_name;
-                mangled_name.from_str(al, "1_" +
+                std::string mangled_name = current_scope->get_unique_name(
                                             std::string(module_name) + "_" +
                                             std::string(der_type_name));
-                char* mangled_name_char = mangled_name.c_str(al);
-                if( current_scope->get_symbol(mangled_name.str()) == nullptr ) {
+                char* mangled_name_char = s2c(al, mangled_name);
+                if( current_scope->get_symbol(mangled_name) == nullptr ) {
                     bool make_new_ext_sym = true;
                     ASR::symbol_t* der_tmp = nullptr;
                     if( current_scope->get_symbol(std::string(der_type_name)) != nullptr ) {
                         der_tmp = current_scope->get_symbol(std::string(der_type_name));
-                        if( der_tmp->type == ASR::symbolType::ExternalSymbol ) {
-                            ASR::ExternalSymbol_t* der_ext_tmp = (ASR::ExternalSymbol_t*)(&(der_tmp->base));
+                        if( ASR::is_a<ASR::ExternalSymbol_t>(*der_tmp) ) {
+                            ASR::ExternalSymbol_t* der_ext_tmp = ASR::down_cast<ASR::ExternalSymbol_t>(der_tmp);
                             if( der_ext_tmp->m_external == m_external ) {
                                 make_new_ext_sym = false;
                             }
@@ -342,15 +356,17 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                         }
                     }
                     if( make_new_ext_sym ) {
-                        der_ext = (ASR::symbol_t*)ASR::make_ExternalSymbol_t(al, loc, current_scope, mangled_name_char, m_external,
-                                                                            module_name, nullptr, 0, s2c(al, der_type_name), ASR::accessType::Public);
-                        current_scope->add_symbol(mangled_name.str(), der_ext);
+                        der_ext = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                                        al, loc, current_scope, mangled_name_char, m_external,
+                                        module_name, nullptr, 0, s2c(al, der_type_name),
+                                        ASR::accessType::Public));
+                        current_scope->add_symbol(mangled_name, der_ext);
                     } else {
-                        LFORTRAN_ASSERT(der_tmp != nullptr);
+                        LCOMPILERS_ASSERT(der_tmp != nullptr);
                         der_ext = der_tmp;
                     }
                 } else {
-                    der_ext = current_scope->get_symbol(mangled_name.str());
+                    der_ext = current_scope->get_symbol(mangled_name);
                 }
                 ASR::asr_t* der_new = ASR::make_Struct_t(al, loc, der_ext, der->m_dims, der->n_dims);
                 member_type = ASRUtils::TYPE(der_new);
@@ -363,7 +379,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         default :
             break;
     }
-    return ASR::make_StructInstanceMember_t(al, loc, LFortran::ASRUtils::EXPR(v_var), member, member_type, nullptr);
+    return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var), member, member_type, nullptr);
 }
 
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
@@ -373,8 +389,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     std::set<std::string>& current_function_dependencies,
                     Vec<char*>& current_module_dependencies,
                     const std::function<void (const std::string &, const Location &)> err) {
-    ASR::ttype_t *left_type = LFortran::ASRUtils::expr_type(left);
-    ASR::ttype_t *right_type = LFortran::ASRUtils::expr_type(right);
+    ASR::ttype_t *left_type = ASRUtils::expr_type(left);
+    ASR::ttype_t *right_type = ASRUtils::expr_type(right);
     bool found = false;
     if( is_op_overloaded(op, intrinsic_op_name, curr_scope) ) {
         ASR::symbol_t* sym = curr_scope->resolve_symbol(intrinsic_op_name);
@@ -488,7 +504,7 @@ bool is_parent(ASR::StructType_t* a, ASR::StructType_t* b) {
         if( current_parent == (ASR::symbol_t*) a ) {
             return true;
         }
-        LFORTRAN_ASSERT(ASR::is_a<ASR::StructType_t>(*current_parent));
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*current_parent));
         current_parent = ASR::down_cast<ASR::StructType_t>(current_parent)->m_parent;
     }
     return false;
@@ -699,8 +715,8 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                std::set<std::string>& current_function_dependencies,
                                Vec<char*>& current_module_dependencies,
                                const std::function<void (const std::string &, const Location &)> err) {
-    ASR::ttype_t *target_type = LFortran::ASRUtils::expr_type(target);
-    ASR::ttype_t *value_type = LFortran::ASRUtils::expr_type(value);
+    ASR::ttype_t *target_type = ASRUtils::expr_type(target);
+    ASR::ttype_t *value_type = ASRUtils::expr_type(value);
     bool found = false;
     ASR::symbol_t* sym = curr_scope->resolve_symbol("~assign");
     ASR::expr_t* expr_dt = nullptr;
@@ -755,8 +771,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     std::set<std::string>& current_function_dependencies,
                     Vec<char*>& current_module_dependencies,
                     const std::function<void (const std::string &, const Location &)> err) {
-    ASR::ttype_t *left_type = LFortran::ASRUtils::expr_type(left);
-    ASR::ttype_t *right_type = LFortran::ASRUtils::expr_type(right);
+    ASR::ttype_t *left_type = ASRUtils::expr_type(left);
+    ASR::ttype_t *right_type = ASRUtils::expr_type(right);
     bool found = false;
     if( is_op_overloaded(op, intrinsic_op_name, curr_scope) ) {
         ASR::symbol_t* sym = curr_scope->resolve_symbol(intrinsic_op_name);
@@ -873,15 +889,15 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
     if (args.size() <= sub.n_args) {
         size_t i;
         for (i = 0; i < args.size(); i++) {
-            ASR::Variable_t *v = LFortran::ASRUtils::EXPR2VAR(sub.m_args[i]);
-            ASR::ttype_t *arg1 = LFortran::ASRUtils::expr_type(args[i].m_value);
+            ASR::Variable_t *v = ASRUtils::EXPR2VAR(sub.m_args[i]);
+            ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
             ASR::ttype_t *arg2 = v->m_type;
             if (!types_equal(*arg1, *arg2)) {
                 return false;
             }
         }
         for( ; i < sub.n_args; i++ ) {
-            ASR::Variable_t *v = LFortran::ASRUtils::EXPR2VAR(sub.m_args[i]);
+            ASR::Variable_t *v = ASRUtils::EXPR2VAR(sub.m_args[i]);
             if( v->m_presence != ASR::presenceType::Optional ) {
                 return false;
             }
@@ -942,7 +958,7 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
     int idx = select_generic_procedure(args, *g, loc, err);
     ASR::symbol_t *final_sym;
     final_sym = g->m_procs[idx];
-    LFORTRAN_ASSERT(ASR::is_a<ASR::Function_t>(*final_sym));
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*final_sym));
     bool is_subroutine = ASR::down_cast<ASR::Function_t>(final_sym)->m_return_var == nullptr;
     ASR::ttype_t *return_type = nullptr;
     if( ASR::is_a<ASR::Function_t>(*final_sym) ) {
@@ -951,7 +967,7 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
             if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
                 return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
             } else {
-                return_type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+                return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             }
         }
     }
@@ -960,7 +976,7 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
     //   generic_procedure_local_name @
     //     specific_procedure_remote_name
     std::string local_sym = std::string(p->m_name) + "@"
-        + LFortran::ASRUtils::symbol_name(final_sym);
+        + ASRUtils::symbol_name(final_sym);
     if (current_scope->get_symbol(local_sym)
         == nullptr) {
         Str name;
@@ -971,7 +987,7 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
             /* a_symtab */ current_scope,
             /* a_name */ cname,
             final_sym,
-            p->m_module_name, nullptr, 0, LFortran::ASRUtils::symbol_name(final_sym),
+            p->m_module_name, nullptr, 0, ASRUtils::symbol_name(final_sym),
             ASR::accessType::Private
             );
         final_sym = ASR::down_cast<ASR::symbol_t>(sub);
@@ -1053,4 +1069,4 @@ ASRUtils::LabelGenerator* ASRUtils::LabelGenerator::label_generator = nullptr;
 } // namespace ASRUtils
 
 
-} // namespace LFortran
+} // namespace LCompilers

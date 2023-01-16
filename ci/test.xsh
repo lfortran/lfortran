@@ -53,3 +53,4 @@ if not $IS_WIN:
     cd ..
 
     ./run_tests.py -b llvm2
+    ./run_tests.py -b llvm_rtlib

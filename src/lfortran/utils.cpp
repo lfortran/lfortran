@@ -13,7 +13,7 @@
 #include <lfortran/utils.h>
 #include <libasr/string_utils.h>
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
 void get_executable_path(std::string &executable_path, int &dirname_length)
 {
@@ -72,5 +72,4 @@ std::string get_runtime_library_header_dir()
     return get_runtime_library_dir() + "/impure";
 }
 
-
-}
+} // namespace LCompilers::LFortran

@@ -10,11 +10,12 @@ namespace {
     };
 }
 
-namespace LFortran {
+namespace LCompilers {
+
 namespace ASR {
 
-using LFortran::ASRUtils::symbol_name;
-using LFortran::ASRUtils::symbol_parent_symtab;
+using ASRUtils::symbol_name;
+using ASRUtils::symbol_parent_symtab;
 
 bool valid_char(char c) {
     if (c >= 'a' && c <= 'z') return true;
@@ -379,22 +380,25 @@ public:
             this->visit_symbol(*a.second);
             if( ASR::is_a<ASR::ClassProcedure_t>(*a.second) ||
                 ASR::is_a<ASR::GenericProcedure_t>(*a.second) ||
+                ASR::is_a<ASR::StructType_t>(*a.second) ||
+                ASR::is_a<ASR::UnionType_t>(*a.second) ||
                 ASR::is_a<ASR::CustomOperator_t>(*a.second) ) {
                 continue ;
             }
             ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a.second));
             char* aggregate_type_name = nullptr;
+            ASR::symbol_t* sym = nullptr;
             if( ASR::is_a<ASR::Struct_t>(*var_type) ) {
-                ASR::symbol_t* sym = ASR::down_cast<ASR::Struct_t>(var_type)->m_derived_type;
+                sym = ASR::down_cast<ASR::Struct_t>(var_type)->m_derived_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
             } else if( ASR::is_a<ASR::Enum_t>(*var_type) ) {
-                ASR::symbol_t* sym = ASR::down_cast<ASR::Enum_t>(var_type)->m_enum_type;
+                sym = ASR::down_cast<ASR::Enum_t>(var_type)->m_enum_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
             } else if( ASR::is_a<ASR::Union_t>(*var_type) ) {
-                ASR::symbol_t* sym = ASR::down_cast<ASR::Union_t>(var_type)->m_union_type;
+                sym = ASR::down_cast<ASR::Union_t>(var_type)->m_union_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
             }
-            if( aggregate_type_name ) {
+            if( aggregate_type_name && ASRUtils::symbol_parent_symtab(sym) != current_symtab ) {
                 struct_dependencies.push_back(std::string(aggregate_type_name));
                 require(present(x.m_dependencies, x.n_dependencies, std::string(aggregate_type_name)),
                     std::string(x.m_name) + " depends on " + std::string(aggregate_type_name)
@@ -529,17 +533,34 @@ public:
             require(std::string(x.m_original_name) == std::string(orig_name),
                 "ExternalSymbol::m_original_name must match external->m_name");
             ASR::Module_t *m = ASRUtils::get_sym_module(x.m_external);
-            require(m,
-                "ExternalSymbol::m_external is not in a module");
-            require(std::string(x.m_module_name) == std::string(m->m_name),
+            ASR::StructType_t* sm = nullptr;
+            bool is_valid_owner = false;
+            is_valid_owner = m != nullptr;
+            std::string asr_owner_name = "";
+            if( !is_valid_owner ) {
+                ASR::symbol_t* asr_owner_sym = ASRUtils::get_asr_owner(x.m_external);
+                is_valid_owner = ASR::is_a<ASR::StructType_t>(*asr_owner_sym);
+                sm = ASR::down_cast<ASR::StructType_t>(asr_owner_sym);
+                asr_owner_name = sm->m_name;
+            } else {
+                asr_owner_name = m->m_name;
+            }
+            require(is_valid_owner,
+                "ExternalSymbol::m_external is not in a module or struct type");
+            require(std::string(x.m_module_name) == asr_owner_name,
                 "ExternalSymbol::m_module_name `" + std::string(x.m_module_name)
-                + "` must match external's module name `" + std::string(m->m_name) + "`");
-            ASR::symbol_t *s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
+                + "` must match external's module name `" + asr_owner_name + "`");
+            ASR::symbol_t *s = nullptr;
+            if( m ) {
+                s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
+            } else if( sm ) {
+                s = sm->m_symtab->resolve_symbol(std::string(x.m_original_name));
+            }
             require(s != nullptr,
                 "ExternalSymbol::m_original_name ('"
                 + std::string(x.m_original_name)
                 + "') + scope_names not found in a module '"
-                + std::string(m->m_name) + "'");
+                + asr_owner_name + "'");
             require(s == x.m_external,
                 "ExternalSymbol::m_name + scope_names found but not equal to m_external");
         }
@@ -638,7 +659,7 @@ public:
     }
 
     SymbolTable *get_dt_symtab(ASR::symbol_t *dt) {
-        LFORTRAN_ASSERT(dt)
+        LCOMPILERS_ASSERT(dt)
         SymbolTable *symtab = ASRUtils::symbol_symtab(ASRUtils::symbol_get_past_external(dt));
         require_impl(symtab,
             "m_dt::m_v::m_type::class/derived_type must point to a symbol with a symbol table",
@@ -774,10 +795,10 @@ bool asr_verify(const ASR::TranslationUnit_t &unit, bool check_external,
     try {
         v.visit_TranslationUnit(unit);
     } catch (const VerifyAbort &) {
-        LFORTRAN_ASSERT(diagnostics.has_error())
+        LCOMPILERS_ASSERT(diagnostics.has_error())
         return false;
     }
     return true;
 }
 
-} // namespace LFortran
+} // namespace LCompilers

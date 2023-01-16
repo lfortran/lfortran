@@ -11,7 +11,7 @@
 #include <libasr/string_utils.h>
 #include <libasr/utils.h>
 
-namespace LFortran  {
+namespace LCompilers  {
 
     namespace ASRUtils  {
 
@@ -48,7 +48,7 @@ static inline ASR::symbol_t *symbol_get_past_external(ASR::symbol_t *f)
 {
     if (f && f->type == ASR::symbolType::ExternalSymbol) {
         ASR::ExternalSymbol_t *e = ASR::down_cast<ASR::ExternalSymbol_t>(f);
-        LFORTRAN_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*e->m_external));
+        LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*e->m_external));
         return e->m_external;
     } else {
         return f;
@@ -59,7 +59,7 @@ static inline const ASR::symbol_t *symbol_get_past_external(const ASR::symbol_t 
 {
     if (f->type == ASR::symbolType::ExternalSymbol) {
         ASR::ExternalSymbol_t *e = ASR::down_cast<ASR::ExternalSymbol_t>(f);
-        LFORTRAN_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*e->m_external));
+        LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*e->m_external));
         return e->m_external;
     } else {
         return f;
@@ -70,7 +70,7 @@ static inline ASR::ttype_t *type_get_past_pointer(ASR::ttype_t *f)
 {
     if (ASR::is_a<ASR::Pointer_t>(*f)) {
         ASR::Pointer_t *e = ASR::down_cast<ASR::Pointer_t>(f);
-        LFORTRAN_ASSERT(!ASR::is_a<ASR::Pointer_t>(*e->m_type));
+        LCOMPILERS_ASSERT(!ASR::is_a<ASR::Pointer_t>(*e->m_type));
         return e->m_type;
     } else {
         return f;
@@ -458,6 +458,34 @@ static inline ASR::Module_t *get_sym_module(const ASR::symbol_t *sym) {
     return nullptr;
 }
 
+// Returns the ASR owner of the symbol
+static inline ASR::symbol_t *get_asr_owner(const ASR::symbol_t *sym) {
+    const SymbolTable *s = symbol_parent_symtab(sym);
+    if( !ASR::is_a<ASR::symbol_t>(*s->asr_owner) ) {
+        return nullptr;
+    }
+    return ASR::down_cast<ASR::symbol_t>(s->asr_owner);
+}
+
+static inline ASR::symbol_t *get_asr_owner(const ASR::expr_t *expr) {
+    switch( expr->type ) {
+        case ASR::exprType::Var: {
+            return ASRUtils::get_asr_owner(ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        }
+        case ASR::exprType::StructInstanceMember: {
+            return ASRUtils::get_asr_owner(ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
+        }
+        case ASR::exprType::GetPointer: {
+            return ASRUtils::get_asr_owner(ASR::down_cast<ASR::GetPointer_t>(expr)->m_arg);
+        }
+        default: {
+            throw LCompilersException("Cannot find the ASR owner of underlying symbol of expression "
+                                        + std::to_string(expr->type));
+        }
+    }
+    return nullptr;
+}
+
 // Returns the Module_t the symbol is in, or nullptr if not in a module
 // or no asr_owner yet
 static inline ASR::Module_t *get_sym_module0(const ASR::symbol_t *sym) {
@@ -669,6 +697,15 @@ static inline bool all_args_evaluated(const Vec<ASR::expr_t*> &args) {
         }
     }
     return true;
+}
+
+static inline std::string get_mangled_name(ASR::Module_t* module, std::string symbol_name) {
+    std::string module_name = module->m_name;
+    if( module_name == symbol_name ) {
+        return "__" + std::string(module->m_name) + "_" + symbol_name;
+    } else {
+        return symbol_name;
+    }
 }
 
 // Returns true if all arguments are evaluated
@@ -1101,7 +1138,7 @@ static inline SymbolTable *get_tu_symtab(SymbolTable *symtab) {
     while (s->parent != nullptr) {
         s = s->parent;
     }
-    LFORTRAN_ASSERT(ASR::is_a<ASR::unit_t>(*s->asr_owner))
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::unit_t>(*s->asr_owner))
     return s;
 }
 
@@ -1544,9 +1581,9 @@ static inline bool is_aggregate_type(ASR::ttype_t* asr_type) {
     }
     return ASRUtils::is_array(asr_type) ||
             !(ASR::is_a<ASR::Integer_t>(*asr_type) ||
-            ASR::is_a<ASR::Real_t>(*asr_type) ||
-            ASR::is_a<ASR::Complex_t>(*asr_type) ||
-            ASR::is_a<ASR::Logical_t>(*asr_type));
+              ASR::is_a<ASR::Real_t>(*asr_type) ||
+              ASR::is_a<ASR::Complex_t>(*asr_type) ||
+              ASR::is_a<ASR::Logical_t>(*asr_type));
 }
 
 static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
@@ -1725,7 +1762,7 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
                     symbol_get_past_external(kind_var->m_v));
             if( kind_variable->m_storage == ASR::storage_typeType::Parameter ) {
                 if( kind_variable->m_type->type == ASR::ttypeType::Integer ) {
-                    LFORTRAN_ASSERT( kind_variable->m_value != nullptr );
+                    LCOMPILERS_ASSERT( kind_variable->m_value != nullptr );
                     a_kind = ASR::down_cast<ASR::IntegerConstant_t>(kind_variable->m_value)->m_n;
                 } else {
                     std::string msg = "Integer variable required. " + std::string(kind_variable->m_name) +
@@ -1764,7 +1801,7 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
                     symbol_get_past_external(len_var->m_v));
             if( len_variable->m_storage == ASR::storage_typeType::Parameter ) {
                 if( len_variable->m_type->type == ASR::ttypeType::Integer ) {
-                    LFORTRAN_ASSERT( len_variable->m_value != nullptr );
+                    LCOMPILERS_ASSERT( len_variable->m_value != nullptr );
                     a_len = ASR::down_cast<ASR::IntegerConstant_t>(len_variable->m_value)->m_n;
                 } else {
                     std::string msg = "Integer variable required. " + std::string(len_variable->m_name) +
@@ -1790,7 +1827,7 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
                                 loc);
         }
     }
-    LFORTRAN_ASSERT(a_len != -10)
+    LCOMPILERS_ASSERT(a_len != -10)
     return a_len;
 }
 
@@ -1970,7 +2007,7 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
             std::string unique_name = current_scope->get_unique_name(f->m_name);
             Str s; s.from_str_view(unique_name);
             char *unique_name_c = s.c_str(al);
-            LFORTRAN_ASSERT(current_scope->get_symbol(unique_name) == nullptr);
+            LCOMPILERS_ASSERT(current_scope->get_symbol(unique_name) == nullptr);
             new_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
                 al, f->base.base.loc,
                 /* a_symtab */ current_scope,
@@ -2012,7 +2049,7 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
             }
         }
         if( idx_found ) {
-            LFORTRAN_ASSERT(current_expr);
+            LCOMPILERS_ASSERT(current_expr);
             *current_expr = orig_args[arg_idx].m_value;
         }
     }
@@ -2086,7 +2123,7 @@ class LabelGenerator {
         }
 
         void add_node_with_unique_label(ASR::asr_t* node, uint64_t label) {
-            LFORTRAN_ASSERT( node2label.find(node) == node2label.end() );
+            LCOMPILERS_ASSERT( node2label.find(node) == node2label.end() );
             node2label[node] = label;
         }
 
@@ -2296,7 +2333,7 @@ static inline ASR::EnumType_t* get_EnumType_from_symbol(ASR::symbol_t* s) {
         return ASR::down_cast<ASR::EnumType_t>(enum_->m_enum_type);
     }
     ASR::symbol_t* enum_type_cand = ASR::down_cast<ASR::symbol_t>(s_var->m_parent_symtab->asr_owner);
-    LFORTRAN_ASSERT(ASR::is_a<ASR::EnumType_t>(*enum_type_cand));
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::EnumType_t>(*enum_type_cand));
     return ASR::down_cast<ASR::EnumType_t>(enum_type_cand);
 }
 
@@ -2334,6 +2371,6 @@ static inline void collect_variable_dependencies(Allocator& al, Vec<char*>& deps
 
 } // namespace ASRUtils
 
-} // namespace LFortran
+} // namespace LCompilers
 
 #endif // LFORTRAN_ASR_UTILS_H

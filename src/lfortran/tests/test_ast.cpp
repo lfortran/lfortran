@@ -10,7 +10,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/utils.h>
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
 
 TEST_CASE("Test types") {
@@ -38,7 +38,7 @@ print *, x
 end program
 )""";
 
-    LFortran::diag::Diagnostics diagnostics;
+    LCompilers::diag::Diagnostics diagnostics;
     CompilerOptions compiler_options;
     AST::TranslationUnit_t* ast = TRY(LFortran::parse(al, src, diagnostics));
     ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast,
@@ -58,4 +58,4 @@ end program
 }
 
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran

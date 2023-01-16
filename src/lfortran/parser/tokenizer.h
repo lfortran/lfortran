@@ -4,8 +4,7 @@
 #include <libasr/exception.h>
 #include <lfortran/parser/parser_stype.h>
 
-namespace LFortran
-{
+namespace LCompilers::LFortran {
 
 class Tokenizer
 {
@@ -70,6 +69,6 @@ void lex_format(unsigned char *&cur, Location &loc,
         unsigned char *&start);
 
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran
 
 #endif

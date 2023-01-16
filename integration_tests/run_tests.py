@@ -6,7 +6,7 @@ import os
 
 # Initialization
 no_of_threads = 8 # default no of threads is 8
-supported_backends = ['llvm', 'llvm2', 'cpp', 'x86', 'wasm', 'gfortran', 'llvmImplicit']
+supported_backends = ['llvm', 'llvm2', 'llvm_rtlib', 'cpp', 'x86', 'wasm', 'gfortran', 'llvmImplicit']
 base_dir = os.path.dirname(os.path.realpath(__file__))
 lfortran_path = f"{base_dir}/../src/bin:$PATH"
 

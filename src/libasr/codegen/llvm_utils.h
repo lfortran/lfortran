@@ -10,7 +10,7 @@
 #include <map>
 #include <tuple>
 
-namespace LFortran {
+namespace LCompilers {
 
     namespace LLVMArrUtils {
         class Descriptor;
@@ -212,6 +212,9 @@ namespace LFortran {
                 llvm::Module& module);
 
             void free_data(llvm::Value* list, llvm::Module& module);
+
+            llvm::Value* check_list_equality(llvm::Value* l1, llvm::Value* l2, ASR::ttype_t *item_type,
+                llvm::LLVMContext& context, llvm::IRBuilder<>* builder, llvm::Module& module);
     };
 
     class LLVMTuple {
@@ -568,6 +571,6 @@ namespace LFortran {
 
     };
 
-} // LFortran
+} // namespace LCompilers
 
 #endif // LFORTRAN_LLVM_UTILS_H

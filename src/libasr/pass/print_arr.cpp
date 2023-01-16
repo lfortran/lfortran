@@ -7,7 +7,7 @@
 #include <libasr/pass/print_arr.h>
 
 
-namespace LFortran {
+namespace LCompilers {
 
 using ASR::down_cast;
 using ASR::is_a;
@@ -58,7 +58,7 @@ public:
         Vec<ASR::expr_t*> idx_vars;
         PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, current_scope);
         ASR::stmt_t* doloop = nullptr;
-        ASR::stmt_t* empty_print_endl = LFortran::ASRUtils::STMT(ASR::make_Print_t(al, loc,
+        ASR::stmt_t* empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, loc,
                                             nullptr, nullptr, 0, nullptr, nullptr));
         for( int i = n_dims - 1; i >= 0; i-- ) {
             ASR::do_loop_head_t head;
@@ -74,32 +74,40 @@ public:
                 Vec<ASR::expr_t*> print_args;
                 print_args.reserve(al, 1);
                 print_args.push_back(al, ref);
-                ASR::stmt_t* print_stmt = LFortran::ASRUtils::STMT(ASR::make_Print_t(al, loc, nullptr,
+                ASR::stmt_t* print_stmt = ASRUtils::STMT(ASR::make_Print_t(al, loc, nullptr,
                                                                 print_args.p, print_args.size(), nullptr, nullptr));
                 doloop_body.push_back(al, print_stmt);
             } else {
                 doloop_body.push_back(al, doloop);
                 doloop_body.push_back(al, empty_print_endl);
             }
-            doloop = LFortran::ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, head, doloop_body.p, doloop_body.size()));
+            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, head, doloop_body.p, doloop_body.size()));
         }
         return doloop;
     }
 
     void visit_Print(const ASR::Print_t& x) {
         std::vector<ASR::expr_t*> print_body;
-        ASR::stmt_t* empty_print_endl = LFortran::ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
+        ASR::stmt_t* empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
                                             nullptr, nullptr, 0, nullptr, nullptr));
         ASR::stmt_t* print_stmt;
         for (size_t i=0; i<x.n_values; i++) {
-            if (PassUtils::is_array(x.m_values[i])) {
+            // TODO: This will disallow printing array pointer in Fortran
+            // Pointers are treated the same as normal variables in Fortran
+            // However, LPython prints the address of pointers when you do
+            // print(some_pointer). Same goes for C/C++ (if we add their frontends in future).
+            // So we need to figure out a way to de-couple printing support from libasr
+            // or add nodes according to the frontends because each frontend will have a different
+            // way of handling printing of pointers and non-pointers
+            if (!ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_values[i])) &&
+                PassUtils::is_array(x.m_values[i])) {
                 if (print_body.size() > 0) {
                     Vec<ASR::expr_t*> body;
                     body.reserve(al, print_body.size());
                     for (size_t j=0; j<print_body.size(); j++) {
                         body.push_back(al, print_body[j]);
                     }
-                    print_stmt = LFortran::ASRUtils::STMT(ASR::make_Print_t(
+                    print_stmt = ASRUtils::STMT(ASR::make_Print_t(
                         al, x.base.base.loc, nullptr, body.p, body.size(),
                         nullptr, nullptr));
                     pass_result.push_back(al, print_stmt);
@@ -119,7 +127,7 @@ public:
             for (size_t j=0; j<print_body.size(); j++) {
                 body.push_back(al, print_body[j]);
             }
-            print_stmt = LFortran::ASRUtils::STMT(ASR::make_Print_t(
+            print_stmt = ASRUtils::STMT(ASR::make_Print_t(
                 al, x.base.base.loc, nullptr, body.p, body.size(),
                 nullptr, nullptr));
             pass_result.push_back(al, print_stmt);
@@ -137,4 +145,4 @@ void pass_replace_print_arr(Allocator &al, ASR::TranslationUnit_t &unit,
 }
 
 
-} // namespace LFortran
+} // namespace LCompilers
