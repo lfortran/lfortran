@@ -1,0 +1,142 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            fpm_command_line:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            fpm_run_settings:
+                                (StructType
+                                    (SymbolTable
+                                        3
+                                        {
+                                            bool:
+                                                (Variable
+                                                    3
+                                                    bool
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            float:
+                                                (Variable
+                                                    3
+                                                    float
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            int:
+                                                (Variable
+                                                    3
+                                                    int
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    fpm_run_settings
+                                    []
+                                    [int
+                                    float
+                                    bool]
+                                    Source
+                                    Public
+                                    .false.
+                                    ()
+                                    ()
+                                ),
+                            get_command_line_settings:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            cmd_settings:
+                                                (Variable
+                                                    4
+                                                    cmd_settings
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Class
+                                                        2 fpm_run_settings
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    get_command_line_settings
+                                    []
+                                    [(Var 4 cmd_settings)]
+                                    [(=
+                                        (Var 4 cmd_settings)
+                                        (StructTypeConstructor
+                                            2 fpm_run_settings
+                                            [(IntegerConstant 0 (Integer 4 []))
+                                            (RealConstant
+                                                1.000000
+                                                (Real 4 [])
+                                            )
+                                            (LogicalConstant
+                                                .true.
+                                                (Logical 4 [])
+                                            )]
+                                            (Struct
+                                                2 fpm_run_settings
+                                                []
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    ()
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                )
+                        })
+                    fpm_command_line
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)
