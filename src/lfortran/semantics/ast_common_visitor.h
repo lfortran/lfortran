@@ -866,21 +866,6 @@ public:
         return access_type;
     }
 
-    bool is_c_ptr(ASR::symbol_t* v, std::string v_name="") {
-        if( v_name == "" ) {
-            v_name = ASRUtils::symbol_name(v);
-        }
-        ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
-        if( ASR::is_a<ASR::StructType_t>(*v_orig) ) {
-            ASR::Module_t* der_type_module = ASRUtils::get_sym_module0(v_orig);
-            return (der_type_module && std::string(der_type_module->m_name) ==
-                    "lfortran_intrinsic_iso_c_binding" &&
-                    der_type_module->m_intrinsic &&
-                    v_name == "c_ptr");
-        }
-        return false;
-    }
-
     void visit_Format(const AST::Format_t &x) {
         diag.semantic_warning_label(
             "Format statement is not implemented yet, for now we will ignore it",
@@ -1630,7 +1615,7 @@ public:
 
             ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
             if(!type_param) {
-                if( is_c_ptr(v, derived_type_name) ) {
+                if( ASRUtils::is_c_ptr(v, derived_type_name) ) {
                     type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
                 } else {
                     if (!v) {
@@ -2242,6 +2227,12 @@ public:
             }
         }
         current_function_dependencies.insert(std::string(ASRUtils::symbol_name(v)));
+        ASR::Module_t* v_module = ASRUtils::get_sym_module0(f2);
+        if( v_module ) {
+            if( !present(current_module_dependencies, v_module->m_name) ) {
+                current_module_dependencies.push_back(al, v_module->m_name);
+            }
+        }
         return ASR::make_FunctionCall_t(al, loc, v, nullptr,
             args.p, args.size(), return_type, value, nullptr);
     }
@@ -3487,8 +3478,7 @@ public:
         if (!intrinsic_procedures.is_intrinsic(remote_sym)) {
             if (compiler_options.implicit_interface) {
                 return nullptr;
-            }
-            else{
+            } else {
                 throw SemanticError("Function '" + remote_sym + "' not found"
                     " or not implemented yet (if it is intrinsic)",
                     loc);

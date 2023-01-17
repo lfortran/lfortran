@@ -504,6 +504,21 @@ static inline ASR::Module_t *get_sym_module0(const ASR::symbol_t *sym) {
     return nullptr;
 }
 
+static inline bool is_c_ptr(ASR::symbol_t* v, std::string v_name="") {
+    if( v_name == "" ) {
+        v_name = ASRUtils::symbol_name(v);
+    }
+    ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
+    if( ASR::is_a<ASR::StructType_t>(*v_orig) ) {
+        ASR::Module_t* der_type_module = ASRUtils::get_sym_module0(v_orig);
+        return (der_type_module && std::string(der_type_module->m_name) ==
+                "lfortran_intrinsic_iso_c_binding" &&
+                der_type_module->m_intrinsic &&
+                v_name == "c_ptr");
+    }
+    return false;
+}
+
 // Returns true if the Function is intrinsic, otherwise false
 template <typename T>
 static inline bool is_intrinsic_procedure(const T *fn) {

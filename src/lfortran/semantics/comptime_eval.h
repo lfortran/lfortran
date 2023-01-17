@@ -226,6 +226,9 @@ struct IntrinsicProcedures {
             // IEEE Arithmetic
             {"ieee_value", {m_ieee_arithmetic, &not_implemented, false}},
             {"ieee_is_nan", {m_ieee_arithmetic, &not_implemented, false}},
+
+            // ISO C Binding
+            {"c_associated", {m_iso_c_binding, &not_implemented, false}},
         };
     }
 
