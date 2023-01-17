@@ -346,6 +346,9 @@ public:
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
         ASR::ttype_t* struct_type = ASRUtils::expr_type(x.m_v);
         ASR::symbol_t* struct_sym = nullptr;
+        if (ASR::is_a<ASR::Pointer_t>(*struct_type)) {
+            struct_type = ASR::down_cast<ASR::Pointer_t>(struct_type)->m_type;
+        }
         if( ASR::is_a<ASR::Struct_t>(*struct_type) ) {
             struct_sym = ASR::down_cast<ASR::Struct_t>(struct_type)->m_derived_type;
         } else if( ASR::is_a<ASR::Class_t>(*struct_type) ) {

@@ -1056,7 +1056,12 @@ public:
                 current_scope->add_symbol(std::string(x.m_assoc_name), assoc_sym);
                 assoc_variable = ASR::down_cast<ASR::Variable_t>(assoc_sym);
             } else if( selector_variable ) {
-                assoc_variable = selector_variable;
+                ASR::symbol_t* assoc_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                    al, x.base.base.loc, current_scope, selector_variable->m_name,
+                    nullptr, 0, ASR::intentType::Local, m_selector, nullptr,
+                    ASR::storage_typeType::Default, nullptr, ASR::abiType::Source,
+                    ASR::accessType::Public, ASR::presenceType::Required, false));
+                assoc_variable = ASR::down_cast<ASR::Variable_t>(assoc_sym);
             }
             switch( x.m_body[i]->type ) {
                 case AST::type_stmtType::ClassStmt: {
@@ -1079,6 +1084,9 @@ public:
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
                         assoc_variable->m_type = selector_type;
+                        ASR::asr_t *tmp_ = (ASR::asr_t *)assoc_variable;
+                        ASR::symbol_t* tmp_s = ASR::down_cast<ASR::symbol_t>(tmp_);
+                        current_scope->add_symbol(std::string(selector_variable->m_name), tmp_s);
                     }
                     Vec<ASR::stmt_t*> class_stmt_body;
                     class_stmt_body.reserve(al, class_stmt->n_body);
@@ -1116,6 +1124,9 @@ public:
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
                         assoc_variable->m_type = selector_type;
+                        ASR::asr_t *tmp_ = (ASR::asr_t *)assoc_variable;
+                        ASR::symbol_t* tmp_s = ASR::down_cast<ASR::symbol_t>(tmp_);
+                        current_scope->add_symbol(std::string(selector_variable->m_name), tmp_s);
                     }
                     Vec<ASR::stmt_t*> type_stmt_name_body;
                     type_stmt_name_body.reserve(al, type_stmt_name->n_body);
@@ -1149,6 +1160,9 @@ public:
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
                         assoc_variable->m_type = selector_type;
+                        ASR::asr_t *tmp_ = (ASR::asr_t *)assoc_variable;
+                        ASR::symbol_t* tmp_s = ASR::down_cast<ASR::symbol_t>(tmp_);
+                        current_scope->add_symbol(std::string(selector_variable->m_name), tmp_s);
                     }
                     Vec<ASR::stmt_t*> type_stmt_type_body;
                     type_stmt_type_body.reserve(al, type_stmt_type->n_body);
