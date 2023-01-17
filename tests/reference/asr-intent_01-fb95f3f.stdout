@@ -195,7 +195,7 @@
                                 )
                         })
                     dflt_intent
-                    []
+                    [dflt_intent]
                     .false.
                     .false.
                 ),

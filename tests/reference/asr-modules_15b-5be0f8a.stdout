@@ -3183,7 +3183,8 @@
                                 )
                         })
                     modules_15b
-                    [iso_c_binding]
+                    [iso_c_binding
+                    modules_15b]
                     .false.
                     .false.
                 )

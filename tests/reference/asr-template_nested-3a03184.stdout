@@ -806,7 +806,8 @@
                                 )
                         })
                     template_nested_m
-                    [lfortran_intrinsic_math]
+                    [lfortran_intrinsic_math
+                    template_nested_m]
                     .false.
                     .false.
                 )

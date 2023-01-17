@@ -987,7 +987,8 @@
                                 )
                         })
                     template_array_m
-                    [math]
+                    [math
+                    template_array_m]
                     .false.
                     .false.
                 )
