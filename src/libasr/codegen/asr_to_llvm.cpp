@@ -5766,9 +5766,8 @@ public:
                 {x.m_fmt->base.loc}, "treated as '*'");
         }
         if (x.m_unit != nullptr) {
-            diag.codegen_error_label("unit in write() is not implemented yet",
-                {x.m_unit->base.loc}, "not implemented");
-            throw CodeGenAbort();
+            diag.codegen_warning_label("unit in write() is not implemented yet and it is currently treated as '*'",
+                {x.m_unit->base.loc}, "treated as '*'");
         }
         handle_print(x);
     }

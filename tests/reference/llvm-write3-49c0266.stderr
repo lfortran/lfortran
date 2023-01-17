@@ -1,0 +1,5 @@
+warning: unit in write() is not implemented yet and it is currently treated as '*'
+ --> tests/write3.f90:5:12
+  |
+5 |     write (nwrite,*) "Hello World"
+  |            ^^^^^^ treated as '*'

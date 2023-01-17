@@ -2685,3 +2685,7 @@ asr_implicit_typing = true
 [[test]]
 filename = "character1.f90"
 asr_implicit_interface = true
+
+[[test]]
+filename = "write3.f90"
+llvm = true
