@@ -9,6 +9,9 @@ contains
 
    generic, public :: operator(>) => greater
    procedure, private :: greater
+
+   generic, public :: operator(.mul.) => multiply
+   procedure, private :: multiply
 end type t
 
 contains
@@ -26,6 +29,13 @@ function greater(x, y) result(is_greater)
    is_greater = x%i > y%i
 end function greater
 
+function multiply(x, y) result(product)
+   class(t), intent(in) :: x
+   type(t), intent(in) :: y
+   integer :: product
+   product = x%i * y%i
+end function multiply
+
 end module mod
 
 program alloc_assign
@@ -33,6 +43,7 @@ use mod
 implicit none
 
 logical :: is_greater
+integer :: product
 type(t) :: xt, yt
 xt = t(5)
 yt = xt
@@ -42,5 +53,9 @@ if( yt%i /= 7 ) error stop
 
 is_greater = (xt > yt)
 if (is_greater) error stop
+
+! TODO: Uncomment this once `DefBinOp` is implemented
+! product = (xt.mul.yt)
+! if (product /= 42) error stop
 
 end program alloc_assign

@@ -1208,8 +1208,8 @@ public:
                         operator_found  = true;
                     }
                 }
-                if ( operator_found ) {
-                    // GenericOperator
+                if ( operator_found || startswith(pname.first, "~def_op~") ) {
+                    // GenericOperator and GenericDefinedOperator
                     v = ASR::make_CustomOperator_t(al, loc, current_scope,
                         generic_name, cand_procs.p, cand_procs.size(),
                         ASR::accessType::Public);
@@ -1630,6 +1630,15 @@ public:
 
     void visit_GenericOperator(const AST::GenericOperator_t &x) {
         std::string generic_name = intrinsic2str[x.m_op];
+        for( size_t i = 0; i < x.n_names; i++ ) {
+            std::string x_m_name = std::string(x.m_names[i]);
+            generic_class_procedures[dt_name][generic_name].push_back(
+                to_lower(x_m_name));
+        }
+    }
+
+    void visit_GenericDefinedOperator(const AST::GenericDefinedOperator_t &x) {
+        std::string generic_name = "~def_op~" + std::string(x.m_optype);
         for( size_t i = 0; i < x.n_names; i++ ) {
             std::string x_m_name = std::string(x.m_names[i]);
             generic_class_procedures[dt_name][generic_name].push_back(
