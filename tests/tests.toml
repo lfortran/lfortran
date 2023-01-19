@@ -994,6 +994,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "fn5.f90"
+asr = true
+
+[[test]]
 filename = "fn6.f90"
 asr = true
 

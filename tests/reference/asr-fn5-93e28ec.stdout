@@ -1,0 +1,780 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            fn5:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            atleast:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            len:
+                                                (ExternalSymbol
+                                                    3
+                                                    len
+                                                    75 len
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    len
+                                                    Private
+                                                ),
+                                            len_repeati32:
+                                                (ExternalSymbol
+                                                    3
+                                                    len_repeati32
+                                                    103 len_repeati32
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    len_repeati32
+                                                    Private
+                                                ),
+                                            len_trim:
+                                                (ExternalSymbol
+                                                    3
+                                                    len_trim
+                                                    103 len_trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    len_trim
+                                                    Private
+                                                ),
+                                            length:
+                                                (Variable
+                                                    3
+                                                    length
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            line:
+                                                (Variable
+                                                    3
+                                                    line
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            max:
+                                                (ExternalSymbol
+                                                    3
+                                                    max
+                                                    6 max
+                                                    lfortran_intrinsic_math2
+                                                    []
+                                                    max
+                                                    Private
+                                                ),
+                                            max@imax:
+                                                (ExternalSymbol
+                                                    3
+                                                    max@imax
+                                                    6 imax
+                                                    lfortran_intrinsic_math2
+                                                    []
+                                                    imax
+                                                    Private
+                                                ),
+                                            pattern:
+                                                (Variable
+                                                    3
+                                                    pattern
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            present:
+                                                (ExternalSymbol
+                                                    3
+                                                    present
+                                                    75 present
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    present
+                                                    Private
+                                                ),
+                                            repeat:
+                                                (ExternalSymbol
+                                                    3
+                                                    repeat
+                                                    103 repeat
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    repeat
+                                                    Private
+                                                ),
+                                            repeat@repeati32:
+                                                (ExternalSymbol
+                                                    3
+                                                    repeat@repeati32
+                                                    103 repeati32
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    repeati32
+                                                    Private
+                                                ),
+                                            strout:
+                                                (Variable
+                                                    3
+                                                    strout
+                                                    [length
+                                                    line
+                                                    line]
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -3 (FunctionCall
+                                                        3 max@imax
+                                                        3 max
+                                                        [((Var 3 length))
+                                                        ((FunctionCall
+                                                            3 len
+                                                            ()
+                                                            [((FunctionCall
+                                                                3 trim
+                                                                ()
+                                                                [((Var 3 line))]
+                                                                (Character 1 -3 (FunctionCall
+                                                                    3 len_trim
+                                                                    ()
+                                                                    [((Var 3 line))]
+                                                                    (Integer 4 [])
+                                                                    ()
+                                                                    ()
+                                                                ) [])
+                                                                ()
+                                                                ()
+                                                            ))]
+                                                            (Integer 4 [])
+                                                            ()
+                                                            ()
+                                                        ))]
+                                                        (Integer 4 [])
+                                                        ()
+                                                        ()
+                                                    ) [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            trim:
+                                                (ExternalSymbol
+                                                    3
+                                                    trim
+                                                    103 trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    trim
+                                                    Private
+                                                )
+                                        })
+                                    atleast
+                                    [len
+                                    len_trim
+                                    max@imax
+                                    trim
+                                    len
+                                    len_repeati32
+                                    present
+                                    repeat@repeati32]
+                                    [(Var 3 line)
+                                    (Var 3 length)
+                                    (Var 3 pattern)]
+                                    [(If
+                                        (FunctionCall
+                                            3 present
+                                            ()
+                                            [((Var 3 pattern))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(=
+                                            (Var 3 strout)
+                                            (StringConcat
+                                                (Var 3 line)
+                                                (FunctionCall
+                                                    3 repeat@repeati32
+                                                    3 repeat
+                                                    [((Var 3 pattern))
+                                                    ((IntegerBinOp
+                                                        (IntegerBinOp
+                                                            (FunctionCall
+                                                                3 len
+                                                                ()
+                                                                [((Var 3 strout))]
+                                                                (Integer 4 [])
+                                                                ()
+                                                                ()
+                                                            )
+                                                            Div
+                                                            (FunctionCall
+                                                                3 len
+                                                                ()
+                                                                [((Var 3 pattern))]
+                                                                (Integer 4 [])
+                                                                ()
+                                                                ()
+                                                            )
+                                                            (Integer 4 [])
+                                                            ()
+                                                        )
+                                                        Add
+                                                        (IntegerConstant 1 (Integer 4 []))
+                                                        (Integer 4 [])
+                                                        ()
+                                                    ))]
+                                                    (Character 1 -3 (FunctionCall
+                                                        3 len_repeati32
+                                                        ()
+                                                        [((IntegerBinOp
+                                                            (IntegerBinOp
+                                                                (FunctionCall
+                                                                    3 len
+                                                                    ()
+                                                                    [((Var 3 strout))]
+                                                                    (Integer 4 [])
+                                                                    ()
+                                                                    ()
+                                                                )
+                                                                Div
+                                                                (FunctionCall
+                                                                    3 len
+                                                                    ()
+                                                                    [((Var 3 pattern))]
+                                                                    (Integer 4 [])
+                                                                    ()
+                                                                    ()
+                                                                )
+                                                                (Integer 4 [])
+                                                                ()
+                                                            )
+                                                            Add
+                                                            (IntegerConstant 1 (Integer 4 []))
+                                                            (Integer 4 [])
+                                                            ()
+                                                        ))]
+                                                        (Integer 4 [])
+                                                        ()
+                                                        ()
+                                                    ) [])
+                                                    ()
+                                                    ()
+                                                )
+                                                (Character 1 -4 () [])
+                                                ()
+                                            )
+                                            ()
+                                        )]
+                                        [(=
+                                            (Var 3 strout)
+                                            (Var 3 line)
+                                            ()
+                                        )]
+                                    )]
+                                    (Var 3 strout)
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            print_dictionary:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            header:
+                                                (Variable
+                                                    4
+                                                    header
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    4
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            imax:
+                                                (ExternalSymbol
+                                                    4
+                                                    imax
+                                                    6 imax
+                                                    lfortran_intrinsic_math2
+                                                    []
+                                                    imax
+                                                    Private
+                                                ),
+                                            keywords:
+                                                (Variable
+                                                    4
+                                                    keywords
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Save
+                                                    (Character 1 -2 () [(()
+                                                    ())])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            len:
+                                                (ExternalSymbol
+                                                    4
+                                                    len
+                                                    75 len
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    len
+                                                    Private
+                                                ),
+                                            len_trim:
+                                                (ExternalSymbol
+                                                    4
+                                                    len_trim
+                                                    103 len_trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    len_trim
+                                                    Private
+                                                ),
+                                            max:
+                                                (ExternalSymbol
+                                                    4
+                                                    max
+                                                    6 max
+                                                    lfortran_intrinsic_math2
+                                                    []
+                                                    max
+                                                    Private
+                                                ),
+                                            max@imax:
+                                                (ExternalSymbol
+                                                    4
+                                                    max@imax
+                                                    6 imax
+                                                    lfortran_intrinsic_math2
+                                                    []
+                                                    imax
+                                                    Private
+                                                ),
+                                            present_in:
+                                                (Variable
+                                                    4
+                                                    present_in
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Save
+                                                    (Logical 4 [(()
+                                                    ())])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            shorts:
+                                                (Variable
+                                                    4
+                                                    shorts
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Save
+                                                    (Character 1 -2 () [(()
+                                                    ())])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            stop:
+                                                (Variable
+                                                    4
+                                                    stop
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            trim:
+                                                (ExternalSymbol
+                                                    4
+                                                    trim
+                                                    103 trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    trim
+                                                    Private
+                                                ),
+                                            values:
+                                                (Variable
+                                                    4
+                                                    values
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Save
+                                                    (Character 1 -2 () [(()
+                                                    ())])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    print_dictionary
+                                    [atleast
+                                    imax
+                                    len
+                                    len_trim
+                                    max@imax
+                                    trim]
+                                    [(Var 4 header)
+                                    (Var 4 stop)]
+                                    [(FileWrite
+                                        0
+                                        ()
+                                        (StringConstant
+                                            "(a,1x,a,1x,a,1x,a)"
+                                            (Character 1 18 () [])
+                                        )
+                                        ()
+                                        ()
+                                        ()
+                                        [(FunctionCall
+                                            2 atleast
+                                            ()
+                                            [((StringConstant
+                                                "KEYWORD"
+                                                (Character 1 7 () [])
+                                            ))
+                                            ((FunctionCall
+                                                4 max@imax
+                                                4 max
+                                                [((FunctionCall
+                                                    4 len
+                                                    ()
+                                                    [((Var 4 keywords))]
+                                                    (Integer 4 [])
+                                                    ()
+                                                    ()
+                                                ))
+                                                ((IntegerConstant 8 (Integer 4 [])))]
+                                                (Integer 4 [])
+                                                ()
+                                                ()
+                                            ))]
+                                            (Character 1 -3 (FunctionCall
+                                                4 imax
+                                                3 max
+                                                [((FunctionCall
+                                                    4 max@imax
+                                                    4 max
+                                                    [((FunctionCall
+                                                        4 len
+                                                        ()
+                                                        [((Var 4 keywords))]
+                                                        (Integer 4 [])
+                                                        ()
+                                                        ()
+                                                    ))
+                                                    ((IntegerConstant 8 (Integer 4 [])))]
+                                                    (Integer 4 [])
+                                                    ()
+                                                    ()
+                                                ))
+                                                ((FunctionCall
+                                                    4 len
+                                                    ()
+                                                    [((FunctionCall
+                                                        4 trim
+                                                        ()
+                                                        [((StringConstant
+                                                            "KEYWORD"
+                                                            (Character 1 7 () [])
+                                                        ))]
+                                                        (Character 1 -3 (FunctionCall
+                                                            4 len_trim
+                                                            ()
+                                                            [((StringConstant
+                                                                "KEYWORD"
+                                                                (Character 1 7 () [])
+                                                            ))]
+                                                            (Integer 4 [])
+                                                            ()
+                                                            ()
+                                                        ) [])
+                                                        ()
+                                                        ()
+                                                    ))]
+                                                    (Integer 4 [])
+                                                    ()
+                                                    ()
+                                                ))]
+                                                (Integer 4 [])
+                                                ()
+                                                ()
+                                            ) [])
+                                            ()
+                                            ()
+                                        )
+                                        (StringConstant
+                                            "SHORT"
+                                            (Character 1 5 () [])
+                                        )
+                                        (StringConstant
+                                            "PRESENT"
+                                            (Character 1 7 () [])
+                                        )
+                                        (StringConstant
+                                            "VALUE"
+                                            (Character 1 5 () [])
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (FileWrite
+                                        0
+                                        ()
+                                        (StringConstant
+                                            "(*(a,1x,a5,1x,l1,8x,"[",a,"]",/))"
+                                            (Character 1 33 () [])
+                                        )
+                                        ()
+                                        ()
+                                        ()
+                                        [(ImpliedDoLoop
+                                            [(FunctionCall
+                                                2 atleast
+                                                ()
+                                                [((ArrayItem
+                                                    (Var 4 keywords)
+                                                    [(()
+                                                    (Var 4 i)
+                                                    ())]
+                                                    (Character 1 -2 () [])
+                                                    ColMajor
+                                                    ()
+                                                ))
+                                                ((FunctionCall
+                                                    4 max@imax
+                                                    4 max
+                                                    [((FunctionCall
+                                                        4 len
+                                                        ()
+                                                        [((Var 4 keywords))]
+                                                        (Integer 4 [])
+                                                        ()
+                                                        ()
+                                                    ))
+                                                    ((IntegerConstant 8 (Integer 4 [])))]
+                                                    (Integer 4 [])
+                                                    ()
+                                                    ()
+                                                ))]
+                                                (Character 1 -3 (FunctionCall
+                                                    4 imax
+                                                    3 max
+                                                    [((FunctionCall
+                                                        4 max@imax
+                                                        4 max
+                                                        [((FunctionCall
+                                                            4 len
+                                                            ()
+                                                            [((Var 4 keywords))]
+                                                            (Integer 4 [])
+                                                            ()
+                                                            ()
+                                                        ))
+                                                        ((IntegerConstant 8 (Integer 4 [])))]
+                                                        (Integer 4 [])
+                                                        ()
+                                                        ()
+                                                    ))
+                                                    ((FunctionCall
+                                                        4 len
+                                                        ()
+                                                        [((FunctionCall
+                                                            4 trim
+                                                            ()
+                                                            [((ArrayItem
+                                                                (Var 4 keywords)
+                                                                [(()
+                                                                (Var 4 i)
+                                                                ())]
+                                                                (Character 1 -2 () [])
+                                                                ColMajor
+                                                                ()
+                                                            ))]
+                                                            (Character 1 -3 (FunctionCall
+                                                                4 len_trim
+                                                                ()
+                                                                [((ArrayItem
+                                                                    (Var 4 keywords)
+                                                                    [(()
+                                                                    (Var 4 i)
+                                                                    ())]
+                                                                    (Character 1 -2 () [])
+                                                                    ColMajor
+                                                                    ()
+                                                                ))]
+                                                                (Integer 4 [])
+                                                                ()
+                                                                ()
+                                                            ) [])
+                                                            ()
+                                                            ()
+                                                        ))]
+                                                        (Integer 4 [])
+                                                        ()
+                                                        ()
+                                                    ))]
+                                                    (Integer 4 [])
+                                                    ()
+                                                    ()
+                                                ) [])
+                                                ()
+                                                ()
+                                            )
+                                            (ArrayItem
+                                                (Var 4 shorts)
+                                                [(()
+                                                (Var 4 i)
+                                                ())]
+                                                (Character 1 -2 () [])
+                                                ColMajor
+                                                ()
+                                            )
+                                            (ArrayItem
+                                                (Var 4 present_in)
+                                                [(()
+                                                (Var 4 i)
+                                                ())]
+                                                (Logical 4 [])
+                                                ColMajor
+                                                ()
+                                            )
+                                            (ArrayItem
+                                                (Var 4 values)
+                                                [(()
+                                                (Var 4 i)
+                                                ())]
+                                                (Character 1 -2 () [])
+                                                ColMajor
+                                                ()
+                                            )]
+                                            (Var 4 i)
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            (ArraySize
+                                                (Var 4 keywords)
+                                                ()
+                                                (Integer 4 [])
+                                                ()
+                                            )
+                                            ()
+                                            (Integer 4 [])
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )]
+                                    ()
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                )
+                        })
+                    fn5
+                    [lfortran_intrinsic_math2
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_string]
+                    .false.
+                    .false.
+                ),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_math2:
+                (IntrinsicModule lfortran_intrinsic_math2),
+            lfortran_intrinsic_math3:
+                (IntrinsicModule lfortran_intrinsic_math3),
+            lfortran_intrinsic_string:
+                (IntrinsicModule lfortran_intrinsic_string)
+        })
+    []
+)
