@@ -511,7 +511,9 @@ bool is_parent(ASR::StructType_t* a, ASR::StructType_t* b) {
 }
 
 bool is_derived_type_similar(ASR::StructType_t* a, ASR::StructType_t* b) {
-    return a == b || is_parent(a, b) || is_parent(b, a);
+    return a == b || is_parent(a, b) || is_parent(b, a) ||
+        (std::string(a->m_name) == "~abstract_type" &&
+        std::string(b->m_name) == "~abstract_type");
 }
 
 bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
