@@ -1085,7 +1085,7 @@ public:
                     Vec<ASR::stmt_t*> block_call_stmt;
                     block_call_stmt.reserve(al, 1);
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, class_stmt->base.base.loc, -1, block_sym)));
-                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmt_t(al,
+                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmtName_t(al,
                         class_stmt->base.base.loc, sym, block_call_stmt.p, block_call_stmt.size())));
                     break;
                 }
@@ -1121,8 +1121,46 @@ public:
                     Vec<ASR::stmt_t*> block_call_stmt;
                     block_call_stmt.reserve(al, 1);
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, type_stmt_name->base.base.loc, -1, block_sym)));
-                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmt_t(al,
+                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmtName_t(al,
                         type_stmt_name->base.base.loc, sym, block_call_stmt.p, block_call_stmt.size())));
+                    break;
+                }
+                case AST::type_stmtType::TypeStmtType: {
+                    AST::TypeStmtType_t* type_stmt_type = AST::down_cast<AST::TypeStmtType_t>(x.m_body[i]);
+                    ASR::ttype_t* selector_type = nullptr;
+                    if( assoc_variable ) {
+                        Vec<ASR::dimension_t> m_dims;
+                        m_dims.reserve(al, 1);
+                        std::string assoc_variable_name = std::string(assoc_variable->m_name);
+                        selector_type = determine_type(type_stmt_type->base.base.loc,
+                                                       assoc_variable_name,
+                                                       type_stmt_type->m_vartype, false, m_dims);
+                        Vec<char*> assoc_deps;
+                        assoc_deps.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, m_selector);
+                        assoc_variable->m_dependencies = assoc_deps.p;
+                        assoc_variable->n_dependencies = assoc_deps.size();
+                        assoc_variable->m_type = selector_type;
+                    }
+                    Vec<ASR::stmt_t*> type_stmt_type_body;
+                    type_stmt_type_body.reserve(al, type_stmt_type->n_body);
+                    transform_stmts(type_stmt_type_body, type_stmt_type->n_body, type_stmt_type->m_body);
+                    std::string block_name = parent_scope->get_unique_name("~select_type_block_");
+                    ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
+                                                    al, type_stmt_type->base.base.loc,
+                                                    current_scope, s2c(al, block_name), type_stmt_type_body.p,
+                                                    type_stmt_type_body.size()));
+                    parent_scope->add_symbol(block_name, block_sym);
+                    Vec<ASR::stmt_t*> block_call_stmt;
+                    block_call_stmt.reserve(al, 1);
+                    block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, type_stmt_type->base.base.loc, -1, block_sym)));
+                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmtType_t(al,
+                        type_stmt_type->base.base.loc, selector_type, block_call_stmt.p, block_call_stmt.size())));
+                    break;
+                }
+                case AST::type_stmtType::ClassDefault: {
+                    AST::ClassDefault_t* class_default = AST::down_cast<AST::ClassDefault_t>(x.m_body[i]);
+                    transform_stmts(select_type_default, class_default->n_body, class_default->m_body);
                     break;
                 }
                 default: {
