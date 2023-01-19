@@ -775,13 +775,30 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     const std::function<void (const std::string &, const Location &)> err) {
     ASR::ttype_t *left_type = ASRUtils::expr_type(left);
     ASR::ttype_t *right_type = ASRUtils::expr_type(right);
+    ASR::StructType_t *left_struct = nullptr;
+    if ( ASR::is_a<ASR::Struct_t>(*left_type) ) {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*right_type));
+        left_struct = ASR::down_cast<ASR::StructType_t>(
+            ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Struct_t>(
+            left_type)->m_derived_type));
+    }
     bool found = false;
-    if( is_op_overloaded(op, intrinsic_op_name, curr_scope) ) {
+    if( is_op_overloaded(op, intrinsic_op_name, curr_scope, left_struct) ) {
         ASR::symbol_t* sym = curr_scope->resolve_symbol(intrinsic_op_name);
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
+        if ( left_struct != nullptr && orig_sym == nullptr ) {
+            orig_sym = left_struct->m_symtab->resolve_symbol(intrinsic_op_name);
+        }
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
-            ASR::symbol_t* proc = gen_proc->m_procs[i];
+            ASR::symbol_t* proc;
+            if ( ASR::is_a<ASR::ClassProcedure_t>(*gen_proc->m_procs[i]) ) {
+                proc =  ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::ClassProcedure_t>(
+                    gen_proc->m_procs[i])->m_proc);
+            } else {
+                proc = gen_proc->m_procs[i];
+            }
             switch(proc->type) {
                 case ASR::symbolType::Function: {
                     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
@@ -789,8 +806,12 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     if( func->n_args == 2 ) {
                         ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
                         ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
-                        if( left_arg_type->type == left_type->type &&
-                            right_arg_type->type == right_type->type ) {
+                        if( (left_arg_type->type == left_type->type &&
+                            right_arg_type->type == right_type->type)
+                        || (ASR::is_a<ASR::Class_t>(*left_arg_type) &&
+                            ASR::is_a<ASR::Struct_t>(*left_type))
+                        || (ASR::is_a<ASR::Class_t>(*right_arg_type) &&
+                            ASR::is_a<ASR::Struct_t>(*right_type))) {
                             found = true;
                             Vec<ASR::call_arg_t> a_args;
                             a_args.reserve(al, 2);
@@ -839,7 +860,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
 }
 
 bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
-                      SymbolTable* curr_scope) {
+                      SymbolTable* curr_scope, ASR::StructType_t *left_struct) {
     bool result = true;
     switch(op) {
         case ASR::cmpopType::Eq: {
@@ -880,8 +901,14 @@ bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
         }
     }
     if( result && curr_scope->resolve_symbol(intrinsic_op_name) == nullptr ) {
-        result = false;
+        if ( left_struct != nullptr && left_struct->m_symtab->resolve_symbol(
+                intrinsic_op_name) != nullptr) {
+            result = true;
+        } else {
+            result = false;
+        }
     }
+
     return result;
 }
 
