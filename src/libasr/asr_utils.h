@@ -2026,6 +2026,20 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
             replace_expr(x->m_args[i].m_value);
             current_expr = current_expr_copy_;
         }
+        switch( x->m_type->type ) {
+            case ASR::ttypeType::Character: {
+                ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(x->m_type);
+                if( char_type->m_len_expr ) {
+                    ASR::expr_t** current_expr_copy_ = current_expr;
+                    current_expr = &(char_type->m_len_expr);
+                    replace_expr(char_type->m_len_expr);
+                    current_expr = current_expr_copy_;
+                }
+                break;
+            }
+            default:
+                break;
+        }
         current_function_dependencies.insert(std::string(ASRUtils::symbol_name(new_es)));
         x->m_name = new_es;
     }

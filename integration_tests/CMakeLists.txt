@@ -620,6 +620,7 @@ RUN(NAME conv_complex2real LABELS gfortran llvm)
 RUN(NAME template_add LABELS llvm)
 RUN(NAME template_nested LABELS llvm)
 RUN(NAME template_travel LABELS llvm)
+RUN(NAME template_triple LABELS llvm)
 RUN(NAME template_array LABELS llvm)
 
 RUN(NAME statement1 LABELS gfortran llvm)

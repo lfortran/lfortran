@@ -221,8 +221,8 @@ jobs:
         run: |
             git clone https://github.com/certik/minpack.git
             cd minpack
-            git checkout scipy24
-            git checkout c5b5f86be92fd80aa0449aa24a44d6209b277633
+            git checkout scipy25
+            git checkout 6cab75931b6f4d385d815c37790d8d8d69a2eae5
             mkdir lf
             cd lf
             FC=$(pwd)/../../src/bin/lfortran cmake ..

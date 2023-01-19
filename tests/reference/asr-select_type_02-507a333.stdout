@@ -287,14 +287,14 @@
                         (Var 2 cp)
                     )
                     (SelectType
-                        [(TypeStmt
+                        [(TypeStmtName
                             2 point
                             [(BlockCall
                                 -1
                                 2 ~select_type_block_
                             )]
                         )
-                        (TypeStmt
+                        (TypeStmtName
                             2 point_3d
                             [(BlockCall
                                 -1

@@ -28,9 +28,12 @@ ast = true
 asr = true
 
 [[test]]
-filename = "../integration_tests/template_array.f90"
+filename = "../integration_tests/template_triple.f90"
 asr = true
 
+[[test]]
+filename = "../integration_tests/template_array.f90"
+asr = true
 
 [[test]]
 filename = "../integration_tests/test_backspace_01.f90"
@@ -690,6 +693,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "array11.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/arrays_01.f90"
 cpp = true
 asr = true
@@ -989,6 +996,14 @@ ast = true
 filename = "fn4.f90"
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "fn5.f90"
+asr = true
+
+[[test]]
+filename = "fn6.f90"
+asr = true
 
 [[test]]
 filename = "forall1.f90"
@@ -1333,6 +1348,10 @@ ast_f90 = true
 filename = "select_type1.f90"
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "select_type2.f90"
+asr = true
 
 [[test]]
 filename = "selectrank1.f90"
@@ -2318,6 +2337,10 @@ filename = "../integration_tests/functions_13.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/functions_14.f90"
+llvm = true
+
+[[test]]
 filename = "../integration_tests/arrays_elemental_15.f90"
 asr = true
 
@@ -2686,3 +2709,7 @@ asr_implicit_typing = true
 [[test]]
 filename = "character1.f90"
 asr_implicit_interface = true
+
+[[test]]
+filename = "write3.f90"
+llvm = true
