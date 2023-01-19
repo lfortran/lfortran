@@ -990,6 +990,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "fn6.f90"
+asr = true
+
+[[test]]
 filename = "forall1.f90"
 ast = true
 ast_f90 = true
@@ -1332,6 +1336,10 @@ ast_f90 = true
 filename = "select_type1.f90"
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "select_type2.f90"
+asr = true
 
 [[test]]
 filename = "selectrank1.f90"

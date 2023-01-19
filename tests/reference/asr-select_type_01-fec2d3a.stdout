@@ -239,14 +239,14 @@
                         (Var 2 child_target)
                     )
                     (SelectType
-                        [(TypeStmt
+                        [(TypeStmtName
                             2 base
                             [(BlockCall
                                 -1
                                 2 ~select_type_block_
                             )]
                         )
-                        (TypeStmt
+                        (TypeStmtName
                             2 child
                             [(BlockCall
                                 -1
@@ -260,14 +260,14 @@
                         (Var 2 base_target)
                     )
                     (SelectType
-                        [(TypeStmt
+                        [(TypeStmtName
                             2 base
                             [(BlockCall
                                 -1
                                 2 ~select_type_block_2
                             )]
                         )
-                        (TypeStmt
+                        (TypeStmtName
                             2 child
                             [(BlockCall
                                 -1
