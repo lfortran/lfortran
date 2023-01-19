@@ -2233,6 +2233,11 @@ public:
                     return result;
                 } else {
                     value = intrinsic_procedures.comptime_eval(f->m_name, al, loc, args);
+                    char *mod = ASR::down_cast<ASR::ExternalSymbol_t>(
+                        current_scope->resolve_symbol(f->m_name))->m_module_name;
+                    if (!present(current_module_dependencies, mod)) {
+                        current_module_dependencies.push_back(al, mod);
+                    }
                 }
             }
         }
