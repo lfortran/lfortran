@@ -753,18 +753,6 @@ std::string token2text(const int token)
         T(KW_WHERE, "where")
         T(KW_WHILE, "while")
         T(KW_WRITE, "write")
-
-        // Pre-processor directives
-        T(KW_DEFINE_DIR, "#define")
-        T(KW_UNDEF_DIR, "#undef")
-        T(KW_IF_DIR, "#if")
-        T(KW_IFDEF_DIR, "#ifdef")
-        T(KW_IFNDEF_DIR, "#ifndef")
-        T(KW_ELIF_DIR, "#elif")
-        T(KW_ELSE_DIR, "#else")
-        T(KW_ENDIF_DIR, "#endif")
-        T(KW_INCLUDE_DIR, "#include")
-
         default : {
             std::cout << "TOKEN: " << token << std::endl;
             throw LCompilersException("Token conversion not implemented yet.");

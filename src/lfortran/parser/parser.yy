@@ -354,17 +354,6 @@ void yyerror(YYLTYPE *yyloc, LFortran::Parser &p, const std::string &msg)
 %token <string> KW_WHILE
 %token <string> KW_WRITE
 
-// Pre-processor directives
-%token <string> KW_DEFINE_DIR
-%token <string> KW_UNDEF_DIR
-%token <string> KW_IF_DIR
-%token <string> KW_IFDEF_DIR
-%token <string> KW_IFNDEF_DIR
-%token <string> KW_ELIF_DIR
-%token <string> KW_ELSE_DIR
-%token <string> KW_ENDIF_DIR
-%token <string> KW_INCLUDE_DIR
-
 // Nonterminal tokens
 
 %type <ast> expr
@@ -995,11 +984,6 @@ fn_mod
 
 decl_star
     : decl_star decl { $$ = $1; LIST_ADD($$, $2); }
-    // TODO: Store directives information in the AST
-    | decl_star KW_IFNDEF_DIR id sep decl KW_ELSE_DIR sep
-        decl KW_ENDIF_DIR sep { $$ = $1; LIST_ADD($$, $5); }
-    | decl_star KW_IFNDEF_DIR id sep decl KW_ENDIF_DIR sep {
-        $$ = $1; LIST_ADD($$, $5); }
     | %empty { LIST_NEW($$); }
 
 decl
@@ -1025,8 +1009,6 @@ sub_or_func_plus
 
 sub_or_func
     : subroutine
-    | KW_IFNDEF_DIR id sep subroutine KW_ELSE_DIR sep
-        subroutine KW_ENDIF_DIR sep { $$ = $4; }
     | function
     | procedure
     ;
@@ -1038,9 +1020,6 @@ sub_args
 
 bind_opt
     : bind { $$ = $1; }
-    // TODO: Store directives information in the AST
-    | KW_IFNDEF_DIR id sep bind sep KW_ELSE_DIR sep
-        bind sep KW_ENDIF_DIR { $$ = $4; }
     | %empty { $$ = nullptr; }
     ;
 

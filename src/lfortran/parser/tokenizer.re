@@ -654,18 +654,8 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                 }
             }
 
-            "#" 'define' { KW(DEFINE_DIR); }
-            "#" 'undef'  { KW(UNDEF_DIR);  }
-
-            // Conditional compilation directives
-            "#" 'if'     { KW(IF_DIR);     }
-            "#" 'ifdef'  { KW(IFDEF_DIR);  }
-            "#" 'ifndef' { KW(IFNDEF_DIR); }
-            "#" 'elif'   { KW(ELIF_DIR);   }
-            "#" 'else'   { KW(ELSE_DIR);   }
-            "#" 'endif'  { KW(ENDIF_DIR);  }
-
-            "#" 'include'{ KW(INCLUDE_DIR);}
+            // Macros are ignored for now:
+            "#" [^\n\x00]* newline { line_num++; cur_line=cur; continue; }
 
             string1 { token_str(yylval.string); RET(TK_STRING) }
             string2 { token_str(yylval.string); RET(TK_STRING) }
