@@ -1159,8 +1159,11 @@ public:
                     break;
                 }
                 case AST::type_stmtType::ClassDefault: {
+                    SymbolTable* current_scope_copy = current_scope;
+                    current_scope = parent_scope;
                     AST::ClassDefault_t* class_default = AST::down_cast<AST::ClassDefault_t>(x.m_body[i]);
                     transform_stmts(select_type_default, class_default->n_body, class_default->m_body);
+                    current_scope = current_scope_copy;
                     break;
                 }
                 default: {
