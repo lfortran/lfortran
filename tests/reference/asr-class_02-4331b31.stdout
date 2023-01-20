@@ -85,6 +85,16 @@
                                     (SymbolTable
                                         4
                                         {
+                                            1_circle_radius:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_circle_radius
+                                                    3 radius
+                                                    circle
+                                                    []
+                                                    radius
+                                                    Public
+                                                ),
                                             circle_area:
                                                 (Variable
                                                     4
@@ -130,7 +140,7 @@
                                             (RealBinOp
                                                 (StructInstanceMember
                                                     (Var 4 this)
-                                                    3 radius
+                                                    4 1_circle_radius
                                                     (Real 4 [])
                                                     ()
                                                 )
@@ -171,6 +181,26 @@
                                     (SymbolTable
                                         5
                                         {
+                                            1_circle_area:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_circle_area
+                                                    3 circle_area
+                                                    circle
+                                                    []
+                                                    circle_area
+                                                    Public
+                                                ),
+                                            1_circle_radius:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_circle_radius
+                                                    3 radius
+                                                    circle
+                                                    []
+                                                    radius
+                                                    Public
+                                                ),
                                             area:
                                                 (Variable
                                                     5
@@ -206,12 +236,12 @@
                                                 )
                                         })
                                     circle_print
-                                    [circle_area]
+                                    [1_circle_area]
                                     [(Var 5 this)]
                                     [(=
                                         (Var 5 area)
                                         (FunctionCall
-                                            3 circle_area
+                                            5 1_circle_area
                                             ()
                                             []
                                             (Real 4 [])
@@ -228,7 +258,7 @@
                                         )
                                         (StructInstanceMember
                                             (Var 5 this)
-                                            3 radius
+                                            5 1_circle_radius
                                             (Real 4 [])
                                             ()
                                         )
@@ -259,6 +289,26 @@
                                     (SymbolTable
                                         6
                                         {
+                                            1_circle_print:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_circle_print
+                                                    3 circle_print
+                                                    circle
+                                                    []
+                                                    circle_print
+                                                    Public
+                                                ),
+                                            1_circle_radius:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_circle_radius
+                                                    3 radius
+                                                    circle
+                                                    []
+                                                    radius
+                                                    Public
+                                                ),
                                             c:
                                                 (Variable
                                                     6
@@ -279,7 +329,7 @@
                                                 )
                                         })
                                     main
-                                    [circle_print]
+                                    [1_circle_print]
                                     []
                                     [(=
                                         (Var 6 c)
@@ -300,7 +350,7 @@
                                     (=
                                         (StructInstanceMember
                                             (Var 6 c)
-                                            3 radius
+                                            6 1_circle_radius
                                             (Real 4 [])
                                             ()
                                         )
@@ -311,7 +361,7 @@
                                         ()
                                     )
                                     (SubroutineCall
-                                        3 circle_print
+                                        6 1_circle_print
                                         ()
                                         []
                                         (Var 6 c)

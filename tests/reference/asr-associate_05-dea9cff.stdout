@@ -304,7 +304,7 @@
                     associate_05
                     []
                     [(Allocate
-                        [(2 myreal
+                        [((Var 2 myreal)
                         [((IntegerConstant 1 (Integer 4 []))
                         (IntegerConstant 10 (Integer 4 [])))])]
                         ()

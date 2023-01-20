@@ -250,6 +250,26 @@
                                     (SymbolTable
                                         10
                                         {
+                                            1_point_x:
+                                                (ExternalSymbol
+                                                    10
+                                                    1_point_x
+                                                    6 x
+                                                    point
+                                                    []
+                                                    x
+                                                    Public
+                                                ),
+                                            1_point_y:
+                                                (ExternalSymbol
+                                                    10
+                                                    1_point_y
+                                                    6 y
+                                                    point
+                                                    []
+                                                    y
+                                                    Public
+                                                ),
                                             a:
                                                 (Variable
                                                     10
@@ -336,14 +356,14 @@
                                                     (RealBinOp
                                                         (StructInstanceMember
                                                             (Var 10 a)
-                                                            6 x
+                                                            10 1_point_x
                                                             (Real 4 [])
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
                                                             (Var 10 b)
-                                                            6 x
+                                                            10 1_point_x
                                                             (Real 4 [])
                                                             ()
                                                         )
@@ -368,14 +388,14 @@
                                                     (RealBinOp
                                                         (StructInstanceMember
                                                             (Var 10 a)
-                                                            6 y
+                                                            10 1_point_y
                                                             (Real 4 [])
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
                                                             (Var 10 b)
-                                                            6 y
+                                                            10 1_point_y
                                                             (Real 4 [])
                                                             ()
                                                         )
@@ -423,6 +443,26 @@
                                     (SymbolTable
                                         11
                                         {
+                                            1_point_x:
+                                                (ExternalSymbol
+                                                    11
+                                                    1_point_x
+                                                    6 x
+                                                    point
+                                                    []
+                                                    x
+                                                    Public
+                                                ),
+                                            1_point_y:
+                                                (ExternalSymbol
+                                                    11
+                                                    1_point_y
+                                                    6 y
+                                                    point
+                                                    []
+                                                    y
+                                                    Public
+                                                ),
                                             a:
                                                 (Variable
                                                     11
@@ -510,14 +550,14 @@
                                                     (RealBinOp
                                                         (StructInstanceMember
                                                             (Var 11 a)
-                                                            6 x
+                                                            11 1_point_x
                                                             (Real 4 [])
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
                                                             (Var 11 b)
-                                                            6 x
+                                                            11 1_point_x
                                                             (Real 4 [])
                                                             ()
                                                         )
@@ -542,14 +582,14 @@
                                                     (RealBinOp
                                                         (StructInstanceMember
                                                             (Var 11 a)
-                                                            6 y
+                                                            11 1_point_y
                                                             (Real 4 [])
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
                                                             (Var 11 b)
-                                                            6 y
+                                                            11 1_point_y
                                                             (Real 4 [])
                                                             ()
                                                         )

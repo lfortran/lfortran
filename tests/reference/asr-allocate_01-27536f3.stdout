@@ -474,7 +474,7 @@
                                     (Var 3 b)
                                     (Var 3 c)]
                                     [(Allocate
-                                        [(3 c_copy
+                                        [((Var 3 c_copy)
                                         [((ArrayBound
                                             (Var 3 a)
                                             (IntegerConstant 1 (Integer 4 []))
@@ -576,7 +576,7 @@
                                         ()
                                     )
                                     (Allocate
-                                        [(3 c
+                                        [((Var 3 c)
                                         [((ArrayBound
                                             (Var 3 a)
                                             (IntegerConstant 1 (Integer 4 []))
@@ -840,7 +840,7 @@
                                         )]
                                     )
                                     (ExplicitDeallocate
-                                        [3 c_copy]
+                                        [(Var 3 c_copy)]
                                     )
                                     (ImplicitDeallocate
                                         [3 c_copy]
@@ -868,7 +868,7 @@
                         ()
                     )
                     (Allocate
-                        [(2 a
+                        [((Var 2 a)
                         [((IntegerConstant 5 (Integer 4 []))
                         (IntegerBinOp
                             (Var 2 n)
@@ -882,7 +882,7 @@
                         ()
                     )
                     (Allocate
-                        [(2 b
+                        [((Var 2 b)
                         [((Var 2 n)
                         (IntegerBinOp
                             (IntegerBinOp

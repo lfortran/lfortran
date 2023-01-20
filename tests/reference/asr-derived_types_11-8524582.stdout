@@ -7,6 +7,16 @@
                     (SymbolTable
                         2
                         {
+                            1_y_backslash:
+                                (ExternalSymbol
+                                    2
+                                    1_y_backslash
+                                    3 backslash
+                                    y
+                                    []
+                                    backslash
+                                    Public
+                                ),
                             type_y:
                                 (Variable
                                     2
@@ -38,7 +48,7 @@
                                         )
                                         (StructInstanceMember
                                             (Var 2 type_y)
-                                            3 backslash
+                                            2 1_y_backslash
                                             (Character 1 1 () [])
                                             ()
                                         )

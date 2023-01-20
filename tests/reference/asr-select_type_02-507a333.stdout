@@ -192,6 +192,26 @@
                                     (SymbolTable
                                         6
                                         {
+                                            1_point_x:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_point_x
+                                                    3 x
+                                                    point
+                                                    []
+                                                    x
+                                                    Public
+                                                ),
+                                            1_point_y:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_point_y
+                                                    3 y
+                                                    point
+                                                    []
+                                                    y
+                                                    Public
+                                                ),
                                             an:
                                                 (Variable
                                                     6
@@ -216,13 +236,13 @@
                                         ()
                                         [(StructInstanceMember
                                             (Var 6 an)
-                                            3 x
+                                            6 1_point_x
                                             (Real 4 [])
                                             ()
                                         )
                                         (StructInstanceMember
                                             (Var 6 an)
-                                            3 y
+                                            6 1_point_y
                                             (Real 4 [])
                                             ()
                                         )]
@@ -235,6 +255,36 @@
                                     (SymbolTable
                                         7
                                         {
+                                            1_point_3d_z:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_point_3d_z
+                                                    4 z
+                                                    point_3d
+                                                    []
+                                                    z
+                                                    Public
+                                                ),
+                                            1_point_x:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_point_x
+                                                    3 x
+                                                    point
+                                                    []
+                                                    x
+                                                    Public
+                                                ),
+                                            1_point_y:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_point_y
+                                                    3 y
+                                                    point
+                                                    []
+                                                    y
+                                                    Public
+                                                ),
                                             an:
                                                 (Variable
                                                     7
@@ -259,19 +309,19 @@
                                         ()
                                         [(StructInstanceMember
                                             (Var 7 an)
-                                            3 x
+                                            7 1_point_x
                                             (Real 4 [])
                                             ()
                                         )
                                         (StructInstanceMember
                                             (Var 7 an)
-                                            3 y
+                                            7 1_point_y
                                             (Real 4 [])
                                             ()
                                         )
                                         (StructInstanceMember
                                             (Var 7 an)
-                                            4 z
+                                            7 1_point_3d_z
                                             (Real 4 [])
                                             ()
                                         )]

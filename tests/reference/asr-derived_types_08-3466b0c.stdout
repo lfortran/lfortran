@@ -7,6 +7,76 @@
                     (SymbolTable
                         6
                         {
+                            1_initialize:
+                                (ExternalSymbol
+                                    6
+                                    1_initialize
+                                    3 initialize
+                                    shape
+                                    []
+                                    initialize
+                                    Public
+                                ),
+                            1_rectangle_length:
+                                (ExternalSymbol
+                                    6
+                                    1_rectangle_length
+                                    4 length
+                                    rectangle
+                                    []
+                                    length
+                                    Public
+                                ),
+                            1_rectangle_width:
+                                (ExternalSymbol
+                                    6
+                                    1_rectangle_width
+                                    4 width
+                                    rectangle
+                                    []
+                                    width
+                                    Public
+                                ),
+                            1_shape_color:
+                                (ExternalSymbol
+                                    6
+                                    1_shape_color
+                                    3 color
+                                    shape
+                                    []
+                                    color
+                                    Public
+                                ),
+                            1_shape_filled:
+                                (ExternalSymbol
+                                    6
+                                    1_shape_filled
+                                    3 filled
+                                    shape
+                                    []
+                                    filled
+                                    Public
+                                ),
+                            1_shape_x:
+                                (ExternalSymbol
+                                    6
+                                    1_shape_x
+                                    3 x
+                                    shape
+                                    []
+                                    x
+                                    Public
+                                ),
+                            1_shape_y:
+                                (ExternalSymbol
+                                    6
+                                    1_shape_y
+                                    3 y
+                                    shape
+                                    []
+                                    y
+                                    Public
+                                ),
                             initialize_subrout:
                                 (ExternalSymbol
                                     6
@@ -77,7 +147,7 @@
                     derived_types_08
                     [shape_mod]
                     [(SubroutineCall
-                        3 initialize
+                        6 1_initialize
                         ()
                         [((IntegerConstant 1 (Integer 4 [])))
                         ((LogicalConstant
@@ -89,7 +159,7 @@
                         (Var 6 shp)
                     )
                     (SubroutineCall
-                        3 initialize
+                        6 1_initialize
                         ()
                         [((IntegerConstant 2 (Integer 4 [])))
                         ((LogicalConstant
@@ -104,25 +174,25 @@
                         ()
                         [(StructInstanceMember
                             (Var 6 shp)
-                            3 color
+                            6 1_shape_color
                             (Integer 4 [])
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 shp)
-                            3 filled
+                            6 1_shape_filled
                             (Logical 4 [])
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 shp)
-                            3 x
+                            6 1_shape_x
                             (Integer 4 [])
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 shp)
-                            3 y
+                            6 1_shape_y
                             (Integer 4 [])
                             ()
                         )]
@@ -133,25 +203,25 @@
                         ()
                         [(StructInstanceMember
                             (Var 6 rect)
-                            3 color
+                            6 1_shape_color
                             (Integer 4 [])
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 rect)
-                            3 filled
+                            6 1_shape_filled
                             (Logical 4 [])
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 rect)
-                            3 x
+                            6 1_shape_x
                             (Integer 4 [])
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 rect)
-                            3 y
+                            6 1_shape_y
                             (Integer 4 [])
                             ()
                         )]
@@ -161,7 +231,7 @@
                     (=
                         (StructInstanceMember
                             (Var 6 rect)
-                            4 length
+                            6 1_rectangle_length
                             (Integer 4 [])
                             ()
                         )
@@ -171,7 +241,7 @@
                     (=
                         (StructInstanceMember
                             (Var 6 rect)
-                            4 width
+                            6 1_rectangle_width
                             (Integer 4 [])
                             ()
                         )
@@ -182,13 +252,13 @@
                         ()
                         [(StructInstanceMember
                             (Var 6 rect)
-                            4 length
+                            6 1_rectangle_length
                             (Integer 4 [])
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 rect)
-                            4 width
+                            6 1_rectangle_width
                             (Integer 4 [])
                             ()
                         )]
@@ -206,6 +276,46 @@
                                     (SymbolTable
                                         5
                                         {
+                                            1_shape_color:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_shape_color
+                                                    3 color
+                                                    shape
+                                                    []
+                                                    color
+                                                    Public
+                                                ),
+                                            1_shape_filled:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_shape_filled
+                                                    3 filled
+                                                    shape
+                                                    []
+                                                    filled
+                                                    Public
+                                                ),
+                                            1_shape_x:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_shape_x
+                                                    3 x
+                                                    shape
+                                                    []
+                                                    x
+                                                    Public
+                                                ),
+                                            1_shape_y:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_shape_y
+                                                    3 y
+                                                    shape
+                                                    []
+                                                    y
+                                                    Public
+                                                ),
                                             color:
                                                 (Variable
                                                     5
@@ -295,7 +405,7 @@
                                     [(=
                                         (StructInstanceMember
                                             (Var 5 sh)
-                                            3 color
+                                            5 1_shape_color
                                             (Integer 4 [])
                                             ()
                                         )
@@ -305,7 +415,7 @@
                                     (=
                                         (StructInstanceMember
                                             (Var 5 sh)
-                                            3 filled
+                                            5 1_shape_filled
                                             (Logical 4 [])
                                             ()
                                         )
@@ -315,7 +425,7 @@
                                     (=
                                         (StructInstanceMember
                                             (Var 5 sh)
-                                            3 x
+                                            5 1_shape_x
                                             (Integer 4 [])
                                             ()
                                         )
@@ -325,7 +435,7 @@
                                     (=
                                         (StructInstanceMember
                                             (Var 5 sh)
-                                            3 y
+                                            5 1_shape_y
                                             (Integer 4 [])
                                             ()
                                         )

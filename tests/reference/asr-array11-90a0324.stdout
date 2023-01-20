@@ -12,6 +12,26 @@
                                     (SymbolTable
                                         4
                                         {
+                                            1_toml_context_num:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_toml_context_num
+                                                    3 num
+                                                    toml_context
+                                                    []
+                                                    num
+                                                    Public
+                                                ),
+                                            1_toml_context_ptr:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_toml_context_ptr
+                                                    3 ptr
+                                                    toml_context
+                                                    []
+                                                    ptr
+                                                    Public
+                                                ),
                                             context:
                                                 (Variable
                                                     4
@@ -94,7 +114,7 @@
                                         (IntegerCompare
                                             (StructInstanceMember
                                                 (Var 4 context)
-                                                3 num
+                                                4 1_toml_context_num
                                                 (Integer 4 [])
                                                 ()
                                             )
@@ -115,7 +135,7 @@
                                             ()
                                             [(StructInstanceMember
                                                 (Var 4 context)
-                                                3 num
+                                                4 1_toml_context_num
                                                 (Integer 4 [])
                                                 ()
                                             )]
@@ -170,7 +190,7 @@
                                                 (ArraySection
                                                     (StructInstanceMember
                                                         (Var 4 context)
-                                                        3 ptr
+                                                        4 1_toml_context_ptr
                                                         (Character 1 -2 () [])
                                                         ()
                                                     )

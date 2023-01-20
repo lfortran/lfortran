@@ -84,6 +84,26 @@
                                     (SymbolTable
                                         4
                                         {
+                                            1_complextype_i:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_complextype_i
+                                                    3 i
+                                                    complextype
+                                                    []
+                                                    i
+                                                    Public
+                                                ),
+                                            1_complextype_r:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_complextype_r
+                                                    3 r
+                                                    complextype
+                                                    []
+                                                    r
+                                                    Public
+                                                ),
                                             i:
                                                 (Variable
                                                     4
@@ -169,14 +189,14 @@
                                     (=
                                         (StructInstanceMember
                                             (Var 4 sum)
-                                            3 r
+                                            4 1_complextype_r
                                             (Real 4 [])
                                             ()
                                         )
                                         (RealBinOp
                                             (StructInstanceMember
                                                 (Var 4 this)
-                                                3 r
+                                                4 1_complextype_r
                                                 (Real 4 [])
                                                 ()
                                             )
@@ -195,14 +215,14 @@
                                     (=
                                         (StructInstanceMember
                                             (Var 4 sum)
-                                            3 i
+                                            4 1_complextype_i
                                             (Real 4 [])
                                             ()
                                         )
                                         (RealBinOp
                                             (StructInstanceMember
                                                 (Var 4 this)
-                                                3 i
+                                                4 1_complextype_i
                                                 (Real 4 [])
                                                 ()
                                             )
@@ -237,6 +257,26 @@
                                     (SymbolTable
                                         5
                                         {
+                                            1_complextype_i:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_complextype_i
+                                                    3 i
+                                                    complextype
+                                                    []
+                                                    i
+                                                    Public
+                                                ),
+                                            1_complextype_r:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_complextype_r
+                                                    3 r
+                                                    complextype
+                                                    []
+                                                    r
+                                                    Public
+                                                ),
                                             i:
                                                 (Variable
                                                     5
@@ -322,14 +362,14 @@
                                     (=
                                         (StructInstanceMember
                                             (Var 5 sum)
-                                            3 r
+                                            5 1_complextype_r
                                             (Real 4 [])
                                             ()
                                         )
                                         (RealBinOp
                                             (StructInstanceMember
                                                 (Var 5 this)
-                                                3 r
+                                                5 1_complextype_r
                                                 (Real 4 [])
                                                 ()
                                             )
@@ -343,14 +383,14 @@
                                     (=
                                         (StructInstanceMember
                                             (Var 5 sum)
-                                            3 i
+                                            5 1_complextype_i
                                             (Real 4 [])
                                             ()
                                         )
                                         (RealBinOp
                                             (StructInstanceMember
                                                 (Var 5 this)
-                                                3 i
+                                                5 1_complextype_i
                                                 (Real 4 [])
                                                 ()
                                             )
@@ -386,6 +426,46 @@
                     (SymbolTable
                         6
                         {
+                            1_complextype_i:
+                                (ExternalSymbol
+                                    6
+                                    1_complextype_i
+                                    3 i
+                                    complextype
+                                    []
+                                    i
+                                    Public
+                                ),
+                            1_complextype_r:
+                                (ExternalSymbol
+                                    6
+                                    1_complextype_r
+                                    3 r
+                                    complextype
+                                    []
+                                    r
+                                    Public
+                                ),
+                            1_integer_add_subrout:
+                                (ExternalSymbol
+                                    6
+                                    1_integer_add_subrout
+                                    3 integer_add_subrout
+                                    complextype
+                                    []
+                                    integer_add_subrout
+                                    Public
+                                ),
+                            1_real_add_subrout:
+                                (ExternalSymbol
+                                    6
+                                    1_real_add_subrout
+                                    3 real_add_subrout
+                                    complextype
+                                    []
+                                    real_add_subrout
+                                    Public
+                                ),
                             a:
                                 (Variable
                                     6
@@ -589,7 +669,7 @@
                         ()
                     )
                     (SubroutineCall
-                        3 integer_add_subrout
+                        6 1_integer_add_subrout
                         3 add
                         [((Var 6 ione))
                         ((Var 6 izero))
@@ -600,13 +680,13 @@
                         ()
                         [(StructInstanceMember
                             (Var 6 a)
-                            3 r
+                            6 1_complextype_r
                             (Real 4 [])
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 a)
-                            3 i
+                            6 1_complextype_i
                             (Real 4 [])
                             ()
                         )]
@@ -614,7 +694,7 @@
                         ()
                     )
                     (SubroutineCall
-                        3 real_add_subrout
+                        6 1_real_add_subrout
                         3 add
                         [((Var 6 fpzero))
                         ((Var 6 negfpone))
@@ -625,13 +705,13 @@
                         ()
                         [(StructInstanceMember
                             (Var 6 a)
-                            3 r
+                            6 1_complextype_r
                             (Real 4 [])
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 a)
-                            3 i
+                            6 1_complextype_i
                             (Real 4 [])
                             ()
                         )]

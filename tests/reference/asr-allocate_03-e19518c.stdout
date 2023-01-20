@@ -57,7 +57,7 @@
                                     []
                                     [(Var 3 c)]
                                     [(Allocate
-                                        [(3 c
+                                        [((Var 3 c)
                                         [((IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 3 (Integer 4 [])))
                                         ((IntegerConstant 1 (Integer 4 []))
@@ -382,7 +382,7 @@
                         ()
                     )
                     (Allocate
-                        [(2 c
+                        [((Var 2 c)
                         [((IntegerConstant 1 (Integer 4 []))
                         (IntegerConstant 3 (Integer 4 [])))
                         ((IntegerConstant 1 (Integer 4 []))

@@ -64,10 +64,20 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 return ;
             }
             ASR::alloc_arg_t& xx = const_cast<ASR::alloc_arg_t&>(x);
-            ASR::symbol_t* x_sym = xx.m_a;
+            ASR::symbol_t* x_sym = nullptr;
+            ASR::expr_t* tmp_expr = xx.m_a;
+            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
+                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
+                x_sym = tmp_var->m_v;
+            } else {
+                throw LCompilersException(
+                    "Cannot deallocate variables in expression " +
+                    std::to_string(tmp_expr->type));
+            }
             std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
             if( current_proc_scope->get_symbol(x_sym_name) != x_sym ) {
-                xx.m_a = current_proc_scope->get_symbol(x_sym_name);
+                ASR::symbol_t* x_sym_new = current_proc_scope->get_symbol(x_sym_name);
+                xx.m_a = ASRUtils::EXPR(ASR::make_Var_t(al,  x_sym_new->base.loc, x_sym_new));
             }
         }
 

@@ -21,6 +21,16 @@
                                     (SymbolTable
                                         4
                                         {
+                                            1_string_type_raw:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_string_type_raw
+                                                    3 raw
+                                                    string_type
+                                                    []
+                                                    raw
+                                                    Public
+                                                ),
                                             allocated:
                                                 (ExternalSymbol
                                                     4
@@ -85,7 +95,7 @@
                                             ()
                                             [((StructInstanceMember
                                                 (Var 4 string)
-                                                3 raw
+                                                4 1_string_type_raw
                                                 (Character 1 -2 () [])
                                                 ()
                                             ))]
@@ -100,7 +110,7 @@
                                                 ()
                                                 [((StructInstanceMember
                                                     (Var 4 string)
-                                                    3 raw
+                                                    4 1_string_type_raw
                                                     (Character 1 -2 () [])
                                                     ()
                                                 ))]
@@ -135,6 +145,16 @@
                                     (SymbolTable
                                         5
                                         {
+                                            1_string_type_raw:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_string_type_raw
+                                                    3 raw
+                                                    string_type
+                                                    []
+                                                    raw
+                                                    Public
+                                                ),
                                             allocated:
                                                 (ExternalSymbol
                                                     5
@@ -196,7 +216,7 @@
                                             ()
                                             [((StructInstanceMember
                                                 (Var 5 string)
-                                                3 raw
+                                                5 1_string_type_raw
                                                 (Character 1 -2 () [])
                                                 ()
                                             ))]
@@ -208,7 +228,7 @@
                                             (Var 5 maybe_string)
                                             (StructInstanceMember
                                                 (Var 5 string)
-                                                3 raw
+                                                5 1_string_type_raw
                                                 (Character 1 -2 () [])
                                                 ()
                                             )

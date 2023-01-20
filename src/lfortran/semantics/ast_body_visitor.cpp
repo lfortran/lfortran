@@ -751,7 +751,7 @@ public:
             ASR::expr_t* tmp_stmt = ASRUtils::EXPR(tmp);
             if( ASR::is_a<ASR::ArraySection_t>(*tmp_stmt) ) {
                 ASR::ArraySection_t* array_ref = ASR::down_cast<ASR::ArraySection_t>(tmp_stmt);
-                new_arg.m_a = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)ASRUtils::EXPR2VAR(array_ref->m_v));
+                new_arg.m_a = array_ref->m_v;
                 Vec<ASR::dimension_t> dims_vec;
                 dims_vec.reserve(al, array_ref->n_args);
                 for( size_t j = 0; j < array_ref->n_args; j++ ) {
@@ -772,7 +772,7 @@ public:
                 alloc_args_vec.push_back(al, new_arg);
             } else if( ASR::is_a<ASR::ArrayItem_t>(*tmp_stmt) ) {
                 ASR::ArrayItem_t* array_ref = ASR::down_cast<ASR::ArrayItem_t>(tmp_stmt);
-                new_arg.m_a = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)ASRUtils::EXPR2VAR(array_ref->m_v));
+                new_arg.m_a = array_ref->m_v;
                 Vec<ASR::dimension_t> dims_vec;
                 dims_vec.reserve(al, array_ref->n_args);
                 for( size_t j = 0; j < array_ref->n_args; j++ ) {
@@ -787,8 +787,7 @@ public:
                 new_arg.n_dims = dims_vec.size();
                 alloc_args_vec.push_back(al, new_arg);
             } else if( ASR::is_a<ASR::Var_t>(*tmp_stmt) ) {
-                ASR::Var_t* array_var = ASR::down_cast<ASR::Var_t>(tmp_stmt);
-                new_arg.m_a = array_var->m_v;
+                new_arg.m_a = tmp_stmt;
                 new_arg.m_dims = nullptr;
                 new_arg.n_dims = 0;
                 alloc_args_vec.push_back(al, new_arg);
@@ -885,38 +884,46 @@ public:
                     del_syms.p, del_syms.size()));
     }
 
+    inline void check_for_deallocation(ASR::symbol_t* tmp_sym, const Location& loc) {
+        tmp_sym = ASRUtils::symbol_get_past_external(tmp_sym);
+        if( !ASR::is_a<ASR::Variable_t>(*tmp_sym) ) {
+            throw SemanticError("Only an allocatable variable symbol "
+                                "can be deallocated.", loc);
+        }
+
+        ASR::Variable_t* tmp_v = ASR::down_cast<ASR::Variable_t>(tmp_sym);
+        if( tmp_v->m_storage != ASR::storage_typeType::Allocatable &&
+            tmp_v->m_storage != ASR::storage_typeType::Save ) {
+            // If it is not allocatable, it can also be a pointer
+            if (ASR::is_a<ASR::Pointer_t>(*tmp_v->m_type)) {
+                // OK
+            } else {
+                throw SemanticError("Only an allocatable or a pointer variable "
+                                    "can be deallocated.", loc);
+            }
+        }
+    }
+
     void visit_Deallocate(const AST::Deallocate_t& x) {
-        Vec<ASR::symbol_t*> arg_vec;
+        Vec<ASR::expr_t*> arg_vec;
         arg_vec.reserve(al, x.n_args);
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*(x.m_args[i].m_end));
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
-            if( tmp_expr->type != ASR::exprType::Var ) {
-                throw SemanticError("Only an allocatable variable symbol "
-                                    "can be deallocated.",
-                                    tmp_expr->base.loc);
-            } else {
+            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                 const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
                 ASR::symbol_t* tmp_sym = tmp_var->m_v;
-                if( ASRUtils::symbol_get_past_external(tmp_sym)->type != ASR::symbolType::Variable ) {
-                    throw SemanticError("Only an allocatable variable symbol "
-                                        "can be deallocated.",
-                                        tmp_expr->base.loc);
-                } else {
-                    ASR::Variable_t* tmp_v = ASR::down_cast<ASR::Variable_t>(tmp_sym);
-                    if( tmp_v->m_storage != ASR::storage_typeType::Allocatable ) {
-                        // If it is not allocatable, it can also be a pointer
-                        if (ASR::is_a<ASR::Pointer_t>(*tmp_v->m_type)) {
-                            // OK
-                        } else {
-                            throw SemanticError("Only an allocatable or a pointer variable "
-                                                "can be deallocated.",
-                                                tmp_expr->base.loc);
-                        }
-                    }
-                    arg_vec.push_back(al, tmp_sym);
-                }
+                check_for_deallocation(tmp_sym, tmp_expr->base.loc);
+            } else if( ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) ) {
+                const ASR::StructInstanceMember_t* tmp_struct_ref = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
+                ASR::symbol_t* tmp_member = tmp_struct_ref->m_m;
+                check_for_deallocation(tmp_member, tmp_expr->base.loc);
+            } else {
+                throw SemanticError("Cannot deallocate variables in expression " +
+                                    std::to_string(tmp_expr->type),
+                                    tmp_expr->base.loc);
             }
+            arg_vec.push_back(al, tmp_expr);
         }
         tmp = ASR::make_ExplicitDeallocate_t(al, x.base.base.loc,
                                             arg_vec.p, arg_vec.size());
@@ -1674,6 +1681,46 @@ public:
         return ASR::make_CPtrToPointer_t(al, x.base.base.loc, cptr, fptr, shape);
     }
 
+    ASR::symbol_t* import_class_procedure(ASR::symbol_t* original_sym, const Location& loc) {
+        if( original_sym && ASR::is_a<ASR::ClassProcedure_t>(*original_sym) ) {
+            std::string class_proc_name = ASRUtils::symbol_name(original_sym);
+            if( original_sym != current_scope->resolve_symbol(class_proc_name) ) {
+                std::string imported_proc_name = "1_" + class_proc_name;
+                if( current_scope->resolve_symbol(imported_proc_name) == nullptr ) {
+                    ASR::symbol_t* module_sym = ASRUtils::get_asr_owner(original_sym);
+                    std::string module_name = ASRUtils::symbol_name(module_sym);
+                    if( current_scope->resolve_symbol(module_name) == nullptr ) {
+                        std::string imported_module_name = "1_" + module_name;
+                        if( current_scope->resolve_symbol(imported_module_name) == nullptr ) {
+                            LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(module_sym)));
+                            ASR::symbol_t* imported_module = ASR::down_cast<ASR::symbol_t>(
+                                ASR::make_ExternalSymbol_t(
+                                    al, loc, current_scope, s2c(al, imported_module_name),
+                                    module_sym, ASRUtils::symbol_name(ASRUtils::get_asr_owner(module_sym)),
+                                    nullptr, 0, s2c(al, module_name), ASR::accessType::Public
+                                )
+                            );
+                            current_scope->add_symbol(imported_module_name, imported_module);
+                        }
+                        module_name = imported_module_name;
+                    }
+                    ASR::symbol_t* imported_sym = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_ExternalSymbol_t(
+                            al, loc, current_scope, s2c(al, imported_proc_name),
+                            original_sym, s2c(al, module_name), nullptr, 0,
+                            ASRUtils::symbol_name(original_sym), ASR::accessType::Public
+                        )
+                    );
+                    current_scope->add_symbol(imported_proc_name, imported_sym);
+                    original_sym = imported_sym;
+                } else {
+                    original_sym = current_scope->resolve_symbol(imported_proc_name);
+                }
+            }
+        }
+        return original_sym;
+    }
+
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
         SymbolTable* scope = current_scope;
         std::string sub_name = to_lower(x.m_name);
@@ -1688,6 +1735,7 @@ public:
             original_sym = resolve_deriv_type_proc(x.base.base.loc, sub_name,
                             to_lower(x.m_member[x.n_member - 1].m_name),
                             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
+            original_sym = import_class_procedure(original_sym, x.base.base.loc);
         } else {
             original_sym = current_scope->resolve_symbol(sub_name);
         }
@@ -1752,7 +1800,7 @@ public:
             }
         }
         Vec<ASR::call_arg_t> args_with_mdt;
-        if( x.n_member == 1 ) {
+        if( x.n_member >= 1 ) {
             args_with_mdt.reserve(al, x.n_args + 1);
             ASR::call_arg_t v_expr_call_arg;
             v_expr_call_arg.loc = v_expr->base.loc, v_expr_call_arg.m_value = v_expr;
@@ -1779,7 +1827,7 @@ public:
                             [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
                 }
                 // Create ExternalSymbol for procedures in different modules.
-                final_sym = p->m_procs[idx];
+                final_sym = import_class_procedure(p->m_procs[idx], x.base.base.loc);
                 break;
             }
             case (ASR::symbolType::ClassProcedure) : {
@@ -1827,7 +1875,8 @@ public:
                         final_sym = current_scope->get_symbol(local_sym);
                     }
                 } else {
-                    if (!ASR::is_a<ASR::Function_t>(*final_sym)) {
+                    if (!ASR::is_a<ASR::Function_t>(*final_sym) &&
+                        !ASR::is_a<ASR::ClassProcedure_t>(*final_sym)) {
                         throw SemanticError("ExternalSymbol must point to a Subroutine", x.base.base.loc);
                     }
                     final_sym=original_sym;

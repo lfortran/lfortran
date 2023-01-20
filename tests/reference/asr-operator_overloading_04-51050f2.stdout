@@ -23,6 +23,16 @@
                                     (SymbolTable
                                         4
                                         {
+                                            1_string_type_raw:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_string_type_raw
+                                                    3 raw
+                                                    string_type
+                                                    []
+                                                    raw
+                                                    Public
+                                                ),
                                             lhs:
                                                 (Variable
                                                     4
@@ -64,7 +74,7 @@
                                     [(=
                                         (StructInstanceMember
                                             (Var 4 lhs)
-                                            3 raw
+                                            4 1_string_type_raw
                                             (Character 1 -2 () [])
                                             ()
                                         )
@@ -120,6 +130,16 @@
                                     (SymbolTable
                                         5
                                         {
+                                            1_string_type_raw:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_string_type_raw
+                                                    3 raw
+                                                    string_type
+                                                    []
+                                                    raw
+                                                    Public
+                                                ),
                                             string:
                                                 (Variable
                                                     5
@@ -164,7 +184,7 @@
                                         (Var 5 trimmed_string)
                                         (StructInstanceMember
                                             (Var 5 string)
-                                            3 raw
+                                            5 1_string_type_raw
                                             (Character 1 -2 () [])
                                             ()
                                         )
@@ -174,7 +194,7 @@
                                             [((Var 5 trimmed_string))
                                             ((StructInstanceMember
                                                 (Var 5 string)
-                                                3 raw
+                                                5 1_string_type_raw
                                                 (Character 1 -2 () [])
                                                 ()
                                             ))]

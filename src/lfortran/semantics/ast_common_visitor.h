@@ -1700,8 +1700,9 @@ public:
         args.reserve(al, n_args);
         ASR::expr_t* v_Var = nullptr;
         if( v_expr ) {
+            ASR::symbol_t* v_ext = ASRUtils::import_struct_instance_member(al, v, current_scope);
             v_Var = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
-                        al, v_expr->base.loc, v_expr, v,
+                        al, v_expr->base.loc, v_expr, v_ext,
                         ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)),
                         nullptr));
         } else {
@@ -2122,7 +2123,7 @@ public:
                     ASR::expr_t *v_expr) {
         Vec<ASR::call_arg_t> args;
         visit_expr_list(m_args, n_args, args);
-        ASR::ClassProcedure_t *v_class_proc = ASR::down_cast<ASR::ClassProcedure_t>(v);
+        ASR::ClassProcedure_t *v_class_proc = ASR::down_cast<ASR::ClassProcedure_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t *type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
         if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
@@ -2275,7 +2276,7 @@ public:
         if (!v) {
             throw SemanticError("Variable '" + dt_name + "' not declared", loc);
         }
-        ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(v);
+        ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(v));
         if (ASR::is_a<ASR::Struct_t>(*ASRUtils::type_get_past_pointer(v_variable->m_type)) ||
                 ASR::is_a<ASR::Class_t>(*ASRUtils::type_get_past_pointer(v_variable->m_type))) {
             ASR::ttype_t* v_type = ASRUtils::type_get_past_pointer(v_variable->m_type);
@@ -2362,7 +2363,7 @@ public:
             v = ASRUtils::symbol_get_past_external(parent);
             der_type = ASR::down_cast<ASR::StructType_t>(v);
         }
-        ASR::symbol_t* member = der_type->m_symtab->resolve_symbol(var_name);
+        ASR::symbol_t* member = der_type->m_symtab->get_symbol(var_name);
         if( member != nullptr ) {
             scope = der_type->m_symtab;
         } else if( der_type->m_parent != nullptr ) {
@@ -3239,13 +3240,49 @@ public:
         ASR::expr_t *v_expr = nullptr;
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
-        if (x.n_member == 1) {
+        if (x.n_member >= 1) {
             visit_NameUtil(x.m_member, x.n_member - 1,
                 x.m_member[x.n_member - 1].m_name, x.base.base.loc);
             v_expr = ASRUtils::EXPR(tmp);
             v = resolve_deriv_type_proc(x.base.base.loc, var_name,
                     to_lower(x.m_member[x.n_member - 1].m_name),
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
+            if( v && ASR::is_a<ASR::ClassProcedure_t>(*v) ) {
+                std::string class_proc_name = ASRUtils::symbol_name(v);
+                if( v != current_scope->resolve_symbol(class_proc_name) ) {
+                    std::string imported_proc_name = "1_" + class_proc_name;
+                    if( current_scope->resolve_symbol(imported_proc_name) == nullptr ) {
+                        ASR::symbol_t* module_sym = ASRUtils::get_asr_owner(v);
+                        std::string module_name = ASRUtils::symbol_name(module_sym);
+                        if( current_scope->resolve_symbol(module_name) == nullptr ) {
+                            std::string imported_module_name = "1_" + module_name;
+                            if( current_scope->resolve_symbol(imported_module_name) == nullptr ) {
+                                LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(module_sym)));
+                                ASR::symbol_t* imported_module = ASR::down_cast<ASR::symbol_t>(
+                                    ASR::make_ExternalSymbol_t(
+                                        al, x.base.base.loc, current_scope, s2c(al, imported_module_name),
+                                        module_sym, ASRUtils::symbol_name(ASRUtils::get_asr_owner(module_sym)),
+                                        nullptr, 0, s2c(al, module_name), ASR::accessType::Public
+                                    )
+                                );
+                                current_scope->add_symbol(imported_module_name, imported_module);
+                            }
+                            module_name = imported_module_name;
+                        }
+                        ASR::symbol_t* imported_sym = ASR::down_cast<ASR::symbol_t>(
+                            ASR::make_ExternalSymbol_t(
+                                al, x.base.base.loc, current_scope, s2c(al, imported_proc_name),
+                                v, s2c(al, module_name), nullptr, 0,
+                                ASRUtils::symbol_name(v), ASR::accessType::Public
+                            )
+                        );
+                        current_scope->add_symbol(imported_proc_name, imported_sym);
+                        v = imported_sym;
+                    } else {
+                        v = current_scope->resolve_symbol(imported_proc_name);
+                    }
+                }
+            }
         } else {
             v = current_scope->resolve_symbol(var_name);
         }
@@ -4108,13 +4145,15 @@ public:
                 tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc,
                         to_lower(x_m_member[i].m_name), to_lower(x_m_member[i - 1].m_name),
                         scope);
+                ASR::symbol_t* tmp2_m_m_ext = ASRUtils::import_struct_instance_member(al, tmp2->m_m, current_scope);
                 tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp),
-                                                       tmp2->m_m, tmp2->m_type, nullptr);
+                                                       tmp2_m_m_ext, tmp2->m_type, nullptr);
             }
             i = x_n_member - 1;
             tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc, to_lower(x_m_id),
                         to_lower(x_m_member[i].m_name), scope);
-            tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2->m_m,
+            ASR::symbol_t* tmp2_m_m_ext = ASRUtils::import_struct_instance_member(al, tmp2->m_m, current_scope);
+            tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext,
                                                    tmp2->m_type, nullptr);
         }
     }
