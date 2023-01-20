@@ -128,7 +128,16 @@
                                     (SymbolTable
                                         5
                                         {
-                                            
+                                            1_base_i:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_base_i
+                                                    3 i
+                                                    base
+                                                    []
+                                                    i
+                                                    Public
+                                                )
                                         })
                                     ~select_type_block_
                                     [(Print
@@ -139,7 +148,7 @@
                                         )
                                         (StructInstanceMember
                                             (Var 2 bptr)
-                                            3 i
+                                            5 1_base_i
                                             (Integer 4 [])
                                             ()
                                         )]
@@ -152,7 +161,26 @@
                                     (SymbolTable
                                         6
                                         {
-                                            
+                                            1_base_i:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_base_i
+                                                    3 i
+                                                    base
+                                                    []
+                                                    i
+                                                    Public
+                                                ),
+                                            1_child_j:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_child_j
+                                                    4 j
+                                                    child
+                                                    []
+                                                    j
+                                                    Public
+                                                )
                                         })
                                     ~select_type_block_1
                                     [(Print
@@ -163,13 +191,13 @@
                                         )
                                         (StructInstanceMember
                                             (Var 2 bptr)
-                                            3 i
+                                            6 1_base_i
                                             (Integer 4 [])
                                             ()
                                         )
                                         (StructInstanceMember
                                             (Var 2 bptr)
-                                            4 j
+                                            6 1_child_j
                                             (Integer 4 [])
                                             ()
                                         )]
@@ -182,7 +210,16 @@
                                     (SymbolTable
                                         7
                                         {
-                                            
+                                            1_base_i:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_base_i
+                                                    3 i
+                                                    base
+                                                    []
+                                                    i
+                                                    Public
+                                                )
                                         })
                                     ~select_type_block_2
                                     [(Print
@@ -193,7 +230,7 @@
                                         )
                                         (StructInstanceMember
                                             (Var 2 bptr)
-                                            3 i
+                                            7 1_base_i
                                             (Integer 4 [])
                                             ()
                                         )]
@@ -206,7 +243,26 @@
                                     (SymbolTable
                                         8
                                         {
-                                            
+                                            1_base_i:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_base_i
+                                                    3 i
+                                                    base
+                                                    []
+                                                    i
+                                                    Public
+                                                ),
+                                            1_child_j:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_child_j
+                                                    4 j
+                                                    child
+                                                    []
+                                                    j
+                                                    Public
+                                                )
                                         })
                                     ~select_type_block_3
                                     [(Print
@@ -217,13 +273,13 @@
                                         )
                                         (StructInstanceMember
                                             (Var 2 bptr)
-                                            3 i
+                                            8 1_base_i
                                             (Integer 4 [])
                                             ()
                                         )
                                         (StructInstanceMember
                                             (Var 2 bptr)
-                                            4 j
+                                            8 1_child_j
                                             (Integer 4 [])
                                             ()
                                         )]

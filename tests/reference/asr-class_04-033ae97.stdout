@@ -7,6 +7,66 @@
                     (SymbolTable
                         2
                         {
+                            1_bar_a_a:
+                                (ExternalSymbol
+                                    2
+                                    1_bar_a_a
+                                    3 a
+                                    bar_a
+                                    []
+                                    a
+                                    Public
+                                ),
+                            1_bar_b_b:
+                                (ExternalSymbol
+                                    2
+                                    1_bar_b_b
+                                    5 b
+                                    bar_b
+                                    []
+                                    b
+                                    Public
+                                ),
+                            1_bar_c_c:
+                                (ExternalSymbol
+                                    2
+                                    1_bar_c_c
+                                    6 c
+                                    bar_c
+                                    []
+                                    c
+                                    Public
+                                ),
+                            1_foo_a_m_bar_a:
+                                (ExternalSymbol
+                                    2
+                                    1_foo_a_m_bar_a
+                                    4 m_bar_a
+                                    foo_a
+                                    []
+                                    m_bar_a
+                                    Public
+                                ),
+                            1_foo_b_m_bar_b:
+                                (ExternalSymbol
+                                    2
+                                    1_foo_b_m_bar_b
+                                    7 m_bar_b
+                                    foo_b
+                                    []
+                                    m_bar_b
+                                    Public
+                                ),
+                            1_foo_c_m_bar_c:
+                                (ExternalSymbol
+                                    2
+                                    1_foo_c_m_bar_c
+                                    8 m_bar_c
+                                    foo_c
+                                    []
+                                    m_bar_c
+                                    Public
+                                ),
                             bar_a:
                                 (StructType
                                     (SymbolTable
@@ -221,14 +281,14 @@
                         (StructInstanceMember
                             (StructInstanceMember
                                 (Var 2 foo)
-                                4 m_bar_a
+                                2 1_foo_a_m_bar_a
                                 (Struct
                                     2 bar_a
                                     []
                                 )
                                 ()
                             )
-                            3 a
+                            2 1_bar_a_a
                             (Integer 4 [])
                             ()
                         )
@@ -243,14 +303,14 @@
                         (StructInstanceMember
                             (StructInstanceMember
                                 (Var 2 foo)
-                                7 m_bar_b
+                                2 1_foo_b_m_bar_b
                                 (Struct
                                     2 bar_b
                                     []
                                 )
                                 ()
                             )
-                            5 b
+                            2 1_bar_b_b
                             (Integer 4 [])
                             ()
                         )
@@ -261,14 +321,14 @@
                         (StructInstanceMember
                             (StructInstanceMember
                                 (Var 2 foo)
-                                8 m_bar_c
+                                2 1_foo_c_m_bar_c
                                 (Struct
                                     2 bar_c
                                     []
                                 )
                                 ()
                             )
-                            6 c
+                            2 1_bar_c_c
                             (Integer 4 [])
                             ()
                         )
@@ -280,14 +340,14 @@
                         [(StructInstanceMember
                             (StructInstanceMember
                                 (Var 2 foo)
-                                4 m_bar_a
+                                2 1_foo_a_m_bar_a
                                 (Struct
                                     2 bar_a
                                     []
                                 )
                                 ()
                             )
-                            3 a
+                            2 1_bar_a_a
                             (Integer 4 [])
                             ()
                         )]
@@ -299,14 +359,14 @@
                         [(StructInstanceMember
                             (StructInstanceMember
                                 (Var 2 foo)
-                                7 m_bar_b
+                                2 1_foo_b_m_bar_b
                                 (Struct
                                     2 bar_b
                                     []
                                 )
                                 ()
                             )
-                            5 b
+                            2 1_bar_b_b
                             (Integer 4 [])
                             ()
                         )]
@@ -318,14 +378,14 @@
                         [(StructInstanceMember
                             (StructInstanceMember
                                 (Var 2 foo)
-                                8 m_bar_c
+                                2 1_foo_c_m_bar_c
                                 (Struct
                                     2 bar_c
                                     []
                                 )
                                 ()
                             )
-                            6 c
+                            2 1_bar_c_c
                             (Integer 4 [])
                             ()
                         )]
@@ -339,14 +399,14 @@
                                     (StructInstanceMember
                                         (StructInstanceMember
                                             (Var 2 foo)
-                                            4 m_bar_a
+                                            2 1_foo_a_m_bar_a
                                             (Struct
                                                 2 bar_a
                                                 []
                                             )
                                             ()
                                         )
-                                        3 a
+                                        2 1_bar_a_a
                                         (Integer 4 [])
                                         ()
                                     )
@@ -354,14 +414,14 @@
                                     (StructInstanceMember
                                         (StructInstanceMember
                                             (Var 2 foo)
-                                            7 m_bar_b
+                                            2 1_foo_b_m_bar_b
                                             (Struct
                                                 2 bar_b
                                                 []
                                             )
                                             ()
                                         )
-                                        5 b
+                                        2 1_bar_b_b
                                         (Integer 4 [])
                                         ()
                                     )
@@ -372,14 +432,14 @@
                                 (StructInstanceMember
                                     (StructInstanceMember
                                         (Var 2 foo)
-                                        8 m_bar_c
+                                        2 1_foo_c_m_bar_c
                                         (Struct
                                             2 bar_c
                                             []
                                         )
                                         ()
                                     )
-                                    6 c
+                                    2 1_bar_c_c
                                     (Integer 4 [])
                                     ()
                                 )

@@ -161,6 +161,76 @@
                     (SymbolTable
                         5
                         {
+                            1_employee_department:
+                                (ExternalSymbol
+                                    5
+                                    1_employee_department
+                                    4 department
+                                    employee
+                                    []
+                                    department
+                                    Public
+                                ),
+                            1_employee_hire_date:
+                                (ExternalSymbol
+                                    5
+                                    1_employee_hire_date
+                                    4 hire_date
+                                    employee
+                                    []
+                                    hire_date
+                                    Public
+                                ),
+                            1_employee_person:
+                                (ExternalSymbol
+                                    5
+                                    1_employee_person
+                                    4 person
+                                    employee
+                                    []
+                                    person
+                                    Public
+                                ),
+                            1_person_birthyear:
+                                (ExternalSymbol
+                                    5
+                                    1_person_birthyear
+                                    3 birthyear
+                                    person
+                                    []
+                                    birthyear
+                                    Public
+                                ),
+                            1_person_first:
+                                (ExternalSymbol
+                                    5
+                                    1_person_first
+                                    3 first
+                                    person
+                                    []
+                                    first
+                                    Public
+                                ),
+                            1_person_last:
+                                (ExternalSymbol
+                                    5
+                                    1_person_last
+                                    3 last
+                                    person
+                                    []
+                                    last
+                                    Public
+                                ),
+                            1_person_sgender:
+                                (ExternalSymbol
+                                    5
+                                    1_person_sgender
+                                    3 sgender
+                                    person
+                                    []
+                                    sgender
+                                    Public
+                                ),
                             employee:
                                 (ExternalSymbol
                                     5
@@ -287,25 +357,25 @@
                         ()
                         [(StructInstanceMember
                             (Var 5 jack)
-                            3 first
+                            5 1_person_first
                             (Character 1 20 () [])
                             ()
                         )
                         (StructInstanceMember
                             (Var 5 jack)
-                            3 last
+                            5 1_person_last
                             (Character 1 20 () [])
                             ()
                         )
                         (StructInstanceMember
                             (Var 5 jack)
-                            3 birthyear
+                            5 1_person_birthyear
                             (Integer 4 [])
                             ()
                         )
                         (StructInstanceMember
                             (Var 5 jack)
-                            3 sgender
+                            5 1_person_sgender
                             (Character 1 1 () [])
                             ()
                         )]
@@ -317,68 +387,68 @@
                         [(StructInstanceMember
                             (StructInstanceMember
                                 (Var 5 jill)
-                                4 person
+                                5 1_employee_person
                                 (Struct
                                     5 person
                                     []
                                 )
                                 ()
                             )
-                            3 first
+                            5 1_person_first
                             (Character 1 20 () [])
                             ()
                         )
                         (StructInstanceMember
                             (StructInstanceMember
                                 (Var 5 jill)
-                                4 person
+                                5 1_employee_person
                                 (Struct
                                     5 person
                                     []
                                 )
                                 ()
                             )
-                            3 last
+                            5 1_person_last
                             (Character 1 20 () [])
                             ()
                         )
                         (StructInstanceMember
                             (StructInstanceMember
                                 (Var 5 jill)
-                                4 person
+                                5 1_employee_person
                                 (Struct
                                     5 person
                                     []
                                 )
                                 ()
                             )
-                            3 birthyear
+                            5 1_person_birthyear
                             (Integer 4 [])
                             ()
                         )
                         (StructInstanceMember
                             (StructInstanceMember
                                 (Var 5 jill)
-                                4 person
+                                5 1_employee_person
                                 (Struct
                                     5 person
                                     []
                                 )
                                 ()
                             )
-                            3 sgender
+                            5 1_person_sgender
                             (Character 1 1 () [])
                             ()
                         )
                         (StructInstanceMember
                             (Var 5 jill)
-                            4 department
+                            5 1_employee_department
                             (Character 1 20 () [])
                             ()
                         )
                         (StructInstanceMember
                             (Var 5 jill)
-                            4 hire_date
+                            5 1_employee_hire_date
                             (Integer 4 [])
                             ()
                         )]

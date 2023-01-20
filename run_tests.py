@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import subprocess as sp
 import sys
 from typing import Dict
 
@@ -9,6 +10,12 @@ sys.path.append(os.path.join(ROOT_DIR, "src", "libasr"))
 
 from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 
+def run_cmd(cmd, cwd=None):
+    print(f"+ {cmd}")
+    process = sp.run(cmd, shell=True, cwd=cwd)
+    if process.returncode != 0:
+        print("Command failed.")
+        exit(1)
 
 def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool,
                 specific_backends=None, excluded_backends=None) -> None:
@@ -44,6 +51,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
     x86 = is_included("x86")
     bin_ = is_included("bin")
     pass_ = test.get("pass", None)
+    extrafiles = test.get("extrafiles", "").split(",")
     optimization_passes = ["flip_sign", "div_to_mul", "fma", "sign_from_value",
                            "inline_function_calls", "loop_unroll",
                            "dead_code_removal"]
@@ -140,13 +148,27 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
                 update_reference,
                 extra_args)
         else:
-            run_test(
-                filename,
-                "asr",
-                "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
-                filename,
-                update_reference,
-                extra_args)
+            skip_test = False
+            for extrafile in extrafiles:
+                extrafile_ = extrafile.rstrip().lstrip()
+
+                if no_llvm and len(extrafile_) > 0:
+                    log.info(f"{filename} * asr   SKIPPED because LLVM is not enabled")
+                    skip_test = True
+                    break
+
+                if len(extrafile_) > 0:
+                    extrafile_ = os.path.join("tests", extrafile_)
+                    run_cmd("lfortran -c {}".format(extrafile_))
+
+            if not skip_test:
+                run_test(
+                    filename,
+                    "asr",
+                    "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+                    filename,
+                    update_reference,
+                    extra_args)
 
     if asr_implicit_interface_and_typing:
         run_test(

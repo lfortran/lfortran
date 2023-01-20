@@ -980,6 +980,39 @@ filename = "../integration_tests/derived_types_11.f90"
 asr = true
 
 [[test]]
+filename = "derived_types_04.f90"
+asr = true
+
+[[test]]
+filename = "derived_types_06.f90"
+asr = true
+extrafiles = "derived_types_04.f90, derived_types_05.f90"
+
+[[test]]
+filename = "derived_types_07.f90"
+asr = true
+
+[[test]]
+filename = "modules1.f90"
+asr = true
+extrafiles = "modules1_module1.f90, modules1_module2.f90"
+
+[[test]]
+filename = "modules2.f90"
+asr = true
+extrafiles = "modules2_module_a.f90, modules2_module_b_base.f90, modules2_module_b.f90"
+
+[[test]]
+filename = "modules3.f90"
+asr = true
+extrafiles = "modules2_module_a.f90, modules2_module_b_base.f90, modules2_module_b.f90, modules2.f90"
+
+[[test]]
+filename = "modules4.f90"
+asr = true
+extrafiles = "modules2_module_a.f90, modules2_module_b_base.f90, modules2_module_b.f90, modules2.f90, modules3.f90, modules4_module.f90"
+
+[[test]]
 filename = "fn2.f90"
 asr = true
 cpp = true

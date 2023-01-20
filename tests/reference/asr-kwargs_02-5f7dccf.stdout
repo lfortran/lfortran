@@ -23,6 +23,16 @@
                                     (SymbolTable
                                         4
                                         {
+                                            1_log_io_error:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_log_io_error
+                                                    3 log_io_error
+                                                    logger_type
+                                                    []
+                                                    log_io_error
+                                                    Public
+                                                ),
                                             filename:
                                                 (Variable
                                                     4
@@ -73,12 +83,12 @@
                                                 )
                                         })
                                     add_log_file
-                                    [log_io_error]
+                                    [1_log_io_error]
                                     [(Var 4 self)
                                     (Var 4 filename)
                                     (Var 4 unit)]
                                     [(SubroutineCall
-                                        3 log_io_error
+                                        4 1_log_io_error
                                         ()
                                         [((IntegerConstant 1 (Integer 4 [])))
                                         ((Var 4 filename))
