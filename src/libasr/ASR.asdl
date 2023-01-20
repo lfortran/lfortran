@@ -164,7 +164,7 @@ stmt
     | Associate(expr target, expr value)
     | Cycle()
     -- deallocates if allocated otherwise throws a runtime error
-    | ExplicitDeallocate(symbol* vars)
+    | ExplicitDeallocate(expr* vars)
     -- deallocates if allocated otherwise does nothing
     | ImplicitDeallocate(symbol* vars)
     | DoConcurrentLoop(do_loop_head head, stmt* body)
@@ -397,7 +397,7 @@ cast_kind
 
 dimension = (expr? start, expr? length)
 
-alloc_arg = (symbol a, dimension* dims)
+alloc_arg = (expr a, dimension* dims)
 
 attribute = Attribute(identifier name, attribute_arg *args)
 

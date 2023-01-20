@@ -361,7 +361,7 @@ public:
     }
 
     template <typename T>
-    void visit_StructTypeEnumTypeUnionType(const T &x) {
+    void visit_UserDefinedType(const T &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
@@ -397,6 +397,9 @@ public:
             } else if( ASR::is_a<ASR::Union_t>(*var_type) ) {
                 sym = ASR::down_cast<ASR::Union_t>(var_type)->m_union_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
+            } else if( ASR::is_a<ASR::Class_t>(*var_type) ) {
+                sym = ASR::down_cast<ASR::Class_t>(var_type)->m_class_type;
+                aggregate_type_name = ASRUtils::symbol_name(sym);
             }
             if( aggregate_type_name && ASRUtils::symbol_parent_symtab(sym) != current_symtab ) {
                 struct_dependencies.push_back(std::string(aggregate_type_name));
@@ -415,7 +418,7 @@ public:
     }
 
     void visit_StructType(const StructType_t& x) {
-        visit_StructTypeEnumTypeUnionType(x);
+        visit_UserDefinedType(x);
         if( !x.m_alignment ) {
             return ;
         }
@@ -430,7 +433,7 @@ public:
     }
 
     void visit_EnumType(const EnumType_t& x) {
-        visit_StructTypeEnumTypeUnionType(x);
+        visit_UserDefinedType(x);
         require(x.m_type != nullptr,
             "The common type of Enum cannot be nullptr. " +
             std::string(x.m_name) + " doesn't seem to follow this rule.");
@@ -483,7 +486,7 @@ public:
     }
 
     void visit_UnionType(const UnionType_t& x) {
-        visit_StructTypeEnumTypeUnionType(x);
+        visit_UserDefinedType(x);
     }
 
     void visit_Variable(const Variable_t &x) {
@@ -535,7 +538,7 @@ public:
             ASR::Module_t *m = ASRUtils::get_sym_module(x.m_external);
             ASR::StructType_t* sm = nullptr;
             bool is_valid_owner = false;
-            is_valid_owner = m != nullptr;
+            is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
             std::string asr_owner_name = "";
             if( !is_valid_owner ) {
                 ASR::symbol_t* asr_owner_sym = ASRUtils::get_asr_owner(x.m_external);
@@ -545,13 +548,19 @@ public:
             } else {
                 asr_owner_name = m->m_name;
             }
+            std::string x_m_module_name = x.m_module_name;
+            if( current_symtab->resolve_symbol(x.m_module_name) ) {
+                x_m_module_name = ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(
+                        current_symtab->resolve_symbol(x.m_module_name)));
+            }
             require(is_valid_owner,
                 "ExternalSymbol::m_external is not in a module or struct type");
-            require(std::string(x.m_module_name) == asr_owner_name,
-                "ExternalSymbol::m_module_name `" + std::string(x.m_module_name)
+            require(x_m_module_name == asr_owner_name,
+                "ExternalSymbol::m_module_name `" + x_m_module_name
                 + "` must match external's module name `" + asr_owner_name + "`");
             ASR::symbol_t *s = nullptr;
-            if( m ) {
+            if( m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external)) ) {
                 s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
             } else if( sm ) {
                 s = sm->m_symtab->resolve_symbol(std::string(x.m_original_name));
@@ -626,30 +635,33 @@ public:
     }
 
     void visit_SubroutineCall(const SubroutineCall_t &x) {
-        if (x.m_dt) {
-            SymbolTable *symtab = get_dt_symtab(x.m_dt);
-            bool result = symtab_in_scope(symtab, x.m_name);
-            ASR::symbol_t* parent = get_parent_type_dt(x.m_dt);
-            while( !result && parent ) {
-                symtab = get_dt_symtab(parent);
-                result = symtab_in_scope(symtab, x.m_name);
-                parent = get_parent_type_dt(parent);
-            }
-            require(symtab_in_scope(symtab, x.m_name),
-                "SubroutineCall::m_name cannot point outside of its symbol table");
-        } else {
+        // if (x.m_dt) {
+        //     SymbolTable *symtab = get_dt_symtab(x.m_dt);
+        //     bool result = symtab_in_scope(symtab, x.m_name);
+        //     ASR::symbol_t* parent = get_parent_type_dt(x.m_dt);
+        //     while( !result && parent ) {
+        //         symtab = get_dt_symtab(parent);
+        //         result = symtab_in_scope(symtab, x.m_name);
+        //         parent = get_parent_type_dt(parent);
+        //     }
+        //     require(symtab_in_scope(symtab, x.m_name),
+        //         "SubroutineCall::m_name cannot point outside of its symbol table");
+        // } else {
             require(symtab_in_scope(current_symtab, x.m_name),
                 "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table");
             if (check_external) {
                 ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
-                require(ASR::is_a<ASR::Function_t>(*s),
-                    "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function");
+                require(ASR::is_a<ASR::Function_t>(*s) ||
+                        ASR::is_a<ASR::ClassProcedure_t>(*s),
+                    "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function or ClassProcedure.");
             }
-        }
+        // }
         function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
         if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) ) {
             ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
-            module_dependencies.push_back(std::string(x_m_name->m_module_name));
+            if( x_m_name->m_external && ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(x_m_name->m_external)) ) {
+                module_dependencies.push_back(std::string(x_m_name->m_module_name));
+            }
         }
         for (size_t i=0; i<x.n_args; i++) {
             if( x.m_args[i].m_value ) {
@@ -743,13 +755,15 @@ public:
         function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
         if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) ) {
             ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
-            module_dependencies.push_back(std::string(x_m_name->m_module_name));
+            if( x_m_name->m_external && ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(x_m_name->m_external)) ) {
+                module_dependencies.push_back(std::string(x_m_name->m_module_name));
+            }
         }
-        if (x.m_dt) {
-            SymbolTable *symtab = get_dt_symtab(x.m_dt);
-            require(symtab_in_scope(symtab, x.m_name),
-                "FunctionCall::m_name cannot point outside of its symbol table");
-        } else {
+        // if (x.m_dt) {
+        //     SymbolTable *symtab = get_dt_symtab(x.m_dt);
+        //     require(symtab_in_scope(symtab, x.m_name),
+        //         "FunctionCall::m_name cannot point outside of its symbol table");
+        // } else {
             require(symtab_in_scope(current_symtab, x.m_name),
                 "FunctionCall::m_name `" + std::string(symbol_name(x.m_name)) +
                 "` cannot point outside of its symbol table");
@@ -758,10 +772,11 @@ public:
             // external
             if (check_external) {
                 const ASR::symbol_t *fn = ASRUtils::symbol_get_past_external(x.m_name);
-                require(ASR::is_a<ASR::Function_t>(*fn),
-                    "FunctionCall::m_name must be a Function");
+                require(ASR::is_a<ASR::Function_t>(*fn) ||
+                        ASR::is_a<ASR::ClassProcedure_t>(*fn),
+                    "FunctionCall::m_name must be a Function or Variable with FunctionType");
             }
-        }
+        // }
         for (size_t i=0; i<x.n_args; i++) {
             if( x.m_args[i].m_value ) {
                 visit_expr(*(x.m_args[i].m_value));

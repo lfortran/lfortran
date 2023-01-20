@@ -379,7 +379,8 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         default :
             break;
     }
-    return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var), member, member_type, nullptr);
+    ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope);
+    return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var), member_ext, member_type, nullptr);
 }
 
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
@@ -504,6 +505,7 @@ bool is_parent(ASR::StructType_t* a, ASR::StructType_t* b) {
         if( current_parent == (ASR::symbol_t*) a ) {
             return true;
         }
+        current_parent = ASRUtils::symbol_get_past_external(current_parent);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*current_parent));
         current_parent = ASR::down_cast<ASR::StructType_t>(current_parent)->m_parent;
     }

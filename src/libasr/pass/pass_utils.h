@@ -317,7 +317,9 @@ namespace LCompilers {
                     if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
                         fill_module_dependencies ) {
                         ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
-                        module_dependencies.push_back(al, x_m_name->m_module_name);
+                        if( ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(x_m_name->m_external)) ) {
+                            module_dependencies.push_back(al, x_m_name->m_module_name);
+                        }
                     }
                     BaseWalkVisitor<UpdateDependenciesVisitor>::visit_FunctionCall(x);
                 }
@@ -329,7 +331,9 @@ namespace LCompilers {
                     if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
                         fill_module_dependencies ) {
                         ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
-                        module_dependencies.push_back(al, x_m_name->m_module_name);
+                        if( ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(x_m_name->m_external)) ) {
+                            module_dependencies.push_back(al, x_m_name->m_module_name);
+                        }
                     }
                     BaseWalkVisitor<UpdateDependenciesVisitor>::visit_SubroutineCall(x);
                 }

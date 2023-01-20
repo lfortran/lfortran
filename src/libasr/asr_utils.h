@@ -48,6 +48,9 @@ static inline ASR::symbol_t *symbol_get_past_external(ASR::symbol_t *f)
 {
     if (f && f->type == ASR::symbolType::ExternalSymbol) {
         ASR::ExternalSymbol_t *e = ASR::down_cast<ASR::ExternalSymbol_t>(f);
+        if( e->m_external == nullptr ) {
+            return nullptr;
+        }
         LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*e->m_external));
         return e->m_external;
     } else {
@@ -445,6 +448,14 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
     }
 }
 
+static inline ASR::symbol_t *get_asr_owner(const ASR::symbol_t *sym) {
+    const SymbolTable *s = symbol_parent_symtab(sym);
+    if( !ASR::is_a<ASR::symbol_t>(*s->asr_owner) ) {
+        return nullptr;
+    }
+    return ASR::down_cast<ASR::symbol_t>(s->asr_owner);
+}
+
 // Returns the Module_t the symbol is in, or nullptr if not in a module
 static inline ASR::Module_t *get_sym_module(const ASR::symbol_t *sym) {
     const SymbolTable *s = symbol_parent_symtab(sym);
@@ -456,15 +467,6 @@ static inline ASR::Module_t *get_sym_module(const ASR::symbol_t *sym) {
         s = s->parent;
     }
     return nullptr;
-}
-
-// Returns the ASR owner of the symbol
-static inline ASR::symbol_t *get_asr_owner(const ASR::symbol_t *sym) {
-    const SymbolTable *s = symbol_parent_symtab(sym);
-    if( !ASR::is_a<ASR::symbol_t>(*s->asr_owner) ) {
-        return nullptr;
-    }
-    return ASR::down_cast<ASR::symbol_t>(s->asr_owner);
 }
 
 static inline ASR::symbol_t *get_asr_owner(const ASR::expr_t *expr) {
@@ -1948,6 +1950,21 @@ static inline ASR::ttype_t* get_type_parameter(ASR::ttype_t* t) {
         }
         default: throw LCompilersException("Cannot get type parameter from this type.");
     }
+}
+
+static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::symbol_t* v, SymbolTable* scope) {
+    v = ASRUtils::symbol_get_past_external(v);
+    ASR::symbol_t* struct_t = ASRUtils::get_asr_owner(v);
+    std::string v_name = ASRUtils::symbol_name(v);
+    std::string struct_t_name = ASRUtils::symbol_name(struct_t);
+    std::string v_ext_name = "1_" + struct_t_name + "_" + v_name;
+    if( scope->get_symbol(v_ext_name) == nullptr ) {
+        ASR::symbol_t* v_ext = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                                    v->base.loc, scope, s2c(al, v_ext_name), ASRUtils::symbol_get_past_external(v),
+                                    s2c(al, struct_t_name), nullptr, 0, s2c(al, v_name), ASR::accessType::Public));
+        scope->add_symbol(v_ext_name, v_ext);
+    }
+    return scope->get_symbol(v_ext_name);
 }
 
 class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
