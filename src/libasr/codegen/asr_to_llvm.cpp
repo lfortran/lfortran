@@ -4098,7 +4098,7 @@ public:
             x.m_target->type == ASR::exprType::ArraySection ||
             x.m_target->type == ASR::exprType::StructInstanceMember ||
             x.m_target->type == ASR::exprType::ListItem ||
-            x.m_target->type == ASR::exprType::UnionRef ) {
+            x.m_target->type == ASR::exprType::UnionInstanceMember ) {
             is_assignment_target = true;
             this->visit_expr(*x.m_target);
             is_assignment_target = false;
