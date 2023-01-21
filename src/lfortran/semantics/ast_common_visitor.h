@@ -2321,7 +2321,7 @@ public:
             }
             if( member != nullptr ) {
                 ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
-                return ASRUtils::getStructInstanceMember_t(al, loc, v_var, member, current_scope);
+                return ASRUtils::getStructInstanceMember_t(al, loc, v_var, v, member, current_scope);
             } else {
                 throw SemanticError("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.", loc);
             }
