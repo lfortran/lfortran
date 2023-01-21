@@ -1619,7 +1619,7 @@ public:
                         if (ASR::is_a<ASR::ttype_t>(*req_asr)) {
                             type_param = true;
                             type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
-                                                            s2c(al, derived_type_name), nullptr, 0));
+                                                            s2c(al, derived_type_name), dims.p, dims.size()));
                         }
                     }
                 }
