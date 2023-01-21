@@ -104,6 +104,16 @@
                                     (SymbolTable
                                         6
                                         {
+                                            1_enum_stat_fatal:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_enum_stat_fatal
+                                                    5 fatal
+                                                    enum_stat
+                                                    []
+                                                    fatal
+                                                    Public
+                                                ),
                                             present:
                                                 (ExternalSymbol
                                                     6
@@ -192,6 +202,16 @@
                                                     (SymbolTable
                                                         8
                                                         {
+                                                            1_enum_stat_success:
+                                                                (ExternalSymbol
+                                                                    8
+                                                                    1_enum_stat_success
+                                                                    5 success
+                                                                    enum_stat
+                                                                    []
+                                                                    success
+                                                                    Public
+                                                                ),
                                                             present:
                                                                 (ExternalSymbol
                                                                     8
@@ -221,9 +241,9 @@
                                                             (Var 6 stat)
                                                             (StructInstanceMember
                                                                 (Var 2 toml_stat)
-                                                                5 success
+                                                                8 1_enum_stat_success
                                                                 (Integer 4 [])
-                                                                ()
+                                                                (IntegerConstant 0 (Integer 4 []))
                                                             )
                                                             ()
                                                         )]
@@ -268,9 +288,9 @@
                                                     (Var 6 stat)
                                                     (StructInstanceMember
                                                         (Var 2 toml_stat)
-                                                        5 fatal
+                                                        6 1_enum_stat_fatal
                                                         (Integer 4 [])
-                                                        ()
+                                                        (IntegerConstant -1 (Integer 4 []))
                                                     )
                                                     ()
                                                 )]

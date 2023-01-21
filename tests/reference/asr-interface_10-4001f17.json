@@ -2,11 +2,11 @@
     "basename": "asr-interface_10-4001f17",
     "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/interface_10.f90",
-    "infile_hash": "560959bf16e50f797232399c4319c14207b2c082cb5616339e6680eb",
+    "infile_hash": "8465656b7ce46b783d3db81b21e7bd48594e95e99839534c7e50cad8",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-interface_10-4001f17.stdout",
-    "stdout_hash": "26e0ec66a10c2c17f8e2db9904caf5a2cabae05f5204c186d795ec61",
+    "stdout_hash": "f4003b23965ecad0818a49c8e91f1bd66db1867956d16f36b72356a6",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

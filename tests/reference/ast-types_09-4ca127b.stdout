@@ -183,6 +183,51 @@
             )]
             []
             []
+        )
+        (Subroutine
+            s
+            []
+            []
+            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+            [(Use
+                [(SimpleAttribute
+                    AttrIntrinsic
+                )]
+                iso_fortran_env
+                [(UseSymbol
+                    int32
+                    ()
+                )]
+                .true.
+                ()
+            )]
+            []
+            []
+            [(Declaration
+                (AttrType
+                    TypeInteger
+                    [(()
+                    int32
+                    Value)]
+                    ()
+                    None
+                )
+                []
+                [(x
+                []
+                []
+                1
+                Equal
+                ())]
+                ()
+            )]
+            []
+            []
         )]
     )]
 )
