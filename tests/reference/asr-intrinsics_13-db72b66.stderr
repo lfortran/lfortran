@@ -1,0 +1,47 @@
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_13.f90:2:2
+  |
+2 |  integer, parameter :: p = kind(5) ! 4
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_13.f90:3:2
+  |
+3 |  integer, parameter :: p1 = kind(5_4) ! 4
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_13.f90:4:2
+  |
+4 |  integer, parameter :: p2 = kind(5_8) ! 8
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_13.f90:5:2
+  |
+5 |  integer, parameter :: p3 = kind(0.d0) ! 8
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_13.f90:6:2
+  |
+6 |  integer, parameter :: p4 = kind(0.0) ! 4
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_13.f90:7:2
+  |
+7 |  integer, parameter :: p5 = kind(5._4) ! 4
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_13.f90:8:2
+  |
+8 |  integer, parameter :: p6 = kind(5._8) ! 8
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_13.f90:9:2
+  |
+9 |  integer, parameter :: p7 = kind(.true.) ! 4
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

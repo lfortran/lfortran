@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/../integration_tests/arrays_10.f90:3:3
+  |
+3 |   integer, pointer :: x(:)
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/../integration_tests/string_10.f90:2:5
+  |
+2 |     character(len=2) :: c = "BC"
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/string_10.f90:3:5
+  |
+3 |     logical :: is_alpha
+  |     ^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

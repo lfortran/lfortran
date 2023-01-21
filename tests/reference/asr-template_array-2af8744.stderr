@@ -1,0 +1,161 @@
+warning: Implied save feature
+ --> tests/../integration_tests/template_array.f90:5:5
+  |
+5 |     public :: add_integer, zero_integer, add_real, zero_real
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/template_array.f90:5:5
+  |
+5 |     public :: add_integer, zero_integer, add_real, zero_real
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/template_array.f90:5:5
+  |
+5 |     public :: add_integer, zero_integer, add_real, zero_real
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/template_array.f90:5:5
+  |
+5 |     public :: add_integer, zero_integer, add_real, zero_real
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:10:9
+   |
+10 |         integer, intent(in) :: x, y
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:10:9
+   |
+10 |         integer, intent(in) :: x, y
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:11:9
+   |
+11 |         integer :: r
+   |         ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:16:9
+   |
+16 |         integer, intent(in) :: x
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:17:9
+   |
+17 |         integer :: r
+   |         ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:22:9
+   |
+22 |         real, intent(in) :: x, y
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:22:9
+   |
+22 |         real, intent(in) :: x, y
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:23:9
+   |
+23 |         real :: r
+   |         ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:28:9
+   |
+28 |         real, intent(in) :: x
+   |         ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:29:9
+   |
+29 |         real :: r
+   |         ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:40:5
+   |
+40 |     public :: array_tmpl
+   |     ^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:46:13
+   |
+46 |             type(t), intent(in) :: l, r
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:46:13
+   |
+46 |             type(t), intent(in) :: l, r
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:47:13
+   |
+47 |             type(t) :: rs
+   |             ^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:51:13
+   |
+51 |             type(t), intent(in) :: l
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:52:13
+   |
+52 |             type(t) :: rs
+   |             ^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:59:9
+   |
+59 |         public :: mysum_t
+   |         ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:62:13
+   |
+62 |             type(t), intent(in) :: a(:)
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:63:13
+   |
+63 |             type(t) :: r
+   |             ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:64:13
+   |
+64 |             integer :: i
+   |             ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:76:9
+   |
+76 |         integer :: a(10), i, s
+   |         ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:76:9
+   |
+76 |         integer :: a(10), i, s
+   |         ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_array.f90:76:9
+   |
+76 |         integer :: a(10), i, s
+   |         ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

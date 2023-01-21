@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/../integration_tests/nested_01.f90:7:1
+  |
+7 | integer e
+  | ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/nested_01.f90:23:1
+   |
+23 | integer c
+   | ^^^^^^^^^ Assuming save attribute implicitly for variables

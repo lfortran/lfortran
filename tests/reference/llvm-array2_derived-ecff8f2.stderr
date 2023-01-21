@@ -1,0 +1,107 @@
+warning: Implied save feature
+ --> tests/array2_derived.f90:5:5
+  |
+5 |     real :: r
+  |     ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array2_derived.f90:6:5
+  |
+6 |     integer :: i
+  |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array2_derived.f90:9:1
+  |
+9 | real, dimension(5) :: a, b
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array2_derived.f90:9:1
+  |
+9 | real, dimension(5) :: a, b
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array2_derived.f90:10:1
+   |
+10 | complex, dimension(6) :: x
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array2_derived.f90:11:1
+   |
+11 | integer, dimension(3) :: c
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array2_derived.f90:12:1
+   |
+12 | logical, dimension(2) :: d
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array2_derived.f90:13:1
+   |
+13 | type(der_type), dimension(7) :: p
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array2_derived.f90:15:1
+   |
+15 | real, dimension(2,3) :: e
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array2_derived.f90:16:1
+   |
+16 | complex, dimension(6,8) :: y
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array2_derived.f90:17:1
+   |
+17 | integer, dimension(3,4) :: f
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array2_derived.f90:18:1
+   |
+18 | logical, dimension(5,2) :: g
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array2_derived.f90:19:1
+   |
+19 | type(der_type), dimension(7,9) :: q
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array2_derived.f90:21:1
+   |
+21 | real, dimension(2:3,3:4,4:5) :: h
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array2_derived.f90:22:1
+   |
+22 | complex, dimension(6:7,8:10,11:13) :: z
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array2_derived.f90:23:1
+   |
+23 | integer, dimension(3:4,4:5,3:4) :: i
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array2_derived.f90:24:1
+   |
+24 | logical, dimension(5:6,2:3,2:4) :: j
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array2_derived.f90:25:1
+   |
+25 | type(der_type), dimension(7:10,9:15,16:18) :: r
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

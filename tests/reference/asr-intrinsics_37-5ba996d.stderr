@@ -1,0 +1,47 @@
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_37.f90:2:1
+  |
+2 | real(8) :: tsource(2, 3), fsource(2, 3), ar1(2, 3), ar2(2, 3)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_37.f90:2:1
+  |
+2 | real(8) :: tsource(2, 3), fsource(2, 3), ar1(2, 3), ar2(2, 3)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_37.f90:2:1
+  |
+2 | real(8) :: tsource(2, 3), fsource(2, 3), ar1(2, 3), ar2(2, 3)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_37.f90:2:1
+  |
+2 | real(8) :: tsource(2, 3), fsource(2, 3), ar1(2, 3), ar2(2, 3)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_37.f90:3:1
+  |
+3 | logical :: mask(2, 3)
+  | ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_37.f90:4:1
+  |
+4 | real(8) :: real_mask(2, 3)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_37.f90:5:1
+  |
+5 | integer :: i, j
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_37.f90:5:1
+  |
+5 | integer :: i, j
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

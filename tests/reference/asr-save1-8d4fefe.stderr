@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/save1.f90:2:5
+  |
+2 |     real :: x = 5
+  |     ^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/../integration_tests/complex_pow_test.f90:2:1
+  |
+2 | complex :: x, y, z
+  | ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/complex_pow_test.f90:2:1
+  |
+2 | complex :: x, y, z
+  | ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/complex_pow_test.f90:2:1
+  |
+2 | complex :: x, y, z
+  | ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

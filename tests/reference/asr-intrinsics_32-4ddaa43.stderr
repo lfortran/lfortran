@@ -1,0 +1,29 @@
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_32.f90:4:5
+  |
+4 |     real, dimension(6) :: tsource, fsource, result
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_32.f90:4:5
+  |
+4 |     real, dimension(6) :: tsource, fsource, result
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_32.f90:4:5
+  |
+4 |     real, dimension(6) :: tsource, fsource, result
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_32.f90:5:5
+  |
+5 |     logical, dimension(6) :: mask
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_32.f90:6:5
+  |
+6 |     integer :: i
+  |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

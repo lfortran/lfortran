@@ -1,0 +1,47 @@
+warning: Implied save feature
+ --> tests/../integration_tests/string_12.f90:4:5
+  |
+4 |     character(len=*), parameter :: fullhex_digits = "0123456789ABCDEFabcdef" !! 0 .. 9A .. Fa .. f
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/string_12.f90:5:5
+  |
+5 |     character(len=*), parameter :: hex_digits = fullhex_digits(1:16) !! 0 .. 9A .. F
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/string_12.f90:6:5
+  |
+6 |     character(len=*), parameter :: lowerhex_digits = "0123456789abcdef" !! 0 .. 9a .. f
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/string_12.f90:7:5
+  |
+7 |     character(len=*), parameter :: digits = hex_digits(1:10) !! 0 .. 9
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/string_12.f90:8:5
+  |
+8 |     character(len=*), parameter :: octal_digits = digits(1:8) !! 0 .. 7
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/string_12.f90:9:5
+  |
+9 |     character(len=*), parameter :: letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" !! A .. Za .. z
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/string_12.f90:10:5
+   |
+10 |     character(len=*), parameter :: uppercase = letters(1:26) !! A .. Z
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/string_12.f90:11:5
+   |
+11 |     character(len=*), parameter :: lowercase = letters(27:) !! a .. z
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

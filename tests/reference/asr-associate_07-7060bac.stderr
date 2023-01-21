@@ -1,0 +1,35 @@
+warning: Implied save feature
+ --> tests/../integration_tests/associate_07.f90:2:5
+  |
+2 |     integer, pointer :: p1 => null()
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/associate_07.f90:3:5
+  |
+3 |     real(8), pointer :: p2(:, :) => null()
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/associate_07.f90:4:5
+  |
+4 |     complex(4), pointer :: p3(:, :) => null()
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/associate_07.f90:5:5
+  |
+5 |     integer, target :: t1 = 2
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/associate_07.f90:6:5
+  |
+6 |     real(8), target :: t2(2, 3)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/associate_07.f90:7:5
+  |
+7 |     complex(4), target :: t3(2, 4)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

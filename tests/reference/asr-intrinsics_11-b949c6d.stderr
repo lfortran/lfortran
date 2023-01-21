@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_11.f90:2:3
+  |
+2 |   integer, parameter :: x = 3
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_11.f90:3:3
+  |
+3 |   real, parameter :: y = real(x)
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

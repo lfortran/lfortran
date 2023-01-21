@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/complex2.f90:2:1
+  |
+2 | complex :: x
+  | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

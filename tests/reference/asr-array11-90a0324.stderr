@@ -1,0 +1,41 @@
+warning: Implied save feature
+ --> tests/array11.f90:6:7
+  |
+6 |       integer :: pos
+  |       ^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array11.f90:9:7
+  |
+9 |       integer :: num
+  |       ^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array11.f90:12:7
+   |
+12 |       character(len=:), pointer :: ptr
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array11.f90:20:4
+   |
+20 |    character(len=:), allocatable, intent(inout) :: message
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array11.f90:23:4
+   |
+23 |    type(toml_context), intent(in) :: context
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array11.f90:25:4
+   |
+25 |    character(len=20) :: num
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array11.f90:26:4
+   |
+26 |    integer :: line_break
+   |    ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

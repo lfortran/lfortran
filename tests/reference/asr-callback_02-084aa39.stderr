@@ -1,0 +1,65 @@
+warning: Implied save feature
+ --> tests/../integration_tests/callback_02.f90:6:1
+  |
+6 | real, intent(in) :: a, b
+  | ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/callback_02.f90:6:1
+  |
+6 | real, intent(in) :: a, b
+  | ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/callback_02.f90:7:1
+  |
+7 | real :: res
+  | ^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/callback_02.f90:11:5
+   |
+11 |     real, intent(in) :: x
+   |     ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/callback_02.f90:12:5
+   |
+12 |     real :: res
+   |     ^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/callback_02.f90:25:1
+   |
+25 | real :: c, d, res
+   | ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/callback_02.f90:25:1
+   |
+25 | real :: c, d, res
+   | ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/callback_02.f90:25:1
+   |
+25 | real :: c, d, res
+   | ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/callback_02.f90:32:1
+   |
+32 | real, intent(in) :: x
+   | ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/callback_02.f90:33:1
+   |
+33 | real :: res
+   | ^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/callback_02.f90:43:3
+   |
+43 |   real :: res = 0
+   |   ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

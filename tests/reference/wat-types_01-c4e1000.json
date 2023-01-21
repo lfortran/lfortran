@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "wat-types_01-c4e1000.stdout",
     "stdout_hash": "8e6cfd2d05cd9d726edded98d2f6e1dff787a1c02277b0fa9096c52c",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "wat-types_01-c4e1000.stderr",
+    "stderr_hash": "ed491a35fdc8131261730f1bbf6179b4bc7019f89c0e49bf6e309b38",
     "returncode": 0
 }

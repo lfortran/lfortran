@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/../integration_tests/arrays_21.f90:2:4
+  |
+2 |    integer :: i6(6) = (/-14, 3, 0, -2, 19, 1/)
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/arrays_21.f90:3:4
+  |
+3 |    integer :: i23(2, 3) = reshape((/-14, 3, 0, -2, 19, 1/), (/2, 3/))
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

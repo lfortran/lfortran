@@ -1,0 +1,23 @@
+warning: Implied save feature
+ --> tests/loop_test1.f:2:7
+  |
+2 |       integer KP
+  |       ^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/loop_test1.f:3:7
+  |
+3 |       integer i,j,do330i
+  |       ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/loop_test1.f:3:7
+  |
+3 |       integer i,j,do330i
+  |       ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/loop_test1.f:3:7
+  |
+3 |       integer i,j,do330i
+  |       ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-goto_04-d6089fa.stdout",
     "stdout_hash": "5405585c449aa785b82235a849cd625362e954f2c28c5a72e0f10302",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "asr-goto_04-d6089fa.stderr",
+    "stderr_hash": "0b49bd70da66b48a38efccaca8aadd59f933a9397370da50a494dca9",
     "returncode": 0
 }

@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/issue532.f90:7:1
+  |
+7 | real, intent(in) :: x
+  | ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/issue532.f90:12:1
+   |
+12 | integer, intent(in) :: x, y
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/issue532.f90:12:1
+   |
+12 | integer, intent(in) :: x, y
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

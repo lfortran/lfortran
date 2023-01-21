@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/implicit7.f90:7:1
+  |
+7 | integer :: X(n), Y(m)
+  | ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/implicit7.f90:7:1
+  |
+7 | integer :: X(n), Y(m)
+  | ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

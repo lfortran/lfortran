@@ -1,0 +1,53 @@
+warning: Implied save feature
+ --> tests/../integration_tests/derived_types_01.f90:5:5
+  |
+5 |     real :: r
+  |     ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/derived_types_01.f90:6:5
+  |
+6 |     integer :: i
+  |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_01.f90:10:5
+   |
+10 |     complex :: c
+   |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_01.f90:11:5
+   |
+11 |     type(X) :: d
+   |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_01.f90:17:1
+   |
+17 | type(X), intent(out) :: a
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_01.f90:29:5
+   |
+29 |     complex :: k
+   |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_01.f90:30:5
+   |
+30 |     type(Y) :: l
+   |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_01.f90:39:1
+   |
+39 | type(X) :: b
+   | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_01.f90:40:1
+   |
+40 | type(Z) :: c
+   | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

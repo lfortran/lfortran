@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-kwargs_02-5f7dccf.stdout",
     "stdout_hash": "718c52553f4ffccdac287c82823b43ea5e73a20c4ff0aa985f724a31",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "asr-kwargs_02-5f7dccf.stderr",
+    "stderr_hash": "40d20f33525bf836a22a28a733677dab2ab6e2ea658c5ade7c979829",
     "returncode": 0
 }

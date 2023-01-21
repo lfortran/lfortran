@@ -1,0 +1,293 @@
+warning: Implied save feature
+ --> tests/../integration_tests/template_triple.f90:5:3
+  |
+5 |   public :: add_integer
+  |   ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:10:5
+   |
+10 |     integer, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:10:5
+   |
+10 |     integer, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:11:5
+   |
+11 |     integer :: result
+   |     ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:16:5
+   |
+16 |     integer, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:16:5
+   |
+16 |     integer, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:17:5
+   |
+17 |     integer :: result
+   |     ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:22:5
+   |
+22 |     integer, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:22:5
+   |
+22 |     integer, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:23:5
+   |
+23 |     integer :: result
+   |     ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:28:5
+   |
+28 |     integer, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:28:5
+   |
+28 |     integer, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:29:5
+   |
+29 |     integer :: result
+   |     ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:34:5
+   |
+34 |     integer :: result
+   |     ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:39:5
+   |
+39 |     integer :: result
+   |     ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:49:3
+   |
+49 |   public :: add_real
+   |   ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:54:5
+   |
+54 |     real, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:54:5
+   |
+54 |     real, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:55:5
+   |
+55 |     real :: result
+   |     ^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:60:5
+   |
+60 |     real, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:60:5
+   |
+60 |     real, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:61:5
+   |
+61 |     real :: result
+   |     ^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:66:5
+   |
+66 |     real, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:66:5
+   |
+66 |     real, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:67:5
+   |
+67 |     real :: result
+   |     ^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:72:5
+   |
+72 |     real, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:72:5
+   |
+72 |     real, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:73:5
+   |
+73 |     real :: result
+   |     ^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:78:5
+   |
+78 |     real, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:78:5
+   |
+78 |     real, intent(in) :: x, y
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:79:5
+   |
+79 |     real :: result
+   |     ^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:84:5
+   |
+84 |     real :: result
+   |     ^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:89:5
+   |
+89 |     real :: result
+   |     ^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/template_triple.f90:99:3
+   |
+99 |   public :: triple_tmpl
+   |   ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/template_triple.f90:105:7
+    |
+105 |       type(T), intent(in) :: l, r
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/template_triple.f90:105:7
+    |
+105 |       type(T), intent(in) :: l, r
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/template_triple.f90:106:7
+    |
+106 |       type(T) :: total
+    |       ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/template_triple.f90:113:5
+    |
+113 |     public :: triple_l, triple_r
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/template_triple.f90:113:5
+    |
+113 |     public :: triple_l, triple_r
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/template_triple.f90:116:7
+    |
+116 |       type(T), intent(in) :: t
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/template_triple.f90:117:7
+    |
+117 |       type(T) :: result
+    |       ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/template_triple.f90:122:7
+    |
+122 |       type(T), intent(in) :: t
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/template_triple.f90:123:7
+    |
+123 |       type(T) :: result
+    |       ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/template_triple.f90:142:5
+    |
+142 |     integer :: tal, tar
+    |     ^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/template_triple.f90:142:5
+    |
+142 |     integer :: tal, tar
+    |     ^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/template_triple.f90:152:5
+    |
+152 |     real :: tml, tmr
+    |     ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/template_triple.f90:152:5
+    |
+152 |     real :: tml, tmr
+    |     ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/template_triple.f90:162:5
+    |
+162 |     real :: tmaxl, tmaxr
+    |     ^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/template_triple.f90:162:5
+    |
+162 |     real :: tmaxl, tmaxr
+    |     ^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

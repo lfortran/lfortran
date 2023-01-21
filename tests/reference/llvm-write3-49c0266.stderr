@@ -1,3 +1,9 @@
+warning: Implied save feature
+ --> tests/write3.f90:2:5
+  |
+2 |     integer nwrite
+  |     ^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
 warning: unit in write() is not implemented yet and it is currently treated as '*'
  --> tests/write3.f90:5:12
   |

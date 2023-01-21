@@ -1,0 +1,41 @@
+warning: Implied save feature
+ --> tests/../integration_tests/class_01.f90:4:3
+  |
+4 |   real :: pi = 3.1415926535897931d0 ! Class-wide private constant
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/class_01.f90:7:6
+  |
+7 |      real :: radius
+  |      ^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/class_01.f90:15:5
+   |
+15 |     class(Circle), intent(in) :: this
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/class_01.f90:16:5
+   |
+16 |     real :: area
+   |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/class_01.f90:21:5
+   |
+21 |     class(Circle), intent(in) :: this
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/class_01.f90:22:5
+   |
+22 |     real :: area
+   |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/class_01.f90:33:3
+   |
+33 |   type(Circle) :: c     ! Declare a variable of type Circle.
+   |   ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

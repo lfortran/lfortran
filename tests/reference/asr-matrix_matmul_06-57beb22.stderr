@@ -1,3 +1,15 @@
+warning: Implied save feature
+ --> tests/errors/matrix_matmul_06.f90:3:5
+  |
+3 |     integer :: a(3)
+  |     ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/errors/matrix_matmul_06.f90:4:5
+  |
+4 |     integer :: b(3)
+  |     ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
 semantic error: matmul provided with two arrays, each of rank 1.
  --> tests/errors/matrix_matmul_06.f90:5:14
   |

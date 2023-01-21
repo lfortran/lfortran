@@ -1,3 +1,15 @@
+warning: Implied save feature
+ --> tests/errors/cpp3.f90:4:1
+  |
+4 | integer :: x, y
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/errors/cpp3.f90:4:1
+  |
+4 | integer :: x, y
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
 semantic error: Variable 'xx' is not declared
  --> tests/errors/cpp3.f90:7:10
   |

@@ -1,0 +1,71 @@
+warning: Implied save feature
+ --> tests/array1.f90:3:1
+  |
+3 | real :: d, e(5), e2(2, 3), e3(1, 2, 3)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array1.f90:3:1
+  |
+3 | real :: d, e(5), e2(2, 3), e3(1, 2, 3)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array1.f90:3:1
+  |
+3 | real :: d, e(5), e2(2, 3), e3(1, 2, 3)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array1.f90:3:1
+  |
+3 | real :: d, e(5), e2(2, 3), e3(1, 2, 3)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array1.f90:4:1
+  |
+4 | integer :: f, g(3), g2(6, 3), g3(4, 3, 2)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array1.f90:4:1
+  |
+4 | integer :: f, g(3), g2(6, 3), g3(4, 3, 2)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array1.f90:4:1
+  |
+4 | integer :: f, g(3), g2(6, 3), g3(4, 3, 2)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array1.f90:4:1
+  |
+4 | integer :: f, g(3), g2(6, 3), g3(4, 3, 2)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array1.f90:5:1
+  |
+5 | logical :: a, b(2), b2(3, 2), b3(2, 1, 2)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array1.f90:5:1
+  |
+5 | logical :: a, b(2), b2(3, 2), b3(2, 1, 2)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array1.f90:5:1
+  |
+5 | logical :: a, b(2), b2(3, 2), b3(2, 1, 2)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array1.f90:5:1
+  |
+5 | logical :: a, b(2), b2(3, 2), b3(2, 1, 2)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

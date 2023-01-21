@@ -1,0 +1,41 @@
+warning: Implied save feature
+ --> tests/array12.f90:8:13
+  |
+8 |             character(kind=c_char, len=1), intent(in) :: buf(*)
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/array12.f90:9:13
+  |
+9 |             integer(c_int), value, intent(in) :: bufsize
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array12.f90:10:13
+   |
+10 |             type(c_ptr) :: path
+   |             ^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array12.f90:17:5
+   |
+17 |     character(len=:), allocatable, intent(out) :: path
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array12.f90:18:5
+   |
+18 |     character(kind=c_char, len=1), allocatable :: cpath(:)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array12.f90:19:5
+   |
+19 |     integer(c_int), parameter :: buffersize = 1000_c_int
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/array12.f90:20:5
+   |
+20 |     type(c_ptr) :: tmp
+   |     ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/implicit_interface2.f90:2:1
+  |
+2 | double precision f, g
+  | ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/implicit_interface2.f90:2:1
+  |
+2 | double precision f, g
+  | ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

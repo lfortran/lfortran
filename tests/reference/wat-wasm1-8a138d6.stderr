@@ -1,0 +1,77 @@
+warning: Implied save feature
+  --> tests/wasm1.f90:14:9
+   |
+14 |         integer, intent(in):: x
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm1.f90:15:9
+   |
+15 |         integer :: r
+   |         ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm1.f90:21:9
+   |
+21 |         integer, intent(in):: x, y
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm1.f90:21:9
+   |
+21 |         integer, intent(in):: x, y
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm1.f90:22:9
+   |
+22 |         integer :: r
+   |         ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm1.f90:28:9
+   |
+28 |         integer(8), intent(in):: x, y
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm1.f90:28:9
+   |
+28 |         integer(8), intent(in):: x, y
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm1.f90:29:9
+   |
+29 |         integer(8) :: r
+   |         ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm1.f90:35:9
+   |
+35 |         integer, intent(in):: radius
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm1.f90:36:9
+   |
+36 |         integer :: PI, area
+   |         ^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm1.f90:36:9
+   |
+36 |         integer :: PI, area
+   |         ^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm1.f90:42:9
+   |
+42 |         integer, intent(in) :: a, b
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm1.f90:42:9
+   |
+42 |         integer, intent(in) :: a, b
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

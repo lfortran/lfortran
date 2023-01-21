@@ -1,0 +1,5 @@
+warning: Implied save feature
+  --> tests/../integration_tests/modules_13.f90:19:1
+   |
+19 | integer :: f
+   | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

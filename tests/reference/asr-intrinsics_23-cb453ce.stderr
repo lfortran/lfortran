@@ -1,0 +1,23 @@
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_23.f90:3:1
+  |
+3 | integer(kind=4), parameter :: i32 = huge(0)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_23.f90:4:1
+  |
+4 | integer(kind=8), parameter :: i64 = huge(0_8)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_23.f90:5:1
+  |
+5 | real(kind=4), parameter :: y = huge(0.0)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_23.f90:6:1
+  |
+6 | real(kind=8), parameter :: z = huge(0.0d0)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

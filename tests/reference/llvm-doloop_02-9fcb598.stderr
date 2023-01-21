@@ -1,0 +1,23 @@
+warning: Implied save feature
+ --> tests/../integration_tests/doloop_02.f90:3:5
+  |
+3 |     integer :: i, j, a, b
+  |     ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/doloop_02.f90:3:5
+  |
+3 |     integer :: i, j, a, b
+  |     ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/doloop_02.f90:3:5
+  |
+3 |     integer :: i, j, a, b
+  |     ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/doloop_02.f90:3:5
+  |
+3 |     integer :: i, j, a, b
+  |     ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

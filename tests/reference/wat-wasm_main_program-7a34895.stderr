@@ -1,0 +1,47 @@
+warning: Implied save feature
+ --> tests/wasm_main_program.f90:4:5
+  |
+4 |     integer :: pi, radius, area
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/wasm_main_program.f90:4:5
+  |
+4 |     integer :: pi, radius, area
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/wasm_main_program.f90:4:5
+  |
+4 |     integer :: pi, radius, area
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/wasm_main_program.f90:5:5
+  |
+5 |     real :: pi2, radius2, area2
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/wasm_main_program.f90:5:5
+  |
+5 |     real :: pi2, radius2, area2
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/wasm_main_program.f90:5:5
+  |
+5 |     real :: pi2, radius2, area2
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm_main_program.f90:23:9
+   |
+23 |         integer, intent(in) :: x
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm_main_program.f90:24:9
+   |
+24 |         integer :: r
+   |         ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

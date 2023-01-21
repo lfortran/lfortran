@@ -1,3 +1,9 @@
+warning: Implied save feature
+ --> tests/errors/complex_01.f90:3:5
+  |
+3 |     complex :: z = (1, 2)
+  |     ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
 semantic error: The first argument of cmplx intrinsic is of complex type, the second argument in this case must be absent
  --> tests/errors/complex_01.f90:4:14
   |

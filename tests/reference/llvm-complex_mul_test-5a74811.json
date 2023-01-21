@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "llvm-complex_mul_test-5a74811.stdout",
     "stdout_hash": "3142864db557b0912158525f25e9828eec42f1339315c65114a1a9cf",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "llvm-complex_mul_test-5a74811.stderr",
+    "stderr_hash": "e411eebedd2bd8a76e542ff55f77e5c569dd2941a6774ff29af862cc",
     "returncode": 0
 }

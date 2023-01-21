@@ -1,0 +1,41 @@
+warning: Implied save feature
+ --> tests/fn5.f90:6:4
+  |
+6 |    character(len=*), intent(in) :: line
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/fn5.f90:7:4
+  |
+7 |    integer, intent(in) :: length
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/fn5.f90:8:4
+  |
+8 |    character(len=*), intent(in), optional :: pattern
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/fn5.f90:9:4
+  |
+9 |    character(len=max(length, len(trim(line)))) :: strout
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/fn5.f90:22:4
+   |
+22 |    character(len=*), intent(in), optional :: header
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/fn5.f90:23:4
+   |
+23 |    logical, intent(in), optional :: stop
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/fn5.f90:24:4
+   |
+24 |    integer :: i
+   |    ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

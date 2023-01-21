@@ -1,0 +1,35 @@
+warning: Implied save feature
+ --> tests/fn2.f90:2:1
+  |
+2 | integer :: a
+  | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/fn2.f90:6:1
+  |
+6 | real :: b
+  | ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/fn2.f90:10:1
+   |
+10 | logical :: c
+   | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/fn2.f90:14:1
+   |
+14 | integer :: r
+   | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/fn2.f90:18:1
+   |
+18 | real :: r
+   | ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/fn2.f90:22:1
+   |
+22 | logical :: r
+   | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

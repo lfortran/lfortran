@@ -1,0 +1,53 @@
+warning: Implied save feature
+ --> tests/../integration_tests/functions_06.f90:7:9
+  |
+7 |         character(len=*) :: s
+  |         ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/functions_06.f90:8:9
+  |
+8 |         character(len=len(s)) :: r
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/functions_06.f90:13:9
+   |
+13 |         character(len=*) :: s
+   |         ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/functions_06.f90:14:9
+   |
+14 |         integer :: r(len(s))
+   |         ^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/functions_06.f90:15:9
+   |
+15 |         integer :: i
+   |         ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/functions_06.f90:22:9
+   |
+22 |         character(len=*) :: s
+   |         ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/functions_06.f90:23:9
+   |
+23 |         real :: r(len(s))
+   |         ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/functions_06.f90:24:9
+   |
+24 |         integer :: i
+   |         ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/functions_06.f90:36:5
+   |
+36 |     character(len=5) :: string = "  abc"
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

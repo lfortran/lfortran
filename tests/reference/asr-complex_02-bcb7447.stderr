@@ -1,0 +1,35 @@
+warning: Implied save feature
+ --> tests/../integration_tests/complex_02.f90:4:1
+  |
+4 | complex :: x, z, w, i_
+  | ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/complex_02.f90:4:1
+  |
+4 | complex :: x, z, w, i_
+  | ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/complex_02.f90:4:1
+  |
+4 | complex :: x, z, w, i_
+  | ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/complex_02.f90:4:1
+  |
+4 | complex :: x, z, w, i_
+  | ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/complex_02.f90:5:1
+  |
+5 | real :: a, b
+  | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/complex_02.f90:5:1
+  |
+5 | real :: a, b
+  | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

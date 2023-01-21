@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/../integration_tests/boz_01.f90:4:1
+  |
+4 | integer :: boz_1, boz_2, boz_3
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/boz_01.f90:4:1
+  |
+4 | integer :: boz_1, boz_2, boz_3
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/boz_01.f90:4:1
+  |
+4 | integer :: boz_1, boz_2, boz_3
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -1,0 +1,29 @@
+warning: Implied save feature
+ --> tests/dimension_attr.f:2:11
+  |
+2 |           integer a
+  |           ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/dimension_attr.f:7:9
+  |
+7 |         integer , dimension (3,3) :: z
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/dimension_attr.f:8:9
+  |
+8 |         integer a, b
+  |         ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/dimension_attr.f:8:9
+  |
+8 |         integer a, b
+  |         ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/dimension_attr.f:11:9
+   |
+11 |         integer, dimension(2,2) :: d
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

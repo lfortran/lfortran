@@ -1,0 +1,29 @@
+warning: Implied save feature
+ --> tests/statement1.f90:2:2
+  |
+2 |  double precision x, a, b, c
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/statement1.f90:2:2
+  |
+2 |  double precision x, a, b, c
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/statement1.f90:2:2
+  |
+2 |  double precision x, a, b, c
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/statement1.f90:2:2
+  |
+2 |  double precision x, a, b, c
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/statement1.f90:3:2
+  |
+3 |  logical q
+  |  ^^^^^^^^^ Assuming save attribute implicitly for variables

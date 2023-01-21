@@ -1,0 +1,65 @@
+warning: Implied save feature
+ --> tests/loop_test2.f:2:7
+  |
+2 |       integer nq, m
+  |       ^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/loop_test2.f:2:7
+  |
+2 |       integer nq, m
+  |       ^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/loop_test2.f:3:7
+  |
+3 |       real wrk5(5), v(3, 4, 5)
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/loop_test2.f:3:7
+  |
+3 |       real wrk5(5), v(3, 4, 5)
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/loop_test2.f:4:7
+  |
+4 |       real ve(3, 4, 5),vev(3, 4)
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/loop_test2.f:4:7
+  |
+4 |       real ve(3, 4, 5),vev(3, 4)
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/loop_test2.f:5:7
+  |
+5 |       real zero
+  |       ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/loop_test2.f:7:7
+  |
+7 |       integer l1,j,l2
+  |       ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/loop_test2.f:7:7
+  |
+7 |       integer l1,j,l2
+  |       ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/loop_test2.f:7:7
+  |
+7 |       integer l1,j,l2
+  |       ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/loop_test2.f:8:7
+  |
+8 |       integer indx
+  |       ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

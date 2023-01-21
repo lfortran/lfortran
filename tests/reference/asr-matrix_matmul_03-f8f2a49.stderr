@@ -1,3 +1,15 @@
+warning: Implied save feature
+ --> tests/errors/matrix_matmul_03.f90:3:5
+  |
+3 |     logical :: a(3, 3)
+  |     ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/errors/matrix_matmul_03.f90:4:5
+  |
+4 |     integer :: b(3, 3)
+  |     ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
 semantic error: matmul accepts second matrix of type Logical if first matrix is of Logical type
  --> tests/errors/matrix_matmul_03.f90:5:24
   |

@@ -1,3 +1,21 @@
+warning: Implied save feature
+ --> tests/errors/c_f_pointer_02.f90:3:5
+  |
+3 |     type(c_ptr) :: queries
+  |     ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/errors/c_f_pointer_02.f90:4:5
+  |
+4 |     integer(2), pointer :: x(:)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/errors/c_f_pointer_02.f90:5:5
+  |
+5 |     integer :: shape(2, 2)
+  |     ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
 semantic error: shape array passed to c_f_pointer must be of rank 1 but given rank is 2
  --> tests/errors/c_f_pointer_02.f90:6:34
   |

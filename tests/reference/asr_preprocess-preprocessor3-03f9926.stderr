@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/preprocessor3.f90:3:1
+  |
+3 | #include "preprocessor3e.h"
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/preprocessor3.f90:3:1
+  |
+3 | #include "preprocessor3e.h"
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

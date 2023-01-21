@@ -1,0 +1,53 @@
+warning: Implied save feature
+ --> tests/program3.f90:2:1
+  |
+2 | real :: x, y, z
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/program3.f90:2:1
+  |
+2 | real :: x, y, z
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/program3.f90:2:1
+  |
+2 | real :: x, y, z
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/program3.f90:18:5
+   |
+18 |     real, intent(in) :: a, b
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/program3.f90:18:5
+   |
+18 |     real, intent(in) :: a, b
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/program3.f90:19:5
+   |
+19 |     real :: c
+   |     ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/program3.f90:25:5
+   |
+25 |     real, intent(in) :: a, b
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/program3.f90:25:5
+   |
+25 |     real, intent(in) :: a, b
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/program3.f90:26:5
+   |
+26 |     real :: c
+   |     ^^^^^^^^^ Assuming save attribute implicitly for variables

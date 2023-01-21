@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "llvm-array2-4254183.stdout",
     "stdout_hash": "bec04a2a3b7f557ed588f4d06da0ef3a080b85417e2f9a103db648d9",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "llvm-array2-4254183.stderr",
+    "stderr_hash": "af307f4909e3b3e63f728f4950ff8cc59db980efa5d6299b83dd1591",
     "returncode": 0
 }

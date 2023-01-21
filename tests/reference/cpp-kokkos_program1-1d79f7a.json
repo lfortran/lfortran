@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "cpp-kokkos_program1-1d79f7a.stdout",
     "stdout_hash": "77a60a602c0dfdf1261c3f84a00a5e6283c2216ff447ff44d51b8678",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "cpp-kokkos_program1-1d79f7a.stderr",
+    "stderr_hash": "067e93a954ada17a5a4c67e91ca5b74f67b532a0d691ce0129a1b27d",
     "returncode": 0
 }

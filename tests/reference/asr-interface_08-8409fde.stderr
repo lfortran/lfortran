@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/../integration_tests/interface_08.f90:4:13
+  |
+4 |             integer, intent(in) :: x
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/interface_08.f90:5:13
+  |
+5 |             integer, intent(in) :: y
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

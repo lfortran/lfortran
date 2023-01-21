@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/fixed_form_call2.f:2:9
+  |
+2 |         integer m, a
+  |         ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/fixed_form_call2.f:2:9
+  |
+2 |         integer m, a
+  |         ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

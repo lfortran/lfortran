@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/optional1.f90:5:5
+  |
+5 |     CHARACTER(LEN=10), INTENT(IN), OPTIONAL :: name
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -1,0 +1,35 @@
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_28.f90:3:5
+  |
+3 |     integer, parameter :: a = 10, b = -20, c = 30
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_28.f90:3:5
+  |
+3 |     integer, parameter :: a = 10, b = -20, c = 30
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_28.f90:3:5
+  |
+3 |     integer, parameter :: a = 10, b = -20, c = 30
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_28.f90:4:5
+  |
+4 |     integer, parameter :: d = -40, e = 0, f = 50
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_28.f90:4:5
+  |
+4 |     integer, parameter :: d = -40, e = 0, f = 50
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_28.f90:4:5
+  |
+4 |     integer, parameter :: d = -40, e = 0, f = 50
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

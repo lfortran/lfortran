@@ -4,8 +4,20 @@ warning: Dimensions are specified twice
 2 | integer, private, dimension(2,2) :: a(2,2)
   |                   ^^^^^^^^^^^^^^    ^^^^^^ help: consider specifying it just one way or the other
 
+warning: Implied save feature
+ --> tests/warnings/dim_assgn_test.f90:2:1
+  |
+2 | integer, private, dimension(2,2) :: a(2,2)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
 warning: Dimensions are specified twice
  --> tests/warnings/dim_assgn_test.f90:3:19
   |
 3 | integer, private, dimension(2,2) :: b(2,3)
   |                   ^^^^^^^^^^^^^^    ^^^^^^ help: consider specifying it just one way or the other
+
+warning: Implied save feature
+ --> tests/warnings/dim_assgn_test.f90:3:1
+  |
+3 | integer, private, dimension(2,2) :: b(2,3)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

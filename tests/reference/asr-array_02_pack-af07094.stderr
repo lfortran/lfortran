@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/../integration_tests/array_02_pack.f90:2:3
+  |
+2 |   integer :: m(4), p(4)
+  |   ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/array_02_pack.f90:2:3
+  |
+2 |   integer :: m(4), p(4)
+  |   ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

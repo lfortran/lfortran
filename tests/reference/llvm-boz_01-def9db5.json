@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "llvm-boz_01-def9db5.stdout",
     "stdout_hash": "ecdda8c2fc3d201c6003788147fc768f4e82998e64a5f8c63f20a61d",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "llvm-boz_01-def9db5.stderr",
+    "stderr_hash": "fc0de610f52a71c1cd02752e47e82cdca1072ca07acc12ec9cbf270a",
     "returncode": 0
 }

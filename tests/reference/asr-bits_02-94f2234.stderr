@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/../integration_tests/bits_02.f90:5:5
+  |
+5 |     integer(bits_kind), parameter :: block_size  = bit_size(0_block_kind)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/bits_02.f90:6:5
+  |
+6 |     integer(block_kind), parameter :: all_zeros  = 0_block_kind
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/bits_02.f90:7:5
+  |
+7 |     integer(block_kind), parameter :: all_ones   = not(all_zeros)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

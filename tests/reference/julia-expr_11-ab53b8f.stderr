@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/../integration_tests/expr_11.f90:3:5
+  |
+3 |     real*8 x
+  |     ^^^^^^^^ Assuming save attribute implicitly for variables

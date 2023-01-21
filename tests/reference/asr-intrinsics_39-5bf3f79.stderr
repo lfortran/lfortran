@@ -1,0 +1,23 @@
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_39.f90:2:5
+  |
+2 |     character(len=8)  :: date
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_39.f90:3:5
+  |
+3 |     character(len=10) :: time
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_39.f90:4:5
+  |
+4 |     character(len=5)  :: zone
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_39.f90:5:5
+  |
+5 |     integer,dimension(8) :: values
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

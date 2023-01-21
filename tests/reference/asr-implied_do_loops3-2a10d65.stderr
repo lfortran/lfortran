@@ -1,0 +1,29 @@
+warning: Implied save feature
+ --> tests/../integration_tests/implied_do_loops3.f90:3:2
+  |
+3 |  integer::i,j,k
+  |  ^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/implied_do_loops3.f90:3:2
+  |
+3 |  integer::i,j,k
+  |  ^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/implied_do_loops3.f90:3:2
+  |
+3 |  integer::i,j,k
+  |  ^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/implied_do_loops3.f90:4:2
+  |
+4 |  real:: a(3) = (/(j*3,j=1,3)/)
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/implied_do_loops3.f90:5:2
+  |
+5 |  real:: b(3) = (/(j*2,j=1,3)/)
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

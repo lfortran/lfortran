@@ -1,0 +1,515 @@
+warning: Implied save feature
+ --> tests/../integration_tests/modules_15b.f90:9:5
+  |
+9 |     integer(c_int), intent(in) :: a
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:10:5
+   |
+10 |     real(c_float), intent(in) :: b
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:16:5
+   |
+16 |     integer(c_int), intent(in) :: a
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:17:5
+   |
+17 |     real(c_double), intent(in) :: b
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:23:5
+   |
+23 |     integer(c_int), intent(in) :: a
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:24:5
+   |
+24 |     complex(c_float), intent(in) :: b
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:30:5
+   |
+30 |     integer(c_int), intent(in) :: a
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:31:5
+   |
+31 |     complex(c_double), intent(in) :: b
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:37:5
+   |
+37 |     integer(c_int), value, intent(in) :: a
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:38:5
+   |
+38 |     complex(c_float), value, intent(in) :: b
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:44:5
+   |
+44 |     integer(c_int), value, intent(in) :: a
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:45:5
+   |
+45 |     complex(c_double), value, intent(in) :: b
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:51:5
+   |
+51 |     complex(c_float), value, intent(in) :: b
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:57:5
+   |
+57 |     complex(c_double), value, intent(in) :: b
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:63:5
+   |
+63 |     integer(c_int), value, intent(in) :: a
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:64:5
+   |
+64 |     real(c_float), value, intent(in) :: b
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:70:5
+   |
+70 |     integer(c_int), value, intent(in) :: a
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:71:5
+   |
+71 |     real(c_double), value, intent(in) :: b
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:77:5
+   |
+77 |     integer(c_int), value, intent(in) :: n
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:78:5
+   |
+78 |     integer(c_int), intent(in) :: b(n)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:84:5
+   |
+84 |     integer(c_int), value, intent(in) :: n
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:85:5
+   |
+85 |     real(c_float), intent(in) :: b(n)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:91:5
+   |
+91 |     integer(c_int), value, intent(in) :: n
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:92:5
+   |
+92 |     real(c_double), intent(in) :: b(n)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/modules_15b.f90:99:5
+   |
+99 |     integer(c_int), value, intent(in) :: n
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:100:5
+    |
+100 |     integer(c_int), intent(in) :: b(*)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:106:5
+    |
+106 |     integer(c_int), value, intent(in) :: n
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:107:5
+    |
+107 |     real(c_float), intent(in) :: b(*)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:114:5
+    |
+114 |     integer(c_int), value, intent(in) :: n
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:115:5
+    |
+115 |     real(c_double), intent(in) :: b(*)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:122:5
+    |
+122 |     integer(c_int), value, intent(in) :: a
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:123:5
+    |
+123 |     real(c_double), value, intent(in) :: b
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:131:5
+    |
+131 |     integer(c_int), intent(in) :: a
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:132:5
+    |
+132 |     real(c_float), intent(in) :: b
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:133:5
+    |
+133 |     integer(c_int), intent(out) :: r
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:139:5
+    |
+139 |     integer(c_int), intent(in) :: a
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:140:5
+    |
+140 |     real(c_double), intent(in) :: b
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:141:5
+    |
+141 |     integer(c_int), intent(out) :: r
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:147:5
+    |
+147 |     integer(c_int), intent(in) :: a
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:148:5
+    |
+148 |     complex(c_float), intent(in) :: b
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:149:5
+    |
+149 |     integer(c_int), intent(out) :: r
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:155:5
+    |
+155 |     integer(c_int), intent(in) :: a
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:156:5
+    |
+156 |     complex(c_double), intent(in) :: b
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:157:5
+    |
+157 |     integer(c_int), intent(out) :: r
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:163:5
+    |
+163 |     integer(c_int), value, intent(in) :: a
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:164:5
+    |
+164 |     real(c_float), value, intent(in) :: b
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:165:5
+    |
+165 |     integer(c_int), intent(out) :: r
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:171:5
+    |
+171 |     integer(c_int), value, intent(in) :: a
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:172:5
+    |
+172 |     real(c_double), value, intent(in) :: b
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:173:5
+    |
+173 |     integer(c_int), intent(out) :: r
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:179:5
+    |
+179 |     integer(c_int), value, intent(in) :: a
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:180:5
+    |
+180 |     complex(c_float), value, intent(in) :: b
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:181:5
+    |
+181 |     integer(c_int), intent(out) :: r
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:187:5
+    |
+187 |     integer(c_int), value, intent(in) :: a
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:188:5
+    |
+188 |     complex(c_double), value, intent(in) :: b
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:189:5
+    |
+189 |     integer(c_int), intent(out) :: r
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:195:5
+    |
+195 |     integer(c_int), value, intent(in) :: n
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:196:5
+    |
+196 |     integer(c_int), intent(in) :: b(n)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:197:5
+    |
+197 |     integer(c_int), intent(out) :: r
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:203:5
+    |
+203 |     integer(c_int), value, intent(in) :: n
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:204:5
+    |
+204 |     real(c_float), intent(in) :: b(n)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:205:5
+    |
+205 |     real(c_float), intent(out) :: r
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:211:5
+    |
+211 |     integer(c_int), value, intent(in) :: n
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:212:5
+    |
+212 |     real(c_double), intent(in) :: b(n)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:213:5
+    |
+213 |     real(c_double), intent(out) :: r
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:220:5
+    |
+220 |     integer(c_int), value, intent(in) :: a
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:221:5
+    |
+221 |     real(c_double), value, intent(in) :: b
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:222:5
+    |
+222 |     integer(c_int), intent(out) :: r
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:228:5
+    |
+228 |     character(len=1, kind=c_char), intent(in) :: s(*)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:233:5
+    |
+233 |     integer(c_int), value, intent(in) :: i
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:238:5
+    |
+238 |     integer(c_int), value, intent(in) :: i
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:243:5
+    |
+243 |     integer(c_long_long), value, intent(in) :: i
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:248:5
+    |
+248 |     integer(c_long_long), value, intent(in) :: i
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:253:5
+    |
+253 |     real(c_float), value, intent(in) :: i
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:258:5
+    |
+258 |     real(c_float), value, intent(in) :: i
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:263:5
+    |
+263 |     real(c_double), value, intent(in) :: i
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:268:5
+    |
+268 |     real(c_double), value, intent(in) :: i
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:276:1
+    |
+276 | character(*), intent(in) :: s
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:281:1
+    |
+281 | integer(c_int), intent(in) :: i
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:286:1
+    |
+286 | integer(c_int), value, intent(in) :: i
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:291:1
+    |
+291 | integer(c_long_long), intent(in) :: i
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:296:1
+    |
+296 | integer(c_long_long), value, intent(in) :: i
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:301:1
+    |
+301 | real(c_float), intent(in) :: i
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:306:1
+    |
+306 | real(c_float), value, intent(in) :: i
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:311:1
+    |
+311 | real(c_double), intent(in) :: i
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+   --> tests/../integration_tests/modules_15b.f90:316:1
+    |
+316 | real(c_double), value, intent(in) :: i
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

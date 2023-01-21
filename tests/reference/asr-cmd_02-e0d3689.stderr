@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/../integration_tests/cmd_02.f90:2:5
+  |
+2 |     integer :: i
+  |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/cmd_02.f90:4:5
+  |
+4 |     character(len=255) :: homedir
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -1,3 +1,15 @@
+warning: Implied save feature
+ --> tests/errors/array_size_02.f90:3:5
+  |
+3 |     integer :: a(3)
+  |     ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/errors/array_size_02.f90:4:5
+  |
+4 |     integer :: size_a
+  |     ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
 semantic error: dim has already been specified as a positional/keyword argument to size.
  --> tests/errors/array_size_02.f90:5:14
   |

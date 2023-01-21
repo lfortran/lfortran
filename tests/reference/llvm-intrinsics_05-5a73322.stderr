@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_05.f90:2:1
+  |
+2 | real :: x
+  | ^^^^^^^^^ Assuming save attribute implicitly for variables

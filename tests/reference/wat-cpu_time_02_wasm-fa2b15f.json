@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "wat-cpu_time_02_wasm-fa2b15f.stdout",
     "stdout_hash": "ae5c49d66852993d568416c7b63f8742bd814206105d49bd90fe8b44",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "wat-cpu_time_02_wasm-fa2b15f.stderr",
+    "stderr_hash": "0bf36ca094268c36a5bc9495105467592e07439efead7fb95ddb57fd",
     "returncode": 0
 }

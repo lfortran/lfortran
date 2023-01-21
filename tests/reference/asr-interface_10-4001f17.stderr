@@ -1,0 +1,23 @@
+warning: Implied save feature
+ --> tests/../integration_tests/interface_10.f90:9:9
+  |
+9 |         character, intent(in) :: x
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/interface_10.f90:10:9
+   |
+10 |         character(kind=1), intent(out) :: y
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/interface_10.f90:17:5
+   |
+17 |     character :: x, y
+   |     ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/interface_10.f90:17:5
+   |
+17 |     character :: x, y
+   |     ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

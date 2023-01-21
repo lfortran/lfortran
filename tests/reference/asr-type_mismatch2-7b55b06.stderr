@@ -1,3 +1,9 @@
+warning: Implied save feature
+ --> tests/errors/type_mismatch2.f90:3:1
+  |
+3 | integer :: x
+  | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
 semantic error: Type mismatch in binary operator, the types must be compatible
  --> tests/errors/type_mismatch2.f90:4:5
   |

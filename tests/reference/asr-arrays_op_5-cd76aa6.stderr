@@ -1,0 +1,77 @@
+warning: Implied save feature
+ --> tests/../integration_tests/arrays_op_5.f90:4:1
+  |
+4 | integer :: a(2, 2, 1), b(2, 2, 1)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/arrays_op_5.f90:4:1
+  |
+4 | integer :: a(2, 2, 1), b(2, 2, 1)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/arrays_op_5.f90:5:1
+  |
+5 | complex :: c(2, 2, 1)
+  | ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/arrays_op_5.f90:6:1
+  |
+6 | integer :: i, j, k
+  | ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/arrays_op_5.f90:6:1
+  |
+6 | integer :: i, j, k
+  | ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/arrays_op_5.f90:6:1
+  |
+6 | integer :: i, j, k
+  | ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/arrays_op_5.f90:29:5
+   |
+29 |     complex, intent(in) :: c(:, :, :)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/arrays_op_5.f90:30:5
+   |
+30 |     integer, intent(in) :: op_code
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/arrays_op_5.f90:32:5
+   |
+32 |     integer :: i, j, k
+   |     ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/arrays_op_5.f90:32:5
+   |
+32 |     integer :: i, j, k
+   |     ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/arrays_op_5.f90:32:5
+   |
+32 |     integer :: i, j, k
+   |     ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/arrays_op_5.f90:33:5
+   |
+33 |     real :: left, right
+   |     ^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/arrays_op_5.f90:33:5
+   |
+33 |     real :: left, right
+   |     ^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

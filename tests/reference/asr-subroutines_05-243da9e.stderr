@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/../integration_tests/subroutines_05.f90:2:3
+  |
+2 |   integer, pointer :: x(:)
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/subroutines_05.f90:9:1
+  |
+9 | integer, intent(in) :: x(:)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/subroutines_05.f90:10:1
+   |
+10 | real :: E(size(x))
+   | ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

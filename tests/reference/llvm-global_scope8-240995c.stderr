@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/global_scope8.f90:1:1
+  |
+1 | integer(4) :: x
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

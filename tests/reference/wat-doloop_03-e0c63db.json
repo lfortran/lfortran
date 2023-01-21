@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "wat-doloop_03-e0c63db.stdout",
     "stdout_hash": "f83960830261a99de90647351c7ebc663bfa0185e8cdd8c1ae6d29b4",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "wat-doloop_03-e0c63db.stderr",
+    "stderr_hash": "e933751c78cb6460750294fe45af2d2a306d46ba7a7e2f21f580ae3a",
     "returncode": 0
 }

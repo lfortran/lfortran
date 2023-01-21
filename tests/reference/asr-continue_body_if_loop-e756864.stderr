@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/continue_body_if_loop.f:1:8
+  |
+1 |        REAL U, S 
+  |        ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/continue_body_if_loop.f:1:8
+  |
+1 |        REAL U, S 
+  |        ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/continue_body_if_loop.f:4:8
+  |
+4 |        INTEGER J
+  |        ^^^^^^^^^ Assuming save attribute implicitly for variables

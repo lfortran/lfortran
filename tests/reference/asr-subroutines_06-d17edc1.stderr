@@ -1,0 +1,83 @@
+warning: Implied save feature
+ --> tests/../integration_tests/subroutines_06.f90:4:13
+  |
+4 |             integer, intent(out) :: set1
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/subroutines_06.f90:5:13
+  |
+5 |             integer, intent(in)  :: set2
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/subroutines_06.f90:9:13
+  |
+9 |             integer, intent(out) :: self
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/subroutines_06.f90:10:13
+   |
+10 |             logical, intent(in)       :: logical_vector(:)
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/subroutines_06.f90:17:13
+   |
+17 |             character(*), intent(in)           :: message
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/subroutines_06.f90:18:13
+   |
+18 |             integer, intent(in)                :: error
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/subroutines_06.f90:19:13
+   |
+19 |             integer, intent(out), optional     :: status
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/subroutines_06.f90:20:13
+   |
+20 |             character(*), intent(in), optional :: module
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/subroutines_06.f90:21:13
+   |
+21 |             character(*), intent(in), optional :: procedure
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/subroutines_06.f90:28:9
+   |
+28 |         character(*), intent(in)           :: message
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/subroutines_06.f90:29:9
+   |
+29 |         integer, intent(in)                :: error
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/subroutines_06.f90:30:9
+   |
+30 |         integer, intent(out), optional     :: status
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/subroutines_06.f90:31:9
+   |
+31 |         character(*), intent(in), optional :: module
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/subroutines_06.f90:32:9
+   |
+32 |         character(*), intent(in), optional :: procedure
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

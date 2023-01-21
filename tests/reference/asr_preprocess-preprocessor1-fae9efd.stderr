@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/preprocessor1.f90:4:1
+  |
+4 | integer :: x, y
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/preprocessor1.f90:4:1
+  |
+4 | integer :: x, y
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

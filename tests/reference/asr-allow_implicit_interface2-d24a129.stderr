@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/allow_implicit_interface2.f90:2:1
+  |
+2 | integer :: n, x, y
+  | ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/allow_implicit_interface2.f90:2:1
+  |
+2 | integer :: n, x, y
+  | ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/allow_implicit_interface2.f90:2:1
+  |
+2 | integer :: n, x, y
+  | ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

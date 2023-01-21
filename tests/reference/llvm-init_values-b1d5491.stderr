@@ -1,0 +1,65 @@
+warning: Implied save feature
+ --> tests/../integration_tests/init_values.f90:3:5
+  |
+3 |     integer, parameter :: i = 1.0, j = 2.0
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/init_values.f90:3:5
+  |
+3 |     integer, parameter :: i = 1.0, j = 2.0
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/init_values.f90:4:5
+  |
+4 |     real, parameter :: r = 4.0
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/init_values.f90:5:5
+  |
+5 |     complex, parameter :: c = (3.0, 4.0)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/init_values.f90:6:5
+  |
+6 |     integer, parameter :: a = i + j
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/init_values.f90:7:5
+  |
+7 |     logical, parameter :: l = a == 3
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/init_values.f90:8:5
+  |
+8 |     logical, parameter :: b = l .or. .true.
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/init_values.f90:9:5
+  |
+9 |     real, parameter :: r_minus = -r
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/init_values.f90:10:5
+   |
+10 |     character(len = 1), parameter :: s1 = "l"
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/init_values.f90:11:5
+   |
+11 |     character(len = 3), parameter :: s2 = "eft"
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/init_values.f90:12:5
+   |
+12 |     character(len = 4), parameter :: s = s1//s2
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

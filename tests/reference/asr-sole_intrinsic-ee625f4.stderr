@@ -1,0 +1,41 @@
+warning: Implied save feature
+ --> tests/sole_intrinsic.f:2:12
+  |
+2 |            intrinsic aimag, cmplx, real
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/sole_intrinsic.f:2:12
+  |
+2 |            intrinsic aimag, cmplx, real
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/sole_intrinsic.f:2:12
+  |
+2 |            intrinsic aimag, cmplx, real
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/sole_intrinsic.f:5:12
+  |
+5 |            complex f
+  |            ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/sole_intrinsic.f:7:12
+  |
+7 |            complex :: x = (1.0, -3.0)
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/sole_intrinsic.f:8:12
+  |
+8 |            real :: y
+  |            ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/sole_intrinsic.f:10:12
+   |
+10 |            intrinsic mod
+   |            ^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

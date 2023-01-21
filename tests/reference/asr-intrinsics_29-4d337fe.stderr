@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_29.f90:4:1
+  |
+4 | real(4) :: random_sp
+  | ^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_29.f90:5:1
+  |
+5 | real(8) :: random_dp
+  | ^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

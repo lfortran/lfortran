@@ -1,3 +1,15 @@
+warning: Implied save feature
+ --> tests/errors/arithmetic_if1.f90:2:1
+  |
+2 | integer :: x, c
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/errors/arithmetic_if1.f90:2:1
+  |
+2 | integer :: x, c
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
 semantic error: Arithmetic if (x) requires an integer or real for `x`
  --> tests/errors/arithmetic_if1.f90:5:5
   |

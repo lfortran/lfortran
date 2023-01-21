@@ -1,0 +1,23 @@
+warning: Implied save feature
+ --> tests/select_type2.f90:7:5
+  |
+7 |     class(*), intent(in) :: generic(:)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/select_type2.f90:8:5
+  |
+8 |     integer :: i, isum
+  |     ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/select_type2.f90:8:5
+  |
+8 |     integer :: i, isum
+  |     ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/select_type2.f90:9:5
+  |
+9 |     real :: rsum
+  |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/../integration_tests/cmd_01.f90:3:5
+  |
+3 |     integer :: i, count
+  |     ^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/cmd_01.f90:3:5
+  |
+3 |     integer :: i, count
+  |     ^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/cmd_01.f90:4:5
+  |
+4 |     character(len=32) :: arg
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

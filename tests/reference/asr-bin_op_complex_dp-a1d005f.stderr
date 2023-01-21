@@ -1,0 +1,23 @@
+warning: Implied save feature
+ --> tests/../integration_tests/bin_op_complex_dp.f90:3:5
+  |
+3 |     complex(4) :: zero
+  |     ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/bin_op_complex_dp.f90:4:5
+  |
+4 |     complex(8) :: v, u
+  |     ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/bin_op_complex_dp.f90:4:5
+  |
+4 |     complex(8) :: v, u
+  |     ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/bin_op_complex_dp.f90:5:5
+  |
+5 |     complex :: x
+  |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

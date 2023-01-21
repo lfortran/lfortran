@@ -1,0 +1,71 @@
+warning: Implied save feature
+ --> tests/../integration_tests/types_16.f90:3:5
+  |
+3 |     integer, parameter :: dp = kind(0.d0)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/types_16.f90:14:9
+   |
+14 |         real(dp), intent(in):: x
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/types_16.f90:15:9
+   |
+15 |         real(dp) :: r
+   |         ^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/types_16.f90:21:9
+   |
+21 |         real, intent(in) :: x, y
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/types_16.f90:21:9
+   |
+21 |         real, intent(in) :: x, y
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/types_16.f90:22:9
+   |
+22 |         real :: r
+   |         ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/types_16.f90:28:9
+   |
+28 |         real :: r
+   |         ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/types_16.f90:34:9
+   |
+34 |         real(dp) :: r
+   |         ^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/types_16.f90:40:9
+   |
+40 |         real :: r
+   |         ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/types_16.f90:47:9
+   |
+47 |         real(dp), intent(in):: radius
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/types_16.f90:48:9
+   |
+48 |         real(dp) :: PI, area
+   |         ^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/types_16.f90:48:9
+   |
+48 |         real(dp) :: PI, area
+   |         ^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

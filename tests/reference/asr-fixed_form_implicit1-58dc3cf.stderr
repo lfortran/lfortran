@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/fixed_form_implicit1.f:3:7
+  |
+3 |       integer a
+  |       ^^^^^^^^^ Assuming save attribute implicitly for variables

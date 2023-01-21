@@ -1,0 +1,35 @@
+warning: Implied save feature
+ --> tests/../integration_tests/string_03.f90:3:1
+  |
+3 | character(len = 5), parameter :: intro = "I've "
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/string_03.f90:10:1
+   |
+10 | character(len = 8) :: verb
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/string_03.f90:11:1
+   |
+11 | character(len = 5) :: posit
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/string_03.f90:12:1
+   |
+12 | character(len = 4) :: title
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/string_03.f90:13:1
+   |
+13 | character(len = 7) :: last_name
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/string_03.f90:14:1
+   |
+14 | character(len = 29) :: combined
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

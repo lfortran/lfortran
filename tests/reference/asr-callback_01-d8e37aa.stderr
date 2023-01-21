@@ -1,0 +1,35 @@
+warning: Implied save feature
+ --> tests/../integration_tests/callback_01.f90:6:1
+  |
+6 | real, intent(in) :: a, b
+  | ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/callback_01.f90:6:1
+  |
+6 | real, intent(in) :: a, b
+  | ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/callback_01.f90:10:5
+   |
+10 |     real, intent(in) :: x
+   |     ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/callback_01.f90:18:1
+   |
+18 | real :: c, d
+   | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/callback_01.f90:18:1
+   |
+18 | real :: c, d
+   | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/callback_01.f90:24:1
+   |
+24 | real, intent(in) :: x
+   | ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

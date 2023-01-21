@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_35.f90:2:1
+  |
+2 | logical l
+  | ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/intrinsics_35.f90:10:5
+   |
+10 |     integer :: a(2, 3), b(2, 3)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/intrinsics_35.f90:10:5
+   |
+10 |     integer :: a(2, 3), b(2, 3)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

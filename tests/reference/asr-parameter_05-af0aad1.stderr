@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/../integration_tests/parameter_05.f90:4:3
+  |
+4 |   integer, parameter :: x = 5.0
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/parameter_05.f90:5:3
+  |
+5 |   real, parameter :: y = 5
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/parameter_05.f90:6:3
+  |
+6 |   real(kind=8), parameter :: z = 5
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/uppercase1.f90:2:1
+  |
+2 | real, dimension(3) :: x, y
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/uppercase1.f90:2:1
+  |
+2 | real, dimension(3) :: x, y
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/uppercase1.f90:7:1
+  |
+7 | integer, intent(inout) :: a
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

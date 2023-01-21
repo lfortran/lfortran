@@ -1,0 +1,23 @@
+warning: Implied save feature
+ --> tests/../integration_tests/int_02.f90:2:3
+  |
+2 |   real, parameter :: x1 = 3.3
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/int_02.f90:3:3
+  |
+3 |   integer, parameter :: x2 = 7
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/int_02.f90:4:3
+  |
+4 |   integer, parameter :: y1 = int(x1)
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/int_02.f90:5:3
+  |
+5 |   integer, parameter :: y2 = int(x2)
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

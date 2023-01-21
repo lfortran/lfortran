@@ -1,3 +1,15 @@
+warning: Implied save feature
+ --> tests/errors/redeclaration1.f90:3:1
+  |
+3 | integer :: idx1
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/errors/redeclaration1.f90:4:1
+  |
+4 | real :: j, idx1
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
 semantic error: Symbol is already declared in the same scope
  --> tests/errors/redeclaration1.f90:4:12
   |

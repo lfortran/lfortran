@@ -1,0 +1,35 @@
+warning: Implied save feature
+ --> tests/../integration_tests/floor_01.f90:3:3
+  |
+3 |   real, parameter :: x1 = 3.3 ! 3
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/floor_01.f90:4:3
+  |
+4 |   real, parameter :: x2 = 3.5 ! 3
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/floor_01.f90:5:3
+  |
+5 |   real, parameter :: x3 = 3.7 ! 3
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/floor_01.f90:6:3
+  |
+6 |   real, parameter :: y1 = -3.3 ! -4
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/floor_01.f90:7:3
+  |
+7 |   real, parameter :: y2 = -3.5 ! -4
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/floor_01.f90:8:3
+  |
+8 |   real, parameter :: y3 = -3.7 ! -4
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

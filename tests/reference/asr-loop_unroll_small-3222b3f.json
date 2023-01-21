@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-loop_unroll_small-3222b3f.stdout",
     "stdout_hash": "541aaba79be8516a074efa1d0e3c63d9cdc603d09ddced447614da33",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "asr-loop_unroll_small-3222b3f.stderr",
+    "stderr_hash": "6a42371a710ea694d1fff3a72267f1b840c422e7ce09ed660b7b5879",
     "returncode": 0
 }

@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/fixed_form_goto_select.f:2:7
+  |
+2 |       integer k
+  |       ^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/fixed_form_goto_select.f:7:7
+  |
+7 |       integer m,n
+  |       ^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/fixed_form_goto_select.f:7:7
+  |
+7 |       integer m,n
+  |       ^^^^^^^^^^^ Assuming save attribute implicitly for variables

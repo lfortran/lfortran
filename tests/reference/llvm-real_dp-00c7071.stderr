@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/../integration_tests/real_dp.f90:3:5
+  |
+3 |     real(4) :: zero
+  |     ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/real_dp.f90:4:5
+  |
+4 |     real(8) :: v
+  |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/real_dp.f90:5:5
+  |
+5 |     real :: x
+  |     ^^^^^^^^^ Assuming save attribute implicitly for variables

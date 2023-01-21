@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/../integration_tests/modules_11.f90:3:1
+  |
+3 | integer :: i = 1
+  | ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/modules_11.f90:4:1
+  |
+4 | integer :: j = 2
+  | ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

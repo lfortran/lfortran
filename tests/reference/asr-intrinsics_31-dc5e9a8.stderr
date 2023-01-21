@@ -1,0 +1,53 @@
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_31.f90:2:5
+  |
+2 |     real :: x = 63.29
+  |     ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_31.f90:3:5
+  |
+3 |     real :: y = -63.59
+  |     ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_31.f90:5:5
+  |
+5 |     integer, parameter :: dp = kind(0.d0)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_31.f90:6:5
+  |
+6 |     real(dp) :: z = 0.000001_dp
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_31.f90:7:5
+  |
+7 |     real(dp) :: w = -1.000001_dp
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_31.f90:9:5
+  |
+9 |     real :: x_ceil, y_ceil
+  |     ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_31.f90:9:5
+  |
+9 |     real :: x_ceil, y_ceil
+  |     ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/intrinsics_31.f90:10:5
+   |
+10 |     integer :: z_ceil, w_ceil
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/intrinsics_31.f90:10:5
+   |
+10 |     integer :: z_ceil, w_ceil
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

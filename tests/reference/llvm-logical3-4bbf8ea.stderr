@@ -1,3 +1,15 @@
+warning: Implied save feature
+ --> tests/../integration_tests/logical3.f90:4:1
+  |
+4 | logical :: a, b
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/logical3.f90:4:1
+  |
+4 | logical :: a, b
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
 warning: .xor. is an LFortran extension
   --> tests/../integration_tests/logical3.f90:24:5
    |

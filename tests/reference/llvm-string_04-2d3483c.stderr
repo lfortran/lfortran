@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/../integration_tests/string_04.f90:4:1
+  |
+4 | character(len = 40), allocatable :: user_data(:)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/string_04.f90:5:1
+  |
+5 | character, allocatable :: greetings(:)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -1,0 +1,47 @@
+warning: Implied save feature
+  --> tests/../integration_tests/operator_overloading_03.f90:14:9
+   |
+14 |         logical, intent (in) :: log1, log2
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/operator_overloading_03.f90:14:9
+   |
+14 |         logical, intent (in) :: log1, log2
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/operator_overloading_03.f90:24:9
+   |
+24 |         logical, intent (in) :: log1, log2
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/operator_overloading_03.f90:24:9
+   |
+24 |         logical, intent (in) :: log1, log2
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/operator_overloading_03.f90:34:9
+   |
+34 |         logical, intent (in) :: log1, log2
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/operator_overloading_03.f90:34:9
+   |
+34 |         logical, intent (in) :: log1, log2
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/operator_overloading_03.f90:43:3
+   |
+43 |   logical, parameter :: T = .true., F = .false.
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/operator_overloading_03.f90:43:3
+   |
+43 |   logical, parameter :: T = .true., F = .false.
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

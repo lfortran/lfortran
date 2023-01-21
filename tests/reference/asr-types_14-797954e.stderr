@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/../integration_tests/types_14.f90:4:5
+  |
+4 |     double precision :: r, s(5)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/types_14.f90:4:5
+  |
+4 |     double precision :: r, s(5)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

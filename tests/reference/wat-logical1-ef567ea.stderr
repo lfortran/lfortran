@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/../integration_tests/logical1.f90:6:8
+  |
+6 |        logical :: a, b
+  |        ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/logical1.f90:6:8
+  |
+6 |        logical :: a, b
+  |        ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

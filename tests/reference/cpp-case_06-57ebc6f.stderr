@@ -1,0 +1,65 @@
+warning: Implied save feature
+ --> tests/../integration_tests/case_06.f90:3:5
+  |
+3 |     integer :: a = 1, b = 2
+  |     ^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/case_06.f90:3:5
+  |
+3 |     integer :: a = 1, b = 2
+  |     ^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/case_06.f90:4:5
+  |
+4 |     integer, parameter :: ap = 1, bp = 2
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/case_06.f90:4:5
+  |
+4 |     integer, parameter :: ap = 1, bp = 2
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/case_06.f90:6:5
+  |
+6 |     real :: c = 1.0, d = 2.0
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/case_06.f90:6:5
+  |
+6 |     real :: c = 1.0, d = 2.0
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/case_06.f90:7:5
+  |
+7 |     real, parameter :: cp = 1.0, dp = 2.0
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/case_06.f90:7:5
+  |
+7 |     real, parameter :: cp = 1.0, dp = 2.0
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/case_06.f90:9:5
+  |
+9 |     integer :: marks
+  |     ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/case_06.f90:10:5
+   |
+10 |     integer, parameter :: marks_fixed = 94
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/case_06.f90:13:5
+   |
+13 |     character, parameter :: grade_fixed = 'B'
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

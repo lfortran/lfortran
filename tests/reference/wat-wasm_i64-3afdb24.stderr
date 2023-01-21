@@ -1,0 +1,47 @@
+warning: Implied save feature
+  --> tests/wasm_i64.f90:12:9
+   |
+12 |         integer(8), intent(in):: x
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm_i64.f90:13:9
+   |
+13 |         integer(8) :: r
+   |         ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm_i64.f90:20:9
+   |
+20 |         integer(8), intent(in):: x, y
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm_i64.f90:20:9
+   |
+20 |         integer(8), intent(in):: x, y
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm_i64.f90:21:9
+   |
+21 |         integer(8) :: r
+   |         ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm_i64.f90:28:9
+   |
+28 |         integer(8) :: x64, y64
+   |         ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm_i64.f90:28:9
+   |
+28 |         integer(8) :: x64, y64
+   |         ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/wasm_i64.f90:29:9
+   |
+29 |         integer(8) :: r
+   |         ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

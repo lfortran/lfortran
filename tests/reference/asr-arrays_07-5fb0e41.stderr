@@ -1,0 +1,23 @@
+warning: Implied save feature
+ --> tests/../integration_tests/arrays_07.f90:3:1
+  |
+3 | integer, dimension(10) :: x
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/arrays_07.f90:4:1
+  |
+4 | integer, dimension(3, 3) :: y
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/arrays_07.f90:5:1
+  |
+5 | integer :: i, j
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/arrays_07.f90:5:1
+  |
+5 | integer :: i, j
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -1,0 +1,29 @@
+warning: Implied save feature
+ --> tests/../integration_tests/expr_05.f90:4:1
+  |
+4 | integer :: x, a, b, c
+  | ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/expr_05.f90:4:1
+  |
+4 | integer :: x, a, b, c
+  | ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/expr_05.f90:4:1
+  |
+4 | integer :: x, a, b, c
+  | ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/expr_05.f90:4:1
+  |
+4 | integer :: x, a, b, c
+  | ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/expr_05.f90:5:1
+  |
+5 | logical :: l
+  | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

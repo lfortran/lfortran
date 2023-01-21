@@ -1,0 +1,155 @@
+warning: Implied save feature
+ --> tests/derived_types_04.f90:5:4
+  |
+5 |    public :: toml_datetime, toml_time, toml_date
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/derived_types_04.f90:5:4
+  |
+5 |    public :: toml_datetime, toml_time, toml_date
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/derived_types_04.f90:5:4
+  |
+5 |    public :: toml_datetime, toml_time, toml_date
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:10:7
+   |
+10 |       integer :: hour = 0
+   |       ^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:11:7
+   |
+11 |       integer :: minute = 0
+   |       ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:12:7
+   |
+12 |       integer :: second = 0
+   |       ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:13:7
+   |
+13 |       integer, allocatable :: millisec
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:14:7
+   |
+14 |       character(len=:), allocatable :: zone
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:27:7
+   |
+27 |       integer :: year = 0
+   |       ^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:28:7
+   |
+28 |       integer :: month = 0
+   |       ^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:29:7
+   |
+29 |       integer :: day = 0
+   |       ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:38:7
+   |
+38 |       type(toml_date), allocatable :: date
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:39:7
+   |
+39 |       type(toml_time), allocatable :: time
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:50:4
+   |
+50 |    character(len=:), allocatable, intent(out) :: lhs
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:51:4
+   |
+51 |    class(toml_date), intent(in) :: rhs
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:59:4
+   |
+59 |    character(len=:), allocatable, intent(out) :: lhs
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:60:4
+   |
+60 |    class(toml_time), intent(in) :: rhs
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:75:4
+   |
+75 |    character(len=:), allocatable, intent(out) :: lhs
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:76:4
+   |
+76 |    class(toml_datetime), intent(in) :: rhs
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:77:4
+   |
+77 |    character(len=:), allocatable :: temporary
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:93:4
+   |
+93 |    integer, intent(in), optional :: hour
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:94:4
+   |
+94 |    integer, intent(in), optional :: minute
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:95:4
+   |
+95 |    integer, intent(in), optional :: second
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:96:4
+   |
+96 |    integer, intent(in), optional :: millisec
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:97:4
+   |
+97 |    character(len=*), intent(in), optional :: zone
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:98:4
+   |
+98 |    type(toml_time) :: self
+   |    ^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

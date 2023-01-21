@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-nullify_02-e89291a.stdout",
     "stdout_hash": "0d46682824fd78e1b0a06ec2d369e5bb3abade7491f8fb2398199d13",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "asr-nullify_02-e89291a.stderr",
+    "stderr_hash": "0d97dceb5fb9017fa8417b2e369f3df2aae25409c235c76fff66e5bc",
     "returncode": 0
 }

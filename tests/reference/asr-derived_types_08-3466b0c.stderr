@@ -1,0 +1,77 @@
+warning: Implied save feature
+ --> tests/../integration_tests/derived_types_08.f90:4:5
+  |
+4 |     integer :: color
+  |     ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/derived_types_08.f90:5:5
+  |
+5 |     logical :: filled
+  |     ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/derived_types_08.f90:6:5
+  |
+6 |     integer :: x
+  |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/derived_types_08.f90:7:5
+  |
+7 |     integer :: y
+  |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_08.f90:13:9
+   |
+13 |         integer :: length
+   |         ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_08.f90:14:9
+   |
+14 |         integer :: width
+   |         ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_08.f90:21:5
+   |
+21 |     class(shape) :: sh
+   |     ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_08.f90:22:5
+   |
+22 |     integer :: color
+   |     ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_08.f90:23:5
+   |
+23 |     logical :: filled
+   |     ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_08.f90:24:5
+   |
+24 |     integer :: x
+   |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_08.f90:25:5
+   |
+25 |     integer :: y
+   |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_08.f90:38:5
+   |
+38 |     type(shape) :: shp                                  ! declare an instance of shape
+   |     ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/derived_types_08.f90:39:5
+   |
+39 |     type(rectangle) :: rect                             ! declare an instance of rectangle
+   |     ^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

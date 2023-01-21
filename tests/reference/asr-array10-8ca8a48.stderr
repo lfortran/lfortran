@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/array10.f90:2:2
+  |
+2 |  integer, parameter :: x(*) = [4, 9, 6, 12, 13]
+  |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

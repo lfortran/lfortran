@@ -1,0 +1,53 @@
+warning: Implied save feature
+ --> tests/../integration_tests/types_15.f90:3:5
+  |
+3 |     integer, parameter :: dp = kind(0.d0)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/types_15.f90:5:5
+  |
+5 |     integer(kind=4) :: n_src, n_des
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/types_15.f90:5:5
+  |
+5 |     integer(kind=4) :: n_src, n_des
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/types_15.f90:6:5
+  |
+6 |     real(kind=4) :: z_src, z_des
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/types_15.f90:6:5
+  |
+6 |     real(kind=4) :: z_src, z_des
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/types_15.f90:8:5
+  |
+8 |     integer(kind=8) :: n_big_src, n_big_des
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/types_15.f90:8:5
+  |
+8 |     integer(kind=8) :: n_big_src, n_big_des
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/types_15.f90:9:5
+  |
+9 |     real(dp) :: z_big_src, z_big_des
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/types_15.f90:9:5
+  |
+9 |     real(dp) :: z_big_src, z_big_des
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

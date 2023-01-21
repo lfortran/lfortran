@@ -1,0 +1,23 @@
+warning: Implied save feature
+ --> tests/../integration_tests/arrays_op_7.f90:4:1
+  |
+4 | integer :: x(3), y(3)
+  | ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/arrays_op_7.f90:4:1
+  |
+4 | integer :: x(3), y(3)
+  | ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/arrays_op_7.f90:13:5
+   |
+13 |     integer, intent(in) :: x(:)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/arrays_op_7.f90:14:5
+   |
+14 |     integer, intent(out) :: y(:)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

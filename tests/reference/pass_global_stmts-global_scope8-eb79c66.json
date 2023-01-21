@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "pass_global_stmts-global_scope8-eb79c66.stdout",
     "stdout_hash": "bc21f204c62f5a8d803dbb5a26830d22a5b5b397fa7ae1a25a621151",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "pass_global_stmts-global_scope8-eb79c66.stderr",
+    "stderr_hash": "5dede298d48a0666871fa5d52837091e5d873268fb941e2aba1b2f21",
     "returncode": 0
 }

@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "llvm-nullify_02-3c7ee61.stdout",
     "stdout_hash": "e98d84bf2dc4686c98279dc2cac1850ba70b39e61f1cf552055ec286",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "llvm-nullify_02-3c7ee61.stderr",
+    "stderr_hash": "0d97dceb5fb9017fa8417b2e369f3df2aae25409c235c76fff66e5bc",
     "returncode": 0
 }

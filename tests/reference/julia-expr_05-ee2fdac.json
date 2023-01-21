@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "julia-expr_05-ee2fdac.stdout",
     "stdout_hash": "72e97cb0bcbef91f4ec4831365b9a17925ef483f9aee69b7955eb1df",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "julia-expr_05-ee2fdac.stderr",
+    "stderr_hash": "28b74d78465e32930255023870989bb42ac0b5a1a9b41f24852dd105",
     "returncode": 0
 }

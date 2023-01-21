@@ -1,0 +1,35 @@
+warning: Implied save feature
+ --> tests/../integration_tests/loop_unroll_small.f90:4:5
+  |
+4 |     integer :: i, first, last, array(4), x
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/loop_unroll_small.f90:4:5
+  |
+4 |     integer :: i, first, last, array(4), x
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/loop_unroll_small.f90:4:5
+  |
+4 |     integer :: i, first, last, array(4), x
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/loop_unroll_small.f90:4:5
+  |
+4 |     integer :: i, first, last, array(4), x
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/loop_unroll_small.f90:4:5
+  |
+4 |     integer :: i, first, last, array(4), x
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/loop_unroll_small.f90:29:9
+   |
+29 |         integer, intent(in) :: x
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

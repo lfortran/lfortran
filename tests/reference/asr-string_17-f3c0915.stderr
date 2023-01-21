@@ -1,0 +1,29 @@
+warning: Implied save feature
+ --> tests/../integration_tests/string_17.f90:6:9
+  |
+6 |         character(len=:), allocatable :: raw
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/string_17.f90:16:13
+   |
+16 |             type(string_type), intent(in) :: string
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/string_17.f90:17:13
+   |
+17 |             integer :: length
+   |             ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/string_17.f90:28:13
+   |
+28 |             type(string_type), intent(in) :: string
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/string_17.f90:29:13
+   |
+29 |             character(len=len(string)) :: maybe_string
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

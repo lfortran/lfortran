@@ -1,0 +1,29 @@
+warning: Implied save feature
+ --> tests/../integration_tests/select_type_01.f90:4:5
+  |
+4 |     integer::i
+  |     ^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/select_type_01.f90:8:5
+  |
+8 |     integer::j
+  |     ^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/select_type_01.f90:11:3
+   |
+11 |   class(base), pointer :: bptr
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/select_type_01.f90:12:3
+   |
+12 |   type(base), target :: base_target = base(10)
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/../integration_tests/select_type_01.f90:13:3
+   |
+13 |   type(child), target :: child_target = child(20, 30)
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -1,0 +1,83 @@
+warning: Implied save feature
+ --> tests/select_type3.f90:3:5
+  |
+3 |     public :: toml_table, get_table
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/select_type3.f90:3:5
+  |
+3 |     public :: toml_table, get_table
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/select_type3.f90:5:9
+  |
+5 |         integer :: int
+  |         ^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/select_type3.f90:6:9
+  |
+6 |         real :: float
+  |         ^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/select_type3.f90:10:7
+   |
+10 |       logical :: implicit = .false.
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/select_type3.f90:11:7
+   |
+11 |       logical :: inline = .false.
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/select_type3.f90:15:7
+   |
+15 |       integer :: success = 0
+   |       ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/select_type3.f90:16:7
+   |
+16 |       integer :: fatal = -1
+   |       ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/select_type3.f90:19:4
+   |
+19 |    type(enum_stat), parameter :: toml_stat = enum_stat()
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/select_type3.f90:24:9
+   |
+24 |         class(toml_table), intent(inout) :: table
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/select_type3.f90:25:9
+   |
+25 |         type(toml_table), pointer, intent(out) :: ptr
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/select_type3.f90:27:9
+   |
+27 |         integer, intent(out), optional :: stat
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/select_type3.f90:29:9
+   |
+29 |         class(toml_value), pointer :: tmp
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/select_type3.f90:47:9
+   |
+47 |         class(toml_table), intent(out) :: tab
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

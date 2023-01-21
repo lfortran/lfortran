@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_08.f90:2:3
+  |
+2 |   real, parameter :: x=tiny(1.0)
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_08.f90:3:3
+  |
+3 |   real (kind = 8) :: b
+  |   ^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_08.f90:4:3
+  |
+4 |   real (kind = 8), parameter :: y=tiny(b)
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
