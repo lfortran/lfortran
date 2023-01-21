@@ -1,0 +1,342 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            derived_types_16:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            1_fpm_run_settings_bool:
+                                (ExternalSymbol
+                                    5
+                                    1_fpm_run_settings_bool
+                                    3 bool
+                                    fpm_run_settings
+                                    []
+                                    bool
+                                    Public
+                                ),
+                            1_fpm_run_settings_float:
+                                (ExternalSymbol
+                                    5
+                                    1_fpm_run_settings_float
+                                    3 float
+                                    fpm_run_settings
+                                    []
+                                    float
+                                    Public
+                                ),
+                            1_fpm_run_settings_int:
+                                (ExternalSymbol
+                                    5
+                                    1_fpm_run_settings_int
+                                    3 int
+                                    fpm_run_settings
+                                    []
+                                    int
+                                    Public
+                                ),
+                            abs:
+                                (ExternalSymbol
+                                    5
+                                    abs
+                                    7 abs
+                                    lfortran_intrinsic_math
+                                    []
+                                    abs
+                                    Private
+                                ),
+                            abs@sabs:
+                                (ExternalSymbol
+                                    5
+                                    abs@sabs
+                                    7 sabs
+                                    lfortran_intrinsic_math
+                                    []
+                                    sabs
+                                    Private
+                                ),
+                            fpm_run_settings:
+                                (ExternalSymbol
+                                    5
+                                    fpm_run_settings
+                                    2 fpm_run_settings
+                                    fpm_command_line
+                                    []
+                                    fpm_run_settings
+                                    Public
+                                ),
+                            get_command_line_settings:
+                                (ExternalSymbol
+                                    5
+                                    get_command_line_settings
+                                    2 get_command_line_settings
+                                    fpm_command_line
+                                    []
+                                    get_command_line_settings
+                                    Public
+                                ),
+                            settings:
+                                (Variable
+                                    5
+                                    settings
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Allocatable
+                                    (Class
+                                        5 fpm_run_settings
+                                        []
+                                    )
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    derived_types_16
+                    [fpm_command_line]
+                    [(Allocate
+                        [((Var 5 settings)
+                        [])]
+                        ()
+                        ()
+                        ()
+                    )
+                    (ImplicitDeallocate
+                        [5 settings]
+                    )
+                    (SubroutineCall
+                        5 get_command_line_settings
+                        ()
+                        [((Var 5 settings))]
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (Var 5 settings)
+                                5 1_fpm_run_settings_int
+                                (Integer 4 [])
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 0 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (FunctionCall
+                                5 abs@sabs
+                                5 abs
+                                [((RealBinOp
+                                    (StructInstanceMember
+                                        (Var 5 settings)
+                                        5 1_fpm_run_settings_float
+                                        (Real 4 [])
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        1.000000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                ))]
+                                (Real 4 [])
+                                ()
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000001
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (LogicalBinOp
+                            (StructInstanceMember
+                                (Var 5 settings)
+                                5 1_fpm_run_settings_bool
+                                (Logical 4 [])
+                                ()
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .true.
+                                (Logical 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (ImplicitDeallocate
+                        [5 settings]
+                    )]
+                ),
+            fpm_command_line:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            fpm_run_settings:
+                                (StructType
+                                    (SymbolTable
+                                        3
+                                        {
+                                            bool:
+                                                (Variable
+                                                    3
+                                                    bool
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            float:
+                                                (Variable
+                                                    3
+                                                    float
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            int:
+                                                (Variable
+                                                    3
+                                                    int
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    fpm_run_settings
+                                    []
+                                    [int
+                                    float
+                                    bool]
+                                    Source
+                                    Public
+                                    .false.
+                                    ()
+                                    ()
+                                ),
+                            get_command_line_settings:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            cmd_settings:
+                                                (Variable
+                                                    4
+                                                    cmd_settings
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Class
+                                                        2 fpm_run_settings
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    get_command_line_settings
+                                    []
+                                    [(Var 4 cmd_settings)]
+                                    [(=
+                                        (Var 4 cmd_settings)
+                                        (StructTypeConstructor
+                                            2 fpm_run_settings
+                                            [(IntegerConstant 0 (Integer 4 []))
+                                            (RealConstant
+                                                1.000000
+                                                (Real 4 [])
+                                            )
+                                            (LogicalConstant
+                                                .true.
+                                                (Logical 4 [])
+                                            )]
+                                            (Struct
+                                                2 fpm_run_settings
+                                                []
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    ()
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                )
+                        })
+                    fpm_command_line
+                    []
+                    .false.
+                    .false.
+                ),
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_math:
+                (IntrinsicModule lfortran_intrinsic_math)
+        })
+    []
+)

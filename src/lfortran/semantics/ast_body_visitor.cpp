@@ -674,11 +674,10 @@ public:
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
-        bool is_value_pointer = ASRUtils::is_pointer(value_type);
-        if( !(is_target_pointer && !is_value_pointer) ) {
-            throw SemanticError("Only a pointer variable can be associated with a non-pointer variable.", x.base.base.loc);
+        if ( !is_target_pointer ) {
+            throw SemanticError("Only a pointer variable can be associated with another variable.", x.base.base.loc);
         }
-        if( ASRUtils::is_same_type_pointer(target_type, value_type) ) {
+        if( ASRUtils::types_equal(target_type, value_type) ) {
             tmp = ASR::make_Associate_t(al, x.base.base.loc, target, value);
         }
     }
@@ -1623,10 +1622,10 @@ public:
             throw SemanticError("ArrayInitalizer expressions can only be assigned array references", x.base.base.loc);
         }
         if( overloaded_stmt == nullptr ) {
-            if (target->type == ASR::exprType::Var ||
+            if ((target->type == ASR::exprType::Var ||
                 target->type == ASR::exprType::ArrayItem ||
-                target->type == ASR::exprType::ArraySection) {
-
+                target->type == ASR::exprType::ArraySection) &&
+                !ASRUtils::check_equal_type(target_type, value_type)) {
                 ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                                         value_type, target_type);
 
