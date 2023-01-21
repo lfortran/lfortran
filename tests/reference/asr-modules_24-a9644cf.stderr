@@ -1,5 +1,0 @@
-semantic error: Derived type `null` is not defined
-  --> tests/../integration_tests/modules_24.f90:11:48
-   |
-11 |        type(toml_table), pointer :: current => null()
-   |                                                ^^^^^^ 
