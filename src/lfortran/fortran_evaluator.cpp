@@ -169,7 +169,9 @@ Result<std::string> FortranEvaluator::get_ast(const std::string &code,
     Result<LFortran::AST::TranslationUnit_t*> ast = get_ast2(code, lm,
         diagnostics);
     if (ast.ok) {
-        if (compiler_options.json) {
+        if (compiler_options.tree) {
+            return LFortran::pickle_tree(*ast.result, compiler_options.use_colors);
+        } else if (compiler_options.json) {
             return LFortran::pickle_json(*ast.result, lm);
         }
         return LFortran::pickle(*ast.result, compiler_options.use_colors,
@@ -214,7 +216,9 @@ Result<std::string> FortranEvaluator::get_asr(const std::string &code,
 {
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     if (asr.ok) {
-        if (compiler_options.json) {
+        if (compiler_options.tree) {
+            return LFortran::pickle_tree(*asr.result, compiler_options.use_colors);
+        } else if (compiler_options.json) {
             return LFortran::pickle_json(*asr.result, lm);
         }
         return LFortran::pickle(*asr.result,
