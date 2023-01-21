@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-recursion_02-b35e7ac.stdout",
     "stdout_hash": "1ae7aaa280f47c49f7daa7bdfe84fa90939e85efbb6fa77ac081b5ca",
-    "stderr": "asr-recursion_02-b35e7ac.stderr",
-    "stderr_hash": "ed2a7325bfdbb90a70f65ef4cd3167e9a03f8c9ad28d4244f8019a5f",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

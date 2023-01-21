@@ -1,15 +1,3 @@
-warning: Implied save feature
- --> tests/errors/cpp1.f90:4:1
-  |
-4 | integer :: x, y
-  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
- --> tests/errors/cpp1.f90:4:1
-  |
-4 | integer :: x, y
-  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
 semantic error: Variable 'z12345678' is not declared
  --> tests/errors/cpp1.f90:7:13
   |

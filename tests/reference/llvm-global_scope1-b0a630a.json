@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "llvm-global_scope1-b0a630a.stdout",
     "stdout_hash": "008af44efaac8baa6178920ec2730470d4fc144e4364568bd9dd70c7",
-    "stderr": "llvm-global_scope1-b0a630a.stderr",
-    "stderr_hash": "f4330e12715f6c62a14912f011f7ee418dbcf24de88a513371e8f823",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "julia-subroutines_03-dde7b37.stdout",
     "stdout_hash": "b5f401ca0d8dee0b5d9b6247bcbf42b62e129e3176988cd07d2bd302",
-    "stderr": "julia-subroutines_03-dde7b37.stderr",
-    "stderr_hash": "bd7f45ca96e1358c296f78d2f9f10a827c8e18d8b2bc44526a3fa37e",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

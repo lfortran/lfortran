@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "pass_flip_sign-flip_sign-e0a724a.stdout",
     "stdout_hash": "f2fcc39fc4bac2c18a33539ff7a43788c7465cc86e730042fe0994de",
-    "stderr": "pass_flip_sign-flip_sign-e0a724a.stderr",
-    "stderr_hash": "62a45f1bd4ac9626449e4bbbad0c272e69c60884fa030111f22fff70",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

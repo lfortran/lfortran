@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr_preprocess-preprocessor2-6c57761.stdout",
     "stdout_hash": "e2c43108945c56c3e8f41ade3cd2a4f772e79f850083e57efbec806b",
-    "stderr": "asr_preprocess-preprocessor2-6c57761.stderr",
-    "stderr_hash": "160b5ee4dec6b85daf837ca9578bbc312b17f5365d6e8090ec893c28",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

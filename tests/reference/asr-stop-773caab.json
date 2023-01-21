@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-stop-773caab.stdout",
     "stdout_hash": "9f41b98864e29f1832f3b0777ec74009d126eb4465234aab488f6018",
-    "stderr": "asr-stop-773caab.stderr",
-    "stderr_hash": "18dbda4106c3ce8856e147af0dba1299003360bcd29851c9c7a8d713",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

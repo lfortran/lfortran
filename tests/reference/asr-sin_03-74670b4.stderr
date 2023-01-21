@@ -1,5 +1,0 @@
-warning: Implied save feature
- --> tests/../integration_tests/sin_03.f90:4:1
-  |
-4 | real(dp) :: x
-  | ^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

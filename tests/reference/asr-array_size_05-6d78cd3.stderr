@@ -1,21 +1,3 @@
-warning: Implied save feature
- --> tests/errors/array_size_05.f90:3:5
-  |
-3 |     integer :: a(3)
-  |     ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
- --> tests/errors/array_size_05.f90:4:5
-  |
-4 |     integer :: size_a
-  |     ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
- --> tests/errors/array_size_05.f90:5:5
-  |
-5 |     integer :: kindvar = 4
-  |     ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
 semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters.
  --> tests/errors/array_size_05.f90:6:27
   |

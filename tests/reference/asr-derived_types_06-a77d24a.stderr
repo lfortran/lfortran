@@ -1,5 +1,0 @@
-warning: Implied save feature
- --> tests/../integration_tests/derived_types_06.f90:7:5
-  |
-7 |     class(*), intent(out) :: a
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-allocate_02-0d57c84.stdout",
     "stdout_hash": "c8dcaa9faa0c732707f3638758cd37513137b38e5d0bb4707a96c364",
-    "stderr": "asr-allocate_02-0d57c84.stderr",
-    "stderr_hash": "5b161505e27647d7f05a4543ab73f80cd782aec553a0d45664fda0a0",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

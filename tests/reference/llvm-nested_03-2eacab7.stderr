@@ -1,5 +1,0 @@
-warning: Implied save feature
- --> tests/../integration_tests/nested_03.f90:7:1
-  |
-7 | real :: x = 6
-  | ^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

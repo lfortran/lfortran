@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-operator_overloading_02-4c26e51.stdout",
     "stdout_hash": "cf06c42d49fcc3e346a5434897b8ac38fb60537817dcbd5258b89be1",
-    "stderr": "asr-operator_overloading_02-4c26e51.stderr",
-    "stderr_hash": "7740f9bd36de057609ac8c82efc3607ab13ef7173cc89781b1ae6251",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

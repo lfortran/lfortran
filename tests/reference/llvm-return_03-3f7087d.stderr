@@ -3,21 +3,3 @@ style suggestion: Use '>' instead of '.gt.'
   |
 9 |         if (i .GT. 5) then
   |               ^^^^ help: write this as '>'
-
-warning: Implied save feature
- --> tests/../integration_tests/return_03.f90:2:5
-  |
-2 |     integer :: main_out = 999
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
- --> tests/../integration_tests/return_03.f90:7:9
-  |
-7 |         integer :: out_var
-  |         ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
- --> tests/../integration_tests/return_03.f90:8:9
-  |
-8 |         integer :: i = 10
-  |         ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

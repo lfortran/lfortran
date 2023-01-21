@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "julia-arrays_01_size-b2012a6.stdout",
     "stdout_hash": "fac69a02d0551bf7d467a20caa5e60e8f8cd0aec7291cfc246b1bd65",
-    "stderr": "julia-arrays_01_size-b2012a6.stderr",
-    "stderr_hash": "19a261cdb9374fe5bad2e1b332b31b1d8e56ccc27d2bd2647207a526",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

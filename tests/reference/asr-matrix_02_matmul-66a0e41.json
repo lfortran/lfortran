@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-matrix_02_matmul-66a0e41.stdout",
     "stdout_hash": "b1cf1a61ecf4d5b3f85262993933fc5afe71f07a9896997b84ab4ae2",
-    "stderr": "asr-matrix_02_matmul-66a0e41.stderr",
-    "stderr_hash": "53640d02f35d970fa239c3f332b88359450435b5188aa1c63f535b38",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

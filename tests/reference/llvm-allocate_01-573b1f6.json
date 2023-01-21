@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "llvm-allocate_01-573b1f6.stdout",
     "stdout_hash": "81b5cae0fe7e7ba2fe65933f0efca5718ee62752d1384109722214cf",
-    "stderr": "llvm-allocate_01-573b1f6.stderr",
-    "stderr_hash": "4e78f98008f2e574aad3fe7776c16512c419b6544df53a4f55064c18",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

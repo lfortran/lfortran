@@ -1,5 +1,0 @@
-warning: Implied save feature
- --> tests/../integration_tests/subroutines_04.f90:5:1
-  |
-5 | integer :: a = 5
-  | ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

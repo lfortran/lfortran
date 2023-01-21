@@ -1,5 +1,0 @@
-warning: Implied save feature
- --> tests/fixed_form_if_variations.f:2:11
-  |
-2 |           integer a
-  |           ^^^^^^^^^ Assuming save attribute implicitly for variables

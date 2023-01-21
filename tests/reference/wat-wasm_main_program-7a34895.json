@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "wat-wasm_main_program-7a34895.stdout",
     "stdout_hash": "8acabe8d7a73ba90d3dcdb024c8dfc9f1a191f04b2cc729e6822b438",
-    "stderr": "wat-wasm_main_program-7a34895.stderr",
-    "stderr_hash": "c2eb3a96906b7d85e30bcf211c5e40701586f2c2fc5fd6da8bea86e4",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

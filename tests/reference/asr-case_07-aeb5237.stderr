@@ -1,5 +1,0 @@
-warning: Implied save feature
- --> tests/../integration_tests/case_07.f90:2:5
-  |
-2 |     character(len=1) :: c
-  |     ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

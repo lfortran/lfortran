@@ -3,27 +3,3 @@ style suggestion: Use '==' instead of '.eq.'
   |
 7 |         IF (A.EQ.15) GO TO 1
   |              ^^^^ help: write this as '=='
-
-warning: Implied save feature
- --> tests/../integration_tests/block_02.f90:2:5
-  |
-2 |     INTEGER :: A
-  |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
-  --> tests/../integration_tests/block_02.f90:14:5
-   |
-14 |     INTEGER :: B, Result
-   |     ^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
-  --> tests/../integration_tests/block_02.f90:14:5
-   |
-14 |     INTEGER :: B, Result
-   |     ^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
- --> tests/../integration_tests/block_02.f90:5:9
-  |
-5 |         INTEGER :: B
-  |         ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

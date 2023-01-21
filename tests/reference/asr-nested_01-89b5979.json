@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-nested_01-89b5979.stdout",
     "stdout_hash": "0aab654555ca9da0d0430358d0f6c4c9ffd9c02801fedb16479f37ea",
-    "stderr": "asr-nested_01-89b5979.stderr",
-    "stderr_hash": "1b891d8d2368bd296bfe8478accdeffd728939eba09019a3b462751a",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

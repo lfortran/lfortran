@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-real_dp-d141c26.stdout",
     "stdout_hash": "45f559ffe7f49adbfec02770d965764030ed1af5d012cb7e8a0eb1b0",
-    "stderr": "asr-real_dp-d141c26.stderr",
-    "stderr_hash": "4ed4bf614688c20d73a330114f9bb1d7a58fefc9a0884e908bf39214",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

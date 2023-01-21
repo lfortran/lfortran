@@ -1,5 +1,0 @@
-warning: Implied save feature
- --> tests/../integration_tests/complex_div_test.f90:2:1
-  |
-2 | complex :: x
-  | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

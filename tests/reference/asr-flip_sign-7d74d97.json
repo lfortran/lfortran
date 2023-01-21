@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-flip_sign-7d74d97.stdout",
     "stdout_hash": "4abae50044e86c867c6db84f28e2169146fa6ca2b66068f2d28497a4",
-    "stderr": "asr-flip_sign-7d74d97.stderr",
-    "stderr_hash": "62a45f1bd4ac9626449e4bbbad0c272e69c60884fa030111f22fff70",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

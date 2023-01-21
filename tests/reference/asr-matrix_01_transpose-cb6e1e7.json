@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-matrix_01_transpose-cb6e1e7.stdout",
     "stdout_hash": "74386b5939fe65abb0e96fd125a5fa0042c87c1abff23bd207b4865d",
-    "stderr": "asr-matrix_01_transpose-cb6e1e7.stderr",
-    "stderr_hash": "e936aba264480935e0eb4723fba459f1ef7756add0142b4d771dca6e",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

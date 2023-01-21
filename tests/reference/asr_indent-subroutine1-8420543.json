@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr_indent-subroutine1-8420543.stdout",
     "stdout_hash": "5327a164fc0f7896d44537967678906ae0277ec5a8aa824cee00841d",
-    "stderr": "asr_indent-subroutine1-8420543.stderr",
-    "stderr_hash": "224cc11d0917a0f9aed51ec511145a1be9cc5aa9b57d7694c5a6eb3d",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

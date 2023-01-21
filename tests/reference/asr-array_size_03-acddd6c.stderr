@@ -1,15 +1,3 @@
-warning: Implied save feature
- --> tests/errors/array_size_03.f90:3:5
-  |
-3 |     integer :: a(3)
-  |     ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
- --> tests/errors/array_size_03.f90:4:5
-  |
-4 |     integer :: size_a
-  |     ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
 semantic error: Unrecognized keyword argument kind1 passed to size intrinsic.
  --> tests/errors/array_size_03.f90:5:14
   |

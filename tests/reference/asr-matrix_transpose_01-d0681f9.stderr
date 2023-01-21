@@ -1,9 +1,3 @@
-warning: Implied save feature
- --> tests/errors/matrix_transpose_01.f90:3:5
-  |
-3 |     integer :: a(3)
-  |     ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
 semantic error: transpose accepts arrays of rank 2 only, provided an array with rank, 1
  --> tests/errors/matrix_transpose_01.f90:4:24
   |

@@ -1,9 +1,3 @@
-warning: Implied save feature
- --> tests/errors/cpp2.f90:4:1
-  |
-4 | integer :: x
-  | ^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
 semantic error: Variable 'yy' is not declared
  --> tests/errors/cpp2.f90:7:19
   |

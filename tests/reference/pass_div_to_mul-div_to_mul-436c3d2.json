@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "pass_div_to_mul-div_to_mul-436c3d2.stdout",
     "stdout_hash": "2162792377808bf4946799f7089d78eab3bc562e9af1b2a591704d59",
-    "stderr": "pass_div_to_mul-div_to_mul-436c3d2.stderr",
-    "stderr_hash": "5b0c8263c0f9ed330a459ea5b1daa3715acdf5ab5e71affe39005ed5",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

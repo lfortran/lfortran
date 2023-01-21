@@ -1,5 +1,0 @@
-warning: Implied save feature
- --> tests/../integration_tests/doloop_08.f90:3:5
-  |
-3 |     integer :: i
-  |     ^^^^^^^^^^^^ Assuming save attribute implicitly for variables

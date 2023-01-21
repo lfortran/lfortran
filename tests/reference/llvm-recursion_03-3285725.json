@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "llvm-recursion_03-3285725.stdout",
     "stdout_hash": "f3e65775477e1b255ea0e039a1e60599c12a5aa67c32b08ea0384563",
-    "stderr": "llvm-recursion_03-3285725.stderr",
-    "stderr_hash": "8f22761e36712b13639c12ff4599cc056584214ddd52443daa65aede",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

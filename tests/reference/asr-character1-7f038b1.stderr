@@ -1,5 +1,0 @@
-warning: Implied save feature
- --> tests/character1.f90:2:7
-  |
-2 |       character*(*) mess !This is string whose length is decided at compile time
-  |       ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -3,39 +3,3 @@ style suggestion: Use 'end if' instead of 'endif'
    |
 28 |         endif
    |         ^^^^^ help: write this as 'end if'
-
-warning: Implied save feature
-  --> tests/../integration_tests/operator_overloading_01.f90:14:9
-   |
-14 |         logical, intent (in) :: log1, log2
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
-  --> tests/../integration_tests/operator_overloading_01.f90:14:9
-   |
-14 |         logical, intent (in) :: log1, log2
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
-  --> tests/../integration_tests/operator_overloading_01.f90:20:9
-   |
-20 |         logical, intent (in) :: log1, log2
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
-  --> tests/../integration_tests/operator_overloading_01.f90:20:9
-   |
-20 |         logical, intent (in) :: log1, log2
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
-  --> tests/../integration_tests/operator_overloading_01.f90:35:3
-   |
-35 |   logical, parameter :: T = .true., F = .false.
-   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
-  --> tests/../integration_tests/operator_overloading_01.f90:35:3
-   |
-35 |   logical, parameter :: T = .true., F = .false.
-   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

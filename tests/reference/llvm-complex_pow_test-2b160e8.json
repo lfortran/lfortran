@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "llvm-complex_pow_test-2b160e8.stdout",
     "stdout_hash": "e19fdcf5f4e031d6d32c6d09f812abff78dff16ef23c477508bb5fa2",
-    "stderr": "llvm-complex_pow_test-2b160e8.stderr",
-    "stderr_hash": "2695a3dcdf11f8b54c5564d6b656f7851aa5f5cfd03ebb8064e653e2",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

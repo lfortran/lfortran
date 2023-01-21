@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "pass_do_loops-doloop_04-3703380.stdout",
     "stdout_hash": "10c24ed216676c07ef4d4a18951f993ca29bbf1fc1f4747ceaa9650a",
-    "stderr": "pass_do_loops-doloop_04-3703380.stderr",
-    "stderr_hash": "cefe68b2b26c3e28a7730ebd06b545eeda47679d9f1c5bcdc129ce58",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

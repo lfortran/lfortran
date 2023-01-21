@@ -1,15 +1,3 @@
-warning: Implied save feature
- --> tests/errors/c_f_pointer_01.f90:3:5
-  |
-3 |     type(c_ptr) :: queries
-  |     ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
- --> tests/errors/c_f_pointer_01.f90:4:5
-  |
-4 |     integer, pointer :: x
-  |     ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
 semantic error: shape argument specified in c_f_pointer even though fptr is not an array.
  --> tests/errors/c_f_pointer_01.f90:5:34
   |

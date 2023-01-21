@@ -1,5 +1,0 @@
-warning: Implied save feature
- --> tests/../integration_tests/intrinsics_27.f90:2:5
-  |
-2 |     integer, dimension(-1:1, -1:2) :: a
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

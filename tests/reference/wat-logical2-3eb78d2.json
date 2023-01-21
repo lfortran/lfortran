@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "wat-logical2-3eb78d2.stdout",
     "stdout_hash": "0c429a0b3cd1f9a1808524cbe2b048e86d33843ae0c76790686e904d",
-    "stderr": "wat-logical2-3eb78d2.stderr",
-    "stderr_hash": "cdd537887dd641880da84187258f0864fe0ffe19d8cff7b24e51ebdf",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

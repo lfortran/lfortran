@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-intrinsics_03-bfdf0de.stdout",
     "stdout_hash": "1f54227402f74a3223a687d8275a88e7642f5bcfa5d4e58aaea20ec5",
-    "stderr": "asr-intrinsics_03-bfdf0de.stderr",
-    "stderr_hash": "cf2dda993f9d9df6e88b659e8a40b1e126b72eaf40e0f79c343d5258",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "cpp-expr_05-3b5ec63.stdout",
     "stdout_hash": "b3c60dae15d7a66f33badd80e6524ed2f37318f5d94d1bc91cc5e988",
-    "stderr": "cpp-expr_05-3b5ec63.stderr",
-    "stderr_hash": "28b74d78465e32930255023870989bb42ac0b5a1a9b41f24852dd105",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

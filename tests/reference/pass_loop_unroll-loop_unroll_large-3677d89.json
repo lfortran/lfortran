@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "pass_loop_unroll-loop_unroll_large-3677d89.stdout",
     "stdout_hash": "d2c68c9f7e6cefb14c3cbefe1de2bcf93acada250eed35cca6d3b343",
-    "stderr": "pass_loop_unroll-loop_unroll_large-3677d89.stderr",
-    "stderr_hash": "9095e52be1b9e36d39751f683a9e5ee8aab8e3d7df9d37d3882af3b8",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

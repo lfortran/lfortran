@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
-    "stderr": "obj-program1-785a609.stderr",
-    "stderr_hash": "79cd0217582abcaf5b03b5b85fdcb457109f1b149d7c61a7c051375e",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }
