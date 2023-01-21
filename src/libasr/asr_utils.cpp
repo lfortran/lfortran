@@ -796,6 +796,7 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& args,
                          Location& loc, const std::function<void (const std::string &, const Location &)> err) {
     bool result = false;
+    proc = ASRUtils::symbol_get_past_external(proc);
     if (ASR::is_a<ASR::Function_t>(*proc)) {
         ASR::Function_t *fn
             = ASR::down_cast<ASR::Function_t>(proc);

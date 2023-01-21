@@ -1849,7 +1849,7 @@ public:
                                 [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
                     // FIXME
                     // Create ExternalSymbol for the final subroutine here
-                    final_sym = g->m_procs[idx];
+                    final_sym = ASRUtils::symbol_get_past_external(g->m_procs[idx]);
                     if (!ASR::is_a<ASR::Function_t>(*final_sym)) {
                         throw SemanticError("ExternalSymbol must point to a Subroutine", x.base.base.loc);
                     }
@@ -1858,8 +1858,7 @@ public:
                     //     specific_procedure_remote_name
                     std::string local_sym = std::string(to_lower(p->m_name)) + "@"
                         + ASRUtils::symbol_name(final_sym);
-                    if (current_scope->get_symbol(local_sym)
-                        == nullptr) {
+                    if (current_scope->get_symbol(local_sym) == nullptr) {
                         Str name;
                         name.from_str(al, local_sym);
                         char *cname = name.c_str(al);
@@ -1868,9 +1867,9 @@ public:
                             /* a_symtab */ current_scope,
                             /* a_name */ cname,
                             final_sym,
-                            p->m_module_name, nullptr, 0, ASRUtils::symbol_name(final_sym),
-                            ASR::accessType::Private
-                            );
+                            ASRUtils::symbol_name(ASRUtils::get_asr_owner(final_sym)),
+                            nullptr, 0, ASRUtils::symbol_name(final_sym),
+                            ASR::accessType::Private);
                         final_sym = ASR::down_cast<ASR::symbol_t>(sub);
                         current_scope->add_symbol(local_sym, final_sym);
                     } else {
