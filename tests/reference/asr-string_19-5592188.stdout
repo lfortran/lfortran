@@ -1174,7 +1174,8 @@
                     [lfortran_intrinsic_builtin
                     lfortran_intrinsic_builtin
                     stdlib_string_type
-                    lfortran_intrinsic_math2]
+                    lfortran_intrinsic_math2
+                    stdlib_strings]
                     .false.
                     .false.
                 ),

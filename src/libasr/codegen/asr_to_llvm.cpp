@@ -2195,6 +2195,25 @@ public:
                 }
             }
             llvm_symtab[h] = ptr;
+        } else if( x.m_type->type == ASR::ttypeType::Struct ) {
+            ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(x.m_type);
+            if( ASRUtils::is_c_ptr(struct_t->m_derived_type) ) {
+                llvm::Type* void_ptr = llvm::Type::getVoidTy(context)->getPointerTo();
+                llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+                    void_ptr);
+                if (!external) {
+                    if (init_value) {
+                        module->getNamedGlobal(x.m_name)->setInitializer(
+                                init_value);
+                    } else {
+                        module->getNamedGlobal(x.m_name)->setInitializer(
+                                llvm::ConstantPointerNull::get(
+                                    static_cast<llvm::PointerType*>(void_ptr))
+                                );
+                    }
+                }
+                llvm_symtab[h] = ptr;
+            }
         } else if(x.m_type->type == ASR::ttypeType::Pointer) {
             ASR::dimension_t* m_dims = nullptr;
             int n_dims = -1, a_kind = -1;
@@ -2219,7 +2238,7 @@ public:
         } else if (x.m_type->type == ASR::ttypeType::TypeParameter) {
             // Ignore type variables
         } else {
-            throw CodeGenError("Variable type not supported", x.base.base.loc);
+            throw CodeGenError("Variable type not supported " + std::to_string(x.m_type->type), x.base.base.loc);
         }
     }
 

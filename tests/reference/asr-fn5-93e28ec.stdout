@@ -761,7 +761,8 @@
                     fn5
                     [lfortran_intrinsic_math2
                     lfortran_intrinsic_builtin
-                    lfortran_intrinsic_string]
+                    lfortran_intrinsic_string
+                    fn5]
                     .false.
                     .false.
                 ),

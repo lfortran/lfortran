@@ -185,7 +185,8 @@
                                 )
                         })
                     issue532_mod
-                    [lfortran_intrinsic_builtin]
+                    [lfortran_intrinsic_builtin
+                    issue532_mod]
                     .false.
                     .false.
                 ),

@@ -251,6 +251,7 @@
                         })
                     array12
                     [iso_c_binding
+                    array12
                     lfortran_intrinsic_iso_c_binding]
                     .false.
                     .false.
