@@ -17,6 +17,12 @@ namespace LCompilers::LFortran {
     std::string pickle_json(AST::ast_t &ast, LocationManager &lm);
     std::string pickle_json(AST::TranslationUnit_t &ast, LocationManager &lm);
 
+	// Print the tree structure
+	std::string pickle_tree(AST::ast_t &ast, bool colors=true);
+	std::string pickle_tree(AST::TranslationUnit_t &ast, bool colors=true);
+    std::string pickle_tree(ASR::asr_t &asr, bool colors, bool show_intrinsic_modules=false);
+    std::string pickle_tree(ASR::TranslationUnit_t &asr, bool colors, bool show_intrinsic_modules=false);
+
     // Pickle an ASR node
     std::string pickle(ASR::asr_t &asr, bool colors=false, bool indent=false,
             bool show_intrinsic_modules=false);

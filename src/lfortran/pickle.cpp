@@ -197,6 +197,51 @@ std::string pickle(AST::TranslationUnit_t &ast, bool colors, bool indent) {
     return v.get_str();
 }
 
+/********************** AST Pickle Tree *******************/
+class ASTTreeVisitor : public AST::TreeBaseVisitor<ASTTreeVisitor>
+{
+public:
+    std::string get_str() {
+        return s;
+    }
+};
+
+std::string pickle_tree(AST::ast_t &ast, bool colors) {
+    ASTTreeVisitor v;
+    v.use_colors = colors;
+    v.visit_ast(ast);
+    return v.get_str();
+}
+
+std::string pickle_tree(AST::TranslationUnit_t &ast, bool colors) {
+    return pickle_tree((AST::ast_t &)ast, colors);
+}
+
+/********************** ASR Pickle Tree *******************/
+class ASRTreeVisitor :
+    public ASR::TreeBaseVisitor<ASRTreeVisitor>
+{
+public:
+    bool show_intrinsic_modules;
+
+    std::string get_str() {
+        return s;
+    }
+
+};
+
+std::string pickle_tree(ASR::asr_t &asr, bool colors, bool show_intrinsic_modules) {
+    ASRTreeVisitor v;
+    v.use_colors = colors;
+    v.show_intrinsic_modules = show_intrinsic_modules;
+    v.visit_asr(asr);
+    return v.get_str();
+}
+
+std::string pickle_tree(ASR::TranslationUnit_t &asr, bool colors, bool show_intrinsic_modules) {
+    return pickle_tree((ASR::asr_t &)asr, colors, show_intrinsic_modules);
+}
+
 /********************** Pickle Json *******************/
 class ASTJsonVisitor :
     public LFortran::AST::JsonBaseVisitor<ASTJsonVisitor>
