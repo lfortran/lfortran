@@ -500,11 +500,10 @@ public:
         }
         if (parent_scope->get_symbol(sym_name) != nullptr) {
             ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
-            ASR::Function_t *f2 = nullptr;
-            if( ASR::is_a<ASR::Function_t>(*f1) ) {
-                f2 = ASR::down_cast<ASR::Function_t>(f1);
-            }
+            ASR::Function_t *f2 = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(f1));
             if ((f1->type == ASR::symbolType::ExternalSymbol && in_submodule) ||
+                f2->m_access == ASR::accessType::Private ||
                 f2->m_abi == ASR::abiType::Interactive) {
                 // Previous declaration will be shadowed
                 parent_scope->erase_symbol(sym_name);
