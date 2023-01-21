@@ -2,6 +2,103 @@
     (SymbolTable
         1
         {
+            modules_24:
+                (Program
+                    (SymbolTable
+                        7
+                        {
+                            parse_select:
+                                (ExternalSymbol
+                                    7
+                                    parse_select
+                                    2 parse_select
+                                    tomlf_de_tokenizer
+                                    []
+                                    parse_select
+                                    Public
+                                ),
+                            tokenizer:
+                                (Variable
+                                    7
+                                    tokenizer
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        7 toml_tokenizer_
+                                        []
+                                    )
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            tokenizer_ptr:
+                                (Variable
+                                    7
+                                    tokenizer_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Class
+                                            7 toml_tokenizer
+                                            []
+                                        )
+                                    )
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            toml_table:
+                                (ExternalSymbol
+                                    7
+                                    toml_table
+                                    2 toml_table
+                                    tomlf_de_tokenizer
+                                    []
+                                    toml_table
+                                    Public
+                                ),
+                            toml_tokenizer:
+                                (ExternalSymbol
+                                    7
+                                    toml_tokenizer
+                                    2 toml_tokenizer
+                                    tomlf_de_tokenizer
+                                    []
+                                    toml_tokenizer
+                                    Public
+                                ),
+                            toml_tokenizer_:
+                                (ExternalSymbol
+                                    7
+                                    toml_tokenizer_
+                                    2 toml_tokenizer_
+                                    tomlf_de_tokenizer
+                                    []
+                                    toml_tokenizer_
+                                    Public
+                                )
+                        })
+                    modules_24
+                    [tomlf_de_tokenizer]
+                    [(=>
+                        (Var 7 tokenizer_ptr)
+                        (Var 7 tokenizer)
+                    )
+                    (SubroutineCall
+                        7 parse_select
+                        ()
+                        [((Var 7 tokenizer))]
+                        ()
+                    )]
+                ),
             tomlf_de_tokenizer:
                 (Module
                     (SymbolTable
@@ -10,11 +107,21 @@
                             parse_select:
                                 (Function
                                     (SymbolTable
-                                        5
+                                        6
                                         {
+                                            1_toml_tokenizer_current:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_toml_tokenizer_current
+                                                    4 current
+                                                    toml_tokenizer
+                                                    []
+                                                    current
+                                                    Public
+                                                ),
                                             de:
                                                 (Variable
-                                                    5
+                                                    6
                                                     de
                                                     []
                                                     InOut
@@ -32,7 +139,7 @@
                                                 ),
                                             table:
                                                 (Variable
-                                                    5
+                                                    6
                                                     table
                                                     []
                                                     Local
@@ -53,14 +160,14 @@
                                         })
                                     parse_select
                                     []
-                                    [(Var 5 de)]
+                                    [(Var 6 de)]
                                     [(Nullify
-                                        [5 table]
+                                        [6 table]
                                     )
                                     (=>
                                         (StructInstanceMember
-                                            (Var 5 de)
-                                            4 current
+                                            (Var 6 de)
+                                            6 1_toml_tokenizer_current
                                             (Pointer
                                                 (Struct
                                                     2 toml_table
@@ -69,7 +176,7 @@
                                             )
                                             ()
                                         )
-                                        (Var 5 table)
+                                        (Var 6 table)
                                     )]
                                     ()
                                     Source
@@ -159,6 +266,22 @@
                                     .false.
                                     ()
                                     ()
+                                ),
+                            toml_tokenizer_:
+                                (StructType
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    toml_tokenizer_
+                                    []
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    ()
+                                    2 toml_tokenizer
                                 )
                         })
                     tomlf_de_tokenizer

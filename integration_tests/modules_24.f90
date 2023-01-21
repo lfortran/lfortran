@@ -9,6 +9,9 @@ module tomlf_de_tokenizer
        type(toml_table), pointer :: current => null()
     end type toml_tokenizer
 
+    type, extends(toml_tokenizer) :: toml_tokenizer_
+    end type toml_tokenizer_
+
     contains
 
     subroutine parse_select(de)
@@ -26,7 +29,9 @@ end module tomlf_de_tokenizer
 program modules_24
 use tomlf_de_tokenizer
 implicit none
-class(toml_tokenizer), pointer :: tokenizer
+type(toml_tokenizer_), target :: tokenizer
+class(toml_tokenizer), pointer :: tokenizer_ptr
+tokenizer_ptr => tokenizer
 call parse_select(tokenizer)
 ! TODO: Uncomment and fix the ASR verify pass
 ! error. Struct() is pointing to tomlf_de_tokenizer's

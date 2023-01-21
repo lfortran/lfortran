@@ -2,11 +2,11 @@
     "basename": "asr-derived_types_16_module-47448d4",
     "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/derived_types_16_module.f90",
-    "infile_hash": "530d91f6971b7a725d7bc0e0de0f21be8593526c36d46574bd064fd4",
+    "infile_hash": "81550c6abc6abf36b4e475e6f0297fe376befa5adbc94ae398f33526",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-derived_types_16_module-47448d4.stdout",
-    "stdout_hash": "3cdb2c97bf574983a811145bbe9e2f234ddd7ac765daeb04640055f9",
+    "stdout_hash": "f63b64187f4c570f17b73d5190645886dbe13889f8fe7ad7b1cf132f",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
