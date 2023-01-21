@@ -1233,8 +1233,8 @@ ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &m
 void set_intrinsic(ASR::TranslationUnit_t* trans_unit);
 
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
-                            ASR::asr_t* v_var, ASR::symbol_t* member,
-                            SymbolTable* current_scope);
+                            ASR::asr_t* v_var, ASR::symbol_t *v,
+                            ASR::symbol_t* member, SymbolTable* current_scope);
 
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     ASR::binopType op, std::string& intrinsic_op_name,

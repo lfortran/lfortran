@@ -445,6 +445,9 @@ public:
         char *bindc_name=nullptr;
         extract_bind(x, current_procedure_abi_type, bindc_name);
 
+        for (size_t i=0; i<x.n_use; i++) {
+            visit_unit_decl1(*x.m_use[i]);
+        }
         for (size_t i=0; i<x.n_decl; i++) {
             visit_unit_decl2(*x.m_decl[i]);
         }
@@ -1030,7 +1033,12 @@ public:
             interface_name = generic_name;
             std::vector<std::string> proc_names;
             fill_interface_proc_names(x, proc_names);
-            generic_procedures[std::string(generic_name)] = proc_names;
+            if( generic_procedures.find(generic_name) != generic_procedures.end() ) {
+                generic_procedures[generic_name].insert(generic_procedures[generic_name].end(),
+                    proc_names.begin(), proc_names.end());
+            } else {
+                generic_procedures[generic_name] = proc_names;
+            }
             interface_name.clear();
         } else if (AST::is_a<AST::InterfaceHeader_t>(*x.m_header) ||
                    AST::is_a<AST::AbstractInterfaceHeader_t>(*x.m_header)) {

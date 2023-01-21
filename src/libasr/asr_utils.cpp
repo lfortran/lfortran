@@ -314,8 +314,8 @@ ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &m
 }
 
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
-                            ASR::asr_t* v_var, ASR::symbol_t* member,
-                            SymbolTable* current_scope) {
+                            ASR::asr_t* v_var, ASR::symbol_t *v,
+                            ASR::symbol_t* member, SymbolTable* current_scope) {
     ASR::Variable_t* member_variable = ASR::down_cast<ASR::Variable_t>(member);
     ASR::ttype_t* member_type = member_variable->m_type;
     switch( member_type->type ) {
@@ -380,7 +380,15 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             break;
     }
     ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope);
-    return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var), member_ext, member_type, nullptr);
+    ASR::expr_t* value = nullptr;
+    if (v != nullptr && ASR::down_cast<ASR::Variable_t>(v)->m_storage
+            == ASR::storage_typeType::Parameter) {
+        if (member_variable->m_symbolic_value != nullptr) {
+            value = expr_value(member_variable->m_symbolic_value);
+        }
+    }
+    return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
+        member_ext, member_type, value);
 }
 
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,

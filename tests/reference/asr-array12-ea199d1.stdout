@@ -1,0 +1,264 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            array12:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            c_associated:
+                                (ExternalSymbol
+                                    2
+                                    c_associated
+                                    4 c_associated
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_associated
+                                    Public
+                                ),
+                            c_char:
+                                (ExternalSymbol
+                                    2
+                                    c_char
+                                    4 c_char
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_char
+                                    Public
+                                ),
+                            c_int:
+                                (ExternalSymbol
+                                    2
+                                    c_int
+                                    4 c_int
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int
+                                    Public
+                                ),
+                            c_ptr:
+                                (ExternalSymbol
+                                    2
+                                    c_ptr
+                                    4 c_ptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_ptr
+                                    Public
+                                ),
+                            get_current_directory:
+                                (Function
+                                    (SymbolTable
+                                        38
+                                        {
+                                            buffersize:
+                                                (Variable
+                                                    38
+                                                    buffersize
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 1000 (Integer 4 []))
+                                                    (IntegerConstant 1000 (Integer 4 []))
+                                                    Parameter
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            cpath:
+                                                (Variable
+                                                    38
+                                                    cpath
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 1 () [(()
+                                                    ())])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            path:
+                                                (Variable
+                                                    38
+                                                    path
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            tmp:
+                                                (Variable
+                                                    38
+                                                    tmp
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (CPtr)
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    get_current_directory
+                                    [c_associated
+                                    getcwd]
+                                    [(Var 38 path)]
+                                    [(Allocate
+                                        [((Var 38 cpath)
+                                        [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1000 (Integer 4 [])))])]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (=
+                                        (Var 38 tmp)
+                                        (FunctionCall
+                                            2 getcwd
+                                            ()
+                                            [((Var 38 cpath))
+                                            ((Var 38 buffersize))]
+                                            (CPtr)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            2 c_associated
+                                            ()
+                                            [((Var 38 tmp))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(Print
+                                            ()
+                                            [(StringConstant
+                                                "PWD: "
+                                                (Character 1 5 () [])
+                                            )
+                                            (Var 38 tmp)]
+                                            ()
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (ImplicitDeallocate
+                                        [38 cpath]
+                                    )]
+                                    ()
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            getcwd:
+                                (Function
+                                    (SymbolTable
+                                        37
+                                        {
+                                            buf:
+                                                (Variable
+                                                    37
+                                                    buf
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 1 () [(()
+                                                    ())])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            bufsize:
+                                                (Variable
+                                                    37
+                                                    bufsize
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            path:
+                                                (Variable
+                                                    37
+                                                    path
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (CPtr)
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    getcwd
+                                    []
+                                    [(Var 37 buf)
+                                    (Var 37 bufsize)]
+                                    []
+                                    (Var 37 path)
+                                    BindC
+                                    Public
+                                    Interface
+                                    "getcwd"
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                )
+                        })
+                    array12
+                    [iso_c_binding
+                    lfortran_intrinsic_iso_c_binding]
+                    .false.
+                    .false.
+                ),
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin)
+        })
+    []
+)
