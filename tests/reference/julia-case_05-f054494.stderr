@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/../integration_tests/case_05.f90:5:5
+  |
+5 |     character :: grade = 'B'
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

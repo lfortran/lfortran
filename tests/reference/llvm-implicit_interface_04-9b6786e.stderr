@@ -1,0 +1,11 @@
+[0;33;1mwarning[0;0m[0;1m: Implied save feature[0;0m
+ [0;34;1m-->[0;0m tests/../integration_tests/implicit_interface_04.f90:3:1
+  [0;34;1m|[0;0m
+[0;34;1m3 |[0;0m integer :: b(3) = [10, 20, 30]
+  [0;34;1m|[0;0m [0;33;1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables[0;0m
+
+[0;33;1mwarning[0;0m[0;1m: Implied save feature[0;0m
+ [0;34;1m-->[0;0m tests/../integration_tests/implicit_interface_04.f90:4:1
+  [0;34;1m|[0;0m
+[0;34;1m4 |[0;0m integer :: n = 3
+  [0;34;1m|[0;0m [0;33;1m^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables[0;0m

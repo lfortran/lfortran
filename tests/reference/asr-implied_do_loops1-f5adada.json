@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-implied_do_loops1-f5adada.stdout",
     "stdout_hash": "8634f0c99238abfff8a3bc962c91116a78a8b8167ddfe9ba39b807b4",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "asr-implied_do_loops1-f5adada.stderr",
+    "stderr_hash": "d2d1ce930b7cfae83c55eea3cf67ff9fd137d9555b0c1637d934d4a2",
     "returncode": 0
 }

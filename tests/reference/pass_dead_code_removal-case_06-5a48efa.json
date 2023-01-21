@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "pass_dead_code_removal-case_06-5a48efa.stdout",
     "stdout_hash": "9eba9b0b24042115b137f7df844db3d1e91da13646c1fb0630b2a15d",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "pass_dead_code_removal-case_06-5a48efa.stderr",
+    "stderr_hash": "9b63fabeb6eb1a4e96a48ce85a6a058ab22cb8532516644bcf34ae23",
     "returncode": 0
 }

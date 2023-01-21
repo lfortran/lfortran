@@ -1,0 +1,5 @@
+warning: Implied save feature
+  --> tests/derived_types_07.f90:78:7
+   |
+78 |       integer :: n = 0
+   |       ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

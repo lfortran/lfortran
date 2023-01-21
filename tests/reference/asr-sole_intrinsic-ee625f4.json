@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-sole_intrinsic-ee625f4.stdout",
     "stdout_hash": "294ab63edf75db36bde5b48dd90f179bb56fb81bbd28100bdff417d9",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "asr-sole_intrinsic-ee625f4.stderr",
+    "stderr_hash": "7d992bf9b9129e299a26e4ed0c004cf1e8522c0828cef1f7cf7c3b7b",
     "returncode": 0
 }

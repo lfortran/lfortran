@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/../integration_tests/div_to_mul.f90:3:5
+  |
+3 |     real :: x = 3.14, eps = 1e-6
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/div_to_mul.f90:3:5
+  |
+3 |     real :: x = 3.14, eps = 1e-6
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/div_to_mul.f90:5:5
+  |
+5 |     integer :: y = 2
+  |     ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

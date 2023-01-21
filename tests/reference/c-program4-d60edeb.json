@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "c-program4-d60edeb.stdout",
     "stdout_hash": "c690150730d349015f34b601d318f06d495f1f07e1b7e6e3fc9fde75",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "c-program4-d60edeb.stderr",
+    "stderr_hash": "31b18c41d3a3b1b31b669865fe11a379d03b1366cd31075fc73f47f6",
     "returncode": 0
 }

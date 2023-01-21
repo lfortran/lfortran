@@ -1,0 +1,5 @@
+warning: Implied save feature
+  --> tests/../integration_tests/functions_07.f90:43:5
+   |
+43 |     real :: p = 5, q
+   |     ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

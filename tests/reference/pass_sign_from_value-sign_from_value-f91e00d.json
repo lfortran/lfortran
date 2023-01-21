@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "pass_sign_from_value-sign_from_value-f91e00d.stdout",
     "stdout_hash": "fc17c58c42aefd79c638e51a55cfc5e091b5c3de62f5a00b2c90c391",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "pass_sign_from_value-sign_from_value-f91e00d.stderr",
+    "stderr_hash": "ca61c60d539463382d33895435ed13dfabd2e1d1d46b6dc6009c3d43",
     "returncode": 0
 }

@@ -1,0 +1,23 @@
+warning: Implied save feature
+  --> tests/select_type3.f90:10:7
+   |
+10 |       logical :: implicit = .false.
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/select_type3.f90:11:7
+   |
+11 |       logical :: inline = .false.
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/select_type3.f90:15:7
+   |
+15 |       integer :: success = 0
+   |       ^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/select_type3.f90:16:7
+   |
+16 |       integer :: fatal = -1
+   |       ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

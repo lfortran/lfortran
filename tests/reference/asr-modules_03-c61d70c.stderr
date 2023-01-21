@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/modules_03.f90:5:4
+  |
+5 |    real, private :: priv  = 1.5  
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/modules_03.f90:6:4
+  |
+6 |    real, public :: publ = 2.5 
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

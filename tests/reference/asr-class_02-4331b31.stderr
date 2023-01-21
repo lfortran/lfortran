@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/../integration_tests/class_02.f90:5:3
+  |
+5 |   real :: pi = 3.1415926535897931d0 ! Class-wide private constant
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

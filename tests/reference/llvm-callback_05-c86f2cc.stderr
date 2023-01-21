@@ -1,0 +1,5 @@
+warning: Implied save feature
+  --> tests/../integration_tests/callback_05.f90:44:1
+   |
+44 | integer :: x = 5
+   | ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

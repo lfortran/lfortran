@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/../integration_tests/string_01.f90:4:1
+  |
+4 | character(len = 7) :: my_name = 'Dominic'
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

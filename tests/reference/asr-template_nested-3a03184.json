@@ -6,11 +6,7 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-template_nested-3a03184.stdout",
-<<<<<<< HEAD
-    "stdout_hash": "4930bc780244deb6183463fc21ec2b0b1438fb6ca9a36de149e1fd6b",
-=======
     "stdout_hash": "e562a8b4c14e9808f90616c5c0f9fe318573f9c6907ac70535b8b835",
->>>>>>> 6b7222658 (Revert "update test references")
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/../integration_tests/intrinsics_46.f90:7:5
+  |
+7 |     character(len=1) :: c_1 = 'b'
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

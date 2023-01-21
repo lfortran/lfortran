@@ -1,0 +1,35 @@
+warning: Implied save feature
+  --> tests/derived_types_04.f90:10:7
+   |
+10 |       integer :: hour = 0
+   |       ^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:11:7
+   |
+11 |       integer :: minute = 0
+   |       ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:12:7
+   |
+12 |       integer :: second = 0
+   |       ^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:27:7
+   |
+27 |       integer :: year = 0
+   |       ^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:28:7
+   |
+28 |       integer :: month = 0
+   |       ^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+  --> tests/derived_types_04.f90:29:7
+   |
+29 |       integer :: day = 0
+   |       ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

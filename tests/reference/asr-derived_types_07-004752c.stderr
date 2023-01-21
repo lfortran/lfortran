@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/../integration_tests/derived_types_07.f90:6:9
+  |
+6 |         logical                   :: add_blank_line = .false.
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/derived_types_07.f90:8:9
+  |
+8 |         integer                   :: max_width = 0
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

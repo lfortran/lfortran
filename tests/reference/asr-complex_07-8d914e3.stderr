@@ -1,0 +1,17 @@
+warning: Implied save feature
+ --> tests/../integration_tests/complex_07.f90:5:5
+  |
+5 |     complex :: x = cmplx(real_part)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/complex_07.f90:6:5
+  |
+6 |     complex :: y = cmplx(img_part)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/complex_07.f90:7:5
+  |
+7 |     complex :: z = cmplx(real_part, img_part)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

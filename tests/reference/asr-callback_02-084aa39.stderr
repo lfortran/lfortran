@@ -1,0 +1,5 @@
+warning: Implied save feature
+  --> tests/../integration_tests/callback_02.f90:43:3
+   |
+43 |   real :: res = 0
+   |   ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -1,0 +1,5 @@
+warning: Implied save feature
+  --> tests/../integration_tests/intrinsics_26.f90:26:5
+   |
+26 |     integer :: i = 31
+   |     ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/../integration_tests/nested_05.f90:7:1
+  |
+7 | integer :: x = 6
+  | ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/nested_05.f90:8:1
+  |
+8 | real :: y = 5.5
+  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

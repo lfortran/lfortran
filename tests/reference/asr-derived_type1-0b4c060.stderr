@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/derived_type1.f90:7:9
+  |
+7 |         character(len=1, kind=tfc) :: newline = achar(10, kind=tfc)
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -1,0 +1,11 @@
+warning: Implied save feature
+ --> tests/../integration_tests/derived_types_11.f90:4:9
+  |
+4 |         character(kind=1, len=1) :: backslash = '\'
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+
+warning: Implied save feature
+ --> tests/../integration_tests/derived_types_11.f90:9:5
+  |
+9 |     character(len=3) :: x  = '  ' // type_y%backslash
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

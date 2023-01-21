@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/../integration_tests/string_10.f90:2:5
+  |
+2 |     character(len=2) :: c = "BC"
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

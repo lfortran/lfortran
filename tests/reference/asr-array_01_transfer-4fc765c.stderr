@@ -1,0 +1,5 @@
+warning: Implied save feature
+ --> tests/../integration_tests/array_01_transfer.f90:2:3
+  |
+2 |   integer :: m(6), size = 2
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
