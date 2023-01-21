@@ -115,7 +115,7 @@ std::string compare2str(const cmpopType type)
 }
 
 /********************** AST Pickle *******************/
-class PickleVisitor : public PickleBaseVisitor<PickleVisitor>
+class ASTPickleVisitor : public PickleBaseVisitor<ASTPickleVisitor>
 {
 public:
     void visit_BinOp(const BinOp_t &x) {
@@ -183,7 +183,7 @@ public:
 };
 
 std::string pickle(LFortran::AST::ast_t &ast, bool colors, bool indent) {
-    PickleVisitor v;
+    ASTPickleVisitor v;
     v.use_colors = colors;
     v.indent = indent;
     v.visit_ast(ast);
@@ -191,11 +191,7 @@ std::string pickle(LFortran::AST::ast_t &ast, bool colors, bool indent) {
 }
 
 std::string pickle(AST::TranslationUnit_t &ast, bool colors, bool indent) {
-    PickleVisitor v;
-    v.use_colors = colors;
-    v.indent = indent;
-    v.visit_ast((AST::ast_t&)(ast));
-    return v.get_str();
+    return pickle((AST::ast_t&)(ast), colors, indent);
 }
 
 /********************** ASR Pickle *******************/
