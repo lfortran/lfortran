@@ -1181,6 +1181,40 @@ public:
             Str s;
             s.from_str_view(sym_name_str);
             char *generic_name = s.c_str(al);
+            if (current_scope->resolve_symbol(generic_name)) {
+                // Check for ExternalSymbol (GenericProcedure)
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                    current_scope->resolve_symbol(generic_name));
+                if(ASR::is_a<ASR::GenericProcedure_t>(*sym)) {
+                    ASR::GenericProcedure_t *gp
+                        = ASR::down_cast<ASR::GenericProcedure_t>(sym);
+                    for (size_t i=0; i < gp->n_procs; i++) {
+                        ASR::symbol_t *s = current_scope->get_symbol(
+                            ASRUtils::symbol_name(gp->m_procs[i]));
+                        if (s != nullptr) {
+                            // Append all the module procedure's in the scope
+                            symbols.push_back(al, s);
+                        } else {
+                            // If not available, import it from the module
+                            // Create an ExternalSymbol using it
+                            ASR::Module_t *m = ASRUtils::get_sym_module(sym);
+                            s = m->m_symtab->get_symbol(
+                                ASRUtils::symbol_name(gp->m_procs[i]));
+                            if (ASR::is_a<ASR::Function_t>(*s)) {
+                                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
+                                ASR::symbol_t *ep_s = (ASR::symbol_t *)
+                                    ASR::make_ExternalSymbol_t(
+                                        al, fn->base.base.loc, current_scope,
+                                        fn->m_name, s, m->m_name, nullptr, 0,
+                                        fn->m_name, dflt_access);
+                                current_scope->add_symbol(fn->m_name, ep_s);
+                                // Append the ExternalSymbol
+                                symbols.push_back(al, ep_s);
+                            }
+                        }
+                    }
+                }
+            }
             ASR::asr_t *v = ASR::make_GenericProcedure_t(al, loc,
                 current_scope, generic_name,
                 symbols.p, symbols.size(), ASR::Public);

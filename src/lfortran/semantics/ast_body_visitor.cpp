@@ -674,11 +674,10 @@ public:
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
-        bool is_value_pointer = ASRUtils::is_pointer(value_type);
-        if( !(is_target_pointer && !is_value_pointer) ) {
-            throw SemanticError("Only a pointer variable can be associated with a non-pointer variable.", x.base.base.loc);
+        if ( !is_target_pointer ) {
+            throw SemanticError("Only a pointer variable can be associated with another variable.", x.base.base.loc);
         }
-        if( ASRUtils::is_same_type_pointer(target_type, value_type) ) {
+        if( ASRUtils::types_equal(target_type, value_type) ) {
             tmp = ASR::make_Associate_t(al, x.base.base.loc, target, value);
         }
     }
@@ -1623,10 +1622,10 @@ public:
             throw SemanticError("ArrayInitalizer expressions can only be assigned array references", x.base.base.loc);
         }
         if( overloaded_stmt == nullptr ) {
-            if (target->type == ASR::exprType::Var ||
+            if ((target->type == ASR::exprType::Var ||
                 target->type == ASR::exprType::ArrayItem ||
-                target->type == ASR::exprType::ArraySection) {
-
+                target->type == ASR::exprType::ArraySection) &&
+                !ASRUtils::check_equal_type(target_type, value_type)) {
                 ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                                         value_type, target_type);
 
@@ -1850,7 +1849,7 @@ public:
                                 [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
                     // FIXME
                     // Create ExternalSymbol for the final subroutine here
-                    final_sym = g->m_procs[idx];
+                    final_sym = ASRUtils::symbol_get_past_external(g->m_procs[idx]);
                     if (!ASR::is_a<ASR::Function_t>(*final_sym)) {
                         throw SemanticError("ExternalSymbol must point to a Subroutine", x.base.base.loc);
                     }
@@ -1859,8 +1858,7 @@ public:
                     //     specific_procedure_remote_name
                     std::string local_sym = std::string(to_lower(p->m_name)) + "@"
                         + ASRUtils::symbol_name(final_sym);
-                    if (current_scope->get_symbol(local_sym)
-                        == nullptr) {
+                    if (current_scope->get_symbol(local_sym) == nullptr) {
                         Str name;
                         name.from_str(al, local_sym);
                         char *cname = name.c_str(al);
@@ -1869,9 +1867,9 @@ public:
                             /* a_symtab */ current_scope,
                             /* a_name */ cname,
                             final_sym,
-                            p->m_module_name, nullptr, 0, ASRUtils::symbol_name(final_sym),
-                            ASR::accessType::Private
-                            );
+                            ASRUtils::symbol_name(ASRUtils::get_asr_owner(final_sym)),
+                            nullptr, 0, ASRUtils::symbol_name(final_sym),
+                            ASR::accessType::Private);
                         final_sym = ASR::down_cast<ASR::symbol_t>(sub);
                         current_scope->add_symbol(local_sym, final_sym);
                     } else {

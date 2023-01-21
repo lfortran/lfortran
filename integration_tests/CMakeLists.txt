@@ -392,6 +392,7 @@ RUN(NAME modules_20 LABELS gfortran llvm EXTRAFILES
         modules_20b.f90)
 RUN(NAME modules_21 LABELS gfortran llvm EXTRAFILES
         modules_21b.f90)
+RUN(NAME modules_24 LABELS gfortran)
 RUN(NAME operator_overloading_05_module3 LABELS gfortran llvm EXTRAFILES
         operator_overloading_05_module1.f90 operator_overloading_05_module2.f90)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
@@ -434,6 +435,7 @@ RUN(NAME interface_06 LABELS gfortran)
 RUN(NAME interface_07 LABELS gfortran llvm)
 RUN(NAME interface_09 LABELS gfortran)
 RUN(NAME interface_10 LABELS gfortran llvm)
+RUN(NAME interface_12a LABELS gfortran llvm EXTRAFILES interface_12b.f90)
 
 RUN(NAME implicit_interface_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_02 LABELS gfortran llvmImplicit)
@@ -493,6 +495,7 @@ RUN(NAME derived_types_09 LABELS gfortran EXTRAFILES
         derived_types_09b.f90 derived_types_09c.f90)
 RUN(NAME derived_types_10 LABELS gfortran llvm)
 RUN(NAME derived_types_12 LABELS gfortran llvm)
+RUN(NAME derived_types_16_module LABELS gfortran)
 
 RUN(NAME line_continuation_01 LABELS gfortran llvm wasm)
 RUN(NAME line_continuation_02 LABELS gfortran llvm wasm)
