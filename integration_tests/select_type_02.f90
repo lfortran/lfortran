@@ -1,7 +1,15 @@
-program select_type_02
+module derived_type_collection
+implicit none
+
    type point
       real :: x, y
    end type point
+
+end module derived_type_collection
+
+program select_type_02
+use derived_type_collection
+implicit none
 
    type, extends(point) :: point_3d
       real :: z
