@@ -16,3 +16,14 @@ contains
     end subroutine get_command_line_settings
 
 end module fpm_command_line
+
+program derived_types_16
+use fpm_command_line
+implicit none
+class(fpm_run_settings), allocatable :: settings
+allocate(settings)
+call get_command_line_settings(settings)
+if (settings%int /= 0) error stop
+if (abs(settings%float - 1.0) > 1e-6) error stop
+if (settings%bool .neqv. .true.) error stop
+end program
