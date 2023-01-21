@@ -1,0 +1,13 @@
+{
+    "basename": "asr-modules5-b0be3f7",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/modules5.f90",
+    "infile_hash": "19d649ba534a6988744fc82fc7299f5b95c3ef5213106f4a1ebf48e8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-modules5-b0be3f7.stdout",
+    "stdout_hash": "bc53b427dfa1f1f4730eff06b60910fd4a096ad7fef614cd6d6d6789",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

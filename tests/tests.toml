@@ -1059,6 +1059,11 @@ asr = true
 extrafiles = "../integration_tests/select_type_03_module.f90, ../integration_tests/select_type_03.f90"
 
 [[test]]
+filename = "modules5.f90"
+asr = true
+extrafiles = "modules5_module.f90"
+
+[[test]]
 filename = "fn2.f90"
 asr = true
 cpp = true
