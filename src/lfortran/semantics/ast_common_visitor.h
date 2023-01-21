@@ -1115,6 +1115,11 @@ public:
                                 }
                             } else {
                                 std::string sym = to_lower(s.m_name);
+                                diag.semantic_warning_label(
+                                    "Implied save feature",
+                                    {x.base.base.loc},
+                                    "Assuming save attribute implicitly for variables"
+                                );
                                 if (sa->m_attr == AST::simple_attributeType
                                         ::AttrPrivate) {
                                     assgnd_access[sym] = ASR::accessType::Private;
@@ -1196,6 +1201,7 @@ public:
             // Example
             // real(dp), private :: x, y(3), z
             for (size_t i=0; i<x.n_syms; i++) {
+                bool is_save = false;
                 bool is_compile_time = false;
                 bool is_implicitly_declared = false;
                 bool is_external = false;
@@ -1261,6 +1267,7 @@ public:
                             } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrSave) {
                                 storage_type = ASR::storage_typeType::Save;
+                                is_save = true;
                             } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrParameter) {
                                 storage_type = ASR::storage_typeType::Parameter;
@@ -1344,6 +1351,13 @@ public:
                         dims.n = 0;
                     }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time);
+                }
+                if (!is_save) {
+                    diag.semantic_warning_label(
+                        "Implied save feature",
+                        {x.base.base.loc},
+                        "Assuming save attribute implicitly for variables"
+                    );
                 }
                 ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer, dims);
                 current_variable_type_ = type;
