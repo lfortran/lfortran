@@ -55,6 +55,24 @@
                                                 )
                                         })
                                     destroy
+                                    (FunctionType
+                                        [(Class
+                                            43 toml_structure
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 46 self)]
                                     []
@@ -258,6 +276,24 @@
                                                 )
                                         })
                                     destroy
+                                    (FunctionType
+                                        [(Class
+                                            4 toml_array
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [allocated
                                     allocated
                                     1_destroy]
@@ -376,6 +412,24 @@
                                                 )
                                         })
                                     new_array
+                                    (FunctionType
+                                        [(Struct
+                                            4 toml_array
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 7 self)]
                                     []
@@ -524,6 +578,24 @@
                                                 )
                                         })
                                     destroy
+                                    (FunctionType
+                                        [(Class
+                                            48 toml_keyval
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [allocated
                                     allocated]
                                     [(Var 51 self)]
@@ -621,6 +693,24 @@
                                                 )
                                         })
                                     new_keyval
+                                    (FunctionType
+                                        [(Struct
+                                            48 toml_keyval
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 52 self)]
                                     []
@@ -753,6 +843,24 @@
                                                 )
                                         })
                                     destroy
+                                    (FunctionType
+                                        [(Class
+                                            9 toml_value
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 11 self)]
                                     []

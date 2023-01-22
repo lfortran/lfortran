@@ -227,6 +227,21 @@
                                 )
                         })
                     a
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     [(=

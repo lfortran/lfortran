@@ -279,6 +279,21 @@
                                                 )
                                         })
                                     f_a
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 u)]
                                     [(=
@@ -397,6 +412,21 @@
                                                 )
                                         })
                                     f_b
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 5 x)]
                                     [(=
@@ -574,6 +604,21 @@
                                                 )
                                         })
                                     f_c
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 7 w)]
                                     [(=

@@ -203,6 +203,24 @@
                                                 )
                                         })
                                     circle_area
+                                    (FunctionType
+                                        [(Class
+                                            2 circle
+                                            []
+                                        )]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 this)]
                                     [(=
@@ -309,6 +327,24 @@
                                                 )
                                         })
                                     circle_print
+                                    (FunctionType
+                                        [(Class
+                                            2 circle
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [1_area]
                                     [(Var 5 this)]
                                     [(=

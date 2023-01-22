@@ -59,6 +59,22 @@
                                                 )
                                         })
                                     add_integer
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 x)
                                     (Var 3 y)]
@@ -139,6 +155,22 @@
                                                 )
                                         })
                                     add_real
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 5 x)
                                     (Var 5 y)]
@@ -204,6 +236,21 @@
                                                 )
                                         })
                                     zero_integer
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 x)]
                                     [(=
@@ -262,6 +309,21 @@
                                                 )
                                         })
                                     zero_real
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 6 x)]
                                     [(=
@@ -481,6 +543,22 @@
                                                 )
                                         })
                                     mysum_integer
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [add_integer
                                     zero_integer]
                                     [(Var 14 a)]
@@ -609,6 +687,31 @@
                                                 )
                                         })
                                     mysum_t
+                                    (FunctionType
+                                        [(TypeParameter
+                                            t
+                                            [(()
+                                            ())]
+                                        )]
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .false.
+                                    )
                                     [plus_t
                                     zero_t]
                                     [(Var 11 a)]
@@ -754,6 +857,34 @@
                                                 )
                                         })
                                     plus_t
+                                    (FunctionType
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .true.
+                                    )
                                     []
                                     [(Var 9 l)
                                     (Var 9 r)]
@@ -844,6 +975,21 @@
                                                 )
                                         })
                                     test_template
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [mysum_integer]
                                     []
                                     [(DoLoop
@@ -965,6 +1111,30 @@
                                                 )
                                         })
                                     zero_t
+                                    (FunctionType
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .true.
+                                    )
                                     []
                                     [(Var 10 l)]
                                     []

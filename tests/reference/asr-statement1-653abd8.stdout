@@ -89,6 +89,21 @@
                                                 )
                                         })
                                     q
+                                    (FunctionType
+                                        [(Real 8 [])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 x)]
                                     [(=
@@ -160,6 +175,21 @@
                                 )
                         })
                     statement1
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     []

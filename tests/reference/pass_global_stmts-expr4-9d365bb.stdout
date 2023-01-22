@@ -99,6 +99,21 @@
                                 )
                         })
                     f
+                    (FunctionType
+                        []
+                        (Real 4 [])
+                        BindC
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     [(=

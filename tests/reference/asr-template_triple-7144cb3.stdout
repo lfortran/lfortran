@@ -67,6 +67,22 @@
                                                 )
                                         })
                                     add_integer
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 x)
                                     (Var 3 y)]
@@ -167,6 +183,22 @@
                                                 )
                                         })
                                     max_integer
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [max@imax]
                                     [(Var 5 x)
                                     (Var 5 y)]
@@ -269,6 +301,22 @@
                                                 )
                                         })
                                     min_integer
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [min@imin]
                                     [(Var 6 x)
                                     (Var 6 y)]
@@ -351,6 +399,22 @@
                                                 )
                                         })
                                     minus_integer
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 x)
                                     (Var 4 y)]
@@ -401,6 +465,21 @@
                                                 )
                                         })
                                     one_integer
+                                    (FunctionType
+                                        []
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     []
                                     [(=
@@ -444,6 +523,21 @@
                                                 )
                                         })
                                     zero_integer
+                                    (FunctionType
+                                        []
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     []
                                     [(=
@@ -528,6 +622,22 @@
                                                 )
                                         })
                                     add_real
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 10 x)
                                     (Var 10 y)]
@@ -628,6 +738,22 @@
                                                 )
                                         })
                                     max_real
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [max@smax]
                                     [(Var 13 x)
                                     (Var 13 y)]
@@ -730,6 +856,22 @@
                                                 )
                                         })
                                     min_real
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [min@smin]
                                     [(Var 14 x)
                                     (Var 14 y)]
@@ -812,6 +954,22 @@
                                                 )
                                         })
                                     minus_real
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 11 x)
                                     (Var 11 y)]
@@ -862,6 +1020,21 @@
                                                 )
                                         })
                                     one_real
+                                    (FunctionType
+                                        []
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     []
                                     [(=
@@ -938,6 +1111,22 @@
                                                 )
                                         })
                                     slash_real
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 12 x)
                                     (Var 12 y)]
@@ -988,6 +1177,21 @@
                                                 )
                                         })
                                     zero_real
+                                    (FunctionType
+                                        []
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     []
                                     [(=
@@ -1311,6 +1515,34 @@
                                                 )
                                         })
                                     plus_t
+                                    (FunctionType
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .true.
+                                    )
                                     []
                                     [(Var 19 l)
                                     (Var 19 r)]
@@ -1391,6 +1623,30 @@
                                                 )
                                         })
                                     triple_l
+                                    (FunctionType
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .false.
+                                    )
                                     [plus_t]
                                     [(Var 20 t)]
                                     [(=
@@ -1480,6 +1736,30 @@
                                                 )
                                         })
                                     triple_r
+                                    (FunctionType
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .false.
+                                    )
                                     [plus_t]
                                     [(Var 21 t)]
                                     [(=
@@ -1704,6 +1984,21 @@
                                                 )
                                         })
                                     test_add_triples
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [triple_add_l
                                     triple_add_r]
                                     []
@@ -1797,6 +2092,21 @@
                                                 )
                                         })
                                     test_max_triples
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [triple_max_l
                                     triple_max_r]
                                     []
@@ -1896,6 +2206,21 @@
                                                 )
                                         })
                                     test_minus_triples
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [triple_minus_l
                                     triple_minus_r]
                                     []
@@ -1995,6 +2320,21 @@
                                                 )
                                         })
                                     triple_add_l
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [add_integer]
                                     [(Var 124 t)]
                                     [(=
@@ -2069,6 +2409,21 @@
                                                 )
                                         })
                                     triple_add_r
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [add_integer]
                                     [(Var 125 t)]
                                     [(=
@@ -2153,6 +2508,21 @@
                                                 )
                                         })
                                     triple_max_l
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [max_real]
                                     [(Var 128 t)]
                                     [(=
@@ -2227,6 +2597,21 @@
                                                 )
                                         })
                                     triple_max_r
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [max_real]
                                     [(Var 129 t)]
                                     [(=
@@ -2301,6 +2686,21 @@
                                                 )
                                         })
                                     triple_minus_l
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [minus_real]
                                     [(Var 126 t)]
                                     [(=
@@ -2375,6 +2775,21 @@
                                                 )
                                         })
                                     triple_minus_r
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [minus_real]
                                     [(Var 127 t)]
                                     [(=

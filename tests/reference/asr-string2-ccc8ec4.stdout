@@ -87,6 +87,21 @@
                                                 )
                                         })
                                     get_temp_filename
+                                    (FunctionType
+                                        []
+                                        (Character 1 -2 () [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [f_string@f_string~genericprocedure]
                                     []
                                     [(=
@@ -177,6 +192,21 @@
                                                 )
                                         })
                                     list_files
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [c_associated
                                     f_string@f_string_cptr]
                                     []
@@ -334,6 +364,21 @@
                                                                 )
                                                         })
                                                     c_strlen
+                                                    (FunctionType
+                                                        [(CPtr)]
+                                                        (Integer 8 [])
+                                                        BindC
+                                                        Interface
+                                                        "strlen"
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     [(Var 7 s)]
                                                     []
@@ -383,6 +428,21 @@
                                                 )
                                         })
                                     f_string_cptr
+                                    (FunctionType
+                                        [(CPtr)]
+                                        (Character 1 -2 () [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [f_string_cptr_n
                                     c_strlen
                                     c_strlen]
@@ -480,6 +540,22 @@
                                                 )
                                         })
                                     f_string_cptr_n
+                                    (FunctionType
+                                        [(CPtr)
+                                        (Integer 8 [])]
+                                        (Character 1 -3 (Var 8 n) [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 8 cptr)
                                     (Var 8 n)]
@@ -536,6 +612,22 @@
                                                 )
                                         })
                                     f_string~genericprocedure
+                                    (FunctionType
+                                        [(Character 1 1 () [(()
+                                        ())])]
+                                        (Character 1 -2 () [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 9 c_string)]
                                     []

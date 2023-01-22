@@ -83,6 +83,26 @@
                                                 )
                                         })
                                     add_log_file
+                                    (FunctionType
+                                        [(Class
+                                            2 logger_type
+                                            []
+                                        )
+                                        (Character 1 -1 () [])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [1_log_io_error]
                                     [(Var 4 self)
                                     (Var 4 filename)
@@ -179,6 +199,27 @@
                                                 )
                                         })
                                     log_io_error
+                                    (FunctionType
+                                        [(Class
+                                            2 logger_type
+                                            []
+                                        )
+                                        (Integer 4 [])
+                                        (Character 1 -1 () [])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 5 self)
                                     (Var 5 code)

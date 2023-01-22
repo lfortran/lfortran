@@ -94,6 +94,21 @@
                                                                 )
                                                         })
                                                     f
+                                                    (FunctionType
+                                                        [(Real 4 [])]
+                                                        (Real 4 [])
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     [(Var 4 x)]
                                                     []
@@ -113,6 +128,37 @@
                                                 )
                                         })
                                     cb
+                                    (FunctionType
+                                        [(FunctionType
+                                            [(Real 4 [])]
+                                            (Real 4 [])
+                                            Source
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            []
+                                            .false.
+                                        )
+                                        (Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [f]
                                     [(Var 3 f)
                                     (Var 3 a)
@@ -240,6 +286,21 @@
                                                                 )
                                                         })
                                                     f
+                                                    (FunctionType
+                                                        [(Real 4 [])]
+                                                        (Real 4 [])
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     [(Var 6 x)]
                                                     [(=
@@ -277,6 +338,22 @@
                                                 )
                                         })
                                     foo
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [cb]
                                     [(Var 5 c)
                                     (Var 5 d)]

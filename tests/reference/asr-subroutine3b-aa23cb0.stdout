@@ -24,6 +24,21 @@
                                 )
                         })
                     f
+                    (FunctionType
+                        []
+                        (Integer 4 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     [(=
@@ -67,6 +82,21 @@
                                 )
                         })
                     g
+                    (FunctionType
+                        []
+                        (Integer 4 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     [(=
@@ -110,6 +140,21 @@
                                 )
                         })
                     h
+                    (FunctionType
+                        []
+                        (Integer 4 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     [(=

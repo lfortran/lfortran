@@ -102,6 +102,23 @@
                                                 )
                                         })
                                     simps38_weights_dp
+                                    (FunctionType
+                                        [(Real 8 [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 4 (Integer 4 [])))])]
+                                        (Real 8 [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 4 (Integer 4 [])))])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 x)]
                                     []
@@ -142,6 +159,22 @@
                                                 )
                                         })
                                     simps38_weights_dp_use
+                                    (FunctionType
+                                        [(Real 8 [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 4 (Integer 4 [])))])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [simps38_weights_dp]
                                     [(Var 4 x1)]
                                     [(Print

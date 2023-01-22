@@ -47,6 +47,24 @@
                                                 )
                                         })
                                     all_abstract
+                                    (FunctionType
+                                        [(Class
+                                            2 bitset_type
+                                            []
+                                        )]
+                                        (Logical 4 [])
+                                        Source
+                                        Interface
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 self)]
                                     []

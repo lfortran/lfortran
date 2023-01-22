@@ -350,6 +350,22 @@
                                                 )
                                         })
                                     bin_add
+                                    (FunctionType
+                                        [(Logical 4 [])
+                                        (Logical 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 log1)
                                     (Var 4 log2)]
@@ -460,6 +476,22 @@
                                                 )
                                         })
                                     logical_and
+                                    (FunctionType
+                                        [(Logical 4 [])
+                                        (Logical 4 [])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 log1)
                                     (Var 3 log2)]

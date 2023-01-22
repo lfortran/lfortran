@@ -39,6 +39,21 @@
                                 )
                         })
                     f
+                    (FunctionType
+                        []
+                        (Integer 4 [])
+                        BindC
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     [(=

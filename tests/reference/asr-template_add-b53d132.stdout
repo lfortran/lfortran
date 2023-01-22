@@ -151,6 +151,34 @@
                                                 )
                                         })
                                     add_generic
+                                    (FunctionType
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .false.
+                                    )
                                     [f]
                                     [(Var 5 x)
                                     (Var 5 y)]
@@ -239,6 +267,22 @@
                                                 )
                                         })
                                     add_integer
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [func_arg_int]
                                     [(Var 11 x)
                                     (Var 11 y)]
@@ -321,6 +365,22 @@
                                                 )
                                         })
                                     add_real
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [func_arg_real]
                                     [(Var 10 x)
                                     (Var 10 y)]
@@ -412,6 +472,34 @@
                                                 )
                                         })
                                     f
+                                    (FunctionType
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .true.
+                                    )
                                     []
                                     [(Var 4 x)
                                     (Var 4 y)]
@@ -485,6 +573,22 @@
                                                 )
                                         })
                                     func_arg_int
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 7 x)
                                     (Var 7 y)]
@@ -565,6 +669,22 @@
                                                 )
                                         })
                                     func_arg_real
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 6 x)
                                     (Var 6 y)]
@@ -696,6 +816,21 @@
                                                 )
                                         })
                                     test_template
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [abs@sabs
                                     add_integer
                                     add_real]

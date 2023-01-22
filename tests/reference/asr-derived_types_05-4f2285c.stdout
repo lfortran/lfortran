@@ -58,6 +58,24 @@
                                                 )
                                         })
                                     new_string
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Struct
+                                            2 string_type
+                                            []
+                                        )
+                                        Source
+                                        Interface
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 string)]
                                     []
@@ -115,6 +133,24 @@
                                                 )
                                         })
                                     new_string_from_integer_int32
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Struct
+                                            2 string_type
+                                            []
+                                        )
+                                        Source
+                                        Interface
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 5 val)]
                                     []
@@ -172,6 +208,24 @@
                                                 )
                                         })
                                     new_string_from_integer_int64
+                                    (FunctionType
+                                        [(Integer 8 [])]
+                                        (Struct
+                                            2 string_type
+                                            []
+                                        )
+                                        Source
+                                        Interface
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 6 val)]
                                     []
@@ -229,6 +283,24 @@
                                                 )
                                         })
                                     new_string_from_logical_lk
+                                    (FunctionType
+                                        [(Logical 4 [])]
+                                        (Struct
+                                            2 string_type
+                                            []
+                                        )
+                                        Source
+                                        Interface
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 7 val)]
                                     []
@@ -337,6 +409,24 @@
                                                 )
                                         })
                                     new_string
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Struct
+                                            8 string_type
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 9 string)]
                                     []
@@ -394,6 +484,24 @@
                                                 )
                                         })
                                     new_string_from_integer_int32
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Struct
+                                            8 string_type
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 10 val)]
                                     []
@@ -451,6 +559,24 @@
                                                 )
                                         })
                                     new_string_from_integer_int64
+                                    (FunctionType
+                                        [(Integer 8 [])]
+                                        (Struct
+                                            8 string_type
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 11 val)]
                                     []
@@ -508,6 +634,24 @@
                                                 )
                                         })
                                     new_string_from_logical_lk
+                                    (FunctionType
+                                        [(Logical 4 [])]
+                                        (Struct
+                                            8 string_type
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 12 val)]
                                     []

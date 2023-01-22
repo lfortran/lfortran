@@ -24,6 +24,21 @@
                                 )
                         })
                     a
+                    (FunctionType
+                        []
+                        (Integer 4 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     []
@@ -63,6 +78,21 @@
                                 )
                         })
                     b
+                    (FunctionType
+                        []
+                        (Real 4 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     []
@@ -102,6 +132,21 @@
                                 )
                         })
                     c
+                    (FunctionType
+                        []
+                        (Logical 4 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     []
@@ -141,6 +186,21 @@
                                 )
                         })
                     d
+                    (FunctionType
+                        []
+                        (Integer 4 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     []
@@ -180,6 +240,21 @@
                                 )
                         })
                     e
+                    (FunctionType
+                        []
+                        (Real 4 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     []
@@ -219,6 +294,21 @@
                                 )
                         })
                     f
+                    (FunctionType
+                        []
+                        (Logical 4 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     []

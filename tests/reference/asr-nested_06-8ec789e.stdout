@@ -48,6 +48,21 @@
                                                             
                                                         })
                                                     c
+                                                    (FunctionType
+                                                        []
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     []
                                                     [(Print
@@ -93,6 +108,21 @@
                                                 )
                                         })
                                     b
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [c]
                                     [(Var 3 x)]
                                     [(Print

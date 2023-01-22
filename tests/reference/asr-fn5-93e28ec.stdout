@@ -195,6 +195,52 @@
                                                 )
                                         })
                                     atleast
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Integer 4 [])
+                                        (Character 1 -1 () [])]
+                                        (Character 1 -3 (FunctionCall
+                                            3 max@imax
+                                            3 max
+                                            [((Var 3 length))
+                                            ((FunctionCall
+                                                3 len
+                                                ()
+                                                [((FunctionCall
+                                                    3 trim
+                                                    ()
+                                                    [((Var 3 line))]
+                                                    (Character 1 -3 (FunctionCall
+                                                        3 len_trim
+                                                        ()
+                                                        [((Var 3 line))]
+                                                        (Integer 4 [])
+                                                        ()
+                                                        ()
+                                                    ) [])
+                                                    ()
+                                                    ()
+                                                ))]
+                                                (Integer 4 [])
+                                                ()
+                                                ()
+                                            ))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ) [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [len
                                     len_trim
                                     max@imax
@@ -488,6 +534,22 @@
                                                 )
                                         })
                                     print_dictionary
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Logical 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [atleast
                                     imax
                                     len

@@ -101,6 +101,21 @@
                                                                 )
                                                         })
                                                     f
+                                                    (FunctionType
+                                                        []
+                                                        (Integer 4 [])
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     []
                                                     []
@@ -165,6 +180,36 @@
                                                 )
                                         })
                                     solver
+                                    (FunctionType
+                                        [(FunctionType
+                                            []
+                                            (Integer 4 [])
+                                            Source
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            []
+                                            .false.
+                                        )
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [f
                                     sub1]
                                     [(Var 3 f)
@@ -273,6 +318,21 @@
                                                                 )
                                                         })
                                                     getx
+                                                    (FunctionType
+                                                        []
+                                                        (Integer 4 [])
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     []
                                                     [(Print
@@ -381,6 +441,22 @@
                                                 )
                                         })
                                     sub1
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [getx
                                     solver]
                                     [(Var 5 y)

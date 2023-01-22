@@ -95,6 +95,21 @@
                                                                 )
                                                         })
                                                     d
+                                                    (FunctionType
+                                                        []
+                                                        (Integer 4 [])
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     []
                                                     [(Print
@@ -142,6 +157,21 @@
                                                 )
                                         })
                                     b
+                                    (FunctionType
+                                        []
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [d]
                                     []
                                     [(Print

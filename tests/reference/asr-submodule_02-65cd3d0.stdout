@@ -119,6 +119,28 @@
                                                 )
                                         })
                                     point_dist_func
+                                    (FunctionType
+                                        [(Struct
+                                            5 point
+                                            []
+                                        )
+                                        (Struct
+                                            5 point
+                                            []
+                                        )]
+                                        (Real 4 [])
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 7 a)
                                     (Var 7 b)]
@@ -195,6 +217,29 @@
                                                 )
                                         })
                                     point_dist_subrout
+                                    (FunctionType
+                                        [(Struct
+                                            5 point
+                                            []
+                                        )
+                                        (Struct
+                                            5 point
+                                            []
+                                        )
+                                        (Real 4 [])]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 8 a)
                                     (Var 8 b)
@@ -343,6 +388,28 @@
                                                 )
                                         })
                                     point_dist_func
+                                    (FunctionType
+                                        [(Struct
+                                            9 point
+                                            []
+                                        )
+                                        (Struct
+                                            9 point
+                                            []
+                                        )]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [sqrt@ssqrt]
                                     [(Var 10 a)
                                     (Var 10 b)]
@@ -536,6 +603,29 @@
                                                 )
                                         })
                                     point_dist_subrout
+                                    (FunctionType
+                                        [(Struct
+                                            9 point
+                                            []
+                                        )
+                                        (Struct
+                                            9 point
+                                            []
+                                        )
+                                        (Real 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [sqrt@ssqrt]
                                     [(Var 11 a)
                                     (Var 11 b)

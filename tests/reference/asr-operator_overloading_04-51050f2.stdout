@@ -68,6 +68,25 @@
                                                 )
                                         })
                                     assign_string_char
+                                    (FunctionType
+                                        [(Struct
+                                            2 string_type
+                                            []
+                                        )
+                                        (Character 1 -1 () [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 lhs)
                                     (Var 4 rhs)]
@@ -178,6 +197,27 @@
                                                 )
                                         })
                                     trim_string
+                                    (FunctionType
+                                        [(Struct
+                                            2 string_type
+                                            []
+                                        )]
+                                        (Struct
+                                            2 string_type
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [assign_string_char]
                                     [(Var 5 string)]
                                     [(=
@@ -311,6 +351,27 @@
                                                 )
                                         })
                                     chomp_string
+                                    (FunctionType
+                                        [(Struct
+                                            6 string_type
+                                            []
+                                        )]
+                                        (Struct
+                                            6 string_type
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 7 string)]
                                     []

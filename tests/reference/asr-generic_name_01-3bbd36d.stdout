@@ -172,6 +172,30 @@
                                                 )
                                         })
                                     integer_add_subrout
+                                    (FunctionType
+                                        [(Class
+                                            2 complextype
+                                            []
+                                        )
+                                        (Integer 4 [])
+                                        (Integer 4 [])
+                                        (Struct
+                                            2 complextype
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 this)
                                     (Var 4 r)
@@ -345,6 +369,30 @@
                                                 )
                                         })
                                     real_add_subrout
+                                    (FunctionType
+                                        [(Class
+                                            2 complextype
+                                            []
+                                        )
+                                        (Real 4 [])
+                                        (Real 4 [])
+                                        (Struct
+                                            2 complextype
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 5 this)
                                     (Var 5 r)

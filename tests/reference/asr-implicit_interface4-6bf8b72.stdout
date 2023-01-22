@@ -15,6 +15,37 @@
                                             
                                         })
                                     driver2
+                                    (FunctionType
+                                        [(FunctionType
+                                            [(Integer 4 [])
+                                            (Real 4 [])
+                                            (Real 8 [])]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            []
+                                            .false.
+                                        )]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 2 f)]
                                     []
@@ -84,6 +115,23 @@
                                                 )
                                         })
                                     f
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 4 [])
+                                        (Real 8 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 f_arg_0)
                                     (Var 3 f_arg_1)
@@ -150,6 +198,22 @@
                                 )
                         })
                     driver
+                    (FunctionType
+                        [(Real 4 [])
+                        (Integer 4 [])]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     [driver2
                     f]
                     [(Var 2 f)

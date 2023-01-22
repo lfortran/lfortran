@@ -60,6 +60,21 @@
                                                 )
                                         })
                                     abs
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 a)]
                                     [(Print
@@ -184,6 +199,22 @@
                                                 )
                                         })
                                     sum
+                                    (FunctionType
+                                        [(Real 4 [(()
+                                        ())])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 a)]
                                     [(Print

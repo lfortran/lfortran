@@ -69,7 +69,33 @@
                                                 )
                                         })
                                     char_string
-                                    [len_string]
+                                    (FunctionType
+                                        [(Struct
+                                            2 string_type
+                                            []
+                                        )]
+                                        (Character 1 -3 (FunctionCall
+                                            2 len_string
+                                            2 len
+                                            [((Var 5 string))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ) [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [len_string
+                                    len_string]
                                     [(Var 5 string)]
                                     []
                                     (Var 5 character_string)
@@ -133,6 +159,24 @@
                                                 )
                                         })
                                     len_string
+                                    (FunctionType
+                                        [(Struct
+                                            2 string_type
+                                            []
+                                        )]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 string)]
                                     []
@@ -266,7 +310,31 @@
                                                 )
                                         })
                                     compute_lps
-                                    [len]
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (FunctionCall
+                                            7 len
+                                            ()
+                                            [((Var 7 string))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ))])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [len
+                                    len]
                                     [(Var 7 string)]
                                     []
                                     (Var 7 lps_array)
@@ -330,6 +398,21 @@
                                                 )
                                         })
                                     compute_lps_use
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [compute_lps
                                     len]
                                     [(Var 36 string)]
@@ -428,6 +511,24 @@
                                                 )
                                         })
                                     compute_lps_use1
+                                    (FunctionType
+                                        [(Struct
+                                            6 string_type
+                                            []
+                                        )]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [char@char_string
                                     len_string]
                                     [(Var 37 string)]
@@ -572,7 +673,31 @@
                                                 )
                                         })
                                     padl_char_default
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Integer 4 [])]
+                                        (Character 1 -3 (FunctionCall
+                                            40 len
+                                            ()
+                                            [((Var 40 string))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ) [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [len
+                                    len
                                     imax
                                     len
                                     padl_char_pad_with]
@@ -752,6 +877,38 @@
                                                 )
                                         })
                                     padl_char_pad_with
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Integer 4 [])
+                                        (Character 1 1 () [])]
+                                        (Character 1 -3 (FunctionCall
+                                            41 max@imax
+                                            41 max
+                                            [((FunctionCall
+                                                41 len
+                                                ()
+                                                [((Var 41 string))]
+                                                (Integer 4 [])
+                                                ()
+                                                ()
+                                            ))
+                                            ((Var 41 output_length))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ) [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [len
                                     max@imax]
                                     [(Var 41 string)
@@ -870,6 +1027,28 @@
                                                 )
                                         })
                                     padl_string_default
+                                    (FunctionType
+                                        [(Struct
+                                            6 string_type
+                                            []
+                                        )
+                                        (Integer 4 [])]
+                                        (Struct
+                                            6 string_type
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [char@char_string
                                     imax
                                     len
@@ -1072,6 +1251,29 @@
                                                 )
                                         })
                                     padl_string_pad_with
+                                    (FunctionType
+                                        [(Struct
+                                            6 string_type
+                                            []
+                                        )
+                                        (Integer 4 [])
+                                        (Character 1 1 () [])]
+                                        (Struct
+                                            6 string_type
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [char@char_string
                                     imax
                                     len
@@ -1172,6 +1374,8 @@
                         })
                     stdlib_strings
                     [lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
                     lfortran_intrinsic_builtin
                     stdlib_string_type
                     lfortran_intrinsic_math2

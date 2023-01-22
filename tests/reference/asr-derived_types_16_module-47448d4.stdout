@@ -286,6 +286,24 @@
                                                 )
                                         })
                                     get_command_line_settings
+                                    (FunctionType
+                                        [(Class
+                                            2 fpm_run_settings
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 cmd_settings)]
                                     [(=

@@ -44,6 +44,21 @@
                                                 )
                                         })
                                     f
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Real 8 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 f_arg_0)]
                                     []
@@ -113,6 +128,22 @@
                                                 )
                                         })
                                     g
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 4 [])]
+                                        (Real 8 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 g_arg_0)
                                     (Var 4 g_arg_1)]

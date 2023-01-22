@@ -32,6 +32,24 @@
                                                 )
                                         })
                                     check_table
+                                    (FunctionType
+                                        [(Class
+                                            2 toml_table
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 7 tab)]
                                     []
@@ -252,6 +270,31 @@
                                                 )
                                         })
                                     get_table
+                                    (FunctionType
+                                        [(Class
+                                            2 toml_table
+                                            []
+                                        )
+                                        (Pointer
+                                            (Struct
+                                                2 toml_table
+                                                []
+                                            )
+                                        )
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [check_table
                                     present]
                                     [(Var 6 table)

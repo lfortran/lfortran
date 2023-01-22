@@ -44,6 +44,21 @@
                                                 )
                                         })
                                     add_z
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 5 x)]
                                     [(=
@@ -113,6 +128,21 @@
                                                                 )
                                                         })
                                                     fun
+                                                    (FunctionType
+                                                        [(Integer 4 [])]
+                                                        (Integer 4 [])
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     [(Var 4 x)]
                                                     []
@@ -162,6 +192,36 @@
                                                 )
                                         })
                                     apply
+                                    (FunctionType
+                                        [(FunctionType
+                                            [(Integer 4 [])]
+                                            (Integer 4 [])
+                                            Source
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            []
+                                            .false.
+                                        )
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [fun]
                                     [(Var 3 fun)
                                     (Var 3 x)]
