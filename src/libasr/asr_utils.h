@@ -1851,6 +1851,7 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
 inline bool is_parent(ASR::StructType_t* a, ASR::StructType_t* b) {
     ASR::symbol_t* current_parent = b->m_parent;
     while( current_parent ) {
+        current_parent = ASRUtils::symbol_get_past_external(current_parent);
         if( current_parent == (ASR::symbol_t*) a ) {
             return true;
         }
