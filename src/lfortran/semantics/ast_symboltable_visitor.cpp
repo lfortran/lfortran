@@ -521,7 +521,7 @@ public:
         for( auto& itr: current_function_dependencies ) {
             func_deps.push_back(al, s2c(al, itr));
         }
-        tmp = ASR::make_Function_t(
+        tmp = ASRUtils::make_Function_t_util(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, to_lower(sym_name)),
@@ -836,7 +836,7 @@ public:
         for( auto& itr: current_function_dependencies ) {
             func_deps.push_back(al, s2c(al, itr));
         }
-        tmp = ASR::make_Function_t(
+        tmp = ASRUtils::make_Function_t_util(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, to_lower(sym_name)),

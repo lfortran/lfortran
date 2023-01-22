@@ -1658,6 +1658,15 @@ public:
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     type));
             }
+        } else if (sym_type->m_type == AST::decl_typeType::TypeProcedure) {
+            std::string func_name = to_lower(sym_type->m_name);
+            ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
+            if( !v ) {
+                throw SemanticError("Procedure type '" + func_name
+                                    + "' not declared", loc);
+            }
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
+            type = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
         } else {
             throw SemanticError("Type not implemented yet.",
                     loc);
@@ -2236,6 +2245,15 @@ public:
             args.p, args.size(), return_type, value, nullptr);
     }
 
+    ASR::asr_t* create_FunctionFromFunctionTypeVariable(const Location &loc,
+                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
+        ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::symbol_type(v));
+        ASR::ttype_t *return_type = func->m_return_var_type;
+        current_function_dependencies.insert(std::string(ASRUtils::symbol_name(v)));
+        return ASR::make_FunctionCall_t(al, loc, v, nullptr,
+            args.p, args.size(), return_type, nullptr, nullptr);
+    }
+
     // `fn` is a local Function or GenericProcedure (that resolves to a
     // Function), or an ExternalSymbol that points to a Function or
     // GenericProcedure (that resolves to a Function). This function resolves
@@ -2262,6 +2280,8 @@ public:
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             return create_Function(x.base.base.loc, args, v);
+        } else if (ASR::is_a<ASR::Variable_t>(*f2)) {
+            return create_FunctionFromFunctionTypeVariable(x.base.base.loc, args, v);
         } else {
             LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
             return create_GenericProcedureWithASTNode(x, args, v);
@@ -3173,7 +3193,7 @@ public:
                 ASR::down_cast<ASR::symbol_t>(return_var)));
         }
 
-        tmp = ASR::make_Function_t(
+        tmp = ASRUtils::make_Function_t_util(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, sym_name),
@@ -3326,7 +3346,10 @@ public:
                 }
             }
         }
-        if (ASR::is_a<ASR::Function_t>(*f2) || ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
+        if (ASR::is_a<ASR::Function_t>(*f2) ||
+            ASR::is_a<ASR::GenericProcedure_t>(*f2) ||
+            (ASR::is_a<ASR::Variable_t>(*f2) &&
+            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(f2))) ) {
             if (ASRUtils::is_intrinsic_symbol(f2)) {
                 // Here we handle all intrinsic functions that are implemented
                 // in Fortran, but have different interface (API), e.g.,
