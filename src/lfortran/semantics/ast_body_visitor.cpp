@@ -1573,7 +1573,7 @@ public:
         }
         body.push_back(al, ASR::down_cast<ASR::stmt_t>(ASR::make_Assignment_t(al, x.base.base.loc, to_return, value, nullptr)));
 
-        tmp = ASR::make_Function_t(
+        tmp = ASRUtils::make_Function_t_util(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, var_name),

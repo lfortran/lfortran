@@ -127,7 +127,7 @@ public:
         }
         LCOMPILERS_ASSERT(s->m_return_var)
         a_args.push_back(al, s->m_return_var);
-        ASR::asr_t* s_sub_asr = ASR::make_Function_t(al, s->base.base.loc,
+        ASR::asr_t* s_sub_asr = ASRUtils::make_Function_t_util(al, s->base.base.loc,
             s->m_symtab,
             s->m_name, s->m_dependencies, s->n_dependencies,
             a_args.p, a_args.size(), s->m_body, s->n_body,

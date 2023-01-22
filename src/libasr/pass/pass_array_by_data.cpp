@@ -158,7 +158,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 if( x->m_bindc_name ) {
                     new_bindc_name = std::string(x->m_bindc_name) + suffix;
                 }
-                ASR::asr_t* new_subrout = ASR::make_Function_t(al, x->base.base.loc,
+                ASR::asr_t* new_subrout = ASRUtils::make_Function_t_util(al, x->base.base.loc,
                                             new_symtab, s2c(al, new_name), x->m_dependencies, x->n_dependencies,
                                             new_args.p, new_args.size(),  new_body.p, new_body.size(),
                                             return_var, x->m_abi, x->m_access, x->m_deftype,
