@@ -1,0 +1,12 @@
+semantic error: Type mismatch in function call, the types must be compatible
+  --> tests/errors/template_error.f90:45:9 - 50:1
+   |
+45 |            pure function D_divided_by_T(n, d) result(quotient)
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+50 |    
+   | ...^ type mismatch (t and s)
+   |
+75 |             avg = avg_S_from_T(d1, D_divided_by_T(d1, s1), d2, D_divided_by_S(d2, s2))
+   |                                                       ^^ type mismatch (t and s)
