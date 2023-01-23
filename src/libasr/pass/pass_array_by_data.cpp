@@ -135,6 +135,46 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     arg = ASRUtils::EXPR2VAR(x->m_args[i]);
                 } else if( x->m_return_var ) {
                     arg = ASRUtils::EXPR2VAR(x->m_return_var);
+                    if ( arg->m_type ) {
+                        ASR::ttype_t* ttype = arg->m_type;
+
+                        if ( ttype->type == ASR::ttypeType::Real ) {
+                            ASR::Real_t* real = ASR::down_cast<ASR::Real_t>(ttype);
+                            ASR::dimension_t* dim = real->m_dims;
+                            if ( dim && dim->m_length) {
+                                ASR::expr_t* len = dim->m_length;
+                                // check if len is ASR::ArraySize_t
+                                if ( len->type == ASR::exprType::ArraySize ) {
+                                    ASR::ArraySize_t* array_size = ASR::down_cast<ASR::ArraySize_t>(len);
+                                    ASR::expr_t* array = array_size->m_v;
+                                    ASR::Variable_t* array_var = ASRUtils::EXPR2VAR(array);
+                                    // find array_var in symbol table
+                                    ASR::symbol_t* sym = new_symtab->resolve_symbol(array_var->m_name);
+                                    // check if sym is ASR::Variable_t
+                                    if ( sym->type == ASR::symbolType::Variable ) {
+                                        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                                        
+
+                                        ASR::asr_t* new_array = ASR::make_Variable_t(al,
+                                                    var->base.base.loc, var->m_parent_symtab, var->m_name,
+                                                    var->m_dependencies, var->n_dependencies, var->m_intent,
+                                                    var->m_symbolic_value, var->m_value, var->m_storage, var->m_type,
+                                                    var->m_abi, var->m_access, var->m_presence, var->m_value_attr);
+                                        ASR::expr_t* new_array_expr = ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc,
+                                                    ASR::down_cast<ASR::symbol_t>(new_array)));
+                                        
+                                        ASR::expr_t* new_len = ASRUtils::EXPR(ASR::make_ArraySize_t(al,
+                                                    array_size->base.base.loc, new_array_expr, array_size->m_dim, array_size->m_type,
+                                                    array_size->m_value));
+                                        dim->m_length = new_len;
+                                    }
+
+                                }
+                                
+                            }
+
+                        }
+                    }
                 } else {
                     break ;
                 }
