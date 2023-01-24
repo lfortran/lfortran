@@ -1,4 +1,5 @@
-module class_default_select_type
+module class_default_select_type_user
+    use class_default_select_type, only: toml_stat
     implicit none
     public :: toml_table, get_table
     type :: toml_value
@@ -10,13 +11,6 @@ module class_default_select_type
       logical :: implicit = .false.
       logical :: inline = .false.
     end type
-
-    type :: enum_stat
-      integer :: success = 0
-      integer :: fatal = -1
-   end type enum_stat
-
-   type(enum_stat), parameter :: toml_stat = enum_stat()
 
     contains
     subroutine get_table(table, ptr, stat)
@@ -47,4 +41,4 @@ module class_default_select_type
         class(toml_table), intent(out) :: tab
     end subroutine check_table
 
- end module class_default_select_type
+ end module class_default_select_type_user

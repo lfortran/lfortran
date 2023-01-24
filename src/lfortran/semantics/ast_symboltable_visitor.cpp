@@ -921,6 +921,14 @@ public:
         Vec<char*> struct_dependencies;
         struct_dependencies.reserve(al, 1);
         for( auto& item: current_scope->get_scope() ) {
+            // ExternalSymbol means that current module/program
+            // already depends on the module of ExternalSymbol
+            // present inside StructType's scope. So the order
+            // is already established and hence no need to store
+            // this ExternalSymbol as a dependency.
+            if( ASR::is_a<ASR::ExternalSymbol_t>(*item.second) ) {
+                continue;
+            }
             ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
             char* aggregate_type_name = nullptr;
             if( ASR::is_a<ASR::Struct_t>(*var_type) ) {
