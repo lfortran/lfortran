@@ -2127,14 +2127,22 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::s
     if( scope->resolve_symbol(struct_t_name) != struct_t ) {
         struct_ext_name = "1_" + struct_ext_name;
     }
-    if( scope->get_symbol(struct_ext_name) == nullptr ) {
-        ASR::symbol_t* struct_t_module = ASRUtils::get_asr_owner(struct_t);
+    if( scope->resolve_symbol(struct_ext_name) == nullptr ) {
+        ASR::symbol_t* struct_t_module = ASRUtils::get_asr_owner(
+            ASRUtils::symbol_get_past_external(struct_t));
         LCOMPILERS_ASSERT(struct_t_module != nullptr);
+        SymbolTable* import_struct_t_scope = scope;
+        while( import_struct_t_scope->asr_owner == nullptr ||
+               !ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
+                import_struct_t_scope->asr_owner)) ) {
+            import_struct_t_scope = import_struct_t_scope->parent;
+        }
+        LCOMPILERS_ASSERT(import_struct_t_scope != nullptr);
         ASR::symbol_t* struct_ext = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
-                                    v->base.loc, scope, s2c(al, struct_ext_name), struct_t,
+                                    v->base.loc, import_struct_t_scope, s2c(al, struct_ext_name), struct_t,
                                     ASRUtils::symbol_name(struct_t_module),
                                     nullptr, 0, s2c(al, struct_t_name), ASR::accessType::Public));
-        scope->add_symbol(struct_ext_name, struct_ext);
+        import_struct_t_scope->add_symbol(struct_ext_name, struct_ext);
     }
     std::string v_ext_name = "1_" + struct_t_name + "_" + v_name;
     if( scope->get_symbol(v_ext_name) == nullptr ) {
