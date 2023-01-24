@@ -2308,6 +2308,15 @@ class ReplaceReturnWithGotoVisitor: public ASR::BaseStmtReplacer<ReplaceReturnWi
 
 };
 
+static inline bool present(Vec<ASR::symbol_t*> &v, const ASR::symbol_t* name) {
+    for (auto &a : v) {
+        if (a == name) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Singleton LabelGenerator so that it generates
 // unique labels for different statements, from
 // whereever it is called (be it ASR passes, be it
