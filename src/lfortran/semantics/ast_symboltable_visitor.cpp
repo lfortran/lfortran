@@ -499,13 +499,15 @@ public:
             }
         }
         if (parent_scope->get_symbol(sym_name) != nullptr) {
-            ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
+            ASR::symbol_t *f1 = ASRUtils::symbol_get_past_external(
+                parent_scope->get_symbol(sym_name));
             ASR::Function_t *f2 = nullptr;
             if( ASR::is_a<ASR::Function_t>(*f1) ) {
                 f2 = ASR::down_cast<ASR::Function_t>(f1);
             }
             if ((f1->type == ASR::symbolType::ExternalSymbol && in_submodule) ||
-                f2->m_abi == ASR::abiType::Interactive) {
+                f2->m_abi == ASR::abiType::Interactive ||
+                f2->m_deftype == ASR::deftypeType::Interface) {
                 // Previous declaration will be shadowed
                 parent_scope->erase_symbol(sym_name);
             } else {
