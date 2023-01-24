@@ -1797,9 +1797,40 @@ public:
                             diags.diagnostics.begin(), diags.diagnostics.end());
                     throw SemanticAbort();
                 }
+            } else if (ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
+                ASR::GenericProcedure_t* f3 = ASR::down_cast<ASR::GenericProcedure_t>(f2);
+                bool function_found = false;
+                for( size_t i = 0; i < f3->n_procs && !function_found; i++ ) {
+                    ASR::symbol_t* f4 = ASRUtils::symbol_get_past_external(f3->m_procs[i]);
+                    if( !ASR::is_a<ASR::Function_t>(*f4) ) {
+                        throw SemanticError(std::string(ASRUtils::symbol_name(f4)) +
+                            " is not a function/subroutine.", x.base.base.loc);
+                    }
+                    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f4);
+                    diag::Diagnostics diags;
+                    Vec<ASR::call_arg_t> args_;
+                    args_.from_pointer_n_copy(al, args.p, args.size());
+                    visit_kwargs(args_, x.m_keywords, x.n_keywords,
+                        f->m_args, f->n_args, x.base.base.loc, f,
+                        diags, x.n_member);
+                    if( !diags.has_error() ) {
+                        if( ASRUtils::select_generic_procedure(args_, *f3, x.base.base.loc,
+                            [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); },
+                            false) != -1 ) {
+                            function_found = true;
+                            args.n = 0;
+                            args.from_pointer_n_copy(al, args_.p, args_.size());
+                        }
+                    }
+                }
+                if( !function_found ) {
+                    throw SemanticError("No matching function found for the "
+                        "call to generic procedure, " + std::string(f3->m_name),
+                        x.base.base.loc);
+                }
             } else {
                 throw SemanticError(
-                    "Keyword arguments are not implemented for generic subroutines yet",
+                    "Keyword arguments are not implemented for generic subroutines yet, symbol type: " + std::to_string(f2->type),
                     x.base.base.loc);
             }
         }
