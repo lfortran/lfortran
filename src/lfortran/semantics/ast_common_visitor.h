@@ -1436,9 +1436,10 @@ public:
                     }
                 }
                 if (implicit_save && !is_save) {
+                    // throw warning to that particular variable
                     diag.semantic_warning_label(
                         "Implied save feature",
-                        {x.base.base.loc},
+                        {x.m_syms[i].loc},
                         "Assuming save attribute implicitly for variables"
                     );
                 }
