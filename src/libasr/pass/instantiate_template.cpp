@@ -204,12 +204,6 @@ public:
         return ASR::make_Assignment_t(al, x->base.base.loc, target, value, overloaded);
     }
 
-    ASR::asr_t* duplicate_TemplateBinOp(ASR::TemplateBinOp_t *x) {
-        ASR::expr_t *left = duplicate_expr(x->m_left);
-        ASR::expr_t *right = duplicate_expr(x->m_right);
-        return make_BinOp_helper(left, right, x->m_op, x->base.base.loc);
-    }
-
     ASR::asr_t* duplicate_DoLoop(ASR::DoLoop_t *x) {
         Vec<ASR::stmt_t*> m_body;
         m_body.reserve(al, x->n_body);
