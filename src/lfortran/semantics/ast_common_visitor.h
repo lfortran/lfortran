@@ -3449,10 +3449,12 @@ public:
                             std::string dtype = ASRUtils::type_to_str(dest_type);
                             std::string stype = ASRUtils::type_to_str(source_type);
                             diag.add(Diagnostic(
-                                "Type mismatch in function call, the types must be compatible",
+                                "Type mismatch in function call, the function expects '" + dtype + "' but '" + stype + "' was provided",
                                 Level::Error, Stage::Semantic, {
-                                    Label("type mismatch (" + dtype + " and " + stype + ")",
-                                            {dest->base.loc, source->base.loc})
+                                    Label("type '" + dtype + "' expected, but '" + stype + "' provided",
+                                            {source->base.loc}),
+                                    Label("function definition has parameter type '" + dtype + "'",
+                                            {dest->base.loc})
                                 })
                             );
                             throw SemanticAbort();
