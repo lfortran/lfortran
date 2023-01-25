@@ -779,6 +779,14 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
         size_t i;
         for (i = 0; i < args.size(); i++) {
             ASR::Variable_t *v = ASRUtils::EXPR2VAR(sub.m_args[i]);
+            if (args[i].m_value == nullptr &&
+                v->m_presence == ASR::presenceType::Optional) {
+                // If it's optional and argument is empty
+                // continue to next argument.
+                continue;
+            }
+            // Otherwise this should not be nullptr
+            LCOMPILERS_ASSERT(args[i].m_value != nullptr);
             ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
             ASR::ttype_t *arg2 = v->m_type;
             if (!types_equal(arg1, arg2)) {
