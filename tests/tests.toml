@@ -2779,3 +2779,7 @@ asr_implicit_interface = true
 [[test]]
 filename = "write3.f90"
 llvm = true
+
+[[test]]
+filename = "interface5.f90"
+llvm = true
