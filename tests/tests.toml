@@ -2781,5 +2781,5 @@ filename = "write3.f90"
 llvm = true
 
 [[test]]
-filename = "interface5.f90"
+filename = "../integration_tests/interface_12.f90"
 llvm = true
