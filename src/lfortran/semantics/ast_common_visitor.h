@@ -3693,8 +3693,6 @@ public:
 
             asr = ASR::make_IntegerBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
-        } else if (ASRUtils::is_generic(*left_type) || ASRUtils::is_generic(*right_type)){
-            asr = ASR::make_TemplateBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
         } else if (ASRUtils::is_real(*dest_type)) {
 
             if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {

@@ -313,7 +313,7 @@
                     (SymbolTable
                         15
                         {
-                            __lfortran_generic_avg_s_from_t:
+                            __asr_generic_avg_s_from_t:
                                 (Function
                                     (SymbolTable
                                         20
@@ -394,7 +394,7 @@
                                                     .false.
                                                 )
                                         })
-                                    __lfortran_generic_avg_s_from_t
+                                    __asr_generic_avg_s_from_t
                                     [add_real
                                     slash_real]
                                     [(Var 20 d1)
@@ -536,7 +536,7 @@
                                                 )
                                         })
                                     avg_real_s_from_s
-                                    [__lfortran_generic_avg_s_from_t
+                                    [__asr_generic_avg_s_from_t
                                     slash_real]
                                     [(Var 19 d1)
                                     (Var 19 s1)
@@ -545,7 +545,7 @@
                                     [(=
                                         (Var 19 avg)
                                         (FunctionCall
-                                            15 __lfortran_generic_avg_s_from_t
+                                            15 __asr_generic_avg_s_from_t
                                             ()
                                             [((Var 19 d1))
                                             ((FunctionCall
