@@ -1620,7 +1620,15 @@ public:
             }
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
         } else if (ASR::is_a<ASR::Function_t>(*t)) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
+            bool is_already_defined = false;
+            ASR::symbol_t* imported_func_sym = current_scope->get_symbol(local_sym);
+            if (imported_func_sym != nullptr) {
+                ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(imported_func_sym);
+                if( ext_sym->m_external != t ) {
+                    is_already_defined = true;
+                }
+            }
+            if( is_already_defined ) {
                 throw SemanticError("Function already defined", loc);
             }
             ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(t);
