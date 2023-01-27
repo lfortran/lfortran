@@ -221,13 +221,18 @@ jobs:
         run: |
             git clone https://github.com/certik/minpack.git
             cd minpack
-            git checkout scipy25
-            git checkout 6cab75931b6f4d385d815c37790d8d8d69a2eae5
+            git checkout scipy26
+            git checkout 8b7559cfbc893de34f1fc9746d5f4d0c83b13431
             mkdir lf
             cd lf
             FC=$(pwd)/../../src/bin/lfortran cmake ..
             make
             examples/example_hybrd
+            examples/example_hybrd1
+            examples/example_lmder1
+            examples/example_lmdif1
+            examples/example_primes
+            ctest
 
   test_llvm_10:
     name: Test LLVM 10
