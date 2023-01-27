@@ -242,7 +242,7 @@ RUN(NAME arrays_01_real LABELS gfortran llvm wasm)
 RUN(NAME arrays_01_complex LABELS gfortran llvm)
 RUN(NAME arrays_01_logical LABELS gfortran llvm wasm)
 RUN(NAME arrays_01_multi_dim LABELS gfortran llvm wasm)
-RUN(NAME array_bound_1 LABELS gfortran llvm)
+RUN(NAME array_bound_1 LABELS gfortran llvm wasm)
 RUN(NAME arrays_op_1 LABELS gfortran llvm)
 RUN(NAME arrays_op_2 LABELS gfortran llvm)
 RUN(NAME arrays_op_3 LABELS gfortran llvm)
@@ -638,3 +638,5 @@ RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90)
 
 RUN(NAME external_01 LABELS gfortran llvm)
+
+RUN(NAME interface_12 LABELS gfortran llvm)

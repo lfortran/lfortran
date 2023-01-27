@@ -90,7 +90,7 @@
                     (SymbolTable
                         2
                         {
-                            __lfortran_generic_add_generic:
+                            __asr_generic_add_generic:
                                 (Function
                                     (SymbolTable
                                         11
@@ -141,7 +141,7 @@
                                                     .false.
                                                 )
                                         })
-                                    __lfortran_generic_add_generic
+                                    __asr_generic_add_generic
                                     [func_arg_real]
                                     [(Var 11 x)
                                     (Var 11 y)]
@@ -321,13 +321,13 @@
                                                 )
                                         })
                                     add_real
-                                    [__lfortran_generic_add_generic]
+                                    [__asr_generic_add_generic]
                                     [(Var 10 x)
                                     (Var 10 y)]
                                     [(=
                                         (Var 10 z)
                                         (FunctionCall
-                                            2 __lfortran_generic_add_generic
+                                            2 __asr_generic_add_generic
                                             ()
                                             [((Var 10 x))
                                             ((Var 10 y))]

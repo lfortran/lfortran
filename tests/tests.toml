@@ -2787,3 +2787,7 @@ asr_implicit_interface = true
 [[test]]
 filename = "write3.f90"
 llvm = true
+
+[[test]]
+filename = "../integration_tests/interface_12.f90"
+llvm = true
