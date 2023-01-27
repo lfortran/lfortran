@@ -4056,6 +4056,7 @@ public:
         size_t n_args = args.size();
         std::string fn_name = fn->m_name;
         std::vector<std::string> optional_args;
+        std::vector<int> optional_args_idx;
         for( auto itr = fn->m_symtab->get_scope().begin(); itr != fn->m_symtab->get_scope().end();
              itr++ ) {
             ASR::symbol_t* fn_sym = itr->second;
@@ -4063,6 +4064,12 @@ public:
                 ASR::Variable_t* fn_var = ASR::down_cast<ASR::Variable_t>(fn_sym);
                 if( fn_var->m_presence == ASR::presenceType::Optional ) {
                     optional_args.push_back(itr->first);
+                    for( size_t i = 0; i < fn_n_args; i++ ) {
+                        if( ASR::down_cast<ASR::Var_t>(fn_args[i])->m_v == fn_sym ) {
+                            optional_args_idx.push_back(i);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -4139,8 +4146,11 @@ public:
                 }
             }
         }
-        for (size_t i=0; i < offset; i++) {
-            if (args[i].m_value == nullptr) {
+
+        for (size_t i=0; i < args.size(); i++) {
+            if (args[i].m_value == nullptr &&
+                std::find(optional_args_idx.begin(), optional_args_idx.end(), i)
+                    == optional_args_idx.end()) {
                 diag.semantic_error_label(
                     "Argument was not specified",
                     {loc},
