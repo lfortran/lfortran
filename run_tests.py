@@ -159,7 +159,9 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
 
                 if len(extrafile_) > 0:
                     extrafile_ = os.path.join("tests", extrafile_)
-                    run_cmd("lfortran -c {}".format(extrafile_))
+                    modfile = extrafile_[:-4] + ".mod"
+                    if not os.path.exists(modfile):
+                        run_cmd("lfortran -c {}".format(extrafile_))
 
             if not skip_test:
                 run_test(
