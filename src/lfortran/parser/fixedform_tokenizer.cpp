@@ -977,6 +977,13 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "errorstop")) {
+            push_token_advance(cur, "error");
+            push_token_advance(cur, "stop");
+            tokenize_line(cur);
+            return true;
+        }
+
         if (next_is(cur, "assign")) {
             lex_assign(cur);
             return true;
