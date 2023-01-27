@@ -1,7 +1,8 @@
-module template_array_m
+module template_array_01_m
 
     implicit none
     private
+    public :: test_template
 
     requirement r(t)
         type :: t; end type
@@ -34,9 +35,9 @@ contains
 
 end module
 
-program template_array
+program template_array_01
 
-    use template_array_m
+    use template_array_01_m
     implicit none
 
     call test_template()
