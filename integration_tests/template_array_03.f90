@@ -96,7 +96,7 @@ module template_array_03_m
                 end do
             end do
         end subroutine
-        
+
     end template
 
 contains
@@ -105,11 +105,16 @@ contains
         integer :: arr(2,2)
         integer :: r(2,2)
         arr(1,1) = 1
-        arr(1,2) = 0
+        arr(1,2) = 1
         arr(2,1) = 0
         arr(2,2) = 1
         instantiate array_tmpl(integer, add_integer, zero_integer, mult_integer), &
             only: mymatmul_int => mymatmul_t
+        call mymatmul_int(2, 2, 2, arr, arr, r)
+        print *, r(1,1)
+        print *, r(1,2)
+        print *, r(2,1)
+        print *, r(2,2)
     end subroutine
 
 end module

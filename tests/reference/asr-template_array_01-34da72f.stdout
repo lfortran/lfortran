@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            template_array:
+            template_array_01:
                 (Program
                     (SymbolTable
                         6
@@ -12,7 +12,7 @@
                                     6
                                     insert_t
                                     2 insert_t
-                                    template_array_m
+                                    template_array_01_m
                                     []
                                     insert_t
                                     Private
@@ -22,7 +22,7 @@
                                     6
                                     t
                                     2 t
-                                    template_array_m
+                                    template_array_01_m
                                     []
                                     t
                                     Private
@@ -32,14 +32,14 @@
                                     6
                                     test_template
                                     2 test_template
-                                    template_array_m
+                                    template_array_01_m
                                     []
                                     test_template
                                     Private
                                 )
                         })
-                    template_array
-                    [template_array_m]
+                    template_array_01
+                    [template_array_01_m]
                     [(SubroutineCall
                         6 test_template
                         ()
@@ -47,7 +47,7 @@
                         ()
                     )]
                 ),
-            template_array_m:
+            template_array_01_m:
                 (Module
                     (SymbolTable
                         2
@@ -394,7 +394,7 @@
                                     )]
                                     ()
                                     Source
-                                    Private
+                                    Public
                                     Implementation
                                     ()
                                     .false.
@@ -407,8 +407,8 @@
                                     .false.
                                 )
                         })
-                    template_array_m
-                    [template_array_m]
+                    template_array_01_m
+                    [template_array_01_m]
                     .false.
                     .false.
                 )

@@ -626,6 +626,7 @@ RUN(NAME template_travel LABELS llvm)
 RUN(NAME template_triple LABELS llvm)
 RUN(NAME template_array_01 LABELS llvm)
 RUN(NAME template_array_02 LABELS llvm)
+RUN(NAME template_array_03 LABELS llvm)
 
 RUN(NAME statement1 LABELS gfortran llvm)
 

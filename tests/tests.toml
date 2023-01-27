@@ -40,6 +40,10 @@ filename = "../integration_tests/template_array_02.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_array_03.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/test_backspace_01.f90"
 asr = true
 
