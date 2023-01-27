@@ -1696,11 +1696,11 @@ public:
         args.reserve(al, n_args);
         ASR::expr_t* v_Var = nullptr;
         if( v_expr ) {
-            ASR::symbol_t* v_ext = ASRUtils::import_struct_instance_member(al, v, current_scope);
+            ASR::ttype_t* struct_t_mem_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v));
+            ASR::symbol_t* v_ext = ASRUtils::import_struct_instance_member(al, v, current_scope, struct_t_mem_type);
             v_Var = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                         al, v_expr->base.loc, v_expr, v_ext,
-                        ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)),
-                        nullptr));
+                        struct_t_mem_type, nullptr));
         } else {
             v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
         }
@@ -4186,16 +4186,20 @@ public:
                 tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc,
                         to_lower(x_m_member[i].m_name), to_lower(x_m_member[i - 1].m_name),
                         scope);
-                ASR::symbol_t* tmp2_m_m_ext = ASRUtils::import_struct_instance_member(al, tmp2->m_m, current_scope);
+                ASR::ttype_t* tmp2_mem_type = tmp2->m_type;
+                ASR::symbol_t* tmp2_m_m_ext = ASRUtils::import_struct_instance_member(al,
+                                                    tmp2->m_m, current_scope, tmp2_mem_type);
                 tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp),
-                                                       tmp2_m_m_ext, tmp2->m_type, nullptr);
+                                                       tmp2_m_m_ext, tmp2_mem_type, nullptr);
             }
             i = x_n_member - 1;
             tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc, to_lower(x_m_id),
                         to_lower(x_m_member[i].m_name), scope);
-            ASR::symbol_t* tmp2_m_m_ext = ASRUtils::import_struct_instance_member(al, tmp2->m_m, current_scope);
+            ASR::ttype_t* tmp2_mem_type = tmp2->m_type;
+            ASR::symbol_t* tmp2_m_m_ext = ASRUtils::import_struct_instance_member(al, tmp2->m_m,
+                                            current_scope, tmp2_mem_type);
             tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext,
-                                                   tmp2->m_type, nullptr);
+                                                   tmp2_mem_type, nullptr);
         }
     }
 

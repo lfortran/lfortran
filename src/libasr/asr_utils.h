@@ -2118,7 +2118,8 @@ static inline ASR::ttype_t* get_type_parameter(ASR::ttype_t* t) {
     }
 }
 
-static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::symbol_t* v, SymbolTable* scope) {
+static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::symbol_t* v,
+    SymbolTable* scope, ASR::ttype_t*& mem_type) {
     v = ASRUtils::symbol_get_past_external(v);
     ASR::symbol_t* struct_t = ASRUtils::get_asr_owner(v);
     std::string v_name = ASRUtils::symbol_name(v);
@@ -2150,6 +2151,25 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::s
                                     v->base.loc, scope, s2c(al, v_ext_name), ASRUtils::symbol_get_past_external(v),
                                     s2c(al, struct_ext_name), nullptr, 0, s2c(al, v_name), ASR::accessType::Public));
         scope->add_symbol(v_ext_name, v_ext);
+    }
+
+    if( mem_type && ASR::is_a<ASR::Struct_t>(*mem_type) ) {
+        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(mem_type);
+        std::string struct_type_name = ASRUtils::symbol_name(struct_t->m_derived_type);
+        ASR::symbol_t* struct_t_m_derived_type = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
+        if( scope->resolve_symbol(struct_type_name) == nullptr ) {
+            std::string struct_type_name_ = "1_" + struct_type_name;
+            if( scope->get_symbol(struct_type_name_) == nullptr ) {
+                ASR::Module_t* struct_type_module = ASRUtils::get_sym_module(struct_t_m_derived_type);
+                LCOMPILERS_ASSERT(struct_type_module != nullptr);
+                ASR::symbol_t* imported_struct_type = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                    v->base.loc, scope, s2c(al, struct_type_name_), struct_t_m_derived_type, struct_type_module->m_name,
+                    nullptr, 0, s2c(al, struct_type_name), ASR::accessType::Public));
+                scope->add_symbol(struct_type_name_, imported_struct_type);
+            }
+            mem_type = ASRUtils::TYPE(ASR::make_Struct_t(al, mem_type->base.loc, scope->get_symbol(struct_type_name_),
+                            struct_t->m_dims, struct_t->n_dims));
+        }
     }
     return scope->get_symbol(v_ext_name);
 }
