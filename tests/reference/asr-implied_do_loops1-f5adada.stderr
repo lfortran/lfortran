@@ -1,5 +1,0 @@
-warning: Implied save feature
- --> tests/../integration_tests/implied_do_loops1.f90:3:5
-  |
-3 |     integer :: a(10)=(/(j,j=1,10)/)
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

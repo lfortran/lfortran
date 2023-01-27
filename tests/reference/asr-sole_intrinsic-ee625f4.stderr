@@ -1,5 +1,0 @@
-warning: Implied save feature
- --> tests/sole_intrinsic.f:7:12
-  |
-7 |            complex :: x = (1.0, -3.0)
-  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

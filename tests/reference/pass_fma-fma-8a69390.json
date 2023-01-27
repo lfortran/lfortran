@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "pass_fma-fma-8a69390.stdout",
     "stdout_hash": "dc8f7775d06452750ee06de1cab45afad55e3b64d13152cf6bc6b132",
-    "stderr": "pass_fma-fma-8a69390.stderr",
-    "stderr_hash": "73cc66699c323bc2f388a9cbc0c27103f284dd4ab0715dc01f5f53aa",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

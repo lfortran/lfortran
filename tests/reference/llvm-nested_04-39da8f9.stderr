@@ -1,5 +1,5 @@
-warning: Implied save feature
- --> tests/../integration_tests/nested_04.f90:9:1
+warning: Assuming implicit save attribute for variable declaration
+ --> tests/../integration_tests/nested_04.f90:9:9
   |
 9 | real :: yy = 6.6
-  | ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+  |         ^^^^^^^^ help: add explicit save attribute

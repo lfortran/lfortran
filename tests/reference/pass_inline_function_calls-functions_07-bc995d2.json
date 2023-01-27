@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "pass_inline_function_calls-functions_07-bc995d2.stdout",
     "stdout_hash": "9066c637472f8975b0a698f826a5a05b188072aaaf8565d7bb6c26ef",
-    "stderr": "pass_inline_function_calls-functions_07-bc995d2.stderr",
-    "stderr_hash": "930264c233d18c37229a870bdc0cd0fb187a48b9f0f1e2ce996183cf",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

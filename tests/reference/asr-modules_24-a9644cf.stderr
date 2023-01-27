@@ -1,5 +1,0 @@
-warning: Implied save feature
- --> tests/../integration_tests/modules_24.f90:5:8
-  |
-5 |        logical :: inline = .false.
-  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

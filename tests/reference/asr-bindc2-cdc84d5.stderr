@@ -1,5 +1,0 @@
-warning: Implied save feature
- --> tests/../integration_tests/bindc2.f90:4:1
-  |
-4 | integer :: idx = 1
-  | ^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-fma-1923392.stdout",
     "stdout_hash": "67d1045329dae4d5b8718510f7e3e57df0e02c5620693bcea4f4487b",
-    "stderr": "asr-fma-1923392.stderr",
-    "stderr_hash": "73cc66699c323bc2f388a9cbc0c27103f284dd4ab0715dc01f5f53aa",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

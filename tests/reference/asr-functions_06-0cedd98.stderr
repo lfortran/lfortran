@@ -1,5 +1,0 @@
-warning: Implied save feature
-  --> tests/../integration_tests/functions_06.f90:36:5
-   |
-36 |     character(len=5) :: string = "  abc"
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables

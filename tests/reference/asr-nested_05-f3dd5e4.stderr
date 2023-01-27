@@ -1,11 +1,11 @@
-warning: Implied save feature
- --> tests/../integration_tests/nested_05.f90:7:1
+warning: Assuming implicit save attribute for variable declaration
+ --> tests/../integration_tests/nested_05.f90:7:12
   |
 7 | integer :: x = 6
-  | ^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+  |            ^^^^^ help: add explicit save attribute
 
-warning: Implied save feature
- --> tests/../integration_tests/nested_05.f90:8:1
+warning: Assuming implicit save attribute for variable declaration
+ --> tests/../integration_tests/nested_05.f90:8:9
   |
 8 | real :: y = 5.5
-  | ^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+  |         ^^^^^^^ help: add explicit save attribute

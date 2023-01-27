@@ -4,14 +4,8 @@ style suggestion: Use '>' instead of '.gt.'
 9 |         if (i .GT. 5) then
   |               ^^^^ help: write this as '>'
 
-warning: Implied save feature
- --> tests/../integration_tests/return_03.f90:2:5
-  |
-2 |     integer :: main_out = 999
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
-
-warning: Implied save feature
- --> tests/../integration_tests/return_03.f90:8:9
+warning: Assuming implicit save attribute for variable declaration
+ --> tests/../integration_tests/return_03.f90:8:20
   |
 8 |         integer :: i = 10
-  |         ^^^^^^^^^^^^^^^^^ Assuming save attribute implicitly for variables
+  |                    ^^^^^^ help: add explicit save attribute
