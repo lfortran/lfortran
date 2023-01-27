@@ -696,6 +696,7 @@ public:
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
+    bool &is_Function;
 
     Vec<char*> data_member_names;
     std::set<std::string> current_function_dependencies;
@@ -703,9 +704,10 @@ public:
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
-            std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
+            std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+            bool &is_Function)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
-          current_scope{symbol_table}, implicit_mapping{implicit_mapping},
+          current_scope{symbol_table}, implicit_mapping{implicit_mapping}, is_Function{is_Function},
           current_variable_type_{nullptr} {
         current_module_dependencies.reserve(al, 4);
     }
@@ -1435,13 +1437,14 @@ public:
                         storage_type = ASR::storage_typeType::Save; // implicit save
                     }
                 }
-                if (implicit_save && !is_save) {
+                if (is_Function && implicit_save && !is_save) {
                     // throw warning to that particular variable
                     diag.semantic_warning_label(
-                        "Implied save feature",
+                        "Assuming implicit save attribute for variable declaration",
                         {x.m_syms[i].loc},
-                        "Assuming save attribute implicitly for variables"
+                        "help: add explicit save attribute"
                     );
+
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
                     if ( !is_implicitly_declared && !is_external) {

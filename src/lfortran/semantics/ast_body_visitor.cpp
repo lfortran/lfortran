@@ -33,8 +33,8 @@ public:
     AST::stmt_t **starting_m_body = nullptr;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
-            CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
-        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping),
+            CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping, bool &is_Function)
+        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, is_Function),
         asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -1320,8 +1320,10 @@ public:
             t = current_scope->get_symbol(subrout_name);
         }
         for (size_t i=0; i<x.n_decl; i++) {
+            is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
                 visit_unit_decl2(*x.m_decl[i]);
+            is_Function = false;
         }
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
@@ -1391,8 +1393,10 @@ public:
         }
 
         for (size_t i=0; i<x.n_decl; i++) {
+            is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
                 visit_unit_decl2(*x.m_decl[i]);
+            is_Function = false;
         }
 
         starting_m_body = nullptr;
@@ -2407,9 +2411,10 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
         std::map<std::string, std::map<std::string, ASR::asr_t*>>& requirement_map,
-        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
+        bool &is_Function)
 {
-    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping);
+    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, is_Function);
     try {
         b.is_body_visitor = true;
         b.requirement_map = requirement_map;
