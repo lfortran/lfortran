@@ -121,7 +121,7 @@ end function
 elemental real(sp) function ssqrt(x) result(r)
 real(sp), intent(in) :: x
 if (x >= 0) then
-    r = x**(1._sp/2)
+    r = _lfortran_sqrt(x)
 else
     error stop "sqrt(x) for x < 0 is not allowed"
 end if
@@ -130,7 +130,7 @@ end function
 elemental real(dp) function dsqrt(x) result(r)
 real(dp), intent(in) :: x
 if (x >= 0) then
-    r = x**(1._dp/2)
+    r = _lfortran_sqrt(x)
 else
     error stop "sqrt(x) for x < 0 is not allowed"
 end if
