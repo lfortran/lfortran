@@ -1,6 +1,7 @@
 module tomlf_build_keyval
    implicit none
 
+   real :: x
    interface get_value
       module procedure :: get_value_float_sp
       module procedure :: get_value_float_dp

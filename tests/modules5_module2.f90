@@ -1,5 +1,5 @@
 module tomlf_build_array
-   use tomlf_build_keyval, only : get_value
+   use tomlf_build_keyval, only : get_value, x
    implicit none
 
    interface get_value
@@ -17,7 +17,7 @@ subroutine get_elem_table(array, pos, ptr, stat)
    integer, intent(in) :: pos
    real, pointer, intent(out) :: ptr
    integer, intent(out), optional :: stat
-
+   x = 1.0
 end subroutine get_elem_table
 
 
