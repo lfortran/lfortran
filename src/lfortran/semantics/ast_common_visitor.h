@@ -3043,6 +3043,8 @@ public:
                 tmp = create_Associated(x);
             } else if( var_name == "sqrt" ) {
                 tmp = create_IntrinsicFunctionSqrt(x);
+            } else if( var_name == "dsqrt" ) {
+                tmp = create_IntrinsicFunctionSqrt(x);
             } else {
                 LCompilersException("create_" + var_name + " not implemented yet.");
             }
