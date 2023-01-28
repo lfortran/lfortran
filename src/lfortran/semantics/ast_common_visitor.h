@@ -1840,6 +1840,9 @@ public:
         if( is_item ) {
             Vec<ASR::dimension_t> empty_dims;
             empty_dims.reserve(al, 1);
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*v_Var)) {
+                type = ASR::down_cast<ASR::StructInstanceMember_t>(v_Var)->m_type;
+            }
             type = ASRUtils::duplicate_type(al, type, &empty_dims);
             return ASR::make_ArrayItem_t(al, loc,
                 v_Var, args.p, args.size(), type, ASR::arraystorageType::ColMajor, arr_ref_val);

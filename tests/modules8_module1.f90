@@ -3,6 +3,7 @@ module fpm_manifest_package
     implicit none
 
     type :: package_config_t
+        character(len=:), allocatable :: name
         type(executable_config_t), allocatable :: executable(:)
     end type package_config_t
 
