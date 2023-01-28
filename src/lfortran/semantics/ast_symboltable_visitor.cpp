@@ -1703,7 +1703,11 @@ public:
             pass_options.mod_files_dir = compiler_options.mod_files_dir;
             pass_options.include_dirs = compiler_options.include_dirs;
 
-            t = (ASR::symbol_t*)(ASRUtils::load_module(al, current_scope->parent,
+            SymbolTable *tu_symtab = current_scope->parent;
+            while (tu_symtab->parent != nullptr) {
+                tu_symtab = tu_symtab->parent;
+            }
+            t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
                 msym, x.base.base.loc, false, pass_options, true,
                 [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
                 ));
