@@ -319,6 +319,8 @@ expr
     | PointerNullConstant(ttype type)
     | PointerAssociated(expr ptr, expr? tgt, ttype type, expr? value)
 
+    | IntrinsicFunctionSqrt(expr arg, ttype type, expr? value)
+
 
 -- `len` in Character:
 -- >=0 ... the length of the string, known at compile time
