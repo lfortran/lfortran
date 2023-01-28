@@ -177,7 +177,7 @@ jobs:
         shell: bash -l {0}
         run: |
             ctest
-            ./run_tests.py
+            ./run_tests.py -s
             cd integration_tests
             ./run_tests.py -b llvm
 
