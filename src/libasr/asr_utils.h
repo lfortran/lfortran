@@ -2169,6 +2169,10 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::s
             }
             mem_type = ASRUtils::TYPE(ASR::make_Struct_t(al, mem_type->base.loc, scope->get_symbol(struct_type_name_),
                             struct_t->m_dims, struct_t->n_dims));
+        } else {
+            mem_type = ASRUtils::TYPE(ASR::make_Struct_t(al, mem_type->base.loc,
+                scope->resolve_symbol(struct_type_name),
+                struct_t->m_dims, struct_t->n_dims));
         }
     }
     return scope->get_symbol(v_ext_name);
