@@ -27,7 +27,7 @@ struct IntrinsicProceduresAsASRNodes {
             intrinsics_present_in_ASR = {"size", "lbound", "ubound",
                 "transpose", "matmul", "pack", "transfer", "cmplx",
                 "dcmplx", "reshape", "ichar", "iachar", "maxloc",
-                "null", "associated"};
+                "null", "associated", "sqrt"};
 
             kind_based_intrinsics = {"scan", "verify"};
         }
@@ -125,7 +125,6 @@ struct IntrinsicProcedures {
             {"erfc", {m_math, &eval_erfc, true}},
             {"abs", {m_math, &eval_abs, true}},
             {"iabs", {m_math, &eval_abs, true}},
-            {"sqrt", {m_math, &eval_sqrt, true}},
             {"dsqrt", {m_math, &eval_dsqrt, true}},
             {"datan", {m_math, &eval_datan, true}},
             {"dabs", {m_math2, &eval_dabs, true}},
