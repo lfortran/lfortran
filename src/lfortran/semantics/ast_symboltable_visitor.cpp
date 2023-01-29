@@ -91,9 +91,8 @@ public:
     };
 
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
-        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
-        bool &is_Function)
-      : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, is_Function) {}
+        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
+      : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -1800,10 +1799,9 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         diag::Diagnostics &diagnostics,
         SymbolTable *symbol_table, CompilerOptions &compiler_options,
         std::map<std::string, std::map<std::string, ASR::asr_t*>>& requirement_map,
-        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
-        bool &is_Function)
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
 {
-    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, is_Function);
+    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticError &e) {

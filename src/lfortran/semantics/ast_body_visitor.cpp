@@ -33,8 +33,8 @@ public:
     AST::stmt_t **starting_m_body = nullptr;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
-            CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping, bool &is_Function)
-        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, is_Function),
+            CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
+        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping),
         asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -2411,10 +2411,9 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
         std::map<std::string, std::map<std::string, ASR::asr_t*>>& requirement_map,
-        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
-        bool &is_Function)
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
 {
-    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, is_Function);
+    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping);
     try {
         b.is_body_visitor = true;
         b.requirement_map = requirement_map;
