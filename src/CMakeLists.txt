@@ -3,8 +3,3 @@ add_subdirectory(tests)
 add_subdirectory(lfortran)
 add_subdirectory(bin)
 add_subdirectory(runtime/legacy)
-
-if (WITH_RUNTIME_LIBRARY)
-  add_subdirectory(runtime)
-  add_subdirectory(runtime/legacy)
-endif()

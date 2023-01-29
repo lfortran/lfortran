@@ -316,3 +316,18 @@ message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
 
 
 add_subdirectory(src)
+
+# This is called after lfortran has been installed
+if (WITH_RUNTIME_LIBRARY)
+  install(CODE "set(CMAKE_COMMAND \"${CMAKE_COMMAND}\")")
+  install(CODE "set(CMAKE_GENERATOR \"${CMAKE_GENERATOR}\")")
+  install(CODE "set(CMAKE_TOOLCHAIN_FILE \"${CMAKE_TOOLCHAIN_FILE}\")")
+  install(CODE "set(CMAKE_INSTALL_PREFIX \"${CMAKE_INSTALL_PREFIX}\")")
+  install(CODE "set(CMAKE_BUILD_TYPE \"${CMAKE_BUILD_TYPE}\")")
+  install(CODE "set(CMAKE_PREFIX_PATH \"${CMAKE_PREFIX_PATH}\")")
+  install(CODE "set(CMAKE_VERBOSE_MAKEFILE \"${CMAKE_VERBOSE_MAKEFILE}\")")
+  install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
+  install(CODE "set(CMAKE_BINARY_DIR \"${CMAKE_BINARY_DIR}\")")
+
+  install(SCRIPT "${CMAKE_SOURCE_DIR}/BuildRuntime.cmake")
+endif()
