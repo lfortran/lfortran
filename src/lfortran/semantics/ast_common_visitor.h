@@ -683,7 +683,7 @@ public:
     bool is_template = false;
     bool is_instantiate = false;
     bool is_current_procedure_templated = false;
-    bool is_Function;
+    bool is_Function = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
 
     // fields for generics
