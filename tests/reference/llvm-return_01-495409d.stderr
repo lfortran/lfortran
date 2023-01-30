@@ -1,11 +1,5 @@
 style suggestion: Use '>' instead of '.gt.'
- --> tests/../integration_tests/return_01.f90:8:15
+ --> tests/../integration_tests/return_01.f90:9:15
   |
-8 |         if (i .GT. 5) then
+9 |         if (i .GT. 5) then
   |               ^^^^ help: write this as '>'
-
-warning: Assuming implicit save attribute for variable declaration
- --> tests/../integration_tests/return_01.f90:7:20
-  |
-7 |         integer :: i = 10
-  |                    ^^^^^^ help: add explicit save attribute

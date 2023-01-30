@@ -2,12 +2,12 @@
     "basename": "llvm-nested_04-39da8f9",
     "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
     "infile": "tests/../integration_tests/nested_04.f90",
-    "infile_hash": "2b8a74be94384279e6675120af0087fbbadee6a829dc9f04e36dabfb",
+    "infile_hash": "e1cee5ef2176599a2dccac3f59fc86ddc957a5f559f5edb7ddd710ca",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-nested_04-39da8f9.stdout",
     "stdout_hash": "cf37bd451b6bfc4191e85b14c5ff53b17df44a18a827f3b3c0932b6c",
-    "stderr": "llvm-nested_04-39da8f9.stderr",
-    "stderr_hash": "48d6e4f9cfdad34a4ceb619616c530a4550c3b1ec321adc70ea88fae",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }
