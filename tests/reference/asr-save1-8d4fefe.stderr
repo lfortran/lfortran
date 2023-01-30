@@ -2,22 +2,22 @@ warning: Assuming implicit save attribute for variable declaration
  --> tests/save1.f90:2:13
   |
 2 |     real :: x = 5, z
-  |             ^^^^^ help: add explicit save attribute
+  |             ^^^^^ help: add explicit save attribute or initialize in a separate statement
 
 warning: Assuming implicit save attribute for variable declaration
  --> tests/save1.f90:8:13
   |
 8 |     real :: x = 5, z
-  |             ^^^^^ help: add explicit save attribute
+  |             ^^^^^ help: add explicit save attribute or initialize in a separate statement
 
 warning: Assuming implicit save attribute for variable declaration
   --> tests/save1.f90:20:17
    |
 20 |         real :: x = 5, z
-   |                 ^^^^^ help: add explicit save attribute
+   |                 ^^^^^ help: add explicit save attribute or initialize in a separate statement
 
 warning: Assuming implicit save attribute for variable declaration
   --> tests/save1.f90:26:17
    |
 26 |         real :: x = 5, z
-   |                 ^^^^^ help: add explicit save attribute
+   |                 ^^^^^ help: add explicit save attribute or initialize in a separate statement

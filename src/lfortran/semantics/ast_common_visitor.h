@@ -1440,7 +1440,7 @@ public:
                     diag.semantic_warning_label(
                         "Assuming implicit save attribute for variable declaration",
                         {x.m_syms[i].loc},
-                        "help: add explicit save attribute"
+                        "help: add explicit save attribute or initialize in a separate statement"
                     );
 
                 }
