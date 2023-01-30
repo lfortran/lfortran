@@ -4,7 +4,8 @@ implicit none
 contains
 
 subroutine b()
-real :: x = 6
+real :: x
+x = 6
 print *, "b()"
 call c()
 contains
