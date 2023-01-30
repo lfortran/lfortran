@@ -316,6 +316,15 @@ ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &m
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                             ASR::asr_t* v_var, ASR::symbol_t *v,
                             ASR::symbol_t* member, SymbolTable* current_scope) {
+    member = ASRUtils::symbol_get_past_external(member);
+    if (ASR::is_a<ASR::StructType_t>(*member)) {
+        ASR::StructType_t* member_variable = ASR::down_cast<ASR::StructType_t>(member);
+        ASR::ttype_t* member_type = ASRUtils::TYPE(ASR::make_Struct_t(al,
+            member_variable->base.base.loc, member, nullptr, 0));
+        return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
+                member, member_type, nullptr);
+    } else {
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*member));
     ASR::Variable_t* member_variable = ASR::down_cast<ASR::Variable_t>(member);
     ASR::ttype_t* member_type = member_variable->m_type;
     switch( member_type->type ) {
@@ -391,6 +400,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
     }
     return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
         member_ext, member_type, value);
+    }
 }
 
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
