@@ -701,6 +701,8 @@ public:
     std::set<std::string> current_function_dependencies;
     ASR::ttype_t* current_variable_type_;
 
+    int32_t enum_init_val; // TODO: rework this to not use global variable
+
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
             std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
@@ -708,6 +710,7 @@ public:
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
           current_variable_type_{nullptr} {
         current_module_dependencies.reserve(al, 4);
+        enum_init_val = 0;
     }
 
     ASR::symbol_t* resolve_symbol(const Location &loc, const std::string &sub_name) {
@@ -771,6 +774,12 @@ public:
             if (implicit_dictionary.find(std::string(1,var_name[0])) == implicit_dictionary.end()) {
         	    implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
             }
+        }
+        // Check variable in enum scope, if enum is defined
+        if (v == nullptr && scope->resolve_symbol("enum") != nullptr) {
+            ASR::symbol_t *enum_s = scope->resolve_symbol("enum");
+            ASR::EnumType_t *enum_ = ASR::down_cast<ASR::EnumType_t>(enum_s);
+            v = enum_->m_symtab->get_symbol(var_name);
         }
         if (!v) {
             if (compiler_options.implicit_typing) {
@@ -1134,6 +1143,39 @@ public:
                                     // TODO
                                     throw SemanticError("Attribute declaration not "
                                         "supported yet", x.base.base.loc);
+                                } else if (sa->m_attr == AST::simple_attributeType::AttrEnumerator) {
+                                    ASR::symbol_t *sym;
+                                    ASR::ttype_t *init_type = ASRUtils::TYPE(
+                                        ASR::make_Integer_t(al, x.m_syms[i].loc,
+                                        4, nullptr, 0));
+                                    ASR::expr_t *init_expr = ASRUtils::EXPR(
+                                        ASR::make_IntegerConstant_t(al, x.m_syms[i].loc,
+                                        enum_init_val, init_type));
+                                    if (x.m_syms[i].m_sym == AST::symbolType::None) {
+                                        // a_value_attr?
+                                        // storage_type?
+                                        sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                                            al, x.m_syms[i].loc, current_scope,
+                                            x.m_syms[i].m_name, nullptr, 0, ASR::intentType::Local,
+                                            init_expr, init_expr, ASR::storage_typeType::Parameter,
+                                            init_type, ASR::abiType::Source, ASR::accessType::Public,
+                                            ASR::presenceType::Required, false));
+                                        current_scope->add_symbol(x.m_syms[i].m_name, sym);
+                                    } else {
+                                        enum_init_val = AST::down_cast<AST::Num_t>(
+                                            x.m_syms[i].m_initializer)->m_n;
+                                        this->visit_expr(*x.m_syms[i].m_initializer);
+                                        ASR::expr_t *init_expr = ASRUtils::EXPR(tmp);
+                                        init_type = ASRUtils::expr_type(init_expr);
+                                        sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                                            al, x.m_syms[i].loc, current_scope,
+                                            x.m_syms[i].m_name, nullptr, 0, ASR::intentType::Local,
+                                            init_expr, init_expr, ASR::storage_typeType::Parameter,
+                                            init_type, ASR::abiType::Source, ASR::accessType::Public,
+                                            ASR::presenceType::Required, false));
+                                        current_scope->add_symbol(x.m_syms[i].m_name, sym);
+                                    }
+                                    enum_init_val++;
                                 } else {
                                     throw SemanticError("Attribute declaration not "
                                             "supported", x.base.base.loc);

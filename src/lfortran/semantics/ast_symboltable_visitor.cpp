@@ -1879,6 +1879,109 @@ public:
         called_requirement.clear();
     }
 
+    void visit_Enum(const AST::Enum_t &x) {
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        ASR::abiType abi_type = ASR::abiType::BindC;
+        if (x.n_attr == 1) {
+            if (AST::is_a<AST::AttrBind_t>(*x.m_attr[0])) {
+                AST::Bind_t *bind = AST::down_cast<AST::Bind_t>(
+                    AST::down_cast<AST::AttrBind_t>(x.m_attr[0])->m_bind);
+                if (bind->n_args == 1 && AST::is_a<AST::Name_t>(*bind->m_args[0])) {
+                    AST::Name_t *name = AST::down_cast<AST::Name_t>(
+                        bind->m_args[0]);
+                    if (to_lower(std::string(name->m_id)) != "c") {
+                        throw SemanticError("Unsupported language in bind()",
+                            x.base.base.loc);
+                    }
+                } else {
+                    throw SemanticError("Language name must be specified in "
+                        "bind() as a plain text", x.base.base.loc);
+                }
+            } else {
+                throw SemanticError("Unsupported attribute type in enum, "
+                    "only bind() is allowed", x.base.base.loc);
+            }
+        } else {
+            throw SemanticError("Only one attribute is allowed in enum",
+                x.base.base.loc);
+        }
+
+        for (size_t i=0; i<x.n_items; i++) {
+            this->visit_unit_decl2(*x.m_items[i]);
+        }
+        Vec<char *> m_members;
+        m_members.reserve(al, 4);
+        ASR::ttype_t *type = nullptr;
+        for( auto sym: current_scope->get_scope() ) {
+            ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(sym.second);
+            m_members.push_back(al, member_var->m_name);
+            if( type == nullptr ) {
+                type = member_var->m_type;
+            } else {
+                if( !ASRUtils::check_equal_type(type, member_var->m_type) ) {
+                    throw SemanticError("All members of enum should be of the "
+                        "same type.", x.base.base.loc);
+                }
+            }
+        }
+
+        ASR::enumtypeType enum_value_type = ASR::enumtypeType::IntegerConsecutiveFromZero;
+        {
+            int8_t IntegerConsecutiveFromZero = 1;
+            int8_t IntegerNotUnique = 0;
+            int8_t IntegerUnique = 1;
+            std::map<int64_t, int64_t> value2count;
+            for( auto sym: current_scope->get_scope() ) {
+                ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(sym.second);
+                ASR::expr_t* value = ASRUtils::expr_value(member_var->m_symbolic_value);
+                int64_t value_int64 = -1;
+                ASRUtils::extract_value(value, value_int64);
+                if( value2count.find(value_int64) == value2count.end() ) {
+                    value2count[value_int64] = 0;
+                }
+                value2count[value_int64] += 1;
+            }
+            int64_t prev = -1;
+            for( auto itr: value2count ) {
+                if( itr.second > 1 ) {
+                    IntegerNotUnique = 1;
+                    IntegerUnique = 0;
+                    IntegerConsecutiveFromZero = 0;
+                    break ;
+                }
+                if( itr.first - prev != 1 ) {
+                    IntegerConsecutiveFromZero = 0;
+                }
+                prev = itr.first;
+            }
+            if( IntegerConsecutiveFromZero ) {
+                if( value2count.find(0) == value2count.end() ) {
+                    IntegerConsecutiveFromZero = 0;
+                    IntegerUnique = 1;
+                } else {
+                    IntegerUnique = 0;
+                }
+            }
+            LCOMPILERS_ASSERT(IntegerConsecutiveFromZero + IntegerNotUnique + IntegerUnique == 1);
+            if( IntegerConsecutiveFromZero ) {
+                enum_value_type = ASR::enumtypeType::IntegerConsecutiveFromZero;
+            } else if( IntegerNotUnique ) {
+                enum_value_type = ASR::enumtypeType::IntegerNotUnique;
+            } else if( IntegerUnique ) {
+                enum_value_type = ASR::enumtypeType::IntegerUnique;
+            }
+        }
+
+        std::string sym_name = "enum";
+        tmp = ASR::make_EnumType_t(al, x.base.base.loc, current_scope,
+            s2c(al, sym_name), nullptr, 0, m_members.p, m_members.n, abi_type,
+            dflt_access, enum_value_type, type, nullptr);
+        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        current_scope = parent_scope;
+    }
+
 };
 
 Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &ast,
