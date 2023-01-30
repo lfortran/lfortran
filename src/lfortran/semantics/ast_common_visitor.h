@@ -510,6 +510,7 @@ public:
         }
 
     } else if (x.m_op == AST::unaryopType::Not) {
+        
         if (ASRUtils::is_logical(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 bool op_value = ASR::down_cast<ASR::LogicalConstant_t>(
@@ -519,30 +520,11 @@ public:
             }
             asr = ASR::make_LogicalNot_t(al, x.base.base.loc, operand, operand_type, value);
             return;
-        } else {
+        } 
+        else {
             throw SemanticError("Operand of .not. operator is "+
                 std::string(ASRUtils::type_to_str(operand_type)), x.base.base.loc);
         }
-        // else if (ASRUtils::is_real(*operand_type)) {
-            // check if operand is zero or not
-            // if( ASRUtils::expr_value(operand) != nullptr ) {
-            //     double op_value = ASR::down_cast<ASR::RealConstant_t>(
-            //                         ASRUtils::expr_value(operand))->m_r;
-            //     std::cout<<op_value<<std::endl;
-            //     ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
-            //     if (op_value == 0.0) {
-            //         value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
-            //             al, x.base.base.loc, true, type));
-            //     } else {
-            //         value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
-            //             al, x.base.base.loc, false, type));
-            //     }
-            //     asr = ASR::make_LogicalNot_t(al, x.base.base.loc, operand, operand_type, value);
-            // }
-
-        // } 
-        
-
     }
   }
 
