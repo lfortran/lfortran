@@ -93,9 +93,9 @@
                                                     x
                                                     []
                                                     Local
-                                                    (IntegerConstant 2 (Integer 4 []))
                                                     ()
-                                                    Save
+                                                    ()
+                                                    Default
                                                     (Integer 4 [])
                                                     Source
                                                     Public
@@ -107,6 +107,11 @@
                                     []
                                     [(Var 3 a)]
                                     [(=
+                                        (Var 3 x)
+                                        (IntegerConstant 2 (Integer 4 []))
+                                        ()
+                                    )
+                                    (=
                                         (Var 3 b)
                                         (IntegerBinOp
                                             (Var 3 a)

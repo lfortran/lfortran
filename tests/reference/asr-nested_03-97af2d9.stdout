@@ -79,17 +79,9 @@
                                                     x
                                                     []
                                                     Local
-                                                    (Cast
-                                                        (IntegerConstant 6 (Integer 4 []))
-                                                        IntegerToReal
-                                                        (Real 4 [])
-                                                        (RealConstant
-                                                            6.000000
-                                                            (Real 4 [])
-                                                        )
-                                                    )
                                                     ()
-                                                    Save
+                                                    ()
+                                                    Default
                                                     (Real 4 [])
                                                     Source
                                                     Public
@@ -100,7 +92,20 @@
                                     b
                                     [c]
                                     []
-                                    [(Print
+                                    [(=
+                                        (Var 3 x)
+                                        (Cast
+                                            (IntegerConstant 6 (Integer 4 []))
+                                            IntegerToReal
+                                            (Real 4 [])
+                                            (RealConstant
+                                                6.000000
+                                                (Real 4 [])
+                                            )
+                                        )
+                                        ()
+                                    )
+                                    (Print
                                         ()
                                         [(StringConstant
                                             "b()"

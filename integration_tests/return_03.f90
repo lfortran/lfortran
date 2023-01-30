@@ -5,7 +5,8 @@ program main
     contains
     subroutine main1(out_var)
         integer :: out_var
-        integer :: i = 10
+        integer :: i
+        i = 10
         if (i .GT. 5) then
             out_var = i
             print *, "early return"

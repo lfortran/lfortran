@@ -195,17 +195,9 @@
                                                     x
                                                     []
                                                     Local
-                                                    (Cast
-                                                        (IntegerConstant 2 (Integer 4 []))
-                                                        IntegerToReal
-                                                        (Real 4 [])
-                                                        (RealConstant
-                                                            2.000000
-                                                            (Real 4 [])
-                                                        )
-                                                    )
                                                     ()
-                                                    Save
+                                                    ()
+                                                    Default
                                                     (Real 4 [])
                                                     Source
                                                     Public
@@ -217,6 +209,19 @@
                                     [f]
                                     [(Var 4 a)]
                                     [(=
+                                        (Var 4 x)
+                                        (Cast
+                                            (IntegerConstant 2 (Integer 4 []))
+                                            IntegerToReal
+                                            (Real 4 [])
+                                            (RealConstant
+                                                2.000000
+                                                (Real 4 [])
+                                            )
+                                        )
+                                        ()
+                                    )
+                                    (=
                                         (Var 4 a_f_real)
                                         (RealConstant
                                             0.000000

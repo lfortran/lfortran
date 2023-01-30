@@ -122,7 +122,8 @@ end function
 function adjustl(x) result(r)
     character(len=*),intent(in) :: x
     character(len=len(x)) :: r
-    integer :: i, j = 1, initial_spaces_cnt
+    integer :: i, j, initial_spaces_cnt
+    j = 1
     initial_spaces_cnt = cnt_initial_spaces(x)
 
     do i = initial_spaces_cnt + 1, len(x)

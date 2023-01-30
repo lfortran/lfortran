@@ -19,7 +19,8 @@ contains
 
     real function f(a) result(b)
     real, intent(in) :: a
-    real :: x = 2
+    real :: x
+    x = 2
     b = a + f_real(0.0)
     end function
 
