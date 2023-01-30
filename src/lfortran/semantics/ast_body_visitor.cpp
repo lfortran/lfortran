@@ -1320,8 +1320,10 @@ public:
             t = current_scope->get_symbol(subrout_name);
         }
         for (size_t i=0; i<x.n_decl; i++) {
+            is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
                 visit_unit_decl2(*x.m_decl[i]);
+            is_Function = false;
         }
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
@@ -1391,8 +1393,10 @@ public:
         }
 
         for (size_t i=0; i<x.n_decl; i++) {
+            is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
                 visit_unit_decl2(*x.m_decl[i]);
+            is_Function = false;
         }
 
         starting_m_body = nullptr;

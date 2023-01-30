@@ -1,0 +1,5 @@
+warning: Assuming implicit save attribute for variable declaration
+  --> tests/../integration_tests/functions_05.f90:23:16
+   |
+23 |     integer :: x = 2
+   |                ^^^^^ help: add explicit save attribute

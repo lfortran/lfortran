@@ -1,0 +1,5 @@
+warning: Assuming implicit save attribute for variable declaration
+  --> tests/program4.f90:30:13
+   |
+30 |     real :: saved1 = 2.0
+   |             ^^^^^^^^^^^^ help: add explicit save attribute

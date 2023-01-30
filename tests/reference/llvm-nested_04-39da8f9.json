@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "llvm-nested_04-39da8f9.stdout",
     "stdout_hash": "cf37bd451b6bfc4191e85b14c5ff53b17df44a18a827f3b3c0932b6c",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "llvm-nested_04-39da8f9.stderr",
+    "stderr_hash": "48d6e4f9cfdad34a4ceb619616c530a4550c3b1ec321adc70ea88fae",
     "returncode": 0
 }

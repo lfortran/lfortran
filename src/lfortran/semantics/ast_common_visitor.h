@@ -683,6 +683,7 @@ public:
     bool is_template = false;
     bool is_instantiate = false;
     bool is_current_procedure_templated = false;
+    bool is_Function = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
 
     // fields for generics
@@ -696,7 +697,6 @@ public:
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
-
     Vec<char*> data_member_names;
     std::set<std::string> current_function_dependencies;
     ASR::ttype_t* current_variable_type_;
@@ -1196,6 +1196,8 @@ public:
             // Example
             // real(dp), private :: x, y(3), z
             for (size_t i=0; i<x.n_syms; i++) {
+                bool is_save = false;
+                bool implicit_save = false;
                 bool is_compile_time = false;
                 bool is_implicitly_declared = false;
                 bool is_external = false;
@@ -1261,6 +1263,7 @@ public:
                             } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrSave) {
                                 storage_type = ASR::storage_typeType::Save;
+                                is_save = true;
                             } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrParameter) {
                                 storage_type = ASR::storage_typeType::Parameter;
@@ -1428,8 +1431,18 @@ public:
                             lhs_type->m_len = lhs_len;
                         }
                     } else {
+                        implicit_save = true;
                         storage_type = ASR::storage_typeType::Save; // implicit save
                     }
+                }
+                if (is_Function && implicit_save && !is_save) {
+                    // throw warning to that particular variable
+                    diag.semantic_warning_label(
+                        "Assuming implicit save attribute for variable declaration",
+                        {x.m_syms[i].loc},
+                        "help: add explicit save attribute"
+                    );
+
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
                     if ( !is_implicitly_declared && !is_external) {

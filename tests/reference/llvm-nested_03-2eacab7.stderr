@@ -1,0 +1,5 @@
+warning: Assuming implicit save attribute for variable declaration
+ --> tests/../integration_tests/nested_03.f90:7:9
+  |
+7 | real :: x = 6
+  |         ^^^^^ help: add explicit save attribute

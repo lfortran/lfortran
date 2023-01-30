@@ -3,3 +3,9 @@ style suggestion: Use '>' instead of '.gt.'
   |
 9 |         if (i .GT. 5) then
   |               ^^^^ help: write this as '>'
+
+warning: Assuming implicit save attribute for variable declaration
+ --> tests/../integration_tests/return_03.f90:8:20
+  |
+8 |         integer :: i = 10
+  |                    ^^^^^^ help: add explicit save attribute

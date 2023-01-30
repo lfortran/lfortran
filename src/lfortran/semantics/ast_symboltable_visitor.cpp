@@ -449,7 +449,9 @@ public:
             visit_unit_decl1(*x.m_use[i]);
         }
         for (size_t i=0; i<x.n_decl; i++) {
+            is_Function = true;
             visit_unit_decl2(*x.m_decl[i]);
+            is_Function = false;
         }
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
@@ -604,7 +606,9 @@ public:
             visit_unit_decl1(*x.m_use[i]);
         }
         for (size_t i=0; i<x.n_decl; i++) {
+            is_Function = true;
             visit_unit_decl2(*x.m_decl[i]);
+            is_Function = false;
         }
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
