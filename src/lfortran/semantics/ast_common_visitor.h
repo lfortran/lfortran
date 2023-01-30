@@ -510,7 +510,6 @@ public:
         }
 
     } else if (x.m_op == AST::unaryopType::Not) {
-        
         if (ASRUtils::is_logical(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 bool op_value = ASR::down_cast<ASR::LogicalConstant_t>(
@@ -520,7 +519,7 @@ public:
             }
             asr = ASR::make_LogicalNot_t(al, x.base.base.loc, operand, operand_type, value);
             return;
-        } 
+        }
         else {
             throw SemanticError("Operand of .not. operator is "+
                 std::string(ASRUtils::type_to_str(operand_type)), x.base.base.loc);
