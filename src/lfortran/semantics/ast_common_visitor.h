@@ -3084,6 +3084,18 @@ public:
             func_args.size(), type, nullptr, nullptr);
     }
 
+    ASR::asr_t* create_All(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"dim"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "all");
+        ASR::expr_t *mask = args[0], *dim = args[1];
+        // TODO: compute the compile_time value
+        ASR::expr_t* value = nullptr;
+        ASR::ttype_t *type = ASRUtils::TYPE(
+            ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+        return ASR::make_All_t(al, x.base.base.loc, mask, dim, type, value);
+    }
+
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
@@ -3122,6 +3134,8 @@ public:
                 tmp = create_NullPointerConstant(x);
             } else if( var_name == "associated" ) {
                 tmp = create_Associated(x);
+            } else if( var_name == "all" ) {
+                tmp = create_All(x);
             } else {
                 LCompilersException("create_" + var_name + " not implemented yet.");
             }

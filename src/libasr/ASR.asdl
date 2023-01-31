@@ -315,6 +315,7 @@ expr
     | IntegerBitLen(expr a, ttype type, expr? value)
     | Ichar(expr arg, ttype type, expr? value)
     | Iachar(expr arg, ttype type, expr? value)
+    | All(expr arg, expr? dim, ttype type, expr? value)
 
     | SizeOfType(ttype arg, ttype type, expr? value)
 
