@@ -15,6 +15,9 @@ namespace LCompilers  {
 
     namespace ASRUtils  {
 
+ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
+        ASR::symbol_t* original_sym, SymbolTable *current_scope);
+
 static inline  double extract_real(const char *s) {
     // TODO: this is inefficient. We should
     // convert this in the tokenizer where we know most information

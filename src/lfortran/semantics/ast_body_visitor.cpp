@@ -1685,46 +1685,6 @@ public:
         return ASR::make_CPtrToPointer_t(al, x.base.base.loc, cptr, fptr, shape);
     }
 
-    ASR::symbol_t* import_class_procedure(ASR::symbol_t* original_sym, const Location& loc) {
-        if( original_sym && ASR::is_a<ASR::ClassProcedure_t>(*original_sym) ) {
-            std::string class_proc_name = ASRUtils::symbol_name(original_sym);
-            if( original_sym != current_scope->resolve_symbol(class_proc_name) ) {
-                std::string imported_proc_name = "1_" + class_proc_name;
-                if( current_scope->resolve_symbol(imported_proc_name) == nullptr ) {
-                    ASR::symbol_t* module_sym = ASRUtils::get_asr_owner(original_sym);
-                    std::string module_name = ASRUtils::symbol_name(module_sym);
-                    if( current_scope->resolve_symbol(module_name) == nullptr ) {
-                        std::string imported_module_name = "1_" + module_name;
-                        if( current_scope->resolve_symbol(imported_module_name) == nullptr ) {
-                            LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(module_sym)));
-                            ASR::symbol_t* imported_module = ASR::down_cast<ASR::symbol_t>(
-                                ASR::make_ExternalSymbol_t(
-                                    al, loc, current_scope, s2c(al, imported_module_name),
-                                    module_sym, ASRUtils::symbol_name(ASRUtils::get_asr_owner(module_sym)),
-                                    nullptr, 0, s2c(al, module_name), ASR::accessType::Public
-                                )
-                            );
-                            current_scope->add_symbol(imported_module_name, imported_module);
-                        }
-                        module_name = imported_module_name;
-                    }
-                    ASR::symbol_t* imported_sym = ASR::down_cast<ASR::symbol_t>(
-                        ASR::make_ExternalSymbol_t(
-                            al, loc, current_scope, s2c(al, imported_proc_name),
-                            original_sym, s2c(al, module_name), nullptr, 0,
-                            ASRUtils::symbol_name(original_sym), ASR::accessType::Public
-                        )
-                    );
-                    current_scope->add_symbol(imported_proc_name, imported_sym);
-                    original_sym = imported_sym;
-                } else {
-                    original_sym = current_scope->resolve_symbol(imported_proc_name);
-                }
-            }
-        }
-        return original_sym;
-    }
-
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
         SymbolTable* scope = current_scope;
         std::string sub_name = to_lower(x.m_name);
@@ -1739,7 +1699,8 @@ public:
             original_sym = resolve_deriv_type_proc(x.base.base.loc, sub_name,
                             to_lower(x.m_member[x.n_member - 1].m_name),
                             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
-            original_sym = import_class_procedure(original_sym, x.base.base.loc);
+            original_sym = ASRUtils::import_class_procedure(al, x.base.base.loc,
+                original_sym, current_scope);
         } else {
             original_sym = current_scope->resolve_symbol(sub_name);
         }
@@ -1862,7 +1823,8 @@ public:
                             [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
                 }
                 // Create ExternalSymbol for procedures in different modules.
-                final_sym = import_class_procedure(p->m_procs[idx], x.base.base.loc);
+                final_sym = ASRUtils::import_class_procedure(al, x.base.base.loc,
+                    p->m_procs[idx], current_scope);
                 break;
             }
             case (ASR::symbolType::ClassProcedure) : {
