@@ -1987,23 +1987,27 @@ public:
             case ASR::ttypeType::Struct: {
                 ASR::Struct_t* struct_t_type = ASR::down_cast<ASR::Struct_t>(return_type);
                 ASR::symbol_t *sym = struct_t_type->m_derived_type;
-                 ASR::symbol_t *es_s = current_scope->resolve_symbol(
-                     ASRUtils::symbol_name(sym));
-                 if (es_s == nullptr) {
-                     ASR::StructType_t *st = ASR::down_cast<ASR::StructType_t>(sym);
-                     ASR::Module_t* sym_module = ASRUtils::get_sym_module(sym);
-                     LCOMPILERS_ASSERT(sym_module != nullptr);
-                     std::string st_name = "1_" + std::string(st->m_name);
-                     sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                         al, st->base.base.loc, current_scope, s2c(al, st_name),
-                         sym, sym_module->m_name, nullptr, 0, st->m_name,
-                         ASR::accessType::Public));
-                     current_scope->add_symbol(st_name, sym);
-                 } else {
-                     sym = es_s;
-                 }
-                 return ASRUtils::TYPE(ASR::make_Struct_t(al, loc, sym, struct_t_type->m_dims,
-                            struct_t_type->n_dims));
+                ASR::symbol_t *es_s = current_scope->resolve_symbol(
+                    ASRUtils::symbol_name(sym));
+                if (es_s == nullptr) {
+                    ASR::StructType_t *st = ASR::down_cast<ASR::StructType_t>(sym);
+                    ASR::Module_t* sym_module = ASRUtils::get_sym_module(sym);
+                    LCOMPILERS_ASSERT(sym_module != nullptr);
+                    std::string st_name = "1_" + std::string(st->m_name);
+                    if (current_scope->get_symbol(st_name)) {
+                        sym = current_scope->get_symbol(st_name);
+                    } else {
+                        sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                            al, st->base.base.loc, current_scope, s2c(al, st_name),
+                            sym, sym_module->m_name, nullptr, 0, st->m_name,
+                            ASR::accessType::Public));
+                        current_scope->add_symbol(st_name, sym);
+                    }
+                } else {
+                    sym = es_s;
+                }
+                return ASRUtils::TYPE(ASR::make_Struct_t(al, loc, sym, struct_t_type->m_dims,
+                        struct_t_type->n_dims));
             }
             case ASR::ttypeType::Integer: {
                 ASR::Integer_t *t = ASR::down_cast<ASR::Integer_t>(return_type);
