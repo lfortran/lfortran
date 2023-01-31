@@ -319,10 +319,27 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
     member = ASRUtils::symbol_get_past_external(member);
     if (ASR::is_a<ASR::StructType_t>(*member)) {
         ASR::StructType_t* member_variable = ASR::down_cast<ASR::StructType_t>(member);
-        ASR::ttype_t* member_type = ASRUtils::TYPE(ASR::make_Struct_t(al,
-            member_variable->base.base.loc, member, nullptr, 0));
-        return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
-                member, member_type, nullptr);
+        ASR::symbol_t *mem_es = nullptr;
+        if (current_scope->get_symbol(ASRUtils::symbol_name(member))) {
+            mem_es = current_scope->get_symbol(ASRUtils::symbol_name(member));
+        } else {
+            mem_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                member->base.loc, current_scope, member_variable->m_name, member,
+                ASRUtils::symbol_name(ASRUtils::get_asr_owner(member)),
+                nullptr, 0, member_variable->m_name, ASR::accessType::Public));
+            current_scope->add_symbol(member_variable->m_name, mem_es);
+        }
+        if (mem_es != nullptr) {
+            ASR::ttype_t* member_type = ASRUtils::TYPE(ASR::make_Struct_t(al,
+                member_variable->base.base.loc, mem_es, nullptr, 0));
+            return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
+                    mem_es, member_type, nullptr);
+        } else {
+            ASR::ttype_t* member_type = ASRUtils::TYPE(ASR::make_Struct_t(al,
+                member_variable->base.base.loc, member, nullptr, 0));
+            return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
+                    member, member_type, nullptr);
+        }
     } else {
     LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*member));
     ASR::Variable_t* member_variable = ASR::down_cast<ASR::Variable_t>(member);
