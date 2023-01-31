@@ -510,7 +510,6 @@ public:
         }
 
     } else if (x.m_op == AST::unaryopType::Not) {
-
         if (ASRUtils::is_logical(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 bool op_value = ASR::down_cast<ASR::LogicalConstant_t>(
@@ -525,7 +524,6 @@ public:
             throw SemanticError("Operand of .not. operator is "+
                 std::string(ASRUtils::type_to_str(operand_type)), x.base.base.loc);
         }
-
     }
   }
 
@@ -3136,7 +3134,7 @@ public:
     }
 
     template <class Call>
-    void create_implicit_interface_function(const Call &x, std::string func_name, bool add_return) {
+    void create_implicit_interface_function(const Call &x, std::string func_name, bool add_return, ASR::ttype_t* old_type) {
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
@@ -3185,10 +3183,7 @@ public:
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 v)));
         }
-        // FIXME: accept this type as an argument
-        // currently hardcoding the return type to real-8
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
-                                8, nullptr, 0));
+        ASR::ttype_t *type = old_type;
         ASR::expr_t *to_return = nullptr;
         if (add_return) {
             std::string return_var_name = sym_name + "_return_var_name";
@@ -3323,7 +3318,10 @@ public:
                 // Function Call is not defined in this case.
                 // We need to create an interface and add the Function into
                 // the symbol table.
-                create_implicit_interface_function(x, var_name, true);
+                // Currently using real*8 as the return type.
+                ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
+                                    8, nullptr, 0));
+                create_implicit_interface_function(x, var_name, true, type);
                 v = current_scope->resolve_symbol(var_name);
                 LCOMPILERS_ASSERT(v!=nullptr);
             }
@@ -3339,9 +3337,9 @@ public:
             // Which is a function call.
             // We remove "x" from the symbol table and instead recreate it.
             // We use the type of the old "x" as the return value type.
-            // FIXME: for now we drop the old type
             current_scope->erase_symbol(var_name);
-            create_implicit_interface_function(x, var_name, true);
+            ASR::ttype_t* old_type = ASR::down_cast<ASR::Variable_t>(v)->m_type;
+            create_implicit_interface_function(x, var_name, true, old_type);
             v = current_scope->resolve_symbol(var_name);
             LCOMPILERS_ASSERT(v!=nullptr);
         }

@@ -1750,7 +1750,9 @@ public:
         if (!original_sym) {
             original_sym = resolve_intrinsic_function(x.base.base.loc, sub_name);
             if (!original_sym && compiler_options.implicit_interface) {
-                create_implicit_interface_function(x, sub_name, false);
+                ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
+                                    8, nullptr, 0));
+                create_implicit_interface_function(x, sub_name, false, type);
                 original_sym = current_scope->resolve_symbol(sub_name);
                 LCOMPILERS_ASSERT(original_sym!=nullptr);
             }
@@ -1903,8 +1905,9 @@ public:
                     // of previously using the variable as a variable and now
                     // using it as a function. This will (eventually) fail
                     // in verify(). But we should give an error earlier as well.
+                    ASR::ttype_t* old_type = ASR::down_cast<ASR::Variable_t>(original_sym)->m_type;
                     current_scope->erase_symbol(sub_name);
-                    create_implicit_interface_function(x, sub_name, false);
+                    create_implicit_interface_function(x, sub_name, false, old_type);
                     original_sym = current_scope->resolve_symbol(sub_name);
                     LCOMPILERS_ASSERT(original_sym!=nullptr);
 
