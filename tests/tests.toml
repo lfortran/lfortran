@@ -2791,3 +2791,7 @@ asr = true
 [[test]]
 filename = "allow_implicit_interface3.f90"
 asr_implicit_interface = true
+
+[[test]]
+filename = "fixed_form5.f"
+asr = true
