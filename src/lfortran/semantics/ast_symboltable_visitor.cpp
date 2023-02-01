@@ -1354,16 +1354,19 @@ public:
                 current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(ep));
             } else if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *mvar = ASR::down_cast<ASR::Variable_t>(item.second);
-                ASR::asr_t *var = ASR::make_ExternalSymbol_t(
-                    al, mvar->base.base.loc,
-                    /* a_symtab */ current_scope,
-                    /* a_name */ mvar->m_name,
-                    (ASR::symbol_t*)mvar,
-                    m->m_name, nullptr, 0, mvar->m_name,
-                    dflt_access
-                    );
-                std::string sym = to_lower(mvar->m_name);
-                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(var));
+                // check if m_access of mvar is public
+                if ( mvar->m_access == ASR::accessType::Public ) {
+                    ASR::asr_t *var = ASR::make_ExternalSymbol_t(
+                        al, mvar->base.base.loc,
+                        /* a_symtab */ current_scope,
+                        /* a_name */ mvar->m_name,
+                        (ASR::symbol_t*)mvar,
+                        m->m_name, nullptr, 0, mvar->m_name,
+                        dflt_access
+                        );
+                    std::string sym = to_lower(mvar->m_name);
+                    current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(var));
+                }
             } else if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
                 // We have to "repack" the ExternalSymbol so that it lives in the
                 // local symbol table
