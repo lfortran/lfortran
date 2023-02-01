@@ -537,14 +537,21 @@ public:
                 "ExternalSymbol::m_original_name must match external->m_name");
             ASR::Module_t *m = ASRUtils::get_sym_module(x.m_external);
             ASR::StructType_t* sm = nullptr;
+            ASR::EnumType_t* em = nullptr;
             bool is_valid_owner = false;
             is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
             std::string asr_owner_name = "";
             if( !is_valid_owner ) {
                 ASR::symbol_t* asr_owner_sym = ASRUtils::get_asr_owner(x.m_external);
-                is_valid_owner = ASR::is_a<ASR::StructType_t>(*asr_owner_sym);
-                sm = ASR::down_cast<ASR::StructType_t>(asr_owner_sym);
-                asr_owner_name = sm->m_name;
+                is_valid_owner = (ASR::is_a<ASR::StructType_t>(*asr_owner_sym) ||
+                                  ASR::is_a<ASR::EnumType_t>(*asr_owner_sym));
+                if( ASR::is_a<ASR::StructType_t>(*asr_owner_sym) ) {
+                    sm = ASR::down_cast<ASR::StructType_t>(asr_owner_sym);
+                    asr_owner_name = sm->m_name;
+                } else if( ASR::is_a<ASR::EnumType_t>(*asr_owner_sym) ) {
+                    em = ASR::down_cast<ASR::EnumType_t>(asr_owner_sym);
+                    asr_owner_name = em->m_name;
+                }
             } else {
                 asr_owner_name = m->m_name;
             }
@@ -564,6 +571,8 @@ public:
                 s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
             } else if( sm ) {
                 s = sm->m_symtab->resolve_symbol(std::string(x.m_original_name));
+            } else if( em ) {
+                s = em->m_symtab->resolve_symbol(std::string(x.m_original_name));
             }
             require(s != nullptr,
                 "ExternalSymbol::m_original_name ('"

@@ -772,14 +772,16 @@ public:
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
         if (compiler_options.implicit_typing) {
             if (implicit_dictionary.find(std::string(1,var_name[0])) == implicit_dictionary.end()) {
-        	    implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
+                implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
             }
         }
+
         // Check variable in enum scope, if enum is defined
         if (v == nullptr && scope->resolve_symbol("enum") != nullptr) {
             ASR::symbol_t *enum_s = scope->resolve_symbol("enum");
-            ASR::EnumType_t *enum_ = ASR::down_cast<ASR::EnumType_t>(enum_s);
-            v = enum_->m_symtab->get_symbol(var_name);
+            ASR::EnumType_t *enum_ = ASR::down_cast<ASR::EnumType_t>(
+                ASRUtils::symbol_get_past_external(enum_s));
+            v = ASRUtils::import_enum_member(al, enum_->m_symtab->get_symbol(var_name), scope);
         }
         if (!v) {
             if (compiler_options.implicit_typing) {

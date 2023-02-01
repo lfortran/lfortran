@@ -2181,6 +2181,44 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::s
     return scope->get_symbol(v_ext_name);
 }
 
+static inline ASR::symbol_t* import_enum_member(Allocator& al, ASR::symbol_t* v,
+    SymbolTable* scope) {
+    v = ASRUtils::symbol_get_past_external(v);
+    ASR::symbol_t* enum_t = ASRUtils::get_asr_owner(v);
+    std::string v_name = ASRUtils::symbol_name(v);
+    std::string enum_t_name = ASRUtils::symbol_name(enum_t);
+    std::string enum_ext_name = enum_t_name;
+    if( scope->resolve_symbol(enum_t_name) != enum_t ) {
+        enum_ext_name = "1_" + enum_ext_name;
+    }
+    if( scope->resolve_symbol(enum_ext_name) == nullptr ) {
+        ASR::symbol_t* enum_t_module = ASRUtils::get_asr_owner(
+            ASRUtils::symbol_get_past_external(enum_t));
+        LCOMPILERS_ASSERT(enum_t_module != nullptr);
+        SymbolTable* import_enum_t_scope = scope;
+        while( import_enum_t_scope->asr_owner == nullptr ||
+               !ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
+                import_enum_t_scope->asr_owner)) ) {
+            import_enum_t_scope = import_enum_t_scope->parent;
+        }
+        LCOMPILERS_ASSERT(import_enum_t_scope != nullptr);
+        ASR::symbol_t* enum_ext = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                                    v->base.loc, import_enum_t_scope, s2c(al, enum_ext_name), enum_t,
+                                    ASRUtils::symbol_name(enum_t_module),
+                                    nullptr, 0, s2c(al, enum_t_name), ASR::accessType::Public));
+        import_enum_t_scope->add_symbol(enum_ext_name, enum_ext);
+    }
+    std::string v_ext_name = "1_" + enum_t_name + "_" + v_name;
+    if( scope->get_symbol(v_ext_name) == nullptr ) {
+        ASR::symbol_t* v_ext = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                                    v->base.loc, scope, s2c(al, v_ext_name), ASRUtils::symbol_get_past_external(v),
+                                    s2c(al, enum_ext_name), nullptr, 0, s2c(al, v_name), ASR::accessType::Public));
+        scope->add_symbol(v_ext_name, v_ext);
+    }
+
+    return scope->get_symbol(v_ext_name);
+}
+
 class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
 
     private:
