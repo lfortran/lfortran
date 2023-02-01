@@ -1666,10 +1666,15 @@ public:
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
         } else if( ASR::is_a<ASR::StructType_t>(*t) ) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
-                throw SemanticError("Derived type already defined", loc);
-            }
+            ASR::symbol_t* imported_struct_type = current_scope->get_symbol(local_sym);
             ASR::StructType_t *mv = ASR::down_cast<ASR::StructType_t>(t);
+            if (imported_struct_type != nullptr) {
+                imported_struct_type = ASRUtils::symbol_get_past_external(imported_struct_type);
+                if( imported_struct_type == t ) {
+                    return ;
+                }
+                throw SemanticError("Derived type " + local_sym + " already defined.", loc);
+            }
             // `mv` is the Variable in a module. Now we construct
             // an ExternalSymbol that points to it.
             Str name;
