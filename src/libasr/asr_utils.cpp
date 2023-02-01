@@ -359,7 +359,8 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                     module_name = m_ext->m_module_name;
                 } else if( ASR::is_a<ASR::StructType_t>(*m_external) ) {
                     ASR::symbol_t* asr_owner = ASRUtils::get_asr_owner(m_external);
-                    if( ASR::is_a<ASR::StructType_t>(*asr_owner) ) {
+                    if( ASR::is_a<ASR::StructType_t>(*asr_owner) ||
+                        ASR::is_a<ASR::Module_t>(*asr_owner) ) {
                         module_name = ASRUtils::symbol_name(asr_owner);
                     }
                 }
