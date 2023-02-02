@@ -1658,13 +1658,16 @@ public:
 
             ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
             if(!type_param) {
-                if( ASRUtils::is_c_ptr(v, derived_type_name) ) {
+                if( v && ASRUtils::is_c_ptr(v, derived_type_name) ) {
                     type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
                 } else {
                     if (!v) {
-                        throw SemanticError("Derived type '"
-                            + derived_type_name + "' not declared", loc);
-
+                        // Placeholder symbol for Struct type
+                        // Derived type can be used before its actually defined
+                        v = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                                al, loc, current_scope, s2c(al, derived_type_name),
+                                nullptr, nullptr, nullptr, 0, s2c(al, derived_type_name),
+                                ASR::accessType::Private));
                     }
                     type = ASRUtils::TYPE(ASR::make_Struct_t(al, loc, v,
                         dims.p, dims.size()));
