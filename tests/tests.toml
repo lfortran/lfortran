@@ -2795,3 +2795,7 @@ asr_implicit_interface = true
 [[test]]
 filename = "errors/private1.f90"
 asr = true
+
+[[test]]
+filename = "errors/private2.f90"
+asr = true
