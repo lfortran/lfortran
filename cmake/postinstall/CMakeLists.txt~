@@ -1,0 +1,1 @@
+install(SCRIPT "${CMAKE_SOURCE_DIR}/postinstall/BuildRuntime.cmake")

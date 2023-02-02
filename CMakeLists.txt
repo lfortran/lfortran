@@ -319,6 +319,8 @@ add_subdirectory(src)
 
 # This is called after lfortran has been installed
 if (WITH_RUNTIME_LIBRARY)
+  add_subdirectory(cmake/postinstall)
+
   install(CODE "set(CMAKE_COMMAND \"${CMAKE_COMMAND}\")")
   install(CODE "set(CMAKE_GENERATOR \"${CMAKE_GENERATOR}\")")
   install(CODE "set(CMAKE_TOOLCHAIN_FILE \"${CMAKE_TOOLCHAIN_FILE}\")")
@@ -329,5 +331,5 @@ if (WITH_RUNTIME_LIBRARY)
   install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
   install(CODE "set(CMAKE_BINARY_DIR \"${CMAKE_BINARY_DIR}\")")
 
-  install(SCRIPT "${CMAKE_SOURCE_DIR}/BuildRuntime.cmake")
+  install(CODE "set(WITH_RUNTIME_LIBRARY \"${WITH_RUNTIME_LIBRARY}\")")
 endif()
