@@ -2794,4 +2794,4 @@ asr_implicit_interface = true
 
 [[test]]
 filename = "fixed_form5.f"
-asr = true
+ast = true
