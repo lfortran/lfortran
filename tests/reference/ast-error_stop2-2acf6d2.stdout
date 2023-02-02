@@ -1,0 +1,29 @@
+(TranslationUnit
+    [(Subroutine
+        f
+        []
+        []
+        ()
+        ()
+        []
+        []
+        []
+        []
+        [(If
+            0
+            ()
+            (Logical .true.)
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )]
+        []
+    )]
+)
