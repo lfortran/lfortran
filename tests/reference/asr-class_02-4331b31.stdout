@@ -15,7 +15,7 @@
                                     class_circle2
                                     []
                                     main
-                                    Private
+                                    Public
                                 )
                         })
                     circle_test

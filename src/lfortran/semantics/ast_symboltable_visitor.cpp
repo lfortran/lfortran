@@ -267,6 +267,7 @@ public:
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         fix_type_info(m);
+        dflt_access = ASR::Public;
     }
 
     void visit_Module(const AST::Module_t &x) {
