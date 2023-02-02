@@ -2805,5 +2805,5 @@ filename = "errors/private2.f90"
 asr = true
 
 [[test]]
-filename = "private1.f90"
+filename = "../integration_tests/private1.f90"
 asr = true
