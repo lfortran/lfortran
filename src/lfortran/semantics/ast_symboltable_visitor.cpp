@@ -1577,6 +1577,9 @@ public:
             Str name;
             name.from_str(al, local_sym);
             char *cname = name.c_str(al);
+            if (mv->m_access == ASR::accessType::Private) {
+                throw SemanticError("Private variable `" + local_sym + "` cannot be imported", loc);
+            }
             ASR::asr_t *v = ASR::make_ExternalSymbol_t(
                 al, mv->base.base.loc,
                 /* a_symtab */ current_scope,
