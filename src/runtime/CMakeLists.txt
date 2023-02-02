@@ -7,7 +7,7 @@ project(lfortran_unif_runtime C Fortran)
 add_subdirectory(legacy)
 
 # See the TODO in the installation step below
-set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/src/runtime)
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_Fortran_MODULE_DIRECTORY})
 
 macro(lfrotran_compile_runtime name dir)
