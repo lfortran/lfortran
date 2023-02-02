@@ -1366,7 +1366,7 @@ struct FixedFormRecursiveDescent {
 
         // tokenize all keywords
         for(auto iter = kw_found.begin(); iter != kw_found.end(); ++iter) {
-            if (*iter == "real*8") {
+            if (*iter == "real*8" || *iter == "complex*8" || *iter == "complex*16") {
                 tokenize_until(cur+(*iter).size());
             } else {
                 push_token_advance(cur, *iter);
@@ -1407,7 +1407,7 @@ struct FixedFormRecursiveDescent {
             "elemental"};
         std::vector<std::string> function_keywords{"recursive", "pure",
             "elemental",
-            "real*8", "real", "character", "complex", "integer", "logical",
+            "real*8", "real", "character", "complex*16", "complex*8", "complex", "integer", "logical",
             "doubleprecision", "doublecomplex"};
 
         if (next_is(cur, "include")) {
