@@ -1031,7 +1031,7 @@
                                     math_integer_m
                                     []
                                     add_integer
-                                    Private
+                                    Public
                                 ),
                             add_real:
                                 (ExternalSymbol
@@ -1041,7 +1041,7 @@
                                     math_real_m
                                     []
                                     add_real
-                                    Private
+                                    Public
                                 ),
                             max_integer:
                                 (ExternalSymbol
@@ -1051,7 +1051,7 @@
                                     math_integer_m
                                     []
                                     max_integer
-                                    Private
+                                    Public
                                 ),
                             max_real:
                                 (ExternalSymbol
@@ -1061,7 +1061,7 @@
                                     math_real_m
                                     []
                                     max_real
-                                    Private
+                                    Public
                                 ),
                             min_integer:
                                 (ExternalSymbol
@@ -1071,7 +1071,7 @@
                                     math_integer_m
                                     []
                                     min_integer
-                                    Private
+                                    Public
                                 ),
                             min_real:
                                 (ExternalSymbol
@@ -1081,7 +1081,7 @@
                                     math_real_m
                                     []
                                     min_real
-                                    Private
+                                    Public
                                 ),
                             minus_integer:
                                 (ExternalSymbol
@@ -1091,7 +1091,7 @@
                                     math_integer_m
                                     []
                                     minus_integer
-                                    Private
+                                    Public
                                 ),
                             minus_real:
                                 (ExternalSymbol
@@ -1101,7 +1101,7 @@
                                     math_real_m
                                     []
                                     minus_real
-                                    Private
+                                    Public
                                 ),
                             one_integer:
                                 (ExternalSymbol
@@ -1111,7 +1111,7 @@
                                     math_integer_m
                                     []
                                     one_integer
-                                    Private
+                                    Public
                                 ),
                             one_real:
                                 (ExternalSymbol
@@ -1121,7 +1121,7 @@
                                     math_real_m
                                     []
                                     one_real
-                                    Private
+                                    Public
                                 ),
                             plus_t:
                                 (ExternalSymbol
@@ -1131,7 +1131,7 @@
                                     triple_m
                                     []
                                     plus_t
-                                    Private
+                                    Public
                                 ),
                             slash_real:
                                 (ExternalSymbol
@@ -1141,7 +1141,7 @@
                                     math_real_m
                                     []
                                     slash_real
-                                    Private
+                                    Public
                                 ),
                             t:
                                 (ExternalSymbol
@@ -1151,7 +1151,7 @@
                                     triple_m
                                     []
                                     t
-                                    Private
+                                    Public
                                 ),
                             test_add_triples:
                                 (ExternalSymbol
@@ -1161,7 +1161,7 @@
                                     use_triple_m
                                     []
                                     test_add_triples
-                                    Private
+                                    Public
                                 ),
                             test_max_triples:
                                 (ExternalSymbol
@@ -1171,7 +1171,7 @@
                                     use_triple_m
                                     []
                                     test_max_triples
-                                    Private
+                                    Public
                                 ),
                             test_minus_triples:
                                 (ExternalSymbol
@@ -1181,7 +1181,7 @@
                                     use_triple_m
                                     []
                                     test_minus_triples
-                                    Private
+                                    Public
                                 ),
                             triple_l:
                                 (ExternalSymbol
@@ -1191,7 +1191,7 @@
                                     triple_m
                                     []
                                     triple_l
-                                    Private
+                                    Public
                                 ),
                             triple_r:
                                 (ExternalSymbol
@@ -1201,7 +1201,7 @@
                                     triple_m
                                     []
                                     triple_r
-                                    Private
+                                    Public
                                 ),
                             zero_integer:
                                 (ExternalSymbol
@@ -1211,7 +1211,7 @@
                                     math_integer_m
                                     []
                                     zero_integer
-                                    Private
+                                    Public
                                 ),
                             zero_real:
                                 (ExternalSymbol
@@ -1221,7 +1221,7 @@
                                     math_real_m
                                     []
                                     zero_real
-                                    Private
+                                    Public
                                 )
                         })
                     template_triple
@@ -1545,7 +1545,7 @@
                                     math_integer_m
                                     []
                                     add_integer
-                                    Private
+                                    Public
                                 ),
                             add_real:
                                 (ExternalSymbol
@@ -1555,7 +1555,7 @@
                                     math_real_m
                                     []
                                     add_real
-                                    Private
+                                    Public
                                 ),
                             max_integer:
                                 (ExternalSymbol
@@ -1565,7 +1565,7 @@
                                     math_integer_m
                                     []
                                     max_integer
-                                    Private
+                                    Public
                                 ),
                             max_real:
                                 (ExternalSymbol
@@ -1575,7 +1575,7 @@
                                     math_real_m
                                     []
                                     max_real
-                                    Private
+                                    Public
                                 ),
                             min_integer:
                                 (ExternalSymbol
@@ -1585,7 +1585,7 @@
                                     math_integer_m
                                     []
                                     min_integer
-                                    Private
+                                    Public
                                 ),
                             min_real:
                                 (ExternalSymbol
@@ -1595,7 +1595,7 @@
                                     math_real_m
                                     []
                                     min_real
-                                    Private
+                                    Public
                                 ),
                             minus_integer:
                                 (ExternalSymbol
@@ -1605,7 +1605,7 @@
                                     math_integer_m
                                     []
                                     minus_integer
-                                    Private
+                                    Public
                                 ),
                             minus_real:
                                 (ExternalSymbol
@@ -1615,7 +1615,7 @@
                                     math_real_m
                                     []
                                     minus_real
-                                    Private
+                                    Public
                                 ),
                             one_integer:
                                 (ExternalSymbol
@@ -1625,7 +1625,7 @@
                                     math_integer_m
                                     []
                                     one_integer
-                                    Private
+                                    Public
                                 ),
                             one_real:
                                 (ExternalSymbol
@@ -1635,7 +1635,7 @@
                                     math_real_m
                                     []
                                     one_real
-                                    Private
+                                    Public
                                 ),
                             plus_t:
                                 (ExternalSymbol
@@ -1645,7 +1645,7 @@
                                     triple_m
                                     []
                                     plus_t
-                                    Private
+                                    Public
                                 ),
                             slash_real:
                                 (ExternalSymbol
@@ -1655,7 +1655,7 @@
                                     math_real_m
                                     []
                                     slash_real
-                                    Private
+                                    Public
                                 ),
                             t:
                                 (ExternalSymbol
@@ -1665,7 +1665,7 @@
                                     triple_m
                                     []
                                     t
-                                    Private
+                                    Public
                                 ),
                             test_add_triples:
                                 (Function
@@ -1683,7 +1683,7 @@
                                                     Default
                                                     (Integer 4 [])
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                 ),
@@ -1698,7 +1698,7 @@
                                                     Default
                                                     (Integer 4 [])
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                 )
@@ -1748,7 +1748,7 @@
                                     )]
                                     ()
                                     Source
-                                    Private
+                                    Public
                                     Implementation
                                     ()
                                     .false.
@@ -1776,7 +1776,7 @@
                                                     Default
                                                     (Real 4 [])
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                 ),
@@ -1791,7 +1791,7 @@
                                                     Default
                                                     (Real 4 [])
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                 )
@@ -1847,7 +1847,7 @@
                                     )]
                                     ()
                                     Source
-                                    Private
+                                    Public
                                     Implementation
                                     ()
                                     .false.
@@ -1875,7 +1875,7 @@
                                                     Default
                                                     (Real 4 [])
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                 ),
@@ -1890,7 +1890,7 @@
                                                     Default
                                                     (Real 4 [])
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                 )
@@ -1946,7 +1946,7 @@
                                     )]
                                     ()
                                     Source
-                                    Private
+                                    Public
                                     Implementation
                                     ()
                                     .false.
@@ -2114,7 +2114,7 @@
                                     triple_m
                                     []
                                     triple_l
-                                    Private
+                                    Public
                                 ),
                             triple_max_l:
                                 (Function
@@ -2420,7 +2420,7 @@
                                     triple_m
                                     []
                                     triple_r
-                                    Private
+                                    Public
                                 ),
                             zero_integer:
                                 (ExternalSymbol
@@ -2430,7 +2430,7 @@
                                     math_integer_m
                                     []
                                     zero_integer
-                                    Private
+                                    Public
                                 ),
                             zero_real:
                                 (ExternalSymbol
@@ -2440,7 +2440,7 @@
                                     math_real_m
                                     []
                                     zero_real
-                                    Private
+                                    Public
                                 )
                         })
                     use_triple_m

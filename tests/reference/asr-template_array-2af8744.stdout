@@ -310,7 +310,7 @@
                                     math
                                     []
                                     add_integer
-                                    Private
+                                    Public
                                 ),
                             add_real:
                                 (ExternalSymbol
@@ -320,7 +320,7 @@
                                     math
                                     []
                                     add_real
-                                    Private
+                                    Public
                                 ),
                             mysum_t:
                                 (ExternalSymbol
@@ -330,7 +330,7 @@
                                     template_array_m
                                     []
                                     mysum_t
-                                    Private
+                                    Public
                                 ),
                             plus_t:
                                 (ExternalSymbol
@@ -340,7 +340,7 @@
                                     template_array_m
                                     []
                                     plus_t
-                                    Private
+                                    Public
                                 ),
                             t:
                                 (ExternalSymbol
@@ -350,7 +350,7 @@
                                     template_array_m
                                     []
                                     t
-                                    Private
+                                    Public
                                 ),
                             test_template:
                                 (ExternalSymbol
@@ -360,7 +360,7 @@
                                     template_array_m
                                     []
                                     test_template
-                                    Private
+                                    Public
                                 ),
                             zero_integer:
                                 (ExternalSymbol
@@ -370,7 +370,7 @@
                                     math
                                     []
                                     zero_integer
-                                    Private
+                                    Public
                                 ),
                             zero_real:
                                 (ExternalSymbol
@@ -380,7 +380,7 @@
                                     math
                                     []
                                     zero_real
-                                    Private
+                                    Public
                                 ),
                             zero_t:
                                 (ExternalSymbol
@@ -390,7 +390,7 @@
                                     template_array_m
                                     []
                                     zero_t
-                                    Private
+                                    Public
                                 )
                         })
                     template_array
@@ -416,7 +416,7 @@
                                     math
                                     []
                                     add_integer
-                                    Private
+                                    Public
                                 ),
                             add_real:
                                 (ExternalSymbol
@@ -426,7 +426,7 @@
                                     math
                                     []
                                     add_real
-                                    Private
+                                    Public
                                 ),
                             mysum_integer:
                                 (Function
@@ -910,7 +910,7 @@
                                     math
                                     []
                                     zero_integer
-                                    Private
+                                    Public
                                 ),
                             zero_real:
                                 (ExternalSymbol
@@ -920,7 +920,7 @@
                                     math
                                     []
                                     zero_real
-                                    Private
+                                    Public
                                 ),
                             zero_t:
                                 (Function

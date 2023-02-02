@@ -186,7 +186,7 @@
                                     math
                                     []
                                     add_real
-                                    Private
+                                    Public
                                 ),
                             avg_s_from_s:
                                 (ExternalSymbol
@@ -196,7 +196,7 @@
                                     travel
                                     []
                                     avg_s_from_s
-                                    Private
+                                    Public
                                 ),
                             avg_s_from_t:
                                 (ExternalSymbol
@@ -206,7 +206,7 @@
                                     travel
                                     []
                                     avg_s_from_t
-                                    Private
+                                    Public
                                 ),
                             d:
                                 (ExternalSymbol
@@ -216,7 +216,7 @@
                                     travel
                                     []
                                     d
-                                    Private
+                                    Public
                                 ),
                             d_divided_by_s:
                                 (ExternalSymbol
@@ -226,7 +226,7 @@
                                     travel
                                     []
                                     d_divided_by_s
-                                    Private
+                                    Public
                                 ),
                             d_divided_by_t:
                                 (ExternalSymbol
@@ -236,7 +236,7 @@
                                     travel
                                     []
                                     d_divided_by_t
-                                    Private
+                                    Public
                                 ),
                             plus_d:
                                 (ExternalSymbol
@@ -246,7 +246,7 @@
                                     travel
                                     []
                                     plus_d
-                                    Private
+                                    Public
                                 ),
                             plus_t:
                                 (ExternalSymbol
@@ -256,7 +256,7 @@
                                     travel
                                     []
                                     plus_t
-                                    Private
+                                    Public
                                 ),
                             s:
                                 (ExternalSymbol
@@ -266,7 +266,7 @@
                                     travel
                                     []
                                     s
-                                    Private
+                                    Public
                                 ),
                             slash_real:
                                 (ExternalSymbol
@@ -276,7 +276,7 @@
                                     math
                                     []
                                     slash_real
-                                    Private
+                                    Public
                                 ),
                             t:
                                 (ExternalSymbol
@@ -286,7 +286,7 @@
                                     travel
                                     []
                                     t
-                                    Private
+                                    Public
                                 ),
                             test_template:
                                 (ExternalSymbol
@@ -296,7 +296,7 @@
                                     template_travel_m
                                     []
                                     test_template
-                                    Private
+                                    Public
                                 )
                         })
                     template_travel
@@ -452,7 +452,7 @@
                                     math
                                     []
                                     add_real
-                                    Private
+                                    Public
                                 ),
                             avg_real_s_from_s:
                                 (Function
@@ -726,7 +726,7 @@
                                     travel
                                     []
                                     avg_s_from_s
-                                    Private
+                                    Public
                                 ),
                             avg_s_from_t:
                                 (ExternalSymbol
@@ -736,7 +736,7 @@
                                     travel
                                     []
                                     avg_s_from_t
-                                    Private
+                                    Public
                                 ),
                             d:
                                 (ExternalSymbol
@@ -746,7 +746,7 @@
                                     travel
                                     []
                                     d
-                                    Private
+                                    Public
                                 ),
                             d_divided_by_s:
                                 (ExternalSymbol
@@ -756,7 +756,7 @@
                                     travel
                                     []
                                     d_divided_by_s
-                                    Private
+                                    Public
                                 ),
                             d_divided_by_t:
                                 (ExternalSymbol
@@ -766,7 +766,7 @@
                                     travel
                                     []
                                     d_divided_by_t
-                                    Private
+                                    Public
                                 ),
                             plus_d:
                                 (ExternalSymbol
@@ -776,7 +776,7 @@
                                     travel
                                     []
                                     plus_d
-                                    Private
+                                    Public
                                 ),
                             plus_t:
                                 (ExternalSymbol
@@ -786,7 +786,7 @@
                                     travel
                                     []
                                     plus_t
-                                    Private
+                                    Public
                                 ),
                             s:
                                 (ExternalSymbol
@@ -796,7 +796,7 @@
                                     travel
                                     []
                                     s
-                                    Private
+                                    Public
                                 ),
                             slash_real:
                                 (ExternalSymbol
@@ -806,7 +806,7 @@
                                     math
                                     []
                                     slash_real
-                                    Private
+                                    Public
                                 ),
                             t:
                                 (ExternalSymbol
@@ -816,7 +816,7 @@
                                     travel
                                     []
                                     t
-                                    Private
+                                    Public
                                 ),
                             test_template:
                                 (Function
@@ -834,7 +834,7 @@
                                                     Default
                                                     (Real 4 [])
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                 ),
@@ -849,7 +849,7 @@
                                                     Default
                                                     (Real 4 [])
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                 )
@@ -934,7 +934,7 @@
                                     )]
                                     ()
                                     Source
-                                    Private
+                                    Public
                                     Implementation
                                     ()
                                     .false.
@@ -967,7 +967,7 @@
                                     math
                                     []
                                     add_real
-                                    Private
+                                    Public
                                 ),
                             avg_s_from_s:
                                 (Function
@@ -1704,7 +1704,7 @@
                                     math
                                     []
                                     slash_real
-                                    Private
+                                    Public
                                 ),
                             t:
                                 (StructType

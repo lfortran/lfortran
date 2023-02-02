@@ -2803,3 +2803,7 @@ asr = true
 [[test]]
 filename = "errors/private2.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/private1.f90"
+asr = true
