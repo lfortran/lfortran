@@ -372,7 +372,7 @@ def tester_main(compiler, single_test):
     verbose = args.verbose
     no_llvm = args.no_llvm
 
-    # So that the tests find the `lcompiler` executable
+    # So that the tests find the `lcompilers` executable
     os.environ["PATH"] = os.path.join(SRC_DIR, "bin") \
         + os.pathsep + os.environ["PATH"]
     test_data = toml.load(open(os.path.join(ROOT_DIR, "tests", "tests.toml")))
@@ -390,6 +390,17 @@ def tester_main(compiler, single_test):
     if excluded_backends:
         filtered_tests = [test for test in filtered_tests if any(
             b not in excluded_backends and b != "filename" for b in test)]
+
+    for test in filtered_tests:
+        if 'extrafiles' in test:
+            single_test(test,
+                update_reference=update_reference,
+                specific_backends=specific_backends,
+                excluded_backends=excluded_backends,
+                verbose=verbose,
+                no_llvm=no_llvm)
+    filtered_tests = [test for test in filtered_tests if 'extrafiles' not in test]
+
     if args.sequential:
         for test in filtered_tests:
             single_test(test,
