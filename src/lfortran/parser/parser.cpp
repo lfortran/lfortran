@@ -173,7 +173,7 @@ LineType determine_line_type(const unsigned char *pos)
             pos++;
             col+=1;
         }
-        if (*pos == '\n' || *pos == '\0') return LineType::Comment;
+        if (*pos == '\n' || *pos == '\0' || (*pos == '\r' && *(pos+1) == '\n')) return LineType::Comment;
         if (*pos == '!' && col != 6) return LineType::Comment;
         if (col == 6) {
             if (*pos == ' ' || *pos == '0') {
@@ -253,6 +253,11 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
             return;
         } else if (s[pos] == ' ') {
             // Skip white space in a fixed-form parser
+            pos++;
+            lm.files.back().out_start.push_back(out.size());
+            lm.files.back().in_start.push_back(pos);
+        } else if (s[pos] == '\r') {
+            // Skip CR in a fixed-form parser
             pos++;
             lm.files.back().out_start.push_back(out.size());
             lm.files.back().in_start.push_back(pos);
