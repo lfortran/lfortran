@@ -336,10 +336,9 @@ struct FixedFormRecursiveDescent {
     bool next_is_eol(unsigned char *cur) {
         if (*cur == '\n') {
             return true;
-        } else if (*cur == '\r' && *(cur+1) == '\n') {
-            return true;
+        } else {
+            return false;
         }
-        return false;
     }
 
     bool is_integer(const std::string &s) const {
@@ -872,7 +871,7 @@ struct FixedFormRecursiveDescent {
                 // If we are at the end of the statement, then this must
                 // be a function call. Otherwise it's something else,
                 // such as assignment (=, or =>).
-                if (*cur == '\n' || *cur == ';') {
+                if (next_is_eol(cur) || *cur == ';') {
                     return true;
                 }
             }
