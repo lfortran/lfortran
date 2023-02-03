@@ -348,9 +348,10 @@ std::string prescan(const std::string &s, LocationManager &lm,
          *
          *   * Removes all whitespace
          *   * Joins continuation lines
-         *   * Removes comments
+         *   * Removes comments and empty lines
          *   * Handles the first 6 columns
          *   * Converts to lowercase
+         *   * Removes all CR characters
          *
          * features which are currently not yet implemented:
          *
