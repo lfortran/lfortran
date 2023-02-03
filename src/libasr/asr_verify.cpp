@@ -213,14 +213,12 @@ public:
             " should resolve in current scope.");
         SymbolTable *parent_symtab = current_symtab;
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        if ( block ) {
-            current_symtab = block->m_symtab;
-            for (size_t i=0; i<block->n_body; i++) {
-                visit_stmt(*(block->m_body[i]));
-            }
-            current_symtab = parent_symtab;
+        LCOMPILERS_ASSERT(block); // already checked above, just making sure
+        current_symtab = block->m_symtab;
+        for (size_t i=0; i<block->n_body; i++) {
+            visit_stmt(*(block->m_body[i]));
         }
-
+        current_symtab = parent_symtab;
     }
 
     void visit_Module(const Module_t &x) {
