@@ -7,8 +7,8 @@ import os
 os.environ['CXXFLAGS'] = "-Werror"
 
 ./build0.sh
-cmake -DCMAKE_BUILD_TYPE=Debug .
-make -j16
+cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=`pwd`/inst .
+make -j16 install
 
 ctest --output-on-failure
 
