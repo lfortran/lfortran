@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-block3-5c9a186",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/block3.f90",
+    "infile_hash": "85e40a1dc20d7c997805aaad046b8e0da47c329b7cbe2f4496da9295",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-block3-5c9a186.stdout",
+    "stdout_hash": "e2f86b0609b31878f194ffe49616553c20dc0ff87eb56ba776aee5ef",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,67 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%array = type { float*, i32, %dimension_descriptor*, i1, i32 }
+%dimension_descriptor = type { i32, i32, i32 }
+
+define void @hybrd() {
+.entry:
+  %call_arg_value = alloca i32, align 4
+  %temp = alloca float, align 4
+  %wa3 = alloca %array, align 8
+  %0 = getelementptr %array, %array* %wa3, i32 0, i32 1
+  store i32 0, i32* %0, align 4
+  %1 = getelementptr %array, %array* %wa3, i32 0, i32 2
+  %2 = alloca i32, align 4
+  store i32 1, i32* %2, align 4
+  %3 = load i32, i32* %2, align 4
+  %4 = alloca %dimension_descriptor, i32 %3, align 8
+  %5 = getelementptr %array, %array* %wa3, i32 0, i32 4
+  store i32 1, i32* %5, align 4
+  store %dimension_descriptor* %4, %dimension_descriptor** %1, align 8
+  %6 = load %dimension_descriptor*, %dimension_descriptor** %1, align 8
+  %7 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %6, i32 0
+  %8 = getelementptr %dimension_descriptor, %dimension_descriptor* %7, i32 0, i32 0
+  %9 = getelementptr %dimension_descriptor, %dimension_descriptor* %7, i32 0, i32 1
+  %10 = getelementptr %dimension_descriptor, %dimension_descriptor* %7, i32 0, i32 2
+  store i32 1, i32* %8, align 4
+  store i32 1, i32* %9, align 4
+  store i32 3, i32* %10, align 4
+  %11 = alloca i32, align 4
+  store i32 3, i32* %11, align 4
+  %12 = getelementptr %array, %array* %wa3, i32 0, i32 0
+  %13 = load i32, i32* %11, align 4
+  %14 = alloca float, i32 %13, align 4
+  store float* %14, float** %12, align 8
+  store i32 3, i32* %call_arg_value, align 4
+  %15 = getelementptr %array, %array* %wa3, i32 0, i32 0
+  %16 = load float*, float** %15, align 8
+  %17 = call float @enorm(i32* %call_arg_value, float* %16)
+  store float %17, float* %temp, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
+}
+
+define float @enorm(i32* %n, float* %x) {
+.entry:
+  %y = alloca float, align 4
+  store float 0.000000e+00, float* %y, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  %0 = load float, float* %y, align 4
+  ret float %0
+}
+
+declare void @fcn(i32*)
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
+  call void @hybrd()
+  ret i32 0
+}
+
+declare void @_lpython_set_argv(i32, i8**)

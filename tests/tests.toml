@@ -2831,3 +2831,7 @@ asr = true
 [[test]]
 filename = "block2.f90"
 asr = true
+
+[[test]]
+filename = "block3.f90"
+llvm = true
