@@ -3873,6 +3873,113 @@ public:
         visit_BinOp2(al, x, left, right, tmp, binop2str[x.m_op], current_scope);
     }
 
+    void visit_DefBinOp(const AST::DefBinOp_t &x) {
+        this->visit_expr(*x.m_left);
+        ASR::expr_t *left = ASRUtils::EXPR(tmp);
+        this->visit_expr(*x.m_right);
+        ASR::expr_t *right = ASRUtils::EXPR(tmp);
+
+        ASR::ttype_t *left_type = ASRUtils::expr_type(left);
+        ASR::ttype_t *right_type = ASRUtils::expr_type(right);
+
+        ASR::StructType_t *left_struct = nullptr;
+        if ( ASR::is_a<ASR::Struct_t>(*left_type) ) {
+            left_struct = ASR::down_cast<ASR::StructType_t>(
+                ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Struct_t>(
+                left_type)->m_derived_type));
+        } else if ( ASR::is_a<ASR::Class_t>(*left_type) ) {
+            left_struct = ASR::down_cast<ASR::StructType_t>(
+                ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Class_t>(
+                left_type)->m_class_type));
+        }
+
+        ASR::symbol_t* sym = current_scope->resolve_symbol(x.m_op);
+        ASR::symbol_t *op_sym = ASRUtils::symbol_get_past_external(sym);
+        if ( left_struct != nullptr && op_sym == nullptr) {
+            op_sym = left_struct->m_symtab->resolve_symbol(
+                "~def_op~" + std::string(x.m_op));
+        }
+        if (op_sym == nullptr) {
+            throw SemanticError("`" + std::string(x.m_op)
+                + "` is not defined in the struct: `" + left_struct->m_name
+                + "`", x.base.base.loc);
+        }
+
+        ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(op_sym);
+        LCOMPILERS_ASSERT(gen_proc->n_procs == 1)
+        ASR::symbol_t* proc;
+        if ( ASR::is_a<ASR::ClassProcedure_t>(*gen_proc->m_procs[0]) ) {
+            proc =  ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::ClassProcedure_t>(
+                gen_proc->m_procs[0])->m_proc);
+        } else {
+            proc = gen_proc->m_procs[0];
+        }
+        switch(proc->type) {
+            case ASR::symbolType::Function: {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
+                std::string matched_func_name = "";
+                if( func->n_args == 2 ) {
+                    ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
+                    ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
+                    if( (left_arg_type->type == left_type->type &&
+                            right_arg_type->type == right_type->type)
+                        || (ASR::is_a<ASR::Class_t>(*left_arg_type) &&
+                            ASR::is_a<ASR::Struct_t>(*left_type))
+                        || (ASR::is_a<ASR::Class_t>(*right_arg_type) &&
+                            ASR::is_a<ASR::Struct_t>(*right_type)) ) {
+                        Vec<ASR::call_arg_t> a_args;
+                        a_args.reserve(al, 2);
+                        ASR::call_arg_t left_call_arg, right_call_arg;
+
+                        left_call_arg.loc = left->base.loc;
+                        left_call_arg.m_value = left;
+                        a_args.push_back(al, left_call_arg);
+
+                        right_call_arg.loc = right->base.loc;
+                        right_call_arg.m_value = right;
+                        a_args.push_back(al, right_call_arg);
+
+                        std::string func_name = to_lower(func->m_name);
+                        if( current_scope->resolve_symbol(func_name) ) {
+                            matched_func_name = func_name;
+                        } else {
+                            std::string mangled_name = func_name + "@" + std::string(x.m_op);
+                            matched_func_name = mangled_name;
+                        }
+                        ASR::symbol_t* a_name = current_scope->resolve_symbol(matched_func_name);
+                        if( a_name == nullptr ) {
+                            throw SemanticError("Unable to resolve matched function: `"
+                                + matched_func_name + "` for defined binary operation",
+                                x.base.base.loc);
+                        }
+                        ASR::ttype_t *return_type = nullptr;
+                        if( func->m_elemental && func->n_args == 1
+                                && ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
+                            return_type = ASRUtils::duplicate_type(
+                                al, ASRUtils::expr_type(a_args[0].m_value));
+                        } else {
+                            return_type = ASRUtils::expr_type(func->m_return_var);
+                        }
+                        current_function_dependencies.insert(matched_func_name);
+                        if( ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ) {
+                            current_module_dependencies.push_back(al,
+                                ASR::down_cast<ASR::ExternalSymbol_t>(a_name)->m_module_name);
+                        }
+                        tmp = ASR::make_FunctionCall_t(al, x.base.base.loc,
+                            a_name, sym, a_args.p, 2, return_type,
+                            nullptr, nullptr);
+                    }
+                }
+                break;
+            }
+            default: {
+                throw SemanticError("Only function can be used in the defined binary operators",
+                                    proc->base.loc);
+            }
+        }
+    }
+
     void visit_BoolOp(const AST::BoolOp_t &x) {
         this->visit_expr(*x.m_left);
         ASR::expr_t *left = ASRUtils::EXPR(tmp);
