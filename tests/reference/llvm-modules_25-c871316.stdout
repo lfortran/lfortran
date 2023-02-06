@@ -1,0 +1,51 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+define void @__module_modern_minpack_fdjac1(void (i32*, float*)* %fcn) {
+.entry:
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
+}
+
+declare void @fcn(i32*, float*)
+
+define void @__module_modern_minpack_fdjac2(void (i32*)* %fcn, i32* %m) {
+.entry:
+  call void %fcn(i32* %m)
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
+}
+
+declare void @fcn.1(i32*)
+
+define void @fcn.2(i32* %n, float* %x) {
+.entry:
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
+}
+
+define void @fcn2(i32* %m) {
+.entry:
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
+}
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  %call_arg_value = alloca i32, align 4
+  call void @_lpython_set_argv(i32 %0, i8** %1)
+  call void @__module_modern_minpack_fdjac1(void (i32*, float*)* @fcn.2)
+  store i32 1, i32* %call_arg_value, align 4
+  call void @__module_modern_minpack_fdjac2(void (i32*)* @fcn2, i32* %call_arg_value)
+  ret i32 0
+}
+
+declare void @_lpython_set_argv(i32, i8**)
