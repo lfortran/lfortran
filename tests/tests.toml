@@ -2823,3 +2823,7 @@ asr = true
 [[test]]
 filename = "block2.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/modules_25.f90"
+llvm = true
