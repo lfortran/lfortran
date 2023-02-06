@@ -186,6 +186,7 @@ public:
     std::map<std::string, uint64_t> llvm_symtab_fn_names;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
+    std::map<uint32_t, ASR::Function_t> asr_symtab_fn;
 
     // Data members for handling nested functions
     std::map<uint64_t, std::vector<uint64_t>> nesting_map; /* For saving the
@@ -3533,12 +3534,27 @@ public:
                 }
             } else {
                 uint32_t old_h = llvm_symtab_fn_names[fn_name];
-                F = llvm_symtab_fn[old_h];
-                if (compiler_options.emit_debug_info) {
-                    SP = (llvm::DISubprogram*) llvm_symtab_fn_discope[old_h];
+                // get ASR::Function_t from old_h
+                ASR::Function_t old_x = asr_symtab_fn[old_h];
+                // check if symtab_id of both functions are same
+                if (old_x.m_symtab->counter == x.m_symtab->counter) {
+                    F = llvm_symtab_fn[old_h];
+                    if (compiler_options.emit_debug_info) {
+                        SP = (llvm::DISubprogram*) llvm_symtab_fn_discope[old_h];
+                    }
+                } else {
+                    F = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, fn_name, module.get());
+
+                    // Add Debugging information to the LLVM function F
+                    if (compiler_options.emit_debug_info) {
+                        debug_emit_function(x, SP);
+                        F->setSubprogram(SP);
+                    }
                 }
             }
             llvm_symtab_fn[h] = F;
+            asr_symtab_fn[h] = x;
             if (compiler_options.emit_debug_info) llvm_symtab_fn_discope[h] = SP;
 
             // Instantiate (pre-declare) all nested interfaces
