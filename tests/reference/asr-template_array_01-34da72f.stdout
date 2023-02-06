@@ -15,7 +15,7 @@
                                     template_array_01_m
                                     []
                                     insert_t
-                                    Private
+                                    Public
                                 ),
                             t:
                                 (ExternalSymbol
@@ -25,7 +25,7 @@
                                     template_array_01_m
                                     []
                                     t
-                                    Private
+                                    Public
                                 ),
                             test_template:
                                 (ExternalSymbol
@@ -35,7 +35,7 @@
                                     template_array_01_m
                                     []
                                     test_template
-                                    Private
+                                    Public
                                 )
                         })
                     template_array_01
