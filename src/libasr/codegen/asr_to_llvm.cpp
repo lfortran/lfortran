@@ -4393,6 +4393,7 @@ public:
             this->visit_stmt(*(associate_block->m_body[i]));
         }
     }
+    
     void visit_Block(const ASR::Block_t& x) {
         bool is_dict_present_copy_lp = dict_api_lp->is_dict_present();
         bool is_dict_present_copy_sc = dict_api_sc->is_dict_present();

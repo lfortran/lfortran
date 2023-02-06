@@ -343,12 +343,10 @@ namespace LCompilers {
                 }
 
                 void visit_BlockCall(const ASR::BlockCall_t& x) {
-                    if( fill_function_dependencies ) {
-                        ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
-                        if ( block ) {
-                            for (size_t i=0; i<block->n_body; i++) {
-                                visit_stmt(*(block->m_body[i]));
-                            }
+                    ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
+                    if ( block ) {
+                        for (size_t i=0; i<block->n_body; i++) {
+                            visit_stmt(*(block->m_body[i]));
                         }
                     }
                 }
