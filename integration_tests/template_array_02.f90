@@ -32,12 +32,12 @@ contains
 
 end module
 
-module template_array_m
+module template_array_02_m
 
     use math
     implicit none
     private
-    public :: array_tmpl
+    public :: test_template
 
     requirement operations(t, plus_t, zero_t)
         type :: t; end type
@@ -83,10 +83,10 @@ contains
 
 end module
 
-program template_array
+program template_array_02
 
     use math
-    use template_array_m
+    use template_array_02_m
     implicit none
 
     call test_template()

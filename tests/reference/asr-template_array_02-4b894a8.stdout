@@ -297,7 +297,7 @@
                     .false.
                     .false.
                 ),
-            template_array:
+            template_array_02:
                 (Program
                     (SymbolTable
                         13
@@ -327,7 +327,7 @@
                                     13
                                     mysum_t
                                     7 mysum_t
-                                    template_array_m
+                                    template_array_02_m
                                     []
                                     mysum_t
                                     Public
@@ -337,7 +337,7 @@
                                     13
                                     plus_t
                                     7 plus_t
-                                    template_array_m
+                                    template_array_02_m
                                     []
                                     plus_t
                                     Public
@@ -347,7 +347,7 @@
                                     13
                                     t
                                     7 t
-                                    template_array_m
+                                    template_array_02_m
                                     []
                                     t
                                     Public
@@ -357,7 +357,7 @@
                                     13
                                     test_template
                                     7 test_template
-                                    template_array_m
+                                    template_array_02_m
                                     []
                                     test_template
                                     Public
@@ -387,15 +387,15 @@
                                     13
                                     zero_t
                                     7 zero_t
-                                    template_array_m
+                                    template_array_02_m
                                     []
                                     zero_t
                                     Public
                                 )
                         })
-                    template_array
+                    template_array_02
                     [math
-                    template_array_m]
+                    template_array_02_m]
                     [(SubroutineCall
                         13 test_template
                         ()
@@ -403,7 +403,7 @@
                         ()
                     )]
                 ),
-            template_array_m:
+            template_array_02_m:
                 (Module
                     (SymbolTable
                         7
@@ -890,7 +890,7 @@
                                     )]
                                     ()
                                     Source
-                                    Private
+                                    Public
                                     Implementation
                                     ()
                                     .false.
@@ -986,9 +986,9 @@
                                     .true.
                                 )
                         })
-                    template_array_m
+                    template_array_02_m
                     [math
-                    template_array_m]
+                    template_array_02_m]
                     .false.
                     .false.
                 )

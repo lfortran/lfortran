@@ -2416,8 +2416,10 @@ public:
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *v = down_cast<ASR::Function_t>(
                         item.second);
-                instantiate_function(*v);
-                declare_needed_global_types(*v);
+                if (v->n_type_params == 0) {
+                    instantiate_function(*v);
+                    declare_needed_global_types(*v);
+                }
             }
         }
         finish_module_init_function_prototype(x);
@@ -2437,8 +2439,10 @@ public:
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *v = down_cast<ASR::Function_t>(
                         item.second);
-                instantiate_function(*v);
-                declare_needed_global_types(*v);
+                if (v->n_type_params == 0) {
+                    instantiate_function(*v);
+                    declare_needed_global_types(*v);
+                }
             }
         }
         declare_needed_global_types(x);
@@ -3866,7 +3870,9 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
-                visit_Function(*s);
+                if (s->n_type_params == 0) {
+                    visit_Function(*s);
+                }
             }
         }
     }
