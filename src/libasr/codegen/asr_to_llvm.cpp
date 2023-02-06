@@ -3494,7 +3494,6 @@ public:
     }
 
     void instantiate_function(const ASR::Function_t &x){
-        std::cout<<"instantiate_function: "<<x.m_name<<std::endl;
         uint32_t h = get_hash((ASR::asr_t*)&x);
         llvm::Function *F = nullptr;
         llvm::DISubprogram *SP;
@@ -3538,12 +3537,18 @@ public:
                 // get ASR::Function_t from old_h
                 ASR::Function_t old_x = asr_symtab_fn[old_h];
                 // check if number of arguments
-                if (old_x.n_args == x.n_args) {
-                    F = llvm_symtab_fn[old_h];
-                    if (compiler_options.emit_debug_info) {
-                        SP = (llvm::DISubprogram*) llvm_symtab_fn_discope[old_h];
+                bool is_args_same = true;
+                if ( old_x.n_args == x.n_args ) {
+                    for (size_t i = 0; i < x.n_args; i++) {
+                        if ( x.m_args[i] != old_x.m_args[i] ) {
+                            is_args_same = false;
+                            break;
+                        }
                     }
                 } else {
+                    is_args_same = false;
+                }
+                if (!is_args_same) {
                     F = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, fn_name, module.get());
 
@@ -3551,6 +3556,11 @@ public:
                     if (compiler_options.emit_debug_info) {
                         debug_emit_function(x, SP);
                         F->setSubprogram(SP);
+                    }
+                } else {
+                    F = llvm_symtab_fn[old_h];
+                    if (compiler_options.emit_debug_info) {
+                        SP = (llvm::DISubprogram*) llvm_symtab_fn_discope[old_h];
                     }
                 }
             }
