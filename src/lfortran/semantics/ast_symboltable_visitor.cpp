@@ -267,6 +267,7 @@ public:
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         fix_type_info(m);
+        dflt_access = ASR::Public;
     }
 
     void visit_Module(const AST::Module_t &x) {
@@ -449,7 +450,9 @@ public:
             visit_unit_decl1(*x.m_use[i]);
         }
         for (size_t i=0; i<x.n_decl; i++) {
+            is_Function = true;
             visit_unit_decl2(*x.m_decl[i]);
+            is_Function = false;
         }
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
@@ -621,7 +624,9 @@ public:
             visit_unit_decl1(*x.m_use[i]);
         }
         for (size_t i=0; i<x.n_decl; i++) {
+            is_Function = true;
             visit_unit_decl2(*x.m_decl[i]);
+            is_Function = false;
         }
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
@@ -1367,16 +1372,19 @@ public:
                 current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(ep));
             } else if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *mvar = ASR::down_cast<ASR::Variable_t>(item.second);
-                ASR::asr_t *var = ASR::make_ExternalSymbol_t(
-                    al, mvar->base.base.loc,
-                    /* a_symtab */ current_scope,
-                    /* a_name */ mvar->m_name,
-                    (ASR::symbol_t*)mvar,
-                    m->m_name, nullptr, 0, mvar->m_name,
-                    dflt_access
-                    );
-                std::string sym = to_lower(mvar->m_name);
-                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(var));
+                // check if m_access of mvar is public
+                if ( mvar->m_access == ASR::accessType::Public ) {
+                    ASR::asr_t *var = ASR::make_ExternalSymbol_t(
+                        al, mvar->base.base.loc,
+                        /* a_symtab */ current_scope,
+                        /* a_name */ mvar->m_name,
+                        (ASR::symbol_t*)mvar,
+                        m->m_name, nullptr, 0, mvar->m_name,
+                        dflt_access
+                        );
+                    std::string sym = to_lower(mvar->m_name);
+                    current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(var));
+                }
             } else if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
                 // We have to "repack" the ExternalSymbol so that it lives in the
                 // local symbol table
@@ -1587,6 +1595,9 @@ public:
             Str name;
             name.from_str(al, local_sym);
             char *cname = name.c_str(al);
+            if (mv->m_access == ASR::accessType::Private) {
+                throw SemanticError("Private variable `" + local_sym + "` cannot be imported", loc);
+            }
             ASR::asr_t *v = ASR::make_ExternalSymbol_t(
                 al, mv->base.base.loc,
                 /* a_symtab */ current_scope,

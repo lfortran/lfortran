@@ -188,6 +188,7 @@ RUN(NAME doloop_05 LABELS gfortran llvm cpp)
 RUN(NAME doloop_06 LABELS gfortran llvm cpp wasm)
 RUN(NAME doloop_07 LABELS gfortran llvm cpp wasm)
 RUN(NAME doloop_08 LABELS gfortran llvm cpp wasm)
+RUN(NAME doloop_09 LABELS gfortran llvm)
 
 RUN(NAME goto_01 LABELS gfortran llvm)
 RUN(NAME goto_02 LABELS gfortran llvm)
@@ -640,3 +641,5 @@ RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
 RUN(NAME external_01 LABELS gfortran llvm)
 
 RUN(NAME interface_12 LABELS gfortran llvm)
+
+RUN(NAME private1 LABELS gfortran llvm)

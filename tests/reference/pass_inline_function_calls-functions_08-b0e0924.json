@@ -2,11 +2,11 @@
     "basename": "pass_inline_function_calls-functions_08-b0e0924",
     "cmd": "lfortran --pass=inline_function_calls --indent --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/functions_08.f90",
-    "infile_hash": "78c1ee7f06f4d7369ce4d1a22a1d50c26a6850872133f7deba6e8ea8",
+    "infile_hash": "625582953de25dfa6d54c1e44d22b6e19394212ca99c252ca13236e2",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "pass_inline_function_calls-functions_08-b0e0924.stdout",
-    "stdout_hash": "a7e16d2f625dd33fe10bf7dfd3c669c44ba9caf645ca347612af431e",
+    "stdout_hash": "13c3ffa0ff77d12a43779afcb309aa465a8d72e33ecb4ea3efa68850",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

@@ -162,6 +162,10 @@ namespace LCompilers {
                     transform_stmts(xx.m_body, xx.n_body);
 
                     for (auto &item : x.m_symtab->get_scope()) {
+                        if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                            ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
+                            self().visit_Function(*s);
+                        }
                         if (ASR::is_a<ASR::Block_t>(*item.second)) {
                             ASR::Block_t *s = ASR::down_cast<ASR::Block_t>(item.second);
                             self().visit_Block(*s);

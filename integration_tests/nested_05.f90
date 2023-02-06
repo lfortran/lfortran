@@ -4,8 +4,10 @@ implicit none
 contains
 
 subroutine b()
-integer :: x = 6
-real :: y = 5.5
+integer :: x
+real :: y
+x = 6
+y = 5.5
 print *, x
 print *, y
 call c()

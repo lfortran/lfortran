@@ -185,12 +185,9 @@
                                                     yy
                                                     []
                                                     Local
-                                                    (RealConstant
-                                                        6.600000
-                                                        (Real 4 [])
-                                                    )
                                                     ()
-                                                    Save
+                                                    ()
+                                                    Default
                                                     (Real 4 [])
                                                     Source
                                                     Public
@@ -202,6 +199,14 @@
                                     [c]
                                     [(Var 3 x)]
                                     [(=
+                                        (Var 3 yy)
+                                        (RealConstant
+                                            6.600000
+                                            (Real 4 [])
+                                        )
+                                        ()
+                                    )
+                                    (=
                                         (Var 3 y)
                                         (Var 3 x)
                                         ()

@@ -2612,6 +2612,18 @@ filename = "fixed_form/else1.f"
 ast = true
 
 [[test]]
+filename = "fixed_form/error_stop1.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/error_stop2.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/crlf1.f"
+ast = true
+
+[[test]]
 filename = "parameter1.f90"
 ast = true
 asr = true
@@ -2791,3 +2803,31 @@ llvm = true
 [[test]]
 filename = "../integration_tests/interface_12.f90"
 llvm = true
+
+[[test]]
+filename = "save1.f90"
+asr = true
+
+[[test]]
+filename = "allow_implicit_interface3.f90"
+asr_implicit_interface = true
+
+[[test]]
+filename = "fixed_form5.f"
+ast = true
+
+[[test]]
+filename = "errors/private1.f90"
+asr = true
+
+[[test]]
+filename = "errors/private2.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/private1.f90"
+asr = true
+
+[[test]]
+filename = "block2.f90"
+asr = true

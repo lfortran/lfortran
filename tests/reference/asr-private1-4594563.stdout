@@ -1,0 +1,78 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            foo1:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    foo1
+                    []
+                    .false.
+                    .false.
+                ),
+            foo2:
+                (Module
+                    (SymbolTable
+                        3
+                        {
+                            y:
+                                (Variable
+                                    3
+                                    y
+                                    []
+                                    Local
+                                    (Cast
+                                        (IntegerConstant 2 (Integer 4 []))
+                                        IntegerToReal
+                                        (Real 4 [])
+                                        (RealConstant
+                                            2.000000
+                                            (Real 4 [])
+                                        )
+                                    )
+                                    ()
+                                    Save
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    foo2
+                    []
+                    .false.
+                    .false.
+                ),
+            test:
+                (Program
+                    (SymbolTable
+                        4
+                        {
+                            y:
+                                (ExternalSymbol
+                                    4
+                                    y
+                                    3 y
+                                    foo2
+                                    []
+                                    y
+                                    Public
+                                )
+                        })
+                    test
+                    [foo2]
+                    [(Print
+                        ()
+                        [(Var 4 y)]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)
