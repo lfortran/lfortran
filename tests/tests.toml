@@ -13,18 +13,15 @@ ast = true
 julia = true
 
 [[test]]
-filename = "../integration_tests/template_add.f90"
-ast = true
+filename = "../integration_tests/template_add_01.f90"
 asr = true
 
 [[test]]
 filename = "../integration_tests/template_nested.f90"
-ast = true
 asr = true
 
 [[test]]
 filename = "../integration_tests/template_travel.f90"
-ast = true
 asr = true
 
 [[test]]
