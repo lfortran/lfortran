@@ -10,5 +10,11 @@ type build_target_t
     character(:), allocatable :: version
 end type build_target_t
 
+contains
+
+function func() result(target_ptr)
+    type(build_target_t), pointer :: target_ptr
+    target_ptr => null()
+end function func
 
 end module fpm_targets
