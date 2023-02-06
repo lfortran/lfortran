@@ -641,3 +641,5 @@ RUN(NAME external_01 LABELS gfortran llvm)
 RUN(NAME interface_12 LABELS gfortran llvm)
 
 RUN(NAME private1 LABELS gfortran llvm)
+
+RUN(NAME modules_25 LABELS gfortran llvm)
