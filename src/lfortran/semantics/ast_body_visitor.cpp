@@ -510,7 +510,9 @@ public:
         std::map<std::string, ASR::symbol_t*> restriction_subs;
 
         for (size_t i = 0; i < x.n_args; i++) {
-            std::string arg = to_lower(x.m_args[i]);
+            // TODO: handle operator
+            AST::UseSymbol_t *arg_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_args[i]);
+            std::string arg = to_lower(arg_symbol->m_remote_sym);
             ASR::asr_t *template_param = current_template_asr[current_template_arg[i]];
             // Handle type parameters
             if (ASR::is_a<ASR::ttype_t>(*template_param)) {

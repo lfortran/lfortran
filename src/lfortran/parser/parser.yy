@@ -725,7 +725,7 @@ requires_decl
     ;
 
 instantiate
-    : KW_INSTANTIATE id "(" id_list ")" "," KW_ONLY ":" use_symbol_list sep {
+    : KW_INSTANTIATE id "(" use_symbol_list ")" "," KW_ONLY ":" use_symbol_list sep {
         $$ = INSTANTIATE($2, $4, $9, @$); }
     ;
 
