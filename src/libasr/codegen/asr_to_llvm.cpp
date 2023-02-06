@@ -3494,6 +3494,7 @@ public:
     }
 
     void instantiate_function(const ASR::Function_t &x){
+        std::cout<<"instantiate_function: "<<x.m_name<<std::endl;
         uint32_t h = get_hash((ASR::asr_t*)&x);
         llvm::Function *F = nullptr;
         llvm::DISubprogram *SP;
@@ -3536,8 +3537,8 @@ public:
                 uint32_t old_h = llvm_symtab_fn_names[fn_name];
                 // get ASR::Function_t from old_h
                 ASR::Function_t old_x = asr_symtab_fn[old_h];
-                // check if symtab_id of both functions and number of arguments
-                if (old_x.m_symtab->counter == x.m_symtab->counter && old_x.n_args == x.n_args) {
+                // check if number of arguments
+                if (old_x.n_args == x.n_args) {
                     F = llvm_symtab_fn[old_h];
                     if (compiler_options.emit_debug_info) {
                         SP = (llvm::DISubprogram*) llvm_symtab_fn_discope[old_h];
