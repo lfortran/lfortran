@@ -3873,7 +3873,6 @@ public:
                 if (s->n_type_params == 0) {
                     visit_Function(*s);
                 }
-                visit_Function(*s);
             } else if(is_a<ASR::Block_t>(*item.second)) {
                 ASR::Block_t *s = ASR::down_cast<ASR::Block_t>(item.second);
                 visit_Block(*s);
