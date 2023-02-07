@@ -4283,6 +4283,13 @@ public:
             auto search_optional = std::find(optional_args.begin(), optional_args.end(), name);
             if( search_optional != optional_args.end() ) {
                 size_t kwarg_idx = std::distance(optional_args.begin(), search_optional);
+                if (args[kwarg_idx + offset].m_value != nullptr) {
+                    diag.semantic_error_label(
+                        "Keyword argument is already specified as another keyword argument",
+                        {loc},
+                        "`" + name + "` keyword argument is already specified.");
+                    return ;
+                }
                 args.p[kwarg_idx + offset].m_value = expr;
                 args.p[kwarg_idx + offset].loc = expr->base.loc;
             } else {
@@ -4293,15 +4300,18 @@ public:
                         diag.semantic_error_label(
                             "Keyword argument is already specified as a non-keyword argument",
                             {loc},
-                            name + "keyword argument is already specified.");
+                            "`" + name + "` keyword argument is already specified.");
                         return ;
                     }
                     if (args[idx].m_value != nullptr) {
-                        diag.semantic_error_label(
-                            "Keyword argument is already specified as another keyword argument",
-                            {loc},
-                            name + "keyword argument is already specified.");
-                        return ;
+                        idx = n_args + (idx - offset) - 1;
+                        if (args[idx].m_value != nullptr) {
+                            diag.semantic_error_label(
+                                "Keyword argument is already specified as another keyword argument",
+                                {loc},
+                                "`" + name + "` keyword argument is already specified.");
+                            return ;
+                        }
                     }
                     args.p[idx].loc = expr->base.loc;
                     args.p[idx].m_value = expr;
