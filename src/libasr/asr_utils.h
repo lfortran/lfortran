@@ -1652,6 +1652,13 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             return ASRUtils::TYPE(ASR::make_Struct_t(al, t->base.loc,
                         tnew->m_derived_type, dimsp, dimsn));
         }
+        case ASR::ttypeType::Class: {
+            ASR::Class_t* tnew = ASR::down_cast<ASR::Class_t>(t);
+            ASR::dimension_t* dimsp = dims ? dims->p : tnew->m_dims;
+            size_t dimsn = dims ? dims->n : tnew->n_dims;
+            return ASRUtils::TYPE(ASR::make_Class_t(al, t->base.loc,
+                        tnew->m_class_type, dimsp, dimsn));
+        }
         case ASR::ttypeType::Pointer: {
             ASR::Pointer_t* ptr = ASR::down_cast<ASR::Pointer_t>(t);
             ASR::ttype_t* dup_type = duplicate_type(al, ptr->m_type, dims);

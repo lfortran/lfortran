@@ -29,4 +29,11 @@ contains
             print *
         end associate
     end subroutine sub_1
+
+    subroutine sub_2(progress)
+        class(t_2), intent(in) :: progress(:)
+        associate(target => progress(0))
+            print *
+        end associate
+    end subroutine sub_2
 end module module_2
