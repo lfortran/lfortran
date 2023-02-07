@@ -701,6 +701,24 @@ public:
                 tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, tmp_type->base.loc, variable->m_type));
                 create_associate_stmt = true;
             }
+            // if (ASR::is_a<ASR::Pointer_t>(*tmp_type)) {
+            //     ASR::ttype_t *t = ASR::down_cast<ASR::Pointer_t>(tmp_type)->m_type;
+            //     if (ASR::is_a<ASR::Struct_t>(*t)) {
+            //         ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(t);
+            //         std::string s_name = ASRUtils::symbol_name(s->m_derived_type);
+            //         ASR::symbol_t *dt_s = current_scope->resolve_symbol(s_name);
+            //         if (dt_s == nullptr) {
+            //             dt_s = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+            //                 al, s->base.base.loc, current_scope, s2c(al, s_name),
+            //                 s->m_derived_type, ASRUtils::symbol_name(
+            //                     ASRUtils::get_asr_owner(s->m_derived_type)),
+            //                 nullptr, 0, s2c(al, s_name), ASR::accessType::Private));
+            //             current_scope->add_symbol(s_name, dt_s);
+            //             tmp_type = ASRUtils::TYPE(ASR::make_Struct_t(al,
+            //                 s->base.base.loc, dt_s, s->m_dims, s->n_dims));
+            //         }
+            //     }
+            // }
             std::string name = to_lower(x.m_syms[i].m_name);
             char *name_c = s2c(al, name);
             Vec<char*> variable_dependencies_vec;

@@ -344,6 +344,11 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
     LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*member));
     ASR::Variable_t* member_variable = ASR::down_cast<ASR::Variable_t>(member);
     ASR::ttype_t* member_type = member_variable->m_type;
+    bool is_pointer = false;
+    if (ASRUtils::is_pointer(member_type)) {
+        is_pointer = true;
+        member_type = ASR::down_cast<ASR::Pointer_t>(member_type)->m_type;
+    }
     switch( member_type->type ) {
         case ASR::ttypeType::Struct: {
             ASR::Struct_t* der = ASR::down_cast<ASR::Struct_t>(member_type);
@@ -405,6 +410,9 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         }
         default :
             break;
+    }
+    if (is_pointer) {
+        member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, member_type));
     }
     ASR::ttype_t* member_type_ = nullptr;
     ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope, member_type_);
