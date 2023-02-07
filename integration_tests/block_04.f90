@@ -4,10 +4,10 @@ subroutine hybrd()
     real :: temp
 
     interface 
-    subroutine fcn(n)
-    implicit none
-    integer, intent(in) :: n
-    end subroutine fcn
+        subroutine fcn(n)
+        implicit none
+        integer, intent(in) :: n
+        end subroutine fcn
     end interface
 
     main : block
