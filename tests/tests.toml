@@ -2831,7 +2831,3 @@ asr = true
 [[test]]
 filename = "block2.f90"
 asr = true
-
-[[test]]
-filename = "../integration_tests/block_04.f90"
-llvm = true
