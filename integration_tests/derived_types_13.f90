@@ -10,14 +10,13 @@ module debug_1
         procedure :: sqrt_subtract
     end type t_1
 contains
-    function multiply(self, j) result(res)
-        class(t_1), intent(in) :: self
+    subroutine multiply(self, j) !result(res)
+        class(t_1), intent(inout) :: self
         real, intent(in) :: j
-        real :: res
-        res = self%i * j
-    end function multiply
+        self%i = self%i * j
+    end subroutine multiply
 
-    subroutine sqrt_subtract(self, j)
+    subroutine sqrt_subtract(self, j) !result(res)
         class(t_1), intent(inout) :: self
         integer, intent(in) :: j
         self%i = self%i - j ** 0.5
@@ -32,7 +31,7 @@ program name
 
     type_1%i = 100.0
 
-    print *, type_1%compute(5.0)
+    call type_1%compute(5.0)
     print *, type_1%i
 
     call type_1%compute(2500)

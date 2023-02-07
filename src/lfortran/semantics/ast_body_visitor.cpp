@@ -1834,7 +1834,7 @@ public:
             case (ASR::symbolType::GenericProcedure) : {
                 ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(original_sym);
                 int idx;
-                if( x.n_member == 1 ) {
+                if( x.n_member >= 1 ) {
                     idx = ASRUtils::select_generic_procedure(args_with_mdt, *p, x.base.base.loc,
                             [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
                 } else {
