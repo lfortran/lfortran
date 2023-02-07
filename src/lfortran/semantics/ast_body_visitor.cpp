@@ -1833,6 +1833,12 @@ public:
             }
             case (ASR::symbolType::GenericProcedure) : {
                 ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(original_sym);
+                std::string s_name = "1_" + std::string(p->m_name);
+                original_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                    p->base.base.loc, current_scope, s2c(al, s_name), original_sym,
+                    ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_sym)),
+                    nullptr, 0, p->m_name, ASR::accessType::Private));
+                current_scope->add_symbol(s_name, original_sym);
                 int idx;
                 if( x.n_member >= 1 ) {
                     idx = ASRUtils::select_generic_procedure(args_with_mdt, *p, x.base.base.loc,
