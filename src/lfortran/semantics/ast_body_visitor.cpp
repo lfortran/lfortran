@@ -1834,10 +1834,26 @@ public:
             case (ASR::symbolType::GenericProcedure) : {
                 ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(original_sym);
                 std::string s_name = "1_" + std::string(p->m_name);
+                ASR::symbol_t* original_sym_owner = ASRUtils::get_asr_owner(original_sym);
+                std::string original_sym_owner_name = ASRUtils::symbol_name(original_sym_owner);
+                if( !ASR::is_a<ASR::Module_t>(*original_sym_owner) ) {
+                    if( current_scope->resolve_symbol(original_sym_owner_name) == nullptr ) {
+                        std::string original_sym_owner_name_ = "1_" + original_sym_owner_name;
+                        if( current_scope->resolve_symbol(original_sym_owner_name) == nullptr ) {
+                            ASR::symbol_t* module_ = ASRUtils::get_asr_owner(original_sym_owner);
+                            LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*module_));
+                            original_sym_owner = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                                                    x.base.base.loc, current_scope, s2c(al, original_sym_owner_name_),
+                                                    original_sym_owner, ASRUtils::symbol_name(module_), nullptr, 0,
+                                                    s2c(al, original_sym_owner_name), ASR::accessType::Private));
+                            current_scope->add_symbol(original_sym_owner_name_, original_sym_owner);
+                            original_sym_owner_name = original_sym_owner_name_;
+                        }
+                    }
+                }
                 original_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
                     p->base.base.loc, current_scope, s2c(al, s_name), original_sym,
-                    ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_sym)),
-                    nullptr, 0, p->m_name, ASR::accessType::Private));
+                    s2c(al, original_sym_owner_name), nullptr, 0, p->m_name, ASR::accessType::Private));
                 current_scope->add_symbol(s_name, original_sym);
                 int idx;
                 if( x.n_member >= 1 ) {
