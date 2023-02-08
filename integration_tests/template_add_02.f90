@@ -23,6 +23,10 @@ module template_add_m
         end function
     end template
 
+    interface operator (+)
+        module procedure func_arg_real
+    end interface
+
 contains
 
     real function func_arg_real(x, y) result(z)
@@ -37,6 +41,19 @@ contains
 
     subroutine test_template()
         instantiate add_t(real, operator(+)), only: add_real => add_generic
+        real :: x, y
+        x = 5.1
+        y = 7.2
+        print*, "The result is ", add_real(x, y)
+        if (abs(add_real(x, y) - 12.3) > 1e-5) error stop
     end subroutine
 
 end module
+
+program template_add
+use template_add_m
+implicit none
+
+call test_template()
+
+end program template_add
