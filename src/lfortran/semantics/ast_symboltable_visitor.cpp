@@ -1746,6 +1746,7 @@ public:
             while (tu_symtab->parent != nullptr) {
                 tu_symtab = tu_symtab->parent;
             }
+
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
                 msym, x.base.base.loc, false, pass_options, true,
                 [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }

@@ -280,6 +280,13 @@ public:
         current_scope = current_scope_copy;
     }
 
+    void visit_AssociateBlock(const AssociateBlock_t& x) {
+        SymbolTable* current_scope_copy = current_scope;
+        current_scope = x.m_symtab;
+        BaseWalkVisitor<FixExternalSymbolsVisitor>::visit_AssociateBlock(x);
+        current_scope = current_scope_copy;
+    }
+
     void visit_ExternalSymbol(const ExternalSymbol_t &x) {
         if (x.m_external != nullptr) {
             // Nothing to do, the external symbol is already resolved
@@ -294,6 +301,7 @@ public:
         if (startswith(module_name, "lfortran_intrinsic_iso")) {
             module_name = module_name.substr(19);
         }
+
         if (global_symtab->get_symbol(module_name) != nullptr) {
             Module_t *m = down_cast<Module_t>(global_symtab->get_symbol(module_name));
             symbol_t *sym = m->m_symtab->find_scoped_symbol(original_name, x.n_scope_names, x.m_scope_names);
