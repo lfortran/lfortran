@@ -510,39 +510,71 @@ public:
         std::map<std::string, ASR::symbol_t*> restriction_subs;
 
         for (size_t i = 0; i < x.n_args; i++) {
-            // TODO: handle operator
-            AST::UseSymbol_t *arg_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_args[i]);
-            std::string arg = to_lower(arg_symbol->m_remote_sym);
             ASR::asr_t *template_param = current_template_asr[current_template_arg[i]];
-            // Handle type parameters
-            if (ASR::is_a<ASR::ttype_t>(*template_param)) {
-                ASR::TypeParameter_t *type_param = ASR::down_cast2<ASR::TypeParameter_t>(template_param);
-                ASR::ttype_t *type_arg;
-                if (arg.compare("real") == 0) {
-                    type_arg = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
-                } else if (arg.compare("integer") == 0) {
-                    type_arg = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
-                } else {
-                    throw SemanticError(
-                        "The type " + arg + " is not yet handled for generic instantiation",
-                        x.base.base.loc);
+            if (AST::is_a<AST::UseSymbol_t>(*x.m_args[i])) {
+                AST::UseSymbol_t *arg_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_args[i]);
+                std::string arg = to_lower(arg_symbol->m_remote_sym);
+                // Handle type parameters
+                if (ASR::is_a<ASR::ttype_t>(*template_param)) {
+                    ASR::TypeParameter_t *type_param = ASR::down_cast2<ASR::TypeParameter_t>(template_param);
+                    ASR::ttype_t *type_arg;
+                    if (arg.compare("real") == 0) {
+                        type_arg = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+                    } else if (arg.compare("integer") == 0) {
+                        type_arg = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+                    } else {
+                        throw SemanticError(
+                            "The type " + arg + " is not yet handled for generic instantiation",
+                            x.base.base.loc);
+                    }
+                    subs[type_param->m_param] = type_arg;
+                // Handle function restrictions
+                } else if (ASR::is_a<ASR::symbol_t>(*template_param)) {
+                    // TODO: restriction can also be subroutine
+                    ASR::Function_t *restriction = ASR::down_cast2<ASR::Function_t>(template_param);
+                    ASR::symbol_t *f_arg = current_scope->resolve_symbol(arg);
+                    if (!f_arg) {
+                        throw SemanticError("The function argument " + arg + " is not found",
+                            x.base.base.loc);
+                    }
+                    ASR::symbol_t *f_arg2 = ASRUtils::symbol_get_past_external(f_arg);
+                    if (!ASR::is_a<ASR::Function_t>(*f_arg2)) {
+                        throw SemanticError(
+                            "The argument for " + current_template_arg[i] + " must be a function",
+                            x.base.base.loc);
+                    }
+                    // TODO: make the error returning optional for operators
+                    check_restriction(subs, restriction_subs, restriction, f_arg, x.base.base.loc);
                 }
-                subs[type_param->m_param] = type_arg;
-            // Handle function restrictions
-            } else if (ASR::is_a<ASR::symbol_t>(*template_param)) {
-                ASR::Function_t *restriction = ASR::down_cast2<ASR::Function_t>(template_param);
-                ASR::symbol_t *f_arg = current_scope->resolve_symbol(arg);
-                if (!f_arg) {
-                    throw SemanticError("The function argument " + arg + " is not found",
-                        x.base.base.loc);
+            } else if (AST::is_a<AST::IntrinsicOperator_t>(*x.m_args[i])) {
+                AST::IntrinsicOperator_t *intrinsic_op = AST::down_cast<AST::IntrinsicOperator_t>(x.m_args[i]);
+                ASR::binopType op;
+                std::string op_name;
+                switch (intrinsic_op->m_op) {
+                    case (AST::PLUS):
+                        op = ASR::Add;
+                        op_name = "~add";
+                        break;
+                    default:
+                        LCOMPILERS_ASSERT(false);
                 }
-                ASR::symbol_t *f_arg2 = ASRUtils::symbol_get_past_external(f_arg);
-                if (!ASR::is_a<ASR::Function_t>(*f_arg2)) {
-                    throw SemanticError(
-                        "The argument for " + current_template_arg[i] + " must be a function",
-                        x.base.base.loc);
+                bool is_overloaded = ASRUtils::is_op_overloaded(op, op_name, current_scope);
+                if (is_overloaded) {
+                    ASR::Function_t *restriction = ASR::down_cast2<ASR::Function_t>(template_param);
+                    ASR::symbol_t* sym = current_scope->resolve_symbol(op_name);
+                    ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
+                    ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
+                    bool found = false;
+                    // TODO: do one where operations are built in
+                    for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
+                        ASR::symbol_t* proc = gen_proc->m_procs[i];
+                        ASR::symbol_t* proc2 = ASRUtils::symbol_get_past_external(proc);
+                        check_restriction(subs, restriction_subs, restriction, proc2, x.base.base.loc);
+                    }
                 }
-                check_restriction(subs, restriction_subs, restriction, f_arg, x.base.base.loc);
+                // LCOMPILERS_ASSERT(false);
+            } else {
+                LCOMPILERS_ASSERT(false);
             }
         }
 
