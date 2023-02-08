@@ -622,6 +622,7 @@ RUN(NAME assign_to2 LABELS gfortran llvm)
 RUN(NAME conv_complex2real LABELS gfortran llvm)
 
 RUN(NAME template_add_01 LABELS llvm)
+RUN(NAME template_add_02 LABELS llvm)
 RUN(NAME template_nested LABELS llvm)
 RUN(NAME template_travel LABELS llvm)
 RUN(NAME template_triple LABELS llvm)
