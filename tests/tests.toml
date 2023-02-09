@@ -2515,6 +2515,10 @@ filename = "../integration_tests/derived_types_16_module.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/derived_types_13.f90"
+asr = true
+
+[[test]]
 filename = "implicit_typing1.f90"
 asr_implicit_typing = true
 
