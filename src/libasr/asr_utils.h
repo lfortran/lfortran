@@ -2136,6 +2136,10 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::s
                !ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
                 import_struct_t_scope->asr_owner)) ) {
             import_struct_t_scope = import_struct_t_scope->parent;
+            if( import_struct_t_scope->asr_owner != nullptr &&
+                !ASR::is_a<ASR::symbol_t>(*import_struct_t_scope->asr_owner) ) {
+                break;
+            }
         }
         LCOMPILERS_ASSERT(import_struct_t_scope != nullptr);
         ASR::symbol_t* struct_ext = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,

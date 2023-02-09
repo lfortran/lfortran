@@ -1,6 +1,7 @@
 module class_default_select_type_user
-    use class_default_select_type, only: toml_stat
-    implicit none
+use class_default_select_type, only: toml_stat
+implicit none
+
     public :: toml_table, get_table
     type :: toml_value
         integer :: int
@@ -12,7 +13,8 @@ module class_default_select_type_user
       logical :: inline = .false.
     end type
 
-    contains
+contains
+
     subroutine get_table(table, ptr, stat)
 
         class(toml_table), intent(inout) :: table
@@ -39,6 +41,7 @@ module class_default_select_type_user
 
     subroutine check_table(tab)
         class(toml_table), intent(out) :: tab
+        print *, "inside check_table"
     end subroutine check_table
 
- end module class_default_select_type_user
+end module class_default_select_type_user
