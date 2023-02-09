@@ -1843,6 +1843,27 @@ public:
             Vec<ASR::dimension_t> empty_dims;
             empty_dims.reserve(al, 1);
             type = ASRUtils::duplicate_type(al, type, &empty_dims);
+            if (arr_ref_val == nullptr) {
+                // For now we will only handle 1D arrays
+                if (args.size() == 1) {
+                    ASR::array_index_t arg = args[0];
+                    if (arg.m_left == nullptr && arg.m_step == nullptr) {
+                        ASR::expr_t *val = ASRUtils::expr_value(v_Var);
+                        ASR::expr_t *index = ASRUtils::expr_value(arg.m_right);
+                        if (val && index) {
+                            ASR::ArrayConstant_t *val2 = ASR::down_cast<ASR::ArrayConstant_t>(val);
+                            ASR::IntegerConstant_t *index2 = ASR::down_cast<ASR::IntegerConstant_t>(index);
+                            int64_t index3 = index2->m_n-1;
+                            size_t index4 = index3;
+                            if (index3 < 0 || index4 >= val2->n_args) {
+                                throw SemanticError("The index is out of bounds",
+                                    index2->base.base.loc);
+                            }
+                            arr_ref_val = val2->m_args[index4];
+                        }
+                    }
+                }
+            }
             return ASR::make_ArrayItem_t(al, loc,
                 v_Var, args.p, args.size(), type, ASR::arraystorageType::ColMajor, arr_ref_val);
         } else {
