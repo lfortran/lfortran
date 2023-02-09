@@ -1,0 +1,439 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            fpm_git:
+                (Module
+                    (SymbolTable
+                        8
+                        {
+                            git_target_branch:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            1_git_target_t_object:
+                                                (ExternalSymbol
+                                                    10
+                                                    1_git_target_t_object
+                                                    9 object
+                                                    git_target_t
+                                                    []
+                                                    object
+                                                    Public
+                                                ),
+                                            1_git_target_t_url:
+                                                (ExternalSymbol
+                                                    10
+                                                    1_git_target_t_url
+                                                    9 url
+                                                    git_target_t
+                                                    []
+                                                    url
+                                                    Public
+                                                ),
+                                            branch:
+                                                (Variable
+                                                    10
+                                                    branch
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            self:
+                                                (Variable
+                                                    10
+                                                    self
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        8 git_target_t
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            url:
+                                                (Variable
+                                                    10
+                                                    url
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    git_target_branch
+                                    []
+                                    [(Var 10 url)
+                                    (Var 10 branch)]
+                                    [(=
+                                        (StructInstanceMember
+                                            (Var 10 self)
+                                            10 1_git_target_t_url
+                                            (Character 1 -2 () [])
+                                            ()
+                                        )
+                                        (Var 10 url)
+                                        ()
+                                    )
+                                    (=
+                                        (StructInstanceMember
+                                            (Var 10 self)
+                                            10 1_git_target_t_object
+                                            (Character 1 -2 () [])
+                                            ()
+                                        )
+                                        (Var 10 branch)
+                                        ()
+                                    )]
+                                    (Var 10 self)
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            git_target_t:
+                                (StructType
+                                    (SymbolTable
+                                        9
+                                        {
+                                            object:
+                                                (Variable
+                                                    9
+                                                    object
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            url:
+                                                (Variable
+                                                    9
+                                                    url
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    git_target_t
+                                    []
+                                    [url
+                                    object]
+                                    Source
+                                    Public
+                                    .false.
+                                    ()
+                                    ()
+                                )
+                        })
+                    fpm_git
+                    []
+                    .true.
+                    .false.
+                ),
+            fpm_manifest_dependency:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            dependency_config_t:
+                                (StructType
+                                    (SymbolTable
+                                        5
+                                        {
+                                            git:
+                                                (Variable
+                                                    5
+                                                    git
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Struct
+                                                        4 git_target_t
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            name:
+                                                (Variable
+                                                    5
+                                                    name
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            path:
+                                                (Variable
+                                                    5
+                                                    path
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    dependency_config_t
+                                    [git_target_t]
+                                    [name
+                                    path
+                                    git]
+                                    Source
+                                    Public
+                                    .false.
+                                    ()
+                                    ()
+                                ),
+                            git_target_branch:
+                                (ExternalSymbol
+                                    4
+                                    git_target_branch
+                                    8 git_target_branch
+                                    fpm_git
+                                    []
+                                    git_target_branch
+                                    Public
+                                ),
+                            git_target_t:
+                                (ExternalSymbol
+                                    4
+                                    git_target_t
+                                    8 git_target_t
+                                    fpm_git
+                                    []
+                                    git_target_t
+                                    Public
+                                ),
+                            new_dependency:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            1_dependency_config_t_git:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_dependency_config_t_git
+                                                    5 git
+                                                    dependency_config_t
+                                                    []
+                                                    git
+                                                    Public
+                                                ),
+                                            obj:
+                                                (Variable
+                                                    6
+                                                    obj
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            self:
+                                                (Variable
+                                                    6
+                                                    self
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        4 dependency_config_t
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            url:
+                                                (Variable
+                                                    6
+                                                    url
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    new_dependency
+                                    [git_target_branch]
+                                    [(Var 6 self)]
+                                    [(=
+                                        (StructInstanceMember
+                                            (Var 6 self)
+                                            6 1_dependency_config_t_git
+                                            (Struct
+                                                4 git_target_t
+                                                []
+                                            )
+                                            ()
+                                        )
+                                        (FunctionCall
+                                            4 git_target_branch
+                                            ()
+                                            [((Var 6 url))
+                                            ((Var 6 obj))]
+                                            (Struct
+                                                4 git_target_t
+                                                []
+                                            )
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (ImplicitDeallocate
+                                        [6 obj
+                                        6 url]
+                                    )]
+                                    ()
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                )
+                        })
+                    fpm_manifest_dependency
+                    [fpm_git]
+                    .true.
+                    .false.
+                ),
+            modules_28:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            dependency_config_t:
+                                (ExternalSymbol
+                                    2
+                                    dependency_config_t
+                                    4 dependency_config_t
+                                    fpm_manifest_dependency
+                                    []
+                                    dependency_config_t
+                                    Public
+                                ),
+                            git_target_branch:
+                                (ExternalSymbol
+                                    2
+                                    git_target_branch
+                                    8 git_target_branch
+                                    fpm_git
+                                    []
+                                    git_target_branch
+                                    Public
+                                ),
+                            git_target_t:
+                                (ExternalSymbol
+                                    2
+                                    git_target_t
+                                    8 git_target_t
+                                    fpm_git
+                                    []
+                                    git_target_t
+                                    Public
+                                ),
+                            new_dependency:
+                                (ExternalSymbol
+                                    2
+                                    new_dependency
+                                    4 new_dependency
+                                    fpm_manifest_dependency
+                                    []
+                                    new_dependency
+                                    Public
+                                )
+                        })
+                    modules_28
+                    [fpm_manifest_dependency]
+                    [(Print
+                        ()
+                        [(StringConstant
+                            "running modules_28 program"
+                            (Character 1 26 () [])
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)
