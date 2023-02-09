@@ -383,7 +383,8 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
     ASR::ttype_t* member_type_ = nullptr;
     ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope, member_type_);
     ASR::expr_t* value = nullptr;
-    if (v != nullptr && ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(v))->m_storage
+    v = ASRUtils::symbol_get_past_external(v);
+    if (v != nullptr && ASR::down_cast<ASR::Variable_t>(v)->m_storage
             == ASR::storage_typeType::Parameter) {
         if (member_variable->m_symbolic_value != nullptr) {
             value = expr_value(member_variable->m_symbolic_value);
