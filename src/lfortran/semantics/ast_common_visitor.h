@@ -1395,6 +1395,20 @@ public:
                             throw SemanticError("Value of a parameter variable must evaluate to a compile time constant",
                                 x.base.base.loc);
                         }
+                        // TODO: move this into `expr_value` itself:
+                        if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                            // For constant arrays we iterate over each element
+                            // and copy over the value
+                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                            Vec<ASR::expr_t*> body;
+                            body.reserve(al, a->n_args);
+                            for (size_t i=0; i < a->n_args; i++) {
+                                body.push_back(al, ASRUtils::expr_value(a->m_args[i]));
+                            }
+                            value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al,
+                                a->base.base.loc, body.p, body.size(),
+                                a->m_type, a->m_storage_format));
+                        }
                         if (sym_type->m_type == AST::decl_typeType::TypeCharacter) {
                             ASR::Character_t *lhs_type = ASR::down_cast<ASR::Character_t>(type);
                             ASR::Character_t *rhs_type = ASR::down_cast<ASR::Character_t>(ASRUtils::expr_type(value));
