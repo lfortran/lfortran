@@ -1,5 +1,8 @@
 module tomlf_de_tokenizer
     implicit none
+    private
+
+    public :: toml_tokenizer
 
     type :: toml_table
        logical :: inline = .false.
@@ -19,7 +22,7 @@ module tomlf_de_tokenizer
       end subroutine next_token
     end interface
 
-    type, extends(toml_tokenizer) :: toml_tokenizer_
+    type, extends(toml_tokenizer), abstract :: toml_tokenizer_
     end type toml_tokenizer_
 
     contains
