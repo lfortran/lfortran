@@ -5,3 +5,10 @@ module tomlf_build
 
 
 end module tomlf_build
+
+program modules_27
+implicit none
+
+print *, "running modules_27 program"
+
+end program
