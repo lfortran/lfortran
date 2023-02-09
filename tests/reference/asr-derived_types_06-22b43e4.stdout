@@ -1302,6 +1302,16 @@
                     (SymbolTable
                         4
                         {
+                            1_toml_datetime:
+                                (ExternalSymbol
+                                    4
+                                    1_toml_datetime
+                                    7 toml_datetime
+                                    tomlf_datetime
+                                    []
+                                    toml_datetime
+                                    Public
+                                ),
                             convert_raw:
                                 (GenericProcedure
                                     4
@@ -1339,7 +1349,7 @@
                                                     5
                                                     1_toml_datetime_date
                                                     9 date
-                                                    toml_datetime
+                                                    1_toml_datetime
                                                     []
                                                     date
                                                     Public
