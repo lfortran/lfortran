@@ -54,8 +54,7 @@ if( yt%i /= 7 ) error stop
 is_greater = (xt > yt)
 if (is_greater) error stop
 
-! TODO: Uncomment this once `DefBinOp` is implemented
-! product = (xt.mul.yt)
-! if (product /= 42) error stop
+product = (xt.mul.yt)
+if (product /= 42) error stop
 
 end program alloc_assign
