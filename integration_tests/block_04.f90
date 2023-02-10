@@ -3,7 +3,7 @@ subroutine hybrd()
     real, dimension(3):: wa3
     real :: temp
 
-    interface 
+    interface
         subroutine fcn(n)
         implicit none
         integer, intent(in) :: n
@@ -27,4 +27,4 @@ end subroutine
 program main
     implicit none
     call hybrd()
-end program 
+end program
