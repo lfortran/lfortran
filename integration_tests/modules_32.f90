@@ -12,3 +12,11 @@ end type build_target_t
 
 
 end module fpm_targets
+
+
+program modules_32
+implicit none
+
+print *, "running modules_32 program"
+
+end program
