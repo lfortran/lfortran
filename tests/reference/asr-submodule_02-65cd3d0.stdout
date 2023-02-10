@@ -217,7 +217,7 @@
                             rkind:
                                 (ExternalSymbol
                                     5
-                                    rkind1
+                                    rkind
                                     4 real32
                                     lfortran_intrinsic_iso_fortran_env
                                     []

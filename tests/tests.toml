@@ -1798,6 +1798,11 @@ filename = "modules_07.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/modules_27.f90"
+asr = true
+extrafiles = "../integration_tests/modules_27_module1.f90, ../integration_tests/modules_27_module2.f90"
+
+[[test]]
 filename = "../integration_tests/modules_25.f90"
 asr = true
 extrafiles = "../integration_tests/modules_25_module.f90, ../integration_tests/modules_25_module1.f90"
