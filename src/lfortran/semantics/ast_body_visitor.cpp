@@ -1882,7 +1882,7 @@ public:
                     s2c(al, original_sym_owner_name), nullptr, 0, p->m_name, ASR::accessType::Private));
                 current_scope->add_symbol(s_name, original_sym);
                 int idx;
-                if( x.n_member == 1 ) {
+                if( x.n_member >= 1 ) {
                     idx = ASRUtils::select_generic_procedure(args_with_mdt, *p, x.base.base.loc,
                             [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
                 } else {
