@@ -1712,11 +1712,11 @@ public:
         args.reserve(al, n_args);
         ASR::expr_t* v_Var = nullptr;
         if( v_expr ) {
-            ASR::symbol_t* v_ext = ASRUtils::import_struct_instance_member(al, v, current_scope);
+            ASR::ttype_t* struct_t_mem_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v));
+            ASR::symbol_t* v_ext = ASRUtils::import_struct_instance_member(al, v, current_scope, struct_t_mem_type);
             v_Var = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                         al, v_expr->base.loc, v_expr, v_ext,
-                        ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)),
-                        nullptr));
+                        struct_t_mem_type, nullptr));
         } else {
             v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
         }
@@ -1975,6 +1975,27 @@ public:
                     a_len = ASRUtils::extract_len<SemanticError>(func_calls[0], loc);
                 }
                 return ASRUtils::TYPE(ASR::make_Character_t(al, loc, t->m_kind, a_len, func_calls[0], new_dims.p, new_dims.size()));
+            }
+            case ASR::ttypeType::Struct: {
+                ASR::Struct_t* struct_t_type = ASR::down_cast<ASR::Struct_t>(return_type);
+                ASR::symbol_t *sym = struct_t_type->m_derived_type;
+                 ASR::symbol_t *es_s = current_scope->resolve_symbol(
+                     ASRUtils::symbol_name(sym));
+                 if (es_s == nullptr) {
+                     ASR::StructType_t *st = ASR::down_cast<ASR::StructType_t>(sym);
+                     ASR::Module_t* sym_module = ASRUtils::get_sym_module(sym);
+                     LCOMPILERS_ASSERT(sym_module != nullptr);
+                     std::string st_name = "1_" + std::string(st->m_name);
+                     sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                         al, st->base.base.loc, current_scope, s2c(al, st_name),
+                         sym, sym_module->m_name, nullptr, 0, st->m_name,
+                         ASR::accessType::Public));
+                     current_scope->add_symbol(st_name, sym);
+                 } else {
+                     sym = es_s;
+                 }
+                 return ASRUtils::TYPE(ASR::make_Struct_t(al, loc, sym, struct_t_type->m_dims,
+                            struct_t_type->n_dims));
             }
             case ASR::ttypeType::Integer: {
                 ASR::Integer_t *t = ASR::down_cast<ASR::Integer_t>(return_type);
@@ -4216,6 +4237,7 @@ public:
         size_t n_args = args.size();
         std::string fn_name = fn->m_name;
         std::vector<std::string> optional_args;
+        std::vector<int> optional_args_idx;
         for( auto itr = fn->m_symtab->get_scope().begin(); itr != fn->m_symtab->get_scope().end();
              itr++ ) {
             ASR::symbol_t* fn_sym = itr->second;
@@ -4223,6 +4245,12 @@ public:
                 ASR::Variable_t* fn_var = ASR::down_cast<ASR::Variable_t>(fn_sym);
                 if( fn_var->m_presence == ASR::presenceType::Optional ) {
                     optional_args.push_back(itr->first);
+                    for( size_t i = 0; i < fn_n_args; i++ ) {
+                        if( ASR::down_cast<ASR::Var_t>(fn_args[i])->m_v == fn_sym ) {
+                            optional_args_idx.push_back(i);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -4299,8 +4327,11 @@ public:
                 }
             }
         }
-        for (size_t i=0; i < offset; i++) {
-            if (args[i].m_value == nullptr) {
+
+        for (size_t i=0; i < args.size(); i++) {
+            if (args[i].m_value == nullptr &&
+                std::find(optional_args_idx.begin(), optional_args_idx.end(), i)
+                    == optional_args_idx.end()) {
                 diag.semantic_error_label(
                     "Argument was not specified",
                     {loc},
@@ -4336,16 +4367,20 @@ public:
                 tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc,
                         to_lower(x_m_member[i].m_name), to_lower(x_m_member[i - 1].m_name),
                         scope);
-                ASR::symbol_t* tmp2_m_m_ext = ASRUtils::import_struct_instance_member(al, tmp2->m_m, current_scope);
+                ASR::ttype_t* tmp2_mem_type = tmp2->m_type;
+                ASR::symbol_t* tmp2_m_m_ext = ASRUtils::import_struct_instance_member(al,
+                                                    tmp2->m_m, current_scope, tmp2_mem_type);
                 tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp),
-                                                       tmp2_m_m_ext, tmp2->m_type, nullptr);
+                                                       tmp2_m_m_ext, tmp2_mem_type, nullptr);
             }
             i = x_n_member - 1;
             tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc, to_lower(x_m_id),
                         to_lower(x_m_member[i].m_name), scope);
-            ASR::symbol_t* tmp2_m_m_ext = ASRUtils::import_struct_instance_member(al, tmp2->m_m, current_scope);
+            ASR::ttype_t* tmp2_mem_type = tmp2->m_type;
+            ASR::symbol_t* tmp2_m_m_ext = ASRUtils::import_struct_instance_member(al, tmp2->m_m,
+                                            current_scope, tmp2_mem_type);
             tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext,
-                                                   tmp2->m_type, nullptr);
+                                                   tmp2_mem_type, nullptr);
         }
     }
 
