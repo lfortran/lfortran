@@ -1818,6 +1818,11 @@ asr = true
 extrafiles = "../integration_tests/modules_29_module1.f90, ../integration_tests/modules_29_module2.f90, ../integration_tests/modules_29_module3.f90"
 
 [[test]]
+filename = "../integration_tests/modules_30.f90"
+asr = true
+extrafiles = "../integration_tests/modules_30_module1.f90, ../integration_tests/modules_30_module2.f90, ../integration_tests/modules_30_module3.f90, ../integration_tests/modules_30_module4.f90"
+
+[[test]]
 filename = "string.f90"
 ast_f90 = true
 
