@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            fpm_git:
+            fpm_git1:
                 (Module
                     (SymbolTable
                         15
@@ -166,12 +166,12 @@
                                     ()
                                 )
                         })
-                    fpm_git
+                    fpm_git1
                     []
                     .true.
                     .false.
                 ),
-            fpm_manifest_dependency:
+            fpm_manifest_dependency1:
                 (Module
                     (SymbolTable
                         8
@@ -276,7 +276,7 @@
                                     8
                                     git_target_branch
                                     15 git_target_branch
-                                    fpm_git
+                                    fpm_git1
                                     []
                                     git_target_branch
                                     Public
@@ -286,7 +286,7 @@
                                     8
                                     git_target_t
                                     15 git_target_t
-                                    fpm_git
+                                    fpm_git1
                                     []
                                     git_target_t
                                     Public
@@ -531,8 +531,8 @@
                                     ()
                                 )
                         })
-                    fpm_manifest_dependency
-                    [fpm_git]
+                    fpm_manifest_dependency1
+                    [fpm_git1]
                     .true.
                     .false.
                 ),
@@ -546,7 +546,7 @@
                                     4
                                     dependency_config_t
                                     8 dependency_config_t
-                                    fpm_manifest_dependency
+                                    fpm_manifest_dependency1
                                     []
                                     dependency_config_t
                                     Public
@@ -556,7 +556,7 @@
                                     4
                                     error_t
                                     8 error_t
-                                    fpm_manifest_dependency
+                                    fpm_manifest_dependency1
                                     []
                                     error_t
                                     Public
@@ -648,7 +648,7 @@
                                     4
                                     new_dependencies
                                     8 new_dependencies
-                                    fpm_manifest_dependency
+                                    fpm_manifest_dependency1
                                     []
                                     new_dependencies
                                     Public
@@ -788,14 +788,14 @@
                                     4
                                     toml_table
                                     8 toml_table
-                                    fpm_manifest_dependency
+                                    fpm_manifest_dependency1
                                     []
                                     toml_table
                                     Public
                                 )
                         })
                     fpm_manifest_executable
-                    [fpm_manifest_dependency]
+                    [fpm_manifest_dependency1]
                     .true.
                     .false.
                 ),
@@ -809,7 +809,7 @@
                                     2
                                     dependency_config_t
                                     8 dependency_config_t
-                                    fpm_manifest_dependency
+                                    fpm_manifest_dependency1
                                     []
                                     dependency_config_t
                                     Public
@@ -819,7 +819,7 @@
                                     2
                                     error_t
                                     8 error_t
-                                    fpm_manifest_dependency
+                                    fpm_manifest_dependency1
                                     []
                                     error_t
                                     Public
@@ -839,7 +839,7 @@
                                     2
                                     new_dependencies
                                     8 new_dependencies
-                                    fpm_manifest_dependency
+                                    fpm_manifest_dependency1
                                     []
                                     new_dependencies
                                     Public
@@ -859,7 +859,7 @@
                                     2
                                     toml_table
                                     8 toml_table
-                                    fpm_manifest_dependency
+                                    fpm_manifest_dependency1
                                     []
                                     toml_table
                                     Public

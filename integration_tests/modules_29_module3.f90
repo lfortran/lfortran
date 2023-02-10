@@ -1,5 +1,5 @@
 module fpm_manifest_executable
-    use fpm_manifest_dependency, only : dependency_config_t, error_t, toml_table, new_dependencies
+    use fpm_manifest_dependency1, only : dependency_config_t, error_t, toml_table, new_dependencies
     implicit none
 
     public :: executable_config_t, new_executable
