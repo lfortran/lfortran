@@ -1691,6 +1691,11 @@ public:
                         remote_sym = intrinsic2str[op_type];
                         break;
                     }
+                    case AST::use_symbolType::DefinedOperator: {
+                        remote_sym = AST::down_cast<AST::DefinedOperator_t>(
+                            x.m_symbols[i])->m_opName;
+                        break;
+                    }
                     default:
                         throw SemanticError("Symbol with use not supported yet", x.base.base.loc);
                 }
