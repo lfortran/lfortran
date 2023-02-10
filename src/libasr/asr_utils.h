@@ -2133,8 +2133,8 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::s
         LCOMPILERS_ASSERT(struct_t_module != nullptr);
         SymbolTable* import_struct_t_scope = scope;
         while( import_struct_t_scope->asr_owner == nullptr ||
-               !(ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
-                import_struct_t_scope->asr_owner))) ) {
+               !ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
+                import_struct_t_scope->asr_owner)) ) {
             import_struct_t_scope = import_struct_t_scope->parent;
             if( import_struct_t_scope->asr_owner != nullptr &&
                 !ASR::is_a<ASR::symbol_t>(*import_struct_t_scope->asr_owner) ) {
