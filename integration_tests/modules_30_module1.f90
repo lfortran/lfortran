@@ -1,9 +1,19 @@
-module fpm_manifest_package_modules_30
-    use fpm_manifest_executable, only: executable_config_t
+module fpm_git_modules_30
     implicit none
 
-    type :: package_config_t
-        type(executable_config_t), allocatable :: executable(:)
-    end type package_config_t
+    type :: git_target_t
+        character(len=:), allocatable :: url
+        character(len=:), allocatable :: object
+    end type git_target_t
 
-end module fpm_manifest_package
+contains
+
+    function git_target_branch(url, branch) result(self)
+        character(len=*), intent(in) :: url
+        character(len=*), intent(in) :: branch
+        type(git_target_t) :: self
+        self%url = url
+        self%object = branch
+    end function git_target_branch
+
+end module fpm_git_modules_30

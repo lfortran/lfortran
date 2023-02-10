@@ -1,5 +1,5 @@
-module fpm_manifest
-    use fpm_manifest_package, only : package_config_t
+module fpm_manifest_modules_30
+    use fpm_manifest_package_modules_30, only : package_config_t
     implicit none
 
 contains
@@ -13,7 +13,7 @@ contains
     end subroutine package_defaults
 
 
-end module fpm_manifest
+end module fpm_manifest_modules_30
 
 program modules_30
 implicit none
