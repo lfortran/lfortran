@@ -128,6 +128,7 @@
                                     2
                                     new
                                     [2 new_array
+                                    2 new_keyval
                                     2 new_keyval]
                                     Public
                                 ),
@@ -183,6 +184,16 @@
                     (SymbolTable
                         4
                         {
+                            1_toml_value:
+                                (ExternalSymbol
+                                    4
+                                    1_toml_value
+                                    9 toml_value
+                                    tomlf_type_value
+                                    []
+                                    toml_value
+                                    Public
+                                ),
                             destroy:
                                 (Function
                                     (SymbolTable
@@ -223,7 +234,7 @@
                                                     6
                                                     1_toml_value_key
                                                     10 key
-                                                    toml_value
+                                                    1_toml_value
                                                     []
                                                     key
                                                     Public

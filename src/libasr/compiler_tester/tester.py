@@ -166,7 +166,7 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     assert basename is not None and basename != ""
     pathlib.Path(out_dir).mkdir(parents=True, exist_ok=True)
     if infile and not os.path.exists(infile):
-        raise RunException("The input file does not exist")
+        raise RunException("The input file %s does not exist" % (infile))
     outfile = os.path.join(out_dir, basename + "." + "out")
 
     infile = infile.replace("\\\\", "\\").replace("\\", "/")

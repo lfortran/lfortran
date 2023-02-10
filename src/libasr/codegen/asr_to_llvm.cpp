@@ -2968,7 +2968,11 @@ public:
                         !ASR::is_a<ASR::List_t>(*v->m_type)) {
                         target_var = ptr;
                         tmp = nullptr;
-                        this->visit_expr_wrapper(v->m_symbolic_value, true);
+                        if (v->m_value != nullptr) {
+                            this->visit_expr_wrapper(v->m_value, true);
+                        } else {
+                            this->visit_expr_wrapper(v->m_symbolic_value, true);
+                        }
                         llvm::Value *init_value = tmp;
                         if (ASR::is_a<ASR::ArrayConstant_t>(*v->m_symbolic_value)) {
                             target_var = arr_descr->get_pointer_to_data(target_var);
