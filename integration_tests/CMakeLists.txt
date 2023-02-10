@@ -264,6 +264,7 @@ RUN(NAME arrays_17 LABELS gfortran llvm)
 RUN(NAME arrays_18_func LABELS gfortran llvm)
 RUN(NAME arrays_19 LABELS gfortran llvm)
 RUN(NAME arrays_20 LABELS gfortran llvm)
+RUN(NAME arrays_22 LABELS gfortran llvm)
 
 # GFortran
 RUN(NAME arrays_02 LABELS gfortran)
@@ -394,6 +395,8 @@ RUN(NAME modules_20 LABELS gfortran llvm EXTRAFILES
 RUN(NAME modules_21 LABELS gfortran llvm EXTRAFILES
         modules_21b.f90)
 RUN(NAME modules_24 LABELS gfortran)
+RUN(NAME modules_25 LABELS gfortran EXTRAFILES
+        modules_25_module.f90 modules_25_module1.f90)
 RUN(NAME modules_27 LABELS gfortran EXTRAFILES
         modules_27_module1.f90 modules_27_module2.f90)
 RUN(NAME operator_overloading_05_module3 LABELS gfortran llvm EXTRAFILES
@@ -416,6 +419,8 @@ RUN(NAME case_05 LABELS gfortran llvm cpp)
 RUN(NAME case_06 LABELS gfortran llvm cpp)
 
 RUN(NAME select_type_01 LABELS gfortran)
+RUN(NAME select_type_04 LABELS gfortran
+        EXTRAFILES select_type_03_module.f90 select_type_03.f90)
 
 RUN(NAME program_02 LABELS gfortran)
 RUN(NAME program_03 LABELS gfortran llvm)

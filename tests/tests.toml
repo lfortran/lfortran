@@ -1037,6 +1037,11 @@ asr = true
 extrafiles = "modules2_module_a.f90, modules2_module_b_base.f90, modules2_module_b.f90, modules2.f90, modules3.f90, modules4_module.f90"
 
 [[test]]
+filename = "../integration_tests/select_type_04.f90"
+asr = true
+extrafiles = "../integration_tests/select_type_03_module.f90, ../integration_tests/select_type_03.f90"
+
+[[test]]
 filename = "fn2.f90"
 asr = true
 cpp = true
@@ -1407,8 +1412,9 @@ filename = "select_type2.f90"
 asr = true
 
 [[test]]
-filename = "select_type3.f90"
+filename = "../integration_tests/select_type_03.f90"
 asr = true
+extrafiles = "../integration_tests/select_type_03_module.f90"
 
 [[test]]
 filename = "selectrank1.f90"
@@ -1795,6 +1801,11 @@ asr = true
 filename = "../integration_tests/modules_27.f90"
 asr = true
 extrafiles = "../integration_tests/modules_27_module1.f90, ../integration_tests/modules_27_module2.f90"
+
+[[test]]
+filename = "../integration_tests/modules_25.f90"
+asr = true
+extrafiles = "../integration_tests/modules_25_module.f90, ../integration_tests/modules_25_module1.f90"
 
 [[test]]
 filename = "string.f90"

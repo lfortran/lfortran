@@ -502,13 +502,15 @@ public:
             }
         }
         if (parent_scope->get_symbol(sym_name) != nullptr) {
-            ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
+            ASR::symbol_t *f1 = ASRUtils::symbol_get_past_external(
+                parent_scope->get_symbol(sym_name));
             ASR::Function_t *f2 = nullptr;
             if( ASR::is_a<ASR::Function_t>(*f1) ) {
                 f2 = ASR::down_cast<ASR::Function_t>(f1);
             }
             if ((f1->type == ASR::symbolType::ExternalSymbol && in_submodule) ||
-                f2->m_abi == ASR::abiType::Interactive) {
+                f2->m_abi == ASR::abiType::Interactive ||
+                f2->m_deftype == ASR::deftypeType::Interface) {
                 // Previous declaration will be shadowed
                 parent_scope->erase_symbol(sym_name);
             } else {
@@ -553,7 +555,7 @@ public:
             current_procedure_abi_type,
             s_access, deftype, bindc_name,
             is_pure, is_module, false, false, false,
-            /* a_type_parameters */ (params.size() > 0) ? params.p : nullptr, 
+            /* a_type_parameters */ (params.size() > 0) ? params.p : nullptr,
             /* n_type_parameters */ params.size(), nullptr, 0, is_requirement);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
@@ -943,6 +945,14 @@ public:
         Vec<char*> struct_dependencies;
         struct_dependencies.reserve(al, 1);
         for( auto& item: current_scope->get_scope() ) {
+            // ExternalSymbol means that current module/program
+            // already depends on the module of ExternalSymbol
+            // present inside StructType's scope. So the order
+            // is already established and hence no need to store
+            // this ExternalSymbol as a dependency.
+            if( ASR::is_a<ASR::ExternalSymbol_t>(*item.second) ) {
+                continue;
+            }
             ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
             char* aggregate_type_name = nullptr;
             if( ASR::is_a<ASR::Struct_t>(*var_type) ) {
