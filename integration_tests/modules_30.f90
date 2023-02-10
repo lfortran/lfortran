@@ -14,3 +14,10 @@ contains
 
 
 end module fpm_manifest
+
+program modules_30
+implicit none
+
+print *, "running modules_30 program"
+
+end program

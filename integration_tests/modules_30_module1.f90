@@ -1,4 +1,4 @@
-module fpm_manifest_package
+module fpm_manifest_package_modules_30
     use fpm_manifest_executable, only: executable_config_t
     implicit none
 
