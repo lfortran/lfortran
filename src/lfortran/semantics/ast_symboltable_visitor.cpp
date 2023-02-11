@@ -208,6 +208,39 @@ public:
         type_info.clear();
     }
 
+    void fix_struct_type(SymbolTable* symtab) {
+        for( auto& itr: symtab->get_scope() ) {
+            ASR::symbol_t* sym = itr.second;
+            if( !ASR::is_a<ASR::Variable_t>(*sym) &&
+                !ASR::is_a<ASR::StructType_t>(*sym) ) {
+                continue ;
+            }
+
+            if( ASR::is_a<ASR::StructType_t>(*sym) ) {
+                fix_struct_type(ASR::down_cast<ASR::StructType_t>(sym)->m_symtab);
+                continue ;
+            }
+
+            ASR::ttype_t* sym_type = ASRUtils::type_get_past_pointer(
+                                        ASRUtils::symbol_type(sym));
+            if( ASR::is_a<ASR::Struct_t>(*sym_type) ) {
+                ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(sym_type);
+                ASR::symbol_t* der_sym = struct_t->m_derived_type;
+                if( ASR::is_a<ASR::ExternalSymbol_t>(*der_sym) &&
+                    ASR::down_cast<ASR::ExternalSymbol_t>(der_sym)->m_external == nullptr &&
+                    ASR::down_cast<ASR::ExternalSymbol_t>(der_sym)->m_module_name == nullptr ) {
+                    std::string derived_type_name = ASR::down_cast<ASR::ExternalSymbol_t>(der_sym)->m_name;
+                    ASR::symbol_t* sym_ = symtab->resolve_symbol(derived_type_name);
+                    if( !sym_ ) {
+                        throw SemanticError("Derived type '"
+                                + derived_type_name + "' not declared", der_sym->base.loc);
+                    }
+                    struct_t->m_derived_type = sym_;
+                }
+            }
+        }
+    }
+
     template <typename T, typename R>
     void visit_ModuleSubmoduleCommon(const T &x, std::string parent_name="") {
         assgn_proc_names.clear();
@@ -267,6 +300,7 @@ public:
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         fix_type_info(m);
+        fix_struct_type(m->m_symtab);
         dflt_access = ASR::Public;
     }
 
@@ -1645,7 +1679,15 @@ public:
             }
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
         } else if (ASR::is_a<ASR::Function_t>(*t)) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
+            bool is_already_defined = false;
+            ASR::symbol_t* imported_func_sym = current_scope->get_symbol(local_sym);
+            if (imported_func_sym != nullptr) {
+                ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(imported_func_sym);
+                if( ext_sym->m_external != t ) {
+                    is_already_defined = true;
+                }
+            }
+            if( is_already_defined ) {
                 throw SemanticError("Function already defined", loc);
             }
             ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(t);
@@ -1686,10 +1728,15 @@ public:
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
         } else if( ASR::is_a<ASR::StructType_t>(*t) ) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
-                throw SemanticError("Derived type already defined", loc);
-            }
+            ASR::symbol_t* imported_struct_type = current_scope->get_symbol(local_sym);
             ASR::StructType_t *mv = ASR::down_cast<ASR::StructType_t>(t);
+            if (imported_struct_type != nullptr) {
+                imported_struct_type = ASRUtils::symbol_get_past_external(imported_struct_type);
+                if( imported_struct_type == t ) {
+                    return ;
+                }
+                throw SemanticError("Derived type " + local_sym + " already defined.", loc);
+            }
             // `mv` is the Variable in a module. Now we construct
             // an ExternalSymbol that points to it.
             Str name;
@@ -1757,6 +1804,11 @@ public:
                     case AST::use_symbolType::IntrinsicOperator: {
                         AST::intrinsicopType op_type = AST::down_cast<AST::IntrinsicOperator_t>(x.m_symbols[i])->m_op;
                         remote_sym = intrinsic2str[op_type];
+                        break;
+                    }
+                    case AST::use_symbolType::DefinedOperator: {
+                        remote_sym = AST::down_cast<AST::DefinedOperator_t>(
+                            x.m_symbols[i])->m_opName;
                         break;
                     }
                     default:

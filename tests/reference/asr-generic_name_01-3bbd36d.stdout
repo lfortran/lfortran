@@ -436,6 +436,16 @@
                     (SymbolTable
                         6
                         {
+                            1_add:
+                                (ExternalSymbol
+                                    6
+                                    1_add
+                                    3 add
+                                    complextype
+                                    []
+                                    add
+                                    Private
+                                ),
                             1_complextype_i:
                                 (ExternalSymbol
                                     6
@@ -680,7 +690,7 @@
                     )
                     (SubroutineCall
                         6 1_integer_add_subrout
-                        3 add
+                        6 1_add
                         [((Var 6 ione))
                         ((Var 6 izero))
                         ((Var 6 a))]
@@ -705,7 +715,7 @@
                     )
                     (SubroutineCall
                         6 1_real_add_subrout
-                        3 add
+                        6 1_add
                         [((Var 6 fpzero))
                         ((Var 6 negfpone))
                         ((Var 6 a))]
