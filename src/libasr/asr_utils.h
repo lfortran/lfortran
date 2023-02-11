@@ -1790,7 +1790,14 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
             ASR::Variable_t* kind_variable =
                 ASR::down_cast<ASR::Variable_t>(
                     symbol_get_past_external(kind_var->m_v));
-            if( kind_variable->m_storage == ASR::storage_typeType::Parameter ) {
+            bool is_parent_enum = false;
+            if (kind_variable->m_parent_symtab->asr_owner != nullptr) {
+                ASR::symbol_t *s = ASR::down_cast<ASR::symbol_t>(
+                    kind_variable->m_parent_symtab->asr_owner);
+                is_parent_enum = ASR::is_a<ASR::EnumType_t>(*s);
+            }
+            if( kind_variable->m_storage == ASR::storage_typeType::Parameter
+                    || is_parent_enum) {
                 if( kind_variable->m_type->type == ASR::ttypeType::Integer ) {
                     LCOMPILERS_ASSERT( kind_variable->m_value != nullptr );
                     a_kind = ASR::down_cast<ASR::IntegerConstant_t>(kind_variable->m_value)->m_n;
