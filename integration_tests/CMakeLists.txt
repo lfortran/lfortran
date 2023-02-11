@@ -541,6 +541,7 @@ RUN(NAME allocate_04 LABELS gfortran)
 RUN(NAME block_01 LABELS gfortran llvm)
 RUN(NAME block_02 LABELS gfortran)
 RUN(NAME block_03 LABELS gfortran llvm)
+RUN(NAME block_04 LABELS gfortran llvm)
 RUN(NAME associate_01 LABELS gfortran)
 RUN(NAME associate_02 LABELS gfortran llvm)
 RUN(NAME associate_03 LABELS gfortran llvm)
@@ -675,3 +676,5 @@ RUN(NAME private1 LABELS gfortran llvm)
 RUN(NAME block_04 LABELS gfortran llvm)
 
 RUN(NAME modules_26 LABELS gfortran llvm)
+
+RUN(NAME enum_01 LABELS gfortran llvm)
