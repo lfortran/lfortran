@@ -1808,8 +1808,6 @@ asr = true
 extrafiles = "../integration_tests/modules_25_module.f90, ../integration_tests/modules_25_module1.f90"
 
 [[test]]
-<<<<<<< HEAD
-=======
 filename = "../integration_tests/modules_28.f90"
 asr = true
 extrafiles = "../integration_tests/modules_28_module1.f90, ../integration_tests/modules_28_module2.f90"
@@ -1842,7 +1840,6 @@ extrafiles = "../integration_tests/modules_33_module1.f90, ../integration_tests/
 filename = "../integration_tests/modules_34.f90"
 asr = true
 extrafiles = "../integration_tests/modules_34_module1a.f90, ../integration_tests/modules_34_module1.f90, ../integration_tests/modules_34_module2.f90, ../integration_tests/modules_34_module3.f90"
->>>>>>> main
 
 [[test]]
 filename = "string.f90"
