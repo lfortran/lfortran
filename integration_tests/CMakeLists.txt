@@ -399,6 +399,16 @@ RUN(NAME modules_25 LABELS gfortran EXTRAFILES
         modules_25_module.f90 modules_25_module1.f90)
 RUN(NAME modules_27 LABELS gfortran EXTRAFILES
         modules_27_module1.f90 modules_27_module2.f90)
+RUN(NAME modules_28 LABELS gfortran EXTRAFILES
+        modules_28_module1.f90 modules_28_module2.f90)
+RUN(NAME modules_29 LABELS gfortran EXTRAFILES
+        modules_29_module1.f90 modules_29_module2.f90 modules_29_module3.f90)
+RUN(NAME modules_30 LABELS gfortran EXTRAFILES
+        modules_30_module1.f90 modules_30_module2.f90
+        modules_30_module3.f90 modules_30_module4.f90)
+RUN(NAME modules_31 LABELS gfortran EXTRAFILES
+        modules_31_module1.f90 modules_31_module2.f90)
+RUN(NAME modules_32 LABELS gfortran)
 RUN(NAME modules_33 LABELS gfortran EXTRAFILES
         modules_33_module1.f90 modules_33_module2.f90
         modules_33_module3.f90)
@@ -447,6 +457,7 @@ RUN(NAME interface_07 LABELS gfortran llvm)
 RUN(NAME interface_09 LABELS gfortran)
 RUN(NAME interface_10 LABELS gfortran llvm)
 RUN(NAME interface_12a LABELS gfortran llvm EXTRAFILES interface_12b.f90)
+RUN(NAME interface_13 LABELS gfortran llvm)
 
 RUN(NAME implicit_interface_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_02 LABELS gfortran llvmImplicit)
@@ -653,3 +664,5 @@ RUN(NAME external_01 LABELS gfortran llvm)
 RUN(NAME interface_12 LABELS gfortran llvm)
 
 RUN(NAME private1 LABELS gfortran llvm)
+
+RUN(NAME block_04 LABELS gfortran llvm)
