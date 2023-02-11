@@ -333,7 +333,8 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                     module_name = m_ext->m_module_name;
                 } else if( ASR::is_a<ASR::StructType_t>(*m_external) ) {
                     ASR::symbol_t* asr_owner = ASRUtils::get_asr_owner(m_external);
-                    if( ASR::is_a<ASR::StructType_t>(*asr_owner) ) {
+                    if( ASR::is_a<ASR::StructType_t>(*asr_owner) ||
+                        ASR::is_a<ASR::Module_t>(*asr_owner) ) {
                         module_name = ASRUtils::symbol_name(asr_owner);
                     }
                 }
@@ -379,7 +380,8 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         default :
             break;
     }
-    ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope);
+    ASR::ttype_t* member_type_ = nullptr;
+    ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope, member_type_);
     ASR::expr_t* value = nullptr;
     if (v != nullptr && ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(v))->m_storage
             == ASR::storage_typeType::Parameter) {
