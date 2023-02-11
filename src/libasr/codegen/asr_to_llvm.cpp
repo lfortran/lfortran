@@ -3877,6 +3877,9 @@ public:
                 if (s->n_type_params == 0) {
                     visit_Function(*s);
                 }
+            } else if(is_a<ASR::Block_t>(*item.second)) {
+                ASR::Block_t *s = ASR::down_cast<ASR::Block_t>(item.second);
+                visit_Block(*s);
             }
         }
     }
@@ -4392,6 +4395,22 @@ public:
         for (size_t i = 0; i < associate_block->n_body; i++) {
             this->visit_stmt(*(associate_block->m_body[i]));
         }
+    }
+
+    void visit_Block(const ASR::Block_t& x) {
+
+        bool is_dict_present_copy_lp = dict_api_lp->is_dict_present();
+        bool is_dict_present_copy_sc = dict_api_sc->is_dict_present();
+        dict_api_lp->set_is_dict_present(false);
+        dict_api_sc->set_is_dict_present(false);
+        llvm_goto_targets.clear();
+        visit_procedures(x);
+        parent_function = nullptr;
+        dict_api_lp->set_is_dict_present(is_dict_present_copy_lp);
+        dict_api_sc->set_is_dict_present(is_dict_present_copy_sc);
+
+        // Finalize the debug info.
+        if (compiler_options.emit_debug_info) DBuilder->finalize();
     }
 
     void visit_BlockCall(const ASR::BlockCall_t& x) {
