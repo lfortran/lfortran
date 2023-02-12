@@ -3428,7 +3428,18 @@ public:
                 }
             }
             Vec<ASR::call_arg_t> args;
+            Vec<ASR::call_arg_t> args_with_mdt;
             visit_expr_list(x.m_args, x.n_args, args);
+            if (x.n_member >= 1) {
+                args_with_mdt.reserve(al, x.n_args + 1);
+                ASR::call_arg_t v_expr_call_arg;
+                v_expr_call_arg.loc = v_expr->base.loc;
+                v_expr_call_arg.m_value = v_expr;
+                args_with_mdt.push_back(al, v_expr_call_arg);
+                for( size_t i = 0; i < args.size(); i++ ) {
+                    args_with_mdt.push_back(al, args[i]);
+                }
+            }
             if (x.n_keywords > 0) {
                 if (ASR::is_a<ASR::Function_t>(*f2)) {
                     ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
@@ -3535,7 +3546,11 @@ public:
                     rt_vec.push_back(v);
                 }
             }
-            tmp = create_FunctionCallWithASTNode(x, v, args);
+            if (x.n_member >= 1) {
+                tmp = create_FunctionCallWithASTNode(x, v, args_with_mdt);
+            } else {
+                tmp = create_FunctionCallWithASTNode(x, v, args);
+            }
         } else {
             switch (f2->type) {
             case(ASR::symbolType::Variable): {
