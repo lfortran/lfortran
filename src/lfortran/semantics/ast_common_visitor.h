@@ -1859,6 +1859,9 @@ public:
         if( is_item ) {
             Vec<ASR::dimension_t> empty_dims;
             empty_dims.reserve(al, 1);
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*v_Var)) {
+                type = ASR::down_cast<ASR::StructInstanceMember_t>(v_Var)->m_type;
+            }
             type = ASRUtils::duplicate_type(al, type, &empty_dims);
             if (arr_ref_val == nullptr) {
                 // For now we will only handle 1D arrays

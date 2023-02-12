@@ -12,6 +12,14 @@ module fpm_manifest_executable
     end type executable_config_t
 
 contains
+    subroutine default_executable(self, name)
+        type(executable_config_t), intent(out) :: self
+        character(len=*), intent(inout) :: name
+
+        self%name = name
+        self%source_dir = "app"
+        self%main = "main.f90"
+    end subroutine default_executable
 
     subroutine new_executable(self, table, error)
         type(executable_config_t), intent(out) :: self

@@ -1,5 +1,6 @@
 module fpm_manifest_modules_30
     use fpm_manifest_package_modules_30, only : package_config_t
+    use fpm_manifest_executable, only : executable_config_t, default_executable
     implicit none
 
 contains
@@ -9,6 +10,7 @@ contains
         character(len=*), intent(in) :: root
 
         allocate(package%executable(1))
+        call default_executable(package%executable(1), package%name)
 
     end subroutine package_defaults
 
