@@ -3554,7 +3554,27 @@ public:
                 if (is_a<ASR::Function_t>(*item.second)) {
                     ASR::Function_t *v = down_cast<ASR::Function_t>(
                             item.second);
-                    instantiate_function(*v);
+                    // check if item.second is present in x.m_args
+                    bool interface_as_arg = false;
+                    for (size_t i=0; i<x.n_args; i++) {
+                        if (is_a<ASR::Var_t>(*x.m_args[i])) {
+                            ASR::Var_t *arg = down_cast<ASR::Var_t>(x.m_args[i]);
+                            if ( arg->m_v == item.second ) {
+                                interface_as_arg = true;
+                                llvm::Function::arg_iterator arg_it = F->arg_begin();
+                                for (size_t j=0; j<i; j++) {
+                                    arg_it++;
+                                }
+                                llvm::FunctionType* fntype = get_function_type(*v);
+                                llvm::Function* fn = llvm::Function::Create(fntype, llvm::Function::ExternalLinkage, v->m_name, module.get());
+                                uint32_t hash = get_hash((ASR::asr_t*)v);
+                                llvm_symtab_fn[hash] = fn;
+                            }
+                        }
+                    } 
+                    if (!interface_as_arg) {
+                        instantiate_function(*v);
+                    }
                 }
             }
         }
