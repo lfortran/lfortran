@@ -2252,6 +2252,13 @@ public:
             ASR::symbol_t *final_sym = p->m_procs[idx];
 
             ASR::ttype_t *type = nullptr;
+            ASR::symbol_t *cp_s = nullptr;
+            if (ASR::is_a<ASR::ClassProcedure_t>(*final_sym)) {
+                cp_s = ASRUtils::import_class_procedure(al, x.base.base.loc,
+                    final_sym, current_scope);
+                final_sym = ASR::down_cast<ASR::ClassProcedure_t>(final_sym)->m_proc;
+            }
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*final_sym))
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
             if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
                 type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
@@ -2260,9 +2267,15 @@ public:
                 type = handle_return_type(type, loc, args, func);
             }
             current_function_dependencies.insert(std::string(ASRUtils::symbol_name(final_sym)));
-            return ASR::make_FunctionCall_t(al, loc,
-                final_sym, v, args.p, args.size(), type,
-                nullptr, nullptr);
+            if (cp_s != nullptr) {
+                return ASR::make_FunctionCall_t(al, loc,
+                    cp_s, v, args.p, args.size(), type,
+                    nullptr, nullptr);
+            } else {
+                return ASR::make_FunctionCall_t(al, loc,
+                    final_sym, v, args.p, args.size(), type,
+                    nullptr, nullptr);
+            }
         }
     }
 
