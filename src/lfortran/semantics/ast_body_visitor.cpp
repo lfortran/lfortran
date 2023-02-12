@@ -669,9 +669,10 @@ public:
     void visit_Associate(const AST::Associate_t& x) {
         this->visit_expr(*(x.m_target));
         ASR::expr_t* target = ASRUtils::EXPR(tmp);
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+        current_variable_type_ = target_type;
         this->visit_expr(*(x.m_value));
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
-        ASR::ttype_t* target_type = ASRUtils::expr_type(target);
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
         if ( !is_target_pointer ) {
