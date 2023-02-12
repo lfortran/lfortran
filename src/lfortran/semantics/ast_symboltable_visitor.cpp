@@ -1965,7 +1965,8 @@ public:
         }
         Vec<char *> m_members;
         m_members.reserve(al, 4);
-        ASR::ttype_t *type = nullptr;
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+            x.base.base.loc, 4, nullptr, 0));
 
         ASR::abiType abi_type = ASR::abiType::BindC;
         if ( x.n_attr == 1 ) {
@@ -1997,16 +1998,9 @@ public:
         }
 
         for( auto sym: current_scope->get_scope() ) {
-            ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(sym.second);
+            ASR::Variable_t* member_var = ASR::down_cast<
+                ASR::Variable_t>(sym.second);
             m_members.push_back(al, member_var->m_name);
-            if( type == nullptr ) {
-                type = member_var->m_type;
-            } else {
-                if( !ASRUtils::check_equal_type(type, member_var->m_type) ) {
-                    throw SemanticError("All members of enum should be of the "
-                        "same type.", x.base.base.loc);
-                }
-            }
         }
 
         ASR::enumtypeType enum_value_type = ASR::enumtypeType::IntegerConsecutiveFromZero;
