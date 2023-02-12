@@ -52,6 +52,16 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                ),
+                                            toml_value:
+                                                (ExternalSymbol
+                                                    46
+                                                    toml_value
+                                                    9 toml_value
+                                                    tomlf_type_value
+                                                    []
+                                                    toml_value
+                                                    Public
                                                 )
                                         })
                                     destroy
@@ -114,7 +124,7 @@
                                 )
                         })
                     tomlf_structure_base
-                    []
+                    [tomlf_type_value]
                     .true.
                     .false.
                 ),
