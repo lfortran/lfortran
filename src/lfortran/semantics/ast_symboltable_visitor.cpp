@@ -1954,17 +1954,17 @@ public:
     void visit_Enum(const AST::Enum_t &x) {
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
-        std::string sym_name = "enum";
+        std::string sym_name = "_nameless_enum";
+        {
+            int i = 1;
+            while (parent_scope->get_symbol(std::to_string(i) +
+                    sym_name) != nullptr) {
+                i++;
+            }
+            sym_name = std::to_string(i) + sym_name;
+        }
         Vec<char *> m_members;
         m_members.reserve(al, 4);
-        if ( parent_scope->get_symbol(sym_name) != nullptr ) {
-            ASR::EnumType_t *enum_s = ASR::down_cast<ASR::EnumType_t>(
-                parent_scope->get_symbol(sym_name));
-            for (size_t i = 0; i < enum_s->n_dependencies; i++) {
-                m_members.push_back(al, enum_s->m_dependencies[i]);
-            }
-            current_scope = enum_s->m_symtab;
-        }
         ASR::ttype_t *type = nullptr;
 
         ASR::abiType abi_type = ASR::abiType::BindC;
