@@ -351,7 +351,14 @@
                                     (Var 7 pos)
                                     (Var 7 ptr)
                                     (Var 7 stat)]
-                                    []
+                                    [(=
+                                        (Var 4 global_var)
+                                        (RealConstant
+                                            1.000000
+                                            (Real 4 [])
+                                        )
+                                        ()
+                                    )]
                                     ()
                                     Source
                                     Public
@@ -395,6 +402,16 @@
                                     tomlf_build_keyval
                                     []
                                     get_value_float_sp
+                                    Public
+                                ),
+                            global_var:
+                                (ExternalSymbol
+                                    4
+                                    global_var
+                                    9 global_var
+                                    tomlf_build_keyval
+                                    []
+                                    global_var
                                     Public
                                 )
                         })
@@ -556,6 +573,21 @@
                                     .false.
                                     []
                                     []
+                                    .false.
+                                ),
+                            global_var:
+                                (Variable
+                                    9
+                                    global_var
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
                         })
