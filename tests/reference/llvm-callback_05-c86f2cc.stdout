@@ -44,6 +44,8 @@ return:                                           ; preds = %.entry
   ret void
 }
 
+declare void @f.1(i32*)
+
 declare void @_lfortran_printf(i8*, ...)
 
 define i32 @main(i32 %0, i8** %1) {
