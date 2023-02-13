@@ -321,6 +321,7 @@ public:
     }
 
     void visit_Function(const Function_t &x) {
+        std::vector<std::string> function_dependencies_copy = function_dependencies;
         function_dependencies.clear();
         function_dependencies.reserve(x.n_dependencies);
         SymbolTable *parent_symtab = current_symtab;
@@ -365,6 +366,7 @@ public:
                     " but isn't found in its dependency list.");
         }
         current_symtab = parent_symtab;
+        function_dependencies = function_dependencies_copy;
     }
 
     template <typename T>
