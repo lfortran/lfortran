@@ -7,12 +7,12 @@
                     1
                     1_t_1
                     2 t_1
-                    debug_1
+                    module_1
                     []
                     t_1
                     Public
                 ),
-            debug_1:
+            module_1:
                 (Module
                     (SymbolTable
                         2
@@ -284,7 +284,7 @@
                                     ()
                                 )
                         })
-                    debug_1
+                    module_1
                     []
                     .false.
                     .false.
@@ -329,7 +329,7 @@
                                     6
                                     multiply
                                     2 multiply
-                                    debug_1
+                                    module_1
                                     []
                                     multiply
                                     Public
@@ -339,7 +339,7 @@
                                     6
                                     sqrt_subtract
                                     2 sqrt_subtract
-                                    debug_1
+                                    module_1
                                     []
                                     sqrt_subtract
                                     Public
@@ -349,7 +349,7 @@
                                     6
                                     t_1
                                     2 t_1
-                                    debug_1
+                                    module_1
                                     []
                                     t_1
                                     Public
@@ -374,7 +374,7 @@
                                 )
                         })
                     name
-                    [debug_1]
+                    [module_1]
                     [(=
                         (StructInstanceMember
                             (Var 6 type_1)

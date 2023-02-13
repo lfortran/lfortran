@@ -1,6 +1,8 @@
 module tomlf_build_keyval
    implicit none
 
+   real :: GLOBAL_VAR
+
    interface get_value
       module procedure :: get_value_float_sp
       module procedure :: get_value_float_dp

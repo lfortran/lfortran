@@ -12,7 +12,6 @@ module fpm_manifest_executable
     end type executable_config_t
 
 contains
-
     subroutine new_executable(self, table, error)
         type(executable_config_t), intent(out) :: self
         type(toml_table), intent(inout) :: table

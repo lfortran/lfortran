@@ -1,0 +1,324 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            derived_types_14:
+                (Program
+                    (SymbolTable
+                        8
+                        {
+                            sub_2:
+                                (ExternalSymbol
+                                    8
+                                    sub_2
+                                    6 sub_2
+                                    module_2
+                                    []
+                                    sub_2
+                                    Public
+                                )
+                        })
+                    derived_types_14
+                    [module_2]
+                    [(SubroutineCall
+                        8 sub_2
+                        ()
+                        []
+                        ()
+                    )]
+                ),
+            module_1:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            add:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            1_t_1_num:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_t_1_num
+                                                    3 num
+                                                    t_1
+                                                    []
+                                                    num
+                                                    Public
+                                                ),
+                                            self:
+                                                (Variable
+                                                    4
+                                                    self
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 t_1
+                                                        []
+                                                    )
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    add
+                                    []
+                                    []
+                                    [(=
+                                        (StructInstanceMember
+                                            (Var 4 self)
+                                            4 1_t_1_num
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        (IntegerBinOp
+                                            (StructInstanceMember
+                                                (Var 4 self)
+                                                4 1_t_1_num
+                                                (Integer 4 [])
+                                                ()
+                                            )
+                                            Add
+                                            (StructInstanceMember
+                                                (Var 4 self)
+                                                4 1_t_1_num
+                                                (Integer 4 [])
+                                                ()
+                                            )
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 4 self)
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            subtract:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            1_t_1_num:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_t_1_num
+                                                    3 num
+                                                    t_1
+                                                    []
+                                                    num
+                                                    Public
+                                                ),
+                                            self:
+                                                (Variable
+                                                    5
+                                                    self
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 t_1
+                                                        []
+                                                    )
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    subtract
+                                    []
+                                    []
+                                    [(=
+                                        (StructInstanceMember
+                                            (Var 5 self)
+                                            5 1_t_1_num
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        (IntegerBinOp
+                                            (StructInstanceMember
+                                                (Var 5 self)
+                                                5 1_t_1_num
+                                                (Integer 4 [])
+                                                ()
+                                            )
+                                            Mul
+                                            (StructInstanceMember
+                                                (Var 5 self)
+                                                5 1_t_1_num
+                                                (Integer 4 [])
+                                                ()
+                                            )
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 5 self)
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            t_1:
+                                (StructType
+                                    (SymbolTable
+                                        3
+                                        {
+                                            num:
+                                                (Variable
+                                                    3
+                                                    num
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 100 (Integer 4 []))
+                                                    ()
+                                                    Save
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    t_1
+                                    []
+                                    [num]
+                                    Source
+                                    Private
+                                    .false.
+                                    ()
+                                    ()
+                                )
+                        })
+                    module_1
+                    []
+                    .false.
+                    .false.
+                ),
+            module_2:
+                (Module
+                    (SymbolTable
+                        6
+                        {
+                            add:
+                                (ExternalSymbol
+                                    6
+                                    add
+                                    2 add
+                                    module_1
+                                    []
+                                    add
+                                    Public
+                                ),
+                            sub_2:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            1_t_1:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_t_1
+                                                    2 t_1
+                                                    module_1
+                                                    []
+                                                    t_1
+                                                    Public
+                                                )
+                                        })
+                                    sub_2
+                                    [add
+                                    subtract]
+                                    []
+                                    [(Print
+                                        ()
+                                        [(FunctionCall
+                                            6 subtract
+                                            ()
+                                            []
+                                            (Struct
+                                                7 1_t_1
+                                                []
+                                            )
+                                            ()
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(FunctionCall
+                                            6 add
+                                            ()
+                                            []
+                                            (Struct
+                                                7 1_t_1
+                                                []
+                                            )
+                                            ()
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )]
+                                    ()
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            subtract:
+                                (ExternalSymbol
+                                    6
+                                    subtract
+                                    2 subtract
+                                    module_1
+                                    []
+                                    subtract
+                                    Public
+                                )
+                        })
+                    module_2
+                    [module_1]
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

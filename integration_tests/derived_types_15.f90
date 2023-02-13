@@ -1,4 +1,4 @@
-module debug_1
+module module_1
     implicit none
     private
     public :: t_1
@@ -23,10 +23,10 @@ contains
         real :: res
         res = self%i - (j ** 0.5)
     end function sqrt_subtract
-end module debug_1
+end module module_1
 
 program name
-    use debug_1
+    use module_1
     implicit none
     type(t_1) :: type_1
     type_1%i = 100.0
