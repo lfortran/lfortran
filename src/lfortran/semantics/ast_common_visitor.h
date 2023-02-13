@@ -567,13 +567,15 @@ public:
 
 static ASR::asr_t* comptime_intrinsic_real(ASR::expr_t *A,
         ASR::expr_t * kind,
-        Allocator &al, const Location &loc) {
+        Allocator &al, const Location &loc,
+        std::set<std::string>& current_function_dependencies) {
     int kind_int = 4;
     if (kind) {
         ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
         if (kind_value) {
             if (ASR::is_a<ASR::IntegerConstant_t>(*kind_value)) {
                 kind_int = ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n;
+                current_function_dependencies.erase("kind");
             } else {
                 throw SemanticError("kind argument to real(a, kind) is not a constant integer", loc);
             }
@@ -2065,7 +2067,7 @@ public:
             } else {
                 throw SemanticError("real(...) must have 1 or 2 arguments", loc);
             }
-            return LFortran::CommonVisitorMethods::comptime_intrinsic_real(args[0].m_value, arg1, al, loc);
+            return LFortran::CommonVisitorMethods::comptime_intrinsic_real(args[0].m_value, arg1, al, loc, current_function_dependencies);
         } else if (fn_name == "int") {
             ASR::expr_t *arg1;
             if (args.size() == 1) {
