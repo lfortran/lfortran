@@ -35,7 +35,7 @@ contains
         real :: r
         r = 0
     end function
-    
+
     pure function mult_real(x, y) result(r)
         real, intent(in) :: x, y
         real :: r
