@@ -265,10 +265,16 @@ namespace LCompilers {
                 : al(al_), fill_function_dependencies(false),
                 fill_module_dependencies(false),
                 fill_variable_dependencies(false)
-                {}
+                {
+                    function_dependencies.n = 0;
+                    module_dependencies.n = 0;
+                    variable_dependencies.n = 0;
+                }
 
                 void visit_Function(const ASR::Function_t& x) {
                     ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
+                    Vec<char*> function_dependencies_copy;
+                    function_dependencies_copy.from_pointer_n_copy(al, function_dependencies.p, function_dependencies.size());
                     function_dependencies.n = 0;
                     function_dependencies.reserve(al, 1);
                     bool fill_function_dependencies_copy = fill_function_dependencies;
@@ -277,6 +283,10 @@ namespace LCompilers {
                     xx.m_dependencies = function_dependencies.p;
                     xx.n_dependencies = function_dependencies.size();
                     fill_function_dependencies = fill_function_dependencies_copy;
+                    function_dependencies.from_pointer_n_copy(al,
+                        function_dependencies_copy.p,
+                        function_dependencies_copy.size()
+                    );
                 }
 
                 void visit_Module(const ASR::Module_t& x) {

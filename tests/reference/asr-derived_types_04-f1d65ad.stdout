@@ -1214,7 +1214,8 @@
                         })
                     tomlf_datetime
                     [lfortran_intrinsic_builtin
-                    lfortran_intrinsic_string]
+                    lfortran_intrinsic_string
+                    tomlf_datetime]
                     .false.
                     .false.
                 )

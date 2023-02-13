@@ -1,0 +1,106 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_kind:
+                (IntrinsicModule lfortran_intrinsic_kind),
+            m_cli2:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            a2d:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            ivalu:
+                                                (Variable
+                                                    3
+                                                    ivalu
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            kind:
+                                                (ExternalSymbol
+                                                    3
+                                                    kind
+                                                    33 kind
+                                                    lfortran_intrinsic_kind
+                                                    []
+                                                    kind
+                                                    Private
+                                                ),
+                                            real:
+                                                (ExternalSymbol
+                                                    3
+                                                    real
+                                                    5 real
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    real
+                                                    Private
+                                                ),
+                                            valu:
+                                                (Variable
+                                                    3
+                                                    valu
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    a2d
+                                    []
+                                    [(Var 3 valu)]
+                                    [(=
+                                        (Var 3 valu)
+                                        (Cast
+                                            (Var 3 ivalu)
+                                            IntegerToReal
+                                            (Real 8 [])
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    ()
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                )
+                        })
+                    m_cli2
+                    [lfortran_intrinsic_builtin
+                    lfortran_intrinsic_kind]
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

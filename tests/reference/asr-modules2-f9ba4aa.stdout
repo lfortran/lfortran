@@ -418,7 +418,8 @@
                     tomlf_type_array
                     [tomlf_type_value
                     tomlf_structure
-                    lfortran_intrinsic_builtin]
+                    lfortran_intrinsic_builtin
+                    tomlf_structure_base]
                     .false.
                     .false.
                 ),

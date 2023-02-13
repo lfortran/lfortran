@@ -491,7 +491,8 @@
                     [lfortran_intrinsic_builtin
                     lfortran_intrinsic_builtin
                     tomlf_type_value
-                    tomlf_structure]
+                    tomlf_structure
+                    tomlf_structure_base]
                     .true.
                     .false.
                 ),
