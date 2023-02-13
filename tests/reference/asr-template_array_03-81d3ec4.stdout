@@ -915,10 +915,10 @@
                                                     [((ArrayItem
                                                         (Var 17 a)
                                                         [(()
-                                                        (IntegerConstant 0 (Integer 4 []))
+                                                        (IntegerConstant 1 (Integer 4 []))
                                                         ())
                                                         (()
-                                                        (IntegerConstant 0 (Integer 4 []))
+                                                        (IntegerConstant 1 (Integer 4 []))
                                                         ())]
                                                         (Integer 4 [])
                                                         RowMajor
@@ -1219,10 +1219,10 @@
                                                     [((ArrayItem
                                                         (Var 14 a)
                                                         [(()
-                                                        (IntegerConstant 0 (Integer 4 []))
+                                                        (IntegerConstant 1 (Integer 4 []))
                                                         ())
                                                         (()
-                                                        (IntegerConstant 0 (Integer 4 []))
+                                                        (IntegerConstant 1 (Integer 4 []))
                                                         ())]
                                                         (TypeParameter
                                                             t
