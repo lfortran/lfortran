@@ -18,6 +18,13 @@ contains
         end associate
     end subroutine sub_1
 
+    subroutine sub_2(progress)
+        class(t_2), intent(inout), allocatable :: progress(:)
+        allocate(progress(0)%type_2(0))
+        associate(target => progress(0))
+            target%type_2(0)%i = 345
+        end associate
+    end subroutine sub_2
 end module module_1
 
 program associate2
