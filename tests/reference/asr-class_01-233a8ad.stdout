@@ -395,7 +395,7 @@
                                 )
                         })
                     class_circle1
-                    []
+                    [class_circle1]
                     .false.
                     .false.
                 )

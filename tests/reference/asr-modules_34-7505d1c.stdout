@@ -32,7 +32,7 @@
                                 (ExternalSymbol
                                     8
                                     package_config_t
-                                    10 package_config_t
+                                    15 package_config_t
                                     fpm_manifest_package_modules_34
                                     []
                                     package_config_t
@@ -47,16 +47,16 @@
             fpm_manifest_package_modules_34:
                 (Module
                     (SymbolTable
-                        10
+                        15
                         {
                             package_config_t:
                                 (StructType
                                     (SymbolTable
-                                        11
+                                        16
                                         {
                                             name:
                                                 (Variable
-                                                    11
+                                                    16
                                                     name
                                                     []
                                                     Local
@@ -71,7 +71,7 @@
                                                 ),
                                             version:
                                                 (Variable
-                                                    11
+                                                    16
                                                     version
                                                     []
                                                     Local
@@ -79,7 +79,7 @@
                                                     ()
                                                     Default
                                                     (Struct
-                                                        10 version_t
+                                                        15 version_t
                                                         []
                                                     )
                                                     Source
@@ -100,9 +100,9 @@
                                 ),
                             version_t:
                                 (ExternalSymbol
-                                    10
+                                    15
                                     version_t
-                                    13 version_t
+                                    10 version_t
                                     fpm_versioning_modules_34
                                     []
                                     version_t
@@ -123,7 +123,7 @@
                                 (ExternalSymbol
                                     4
                                     1_package_config_t
-                                    10 package_config_t
+                                    15 package_config_t
                                     fpm_manifest_package_modules_34
                                     []
                                     package_config_t
@@ -143,7 +143,7 @@
                                                                 (ExternalSymbol
                                                                     6
                                                                     1_package_config_t_version
-                                                                    11 version
+                                                                    16 version
                                                                     1_package_config_t
                                                                     []
                                                                     version
@@ -153,7 +153,7 @@
                                                                 (ExternalSymbol
                                                                     6
                                                                     1_to_string
-                                                                    14 to_string
+                                                                    11 to_string
                                                                     1_version_t
                                                                     []
                                                                     to_string
@@ -163,7 +163,7 @@
                                                                 (ExternalSymbol
                                                                     6
                                                                     1_version_t
-                                                                    13 version_t
+                                                                    10 version_t
                                                                     fpm_versioning_modules_34
                                                                     []
                                                                     version_t
@@ -173,7 +173,7 @@
                                                                 (ExternalSymbol
                                                                     6
                                                                     fpm_versioning_modules_34_version_t
-                                                                    13 version_t
+                                                                    10 version_t
                                                                     fpm_versioning_modules_34
                                                                     []
                                                                     version_t
@@ -299,7 +299,7 @@
                                 (ExternalSymbol
                                     4
                                     package_config_t
-                                    10 package_config_t
+                                    15 package_config_t
                                     fpm_manifest_package_modules_34
                                     []
                                     package_config_t
@@ -307,25 +307,26 @@
                                 )
                         })
                     fpm_modules_34
-                    [fpm_manifest_modules_34]
+                    [fpm_manifest_modules_34
+                    fpm_versioning_modules_34]
                     .true.
                     .false.
                 ),
             fpm_versioning_modules_34:
                 (Module
                     (SymbolTable
-                        13
+                        10
                         {
                             as_string:
                                 (Function
                                     (SymbolTable
-                                        15
+                                        12
                                         {
                                             1_to_string:
                                                 (ExternalSymbol
-                                                    15
+                                                    12
                                                     1_to_string
-                                                    14 to_string
+                                                    11 to_string
                                                     version_t
                                                     []
                                                     to_string
@@ -333,7 +334,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    15
+                                                    12
                                                     self
                                                     []
                                                     In
@@ -341,7 +342,7 @@
                                                     ()
                                                     Default
                                                     (Class
-                                                        13 version_t
+                                                        10 version_t
                                                         []
                                                     )
                                                     Source
@@ -351,7 +352,7 @@
                                                 ),
                                             string:
                                                 (Variable
-                                                    15
+                                                    12
                                                     string
                                                     []
                                                     ReturnVar
@@ -367,14 +368,14 @@
                                         })
                                     as_string
                                     [1_to_string]
-                                    [(Var 15 self)]
+                                    [(Var 12 self)]
                                     [(SubroutineCall
-                                        15 1_to_string
+                                        12 1_to_string
                                         ()
-                                        [((Var 15 string))]
-                                        (Var 15 self)
+                                        [((Var 12 string))]
+                                        (Var 12 self)
                                     )]
-                                    (Var 15 string)
+                                    (Var 12 string)
                                     Source
                                     Public
                                     Implementation
@@ -390,19 +391,19 @@
                                 ),
                             char:
                                 (GenericProcedure
-                                    13
+                                    10
                                     char
-                                    [13 as_string]
+                                    [10 as_string]
                                     Public
                                 ),
                             to_string:
                                 (Function
                                     (SymbolTable
-                                        16
+                                        13
                                         {
                                             self:
                                                 (Variable
-                                                    16
+                                                    13
                                                     self
                                                     []
                                                     In
@@ -410,7 +411,7 @@
                                                     ()
                                                     Default
                                                     (Class
-                                                        13 version_t
+                                                        10 version_t
                                                         []
                                                     )
                                                     Source
@@ -420,7 +421,7 @@
                                                 ),
                                             string:
                                                 (Variable
-                                                    16
+                                                    13
                                                     string
                                                     []
                                                     Out
@@ -436,8 +437,8 @@
                                         })
                                     to_string
                                     []
-                                    [(Var 16 self)
-                                    (Var 16 string)]
+                                    [(Var 13 self)
+                                    (Var 13 string)]
                                     []
                                     ()
                                     Source
@@ -456,11 +457,11 @@
                             version_t:
                                 (StructType
                                     (SymbolTable
-                                        14
+                                        11
                                         {
                                             num:
                                                 (Variable
-                                                    14
+                                                    11
                                                     num
                                                     []
                                                     Local
@@ -476,11 +477,11 @@
                                                 ),
                                             to_string:
                                                 (ClassProcedure
-                                                    14
+                                                    11
                                                     to_string
                                                     ()
                                                     to_string
-                                                    13 to_string
+                                                    10 to_string
                                                     Source
                                                 )
                                         })
@@ -495,7 +496,7 @@
                                 )
                         })
                     fpm_versioning_modules_34
-                    []
+                    [fpm_versioning_modules_34]
                     .true.
                     .false.
                 ),
