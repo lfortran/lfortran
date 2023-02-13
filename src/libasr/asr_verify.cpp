@@ -545,14 +545,21 @@ public:
                 "ExternalSymbol::m_original_name must match external->m_name");
             ASR::Module_t *m = ASRUtils::get_sym_module(x.m_external);
             ASR::StructType_t* sm = nullptr;
+            ASR::EnumType_t* em = nullptr;
             bool is_valid_owner = false;
             is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
             std::string asr_owner_name = "";
             if( !is_valid_owner ) {
                 ASR::symbol_t* asr_owner_sym = ASRUtils::get_asr_owner(x.m_external);
-                is_valid_owner = ASR::is_a<ASR::StructType_t>(*asr_owner_sym);
-                sm = ASR::down_cast<ASR::StructType_t>(asr_owner_sym);
-                asr_owner_name = sm->m_name;
+                is_valid_owner = (ASR::is_a<ASR::StructType_t>(*asr_owner_sym) ||
+                                  ASR::is_a<ASR::EnumType_t>(*asr_owner_sym));
+                if( ASR::is_a<ASR::StructType_t>(*asr_owner_sym) ) {
+                    sm = ASR::down_cast<ASR::StructType_t>(asr_owner_sym);
+                    asr_owner_name = sm->m_name;
+                } else if( ASR::is_a<ASR::EnumType_t>(*asr_owner_sym) ) {
+                    em = ASR::down_cast<ASR::EnumType_t>(asr_owner_sym);
+                    asr_owner_name = em->m_name;
+                }
             } else {
                 asr_owner_name = m->m_name;
             }
@@ -572,6 +579,8 @@ public:
                 s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
             } else if( sm ) {
                 s = sm->m_symtab->resolve_symbol(std::string(x.m_original_name));
+            } else if( em ) {
+                s = em->m_symtab->resolve_symbol(std::string(x.m_original_name));
             }
             require(s != nullptr,
                 "ExternalSymbol::m_original_name ('"
@@ -594,7 +603,20 @@ public:
                 || is_a<Function_t>(*x.m_v) || is_a<ASR::EnumType_t>(*x.m_v),
             "Var_t::m_v " + x_mv_name + " does not point to a Variable_t, ExternalSymbol_t, " \
             "Function_t, Subroutine_t or EnumType_t");
-        require(symtab_in_scope(current_symtab, x.m_v),
+        bool var_present_in_enum = false;
+        {
+            int i = 1;
+            std::string enum_name = "_nameless_enum";
+            while (!var_present_in_enum && current_symtab->resolve_symbol(
+                    std::to_string(i) + enum_name) != nullptr) {
+                ASR::symbol_t *enum_s = current_symtab->resolve_symbol(
+                    std::to_string(i) + enum_name);
+                var_present_in_enum = symtab_in_scope(ASR::down_cast<
+                    ASR::EnumType_t>(enum_s)->m_symtab, x.m_v);
+                i ++;
+            }
+        }
+        require(symtab_in_scope(current_symtab, x.m_v) || var_present_in_enum,
             "Var::m_v `" + x_mv_name + "` cannot point outside of its symbol table");
         variable_dependencies.push_back(x_mv_name);
     }

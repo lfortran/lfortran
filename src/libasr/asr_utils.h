@@ -1790,7 +1790,14 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
             ASR::Variable_t* kind_variable =
                 ASR::down_cast<ASR::Variable_t>(
                     symbol_get_past_external(kind_var->m_v));
-            if( kind_variable->m_storage == ASR::storage_typeType::Parameter ) {
+            bool is_parent_enum = false;
+            if (kind_variable->m_parent_symtab->asr_owner != nullptr) {
+                ASR::symbol_t *s = ASR::down_cast<ASR::symbol_t>(
+                    kind_variable->m_parent_symtab->asr_owner);
+                is_parent_enum = ASR::is_a<ASR::EnumType_t>(*s);
+            }
+            if( kind_variable->m_storage == ASR::storage_typeType::Parameter
+                    || is_parent_enum) {
                 if( kind_variable->m_type->type == ASR::ttypeType::Integer ) {
                     LCOMPILERS_ASSERT( kind_variable->m_value != nullptr );
                     a_kind = ASR::down_cast<ASR::IntegerConstant_t>(kind_variable->m_value)->m_n;
@@ -2192,6 +2199,44 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::s
                 struct_t->m_dims, struct_t->n_dims));
         }
     }
+    return scope->get_symbol(v_ext_name);
+}
+
+static inline ASR::symbol_t* import_enum_member(Allocator& al, ASR::symbol_t* v,
+    SymbolTable* scope) {
+    v = ASRUtils::symbol_get_past_external(v);
+    ASR::symbol_t* enum_t = ASRUtils::get_asr_owner(v);
+    std::string v_name = ASRUtils::symbol_name(v);
+    std::string enum_t_name = ASRUtils::symbol_name(enum_t);
+    std::string enum_ext_name = enum_t_name;
+    if( scope->resolve_symbol(enum_t_name) != enum_t ) {
+        enum_ext_name = "1_" + enum_ext_name;
+    }
+    if( scope->resolve_symbol(enum_ext_name) == nullptr ) {
+        ASR::symbol_t* enum_t_module = ASRUtils::get_asr_owner(
+            ASRUtils::symbol_get_past_external(enum_t));
+        LCOMPILERS_ASSERT(enum_t_module != nullptr);
+        SymbolTable* import_enum_t_scope = scope;
+        while( import_enum_t_scope->asr_owner == nullptr ||
+               !ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
+                import_enum_t_scope->asr_owner)) ) {
+            import_enum_t_scope = import_enum_t_scope->parent;
+        }
+        LCOMPILERS_ASSERT(import_enum_t_scope != nullptr);
+        ASR::symbol_t* enum_ext = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                                    v->base.loc, import_enum_t_scope, s2c(al, enum_ext_name), enum_t,
+                                    ASRUtils::symbol_name(enum_t_module),
+                                    nullptr, 0, s2c(al, enum_t_name), ASR::accessType::Public));
+        import_enum_t_scope->add_symbol(enum_ext_name, enum_ext);
+    }
+    std::string v_ext_name = "1_" + enum_t_name + "_" + v_name;
+    if( scope->get_symbol(v_ext_name) == nullptr ) {
+        ASR::symbol_t* v_ext = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                                    v->base.loc, scope, s2c(al, v_ext_name), ASRUtils::symbol_get_past_external(v),
+                                    s2c(al, enum_ext_name), nullptr, 0, s2c(al, v_name), ASR::accessType::Public));
+        scope->add_symbol(v_ext_name, v_ext);
+    }
+
     return scope->get_symbol(v_ext_name);
 }
 
@@ -2603,6 +2648,53 @@ static inline ASR::EnumType_t* get_EnumType_from_symbol(ASR::symbol_t* s) {
     ASR::symbol_t* enum_type_cand = ASR::down_cast<ASR::symbol_t>(s_var->m_parent_symtab->asr_owner);
     LCOMPILERS_ASSERT(ASR::is_a<ASR::EnumType_t>(*enum_type_cand));
     return ASR::down_cast<ASR::EnumType_t>(enum_type_cand);
+}
+
+static inline void set_enum_value_type(ASR::enumtypeType &enum_value_type,
+        SymbolTable *scope) {
+    int8_t IntegerConsecutiveFromZero = 1;
+    int8_t IntegerNotUnique = 0;
+    int8_t IntegerUnique = 1;
+    std::map<int64_t, int64_t> value2count;
+    for( auto sym: scope->get_scope() ) {
+        ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(sym.second);
+        ASR::expr_t* value = ASRUtils::expr_value(member_var->m_symbolic_value);
+        int64_t value_int64 = -1;
+        ASRUtils::extract_value(value, value_int64);
+        if( value2count.find(value_int64) == value2count.end() ) {
+            value2count[value_int64] = 0;
+        }
+        value2count[value_int64] += 1;
+    }
+    int64_t prev = -1;
+    for( auto itr: value2count ) {
+        if( itr.second > 1 ) {
+            IntegerNotUnique = 1;
+            IntegerUnique = 0;
+            IntegerConsecutiveFromZero = 0;
+            break ;
+        }
+        if( itr.first - prev != 1 ) {
+            IntegerConsecutiveFromZero = 0;
+        }
+        prev = itr.first;
+    }
+    if( IntegerConsecutiveFromZero ) {
+        if( value2count.find(0) == value2count.end() ) {
+            IntegerConsecutiveFromZero = 0;
+            IntegerUnique = 1;
+        } else {
+            IntegerUnique = 0;
+        }
+    }
+    LCOMPILERS_ASSERT(IntegerConsecutiveFromZero + IntegerNotUnique + IntegerUnique == 1);
+    if( IntegerConsecutiveFromZero ) {
+        enum_value_type = ASR::enumtypeType::IntegerConsecutiveFromZero;
+    } else if( IntegerNotUnique ) {
+        enum_value_type = ASR::enumtypeType::IntegerNotUnique;
+    } else if( IntegerUnique ) {
+        enum_value_type = ASR::enumtypeType::IntegerUnique;
+    }
 }
 
 class CollectIdentifiersFromASRExpression: public ASR::BaseWalkVisitor<CollectIdentifiersFromASRExpression> {
