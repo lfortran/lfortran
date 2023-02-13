@@ -1,6 +1,6 @@
 module fpm_manifest_modules_30
     use fpm_manifest_package_modules_30, only : package_config_t
-    use fpm_manifest_executable, only : executable_config_t, default_executable
+    use fpm_manifest_executable_modules_30, only : default_executable
     implicit none
 
 contains

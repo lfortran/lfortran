@@ -5,18 +5,18 @@
             fpm_git1:
                 (Module
                     (SymbolTable
-                        16
+                        15
                         {
                             git_target_branch:
                                 (Function
                                     (SymbolTable
-                                        18
+                                        17
                                         {
                                             1_git_target_t_object:
                                                 (ExternalSymbol
-                                                    18
+                                                    17
                                                     1_git_target_t_object
-                                                    17 object
+                                                    16 object
                                                     git_target_t
                                                     []
                                                     object
@@ -24,9 +24,9 @@
                                                 ),
                                             1_git_target_t_url:
                                                 (ExternalSymbol
-                                                    18
+                                                    17
                                                     1_git_target_t_url
-                                                    17 url
+                                                    16 url
                                                     git_target_t
                                                     []
                                                     url
@@ -34,7 +34,7 @@
                                                 ),
                                             branch:
                                                 (Variable
-                                                    18
+                                                    17
                                                     branch
                                                     []
                                                     In
@@ -49,7 +49,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    18
+                                                    17
                                                     self
                                                     []
                                                     ReturnVar
@@ -57,7 +57,7 @@
                                                     ()
                                                     Default
                                                     (Struct
-                                                        16 git_target_t
+                                                        15 git_target_t
                                                         []
                                                     )
                                                     Source
@@ -67,7 +67,7 @@
                                                 ),
                                             url:
                                                 (Variable
-                                                    18
+                                                    17
                                                     url
                                                     []
                                                     In
@@ -83,29 +83,29 @@
                                         })
                                     git_target_branch
                                     []
-                                    [(Var 18 url)
-                                    (Var 18 branch)]
+                                    [(Var 17 url)
+                                    (Var 17 branch)]
                                     [(=
                                         (StructInstanceMember
-                                            (Var 18 self)
-                                            18 1_git_target_t_url
+                                            (Var 17 self)
+                                            17 1_git_target_t_url
                                             (Character 1 -2 () [])
                                             ()
                                         )
-                                        (Var 18 url)
+                                        (Var 17 url)
                                         ()
                                     )
                                     (=
                                         (StructInstanceMember
-                                            (Var 18 self)
-                                            18 1_git_target_t_object
+                                            (Var 17 self)
+                                            17 1_git_target_t_object
                                             (Character 1 -2 () [])
                                             ()
                                         )
-                                        (Var 18 branch)
+                                        (Var 17 branch)
                                         ()
                                     )]
-                                    (Var 18 self)
+                                    (Var 17 self)
                                     Source
                                     Public
                                     Implementation
@@ -122,11 +122,11 @@
                             git_target_t:
                                 (StructType
                                     (SymbolTable
-                                        17
+                                        16
                                         {
                                             object:
                                                 (Variable
-                                                    17
+                                                    16
                                                     object
                                                     []
                                                     Local
@@ -141,7 +141,7 @@
                                                 ),
                                             url:
                                                 (Variable
-                                                    17
+                                                    16
                                                     url
                                                     []
                                                     Local
@@ -174,16 +174,16 @@
             fpm_manifest_dependency1:
                 (Module
                     (SymbolTable
-                        9
+                        8
                         {
                             dependency_config_t:
                                 (StructType
                                     (SymbolTable
-                                        10
+                                        9
                                         {
                                             git:
                                                 (Variable
-                                                    10
+                                                    9
                                                     git
                                                     []
                                                     Local
@@ -191,7 +191,7 @@
                                                     ()
                                                     Allocatable
                                                     (Struct
-                                                        9 git_target_t
+                                                        8 git_target_t
                                                         []
                                                     )
                                                     Source
@@ -201,7 +201,7 @@
                                                 ),
                                             name:
                                                 (Variable
-                                                    10
+                                                    9
                                                     name
                                                     []
                                                     Local
@@ -216,7 +216,7 @@
                                                 ),
                                             path:
                                                 (Variable
-                                                    10
+                                                    9
                                                     path
                                                     []
                                                     Local
@@ -244,11 +244,11 @@
                             error_t:
                                 (StructType
                                     (SymbolTable
-                                        11
+                                        10
                                         {
                                             message:
                                                 (Variable
-                                                    11
+                                                    10
                                                     message
                                                     []
                                                     Local
@@ -273,9 +273,9 @@
                                 ),
                             git_target_branch:
                                 (ExternalSymbol
-                                    9
+                                    8
                                     git_target_branch
-                                    16 git_target_branch
+                                    15 git_target_branch
                                     fpm_git1
                                     []
                                     git_target_branch
@@ -283,9 +283,9 @@
                                 ),
                             git_target_t:
                                 (ExternalSymbol
-                                    9
+                                    8
                                     git_target_t
-                                    16 git_target_t
+                                    15 git_target_t
                                     fpm_git1
                                     []
                                     git_target_t
@@ -294,11 +294,11 @@
                             new_dependencies:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        12
                                         {
                                             deps:
                                                 (Variable
-                                                    13
+                                                    12
                                                     deps
                                                     []
                                                     Out
@@ -306,7 +306,7 @@
                                                     ()
                                                     Allocatable
                                                     (Struct
-                                                        9 dependency_config_t
+                                                        8 dependency_config_t
                                                         [(()
                                                         ())]
                                                     )
@@ -317,7 +317,7 @@
                                                 ),
                                             error:
                                                 (Variable
-                                                    13
+                                                    12
                                                     error
                                                     []
                                                     Out
@@ -325,7 +325,7 @@
                                                     ()
                                                     Allocatable
                                                     (Struct
-                                                        9 error_t
+                                                        8 error_t
                                                         []
                                                     )
                                                     Source
@@ -335,7 +335,7 @@
                                                 ),
                                             root:
                                                 (Variable
-                                                    13
+                                                    12
                                                     root
                                                     []
                                                     In
@@ -350,7 +350,7 @@
                                                 ),
                                             table:
                                                 (Variable
-                                                    13
+                                                    12
                                                     table
                                                     []
                                                     InOut
@@ -358,7 +358,7 @@
                                                     ()
                                                     Default
                                                     (Struct
-                                                        9 toml_table
+                                                        8 toml_table
                                                         []
                                                     )
                                                     Source
@@ -369,10 +369,10 @@
                                         })
                                     new_dependencies
                                     []
-                                    [(Var 13 deps)
-                                    (Var 13 table)
-                                    (Var 13 root)
-                                    (Var 13 error)]
+                                    [(Var 12 deps)
+                                    (Var 12 table)
+                                    (Var 12 root)
+                                    (Var 12 error)]
                                     []
                                     ()
                                     Source
@@ -391,13 +391,13 @@
                             new_dependency:
                                 (Function
                                     (SymbolTable
-                                        14
+                                        13
                                         {
                                             1_dependency_config_t_git:
                                                 (ExternalSymbol
-                                                    14
+                                                    13
                                                     1_dependency_config_t_git
-                                                    10 git
+                                                    9 git
                                                     dependency_config_t
                                                     []
                                                     git
@@ -405,7 +405,7 @@
                                                 ),
                                             obj:
                                                 (Variable
-                                                    14
+                                                    13
                                                     obj
                                                     []
                                                     Local
@@ -420,7 +420,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    14
+                                                    13
                                                     self
                                                     []
                                                     Out
@@ -428,7 +428,7 @@
                                                     ()
                                                     Default
                                                     (Struct
-                                                        9 dependency_config_t
+                                                        8 dependency_config_t
                                                         []
                                                     )
                                                     Source
@@ -438,7 +438,7 @@
                                                 ),
                                             url:
                                                 (Variable
-                                                    14
+                                                    13
                                                     url
                                                     []
                                                     Local
@@ -454,24 +454,24 @@
                                         })
                                     new_dependency
                                     [git_target_branch]
-                                    [(Var 14 self)]
+                                    [(Var 13 self)]
                                     [(=
                                         (StructInstanceMember
-                                            (Var 14 self)
-                                            14 1_dependency_config_t_git
+                                            (Var 13 self)
+                                            13 1_dependency_config_t_git
                                             (Struct
-                                                9 git_target_t
+                                                8 git_target_t
                                                 []
                                             )
                                             ()
                                         )
                                         (FunctionCall
-                                            9 git_target_branch
+                                            8 git_target_branch
                                             ()
-                                            [((Var 14 url))
-                                            ((Var 14 obj))]
+                                            [((Var 13 url))
+                                            ((Var 13 obj))]
                                             (Struct
-                                                9 git_target_t
+                                                8 git_target_t
                                                 []
                                             )
                                             ()
@@ -480,8 +480,8 @@
                                         ()
                                     )
                                     (ImplicitDeallocate
-                                        [14 obj
-                                        14 url]
+                                        [13 obj
+                                        13 url]
                                     )]
                                     ()
                                     Source
@@ -500,11 +500,11 @@
                             toml_table:
                                 (StructType
                                     (SymbolTable
-                                        12
+                                        11
                                         {
                                             inline:
                                                 (Variable
-                                                    12
+                                                    11
                                                     inline
                                                     []
                                                     Local
@@ -541,134 +541,11 @@
                     (SymbolTable
                         4
                         {
-                            default_executable:
-                                (Function
-                                    (SymbolTable
-                                        6
-                                        {
-                                            1_executable_config_t_main:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_executable_config_t_main
-                                                    5 main
-                                                    executable_config_t
-                                                    []
-                                                    main
-                                                    Public
-                                                ),
-                                            1_executable_config_t_name:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_executable_config_t_name
-                                                    5 name
-                                                    executable_config_t
-                                                    []
-                                                    name
-                                                    Public
-                                                ),
-                                            1_executable_config_t_source_dir:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_executable_config_t_source_dir
-                                                    5 source_dir
-                                                    executable_config_t
-                                                    []
-                                                    source_dir
-                                                    Public
-                                                ),
-                                            name:
-                                                (Variable
-                                                    6
-                                                    name
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 () [])
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            self:
-                                                (Variable
-                                                    6
-                                                    self
-                                                    []
-                                                    Out
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Struct
-                                                        4 executable_config_t
-                                                        []
-                                                    )
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    default_executable
-                                    []
-                                    [(Var 6 self)
-                                    (Var 6 name)]
-                                    [(=
-                                        (StructInstanceMember
-                                            (Var 6 self)
-                                            6 1_executable_config_t_name
-                                            (Character 1 -2 () [])
-                                            ()
-                                        )
-                                        (Var 6 name)
-                                        ()
-                                    )
-                                    (=
-                                        (StructInstanceMember
-                                            (Var 6 self)
-                                            6 1_executable_config_t_source_dir
-                                            (Character 1 -2 () [])
-                                            ()
-                                        )
-                                        (StringConstant
-                                            "app"
-                                            (Character 1 3 () [])
-                                        )
-                                        ()
-                                    )
-                                    (=
-                                        (StructInstanceMember
-                                            (Var 6 self)
-                                            6 1_executable_config_t_main
-                                            (Character 1 -2 () [])
-                                            ()
-                                        )
-                                        (StringConstant
-                                            "main.f90"
-                                            (Character 1 8 () [])
-                                        )
-                                        ()
-                                    )]
-                                    ()
-                                    Source
-                                    Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
                             dependency_config_t:
                                 (ExternalSymbol
                                     4
                                     dependency_config_t
-                                    9 dependency_config_t
+                                    8 dependency_config_t
                                     fpm_manifest_dependency1
                                     []
                                     dependency_config_t
@@ -678,7 +555,7 @@
                                 (ExternalSymbol
                                     4
                                     error_t
-                                    9 error_t
+                                    8 error_t
                                     fpm_manifest_dependency1
                                     []
                                     error_t
@@ -770,7 +647,7 @@
                                 (ExternalSymbol
                                     4
                                     new_dependencies
-                                    9 new_dependencies
+                                    8 new_dependencies
                                     fpm_manifest_dependency1
                                     []
                                     new_dependencies
@@ -779,11 +656,11 @@
                             new_executable:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        6
                                         {
                                             1_executable_config_t_dependency:
                                                 (ExternalSymbol
-                                                    7
+                                                    6
                                                     1_executable_config_t_dependency
                                                     5 dependency
                                                     executable_config_t
@@ -793,7 +670,7 @@
                                                 ),
                                             child:
                                                 (Variable
-                                                    7
+                                                    6
                                                     child
                                                     []
                                                     Local
@@ -813,7 +690,7 @@
                                                 ),
                                             error:
                                                 (Variable
-                                                    7
+                                                    6
                                                     error
                                                     []
                                                     Out
@@ -831,7 +708,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    7
+                                                    6
                                                     self
                                                     []
                                                     Out
@@ -849,7 +726,7 @@
                                                 ),
                                             table:
                                                 (Variable
-                                                    7
+                                                    6
                                                     table
                                                     []
                                                     InOut
@@ -868,18 +745,18 @@
                                         })
                                     new_executable
                                     [new_dependencies]
-                                    [(Var 7 self)
-                                    (Var 7 table)
-                                    (Var 7 error)]
+                                    [(Var 6 self)
+                                    (Var 6 table)
+                                    (Var 6 error)]
                                     [(ImplicitDeallocate
-                                        [7 error]
+                                        [6 error]
                                     )
                                     (SubroutineCall
                                         4 new_dependencies
                                         ()
                                         [((StructInstanceMember
-                                            (Var 7 self)
-                                            7 1_executable_config_t_dependency
+                                            (Var 6 self)
+                                            6 1_executable_config_t_dependency
                                             (Struct
                                                 4 dependency_config_t
                                                 [(()
@@ -887,9 +764,9 @@
                                             )
                                             ()
                                         ))
-                                        ((Var 7 child))
+                                        ((Var 6 child))
                                         (())
-                                        ((Var 7 error))]
+                                        ((Var 6 error))]
                                         ()
                                     )]
                                     ()
@@ -910,7 +787,7 @@
                                 (ExternalSymbol
                                     4
                                     toml_table
-                                    9 toml_table
+                                    8 toml_table
                                     fpm_manifest_dependency1
                                     []
                                     toml_table
@@ -927,21 +804,11 @@
                     (SymbolTable
                         2
                         {
-                            default_executable:
-                                (ExternalSymbol
-                                    2
-                                    default_executable
-                                    4 default_executable
-                                    fpm_manifest_executable
-                                    []
-                                    default_executable
-                                    Public
-                                ),
                             dependency_config_t:
                                 (ExternalSymbol
                                     2
                                     dependency_config_t
-                                    9 dependency_config_t
+                                    8 dependency_config_t
                                     fpm_manifest_dependency1
                                     []
                                     dependency_config_t
@@ -951,7 +818,7 @@
                                 (ExternalSymbol
                                     2
                                     error_t
-                                    9 error_t
+                                    8 error_t
                                     fpm_manifest_dependency1
                                     []
                                     error_t
@@ -971,7 +838,7 @@
                                 (ExternalSymbol
                                     2
                                     new_dependencies
-                                    9 new_dependencies
+                                    8 new_dependencies
                                     fpm_manifest_dependency1
                                     []
                                     new_dependencies
@@ -991,7 +858,7 @@
                                 (ExternalSymbol
                                     2
                                     toml_table
-                                    9 toml_table
+                                    8 toml_table
                                     fpm_manifest_dependency1
                                     []
                                     toml_table
