@@ -699,7 +699,7 @@ public:
     std::set<std::string> current_function_dependencies;
     ASR::ttype_t* current_variable_type_;
 
-    int32_t enum_init_val; // TODO: rework this to not use global variable
+    int32_t enum_init_val;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,

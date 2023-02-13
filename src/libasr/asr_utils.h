@@ -2612,6 +2612,53 @@ static inline ASR::EnumType_t* get_EnumType_from_symbol(ASR::symbol_t* s) {
     return ASR::down_cast<ASR::EnumType_t>(enum_type_cand);
 }
 
+static inline void set_enum_value_type(ASR::enumtypeType &enum_value_type,
+        SymbolTable *scope) {
+    int8_t IntegerConsecutiveFromZero = 1;
+    int8_t IntegerNotUnique = 0;
+    int8_t IntegerUnique = 1;
+    std::map<int64_t, int64_t> value2count;
+    for( auto sym: scope->get_scope() ) {
+        ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(sym.second);
+        ASR::expr_t* value = ASRUtils::expr_value(member_var->m_symbolic_value);
+        int64_t value_int64 = -1;
+        ASRUtils::extract_value(value, value_int64);
+        if( value2count.find(value_int64) == value2count.end() ) {
+            value2count[value_int64] = 0;
+        }
+        value2count[value_int64] += 1;
+    }
+    int64_t prev = -1;
+    for( auto itr: value2count ) {
+        if( itr.second > 1 ) {
+            IntegerNotUnique = 1;
+            IntegerUnique = 0;
+            IntegerConsecutiveFromZero = 0;
+            break ;
+        }
+        if( itr.first - prev != 1 ) {
+            IntegerConsecutiveFromZero = 0;
+        }
+        prev = itr.first;
+    }
+    if( IntegerConsecutiveFromZero ) {
+        if( value2count.find(0) == value2count.end() ) {
+            IntegerConsecutiveFromZero = 0;
+            IntegerUnique = 1;
+        } else {
+            IntegerUnique = 0;
+        }
+    }
+    LCOMPILERS_ASSERT(IntegerConsecutiveFromZero + IntegerNotUnique + IntegerUnique == 1);
+    if( IntegerConsecutiveFromZero ) {
+        enum_value_type = ASR::enumtypeType::IntegerConsecutiveFromZero;
+    } else if( IntegerNotUnique ) {
+        enum_value_type = ASR::enumtypeType::IntegerNotUnique;
+    } else if( IntegerUnique ) {
+        enum_value_type = ASR::enumtypeType::IntegerUnique;
+    }
+}
+
 class CollectIdentifiersFromASRExpression: public ASR::BaseWalkVisitor<CollectIdentifiersFromASRExpression> {
     private:
 
