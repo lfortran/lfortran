@@ -3086,6 +3086,41 @@ public:
             func_args.size(), type, nullptr, nullptr);
     }
 
+    ASR::asr_t* create_All(const AST::FuncCallOrArray_t& x) {
+        std::vector<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"dim"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "all");
+        ASR::expr_t *mask = args[0], *dim = args[1];
+        ASR::expr_t* value = nullptr;
+        // TODO: Use dim to compute the `value`
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al,
+            x.base.base.loc, 4, nullptr, 0));
+        if (ASR::is_a<ASR::ArrayConstant_t>(*mask)) {
+            ASR::ArrayConstant_t *array = ASR::down_cast<ASR::ArrayConstant_t>(mask);
+            bool result = true;
+            value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al,
+                array->base.base.loc, result, type));
+            for (size_t i = 0; i < array->n_args; i++) {
+                ASR::expr_t *args_value = ASRUtils::expr_value(array->m_args[i]);
+                if (args_value && ASR::is_a<ASR::LogicalConstant_t>(*args_value)) {
+                    if (result) {
+                        result = ASR::down_cast<ASR::LogicalConstant_t>(
+                            args_value)->m_value;
+                    }
+                } else {
+                    // TODO: Handle other expressions
+                    result = true; value = nullptr;
+                    break;
+                }
+            }
+            if (!result) {
+                value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al,
+                    array->base.base.loc, false, type));
+            }
+        }
+        return ASR::make_All_t(al, x.base.base.loc, mask, dim, type, value);
+    }
+
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
@@ -3126,6 +3161,8 @@ public:
                 tmp = create_Associated(x);
             } else if( var_name == "_lfortran_sqrt" ) {
                 tmp = create_IntrinsicFunctionSqrt(x);
+            } else if( var_name == "all" ) {
+                tmp = create_All(x);
             } else {
                 LCompilersException("create_" + var_name + " not implemented yet.");
             }
