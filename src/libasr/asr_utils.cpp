@@ -383,7 +383,8 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
     ASR::ttype_t* member_type_ = nullptr;
     ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope, member_type_);
     ASR::expr_t* value = nullptr;
-    if (v != nullptr && ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(v))->m_storage
+    v = ASRUtils::symbol_get_past_external(v);
+    if (v != nullptr && ASR::down_cast<ASR::Variable_t>(v)->m_storage
             == ASR::storage_typeType::Parameter) {
         if (member_variable->m_symbolic_value != nullptr) {
             value = expr_value(member_variable->m_symbolic_value);
@@ -635,10 +636,13 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     ASR::ttype_t *right_type = ASRUtils::expr_type(right);
     ASR::StructType_t *left_struct = nullptr;
     if ( ASR::is_a<ASR::Struct_t>(*left_type) ) {
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*right_type));
         left_struct = ASR::down_cast<ASR::StructType_t>(
             ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Struct_t>(
             left_type)->m_derived_type));
+    } else if ( ASR::is_a<ASR::Class_t>(*left_type) ) {
+        left_struct = ASR::down_cast<ASR::StructType_t>(
+            ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Class_t>(
+            left_type)->m_class_type));
     }
     bool found = false;
     if( is_op_overloaded(op, intrinsic_op_name, curr_scope, left_struct) ) {

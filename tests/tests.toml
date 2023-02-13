@@ -1008,7 +1008,7 @@ filename = "../integration_tests/derived_types_11.f90"
 asr = true
 
 [[test]]
-filename = "../integration_tests/derived_types_13.f90"
+filename = "../integration_tests/derived_types_15.f90"
 asr = true
 
 [[test]]
@@ -1019,6 +1019,11 @@ asr = true
 filename = "derived_types_06.f90"
 asr = true
 extrafiles = "derived_types_04.f90, derived_types_05.f90"
+
+[[test]]
+filename = "../integration_tests/derived_types_14.f90"
+asr = true
+extrafiles = "../integration_tests/derived_types_14_module.f90"
 
 [[test]]
 filename = "derived_types_07.f90"
@@ -2512,6 +2517,10 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/derived_types_16_module.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/derived_types_15.f90"
 asr = true
 
 [[test]]

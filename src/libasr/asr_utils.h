@@ -956,6 +956,16 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             is_dimensional = d->n_dims > 0;
             break;
         }
+        case ASR::ttypeType::Class: {
+            ASR::Class_t* d = ASR::down_cast<ASR::Class_t>(t);
+            res = symbol_name(d->m_class_type);
+            if( encode_dimensions_ ) {
+                encode_dimensions(d->n_dims, res, use_underscore_sep);
+                return res;
+            }
+            is_dimensional = d->n_dims > 0;
+            break;
+        }
         case ASR::ttypeType::Union: {
             ASR::Union_t* d = ASR::down_cast<ASR::Union_t>(t);
             res = symbol_name(d->m_union_type);

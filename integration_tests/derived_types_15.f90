@@ -34,4 +34,3 @@ program name
     if (type_1%compute(5.0) /= 500) error stop
     if (type_1%compute(2500) /= 50) error stop
 end program name
-
