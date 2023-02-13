@@ -1968,6 +1968,7 @@ public:
             }
         }
         current_function_dependencies.insert(std::string(ASRUtils::symbol_name(final_sym)));
+        ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         tmp = ASR::make_SubroutineCall_t(al, x.base.base.loc,
                 final_sym, original_sym, args.p, args.size(), v_expr);
     }

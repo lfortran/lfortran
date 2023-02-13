@@ -2115,6 +2115,23 @@ static inline bool is_dimension_empty(ASR::dimension_t* dims, size_t n) {
     return false;
 }
 
+static inline void insert_module_dependency(ASR::symbol_t* a,
+    Allocator& al, Vec<char*>& module_dependencies) {
+    if( ASR::is_a<ASR::ExternalSymbol_t>(*a) ) {
+        ASR::ExternalSymbol_t* a_ext = ASR::down_cast<ASR::ExternalSymbol_t>(a);
+        ASR::symbol_t* a_sym_module = ASRUtils::get_asr_owner(a_ext->m_external);
+        if( a_sym_module ) {
+            while( a_sym_module && !ASR::is_a<ASR::Module_t>(*a_sym_module) ) {
+                a_sym_module = ASRUtils::get_asr_owner(a_sym_module);
+            }
+            if( a_sym_module && !LCompilers::present(module_dependencies,
+                ASRUtils::symbol_name(a_sym_module)) ) {
+                module_dependencies.push_back(al, ASRUtils::symbol_name(a_sym_module));
+            }
+        }
+    }
+}
+
 static inline ASR::ttype_t* get_type_parameter(ASR::ttype_t* t) {
     switch (t->type) {
         case ASR::ttypeType::TypeParameter: {

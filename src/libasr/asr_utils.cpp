@@ -480,9 +480,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 return_type = ASRUtils::expr_type(func->m_return_var);
                             }
                             current_function_dependencies.insert(matched_func_name);
-                            if( ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ) {
-                                current_module_dependencies.push_back(al, ASR::down_cast<ASR::ExternalSymbol_t>(a_name)->m_module_name);
-                            }
+                            ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
                             asr = ASR::make_FunctionCall_t(al, loc, a_name, sym,
                                                             a_args.p, 2,
                                                             return_type,
@@ -596,9 +594,7 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
                 err("Unable to resolve matched subroutine for assignment overloading, " + matched_subrout_name, loc);
             }
             current_function_dependencies.insert(matched_subrout_name);
-            if( ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ) {
-                current_module_dependencies.push_back(al, ASR::down_cast<ASR::ExternalSymbol_t>(a_name)->m_module_name);
-            }
+            ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
             asr = ASR::make_SubroutineCall_t(al, loc, a_name, sym,
                                             a_args.p, 2, nullptr);
         }
@@ -735,9 +731,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 return_type = ASRUtils::expr_type(func->m_return_var);
                             }
                             current_function_dependencies.insert(matched_func_name);
-                            if( ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ) {
-                                current_module_dependencies.push_back(al, ASR::down_cast<ASR::ExternalSymbol_t>(a_name)->m_module_name);
-                            }
+                            ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
                             asr = ASR::make_FunctionCall_t(al, loc, a_name, sym,
                                                             a_args.p, 2,
                                                             return_type,
@@ -930,6 +924,7 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
     } else {
         final_sym = current_scope->get_symbol(local_sym);
     }
+    // ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
     if( is_subroutine ) {
         return ASR::make_SubroutineCall_t(al, loc, final_sym,
                                         v, args.p, args.size(),
