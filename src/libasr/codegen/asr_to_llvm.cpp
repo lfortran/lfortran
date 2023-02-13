@@ -3561,10 +3561,6 @@ public:
                             ASR::Var_t *arg = down_cast<ASR::Var_t>(x.m_args[i]);
                             if ( arg->m_v == item.second ) {
                                 interface_as_arg = true;
-                                llvm::Function::arg_iterator arg_it = F->arg_begin();
-                                for (size_t j=0; j<i; j++) {
-                                    arg_it++;
-                                }
                                 llvm::FunctionType* fntype = get_function_type(*v);
                                 llvm::Function* fn = llvm::Function::Create(fntype, llvm::Function::ExternalLinkage, v->m_name, module.get());
                                 uint32_t hash = get_hash((ASR::asr_t*)v);
