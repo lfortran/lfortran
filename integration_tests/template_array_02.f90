@@ -62,7 +62,7 @@ module template_array_02_m
             type(t), intent(in) :: a(:)
             type(t) :: r
             integer :: i
-            r = zero_t(a(0))
+            r = zero_t(a(1))
             do i = 1, size(a)
                 r = plus_t(r, a(i))
             end do

@@ -88,7 +88,7 @@ module template_array_03_m
             type(t) :: elem
             do x = 1, i
                 do z = 1, k
-                    elem = zero_t(a(0,0))
+                    elem = zero_t(a(1,1))
                     do y = 1, j
                         elem = plus_t(elem, mult_t(a(x,y), b(y,z)))
                     end do
