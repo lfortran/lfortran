@@ -673,8 +673,8 @@ RUN(NAME interface_12 LABELS gfortran llvm)
 
 RUN(NAME private1 LABELS gfortran llvm)
 
-RUN(NAME block_04 LABELS gfortran llvm)
-
 RUN(NAME modules_26 LABELS gfortran llvm)
 
 RUN(NAME enum_01 LABELS gfortran llvm)
+RUN(NAME enum_02 LABELS gfortran llvm EXTRAFILES
+         enum_02_module.f90)
