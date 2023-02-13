@@ -1345,6 +1345,7 @@ public:
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
+        std::set<std::string> current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear();
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
@@ -1353,6 +1354,7 @@ public:
         for( auto& itr: current_function_dependencies ) {
             func_deps.push_back(al, s2c(al, itr));
         }
+        current_function_dependencies = current_function_dependencies_copy;
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
         if( impl_del != nullptr ) {
             body.push_back(al, impl_del);
@@ -1387,6 +1389,7 @@ public:
         body.reserve(al, x.n_body);
         Vec<ASR::symbol_t*> rts;
         rts.reserve(al, rt_vec.size());
+        std::set<std::string> current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear();
         transform_stmts(body, x.n_body, x.m_body);
         Vec<char*> func_deps;
@@ -1394,6 +1397,7 @@ public:
         for( auto& itr: current_function_dependencies ) {
             func_deps.push_back(al, s2c(al, itr));
         }
+        current_function_dependencies = current_function_dependencies_copy;
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
         if( impl_del != nullptr ) {
             body.push_back(al, impl_del);
