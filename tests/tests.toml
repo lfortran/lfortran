@@ -1762,6 +1762,11 @@ asr = true
 filename = "../integration_tests/intrinsics_46.f90"
 asr = true
 
+# all
+[[test]]
+filename = "../integration_tests/intrinsics_47.f90"
+asr = true
+
 # floor (body)
 [[test]]
 filename = "../integration_tests/floor_01.f90"

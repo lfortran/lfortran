@@ -358,6 +358,7 @@ RUN(NAME intrinsics_43 LABELS gfortran) # dim
 RUN(NAME intrinsics_44 LABELS gfortran) # cshift
 RUN(NAME intrinsics_45 LABELS gfortran llvm wasm) # iso_fortran_env
 RUN(NAME intrinsics_46 LABELS gfortran llvm) # ichar & iachar
+RUN(NAME intrinsics_47 LABELS gfortran llvm) # all
 RUN(NAME intrinsics_open_close_read_write LABELS gfortran)
 
 RUN(NAME parameter_01 LABELS gfortran)
