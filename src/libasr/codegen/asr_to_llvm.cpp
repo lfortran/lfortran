@@ -1550,18 +1550,18 @@ public:
         tmp = builder->CreateCall(fn, {c});
     }
 
-    void visit_All(const ASR::All_t &x) {
+    void visit_ArrayAll(const ASR::ArrayAll_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr(*x.m_arg);
+        this->visit_expr(*x.m_mask);
         llvm::Value *mask = tmp;
-        ASR::ttype_t *type = ASRUtils::expr_type(x.m_arg);
+        ASR::ttype_t *type = ASRUtils::expr_type(x.m_mask);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Logical_t>(*type)) // TODO
         int32_t n = ASR::down_cast<ASR::Logical_t>(type)->n_dims;
         llvm::Value *size = llvm::ConstantInt::get(context, llvm::APInt(32, n));
-        if (ASR::is_a<ASR::Var_t>(*x.m_arg)) {
+        if (ASR::is_a<ASR::Var_t>(*x.m_mask)) {
             mask = LLVM::CreateLoad(*builder, llvm_utils->create_gep(mask, 0));
         }
         std::string runtime_func_name = "_lfortran_all";
@@ -3595,7 +3595,7 @@ public:
                                 llvm_symtab_fn[hash] = fn;
                             }
                         }
-                    } 
+                    }
                     if (!interface_as_arg) {
                         instantiate_function(*v);
                     }
