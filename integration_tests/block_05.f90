@@ -6,8 +6,11 @@ subroutine hybrd(n)
         if ( n <= 0 ) then
             exit main
         else if ( n >= 2 ) then
-            n = n + 1
-            exit main
+            if ( n <= 4 ) then
+                n = n +1
+            else 
+                exit main
+            end if
         else 
             n = n + 9
         end if 
