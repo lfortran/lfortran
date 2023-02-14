@@ -119,9 +119,9 @@
                     (=
                         (StructInstanceMember
                             (Var 5 type_2)
-                            5 t_1
+                            1 1_t_1
                             (Struct
-                                5 t_1
+                                1 1_t_1
                                 []
                             )
                             ()
